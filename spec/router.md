@@ -142,23 +142,34 @@ at `@barefootjs/client/runtime` (`disposeScope`/`rehydrateScope`). Neither may s
 
 ## Phased plan
 
-- **v0 — single authored region, correct by default.** Seams auto-install; shared
-  dispose/rehydrate fallback; `history.state` preserved; response-URL base resolution;
-  focus/a11y on swap. The "never worse than MPA" floor.
-- **v0.5 — `searchParams` done right.** In `@barefootjs/client` (lazy, side-effect-free,
-  router-driven); request-scoped SSR; `"sideEffects": false`. Cookies later.
-- **v1 — persistence within a region.** `data-bf-permanent` + idiomorph-style morphing.
-- **v2 — compiler-derived nested regions.** Smallest proof: `BF_REGION` + `IRElement.regionId`
-  + `<Region>` lowering in `jsx-to-ir.ts`; a Hono fixture asserting a stable id reused
-  across two pages; a runtime test for nearest-enclosing-region dispose + subtree rehydrate.
+- **v0 — single authored region, correct by default.** ✅ Shipped. Seams auto-install;
+  shared dispose/rehydrate fallback; `history.state` preserved; response-URL base
+  resolution; focus/a11y on swap. The "never worse than MPA" floor.
+- **v0.5 — `searchParams` done right.** ✅ Shipped. In `@barefootjs/client` (lazy,
+  side-effect-free, router-driven); request-scoped SSR; `"sideEffects": false`. Cookies later.
+- **v1 — persistence within a region.** ✅ Shipped. `data-bf-permanent` + idiomorph-style morphing.
+- **v2 — compiler-derived nested regions.** ✅ Shipped. `BF_REGION` + `IRElement.regionId`
+  + `<Region>` lowering in `jsx-to-ir.ts` (compiler) and the matching runtime in
+  `@barefootjs/router`: on a navigation the router matches `[bf-region]` ids between the
+  live and incoming documents and swaps only the **deepest regions whose owned content
+  differs** (nested + sibling), falling back to the broadest single swap — or a hard
+  navigation when the region structure diverges and no root contains all. The
+  owned-content diff is taken against a **server-render baseline** (not the island-mutated
+  live DOM) and **normalizes per-render hydration scaffolding** (the random `bf-s` scope
+  ids), so a region containing an island is not mistaken for "changed". Covered by the
+  cross-adapter `region-boundary` fixture (stable id), `router-regions.test.ts` (nested /
+  sibling / divergence), and the `integrations/router-blog` example (hand-authored sibling
+  + compiled nested regions, verified in a real browser).
 
 ## Limitations & non-goals
 
 - True zero-input region inference would need a separate, fragile cross-page diff pass
   (lone-page layouts, conditional shells, per-route layouts confound it). Ship authored
   boundaries first; treat inference as a later optional lint/codemod.
-- Permanent islands and scope-ownership edge cases (portals, context/loops crossing a
-  region) need conformance fixtures before v2 is more than a sketch.
+- v2 ships the nested/sibling swap, but scope-ownership edge cases where a region boundary
+  crosses a portal, context provider, or loop still need dedicated conformance fixtures —
+  the owned-content diff is HTML-structural, so a region split across one of these is not
+  yet guaranteed.
 - No scroll restoration; modulepreload links/dedupe set are session-lived (cap later).
 - **Non-goals:** client route manifest / loader protocol / fragment endpoint; RSC-style
   boundary or non-HTML payload; client-owned Suspense protocol; navigation/content-negotiation header.
