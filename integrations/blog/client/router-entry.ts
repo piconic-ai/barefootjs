@@ -1,5 +1,5 @@
 /**
- * Client bootstrap for the router-blog.
+ * Client bootstrap for the blog.
  *
  * Loaded once per page as a module `<script>`. It:
  *   1. installs the client-runtime seams the router re-hydrates / disposes

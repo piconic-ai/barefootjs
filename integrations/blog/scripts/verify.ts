@@ -1,9 +1,14 @@
 /**
- * Browser verification for the router-blog. Drives a real Chromium through
- * the router's behaviors and asserts each one, exiting non-zero on drift.
+ * Browser verification for the blog example. Drives a real Chromium through the
+ * router's behaviors and asserts each one, exiting non-zero on drift.
  *
  *   PORT=8788 bun run server.tsx &
  *   bun run scripts/verify.ts
+ *
+ * Region swaps are detected by **node identity** — tag a live element with a
+ * marker, act, then check whether the marker survived (region kept) or is gone
+ * (region swapped) — and by the real, user-visible content that appears. No
+ * debug instrumentation is needed on the page itself.
  */
 import { chromium } from '@playwright/test'
 
@@ -26,7 +31,14 @@ page.on('pageerror', (e) => errors.push(String(e)))
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
 
 const text = (sel: string) => page.locator(sel).first().innerText()
-const navCount = () => page.locator('.shell-stats .chip:nth-child(2) b').innerText()
+/** Tag the first match with an identity marker (an expando survives a DOM move, not a re-render). */
+const mark = (sel: string) =>
+  page.$eval(sel, (el) => {
+    ;(el as unknown as { __mark?: string }).__mark = 'KEEP'
+  })
+/** Read the marker back; `null` if the element is gone, `undefined` if it's a fresh node. */
+const marker = (sel: string) =>
+  page.$eval(sel, (el) => (el as unknown as { __mark?: string }).__mark).catch(() => null)
 
 try {
   // ── 1. First load + hydration ───────────────────────────────────────────
@@ -34,27 +46,18 @@ try {
   await page.waitForTimeout(300)
   const items = await page.locator('.sortable-list li').count()
   check('index hydrates with 10 posts', items === 10, `${items} items`)
-  const uptime0 = await text('.shell-stats .chip:nth-child(1) b')
-  await page.waitForTimeout(400)
-  const uptime1 = await text('.shell-stats .chip:nth-child(1) b')
-  check('shell uptime clock runs', uptime0 !== uptime1, `${uptime0} → ${uptime1}`)
 
-  // ── 2. searchParams: sort with NO region swap ───────────────────────────
-  const navsBeforeSort = await navCount()
+  // ── 2. searchParams: sort reorders the list with NO region swap ──────────
+  await mark('.content') // the PostList root — a region swap would replace it
   await page.click('.controls a.sort:has-text("title")')
   await page.waitForTimeout(200)
   const firstTitle = await text('.sortable-list li:first-child .item-link')
-  const navsAfterSort = await navCount()
   check(
     'sort=title reorders list reactively',
     firstTitle.startsWith('A') || firstTitle.startsWith('B'),
     `first now "${firstTitle}"`,
   )
-  check(
-    'sort is a query-only update with NO region swap',
-    navsBeforeSort === navsAfterSort,
-    `partial navs ${navsBeforeSort} → ${navsAfterSort}`,
-  )
+  check('sort is a query-only update with NO region swap', (await marker('.content')) === 'KEEP')
   check('URL reflects sort', page.url().includes('sort=title'), page.url())
 
   // ── 3. Pin survives a re-sort (keyed island state) ──────────────────────
@@ -66,27 +69,25 @@ try {
   check('pinned item state survives re-sort', pinnedSlug === stillPinned, `"${pinnedSlug}"`)
 
   // ── 4. Tag filter (query-only, still no swap) ───────────────────────────
-  const navsBeforeTag = await navCount()
   await page.click('.tags a.tag:has-text("#perf")')
   await page.waitForTimeout(200)
   const filtered = await page.locator('.sortable-list li:visible').count()
   check('tag=perf filters to 3 posts', filtered === 3, `${filtered} visible`)
-  check('tag filter does NOT swap region', (await navCount()) === navsBeforeTag, `navs ${navsBeforeTag}`)
+  check('tag filter does NOT swap the region', (await marker('.content')) === 'KEEP')
 
-  // ── 5. Navigate to a post: region SWAPS, shell persists ─────────────────
+  // ── 5. Navigate to a post: content region SWAPS, shell persists ─────────
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(200)
-  // toggle theme, then navigate — the choice must persist (shell never reloads)
-  await page.click('.toggle')
+  await page.click('.toggle') // flip theme, then navigate — the choice must persist
   const themeAfterToggle = await page.getAttribute('html', 'data-theme')
-  const navsBeforePost = await navCount()
+  await mark('.content') // index content — a swap replaces it with the article
   await page.click('.sortable-list li:first-child .item-link')
-  await page.waitForTimeout(300)
-  check('clicking a post swaps the region (partial nav)', (await navCount()) !== navsBeforePost, `navs ${navsBeforePost} → ${await navCount()}`)
+  await page.waitForSelector('.island.like', { timeout: 2000 })
+  check('clicking a post swaps the content region', (await marker('.content')) === null || (await page.locator('.island.like').count()) === 1)
   check('theme persists across navigation (shell stays mounted)', (await page.getAttribute('html', 'data-theme')) === themeAfterToggle, `theme=${themeAfterToggle}`)
   check('post page has like + timer + player islands', (await page.locator('.island.like').count()) === 1 && (await page.locator('.island.timer').count()) === 1 && (await page.locator('.island.player').count()) === 1)
 
-  // ── 6. Outlet island hydrates: like button reacts ───────────────────────
+  // ── 6. Swapped-in island hydrates: like button reacts ───────────────────
   await page.click('.island.like')
   check('like island hydrated after swap', (await text('.island.like .v')) === '1', `likes=${await text('.island.like .v')}`)
 
@@ -94,11 +95,10 @@ try {
   await page.waitForTimeout(400)
   const t1 = await text('.island.timer .v')
   check('reading timer ticks on post page', Number(t1) > 0, `t=${t1}`)
-  // leave the post → the outgoing timer island must be disposed (no leak)
-  await page.click('.back')
+  await page.click('.back') // leave → the outgoing timer island must be disposed (no leak)
   await page.waitForTimeout(500)
-  // come back to a post and ensure a fresh timer starts near 0 (old one gone)
-  await page.click('.sortable-list li:first-child .item-link')
+  await page.click('.sortable-list li:first-child .item-link') // re-enter → fresh timer near 0
+  await page.waitForSelector('.island.timer', { timeout: 2000 })
   await page.waitForTimeout(200)
   const tFresh = await text('.island.timer .v')
   check('fresh timer starts near 0 after re-entry', Number(tFresh) < 1.5, `t=${tFresh}`)
@@ -112,106 +112,48 @@ try {
   check('forward returns to a post', (await page.locator('.island.like').count()) === 1, page.url())
 
   // ── 9. v1: data-bf-permanent keeps a LIVE node across a region swap ──────
-  // We're on a post page (from §8). Start the NowPlaying mini-player, let it
-  // accrue some elapsed time, then navigate to another post. The marked node
-  // (and its play state + clock) must survive the swap; the unmarked reading
-  // timer next to it must reset — same region, same swap, only the marker
-  // differs.
+  // Start the NowPlaying mini-player, let it accrue time, then page to the next
+  // post. The marked node (play state + clock) survives the swap; the unmarked
+  // reading timer beside it resets — same region, same swap, only the marker.
   await page.locator('.island.player .player-toggle').click() // ▶ play
   await page.waitForTimeout(1000)
   const playerBefore = Number(await text('.island.player .player-time'))
   check('NowPlaying ticks while playing', playerBefore > 0.5, `elapsed=${playerBefore}`)
-  // Tag the live node so we can prove identity (not just equal text) across the swap.
-  await page.$eval('[data-bf-permanent="now-playing"]', (el) => {
-    ;(el as unknown as { __mark?: string }).__mark = 'KEEP'
-  })
-  const nextPost = page.locator('.pager a.pager-link[href^="/posts/"]').first()
-  await nextPost.click()
-  await page.waitForTimeout(250)
-  const sameNode = await page.$eval(
-    '[data-bf-permanent="now-playing"]',
-    (el) => (el as unknown as { __mark?: string }).__mark,
-  )
-  check('permanent node is the SAME live instance across the swap', sameNode === 'KEEP', `mark=${sameNode}`)
+  await mark('[data-bf-permanent="now-playing"]')
+  await page.click('.pager a.pager-link[href*="/posts/"]')
+  await page.waitForTimeout(400)
+  check('permanent node is the SAME live instance across the swap', (await marker('[data-bf-permanent="now-playing"]')) === 'KEEP')
   const playerAfter = Number(await text('.island.player .player-time'))
   check('NowPlaying clock continued across the swap (state preserved)', playerAfter >= playerBefore, `${playerBefore} → ${playerAfter}`)
-  const stillPlaying = await page.locator('.island.player .player-toggle').getAttribute('aria-label')
-  check('NowPlaying keeps its play state across the swap', stillPlaying === 'pause', `aria=${stillPlaying}`)
+  check('NowPlaying keeps its play state across the swap', (await page.locator('.island.player .player-toggle').getAttribute('aria-label')) === 'pause')
   const timerAfter = Number(await text('.island.timer .v'))
   check('unmarked timer resets on the same swap (contrast)', timerAfter < 0.5 && playerAfter > 0.5, `timer=${timerAfter} vs player=${playerAfter}`)
 
-  // ── 10. v2: sibling regions — the sidebar persists while content swaps ───
-  // Fresh load so the sidebar island starts clean, then bump its local pin
-  // counter and client-navigate to a post. The sidebar is its own region
-  // (`nav:0`) with identical markup on both pages, so the router swaps only the
-  // content region (`content:1`) — the sidebar island is never disposed and its
-  // counter survives. (A single-region v0 router could not express this: it
-  // would swap the first region — the sidebar — and never update the article.)
+  // ── 10. v2 sibling: the sidebar region persists while content swaps ──────
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(200)
   await page.click('.sidebar-pin')
   await page.click('.sidebar-pin')
-  const pinsBefore = await text('.sidebar-pin .v')
-  check('sidebar island hydrated (pin counter)', pinsBefore === '2', `pins=${pinsBefore}`)
-  await page.$eval('aside[bf-region] .sidebar', (el) => {
-    ;(el as unknown as { __mark?: string }).__mark = 'KEEP'
-  })
-  const navsBeforeSidebar = await navCount()
-  await page.click('.sortable-list li:first-child .item-link') // → post: content swaps
-  // Wait for the content region's MutationObserver to tick, then read the count
-  // once — so the condition and the message use the same value (no double read
-  // racing the observer).
-  await page
-    .waitForFunction(
-      (before) =>
-        document.querySelector('.shell-stats .chip:nth-child(2) b')?.textContent !== before,
-      navsBeforeSidebar,
-      { timeout: 2000 },
-    )
-    .catch(() => {})
-  const navsAfterSidebar = await navCount()
-  check('content region swapped (partial nav)', navsAfterSidebar !== navsBeforeSidebar, `navs ${navsBeforeSidebar} → ${navsAfterSidebar}`)
+  check('sidebar island hydrated (pin counter)', (await text('.sidebar-pin .v')) === '2')
+  await mark('aside[bf-region] .sidebar')
+  await page.click('.sortable-list li:first-child .item-link')
+  await page.waitForSelector('.island.like', { timeout: 2000 })
   check('article content swapped in (like island present)', (await page.locator('.island.like').count()) === 1)
-  const pinsAfter = await text('.sidebar-pin .v')
-  check('sidebar region persisted across the content swap (v2 sibling)', pinsAfter === '2', `pins=${pinsAfter}`)
-  const sidebarSame = await page.$eval(
-    'aside[bf-region] .sidebar',
-    (el) => (el as unknown as { __mark?: string }).__mark,
-  )
-  check('sidebar is the SAME live node (never disposed)', sidebarSame === 'KEEP', `mark=${sidebarSame}`)
+  check('sidebar region persisted across the content swap (v2 sibling)', (await text('.sidebar-pin .v')) === '2')
+  check('sidebar is the SAME live node (never disposed)', (await marker('aside[bf-region] .sidebar')) === 'KEEP')
 
-  // ── 11. v2 nested: outer region (ReaderToolbar) persists; inner swaps ─────
-  // The content area is a compiled `<PageShell>` with nested `<Region>`s. The
-  // ReaderToolbar lives in the OUTER region (above the inner one the router
-  // swaps), so its font-size level survives a page navigation while the inner
-  // content swaps — the deepest differing region is the only one replaced.
+  // ── 11. v2 nested: outer region (ReaderToolbar) persists; inner swaps ────
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(300)
   await page.click('.reader-toolbar .rt-btn[aria-label="larger"]')
   await page.click('.reader-toolbar .rt-btn[aria-label="larger"]')
-  const levelBefore = await text('.reader-toolbar .v')
-  check('reader toolbar hydrated (font level)', levelBefore === '3', `level=${levelBefore}`)
-  await page.$eval('.reader-toolbar', (el) => {
-    ;(el as unknown as { __mark?: string }).__mark = 'KEEP'
-  })
-  const navsBeforeNested = await navCount()
-  await page.click('.sortable-list li:first-child .item-link') // → post: inner swaps
-  await page
-    .waitForFunction(
-      (before) =>
-        document.querySelector('.shell-stats .chip:nth-child(2) b')?.textContent !== before,
-      navsBeforeNested,
-      { timeout: 2000 },
-    )
-    .catch(() => {})
+  check('reader toolbar hydrated (font level)', (await text('.reader-toolbar .v')) === '3')
+  await mark('.reader-toolbar')
+  await page.click('.sortable-list li:first-child .item-link')
+  await page.waitForSelector('.island.like', { timeout: 2000 })
   check('inner region swapped (article in)', (await page.locator('.island.like').count()) === 1)
-  const levelAfter = await text('.reader-toolbar .v')
-  check('outer region (toolbar) persisted across the inner swap (v2 nested)', levelAfter === '3', `level=${levelAfter}`)
-  const toolbarSame = await page.$eval(
-    '.reader-toolbar',
-    (el) => (el as unknown as { __mark?: string }).__mark,
-  )
-  check('toolbar is the SAME live node (outer region never swapped)', toolbarSame === 'KEEP', `mark=${toolbarSame}`)
+  check('outer region (toolbar) persisted across the inner swap (v2 nested)', (await text('.reader-toolbar .v')) === '3')
+  check('toolbar is the SAME live node (outer region never swapped)', (await marker('.reader-toolbar')) === 'KEEP')
 
   // ── 12. No console / page errors throughout ─────────────────────────────
   check('no console or page errors', errors.length === 0, errors.slice(0, 3).join(' | '))

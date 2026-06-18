@@ -1,4 +1,4 @@
-# Router blog — `@barefootjs/router` reference (real-component edition)
+# Blog — `@barefootjs/router` example (real components, shared across adapters)
 
 A small blog built on [`@barefootjs/router`](../../packages/router) for
 **automatic partial navigation**: clicking a post swaps only the content region
@@ -12,30 +12,32 @@ Every island here is a **real compiled BarefootJS `"use client"` component**
 hydrated by the **real `@barefootjs/client` runtime** — the router drives the
 actual `__bf_hydrate_within` / `__bf_dispose_within` seams, not a hand-written
 stand-in. So this doubles as an end-to-end integration test of the router's
-**v0 / v0.5 / v1 / v2** against the shipping compiler + runtime.
-
-![home](./screenshots/01-home.png)
+**v0 / v0.5 / v1 / v2** against the shipping compiler + runtime. The islands live
+in [`../shared/components/blog`](../shared/components/blog), so the same demo
+compiles for every backend adapter.
 
 ## What it shows
 
-| Screenshot | Demonstrates |
-|---|---|
-| ![home](./screenshots/01-home.png) | First load: the index list + sort/tag controls. The shell shows `uptime · partial navs · live islands`, all hydrated once. |
-| ![sort](./screenshots/02-sort-title.png) | **v0.5 `searchParams()`:** clicking `sort` / `tag` re-orders/filters the list reactively — **`partial navs` stays 0** (no region swap) while the list and the controls' active state update. A pinned post keeps its state across a re-sort. |
-| ![post](./screenshots/03-post.png) | **v0** After opening a post (post 10, `partial navs 1`): the body is swapped in, **uptime kept climbing**. The ▶ NowPlaying player (marked `data-bf-permanent`) is playing — elapsed `0.7s`. |
-| ![persist](./screenshots/04-permanent-persist.png) | **v1** After paging to the next post (post 9, `partial navs 2`): the player's clock **continued to `1.5s`** — the same live node was moved across the swap — while the unmarked ⏱ reading timer **reset** to `0.7s`. Same region, same swap, only the marker differs. |
+- **v0.5 `searchParams()`** — clicking `sort` / `tag` re-orders/filters the list
+  reactively, **with no region swap** (the list root stays mounted); a pinned
+  post keeps its state across a re-sort; the URL reflects the query.
+- **v0** — clicking a post swaps only the content region; the header (and its
+  theme toggle) and the sidebar stay mounted.
+- **v1 `data-bf-permanent`** — page between posts and the ▶ NowPlaying player
+  keeps playing (its live node moves across the swap), while the unmarked ⏱
+  reading timer resets.
+- **v2 nested + sibling regions** — the sidebar (sibling region) and the
+  ReaderToolbar (outer nested region) keep their island state while only the
+  inner content region swaps.
 
-The header is the proof of v0's persistent shell: its uptime clock and theme
-toggle start **once**. A full reload would reset them. The page below it is two
-sibling regions (sidebar + content); only the region whose content differs is
-replaced. (Run `bun run scripts/capture.ts` to regenerate the screenshots,
-including the sibling-region view.)
+`scripts/verify.ts` asserts all of this in a real browser by **node identity**
+(tag a live node, navigate, check whether it survived) — no on-page debug
+instrumentation.
 
-## Components (all real `"use client"`)
+## Components (all real `"use client"`, in `../shared/components/blog`)
 
 | Component | Where | Role |
 |---|---|---|
-| `ShellStats` | shell | uptime clock + a `MutationObserver` partial-nav counter + live-island gauge |
 | `ThemeToggle` | shell | flips `data-theme`; the choice survives navigation |
 | `Sidebar` | sidebar region (`nav:0`, sibling) | a pin counter — its state survives while the content swaps (**v2 sibling**, hand-authored id) |
 | `PageShell` | content area | a compiled layout whose nested `<Region>`s the compiler lowers to `bf-region` ids (**v2 nested**, compiler-derived) |
@@ -69,7 +71,7 @@ including the sibling-region view.)
 
 ```sh
 bun install
-cd integrations/router-blog
+cd integrations/blog
 bun run start        # setup deps + bf build + client bundles + serve on http://localhost:8788
 ```
 
@@ -81,20 +83,18 @@ imports at runtime (`@barefootjs/shared`, `@barefootjs/jsx`,
 `searchParams()` imports it). Run `setup` once; after that, iterate with
 `bun run build && bun run serve` (or just `bun run serve`).
 
-Verify behavior in a real browser (drives the router through **31 assertions** —
+Verify behavior in a real browser (drives the router through **29 assertions** —
 region swap, shell persistence, `searchParams()` no-swap sort/filter, pin
 survival, disposal, back/forward, `data-bf-permanent` persistence, and both
-sibling- and nested-region persistence, plus console
-errors):
+sibling- and nested-region persistence, plus console errors):
 
 ```sh
 bunx playwright install chromium   # once, if you don't have the browser
 PORT=8788 bun run server.tsx &
 bun run scripts/verify.ts
-bun run scripts/capture.ts    # writes screenshots/
 ```
 
-Both scripts use Playwright's managed browser discovery; set
+`verify.ts` uses Playwright's managed browser discovery; set
 `PW_EXECUTABLE_PATH` to point at a specific Chromium binary if yours lives
 outside Playwright's cache.
 
