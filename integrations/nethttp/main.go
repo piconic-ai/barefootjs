@@ -57,6 +57,21 @@ func loadTemplates() *template.Template {
 	return root
 }
 
+// baseTemplates is the parsed template set, kept so the blog renderer (which
+// composes several islands via RenderFragment) can build its own bf.Renderer
+// without re-parsing in production. In dev, currentTemplates re-parses per
+// request so build:watch rebuilds show on refresh.
+var baseTemplates *template.Template
+
+// currentTemplates returns the parsed templates: re-parsed per call in dev so
+// `bun run build:watch` rebuilds appear on reload, the cached set otherwise.
+func currentTemplates() *template.Template {
+	if isDevEnv() {
+		return loadTemplates()
+	}
+	return baseTemplates
+}
+
 // isDevEnv reports whether the process is running in development.
 func isDevEnv() bool {
 	return bfdev.IsDevDefault()
@@ -249,7 +264,8 @@ func main() {
 		}
 	}
 	layoutFn = layout
-	renderer = bf.NewRenderer(loadTemplates(), layout)
+	baseTemplates = loadTemplates()
+	renderer = bf.NewRenderer(baseTemplates, layout)
 
 	mux := http.NewServeMux()
 
@@ -268,6 +284,11 @@ func main() {
 	mux.HandleFunc("GET "+basePath+"/conditional-return-link", conditionalReturnLinkHandler)
 	mux.HandleFunc("GET "+basePath+"/ai-chat", aiChatHandler)
 	mux.HandleFunc("GET "+basePath+"/api/ai-chat", aiChatSSEHandler)
+
+	// Blog — the @barefootjs/router showcase (partial navigation across a
+	// region shell), mounted under ${basePath}/blog.
+	mux.HandleFunc("GET "+basePath+"/blog", blogIndexHandler)
+	mux.HandleFunc("GET "+basePath+"/blog/posts/{slug}", blogPostHandler)
 
 	// Todo API endpoints
 	mux.HandleFunc("GET "+basePath+"/api/todos", getTodosAPI)
@@ -315,7 +336,8 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath)
+        <li><a href="%s/blog">Blog (@barefootjs/router — partial navigation)</a></li>
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, `<!DOCTYPE html>
