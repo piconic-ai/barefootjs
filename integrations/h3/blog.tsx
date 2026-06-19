@@ -34,7 +34,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
 import { PostArticle } from '@/components/PostArticle'
-import { posts, postIndex, allTags, listItems } from '../shared/blog/posts'
+import { allTags, listItems, articleNav } from '../shared/blog/posts'
 
 interface LayoutProps {
   base: string
@@ -144,14 +144,12 @@ export function registerBlog(
     `${blog}/posts/:slug`,
     eventHandler(async (event) => {
       const slug = getRouterParam(event, 'slug')
-      const i = slug ? postIndex(slug) : -1
-      if (i < 0) {
+      const nav = slug ? articleNav(slug) : undefined
+      if (!nav) {
         setResponseStatus(event, 404)
         return 'Not found'
       }
-      const p = posts[i]
-      const prev = posts[i - 1]
-      const next = posts[i + 1]
+      const { post: p, position, total, prev, next } = nav
       // The whole article is the shared <PostArticle> island (nested children:
       // LikeButton / ReadingTimer / NowPlaying), rendered from post data.
       return renderPage(
@@ -162,8 +160,8 @@ export function registerBlog(
             date={p.date}
             tags={p.tags}
             body={p.body}
-            position={i + 1}
-            total={posts.length}
+            position={position}
+            total={total}
             base={blog}
             prevSlug={prev?.slug}
             prevTitle={prev?.title}

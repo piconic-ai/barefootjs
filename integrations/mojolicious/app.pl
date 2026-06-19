@@ -610,7 +610,9 @@ $r_blog->get('/blog' => sub ($c) {
 
 $r_blog->get('/blog/posts/:slug' => sub ($c) {
     my $slug  = $c->param('slug');
-    my $posts = $BLOG_DATA->{posts};
+    # Sort newest-first (the index's default display order) so the article pager
+    # walks down the list the reader is browsing; the corpus is authored oldest-first.
+    my $posts = [ sort { $b->{date} cmp $a->{date} } @{ $BLOG_DATA->{posts} } ];
     my ($i) = grep { $posts->[$_]{slug} eq $slug } 0 .. $#$posts;
     return $c->reply->not_found unless defined $i;
     my $p    = $posts->[$i];
@@ -707,4 +709,5 @@ __DATA__
     <li><a href="<%= $bp %>/todos">Todo (@client)</a></li>
     <li><a href="<%= $bp %>/todos-ssr">Todo (no @client markers)</a></li>
     <li><a href="<%= $bp %>/ai-chat">AI Chat (SSE Streaming)</a></li>
+    <li><a href="<%= $bp %>/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>

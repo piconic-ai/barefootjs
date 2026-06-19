@@ -485,7 +485,9 @@ sub blog_index_route ($req) {
 }
 
 sub blog_post_route ($req, $slug) {
-    my $posts = $BLOG_DATA->{posts};
+    # Sort newest-first (the index's default display order) so the article pager
+    # walks down the list the reader is browsing; the corpus is authored oldest-first.
+    my $posts = [ sort { $b->{date} cmp $a->{date} } @{ $BLOG_DATA->{posts} } ];
     my ($i) = grep { $posts->[$_]{slug} eq $slug } 0 .. $#$posts;
     return [404, ['Content-Type' => 'text/plain'], ['Not Found']] unless defined $i;
     my $p    = $posts->[$i];
@@ -569,6 +571,7 @@ under a plain Plack/PSGI app — no web framework required.</p>
     <li><a href="$BASE/todos">Todo (\@client)</a></li>
     <li><a href="$BASE/todos-ssr">Todo (no \@client markers)</a></li>
     <li><a href="$BASE/ai-chat">AI Chat (SSE Streaming)</a></li>
+    <li><a href="$BASE/blog">Blog (\@barefootjs/router - partial navigation)</a></li>
 </ul>
 HTML
     );

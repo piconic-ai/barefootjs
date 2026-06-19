@@ -24,7 +24,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
 import { PostArticle } from '@/components/PostArticle'
-import { posts, postIndex, allTags, listItems } from '../shared/blog/posts'
+import { allTags, listItems, articleNav } from '../shared/blog/posts'
 
 interface LayoutProps {
   base: string
@@ -109,12 +109,10 @@ export function renderBlogIndex(base: string, manifest: BarefootBuildManifest, t
 
 /** Post page node, or `null` when the slug is unknown (caller returns 404). */
 export function renderBlogPost(base: string, manifest: BarefootBuildManifest, slug: string) {
-  const i = postIndex(slug)
-  if (i < 0) return null
+  const nav = articleNav(slug)
+  if (!nav) return null
   const blog = `${base}/blog`
-  const p = posts[i]
-  const prev = posts[i - 1]
-  const next = posts[i + 1]
+  const { post: p, position, total, prev, next } = nav
   // The whole article is the shared <PostArticle> island (nested children:
   // LikeButton / ReadingTimer / NowPlaying), rendered from post data.
   return (
@@ -125,8 +123,8 @@ export function renderBlogPost(base: string, manifest: BarefootBuildManifest, sl
         date={p.date}
         tags={p.tags}
         body={p.body}
-        position={i + 1}
-        total={posts.length}
+        position={position}
+        total={total}
         base={blog}
         prevSlug={prev?.slug}
         prevTitle={prev?.title}

@@ -165,3 +165,34 @@ export const allTags: string[] = [...new Set(posts.flatMap((p) => p.tags))].sort
 export function postIndex(slug: string): number {
   return posts.findIndex((p) => p.slug === slug)
 }
+
+/** Posts in the index's default display order — date descending (newest first),
+ *  the order `PostList` shows by default. The article pager walks this order so
+ *  "next" moves DOWN the list the reader is browsing; the corpus above is
+ *  authored oldest-first, so without this the newest post (top of the list)
+ *  would be the pager's last entry and its "next" would fall back to the list. */
+export const orderedPosts: Post[] = [...posts].sort((a, b) => b.date.localeCompare(a.date))
+
+/** A post plus its pager neighbours, in the index's display order. */
+export interface ArticleNav {
+  post: Post
+  /** 1-based position in display order. */
+  position: number
+  total: number
+  prev?: Post
+  next?: Post
+}
+
+/** Look up a post and its pager neighbours in the index's display order.
+ *  Returns undefined for an unknown slug. */
+export function articleNav(slug: string): ArticleNav | undefined {
+  const pos = orderedPosts.findIndex((p) => p.slug === slug)
+  if (pos < 0) return undefined
+  return {
+    post: orderedPosts[pos],
+    position: pos + 1,
+    total: orderedPosts.length,
+    prev: orderedPosts[pos - 1],
+    next: orderedPosts[pos + 1],
+  }
+}
