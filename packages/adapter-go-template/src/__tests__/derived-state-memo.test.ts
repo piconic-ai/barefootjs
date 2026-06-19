@@ -155,29 +155,21 @@ export function P(props: { tags: string[] }) {
     expect(template).toContain('{{if eq $.Params.Tag .}}tag on{{else}}tag{{end}}')
   })
 
-  test('a helper that delegates to another local helper is NOT inlined (left for Capability C)', () => {
+  test('a helper that delegates to a non-URL-builder local helper is not inlined', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
-export function P(props: { base: string }) {
-  const params = createMemo(() => {
-    const sp = searchParams()
-    return { sort: sp.get('sort') ?? '' }
-  })
-  const hrefFor = (sort: string, tag: string) => {
-    const u = new URLSearchParams()
-    if (sort !== 'date') u.set('sort', sort)
-    if (tag) u.set('tag', tag)
-    const s = u.toString()
-    return s ? '/' + '?' + s : '/'
-  }
-  const sortHref = (k) => hrefFor(k, params().sort)
-  return <a href={sortHref('date')}>date</a>
+import { createSignal } from '@barefootjs/client'
+export function P() {
+  const [sig] = createSignal('x')
+  const label = (k) => (sig() === k ? 'on' : 'off')
+  const wrap = (k) => '[' + label(k) + ']'
+  return <a className={wrap('y')}>x</a>
 }
 `
     const { template } = generate(src)
-    // sortHref delegates to hrefFor (a local helper) → not inlined here.
-    expect(template).toContain('.SortHref')
+    // wrap delegates to label (a local helper) and isn't a URL builder → not
+    // inlined; falls back to the method-call form.
+    expect(template).toContain('.Wrap')
   })
 
   // A compound argument must keep its precedence when spliced into the body —
@@ -219,5 +211,125 @@ export function P(props: { xs: string[] }) {
     const { template } = generate(src)
     // Not inlined → stays as the (un-backed) method-call form.
     expect(template).toContain('.Has')
+  })
+})
+
+describe('Capability C2: URL-builder helpers → bf_query + derived Root field', () => {
+  const SRC = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { sort: sp.get('sort') ?? '', tag: sp.get('tag') ?? '' }
+  })
+  const base = (props.base ?? '').replace(/\\/+$/, '')
+  const root = base || '/'
+  const hrefFor = (sort: string, tag: string) => {
+    const u = new URLSearchParams()
+    if (sort !== 'date') u.set('sort', sort)
+    if (tag) u.set('tag', tag)
+    const s = u.toString()
+    return s ? \`\${root}?\${s}\` : root
+  }
+  const sortHref = (k) => hrefFor(k, params().tag)
+  const tagHref = (t) => hrefFor(params().sort, t)
+  return (
+    <div>
+      <a href={sortHref('title')}>s</a>
+      {props.base ? <a href={tagHref('go')}>t</a> : null}
+    </div>
+  )
+}
+`
+
+  test('sortHref/tagHref lower to bf_query, not a .SortHref method call', () => {
+    const { template } = generate(SRC)
+    expect(template).not.toContain('.SortHref')
+    expect(template).not.toContain('.TagHref')
+    expect(template).toContain('bf_query .Root')
+  })
+
+  test('guarded set() calls become bool include triples', () => {
+    const { template } = generate(SRC)
+    // sort !== 'date' guard (runtime sort case via tagHref) + tag truthiness.
+    expect(template).toContain('(ne (bf_string .Params.Sort) "date") "sort"')
+    expect(template).toContain('(ne .Params.Tag "") "tag"')
+  })
+
+  test('derived `root` const becomes a computed Root field', () => {
+    const { types } = generate(SRC)
+    expect(types).toContain('Root string `json:"-"`')
+    expect(types).toContain(
+      'Root: func() string { v := strings.TrimRight(in.Base, "/"); if v != "" { return v }; return "/" }(),',
+    )
+    expect(types).toContain('"strings"')
+  })
+
+  // A `&&` guard is NOT a Go bool (Go's `and` returns an operand); it must be
+  // truthiness-wrapped so `bf_query`'s `include` receives a real bool (#1945 review).
+  test('a && guard is wrapped to a bool, not passed as bare `and`', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  const params = createMemo(() => { const sp = searchParams(); return { tag: sp.get('tag') ?? '' } })
+  const root = (props.base ?? '') || '/'
+  const hrefFor = (sort: string, tag: string) => {
+    const u = new URLSearchParams()
+    if (sort && tag) u.set('both', sort)
+    return u.toString() ? \`\${root}?\${u}\` : root
+  }
+  const h = (k) => hrefFor(k, params().tag)
+  return <a href={h('x')}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('(ne (and "x" .Params.Tag) "")')
+  })
+
+  // A URL-builder helper whose return isn't the conditional with-query/base
+  // shape must not be lowered to bf_query (#1945 review) — it falls back to the
+  // method-call form.
+  test('a builder returning a non-conditional shape is not lowered to bf_query', () => {
+    const src = `
+'use client'
+import { searchParams } from '@barefootjs/client'
+export function P() {
+  const bad = (sort: string) => { const u = new URLSearchParams(); u.set('s', sort); return u.toString() }
+  return <a href={bad('x')}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('bf_query')
+    expect(template).toContain('.Bad')
+  })
+
+  // A non-string derived const referenced by the template must not be emitted
+  // as a `string` field with a non-string initializer (#1945 review).
+  test('a numeric derived const is not emitted as a string field', () => {
+    const src = `
+'use client'
+export function P(props: { count: number }) {
+  const n = props.count + 1
+  return <span>{n}</span>
+}
+`
+    const { types } = generate(src)
+    expect(types).not.toContain('N string')
+  })
+
+  // `||`/`??` evaluate to one operand, so a non-string left makes the result
+  // non-string even when the right is a string literal (#1945 review).
+  test('a `?? ""` over a non-string is not emitted as a string field', () => {
+    const src = `
+'use client'
+export function P(props: { count: number }) {
+  const c = props.count ?? ''
+  return <span>{c}</span>
+}
+`
+    const { types } = generate(src)
+    expect(types).not.toContain('C string')
   })
 })

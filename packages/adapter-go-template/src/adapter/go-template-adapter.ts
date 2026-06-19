@@ -206,6 +206,8 @@ interface CtorLowerEnv {
   searchParamsVars: Set<string>
   /** Helper-param name → its already-lowered Go argument, for inlining. */
   params: Map<string, string>
+  /** Component-scope const names currently being inlined (cycle guard). */
+  consts?: Set<string>
 }
 
 export interface GoTemplateAdapterOptions {
@@ -652,6 +654,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private localHelperNames: Set<string> = new Set()
 
+  /** Set when a constructor-context lowering emits a `strings.` call (#1897), so
+   *  `strings` is added to the generated types file's import block. */
+  private needsStringsImport = false
+
+  /** Component-scope derived consts referenced by the template during rendering
+   *  (e.g. `root` → `.Root`). `generateTypes` emits a computed field for each
+   *  that's resolvable and non-colliding (#1897). */
+  private referencedDerivedConsts: Set<string> = new Set()
+
   /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
@@ -687,6 +698,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
     this.componentName = ir.metadata.componentName
     this.errors = []
+    this.referencedDerivedConsts = new Set()
     this.templateVarCounter = 0
     this.pendingChildrenDefines = []
     this.propsObjectName = ir.metadata.propsObjectName
@@ -1209,6 +1221,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
     // Generate Props struct for main component
+    this.needsStringsImport = false
     this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
     // Generate NewXxxProps function
@@ -1226,6 +1239,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.usesFmt) header.push('\t"fmt"')
     if (this.usesHtmlTemplate) header.push('\t"html/template"')
     header.push('\t"math/rand"')
+    if (this.needsStringsImport) header.push('\t"strings"')
     header.push('')
     header.push('\tbf "github.com/barefootjs/runtime/bf"')
     header.push(')')
@@ -1721,6 +1735,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
 
+    // (#1897 PostList) Computed fields for component-scope derived string consts
+    // the template references (e.g. `root = base || '/'`). Not serialised — the
+    // route handler doesn't supply them; `NewXxxProps` computes them.
+    const takenForDerivedConsts = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+    ])
+    for (const f of this.computeDerivedConstFields(takenForDerivedConsts)) {
+      lines.push(`\t${f.name} string \`json:"-"\``)
+    }
+
     // `useContext` consumer fields (skip names already taken by a prop /
     // signal / memo field).
     const takenProps = new Set<string>([
@@ -2211,6 +2237,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
       const memoValue = this.computeMemoInitialValue(memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
       lines.push(`\t\t${fieldName}: ${memoValue},`)
+    }
+
+    // (#1897 PostList) Initialise computed derived-const fields
+    // (e.g. `Root: func() string { … }()`), matching `generatePropsStruct`.
+    const takenDerivedInit = new Set<string>([
+      ...ir.metadata.propsParams.map(p => this.capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => this.capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => this.capitalizeFieldName(m.name)),
+    ])
+    for (const f of this.computeDerivedConstFields(takenDerivedInit)) {
+      lines.push(`\t\t${f.name}: ${f.init},`)
     }
 
     // `useContext` consumer fields: default to the `createContext` default
@@ -4254,18 +4291,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (ts.isNumericLiteral(node)) return node.text
 
-    // Identifier: a substituted helper param, else a module string const.
+    // Identifier: a substituted helper param, a module string const, or a
+    // component-scope derived const inlined recursively (e.g. `root` → its
+    // `base || '/'` value).
     if (ts.isIdentifier(node)) {
       const sub = env.params.get(node.text)
       if (sub !== undefined) return sub
-      const c = this.localConstants.find(lc => lc.name === node.text && lc.isModule)
+      const c = this.localConstants.find(lc => lc.name === node.text)
       if (c?.value !== undefined) {
-        const lit = this.parseLiteralExpression(c.value)
-        if (lit && (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit))) {
-          return JSON.stringify(lit.text)
+        if (c.isModule) {
+          const lit = this.parseLiteralExpression(c.value)
+          if (lit && (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit))) {
+            return JSON.stringify(lit.text)
+          }
+          return null
         }
+        // Component-scope const: inline its computed value, guarding cycles.
+        if (env.consts?.has(node.text)) return null
+        const inner = this.parseLiteralExpression(c.value)
+        if (!inner) return null
+        return this.lowerCtorExpr(inner, {
+          ...env,
+          consts: new Set([...(env.consts ?? []), node.text]),
+        })
       }
       return null
+    }
+
+    // `props.<X>` → the constructor input field `in.<X>`.
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === this.propsObjectName
+    ) {
+      return `in.${this.capitalizeFieldName(node.name.text)}`
     }
 
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
@@ -4287,6 +4346,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const elem = this.lowerCtorExpr(node.arguments[0], env)
         if (arr !== null && elem !== null) return `bf.Includes(${arr}, ${elem})`
         return null
+      }
+      // `<s>.replace(/\/+$/, '')` — strip trailing slashes → strings.TrimRight.
+      // Only this exact trailing-slash regex is recognized (a general regex
+      // replace would need Go's regexp; out of scope).
+      if (
+        method === 'replace' &&
+        node.arguments.length === 2 &&
+        node.arguments[0].kind === ts.SyntaxKind.RegularExpressionLiteral &&
+        (node.arguments[0] as ts.Node).getText() === '/\\/+$/' &&
+        (ts.isStringLiteral(node.arguments[1]) ||
+          ts.isNoSubstitutionTemplateLiteral(node.arguments[1])) &&
+        node.arguments[1].text === ''
+      ) {
+        const recvGo = this.lowerCtorExpr(recv, env)
+        if (recvGo === null) return null
+        this.needsStringsImport = true
+        return `strings.TrimRight(${recvGo}, "/")`
       }
       return null
     }
@@ -4333,6 +4409,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       const right = this.lowerCtorExpr(node.right, env)
       if (right === null) return null
+      return `func() string { v := ${left}; if v != "" { return v }; return ${right} }()`
+    }
+
+    // `<expr> || <fallback>` (string `||` — falsy = empty, like `?? ''` but the
+    // left can itself be empty): `base || '/'`.
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.BarBarToken
+    ) {
+      const left = this.lowerCtorExpr(node.left, env)
+      const right = this.lowerCtorExpr(node.right, env)
+      if (left === null || right === null) return null
       return `func() string { v := ${left}; if v != "" { return v }; return ${right} }()`
     }
 
@@ -5048,8 +5136,101 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // the inner dot no longer refers to it, and it's not a root field. (#1677)
     if (this.isOuterLoopParam(name)) return `$${name}`
     if (this.loopVarRefCount.has(name)) return `$${name}`
+    // (#1897) A bare reference to a component-scope derived const (e.g. `root`)
+    // lowers to `.Root`; note it so `generateTypes` emits a computed field.
+    if (this.localConstants.some(c => c.name === name && !c.isModule && !c.containsArrow)) {
+      this.referencedDerivedConsts.add(name)
+    }
     // Env-signal binding (incl. an alias) → canonical `.SearchParams` (#1922).
     return this.searchParamsFieldRef(name) ?? this.rootFieldRef(name)
+  }
+
+  /**
+   * (#1897 PostList) Compute the Go struct fields for component-scope derived
+   * string consts referenced by the template (e.g. `root = base || '/'`). Each
+   * is lowered to a constructor-context Go expression via `lowerCtorExpr`, with
+   * its dependency consts inlined. Skips names that collide with an existing
+   * field (`takenFieldNames`) or that the lowerer can't represent.
+   */
+  private computeDerivedConstFields(
+    takenFieldNames: ReadonlySet<string>,
+  ): { name: string; init: string }[] {
+    const fields: { name: string; init: string }[] = []
+    for (const name of this.referencedDerivedConsts) {
+      const fieldName = this.capitalizeFieldName(name)
+      if (takenFieldNames.has(fieldName)) continue
+      const c = this.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
+      if (!c?.value) continue
+      const expr = this.parseLiteralExpression(c.value)
+      if (!expr) continue
+      // The field is typed `string`; only emit when the value is provably a Go
+      // string, so a numeric/other const referenced in the template can't be
+      // assigned into a string field (#1945 review).
+      if (!this.isStringExpr(expr, new Set())) continue
+      const init = this.lowerCtorExpr(expr, {
+        searchParamsVars: new Set(),
+        params: new Map(),
+        consts: new Set([name]),
+      })
+      if (init === null) continue
+      fields.push({ name: fieldName, init })
+    }
+    return fields
+  }
+
+  /**
+   * Conservative check that a JS expression is *definitely* string-valued —
+   * used to gate derived-const field emission (the field is typed `string`).
+   * Recognizes string/template literals, string-returning methods (`.replace`,
+   * `.trim`, … and `searchParams().get`), `+` / `||` / `??` where a branch is
+   * string-valued, and a component-const reference to such a value. Anything
+   * unproven (numbers, `props.X`, calls it doesn't know) returns false.
+   */
+  private isStringExpr(node: ts.Expression, seen: Set<string>): boolean {
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (
+      ts.isStringLiteral(node) ||
+      ts.isNoSubstitutionTemplateLiteral(node) ||
+      ts.isTemplateExpression(node)
+    ) {
+      return true
+    }
+    if (ts.isBinaryExpression(node)) {
+      const op = node.operatorToken.kind
+      // `+`: a string on *either* side forces string concatenation.
+      if (op === ts.SyntaxKind.PlusToken) {
+        return this.isStringExpr(node.left, seen) || this.isStringExpr(node.right, seen)
+      }
+      // `||` / `??` evaluate to *one* operand, so the result is only provably a
+      // string when *both* sides are (`props.count ?? ''` is not — it can be the
+      // number) (#1945 review).
+      if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
+        return this.isStringExpr(node.left, seen) && this.isStringExpr(node.right, seen)
+      }
+      return false
+    }
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const m = node.expression.name.text
+      const STRING_METHODS = new Set([
+        'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
+        'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
+      ])
+      return STRING_METHODS.has(m)
+    }
+    if (ts.isConditionalExpression(node)) {
+      return (
+        this.isStringExpr(node.whenTrue, seen) && this.isStringExpr(node.whenFalse, seen)
+      )
+    }
+    if (ts.isIdentifier(node)) {
+      if (seen.has(node.text)) return false
+      const c = this.localConstants.find(lc => lc.name === node.text && !lc.isModule && lc.value)
+      if (c?.value) {
+        const inner = this.parseLiteralExpression(c.value)
+        if (inner) return this.isStringExpr(inner, new Set([...seen, node.text]))
+      }
+    }
+    return false
   }
 
   /**
@@ -6433,7 +6614,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // (#1897 PostList) Inline a call to a local, expression-bodied helper arrow
+    // (#1897 PostList) A local URL-builder helper (`hrefFor`, or `sortHref` /
+    // `tagHref` delegating to it) lowers to a `bf_query` action — there is no Go
+    // method backing a `.SortHref "date"` call. Tried before the generic inliner
+    // because these helpers are block-bodied / delegate, which the inliner skips.
+    const urlBuilt = this.lowerUrlBuilderHelperCall(trimmed)
+    if (urlBuilt !== null) return urlBuilt
+
+    // Inline a call to a local, expression-bodied helper arrow
     // (`sortClass(k)` / `tagClass(t)`) by substituting its params with the call
     // args and lowering the resulting expression. There is no Go method backing
     // a `.SortClass "date"` call, so the call site must carry the computation
@@ -6630,6 +6818,207 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       text = text.slice(0, r.start) + r.text + text.slice(r.end)
     }
     return text
+  }
+
+  /**
+   * (#1897 PostList) Lower a call to a local URL-builder helper to a `bf_query`
+   * template expression. Handles two shapes:
+   *   - the builder itself — `(sort, tag) => { const u = new URLSearchParams();
+   *     if (sort !== 'date') u.set('sort', sort); if (tag) u.set('tag', tag);
+   *     return u.toString() ? \`${root}?${u}\` : root }` — substitute the call
+   *     args for params and emit `bf_query <base> (<guard>) "key" <value> …`;
+   *   - a pass-through delegate — `(k) => hrefFor(k, params().tag)` — substitute
+   *     and recurse on the delegated call.
+   * Returns null for anything else (→ existing lowering / method-call fallback).
+   */
+  private lowerUrlBuilderHelperCall(jsExpr: string): string | null {
+    if (this.localHelperNames.size === 0) return null
+    const head = /^\s*([A-Za-z_$][\w$]*)\s*\(/.exec(jsExpr)
+    if (!head || !this.localHelperNames.has(head[1])) return null
+
+    const call = this.parseLiteralExpression(jsExpr)
+    if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return null
+    if (call.arguments.some(a => ts.isSpreadElement(a))) return null
+    const fnConst = this.localConstants.find(
+      c => c.name === (call.expression as ts.Identifier).text && !c.isModule && c.value,
+    )
+    if (!fnConst?.value) return null
+    const fn = this.parseLiteralExpression(fnConst.value)
+    if (!fn || !ts.isArrowFunction(fn) || fn.parameters.length !== call.arguments.length) return null
+
+    const subs = new Map<string, string>()
+    for (let i = 0; i < fn.parameters.length; i++) {
+      const p = fn.parameters[i]
+      if (!ts.isIdentifier(p.name)) return null
+      subs.set(p.name.text, `(${call.arguments[i].getText()})`)
+    }
+
+    // Shape 1: the helper is itself a URLSearchParams builder.
+    const shape = this.extractUrlBuilder(fn)
+    if (shape) return this.emitUrlBuilder(shape, subs)
+
+    // Shape 2: a pass-through delegate to another local URL-builder helper.
+    if (!ts.isBlock(fn.body)) {
+      let body: ts.Expression = fn.body
+      while (ts.isParenthesizedExpression(body)) body = body.expression
+      if (
+        ts.isCallExpression(body) &&
+        ts.isIdentifier(body.expression) &&
+        this.localHelperNames.has(body.expression.text)
+      ) {
+        return this.lowerUrlBuilderHelperCall(this.substituteHelperParams(body, subs))
+      }
+    }
+    return null
+  }
+
+  /**
+   * Extract the `bf_query` shape from a `(…) => { const u = new URLSearchParams();
+   * [if (G)] u.set(K, V); …; return <s> ? … : <base> }` helper, or null when the
+   * block doesn't match that exact builder idiom.
+   */
+  private extractUrlBuilder(
+    arrow: ts.ArrowFunction,
+  ): { base: ts.Expression; sets: { guard: ts.Expression | null; key: string; value: ts.Expression }[] } | null {
+    if (!ts.isBlock(arrow.body)) return null
+    let builderVar: string | null = null
+    let base: ts.Expression | null = null
+    const sets: { guard: ts.Expression | null; key: string; value: ts.Expression }[] = []
+
+    for (const s of arrow.body.statements) {
+      if (ts.isVariableStatement(s)) {
+        for (const d of s.declarationList.declarations) {
+          if (
+            ts.isIdentifier(d.name) &&
+            d.initializer &&
+            ts.isNewExpression(d.initializer) &&
+            ts.isIdentifier(d.initializer.expression) &&
+            d.initializer.expression.text === 'URLSearchParams' &&
+            (d.initializer.arguments?.length ?? 0) === 0
+          ) {
+            builderVar = d.name.text
+          }
+          // Other locals (`const s = u.toString()`) are inert — ignored.
+        }
+        continue
+      }
+      // `if (G) u.set(K, V)` (no else).
+      if (ts.isIfStatement(s) && !s.elseStatement && builderVar) {
+        const set = this.matchUrlSet(s.thenStatement, builderVar)
+        if (!set) return null
+        sets.push({ guard: s.expression, key: set.key, value: set.value })
+        continue
+      }
+      // Unguarded `u.set(K, V)`.
+      if (ts.isExpressionStatement(s) && builderVar) {
+        const set = this.matchUrlSet(s, builderVar)
+        if (set) {
+          sets.push({ guard: null, key: set.key, value: set.value })
+          continue
+        }
+        return null
+      }
+      // `return <s> ? `${base}?…` : <base>` — the builder's return must be the
+      // conditional that picks between the with-query and bare-base URL; its
+      // `whenFalse` (no-query) branch is the base. Any other return shape isn't
+      // this idiom (#1945 review) — bail to the method-call fallback.
+      if (ts.isReturnStatement(s) && s.expression) {
+        let e: ts.Expression = s.expression
+        while (ts.isParenthesizedExpression(e)) e = e.expression
+        if (!ts.isConditionalExpression(e)) return null
+        base = e.whenFalse
+        continue
+      }
+      return null
+    }
+    if (!builderVar || !base || sets.length === 0) return null
+    return { base, sets }
+  }
+
+  /**
+   * Match `<builderVar>.set('literalKey', <value>)` — as a statement or an
+   * if-then — returning the key text and value node, else null.
+   */
+  private matchUrlSet(
+    node: ts.Node,
+    builderVar: string,
+  ): { key: string; value: ts.Expression } | null {
+    const stmt = ts.isBlock(node) ? (node.statements.length === 1 ? node.statements[0] : null) : node
+    if (!stmt || !ts.isExpressionStatement(stmt)) return null
+    const call = stmt.expression
+    if (
+      ts.isCallExpression(call) &&
+      ts.isPropertyAccessExpression(call.expression) &&
+      ts.isIdentifier(call.expression.expression) &&
+      call.expression.expression.text === builderVar &&
+      call.expression.name.text === 'set' &&
+      call.arguments.length === 2 &&
+      ts.isStringLiteral(call.arguments[0])
+    ) {
+      return { key: call.arguments[0].text, value: call.arguments[1] }
+    }
+    return null
+  }
+
+  /**
+   * Emit `bf_query <base> (<guard>) "key" <value> …` from an extracted builder
+   * shape, lowering each part (with the call args substituted for params) via
+   * the normal expression / condition lowering. Unguarded sets use `true`.
+   */
+  private emitUrlBuilder(
+    shape: { base: ts.Expression; sets: { guard: ts.Expression | null; key: string; value: ts.Expression }[] },
+    subs: ReadonlyMap<string, string>,
+  ): string | null {
+    const lowerExpr = (n: ts.Expression): string =>
+      this.convertExpressionToGo(this.substituteHelperParams(n, subs))
+    const baseGo = wrapIfMultiToken(lowerExpr(shape.base))
+    const parts: string[] = [baseGo]
+    for (const set of shape.sets) {
+      const guardGo = set.guard ? this.lowerUrlGuard(set.guard, subs) : 'true'
+      parts.push(`(${guardGo})`)
+      parts.push(JSON.stringify(set.key))
+      parts.push(wrapIfMultiToken(lowerExpr(set.value)))
+    }
+    return `bf_query ${parts.join(' ')}`
+  }
+
+  /**
+   * Lower a `u.set()` guard to a Go *bool* for `bf_query`'s `include` argument.
+   * A comparison / logical / negation / bool-literal already yields a bool
+   * (`convertConditionToGo`); a bare value (`if (tag)`) is JS string-truthiness,
+   * lowered to `ne <value> ""`. The arg must be a real bool — `bf_query` type-
+   * asserts it, so Go-template truthiness (`{{if x}}`) is not enough.
+   */
+  private lowerUrlGuard(guard: ts.Expression, subs: ReadonlyMap<string, string>): string {
+    let g = guard
+    while (ts.isParenthesizedExpression(g)) g = g.expression
+    // Comparisons, `!x`, and bool literals lower to a Go bool via the condition
+    // lowering. `&&` / `||` do NOT qualify: Go's `and`/`or` return one of their
+    // operands (a string for a truthiness guard like `tag && other`), not a
+    // bool — so they take the truthiness-wrap path below, yielding
+    // `ne (and …) ""`, an actual bool (#1945 review).
+    const isBoolShape =
+      (ts.isBinaryExpression(g) &&
+        [
+          ts.SyntaxKind.EqualsEqualsToken,
+          ts.SyntaxKind.EqualsEqualsEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsEqualsToken,
+          ts.SyntaxKind.LessThanToken,
+          ts.SyntaxKind.GreaterThanToken,
+          ts.SyntaxKind.LessThanEqualsToken,
+          ts.SyntaxKind.GreaterThanEqualsToken,
+        ].includes(g.operatorToken.kind)) ||
+      (ts.isPrefixUnaryExpression(g) && g.operator === ts.SyntaxKind.ExclamationToken) ||
+      g.kind === ts.SyntaxKind.TrueKeyword ||
+      g.kind === ts.SyntaxKind.FalseKeyword
+    if (isBoolShape) {
+      return this.convertConditionToGo(this.substituteHelperParams(guard, subs)).condition
+    }
+    const valueGo = wrapIfMultiToken(
+      this.convertExpressionToGo(this.substituteHelperParams(guard, subs)),
+    )
+    return `ne ${valueGo} ""`
   }
 
   /**
