@@ -333,3 +333,39 @@ export function P(props: { count: number }) {
     expect(types).not.toContain('C string')
   })
 })
+
+describe('Capability D: array-memo .length → handler-filled loop slice count', () => {
+  test('visible().length lowers to len .<Slice>, not the nil memo field', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+import { Row } from './Row'
+export function P(props: { items: { id: string }[] }) {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { tag: sp.get('tag') ?? '' }
+  })
+  const visible = createMemo(() => {
+    const { tag } = params()
+    return props.items.filter((p) => !tag || p.id === tag)
+  })
+  return (
+    <div>
+      <span>{visible().length} / {props.items.length} shown</span>
+      <ul>
+        {visible().map((p) => (
+          <Row key={p.id} id={p.id} />
+        ))}
+      </ul>
+    </div>
+  )
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('len .Visible')
+    // The loop over visible() is handler-filled as `.Rows`; the count reuses it.
+    expect(template).toContain('len .Rows')
+    // props.items.length is unaffected.
+    expect(template).toContain('len .Items')
+  })
+})
