@@ -1870,6 +1870,11 @@ func TestQuery(t *testing.T) {
 		{"escapes value", "/", []any{true, "tag", "a b&c"}, "/?tag=a+b%26c"},
 		{"empty-but-included value", "/", []any{true, "tag", ""}, "/?tag="},
 		{"trailing partial triple ignored", "/", []any{true, "sort", "title", true, "tag"}, "/?sort=title"},
+		// URLSearchParams.set(): repeating a key overwrites the value at the
+		// key's first position, never duplicating `k=v&k=w`.
+		{"repeated key overwrites first position", "/", []any{true, "sort", "title", true, "sort", "date"}, "/?sort=date"},
+		{"overwrite keeps first position among others", "/blog", []any{true, "sort", "title", true, "tag", "go", true, "sort", "date"}, "/blog?sort=date&tag=go"},
+		{"excluded repeat does not overwrite", "/", []any{true, "sort", "title", false, "sort", "date"}, "/?sort=title"},
 	}
 	for _, tt := range tests {
 		if got := Query(tt.base, tt.triples...); got != tt.want {

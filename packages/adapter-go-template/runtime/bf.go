@@ -135,22 +135,37 @@ func FuncMap() template.FuncMap {
 // values are query-escaped (spaces → "+", like URLSearchParams). An empty
 // query yields the bare base.
 //
-// Trailing args that don't complete a triple are ignored.
+// Included pairs follow URLSearchParams.set() semantics: repeating a key
+// overwrites the value at the key's first position rather than emitting a
+// duplicate `k=v&k=w`. Trailing args that don't complete a triple are ignored.
 func Query(base string, triples ...any) string {
-	var b strings.Builder
+	type kv struct{ key, val string }
+	pairs := make([]kv, 0, len(triples)/3)
+	pos := make(map[string]int)
 	for i := 0; i+2 < len(triples); i += 3 {
 		include, _ := triples[i].(bool)
 		if !include {
 			continue
 		}
+		k := String(triples[i+1])
+		v := String(triples[i+2])
+		if at, ok := pos[k]; ok {
+			pairs[at].val = v // set(): overwrite the first occurrence's value
+		} else {
+			pos[k] = len(pairs)
+			pairs = append(pairs, kv{k, v})
+		}
+	}
+	var b strings.Builder
+	for _, p := range pairs {
 		if b.Len() == 0 {
 			b.WriteByte('?')
 		} else {
 			b.WriteByte('&')
 		}
-		b.WriteString(url.QueryEscape(String(triples[i+1])))
+		b.WriteString(url.QueryEscape(p.key))
 		b.WriteByte('=')
-		b.WriteString(url.QueryEscape(String(triples[i+2])))
+		b.WriteString(url.QueryEscape(p.val))
 	}
 	return base + b.String()
 }
