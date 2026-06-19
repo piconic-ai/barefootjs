@@ -1110,10 +1110,19 @@ describe('processBundleEntries', () => {
     const outDir = makeTmpDir('out')
     try {
       const entryPath = resolve(projectDir, 'entry.ts')
-      // A router-entry-style bootstrap importing the reactive runtime.
+      // A router-entry-style bootstrap importing all three `@barefootjs/client*`
+      // specifiers and using each binding, so esbuild can't tree-shake the
+      // imports away before we assert they were kept external.
       writeFileSync(
         entryPath,
-        `import { createSignal } from '@barefootjs/client'\nexport const s = createSignal(0)\n`,
+        [
+          `import { createSignal } from '@barefootjs/client'`,
+          `import { setupStreaming } from '@barefootjs/client/runtime'`,
+          `import { createEffect } from '@barefootjs/client/reactive'`,
+          `export const s = createSignal(0)`,
+          `setupStreaming()`,
+          `createEffect(() => s)`,
+        ].join('\n') + '\n',
       )
 
       const config = makeConfig(projectDir, outDir, {
@@ -1123,13 +1132,18 @@ describe('processBundleEntries', () => {
       const nextEntries: Record<string, CacheEntry> = {}
 
       // allExternals is empty (no `externals` config), yet the bundler must
-      // still leave `@barefootjs/client` as an external import rather than
-      // trying to inline/resolve it — otherwise the reactive runtime forks.
+      // still leave every `@barefootjs/client*` import external rather than
+      // trying to inline/resolve them — otherwise the reactive runtime forks.
       const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
       expect(changed).toBe(true)
 
       const outContent = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
-      expect(outContent).toContain('@barefootjs/client')
+      // Each specifier must survive verbatim as an external import. Match the
+      // closing quote so `@barefootjs/client` doesn't spuriously pass on the
+      // `/runtime` and `/reactive` substrings.
+      expect(outContent).toMatch(/['"]@barefootjs\/client['"]/)
+      expect(outContent).toMatch(/['"]@barefootjs\/client\/runtime['"]/)
+      expect(outContent).toMatch(/['"]@barefootjs\/client\/reactive['"]/)
     } finally {
       rmSync(projectDir, { recursive: true, force: true })
       rmSync(outDir, { recursive: true, force: true })
