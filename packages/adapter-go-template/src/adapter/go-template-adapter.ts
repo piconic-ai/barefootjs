@@ -645,6 +645,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private searchParamsLocals: Set<string> = new Set()
 
+  /**
+   * Names of component-scope arrow-const helpers (`const sortClass = …`),
+   * eligible for call-site inlining (#1897). Precomputed per component so the
+   * inliner can skip the AST parse for the common non-helper expression.
+   */
+  private localHelperNames: Set<string> = new Set()
+
   /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
@@ -686,6 +693,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.restPropsName = ir.metadata.restPropsName ?? null
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.localHelperNames = new Set(
+      this.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
+    )
     this.currentMemos = ir.metadata.memos ?? []
     this.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
@@ -1066,6 +1076,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // lookups — both need the const tables populated on this standalone entry.
     this.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.localHelperNames = new Set(
+      this.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
+    )
     this.currentMemos = ir.metadata.memos ?? []
     this.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.contextConsumers = collectContextConsumers(ir.metadata)
@@ -6420,6 +6433,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // (#1897 PostList) Inline a call to a local, expression-bodied helper arrow
+    // (`sortClass(k)` / `tagClass(t)`) by substituting its params with the call
+    // args and lowering the resulting expression. There is no Go method backing
+    // a `.SortClass "date"` call, so the call site must carry the computation
+    // (`{{if eq .Params.Sort "date"}}sort on{{else}}sort{{end}}`). Only self-
+    // contained helpers are inlined; one that delegates to another local helper
+    // (e.g. `sortHref` → `hrefFor`) is left for a later capability.
+    const inlined = this.inlineLocalHelperCall(trimmed)
+    if (inlined !== null) {
+      return this.convertExpressionToGo(inlined, out)
+    }
+
     // Parse only here — *after* the early returns above, which resolve
     // `null`/`undefined`, static record indexes, and inlined literal consts
     // without a parse. The result is reported to the caller via `out` below
@@ -6456,6 +6481,155 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (out) out.parsed = parsed
 
     return this.renderParsedExpr(parsed)
+  }
+
+  /**
+   * (#1897 PostList) If `jsExpr` is a call to a local, expression-bodied helper
+   * arrow const (`sortClass(k)` / `tagClass(t)`), return its body with the call
+   * args substituted for the params (re-emitted to source), so the caller can
+   * lower the inlined expression. Returns null when `jsExpr` is not such a call,
+   * or when the helper delegates to another local helper (e.g. `sortHref` →
+   * `hrefFor`) — those need their own lowering capability and must not be
+   * half-inlined here. Substitution is AST-based (no string matching) so it is
+   * shadowing- and member-name-safe.
+   */
+  private inlineLocalHelperCall(jsExpr: string): string | null {
+    if (this.localHelperNames.size === 0) return null
+    // Fast path: skip the AST parse unless the expression begins with a known
+    // helper name applied as a call (`<helper>(`). The leading-identifier match
+    // is an unambiguous prefix — the real shape check is the AST parse below.
+    const head = /^\s*([A-Za-z_$][\w$]*)\s*\(/.exec(jsExpr)
+    if (!head || !this.localHelperNames.has(head[1])) return null
+
+    const call = this.parseLiteralExpression(jsExpr)
+    if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return null
+    // A spread arg (`f(...xs)`) can't map to positional params by text splice.
+    if (call.arguments.some(a => ts.isSpreadElement(a))) return null
+    const fnConst = this.localConstants.find(
+      c => c.name === (call.expression as ts.Identifier).text && !c.isModule && c.value,
+    )
+    if (!fnConst?.value) return null
+    const fn = this.parseLiteralExpression(fnConst.value)
+    if (!fn || !ts.isArrowFunction(fn) || ts.isBlock(fn.body)) return null
+    if (fn.parameters.length !== call.arguments.length) return null
+    // Don't half-inline a helper that calls another local helper.
+    if (this.bodyCallsLocalHelper(fn.body)) return null
+
+    const subs = new Map<string, string>()
+    for (let i = 0; i < fn.parameters.length; i++) {
+      const p = fn.parameters[i]
+      if (!ts.isIdentifier(p.name)) return null
+      // Parenthesize the arg so its own precedence survives the splice into the
+      // body (e.g. `x === <param>` with arg `a || b` must not become
+      // `x === a || b`).
+      subs.set(p.name.text, `(${call.arguments[i].getText()})`)
+    }
+    // The splicer is scope-blind, so reject bodies where a textual identifier
+    // replacement could be wrong: nested function scopes (shadowing / param
+    // positions) and object shorthand keys that are params.
+    if (!this.isSpliceSafeHelperBody(fn.body, new Set(subs.keys()))) return null
+    return this.substituteHelperParams(fn.body, subs)
+  }
+
+  /**
+   * Guard for `substituteHelperParams`: the span splicer replaces identifiers by
+   * name without scope tracking, so it is only safe on bodies free of
+   * constructs where a param name could appear in a position the splice can't
+   * handle — a nested function scope (shadowing or its own parameters), or an
+   * object shorthand key (`{ k }`, which can't be rewritten to `{ (arg) }`).
+   */
+  private isSpliceSafeHelperBody(body: ts.Node, paramNames: ReadonlySet<string>): boolean {
+    let safe = true
+    const visit = (n: ts.Node): void => {
+      if (!safe) return
+      if (
+        ts.isArrowFunction(n) ||
+        ts.isFunctionExpression(n) ||
+        ts.isFunctionDeclaration(n)
+      ) {
+        safe = false
+        return
+      }
+      if (ts.isShorthandPropertyAssignment(n) && paramNames.has(n.name.text)) {
+        safe = false
+        return
+      }
+      ts.forEachChild(n, visit)
+    }
+    visit(body)
+    return safe
+  }
+
+  /**
+   * True when `body` contains a call to a *local* (component-scope) arrow helper
+   * const — the signal that inlining `body` here would only push the problem to
+   * another un-lowered helper (e.g. `sortHref`'s body calls `hrefFor`).
+   */
+  private bodyCallsLocalHelper(body: ts.Node): boolean {
+    let found = false
+    const visit = (n: ts.Node): void => {
+      if (found) return
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
+        const name = n.expression.text
+        if (
+          this.localConstants.some(c => c.name === name && !c.isModule && c.containsArrow)
+        ) {
+          found = true
+          return
+        }
+      }
+      ts.forEachChild(n, visit)
+    }
+    visit(body)
+    return found
+  }
+
+  /**
+   * Re-emit `body` to source with each identifier named in `subs` replaced by
+   * the substitution's source text. Implemented as span splicing over `body`'s
+   * own source (single source file — args are passed as text, not cross-file
+   * AST nodes, which would corrupt a printer keyed to `body`'s source). The walk
+   * skips non-value identifier positions — the property NAME in `a.b` and a
+   * plain object-literal key in `{ k: … }` — so a param sharing a name with a
+   * member or key is left untouched. (`isSpliceSafeHelperBody` has already
+   * rejected nested functions and `{ k }` shorthand keys.)
+   */
+  private substituteHelperParams(
+    body: ts.Expression,
+    subs: ReadonlyMap<string, string>,
+  ): string {
+    const sf = body.getSourceFile()
+    const base = body.getStart(sf)
+    // Collect replacement spans (relative to the body's start), right-to-left.
+    const repls: { start: number; end: number; text: string }[] = []
+    const visit = (node: ts.Node): void => {
+      if (ts.isPropertyAccessExpression(node)) {
+        visit(node.expression) // skip `.name`
+        return
+      }
+      if (ts.isPropertyAssignment(node)) {
+        // A plain identifier/string key isn't a value position; only a computed
+        // key (`[expr]`) is. Visit the initializer (and computed key) only.
+        if (ts.isComputedPropertyName(node.name)) visit(node.name)
+        visit(node.initializer)
+        return
+      }
+      if (ts.isIdentifier(node)) {
+        const sub = subs.get(node.text)
+        if (sub !== undefined) {
+          repls.push({ start: node.getStart(sf) - base, end: node.getEnd() - base, text: sub })
+          return
+        }
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(body)
+
+    let text = body.getText(sf)
+    for (const r of repls.sort((a, b) => b.start - a.start)) {
+      text = text.slice(0, r.start) + r.text + text.slice(r.end)
+    }
+    return text
   }
 
   /**
@@ -7318,7 +7492,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const field = `.${this.capitalizeFieldName(propName)}`
         return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr)}}}"{{end}}`
       }
-      return `${name}="{{${this.convertExpressionToGo(value.expr)}}}"`
+      // Lower once; if the result is already a self-contained action block (e.g.
+      // an inlined `sortClass(k)` → `{{if …}}…{{end}}`, #1897), embed it as-is
+      // rather than double-wrapping it in another `{{…}}`.
+      const exprOut: { parsed?: ParsedExpr } = {}
+      const go = this.convertExpressionToGo(value.expr, exprOut)
+      return this.isTemplateFragment(go, exprOut.parsed?.kind)
+        ? `${name}="${go}"`
+        : `${name}="{{${go}}}"`
     },
     emitBooleanAttr: (_value, name) => name,
     // Spread attributes (`<div {...attrs()} />`) lower through the
