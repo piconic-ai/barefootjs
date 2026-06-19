@@ -5197,12 +5197,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (ts.isBinaryExpression(node)) {
       const op = node.operatorToken.kind
-      if (
-        op === ts.SyntaxKind.PlusToken ||
-        op === ts.SyntaxKind.BarBarToken ||
-        op === ts.SyntaxKind.QuestionQuestionToken
-      ) {
+      // `+`: a string on *either* side forces string concatenation.
+      if (op === ts.SyntaxKind.PlusToken) {
         return this.isStringExpr(node.left, seen) || this.isStringExpr(node.right, seen)
+      }
+      // `||` / `??` evaluate to *one* operand, so the result is only provably a
+      // string when *both* sides are (`props.count ?? ''` is not — it can be the
+      // number) (#1945 review).
+      if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
+        return this.isStringExpr(node.left, seen) && this.isStringExpr(node.right, seen)
       }
       return false
     }

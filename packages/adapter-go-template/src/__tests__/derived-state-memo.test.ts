@@ -318,4 +318,18 @@ export function P(props: { count: number }) {
     const { types } = generate(src)
     expect(types).not.toContain('N string')
   })
+
+  // `||`/`??` evaluate to one operand, so a non-string left makes the result
+  // non-string even when the right is a string literal (#1945 review).
+  test('a `?? ""` over a non-string is not emitted as a string field', () => {
+    const src = `
+'use client'
+export function P(props: { count: number }) {
+  const c = props.count ?? ''
+  return <span>{c}</span>
+}
+`
+    const { types } = generate(src)
+    expect(types).not.toContain('C string')
+  })
 })
