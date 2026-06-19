@@ -1,5 +1,98 @@
 # @barefootjs/go-template
 
+## 0.15.0
+
+### Minor Changes
+
+- ae67ac7: JSX children passed to imported child components now render on Go (#1896) instead of silently dropping. Action-bearing children (nested components, dynamic text) lower to a per-call-site companion define executed with the parent's data and injected into the child's props:
+
+  - New runtime helpers: `bf.TemplateFuncMap(t)` (provides `bf_tmpl`, a closure over the executing template set — register it alongside `bf.FuncMap()` before parsing) and `bf.WithChildren` (registered as `bf_with_children`).
+  - The adapter emits `{{template "Child" (bf_with_children .ChildSlotN (bf_tmpl "<Parent>__children_<slot>" .))}}` for such call sites, and collects component instances / keyed loops nested inside children onto the parent's props.
+
+  A long tail of codegen fixes rode along, surfaced by the composed `site/ui` demo corpus (all verified to byte parity with the Hono reference): multi-component-file `restPropsName` staleness in `generateTypes` (`in.Props undefined`), memo-vs-prop struct field collisions (`ClassName redeclared`), reference-typed zero values (`0` into `map`/`bool` fields), compile-time resolution of module-const record lookups (`strokePaths['chevron-down']`, `variantClasses.ghost`) and literal consts, template-literal ternary double-wrapping (`{{{{if`), parenthesised compound args (`eq (or .X "top") "left"`, `bf_string (…)`), string-tolerant equality (`eq (bf_string .Sorted) "asc"` for union-typed props), ARIA presence attributes rendering as `aria-x="true"`, and `attr={cond ? value : undefined}` omitting the attribute like Hono.
+
+- f01e7fa: data-table component now renders on Go template (#1897). Three adapter-level capabilities were added:
+
+  - **Loop body children via companion defines**: children of loop-body components (e.g. `<TableCell>` inside `<TableRow>`) render through `bf_with_children` + `bf_tmpl` companion defines.
+  - **Wrapper struct + constructor baking**: a wrapper struct embeds the child component's Props, per-row datum fields, and child sub-component slots. The constructor bakes module-const arrays into Go struct literals.
+  - **Block-body memo resolution**: recognizes `() => { const k = getter(); if (!k) return MODULE_CONST; … }` via TS AST walk and bakes the constant's value when the guard signal starts falsy.
+
+  Also fixes marker conformance regex to capture `^`-prefixed slot IDs in `bfTextStart`/`bfText`/`text_start` calls.
+
+- 498f83d: Compute object-returning `searchParams()` memos for SSR instead of emitting a nil map (PostList derived-state blocker, #1897 follow-up — Capability A).
+
+  A block-body memo of the shape `() => { const sp = searchParams(); return { sort: asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' } }` previously fell through every memo pattern and was initialized to `nil` in `NewXxxProps`, so the template's `.Params.Sort` / `.Params.Tag` accesses read a nil map. The adapter now lowers the object's values to Go in the constructor context and emits a computed `map[string]interface{}` with capitalized keys (matching the template's field access). The lowerer supports the narrow surface these memos use: `<sp>.get('k')` → `in.SearchParams.Get("k")`, `<arr>.includes(<x>)` → `bf.Includes([]string{…}, <x>)`, module arrow-helper inlining (e.g. `asSortKey`), `<expr> ?? ''`, and string ternaries. Unsupported shapes still fall back to `nil`, so nothing regresses.
+
+- 2c62b27: Inline local pure helper calls at template call sites (PostList derived-state blocker, #1897 follow-up — Capability B).
+
+  A call to a local, expression-bodied helper arrow const — `className={sortClass('date')}` where `const sortClass = (k) => params().sort === k ? 'sort on' : 'sort'` — previously lowered to `{{.SortClass "date"}}`, a method call on the Props struct with no Go method backing it (execute-time `can't evaluate field SortClass`). The adapter now inlines the helper's body at the call site, substituting the call arguments for the params (AST span-splice, so it is shadowing- and member-name-safe), and lowers the result: `class="{{if eq (bf_string .Params.Sort) "date"}}sort on{{else}}sort{{end}}"`. Works inside loops too (`tagClass(t)` resolves the loop var and root memo). Only self-contained helpers are inlined; one that delegates to another local helper (e.g. `sortHref` → `hrefFor`) is left untouched for a later capability. The attribute-value emitter no longer double-wraps an inlined helper that lowers to a self-contained `{{…}}` action block.
+
+- 5536468: `searchParams()` (router v0.5) now renders at SSR on the Go template adapter, so the cross-adapter `search-params` conformance fixture (`{searchParams().get('sort') ?? 'none'}`) runs on Go instead of being skipped (#1922, follow-up to #1917).
+
+  - **Lowering**: Go's `and`/`or` are prefix builtins, so a multi-token operand (a method/function call, arithmetic, comparison, nested helper) must be parenthesised or it degrades into extra sibling args. `logical()` now composes both operands through `wrapIfMultiToken` — the file-wide idiom — so `searchParams().get(k) ?? d` lowers to `{{or (.SearchParams.Get "sort") "none"}}` instead of the broken `{{or .SearchParams.Get "sort" "none"}}` (which dropped the call grouping and rendered empty). This fixes the general `obj.method(arg) ?? fallback` shape, not just `searchParams`.
+  - **Runtime**: new `bf.SearchParams` type with a `.Get(key)` helper (empty-tolerant zero value over `url.Values`) and a `bf.NewSearchParams(raw)` constructor for route handlers (`bf.NewSearchParams(r.URL.RawQuery)`).
+  - **Codegen**: a `SearchParams bf.SearchParams` binding threaded through the generated `Input` / `Props` structs and `NewXxxProps`, emitted only when a component imports `searchParams` (and guarded against a name collision with a user prop/signal/memo of the same name). It is not serialised for hydration (`json:"-"`) — the client re-reads `window.location.search` itself. The zero value is an empty query, so a render with no request query resolves every key to `""` and the author's `?? default` renders.
+
+  The Mojolicious / Xslate template adapters stay skipped pending their own env-signal lowering + per-request Perl `search_params` reader (#1922).
+
+- 9758831: Lower `hrefFor`-style URL-builder helpers to `bf_query`, and compute derived string consts as struct fields (PostList href blocker, #1897 follow-up — Capability C2).
+
+  A call to a local URL-builder helper — `href={sortHref('date')}` where `sortHref` delegates to `hrefFor = (sort, tag) => { const u = new URLSearchParams(); if (sort !== 'date') u.set('sort', sort); if (tag) u.set('tag', tag); return u.toString() ? \`${root}?${u}\` : root }`— previously lowered to`{{.SortHref "date"}}`, a method call with no Go method behind it. The adapter now:
+
+  - Recognizes the `URLSearchParams` builder idiom (AST) and emits a `bf_query` action, lowering each guarded `.set()` to an `(include bool, key, value)` triple — the guard via the existing condition lowering (`if (sort !== 'date')` → `ne … "date"`; `if (tag)` → `ne … ""`). Pass-through delegates (`sortHref` → `hrefFor`) are inlined and recursed.
+  - Computes component-scope derived string consts that the template references (e.g. `root = base || '/'`, with `base = (props.base ?? '').replace(/\/+$/, '')`) as `NewXxxProps`-initialized struct fields. `(…).replace(/\/+$/, '')` lowers to `strings.TrimRight(_, "/")` (this trailing-slash pattern only), `||` to an empty-fallback, and `props.X` to `in.X`; `strings` is added to the generated imports when used.
+
+  Verified end-to-end against the shared blog `PostList`: `.SortHref` / `.TagHref` are gone, `Root` is computed, and the emitted Go renders correct URLs (`/blog?sort=title&tag=go`, trailing-slash bases normalized).
+
+- 071a1a3: `<Region>` now lowers to a `bf-region` page-lifecycle boundary (spec/router.md), the smallest end-to-end proof for the router RFC's compiler-derived nested regions. Following the `<Async>` built-in precedent, the compiler recognises `<Region>` (and its self-closing form) by tag name and lowers it to a wrapper `<div>` carrying a deterministic `bf-region="<file scope>:<index>"` id — the `computeFileScope` FNV hash of the source path plus a per-file structural index. Because a layout compiles to one shared partial, every page composing it emits the _same_ id, which is what a client router matches a region on across page documents.
+
+  The id is a static string, so all four adapters (Hono, Go template, Mojolicious, Xslate) emit byte-identical `bf-region="<id>"` markers — no per-adapter template interpolation. Covered by a cross-adapter conformance fixture (`region-boundary`) in addition to the Hono-only emit assertion in `packages/jsx`.
+
+  Recognition is by capitalized tag name; import-scoped disambiguation, a runtime `<Region>` export, nested/sibling runtime diffing, and the scope-ownership dispose/rehydrate path are follow-ups.
+
+- 6547370: Variable element-access + `.toFixed`, and `/* @client */`-guarded memo SSR folding (#1897, data-table):
+
+  - `@barefootjs/jsx`: new `index-access` `ParsedExpr` kind for element access with a non-literal index (`selected()[index]`, `rows[i + 1]`). Previously refused as "Complex computed property access"; now supported and dispatched through a new `ParsedExprEmitter.indexAccess` arm. The Perl adapters disambiguate array (`->[$i]`) from hash (`->{$k}`) deref by the index's type; Xslate/Hono use the language's polymorphic `[]`; Go emits the `index` builtin.
+  - `@barefootjs/jsx`: `.toFixed(digits?)` lowers as a new `array-method` across all adapters — `bf->to_fixed` / `$bf.to_fixed` (new Perl runtime helper), `bf_to_fixed` (new Go runtime helper, `fmt.Sprintf("%.*f", …)`), native `.toFixed` on Hono.
+  - `@barefootjs/jsx`: `extractSsrDefaults` now folds a block-body memo through a statically-resolvable `if (cond) return …` guard, so a `/* @client */`-guarded memo (`const key = sortKey(); if (!key) return rows; … sort …`) seeds its default-state early-return value instead of `null`.
+  - `@barefootjs/mojolicious`: the test harness seeds a root signal whose initial is `null` / unevaluable as `undef` (rather than skipping it), so a getter read only in a child-prop expression doesn't fault strict vars.
+
+  With these, the composed `data-table` demo compiles clean on both Perl adapters and renders structurally byte-identical to Hono on real Mojolicious / Text::Xslate. It stays pinned in `skipJsx` on a single remaining divergence — the scope-ID of imported components inside the keyed `.map` (a hydration-scope concern tracked with #1896), not an expression-lowering gap.
+
+### Patch Changes
+
+- 0d6333e: Lower an array memo's `.length` to its handler-filled loop slice count (PostList status count, #1897 follow-up — Capability D, completing the derived-state fix).
+
+  A memo used both as a loop source (`visible().map(...)`) and as a count (`visible().length`) previously lowered the count to `len .Visible` — a memo field the adapter leaves unset (nil) — so the status line rendered `0`. The loop's `.map()` already becomes a handler-filled slice (`.PostListItems`) holding exactly the rendered (filtered) items, so the adapter now maps each array memo to that slice and lowers `<memo>().length` to `len .<Slice>` (loop-scoped through `$.` when nested). `props.items.length` and other lengths are unaffected.
+
+  With this, the shared blog `PostList` renders fully on Go template SSR: `params` / derived classes / hrefs / counts all resolve, no execute-time crashes.
+
+- da0c0c0: Go template adapter codegen fixes surfaced by bringing the shared blog islands to the Go/Chi integration.
+
+  - **`Math.min` / `Math.max`** now lower to the `bf_min` / `bf_max` runtime helpers (two-arg form; the N-arg form still falls back to the standard BF101 unsupported-call diagnostic via the arity gate). Previously `Math.min(...)` emitted a non-existent `.Math.Min` field access that crashed at execute time.
+  - **Nested arithmetic** parenthesises compound operands, so `(a / b) * c` emits `bf_mul (bf_div .A .B) .C` instead of `bf_mul bf_div .A .B 100`, which handed `bf_mul` four arguments. Comparisons (`gt`/`lt`/`eq`/…) wrap compound operands the same way.
+  - **Module numeric consts** (`const TRACK = 8`) inline their literal value rather than emitting a `.TRACK` Props field that never exists (mirrors the existing module string-const inlining).
+  - **Combined types file** adds the `"strings"` import when the merged constructors reference `strings.*` (a `searchParams()`-backed component emits `strings.TrimRight` for its router base), fixing an `undefined: strings` compile error in the generated types.
+
+- edd17e6: Add the `bf_query` runtime helper (PostList href blocker, #1897 follow-up — Capability C1).
+
+  `bf_query(base, ...triples)` builds a URL from a base path plus a query string assembled from `(include bool, key, value)` triples, in order — appending each pair only when its `include` flag is true, with keys/values query-escaped. It mirrors a JS `URLSearchParams` builder whose `.set(key, value)` calls are each guarded by an `if` (the compiler lowers each guard to the `include` bool). This is the runtime primitive the upcoming adapter lowering of `hrefFor`-style helpers emits; no generated output uses it yet.
+
+- 50c1965: Fix `searchParams()` SSR on the Go template adapter for an aliased import. `import { searchParams as sp }` + `sp().get(k)` now lowers to the canonical `.SearchParams.Get` field (and the `SearchParams bf.SearchParams` struct binding is generated), matching the non-aliased path — previously detection missed the alias (so no field was emitted) and the call lowered to a `.Sp` field that never exists. Detection now uses the shared `searchParamsLocalNames` helper (the same one the Mojo/Xslate adapters use), so the binding is found under any local name. #1922
+- 2218654: Fix invalid template syntax for a dynamic text node whose expression is a template literal with leading literal text.
+
+  Such an expression lowers to a **mix** of literal text and `{{...}}` actions (e.g. ` · #${tag}` → ` · #{{.Tag}}`). `renderExpression` only skipped re-wrapping when the lowered string _started_ with `{{`, so a template literal with leading literal text fell through and got wrapped whole — emitting `{{ · #{{.Tag}}}}`, which `html/template` rejects at parse time (`unrecognized character in action: U+00B7 '·'`). It now skips re-wrapping when the lowered string starts with `{{` (an `{{if}}`/`{{with}}` action chain) **or** the parsed expression is a `template-literal`, and emits it as-is between `bfTextStart`/`bfTextEnd`. The check keys off the parsed expression kind rather than substring-matching `{{`, so a bare string literal that merely contains `{{` (JSX `{"{{"}` → Go expr `"{{"`) is still wrapped and stays escaped. This is the shared blog `PostList` status-line shape (the `· #${params().tag}` branch).
+
+- ed9bfeb: `test-render` now recognises alias-import siblings (any specifier present in the `components` map, e.g. `@ui/components/ui/<name>`) when computing the reachable child set, and deduplicates module-scope shared types emitted once per component by multi-component child files. Previously an alias-imported child produced a combined unit referencing `New<Child>Props` without the child's type block (`undefined` compile errors), and multi-component child files failed with `redeclared in this block`.
+- 166177d: Composed `site/ui` demo-corpus parity for the perl adapters (#1897):
+
+  - **Xslate now renders the ENTIRE shared conformance corpus to Hono parity** (`skipJsx` is empty). `tabs` / `accordion` / `pagination` came off via: ARIA `aria-selected`/`aria-expanded` and boolean-TYPED prop routing through `bool_str`, compile-time resolution of module object-literal const property access (`variantClasses.ghost`), composed template-literal module consts, `attr={cond ? v : undefined}` attribute omission, and literal-const inlining (`totalPages`).
+  - **Mojolicious closes the strict-vars seeding gap**: child renders now seed declared props (JSX default or `undef`), inherited `props.<x>` accesses (via the shared augmentation pass), signal initials, and memo `ssrDefaults` under the caller's props — `tabs` / `tooltip` / `pagination` render to parity and `skipJsx` is empty. The remaining composed fixtures stay pinned on the context-provider object-literal lowering (BF101), the tracked #1897 feature.
+  - `@barefootjs/jsx` exports the shared static-const machinery all three SSR adapters now use: `collectModuleStringConsts` (fixed-point, incl. composed template-literal consts and `[...].join(sep)`) and `lookupStaticRecordLiteral` (module object-literal property/index lookup). The Go adapter delegates to it (no behavior change).
+
+- Updated dependencies [071a1a3]
+  - @barefootjs/shared@0.15.0
+
 ## 0.14.0
 
 ## 0.13.0
