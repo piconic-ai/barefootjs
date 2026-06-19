@@ -27,32 +27,11 @@ runAdapterConformanceTests({
   render: renderXslateComponent,
   // No JSX-render skips: every shared conformance fixture — including
   // the composed `site/ui` demo corpus (#1467 / #1897) — renders to
-  // Hono parity on real Text::Xslate. The last three (`tabs`,
-  // `accordion`, `pagination`) came off via: shared module-const
-  // resolution (composed template-literal consts), compile-time
-  // record-property lookup (`variantClasses.ghost`), ARIA
-  // `aria-selected`/`aria-expanded` + boolean-TYPED prop routing
-  // through `bool_str`, `attr={cond ? v : undefined}` omission, and
-  // literal-const inlining (`totalPages`). Shapes the adapter
-  // intentionally refuses at build time stay pinned in
-  // `expectedDiagnostics` below.
-  //
-  // `data-table` is the one JSX-render skip (#1897): it compiles clean
-  // (`selected()[index]` → shared `index-access` parser kind,
-  // `.toFixed(2)` → `$bf.to_fixed`, `/* @client */`-guarded `sortedData`
-  // memo SSR-folded to the unsorted early-return) and renders
-  // structurally BYTE-IDENTICAL to Hono on real Text::Xslate. The sole
-  // divergence is the scope-ID of imported components inside the keyed
-  // `.map` (a hydration-scope concern tracked with #1896, not an
-  // expression gap), so it's pinned in `skipJsx` rather than
-  // `expectedDiagnostics` (no BF101 fires anymore).
-  //
-  // `search-params` (router v0.5) now renders: the emitter lowers
-  // `searchParams().get('sort')` to a real method call on the per-request
-  // `$searchParams` reader (`$searchParams.get('sort')`), and the harness
-  // binds it to an empty-query `BarefootJS::SearchParams` (`.get` → nil →
-  // `// 'none'` renders the default). See #1922.
-  skipJsx: ['data-table'],
+  // Hono parity on real Text::Xslate. `data-table` came off via the
+  // body-children `inLoop` reset (#1896): the loop-item component
+  // (TableRow) still gets `ComponentName_<random>` scope IDs, but its
+  // body children (TableCell) now receive `_bf_slot` for deterministic
+  // parent-scope-derived IDs matching Hono.
   // Per-fixture build-time contracts for shapes the Xslate adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
   // gates are shared code paths in the ported adapter.

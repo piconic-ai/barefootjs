@@ -18,34 +18,12 @@ runAdapterConformanceTests({
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
   // No JSX-render skips: every shared conformance fixture — including
-  // the renderable members of the composed `site/ui` demo corpus
-  // (#1467 / #1897) — renders to Hono parity on real Mojolicious.
-  // `tabs` / `tooltip` / `pagination` came off via the harness's
-  // child-defaults seeding (declared props, inherited accesses, signal
-  // initials, memo ssrDefaults — closing the strict-vars `Global
-  // symbol "$id"` gap), boolean-typed prop routing through
-  // `bf->bool_str`, `attr={cond ? v : undefined}` omission, and
-  // literal-const inlining.
-  //
-  // `data-table` is the one remaining JSX-render skip (#1897). It now
-  // COMPILES clean — `selected()[index]` lowers via the shared
-  // `index-access` parser kind and `payment.amount.toFixed(2)` via
-  // `bf->to_fixed`, and its `/* @client */`-guarded `sortedData` memo
-  // SSR-evaluates to the unsorted `payments` early-return — so the
-  // template renders structurally BYTE-IDENTICAL to Hono on real
-  // Mojolicious. The sole divergence is the scope-ID of imported
-  // components inside the keyed `.map` (`TableCell_<random>` vs Hono's
-  // `DataTablePreviewDemo_test_s9`): the loop-child slot-skip is a
-  // hydration-scope concern tracked with #1896, not an expression gap.
-  // Pinned here rather than in `expectedDiagnostics` because no BF101
-  // fires anymore.
-  //
-  // `search-params` (router v0.5) now renders: the emitter lowers
-  // `searchParams().get('sort')` to a real method call on the per-request
-  // `$searchParams` reader (`$searchParams->get('sort')`), and the harness
-  // binds it to an empty-query `BarefootJS::SearchParams` (`.get` → undef →
-  // `// 'none'` renders the default). See #1922.
-  skipJsx: ['data-table'],
+  // the composed `site/ui` demo corpus (#1467 / #1897) — renders to
+  // Hono parity on real Mojolicious. `data-table` came off via the
+  // body-children `inLoop` reset (#1896): the loop-item component
+  // (TableRow) still gets `ComponentName_<random>` scope IDs, but its
+  // body children (TableCell) now receive `_bf_slot` for deterministic
+  // parent-scope-derived IDs matching Hono.
   // Per-fixture build-time contracts for shapes the Mojo adapter
   // intentionally refuses to lower. Owned by this adapter test file
   // (not by the shared fixtures) so adding a new adapter doesn't
