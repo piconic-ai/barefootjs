@@ -67,12 +67,36 @@ func blogMeta(p BlogPost) string {
 	return fmt.Sprintf("%s · %s", p.Date, strings.Join(tags, " "))
 }
 
-// blogPostIndex returns the index of the post with the given slug, or -1.
-func blogPostIndex(slug string) int {
-	for i, p := range blogPosts {
-		if p.Slug == slug {
-			return i
+// blogArticle is everything a post page needs, with its pager neighbours
+// computed in the index's default display order (date descending — newest
+// first) rather than the authored corpus order (oldest-first). That way the
+// article pager walks DOWN the list the reader is browsing: "next" is the post
+// below in the list, "prev" the post above. The newest post (top of the list)
+// thus gets a real "next" instead of falling off the end into "back to list".
+type blogArticle struct {
+	Post                BlogPost
+	Position, Total     int
+	PrevSlug, PrevTitle string
+	NextSlug, NextTitle string
+	Found               bool
+}
+
+// blogArticleFor looks up a post by slug and computes its pager neighbours in
+// the default list order (date descending). Found is false for an unknown slug.
+func blogArticleFor(slug string) blogArticle {
+	ordered := blogVisible("date", "")
+	for pos, q := range ordered {
+		if q.Slug != slug {
+			continue
 		}
+		a := blogArticle{Post: q, Position: pos + 1, Total: len(ordered), Found: true}
+		if pos > 0 {
+			a.PrevSlug, a.PrevTitle = ordered[pos-1].Slug, ordered[pos-1].Title
+		}
+		if pos < len(ordered)-1 {
+			a.NextSlug, a.NextTitle = ordered[pos+1].Slug, ordered[pos+1].Title
+		}
+		return a
 	}
-	return -1
+	return blogArticle{}
 }
