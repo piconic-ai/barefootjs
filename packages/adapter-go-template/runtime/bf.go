@@ -47,6 +47,11 @@ func FuncMap() template.FuncMap {
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
 
+		// URL query builder (#1897 PostList href helpers): conditional
+		// (include, key, value) triples → "base?k=v&…", mirroring a
+		// URLSearchParams builder with guarded `.set()` calls.
+		"bf_query": Query,
+
 		// JSON / numeric primitives — JS-compat callees registered on
 		// the Go adapter's `templatePrimitives` map (#1188).
 		"bf_json":   JSON,
@@ -119,6 +124,35 @@ func FuncMap() template.FuncMap {
 		// JSX intrinsic-element spread lowering (#1407)
 		"bf_spread_attrs": SpreadAttrs,
 	}
+}
+
+// Query builds a URL from a base path plus a query string assembled from
+// (include, key, value) triples, in order. A pair is appended only when its
+// `include` flag is true — mirroring a JS URLSearchParams builder whose
+// `.set(key, value)` calls are each guarded by an `if`. The compiler lowers
+// each guard to the `include` bool (so empty-but-included values, and
+// non-empty-but-excluded values, both match the source semantics). Keys and
+// values are query-escaped (spaces → "+", like URLSearchParams). An empty
+// query yields the bare base.
+//
+// Trailing args that don't complete a triple are ignored.
+func Query(base string, triples ...any) string {
+	var b strings.Builder
+	for i := 0; i+2 < len(triples); i += 3 {
+		include, _ := triples[i].(bool)
+		if !include {
+			continue
+		}
+		if b.Len() == 0 {
+			b.WriteByte('?')
+		} else {
+			b.WriteByte('&')
+		}
+		b.WriteString(url.QueryEscape(String(triples[i+1])))
+		b.WriteByte('=')
+		b.WriteString(url.QueryEscape(String(triples[i+2])))
+	}
+	return base + b.String()
 }
 
 // ScopeAttr returns the bare bf-s scope id (#1249).
