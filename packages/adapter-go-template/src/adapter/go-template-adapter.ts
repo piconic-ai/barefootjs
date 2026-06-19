@@ -5675,12 +5675,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Parse only here — *after* the early returns above, which resolve
     // `null`/`undefined`, static record indexes, and inlined literal consts
-    // without a parse. Report the result to the caller via `out` so
-    // `renderExpression` can classify the expression (template literal vs. not)
-    // off this single `parseExpression`, with no extra `ts.createSourceFile` on
-    // the `bf build` hot path and no parse at all for the early-return shapes.
+    // without a parse. The result is reported to the caller via `out` below
+    // (after the support gate) so `renderExpression` can classify the
+    // expression (template literal vs. not) off this single `parseExpression`,
+    // with no extra `ts.createSourceFile` on the `bf build` hot path and no
+    // parse at all for the early-return shapes.
     const parsed = parseExpression(trimmed)
-    if (out) out.parsed = parsed
     const support = isSupported(parsed)
 
     if (!support.supported) {
@@ -5694,9 +5694,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           message: buildUnsupportedSuggestion(support),
         },
       })
-      // Return empty string - Go template comments must be separate actions
+      // Return empty string - Go template comments must be separate actions.
+      // Deliberately leave `out.parsed` unset here: the sentinel `""` must take
+      // the normal wrap path in `renderExpression` (→ `{{""}}`), not the
+      // template-literal "already template text" path — otherwise an
+      // unsupported interpolation (`template-literal` kind) would emit `""`
+      // outside an action and render literal quotes into the HTML (#1937 review).
       return `""`
     }
+
+    // Report the supported parse to the caller (template-literal classification
+    // for `renderExpression`) only after the support gate, so the wrap-skip path
+    // can never trigger on the error sentinel above.
+    if (out) out.parsed = parsed
 
     return this.renderParsedExpr(parsed)
   }

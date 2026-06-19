@@ -320,6 +320,18 @@ export function Label() {
     const out = adapter.renderExpression({ expr: '`a #${tag}`' } as IRExpression)
     expect(out).toBe('a #{{.Tag}}')
   })
+
+  // A template literal with an UNSUPPORTED interpolation lowers to the BF101
+  // sentinel `""` (the whole expression, not template text). It must still be
+  // WRAPPED (`{{""}}`) so the sentinel sits inside an action — not emitted raw,
+  // which would render literal quotes into the HTML. The template-literal
+  // classification must therefore be reported to `renderExpression` only for a
+  // *supported* parse, never for the error sentinel (#1937 review).
+  test('unsupported template-literal interpolation is wrapped, not emitted raw', () => {
+    const adapter = new GoTemplateAdapter()
+    const out = adapter.renderExpression({ expr: '`x ${new Date()}`' } as IRExpression)
+    expect(out).toBe('{{""}}')
+  })
 })
 
 describe('GoTemplateAdapter - Adapter Specific', () => {
