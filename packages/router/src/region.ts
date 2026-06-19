@@ -10,7 +10,7 @@
  * region, so they are collected from the whole parsed document.
  */
 
-import { BF_HOST, BF_REGION, BF_SCOPE, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
+import { BF_HOST, BF_PROPS, BF_REGION, BF_SCOPE, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
 import type { RouterState } from './types.ts'
 
 /** Parse a fetched page's HTML into a detached document. */
@@ -111,6 +111,7 @@ const VOLATILE_ATTRS = [BF_SCOPE, BF_HOST]
 /** Strip per-render-volatile hydration scaffolding so the diff compares content, not scope ids. */
 function stripVolatileHydration(root: Element): void {
   for (const a of VOLATILE_ATTRS) root.removeAttribute(a)
+  normalizePropsAttr(root)
   const walker = (root.ownerDocument ?? document).createTreeWalker(
     root,
     NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT,
@@ -119,9 +120,44 @@ function stripVolatileHydration(root: Element): void {
     const node = walker.currentNode
     if (node.nodeType === Node.ELEMENT_NODE) {
       for (const a of VOLATILE_ATTRS) (node as Element).removeAttribute(a)
+      normalizePropsAttr(node as Element)
     } else if ((node as Comment).data.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
       ;(node as Comment).data = normalizeScopeComment((node as Comment).data)
     }
+  }
+}
+
+/**
+ * Blank the random `scopeID` inside a `bf-p` props attribute — the Go template
+ * adapter's hydration form, emitted on every root island (`<div bf-p='{"scopeID":
+ * "Sidebar_a1b2c3","pins":0}'>`). The scope id is regenerated per server render,
+ * so without this a persistent sibling region whose island sits *inside* the
+ * region element (e.g. the hand-authored `<aside bf-region>` sidebar) would
+ * compare unequal every navigation and get swapped away, resetting its state.
+ *
+ * Mirrors {@link normalizeScopeComment} (the JS adapters carry props in a
+ * `bf-scope:` comment instead): the scope id is blanked, every other prop kept,
+ * so a real prop change is still detected. Non-JSON / scope-id-free values are
+ * left untouched.
+ *
+ * Known limitation: only the TOP-LEVEL `scopeID` is blanked. A serialized
+ * `children` prop embeds nested islands' scope ids, which are NOT normalized —
+ * harmless today (the only such root, `PageShell`, IS a region element, so its
+ * `bf-p` is excluded from the innerHTML diff), but a `children`-carrying root
+ * placed *inside* a persistent region would still false-swap. See
+ * https://github.com/piconic-ai/barefootjs/issues/1952.
+ */
+function normalizePropsAttr(el: Element): void {
+  const raw = el.getAttribute(BF_PROPS)
+  if (raw === null) return
+  try {
+    const obj = JSON.parse(raw)
+    if (obj && typeof obj === 'object' && 'scopeID' in obj) {
+      obj.scopeID = ''
+      el.setAttribute(BF_PROPS, JSON.stringify(obj))
+    }
+  } catch {
+    // Not JSON we recognise — leave the attribute as authored.
   }
 }
 
