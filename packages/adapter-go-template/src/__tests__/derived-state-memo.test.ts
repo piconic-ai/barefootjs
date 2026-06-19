@@ -88,4 +88,25 @@ export function P() {
     // Must NOT emit a string as a Go bool condition.
     expect(types).not.toContain('if in.SearchParams.Get')
   })
+
+  // A block with control flow (an early `return` inside an `if`, plus the final
+  // return) must fall back to nil — not silently lower the final return as if it
+  // were unconditional, which would change SSR semantics (#1941 review).
+  test('block-body memo with control flow falls back to nil', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P() {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    if (sp.get('x')) return { sort: 'early' }
+    return { sort: sp.get('sort') ?? '' }
+  })
+  return <div>{params().sort}</div>
+}
+`
+    const { types } = generate(src)
+    expect(types).toContain('Params: nil')
+    expect(types).not.toContain('Params: map[string]interface{}{')
+  })
 })

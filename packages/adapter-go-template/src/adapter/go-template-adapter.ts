@@ -4168,10 +4168,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const arrow = this.parseLiteralExpression(computation)
     if (!arrow || !ts.isArrowFunction(arrow) || !ts.isBlock(arrow.body)) return null
 
-    // Collect `const <v> = searchParams()` bindings and the returned object.
+    // Accept only a strict shape: zero or more `const`/`let` declarations
+    // followed by exactly one `return { … }` as the LAST statement. Any other
+    // statement kind — `if`, an early/extra `return`, a loop, a bare call —
+    // means the block has control flow this resolver can't reason about, so we
+    // bail to the nil fallback rather than silently lowering one of several
+    // returns (#1941 review). Along the way, collect `const <v> = searchParams()`
+    // bindings (the env for `<v>.get('k')`).
     const searchParamsVars = new Set<string>()
     let retObj: ts.ObjectLiteralExpression | null = null
-    for (const s of arrow.body.statements) {
+    const statements = arrow.body.statements
+    for (let i = 0; i < statements.length; i++) {
+      const s = statements[i]
       if (ts.isVariableStatement(s)) {
         for (const d of s.declarationList.declarations) {
           if (
@@ -4179,16 +4187,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             d.initializer &&
             ts.isCallExpression(d.initializer) &&
             ts.isIdentifier(d.initializer.expression) &&
+            d.initializer.arguments.length === 0 &&
             this.searchParamsLocals.has(d.initializer.expression.text)
           ) {
             searchParamsVars.add(d.name.text)
           }
         }
-      } else if (ts.isReturnStatement(s) && s.expression) {
+        continue
+      }
+      if (ts.isReturnStatement(s)) {
+        // The return must be the last statement (so it's the only one) and
+        // return an object literal.
+        if (i !== statements.length - 1 || !s.expression) return null
         let e: ts.Expression = s.expression
         while (ts.isParenthesizedExpression(e)) e = e.expression
-        if (ts.isObjectLiteralExpression(e)) retObj = e
+        if (!ts.isObjectLiteralExpression(e)) return null
+        retObj = e
+        continue
       }
+      // Any other statement kind → control flow we don't model → bail.
+      return null
     }
     if (!retObj || retObj.properties.length === 0) return null
 
