@@ -33,6 +33,21 @@ func loadTemplates() *template.Template {
 	)
 }
 
+// baseTemplates is the parsed template set, kept so the blog renderer (which
+// composes several islands via RenderFragment) can build its own bf.Renderer
+// without re-parsing in production. In dev, currentTemplates re-parses per
+// request so build:watch rebuilds show on refresh.
+var baseTemplates *template.Template
+
+// currentTemplates returns the parsed templates: re-parsed per call in dev so
+// `bun run build:watch` rebuilds appear on reload, the cached set otherwise.
+func currentTemplates() *template.Template {
+	if isDevEnv() {
+		return loadTemplates()
+	}
+	return baseTemplates
+}
+
 // EchoRenderer adapts bf.Renderer to Echo's Renderer interface.
 // When devMode is true, templates are re-parsed on each request so edits
 // made by `bun run build:watch` show up without restarting the server.
@@ -231,8 +246,9 @@ func main() {
 			return strings.Replace(html, "</body>", string(devSnippet)+"\n</body>", 1)
 		}
 	}
+	baseTemplates = loadTemplates()
 	e.Renderer = &EchoRenderer{
-		bf:      bf.NewRenderer(loadTemplates(), layout),
+		bf:      bf.NewRenderer(baseTemplates, layout),
 		layout:  layout,
 		devMode: devMode,
 	}
@@ -258,6 +274,11 @@ func main() {
 	g.GET("/conditional-return-link", conditionalReturnLinkHandler)
 	g.GET("/ai-chat", aiChatHandler)
 	g.GET("/api/ai-chat", aiChatSSEHandler)
+
+	// Blog — the @barefootjs/router showcase (partial navigation across a
+	// region shell), mounted under ${basePath}/blog.
+	g.GET("/blog", blogIndexHandler)
+	g.GET("/blog/posts/:slug", blogPostHandler)
 
 	// Todo API endpoints
 	g.GET("/api/todos", getTodosAPI)
@@ -286,7 +307,8 @@ func indexHandler(c echo.Context) error {
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath)
+        <li><a href="%s/blog">Blog (@barefootjs/router — partial navigation)</a></li>
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	return c.HTML(http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en" class="dark">

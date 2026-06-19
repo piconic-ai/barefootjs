@@ -192,6 +192,35 @@ const cases: RegionCase[] = [
     textAfter: { body: 'B' },
   },
   {
+    // The Go template adapter carries props in a `bf-p` attribute whose
+    // `scopeID` is regenerated per server render. The diff must blank it (like
+    // the bf-s case above) or the sidebar region swaps away its state.
+    name: 'a region differing only by a per-render scopeID inside bf-p is not swapped',
+    current:
+      `<header>shell</header>` +
+      `<aside bf-region="nav:0" id="nav"><div class="sidebar" bf-r="" bf-p='{"scopeID":"Sidebar_aaa111","pins":0}'><span id="sb-state">keep</span></div></aside>` +
+      `<main bf-region="content:1" id="main"><p id="body">A</p></main>`,
+    incoming:
+      `<aside bf-region="nav:0" id="nav"><div class="sidebar" bf-r="" bf-p='{"scopeID":"Sidebar_zzz999","pins":0}'><span id="sb-state">keep</span></div></aside>` +
+      `<main bf-region="content:1" id="main"><p id="body">B</p></main>`,
+    survives: ['sb-state'],
+    textAfter: { body: 'B' },
+  },
+  {
+    // ...but a genuine prop change in bf-p (pins 0 → 5) must still swap: only
+    // the scopeID is volatile, every other prop stays in the comparison.
+    name: 'a region whose bf-p props really changed (not just scopeID) is swapped',
+    current:
+      `<header>shell</header>` +
+      `<aside bf-region="nav:0" id="nav"><div class="sidebar" bf-r="" bf-p='{"scopeID":"Sidebar_aaa111","pins":0}'><span id="sb-state">old</span></div></aside>` +
+      `<main bf-region="content:1" id="main"><p id="body">A</p></main>`,
+    incoming:
+      `<aside bf-region="nav:0" id="nav"><div class="sidebar" bf-r="" bf-p='{"scopeID":"Sidebar_zzz999","pins":5}'><span id="sb-state">new</span></div></aside>` +
+      `<main bf-region="content:1" id="main"><p id="body">B</p></main>`,
+    replaced: ['sb-state'],
+    textAfter: { body: 'B' },
+  },
+  {
     name: 'a navigation that changes no region commits history without swapping',
     current: `<header>shell</header><div bf-region="r:0" id="region"><p id="body">same</p></div>`,
     incoming: `<div bf-region="r:0" id="region"><p id="body">same</p></div>`,
