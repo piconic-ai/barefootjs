@@ -1854,3 +1854,31 @@ func TestRender_AutoAssignsChildScopeIDs(t *testing.T) {
 		t.Fatal("expected Render to backfill the empty child ScopeID in place")
 	}
 }
+
+func TestQuery(t *testing.T) {
+	tests := []struct {
+		name    string
+		base    string
+		triples []any
+		want    string
+	}{
+		{"no triples", "/", nil, "/"},
+		{"all excluded", "/", []any{false, "sort", "title", false, "tag", "go"}, "/"},
+		{"one included", "/", []any{true, "sort", "title"}, "/?sort=title"},
+		{"order preserved", "/blog", []any{true, "sort", "title", true, "tag", "go"}, "/blog?sort=title&tag=go"},
+		{"mixed include", "/blog", []any{false, "sort", "date", true, "tag", "go"}, "/blog?tag=go"},
+		{"escapes value", "/", []any{true, "tag", "a b&c"}, "/?tag=a+b%26c"},
+		{"empty-but-included value", "/", []any{true, "tag", ""}, "/?tag="},
+		{"trailing partial triple ignored", "/", []any{true, "sort", "title", true, "tag"}, "/?sort=title"},
+		// URLSearchParams.set(): repeating a key overwrites the value at the
+		// key's first position, never duplicating `k=v&k=w`.
+		{"repeated key overwrites first position", "/", []any{true, "sort", "title", true, "sort", "date"}, "/?sort=date"},
+		{"overwrite keeps first position among others", "/blog", []any{true, "sort", "title", true, "tag", "go", true, "sort", "date"}, "/blog?sort=date&tag=go"},
+		{"excluded repeat does not overwrite", "/", []any{true, "sort", "title", false, "sort", "date"}, "/?sort=title"},
+	}
+	for _, tt := range tests {
+		if got := Query(tt.base, tt.triples...); got != tt.want {
+			t.Errorf("%s: Query(%q, %v) = %q, want %q", tt.name, tt.base, tt.triples, got, tt.want)
+		}
+	}
+}
