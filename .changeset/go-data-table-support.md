@@ -1,6 +1,5 @@
 ---
 "@barefootjs/go-template": minor
-"@barefootjs/adapter-tests": patch
 ---
 
 data-table component now renders on Go template (#1897). Three adapter-level capabilities were added:
