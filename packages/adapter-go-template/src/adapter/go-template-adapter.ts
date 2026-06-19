@@ -4214,12 +4214,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     //     `html/template` syntax that panics at parse time (#1933, blog PostList
     //     status line).
     //
-    // Detect those two shapes precisely rather than substring-matching `{{`: a
-    // bare string literal that merely CONTAINS `{{` (JSX `{"{{"}` → Go expr
+    // `isTemplateFragment` makes this decision structurally (a `{{`-leading
+    // action block or a template-literal kind), not by substring-matching `{{`:
+    // a bare string literal that merely CONTAINS `{{` (JSX `{"{{"}` → Go expr
     // `"{{"`) is neither — it must still be wrapped so html/template evaluates
     // and escapes the string instead of emitting the raw quotes (#1937 review).
     // Use comment markers instead of <span> to avoid changing DOM structure.
-    if (goExpr.startsWith('{{') || classify.parsed?.kind === 'template-literal') {
+    if (this.isTemplateFragment(goExpr, classify.parsed?.kind)) {
       if (expr.slotId) {
         return `{{bfTextStart "${expr.slotId}"}}${goExpr}{{bfTextEnd}}`
       }
@@ -4233,6 +4234,41 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return `{{${goExpr}}}`
+  }
+
+  /**
+   * Decide whether a lowered Go string is ALREADY a self-contained template
+   * fragment — i.e. it carries its own `{{...}}` actions and so must NOT be
+   * re-wrapped in another `{{...}}` (doing so yields `{{ {{...}} }}`, which
+   * `html/template` rejects at parse time). Single source of truth for the
+   * wrap-or-not decision across `renderExpression`, `templateLiteral`, and the
+   * static-string / attribute interpolation paths.
+   *
+   * The decision is STRUCTURAL, deliberately NOT a `{{` substring scan: literal
+   * text and Go string literals are ambiguous to scan — `5" ${x}` lowers to
+   * `5" {{.X}}` while JS `{"{{"}` lowers to the Go literal `"{{"`; both mix
+   * quotes and braces, so no scan can tell them apart. Two — and only two —
+   * structural shapes are fragments:
+   *
+   *   1. A pure action block (`{{if}}` / `{{with}}` / `{{range}}` from a ternary,
+   *      a `find().prop`, a `filter().length`, …). The emitter prepends NO
+   *      literal text to these, so they ALWAYS start with `{{`; a leading `{{`
+   *      is therefore an unambiguous structural marker for this whole class.
+   *   2. A template literal — the ONLY source form that interleaves author
+   *      literal text with `{{...}}` actions (` · #${tag}` → ` · #{{.Tag}}`), so
+   *      it may begin with literal text and is detected by its parsed `kind`.
+   *
+   * Everything else is a bare pipeline (`.Foo`, `len .X`, `bf_arr …`) — even one
+   * whose value contains `{{` inside a Go string literal — and MUST be wrapped.
+   *
+   * Invariant (enforced by the `template-fragment invariant` tests): no
+   * non-template-literal fragment ever begins with literal text, so case 1's
+   * `startsWith('{{')` is complete. If a future emitter prepends literal text to
+   * an action block those tests fail — fix it by giving that shape a parsed kind
+   * this helper can key off, exactly as template literals are handled here.
+   */
+  private isTemplateFragment(go: string, kind?: ParsedExpr['kind']): boolean {
+    return go.startsWith('{{') || kind === 'template-literal'
   }
 
   /**
@@ -4583,9 +4619,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // chain (see `conditional` above) — wrapping it again produces
         // `{{{{if …}}` and a template parse error (#1896, the tooltip
         // open/closed class ternary with module-const branches). Same
-        // guard as `renderExpression`.
+        // `isTemplateFragment` guard as `renderExpression`.
         const e = emit(part.expr)
-        result += e.startsWith('{{') ? e : `{{${e}}}`
+        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${e}}}`
       }
     }
     return result
@@ -6493,8 +6529,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const test = parsed.test
         if (undef(parsed.alternate) && !undef(parsed.consequent)) {
           const { condition: goCond, preamble } = this.convertConditionToGo(
-            // Re-render the test from its source span via the parsed tree.
-            this.renderParsedExpr(test).startsWith('{{')
+            // Re-render the test from its source span via the parsed tree. If it
+            // lowered to a self-contained action block, re-parse the whole
+            // ternary source; otherwise slice off the test portion.
+            this.isTemplateFragment(this.renderParsedExpr(test), test.kind)
               ? value.expr
               : value.expr.slice(0, value.expr.indexOf('?')).trim(),
           )
@@ -6681,10 +6719,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       const inner = s.slice(open + 2, close).trim()
       if (inner) {
-        // Same double-wrap guard as `renderExpression` / `templateLiteral`
-        // (#1896): a ternary lowers to a complete action chain.
-        const goExpr = this.convertExpressionToGo(inner)
-        out += goExpr.startsWith('{{') ? goExpr : `{{${goExpr}}}`
+        // Same `isTemplateFragment` guard as `renderExpression` /
+        // `templateLiteral` (#1896): a ternary lowers to a complete action
+        // chain. Thread the parsed kind out of `convertExpressionToGo` (reusing
+        // its single parse) so a nested template literal here is handled too.
+        const cls: { parsed?: ParsedExpr } = {}
+        const goExpr = this.convertExpressionToGo(inner, cls)
+        out += this.isTemplateFragment(goExpr, cls.parsed?.kind) ? goExpr : `{{${goExpr}}}`
       } else {
         out += s.slice(open, close + 1)
       }

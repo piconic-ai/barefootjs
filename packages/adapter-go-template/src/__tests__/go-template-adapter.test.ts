@@ -334,6 +334,33 @@ export function Label() {
   })
 })
 
+// The wrap-or-not decision (`isTemplateFragment`) treats a leading `{{` as the
+// structural marker for "already a self-contained action block", and keys ONLY
+// template literals off their parsed kind. That is correct because of a
+// load-bearing invariant: a template literal is the *only* expression form that
+// interleaves author literal text with `{{...}}` actions, so every OTHER
+// fragment producer (ternary, find().prop, filter().length, …) emits a pure
+// action block that begins with `{{`. These tests pin that invariant: if a
+// future emitter prepends literal text to an action block, its output stops
+// starting with `{{`, this fails, and the fix is to give that shape a parsed
+// kind `isTemplateFragment` can detect (as template literals are handled) —
+// NOT to fall back to a fragile `{{` substring scan.
+describe('GoTemplateAdapter - template-fragment invariant (#1937)', () => {
+  const adapter = new GoTemplateAdapter()
+  const blockProducers: [string, string][] = [
+    ['ternary', "flag ? 'a' : 'b'"],
+    ['find().prop', 'items.find(i => i.active).name'],
+    ['findLast().prop', 'items.findLast(i => i.active).name'],
+    ['filter().length', 'items.filter(i => i.active).length'],
+  ]
+  for (const [label, expr] of blockProducers) {
+    test(`${label} lowers to a {{-leading action block (no leading literal text)`, () => {
+      const out = adapter.renderExpression({ expr } as IRExpression)
+      expect(out.startsWith('{{')).toBe(true)
+    })
+  }
+})
+
 describe('GoTemplateAdapter - Adapter Specific', () => {
   describe('generate - Go struct types', () => {
     test('deduplicates struct field when signal name matches prop name (#461)', () => {
