@@ -265,4 +265,57 @@ export function P(props: { base: string }) {
     )
     expect(types).toContain('"strings"')
   })
+
+  // A `&&` guard is NOT a Go bool (Go's `and` returns an operand); it must be
+  // truthiness-wrapped so `bf_query`'s `include` receives a real bool (#1945 review).
+  test('a && guard is wrapped to a bool, not passed as bare `and`', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  const params = createMemo(() => { const sp = searchParams(); return { tag: sp.get('tag') ?? '' } })
+  const root = (props.base ?? '') || '/'
+  const hrefFor = (sort: string, tag: string) => {
+    const u = new URLSearchParams()
+    if (sort && tag) u.set('both', sort)
+    return u.toString() ? \`\${root}?\${u}\` : root
+  }
+  const h = (k) => hrefFor(k, params().tag)
+  return <a href={h('x')}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('(ne (and "x" .Params.Tag) "")')
+  })
+
+  // A URL-builder helper whose return isn't the conditional with-query/base
+  // shape must not be lowered to bf_query (#1945 review) — it falls back to the
+  // method-call form.
+  test('a builder returning a non-conditional shape is not lowered to bf_query', () => {
+    const src = `
+'use client'
+import { searchParams } from '@barefootjs/client'
+export function P() {
+  const bad = (sort: string) => { const u = new URLSearchParams(); u.set('s', sort); return u.toString() }
+  return <a href={bad('x')}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('bf_query')
+    expect(template).toContain('.Bad')
+  })
+
+  // A non-string derived const referenced by the template must not be emitted
+  // as a `string` field with a non-string initializer (#1945 review).
+  test('a numeric derived const is not emitted as a string field', () => {
+    const src = `
+'use client'
+export function P(props: { count: number }) {
+  const n = props.count + 1
+  return <span>{n}</span>
+}
+`
+    const { types } = generate(src)
+    expect(types).not.toContain('N string')
+  })
 })

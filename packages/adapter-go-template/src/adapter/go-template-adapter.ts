@@ -5163,6 +5163,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (!c?.value) continue
       const expr = this.parseLiteralExpression(c.value)
       if (!expr) continue
+      // The field is typed `string`; only emit when the value is provably a Go
+      // string, so a numeric/other const referenced in the template can't be
+      // assigned into a string field (#1945 review).
+      if (!this.isStringExpr(expr, new Set())) continue
       const init = this.lowerCtorExpr(expr, {
         searchParamsVars: new Set(),
         params: new Map(),
@@ -5172,6 +5176,58 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       fields.push({ name: fieldName, init })
     }
     return fields
+  }
+
+  /**
+   * Conservative check that a JS expression is *definitely* string-valued —
+   * used to gate derived-const field emission (the field is typed `string`).
+   * Recognizes string/template literals, string-returning methods (`.replace`,
+   * `.trim`, … and `searchParams().get`), `+` / `||` / `??` where a branch is
+   * string-valued, and a component-const reference to such a value. Anything
+   * unproven (numbers, `props.X`, calls it doesn't know) returns false.
+   */
+  private isStringExpr(node: ts.Expression, seen: Set<string>): boolean {
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (
+      ts.isStringLiteral(node) ||
+      ts.isNoSubstitutionTemplateLiteral(node) ||
+      ts.isTemplateExpression(node)
+    ) {
+      return true
+    }
+    if (ts.isBinaryExpression(node)) {
+      const op = node.operatorToken.kind
+      if (
+        op === ts.SyntaxKind.PlusToken ||
+        op === ts.SyntaxKind.BarBarToken ||
+        op === ts.SyntaxKind.QuestionQuestionToken
+      ) {
+        return this.isStringExpr(node.left, seen) || this.isStringExpr(node.right, seen)
+      }
+      return false
+    }
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const m = node.expression.name.text
+      const STRING_METHODS = new Set([
+        'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
+        'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
+      ])
+      return STRING_METHODS.has(m)
+    }
+    if (ts.isConditionalExpression(node)) {
+      return (
+        this.isStringExpr(node.whenTrue, seen) && this.isStringExpr(node.whenFalse, seen)
+      )
+    }
+    if (ts.isIdentifier(node)) {
+      if (seen.has(node.text)) return false
+      const c = this.localConstants.find(lc => lc.name === node.text && !lc.isModule && lc.value)
+      if (c?.value) {
+        const inner = this.parseLiteralExpression(c.value)
+        if (inner) return this.isStringExpr(inner, new Set([...seen, node.text]))
+      }
+    }
+    return false
   }
 
   /**
@@ -6859,11 +6915,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
         return null
       }
-      // `return <s> ? `${base}?…` : <base>` — the alternate is the no-query base.
+      // `return <s> ? `${base}?…` : <base>` — the builder's return must be the
+      // conditional that picks between the with-query and bare-base URL; its
+      // `whenFalse` (no-query) branch is the base. Any other return shape isn't
+      // this idiom (#1945 review) — bail to the method-call fallback.
       if (ts.isReturnStatement(s) && s.expression) {
         let e: ts.Expression = s.expression
         while (ts.isParenthesizedExpression(e)) e = e.expression
-        base = ts.isConditionalExpression(e) ? e.whenFalse : e
+        if (!ts.isConditionalExpression(e)) return null
+        base = e.whenFalse
         continue
       }
       return null
@@ -6929,6 +6989,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private lowerUrlGuard(guard: ts.Expression, subs: ReadonlyMap<string, string>): string {
     let g = guard
     while (ts.isParenthesizedExpression(g)) g = g.expression
+    // Comparisons, `!x`, and bool literals lower to a Go bool via the condition
+    // lowering. `&&` / `||` do NOT qualify: Go's `and`/`or` return one of their
+    // operands (a string for a truthiness guard like `tag && other`), not a
+    // bool — so they take the truthiness-wrap path below, yielding
+    // `ne (and …) ""`, an actual bool (#1945 review).
     const isBoolShape =
       (ts.isBinaryExpression(g) &&
         [
@@ -6940,8 +7005,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           ts.SyntaxKind.GreaterThanToken,
           ts.SyntaxKind.LessThanEqualsToken,
           ts.SyntaxKind.GreaterThanEqualsToken,
-          ts.SyntaxKind.AmpersandAmpersandToken,
-          ts.SyntaxKind.BarBarToken,
         ].includes(g.operatorToken.kind)) ||
       (ts.isPrefixUnaryExpression(g) && g.operator === ts.SyntaxKind.ExclamationToken) ||
       g.kind === ts.SyntaxKind.TrueKeyword ||
