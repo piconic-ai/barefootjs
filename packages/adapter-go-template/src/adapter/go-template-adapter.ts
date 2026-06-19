@@ -4307,13 +4307,68 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // `<cond> ? <t> : <f>` (string result)
     if (ts.isConditionalExpression(node)) {
-      const cond = this.lowerCtorExpr(node.condition, env)
+      // The condition must be lowered as a *boolean* (`lowerCtorCond`), not a
+      // value: a string-valued JS condition like `sp.get('tag') ? a : b` is
+      // truthy in JS, but `if "<string>"` does not compile in Go — such shapes
+      // return null so the memo falls back to nil rather than emitting invalid
+      // code (#1941 review).
+      const cond = this.lowerCtorCond(node.condition, env)
       const t = this.lowerCtorExpr(node.whenTrue, env)
       const f = this.lowerCtorExpr(node.whenFalse, env)
       if (cond !== null && t !== null && f !== null) {
         return `func() string { if ${cond} { return ${t} }; return ${f} }()`
       }
       return null
+    }
+
+    return null
+  }
+
+  /**
+   * Lower a JS expression used as a *boolean* condition to a Go bool expression,
+   * or null when it is not provably boolean. Distinct from `lowerCtorExpr`,
+   * which lowers value expressions: a string-valued condition (`sp.get('tag')`)
+   * is truthy in JS but `if "<string>"` does not compile in Go, so anything not
+   * known to yield a Go bool must fall back to null (#1941 review).
+   */
+  private lowerCtorCond(node: ts.Expression, env: CtorLowerEnv): string | null {
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+
+    if (node.kind === ts.SyntaxKind.TrueKeyword) return 'true'
+    if (node.kind === ts.SyntaxKind.FalseKeyword) return 'false'
+
+    // `!<cond>`
+    if (
+      ts.isPrefixUnaryExpression(node) &&
+      node.operator === ts.SyntaxKind.ExclamationToken
+    ) {
+      const inner = this.lowerCtorCond(node.operand, env)
+      return inner === null ? null : `!(${inner})`
+    }
+
+    // `<a> && <b>` / `<a> || <b>` — both operands must themselves be boolean.
+    if (ts.isBinaryExpression(node)) {
+      const op =
+        node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+          ? '&&'
+          : node.operatorToken.kind === ts.SyntaxKind.BarBarToken
+            ? '||'
+            : null
+      if (op) {
+        const l = this.lowerCtorCond(node.left, env)
+        const r = this.lowerCtorCond(node.right, env)
+        return l !== null && r !== null ? `(${l} ${op} ${r})` : null
+      }
+    }
+
+    // `<arr>.includes(<x>)` is the one value-shape `lowerCtorExpr` lowers to a
+    // Go bool (`bf.Includes(...)`); reuse it for that case only.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'includes'
+    ) {
+      return this.lowerCtorExpr(node, env)
     }
 
     return null

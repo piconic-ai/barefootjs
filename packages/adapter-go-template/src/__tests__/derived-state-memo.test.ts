@@ -67,4 +67,25 @@ export function P() {
     expect(template).toContain('.Params.Sort')
     expect(template).toContain('.Params.Tag')
   })
+
+  // A ternary whose condition is string-valued (`sp.get('tag') ? … : …`) is
+  // truthy in JS but `if "<string>"` does not compile in Go. The lowerer must
+  // fall back to nil rather than emit invalid code (#1941 review).
+  test('string-valued ternary condition falls back to nil, never invalid Go', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P() {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { label: sp.get('tag') ? 'has' : 'none' }
+  })
+  return <div>{params().label}</div>
+}
+`
+    const { types } = generate(src)
+    expect(types).toContain('Params: nil')
+    // Must NOT emit a string as a Go bool condition.
+    expect(types).not.toContain('if in.SearchParams.Get')
+  })
 })
