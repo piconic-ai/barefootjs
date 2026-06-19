@@ -80,6 +80,40 @@ func TestDiv(t *testing.T) {
 	}
 }
 
+func TestMin(t *testing.T) {
+	tests := []struct {
+		a, b any
+		want any
+	}{
+		{3, 4, 3},         // both int-like → int result
+		{4, 3, 3},         // order independent
+		{100, 12.5, 12.5}, // mixed operands → float64 result
+		{-2, 5, -2},       // negatives
+	}
+	for _, tt := range tests {
+		if got := Min(tt.a, tt.b); got != tt.want {
+			t.Errorf("Min(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func TestMax(t *testing.T) {
+	tests := []struct {
+		a, b any
+		want any
+	}{
+		{3, 4, 4},
+		{4, 3, 4},
+		{2.5, 1, 2.5}, // mixed operands → float64 result
+		{-5, -2, -2},
+	}
+	for _, tt := range tests {
+		if got := Max(tt.a, tt.b); got != tt.want {
+			t.Errorf("Max(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
 func TestMod(t *testing.T) {
 	tests := []struct {
 		a, b any

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/copy-shared.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/build-client.ts && bun run scripts/copy-shared.ts",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "APP_ENV=development BASE_PATH=/integrations/chi go run .",
     "setup": "go mod tidy",
@@ -14,6 +14,8 @@
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
     "@barefootjs/go-template": "workspace:*",
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/router": "workspace:*",
     "@cloudflare/containers": "^0.3.2",
     "@cloudflare/workers-types": "^4",
     "@playwright/test": "^1.41.0",

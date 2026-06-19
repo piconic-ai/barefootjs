@@ -165,6 +165,10 @@ export function combineGoTypes(options: {
   const usageScan = combinedContent + '\n' + (manualTypes ?? '')
   const stdlibImports: string[] = [`\t"math/rand"`]
   if (/\bfmt\./.test(usageScan)) stdlibImports.push(`\t"fmt"`)
+  // `strings.` shows up in generated constructors that normalize a prop, e.g.
+  // `searchParams()`-backed components emit `strings.TrimRight(in.Base, "/")`
+  // to derive the router base. Only imported when referenced, like the others.
+  if (/\bstrings\./.test(usageScan)) stdlibImports.push(`\t"strings"`)
   if (/\btemplate\.HTML\b/.test(usageScan)) stdlibImports.push(`\t"html/template"`)
   // gofmt sorts the stdlib group alphabetically by import path.
   stdlibImports.sort()

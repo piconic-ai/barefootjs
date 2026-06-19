@@ -1,5 +1,44 @@
 import { describe, expect, test } from 'bun:test'
-import { deduplicateGoTypes } from '../build'
+import { combineGoTypes, deduplicateGoTypes } from '../build'
+
+describe('combineGoTypes stdlib imports', () => {
+  // The combined types file strips each component's own import block and
+  // rebuilds one header, pulling in stdlib packages only when the merged code
+  // references them. A `searchParams()`-backed constructor emits
+  // `strings.TrimRight(in.Base, "/")`, so the header must include "strings" or
+  // the generated file fails to compile (`undefined: strings`).
+  test('adds "strings" import when a constructor uses strings.*', () => {
+    const types = new Map<string, string>([
+      [
+        'Foo',
+        [
+          'package main',
+          '',
+          'import (',
+          '\t"strings"',
+          ')',
+          '',
+          'func NewFooProps(in FooInput) FooProps {',
+          '\treturn FooProps{Root: strings.TrimRight(in.Base, "/")}',
+          '}',
+        ].join('\n'),
+      ],
+    ])
+    const result = combineGoTypes({ types, packageName: 'main' })
+    expect(result).toContain('\t"strings"')
+  })
+
+  test('omits "strings" import when unused', () => {
+    const types = new Map<string, string>([
+      [
+        'Foo',
+        ['package main', '', 'func NewFooProps(in FooInput) FooProps {', '\treturn FooProps{}', '}'].join('\n'),
+      ],
+    ])
+    const result = combineGoTypes({ types, packageName: 'main' })
+    expect(result).not.toContain('"strings"')
+  })
+})
 
 describe('deduplicateGoTypes', () => {
   test('deduplicates NewXxxProps with single-line doc comment', () => {
