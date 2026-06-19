@@ -17,7 +17,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
 import { PostArticle } from '@/components/PostArticle'
-import { posts, postIndex, allTags, listItems } from '../shared/blog/posts'
+import { allTags, listItems, articleNav } from '../shared/blog/posts'
 
 const BASE_PATH = process.env.BASE_PATH ?? '/integrations/hono'
 const STATIC = `${BASE_PATH}/static/components`
@@ -102,11 +102,9 @@ blog.get('/', (c) => {
 
 blog.get('/posts/:slug', (c) => {
   const slug = c.req.param('slug')
-  const i = postIndex(slug)
-  if (i < 0) return c.notFound()
-  const p = posts[i]
-  const prev = posts[i - 1]
-  const next = posts[i + 1]
+  const nav = articleNav(slug)
+  if (!nav) return c.notFound()
+  const { post: p, position, total, prev, next } = nav
   // The whole article is the shared <PostArticle> island (its nested children
   // are LikeButton / ReadingTimer / NowPlaying), so every adapter renders the
   // same markup from post data instead of hand-authoring it.
@@ -117,8 +115,8 @@ blog.get('/posts/:slug', (c) => {
       date={p.date}
       tags={p.tags}
       body={p.body}
-      position={i + 1}
-      total={posts.length}
+      position={position}
+      total={total}
       base={BASE}
       prevSlug={prev?.slug}
       prevTitle={prev?.title}
