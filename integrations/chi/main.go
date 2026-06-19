@@ -35,7 +35,21 @@ var basePath string
 var (
 	renderer *bf.Renderer
 	layoutFn bf.LayoutFunc
+	// baseTemplates is the parsed template set, kept so the blog renderer (which
+	// composes several islands via RenderFragment) can build its own bf.Renderer
+	// without re-parsing in production. In dev, currentTemplates re-parses per
+	// request so build:watch rebuilds show on refresh.
+	baseTemplates *template.Template
 )
+
+// currentTemplates returns the parsed templates: re-parsed per call in dev so
+// `bun run build:watch` rebuilds appear on reload, the cached set otherwise.
+func currentTemplates() *template.Template {
+	if isDevEnv() {
+		return loadTemplates()
+	}
+	return baseTemplates
+}
 
 // loadTemplates walks dist/templates/ recursively and parses every .tmpl
 // file, registering a no-op "Tag" stub first so html/template's escape pass
@@ -251,7 +265,8 @@ func main() {
 		}
 	}
 	layoutFn = layout
-	renderer = bf.NewRenderer(loadTemplates(), layout)
+	baseTemplates = loadTemplates()
+	renderer = bf.NewRenderer(baseTemplates, layout)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -272,6 +287,12 @@ func main() {
 	r.Get(basePath+"/conditional-return-link", conditionalReturnLinkHandler)
 	r.Get(basePath+"/ai-chat", aiChatHandler)
 	r.Get(basePath+"/api/ai-chat", aiChatSSEHandler)
+
+	// Blog — the @barefootjs/router showcase (partial navigation across a
+	// region shell). Its own region-shell layout, separate from the catalog
+	// renderer, mounted under ${basePath}/blog.
+	r.Get(basePath+"/blog", blogIndexHandler)
+	r.Get(basePath+"/blog/posts/{slug}", blogPostHandler)
 
 	// Todo API endpoints
 	r.Get(basePath+"/api/todos", getTodosAPI)
@@ -309,7 +330,8 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath)
+        <li><a href="%s/blog">Blog (@barefootjs/router — partial navigation)</a></li>
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, `<!DOCTYPE html>

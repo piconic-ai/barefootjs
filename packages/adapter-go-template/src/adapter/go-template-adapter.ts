@@ -455,6 +455,10 @@ const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.floor':     { arity: 1, emit: (args) => `bf_floor ${wrapGoArg(args[0])}` },
   'Math.ceil':      { arity: 1, emit: (args) => `bf_ceil ${wrapGoArg(args[0])}` },
   'Math.round':     { arity: 1, emit: (args) => `bf_round ${wrapGoArg(args[0])}` },
+  // Two-arg forms only; an N-arg `Math.min(a, b, c)` falls through to the
+  // standard BF101 unsupported-call diagnostic via the arity gate.
+  'Math.min':       { arity: 2, emit: (args) => `bf_min ${wrapGoArg(args[0])} ${wrapGoArg(args[1])}` },
+  'Math.max':       { arity: 2, emit: (args) => `bf_max ${wrapGoArg(args[0])} ${wrapGoArg(args[1])}` },
 }
 
 export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
@@ -5144,6 +5148,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     const inlined = this.resolveModuleStringConst(name)
     if (inlined !== null) return inlined
+    // Module numeric const (e.g. `const TRACK = 8` used in a width expression):
+    // inline the literal value rather than emit `{{.TRACK}}` against a Props
+    // field that never exists. Mirrors the string-const inlining above.
+    const inlinedNum = this.resolveModuleNumericConst(name)
+    if (inlinedNum !== null) return inlinedNum
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
     if (currentLoopParam && name === currentLoopParam) return '.'
     // An *outer* loop's value variable (we're in a nested loop) is in scope as
@@ -5330,6 +5339,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `"${this.escapeGoString(value)}"`
   }
 
+  /**
+   * Inline a module-level numeric const (`const TRACK = 8`) as its literal
+   * value. Only a plain numeric initializer qualifies — anything computed or
+   * non-numeric falls through to the normal field/ident resolution. Scoped to
+   * module consts (like the string variant) and guarded against loop vars so a
+   * range variable that shadows a const name still wins.
+   */
+  private resolveModuleNumericConst(name: string): string | null {
+    if (this.loopParamStack.length > 0 && this.loopParamStack[this.loopParamStack.length - 1] === name) {
+      return null
+    }
+    if (this.loopVarRefCount.has(name)) return null
+    if (this.isOuterLoopParam(name)) return null
+    const c = this.localConstants.find(
+      (k) => k.name === name && k.isModule && !k.containsArrow,
+    )
+    if (!c || c.value === undefined) return null
+    // `value` is reconstructed from source text, so a valid TS literal may carry
+    // numeric separators (`100_000`). Strip them between digits, then accept a
+    // plain decimal / float; Go template numeric literals don't allow `_`, so
+    // the stripped form is what gets emitted.
+    const v = c.value.trim().replace(/(?<=\d)_(?=\d)/g, '')
+    return /^-?\d+(\.\d+)?$/.test(v) ? v : null
+  }
+
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
     if (literalType === 'string') return `"${value}"`
     if (literalType === 'null') return 'nil'
@@ -5466,35 +5500,43 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const l = emit(left)
     const r = emit(right)
+    // Every Go form below is a prefix function call (`bf_mul a b`, `gt a b`,
+    // `eq a b`), so a COMPOUND operand must be parenthesised or the template
+    // parser folds its tokens into the call's argument list — e.g. nested
+    // arithmetic `(elapsed / TRACK) * 100` would emit `bf_mul bf_div .Elapsed
+    // .TRACK 100`, handing `bf_mul` four args. `wrapIfMultiToken` is a no-op
+    // for single tokens and quoted literals, so simple operands are untouched.
+    const wl = wrapIfMultiToken(l)
+    const wr = wrapIfMultiToken(r)
     switch (op) {
       case '===':
       case '==': {
         const [el, er] = stringTolerantEqOperands(l, r)
-        return `eq ${el} ${er}`
+        return `eq ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
       }
       case '!==':
       case '!=': {
         const [el, er] = stringTolerantEqOperands(l, r)
-        return `ne ${el} ${er}`
+        return `ne ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
       }
       case '>':
-        return `gt ${l} ${r}`
+        return `gt ${wl} ${wr}`
       case '<':
-        return `lt ${l} ${r}`
+        return `lt ${wl} ${wr}`
       case '>=':
-        return `ge ${l} ${r}`
+        return `ge ${wl} ${wr}`
       case '<=':
-        return `le ${l} ${r}`
+        return `le ${wl} ${wr}`
       case '+':
-        return `bf_add ${l} ${r}`
+        return `bf_add ${wl} ${wr}`
       case '-':
-        return `bf_sub ${l} ${r}`
+        return `bf_sub ${wl} ${wr}`
       case '*':
-        return `bf_mul ${l} ${r}`
+        return `bf_mul ${wl} ${wr}`
       case '/':
-        return `bf_div ${l} ${r}`
+        return `bf_div ${wl} ${wr}`
       case '%':
-        return `bf_mod ${l} ${r}`
+        return `bf_mod ${wl} ${wr}`
       default:
         return `${l} ${op} ${r}`
     }

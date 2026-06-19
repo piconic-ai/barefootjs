@@ -4,7 +4,7 @@ const basePath = process.env.BASE_PATH ?? '/integrations/chi'
 const staticBase = `${basePath}/static/client/`
 
 export default createConfig({
-  components: ['../shared/components'],
+  components: ['../shared/components', '../shared/blog'],
   outDir: 'dist',
   minify: true,
   adapterOptions: {

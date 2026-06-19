@@ -2142,13 +2142,74 @@ export function Tagged(props: { className?: string }) {
       expect(numberResult.template).toContain('bf_number .V')
     })
 
+    test('Math.min(a, b) emits bf_min and parenthesises compound operands', () => {
+      // The blog's NowPlaying progress bar: `Math.min(100, (elapsed / TRACK) *
+      // 100)`. Math.min must lower to bf_min, the nested arithmetic must keep
+      // its inner parens (so bf_mul / bf_div get exactly two args each), and the
+      // module const TRACK must inline to its literal value.
+      const result = compileAndGenerate(`
+        'use client'
+        const TRACK = 8
+        export function Foo(props: { elapsed: number }) {
+          return <div data-x={Math.min(100, (props.elapsed / TRACK) * 100)}>hi</div>
+        }
+      `)
+      expect(result.template).toContain('bf_min 100 (bf_mul (bf_div .Elapsed 8) 100)')
+    })
+
+    test('Math.max(a, b) emits bf_max', () => {
+      const result = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { a: number; b: number }) {
+          return <div data-x={Math.max(props.a, props.b)}>hi</div>
+        }
+      `)
+      expect(result.template).toContain('bf_max .A .B')
+    })
+
+    test('nested arithmetic parenthesises a compound operand', () => {
+      // Without wrapping, `(a / b) * c` would emit `bf_mul bf_div .A .B .C`,
+      // handing bf_mul four args. Each compound operand must be parenthesised.
+      const result = compileAndGenerate(`
+        'use client'
+        export function Foo(props: { a: number; b: number; c: number }) {
+          return <div data-x={(props.a / props.b) * props.c}>hi</div>
+        }
+      `)
+      expect(result.template).toContain('bf_mul (bf_div .A .B) .C')
+    })
+
+    test('module numeric const inlines its literal value', () => {
+      const result = compileAndGenerate(`
+        'use client'
+        const SIZE = 12
+        export function Foo(props: { n: number }) {
+          return <div data-x={props.n + SIZE}>hi</div>
+        }
+      `)
+      // SIZE inlines to 12 rather than emitting a bogus `.SIZE` Props field.
+      expect(result.template).toContain('bf_add .N 12')
+    })
+
+    test('module numeric const with separators inlines the stripped value', () => {
+      const result = compileAndGenerate(`
+        'use client'
+        const GAP = 100_000
+        export function Foo(props: { n: number }) {
+          return <div data-x={props.n + GAP}>hi</div>
+        }
+      `)
+      // 100_000 (TS numeric separator) → 100000; Go template literals reject "_".
+      expect(result.template).toContain('bf_add .N 100000')
+    })
+
     test('registry exposes the expected V1 callees', () => {
       // Pin the V1 surface so a future refactor doesn't accidentally
       // drop a primitive. New entries are additive — extend this
       // list rather than replace.
       const a = new GoTemplateAdapter()
       const keys = Object.keys(a.templatePrimitives ?? {}).sort()
-      expect(keys).toEqual(['JSON.stringify', 'Math.ceil', 'Math.floor', 'Math.round', 'Number', 'String'])
+      expect(keys).toEqual(['JSON.stringify', 'Math.ceil', 'Math.floor', 'Math.max', 'Math.min', 'Math.round', 'Number', 'String'])
     })
 
     test('unregistered identifier-path callee is NOT accepted by the registry', () => {

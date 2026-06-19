@@ -31,10 +31,12 @@ func FuncMap() template.FuncMap {
 		"bf_div": Div,
 		"bf_mod": Mod,
 		"bf_neg": Neg,
+		"bf_min": Min,
+		"bf_max": Max,
 
 		// String
-		"bf_lower":    Lower,
-		"bf_upper":    Upper,
+		"bf_lower":       Lower,
+		"bf_upper":       Upper,
 		"bf_trim":        Trim,
 		"bf_contains":    Contains,
 		"bf_join":        Join,
@@ -54,8 +56,8 @@ func FuncMap() template.FuncMap {
 
 		// JSON / numeric primitives — JS-compat callees registered on
 		// the Go adapter's `templatePrimitives` map (#1188).
-		"bf_json":   JSON,
-		"bf_number": Number,
+		"bf_json":     JSON,
+		"bf_number":   Number,
 		"bf_floor":    Floor,
 		"bf_ceil":     Ceil,
 		"bf_round":    Round,
@@ -79,20 +81,20 @@ func FuncMap() template.FuncMap {
 		"bf_filter_truthy":  FilterTruthy,
 
 		// Higher-order Array Methods
-		"bf_every":      Every,
-		"bf_some":       Some,
-		"bf_filter":     Filter,
+		"bf_every":           Every,
+		"bf_some":            Some,
+		"bf_filter":          Filter,
 		"bf_find":            Find,
 		"bf_find_index":      FindIndex,
 		"bf_find_last":       FindLast,
 		"bf_find_last_index": FindLastIndex,
-		"bf_sort":       Sort,
-		"bf_reduce":     Reduce,
+		"bf_sort":            Sort,
+		"bf_reduce":          Reduce,
 
 		// Comment marker (for hydration)
-		"bfComment":    Comment,
-		"bfTextStart":  TextStart,
-		"bfTextEnd":    TextEnd,
+		"bfComment":   Comment,
+		"bfTextStart": TextStart,
+		"bfTextEnd":   TextEnd,
 
 		// Script collection
 		"bfScripts": BfScripts,
@@ -505,6 +507,35 @@ func Div(a, b any) any {
 		return 0
 	}
 	return av / bv
+}
+
+// Min returns the smaller of a and b (two-arg `Math.min`). Like Mul, it keeps
+// an integer result when both operands are int-like so a CSS value such as
+// `bf_min 100 x` stays `100` rather than `100.000000`.
+func Min(a, b any) any {
+	av, bv := toFloat64(a), toFloat64(b)
+	r := av
+	if bv < av {
+		r = bv
+	}
+	if isIntLike(a) && isIntLike(b) && r == float64(int(r)) {
+		return int(r)
+	}
+	return r
+}
+
+// Max returns the larger of a and b (two-arg `Math.max`), with the same
+// int-preserving rule as Min.
+func Max(a, b any) any {
+	av, bv := toFloat64(a), toFloat64(b)
+	r := av
+	if bv > av {
+		r = bv
+	}
+	if isIntLike(a) && isIntLike(b) && r == float64(int(r)) {
+		return int(r)
+	}
+	return r
 }
 
 // Mod returns a % b (modulo). Supports int only.
@@ -1634,6 +1665,7 @@ func decapitalize(s string) string {
 //   - numeric-*string* keys fold numerically here, but JS `+`
 //     string-concatenates once an operand is a string, so
 //     numeric-string data can render differently under CSR.
+//
 // Genuine numbers — the common SSR case — agree across all three.
 func Reduce(items any, op, keyKind, keyName, typ, init, direction string) any {
 	v := reflect.ValueOf(items)
@@ -2018,13 +2050,14 @@ func renderTemplateErrorPanel(componentName string, err error) string {
 		`</pre><div style="margin-top:.75em;font-size:12px;opacity:.7">Common cause: a JSX expression referenced a name the adapter could not resolve to a struct field. Open the matching <code>dist/templates/*.tmpl</code> for the unresolved reference, then fix the source component.</div></div>`
 }
 
-func (r *Renderer) Render(opts RenderOptions) string {
-	// Create script collector and inject into props
-	scriptCollector := NewScriptCollector()
+// renderComponentInto wires a component's props (script/portal collectors,
+// child-slot scope ids + hydration, root marking) against the PROVIDED
+// collectors and returns just the component's HTML — no layout. Both Render
+// (one fresh collector pair per page) and RenderFragment (a shared pair across
+// several islands) funnel through here so their wiring stays identical.
+func (r *Renderer) renderComponentInto(opts RenderOptions, scriptCollector *ScriptCollector, portalCollector *PortalCollector) template.HTML {
+	// Inject the shared collectors into the props.
 	setScriptsField(opts.Props, scriptCollector)
-
-	// Create portal collector and inject into props
-	portalCollector := NewPortalCollector()
 	setPortalsField(opts.Props, portalCollector)
 
 	// Auto-detect and process child component props (slices)
@@ -2075,6 +2108,16 @@ func (r *Renderer) Render(opts RenderOptions) string {
 		componentBuf.WriteString(renderTemplateErrorPanel(opts.ComponentName, err))
 	}
 
+	return template.HTML(componentBuf.String())
+}
+
+func (r *Renderer) Render(opts RenderOptions) string {
+	// One script + portal collector pair for the whole page.
+	scriptCollector := NewScriptCollector()
+	portalCollector := NewPortalCollector()
+
+	componentHTML := r.renderComponentInto(opts, scriptCollector, portalCollector)
+
 	// Determine title (default: "{ComponentName} - BarefootJS")
 	title := opts.Title
 	if title == "" {
@@ -2088,7 +2131,7 @@ func (r *Renderer) Render(opts RenderOptions) string {
 	ctx := &RenderContext{
 		ComponentName: opts.ComponentName,
 		Props:         opts.Props,
-		ComponentHTML: template.HTML(componentBuf.String()),
+		ComponentHTML: componentHTML,
 		Portals:       portalCollector.Render(),
 		Scripts:       BfScripts(scriptCollector),
 		Title:         title,
@@ -2097,6 +2140,25 @@ func (r *Renderer) Render(opts RenderOptions) string {
 	}
 
 	return r.layout(ctx)
+}
+
+// RenderFragment renders a single island subtree into the caller-provided
+// script and portal collectors and returns just its HTML — no page layout.
+//
+// It exists for hand-authored "region shell" pages (the `@barefootjs/router`
+// showcase): a layout that places several independent islands — e.g. a header
+// ThemeToggle, an `<aside bf-region>` Sidebar, and a `<PageShell>` wrapping the
+// route content — must collect ALL their scripts and portals into ONE place so
+// the runtime (`barefoot.js`) and each island's client JS are emitted exactly
+// once and share a single reactive instance. Render each island with the same
+// collectors, splice the returned HTML into the shell, then emit
+// `BfScripts(sc)` and `pc.Render()` once at the end of the document.
+//
+// Each fragment is treated as its own root (it emits `bf-p` like any top-level
+// island); nested children declared in its props are wired as children, exactly
+// as in Render.
+func (r *Renderer) RenderFragment(opts RenderOptions, scriptCollector *ScriptCollector, portalCollector *PortalCollector) template.HTML {
+	return r.renderComponentInto(opts, scriptCollector, portalCollector)
 }
 
 // setScriptsField sets the Scripts field on a struct using reflection.
@@ -2355,7 +2417,6 @@ func setPortalsOnSlice(slice interface{}, collector *PortalCollector) {
 	}
 }
 
-
 // findSingleChildComponents finds single struct fields containing child component props.
 // Child props are identified by having ScopeID and Scripts fields.
 func findSingleChildComponents(props interface{}) []interface{} {
@@ -2423,7 +2484,6 @@ func setPortalsOnSingle(child interface{}, collector *PortalCollector) {
 		}
 	}
 }
-
 
 // =============================================================================
 // Internal Helpers
