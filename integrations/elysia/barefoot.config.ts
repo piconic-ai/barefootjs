@@ -10,6 +10,7 @@ export default createConfig({
   outDir: 'dist',
   minify: true,
   scriptBasePath: staticBase,
+  bundleEntries: [{ entry: 'client/router-entry.ts', outfile: 'router-entry.js' }],
   adapterOptions: {
     clientJsBasePath: staticBase,
     barefootJsPath: `${staticBase}barefoot.js`,

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/build-client.ts && bun run scripts/copy-shared.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/copy-shared.ts",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "APP_ENV=development BASE_PATH=/integrations/echo go run .",
     "setup": "go mod tidy",

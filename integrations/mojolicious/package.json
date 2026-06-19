@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/build-client.ts && bun run scripts/assemble-deps.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "BASE_PATH=/integrations/mojolicious perl app.pl daemon -l 'http://*:3004'",
     "deploy": "bun run build && wrangler deploy",
