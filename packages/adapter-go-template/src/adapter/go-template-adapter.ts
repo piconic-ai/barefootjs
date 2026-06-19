@@ -4195,11 +4195,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return ''
     }
 
-    // Parse once and reuse the result for both the wrap decision below and the
-    // lowering, so the classification doesn't cost a second `ts.createSourceFile`
-    // on the `bf build` hot path.
-    const parsed = parseExpression(expr.expr.trim())
-    const goExpr = this.convertExpressionToGo(expr.expr, parsed)
+    // Let `convertExpressionToGo` report the `ParsedExpr` it already builds (if
+    // it gets that far) so the wrap decision below reuses that single parse —
+    // no extra `ts.createSourceFile`, and no parse at all for expressions it
+    // resolves via early returns (`null`/`undefined`, inlined consts) on the
+    // `bf build` hot path.
+    const classify: { parsed?: ParsedExpr } = {}
+    const goExpr = this.convertExpressionToGo(expr.expr, classify)
 
     // If the lowered expression is already template text, don't wrap it again
     // in {{...}} (double-wrapping). Two distinct shapes reach here:
@@ -4217,7 +4219,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `"{{"`) is neither — it must still be wrapped so html/template evaluates
     // and escapes the string instead of emitting the raw quotes (#1937 review).
     // Use comment markers instead of <span> to avoid changing DOM structure.
-    if (goExpr.startsWith('{{') || parsed.kind === 'template-literal') {
+    if (goExpr.startsWith('{{') || classify.parsed?.kind === 'template-literal') {
       if (expr.slotId) {
         return `{{bfTextStart "${expr.slotId}"}}${goExpr}{{bfTextEnd}}`
       }
@@ -5636,7 +5638,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Convert a JS expression to Go template syntax.
    */
-  private convertExpressionToGo(jsExpr: string, preParsed?: ParsedExpr): string {
+  private convertExpressionToGo(jsExpr: string, out?: { parsed?: ParsedExpr }): string {
     const trimmed = jsExpr.trim()
 
     // Handle null/undefined specially
@@ -5671,11 +5673,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // Reuse a parse the caller already performed (renderExpression parses to
-    // classify template literals) — none of the early returns above apply to a
-    // template literal, so passing it through here is safe and avoids a second
-    // `ts.createSourceFile` on the `bf build` hot path.
-    const parsed = preParsed ?? parseExpression(trimmed)
+    // Parse only here — *after* the early returns above, which resolve
+    // `null`/`undefined`, static record indexes, and inlined literal consts
+    // without a parse. Report the result to the caller via `out` so
+    // `renderExpression` can classify the expression (template literal vs. not)
+    // off this single `parseExpression`, with no extra `ts.createSourceFile` on
+    // the `bf build` hot path and no parse at all for the early-return shapes.
+    const parsed = parseExpression(trimmed)
+    if (out) out.parsed = parsed
     const support = isSupported(parsed)
 
     if (!support.supported) {
