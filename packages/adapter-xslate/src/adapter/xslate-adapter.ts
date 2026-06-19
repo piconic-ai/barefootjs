@@ -1080,7 +1080,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // children HTML; the macro call result is passed as the `children` entry
       // of the render_child hashref. `render_child` materializes a CODE-ref
       // children value through the backend before handing it to the child.
+      const prevInLoop = this.inLoop
+      this.inLoop = false
       const childrenBody = this.renderChildren(effectiveChildren)
+      this.inLoop = prevInLoop
       const macroName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       const childrenEntry = `children => ${macroName}()`
       const allParts = [...propParts, childrenEntry]

@@ -1254,7 +1254,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // `render_child` would let the inner `%>` close the outer tag.
       // `render_child` materializes the resulting CODE ref into the
       // captured Mojo::ByteStream.
+      const prevInLoop = this.inLoop
+      this.inLoop = false
       const childrenBody = this.renderChildren(effectiveChildren)
+      this.inLoop = prevInLoop
       const varName = `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       return `<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
     }
