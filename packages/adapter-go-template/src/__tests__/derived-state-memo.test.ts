@@ -110,3 +110,73 @@ export function P() {
     expect(types).not.toContain('Params: map[string]interface{}{')
   })
 })
+
+describe('Capability B: inline local pure helper calls at attribute call sites', () => {
+  test('sortClass(k) inlines to a conditional, not a .SortClass method call', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+const SORT_KEYS = ['date', 'title', 'tag']
+const asSortKey = (raw) => (SORT_KEYS.includes(raw) ? raw : 'date')
+export function P() {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { sort: asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' }
+  })
+  const sortClass = (k) => (params().sort === k ? 'sort on' : 'sort')
+  return <a className={sortClass('date')}>date</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('.SortClass')
+    // `.Params.Sort` is interface{} (a map value), so `eq` coerces it via
+    // `bf_string` before comparing to the string literal.
+    expect(template).toContain(
+      'class="{{if eq (bf_string .Params.Sort) "date"}}sort on{{else}}sort{{end}}"',
+    )
+  })
+
+  test('tagClass(t) inlines inside a loop, resolving the loop var and root memo', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P(props: { tags: string[] }) {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { tag: sp.get('tag') ?? '' }
+  })
+  const tagClass = (t) => (params().tag === t ? 'tag on' : 'tag')
+  return <div>{props.tags.map((t) => <a key={t} className={tagClass(t)}>#{t}</a>)}</div>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('.TagClass')
+    // params() is a root memo (→ $.Params) and t is the loop var (→ .)
+    expect(template).toContain('{{if eq $.Params.Tag .}}tag on{{else}}tag{{end}}')
+  })
+
+  test('a helper that delegates to another local helper is NOT inlined (left for Capability C)', () => {
+    const src = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { sort: sp.get('sort') ?? '' }
+  })
+  const hrefFor = (sort: string, tag: string) => {
+    const u = new URLSearchParams()
+    if (sort !== 'date') u.set('sort', sort)
+    if (tag) u.set('tag', tag)
+    const s = u.toString()
+    return s ? '/' + '?' + s : '/'
+  }
+  const sortHref = (k) => hrefFor(k, params().sort)
+  return <a href={sortHref('date')}>date</a>
+}
+`
+    const { template } = generate(src)
+    // sortHref delegates to hrefFor (a local helper) → not inlined here.
+    expect(template).toContain('.SortHref')
+  })
+})
