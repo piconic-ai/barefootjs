@@ -155,29 +155,21 @@ export function P(props: { tags: string[] }) {
     expect(template).toContain('{{if eq $.Params.Tag .}}tag on{{else}}tag{{end}}')
   })
 
-  test('a helper that delegates to another local helper is NOT inlined (left for Capability C)', () => {
+  test('a helper that delegates to a non-URL-builder local helper is not inlined', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
-export function P(props: { base: string }) {
-  const params = createMemo(() => {
-    const sp = searchParams()
-    return { sort: sp.get('sort') ?? '' }
-  })
-  const hrefFor = (sort: string, tag: string) => {
-    const u = new URLSearchParams()
-    if (sort !== 'date') u.set('sort', sort)
-    if (tag) u.set('tag', tag)
-    const s = u.toString()
-    return s ? '/' + '?' + s : '/'
-  }
-  const sortHref = (k) => hrefFor(k, params().sort)
-  return <a href={sortHref('date')}>date</a>
+import { createSignal } from '@barefootjs/client'
+export function P() {
+  const [sig] = createSignal('x')
+  const label = (k) => (sig() === k ? 'on' : 'off')
+  const wrap = (k) => '[' + label(k) + ']'
+  return <a className={wrap('y')}>x</a>
 }
 `
     const { template } = generate(src)
-    // sortHref delegates to hrefFor (a local helper) → not inlined here.
-    expect(template).toContain('.SortHref')
+    // wrap delegates to label (a local helper) and isn't a URL builder → not
+    // inlined; falls back to the method-call form.
+    expect(template).toContain('.Wrap')
   })
 
   // A compound argument must keep its precedence when spliced into the body —
@@ -219,5 +211,58 @@ export function P(props: { xs: string[] }) {
     const { template } = generate(src)
     // Not inlined → stays as the (un-backed) method-call form.
     expect(template).toContain('.Has')
+  })
+})
+
+describe('Capability C2: URL-builder helpers → bf_query + derived Root field', () => {
+  const SRC = `
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  const params = createMemo(() => {
+    const sp = searchParams()
+    return { sort: sp.get('sort') ?? '', tag: sp.get('tag') ?? '' }
+  })
+  const base = (props.base ?? '').replace(/\\/+$/, '')
+  const root = base || '/'
+  const hrefFor = (sort: string, tag: string) => {
+    const u = new URLSearchParams()
+    if (sort !== 'date') u.set('sort', sort)
+    if (tag) u.set('tag', tag)
+    const s = u.toString()
+    return s ? \`\${root}?\${s}\` : root
+  }
+  const sortHref = (k) => hrefFor(k, params().tag)
+  const tagHref = (t) => hrefFor(params().sort, t)
+  return (
+    <div>
+      <a href={sortHref('title')}>s</a>
+      {props.base ? <a href={tagHref('go')}>t</a> : null}
+    </div>
+  )
+}
+`
+
+  test('sortHref/tagHref lower to bf_query, not a .SortHref method call', () => {
+    const { template } = generate(SRC)
+    expect(template).not.toContain('.SortHref')
+    expect(template).not.toContain('.TagHref')
+    expect(template).toContain('bf_query .Root')
+  })
+
+  test('guarded set() calls become bool include triples', () => {
+    const { template } = generate(SRC)
+    // sort !== 'date' guard (runtime sort case via tagHref) + tag truthiness.
+    expect(template).toContain('(ne (bf_string .Params.Sort) "date") "sort"')
+    expect(template).toContain('(ne .Params.Tag "") "tag"')
+  })
+
+  test('derived `root` const becomes a computed Root field', () => {
+    const { types } = generate(SRC)
+    expect(types).toContain('Root string `json:"-"`')
+    expect(types).toContain(
+      'Root: func() string { v := strings.TrimRight(in.Base, "/"); if v != "" { return v }; return "/" }(),',
+    )
+    expect(types).toContain('"strings"')
   })
 })
