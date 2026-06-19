@@ -1105,6 +1105,37 @@ describe('processBundleEntries', () => {
     }
   })
 
+  test('keeps @barefootjs/client* external implicitly (no externals configured)', async () => {
+    const projectDir = makeTmpDir('src')
+    const outDir = makeTmpDir('out')
+    try {
+      const entryPath = resolve(projectDir, 'entry.ts')
+      // A router-entry-style bootstrap importing the reactive runtime.
+      writeFileSync(
+        entryPath,
+        `import { createSignal } from '@barefootjs/client'\nexport const s = createSignal(0)\n`,
+      )
+
+      const config = makeConfig(projectDir, outDir, {
+        bundleEntries: [{ entry: entryPath, outfile: 'entry.js' }],
+      })
+      const cache: BuildCache = emptyCache('global-hash')
+      const nextEntries: Record<string, CacheEntry> = {}
+
+      // allExternals is empty (no `externals` config), yet the bundler must
+      // still leave `@barefootjs/client` as an external import rather than
+      // trying to inline/resolve it — otherwise the reactive runtime forks.
+      const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
+      expect(changed).toBe(true)
+
+      const outContent = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
+      expect(outContent).toContain('@barefootjs/client')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
   test('cache hit: skips rebuild when source and deps unchanged', async () => {
     const projectDir = makeTmpDir('src')
     const outDir = makeTmpDir('out')

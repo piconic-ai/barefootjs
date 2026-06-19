@@ -150,6 +150,10 @@ export type ExternalSpec =
 /**
  * An entry point to bundle directly with esbuild.
  * Externals declared in `BuildOptions.externals` are applied automatically.
+ * `@barefootjs/client`, `@barefootjs/client/runtime`, and
+ * `@barefootjs/client/reactive` are *always* external (they resolve through
+ * the page's import map to the shared `barefoot.js` runtime — inlining them
+ * would fork the reactive runtime, #927), so you never need to list them here.
  * Use this for modules that are not barefoot components (e.g. plain TS entry
  * points that import external vendor packages).
  */

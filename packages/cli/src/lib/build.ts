@@ -1533,6 +1533,7 @@ export async function processExternals(
  * Bundle entries listed in `config.bundleEntries` directly with esbuild.
  * Each entry is compiled as an ESM bundle with all externals from
  * `config.externals` (plus any per-entry overrides) excluded from the bundle.
+ * `@barefootjs/client*` is always implicitly external (see #927).
  *
  * Results are cached by source+deps hash. Dependencies are harvested from
  * esbuild's metafile on first build (project-local files only — node_modules
@@ -1552,7 +1553,15 @@ export async function processBundleEntries(
 
   let anyChanged = false
   for (const entry of config.bundleEntries) {
-    const entryExternals = [...allExternals, ...(entry.externals ?? [])]
+    // `@barefootjs/client*` is always external for bundled entries: in a
+    // BarefootJS app it resolves through the page's import map to the same
+    // `barefoot.js` the compiled islands import, so inlining it here would
+    // fork the reactive runtime (duplicate signals — #927). These keys are
+    // implicit so configs don't have to repeat them per entry; `allExternals`
+    // already carries them when `externals` is configured, and the Set dedups.
+    const entryExternals = [
+      ...new Set([...BF_CLIENT_DEDUP_KEYS, ...allExternals, ...(entry.externals ?? [])]),
+    ]
     const outfilePath = resolve(clientJsOutDir, entry.outfile)
     const absEntry = resolve(entry.entry)
     const cacheKey = `${BUNDLE_KEY_PREFIX}${absEntry}`
