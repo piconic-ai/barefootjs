@@ -6503,6 +6503,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const call = this.parseLiteralExpression(jsExpr)
     if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return null
+    // A spread arg (`f(...xs)`) can't map to positional params by text splice.
+    if (call.arguments.some(a => ts.isSpreadElement(a))) return null
     const fnConst = this.localConstants.find(
       c => c.name === (call.expression as ts.Identifier).text && !c.isModule && c.value,
     )
@@ -6517,9 +6519,45 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (let i = 0; i < fn.parameters.length; i++) {
       const p = fn.parameters[i]
       if (!ts.isIdentifier(p.name)) return null
-      subs.set(p.name.text, call.arguments[i].getText())
+      // Parenthesize the arg so its own precedence survives the splice into the
+      // body (e.g. `x === <param>` with arg `a || b` must not become
+      // `x === a || b`).
+      subs.set(p.name.text, `(${call.arguments[i].getText()})`)
     }
+    // The splicer is scope-blind, so reject bodies where a textual identifier
+    // replacement could be wrong: nested function scopes (shadowing / param
+    // positions) and object shorthand keys that are params.
+    if (!this.isSpliceSafeHelperBody(fn.body, new Set(subs.keys()))) return null
     return this.substituteHelperParams(fn.body, subs)
+  }
+
+  /**
+   * Guard for `substituteHelperParams`: the span splicer replaces identifiers by
+   * name without scope tracking, so it is only safe on bodies free of
+   * constructs where a param name could appear in a position the splice can't
+   * handle — a nested function scope (shadowing or its own parameters), or an
+   * object shorthand key (`{ k }`, which can't be rewritten to `{ (arg) }`).
+   */
+  private isSpliceSafeHelperBody(body: ts.Node, paramNames: ReadonlySet<string>): boolean {
+    let safe = true
+    const visit = (n: ts.Node): void => {
+      if (!safe) return
+      if (
+        ts.isArrowFunction(n) ||
+        ts.isFunctionExpression(n) ||
+        ts.isFunctionDeclaration(n)
+      ) {
+        safe = false
+        return
+      }
+      if (ts.isShorthandPropertyAssignment(n) && paramNames.has(n.name.text)) {
+        safe = false
+        return
+      }
+      ts.forEachChild(n, visit)
+    }
+    visit(body)
+    return safe
   }
 
   /**
@@ -6551,8 +6589,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * the substitution's source text. Implemented as span splicing over `body`'s
    * own source (single source file — args are passed as text, not cross-file
    * AST nodes, which would corrupt a printer keyed to `body`'s source). The walk
-   * skips the property NAME in `a.b`, so a param sharing a name with a member is
-   * left untouched.
+   * skips non-value identifier positions — the property NAME in `a.b` and a
+   * plain object-literal key in `{ k: … }` — so a param sharing a name with a
+   * member or key is left untouched. (`isSpliceSafeHelperBody` has already
+   * rejected nested functions and `{ k }` shorthand keys.)
    */
   private substituteHelperParams(
     body: ts.Expression,
@@ -6565,6 +6605,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const visit = (node: ts.Node): void => {
       if (ts.isPropertyAccessExpression(node)) {
         visit(node.expression) // skip `.name`
+        return
+      }
+      if (ts.isPropertyAssignment(node)) {
+        // A plain identifier/string key isn't a value position; only a computed
+        // key (`[expr]`) is. Visit the initializer (and computed key) only.
+        if (ts.isComputedPropertyName(node.name)) visit(node.name)
+        visit(node.initializer)
         return
       }
       if (ts.isIdentifier(node)) {

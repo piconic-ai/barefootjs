@@ -179,4 +179,45 @@ export function P(props: { base: string }) {
     // sortHref delegates to hrefFor (a local helper) → not inlined here.
     expect(template).toContain('.SortHref')
   })
+
+  // A compound argument must keep its precedence when spliced into the body —
+  // `sig() === <param>` with arg `a ?? b` must not become `sig() === a ?? b`
+  // (#1943 review). The substituted arg is parenthesized.
+  test('compound call argument is parenthesized (precedence preserved)', () => {
+    const src = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function P(props: { a?: string; b?: string }) {
+  const [sig] = createSignal('x')
+  const cls = (k) => (sig() === k ? 'on' : 'off')
+  return <a className={cls(props.a ?? props.b)}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('.Cls')
+    // `===` must stay the outer operation (`eq .Sig …`). Without parenthesizing
+    // the arg, `sig() === props.a ?? props.b` would bind as
+    // `(sig() === props.a) ?? props.b` → an outer `{{if or …}}`. This matches
+    // what a direct `sig() === (props.a ?? props.b)` lowers to.
+    expect(template).toContain('{{if eq .Sig')
+    expect(template).not.toContain('{{if or')
+  })
+
+  // The splicer is scope-blind, so a helper whose body contains a nested
+  // function is NOT inlined (avoids shadowing / param-position corruption) —
+  // it falls back to the method-call form (#1943 review).
+  test('helper with a nested function scope is not inlined', () => {
+    const src = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function P(props: { xs: string[] }) {
+  const [sig] = createSignal('x')
+  const has = (k) => (props.xs.some((x) => x === k) ? 'on' : 'off')
+  return <a className={has('y')}>x</a>
+}
+`
+    const { template } = generate(src)
+    // Not inlined → stays as the (un-backed) method-call form.
+    expect(template).toContain('.Has')
+  })
 })
