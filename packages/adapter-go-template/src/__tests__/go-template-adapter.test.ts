@@ -11,7 +11,7 @@ import {
   TemplatePrimitiveCaseId,
 } from '@barefootjs/adapter-tests'
 import { renderGoTemplateComponent, GoNotAvailableError } from '@barefootjs/go-template/test-render'
-import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, type ComponentIR, type IRExpression } from '@barefootjs/jsx'
 
 runAdapterConformanceTests({
   name: 'go-template',
@@ -251,6 +251,129 @@ export function SortLabel() {
     expect(template).not.toContain('.Sp.Get')
     expect(types).toContain('SearchParams bf.SearchParams')
   })
+})
+
+describe('GoTemplateAdapter - template-literal text lowering (#1933)', () => {
+  // A dynamic text node whose expression is a template literal lowers to a
+  // MIX of literal text + `{{...}}` actions (e.g. ` · #${tag}` →
+  // ` · #{{.Tag}}`). `renderExpression` must emit that mixed string as-is
+  // between bfTextStart/bfTextEnd — wrapping the whole thing in another
+  // `{{...}}` produces `{{ · #{{.Tag}}}}`, which `html/template` rejects at
+  // parse time with `unrecognized character in action: U+00B7 '·'`. This is
+  // the blog PostList status-line shape (the `· #${params().tag}` branch).
+  test('template literal in a conditional text branch keeps literal text outside the action', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, searchParams } from '@barefootjs/client'
+export function StatusLine() {
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  return (
+    <div className="status">
+      {tag() ? \` · #\${tag()}\` : ''}
+    </div>
+  )
+}
+`, adapter)
+    const { template } = adapter.generate(ir)
+    // The literal text ` · #` must sit OUTSIDE the action, with only the
+    // interpolation as `{{...}}`. The broken form double-wraps it.
+    expect(template).not.toContain('{{ · #')
+    expect(template).toContain(' · #{{.Tag}}')
+  })
+
+  // Generalised: a template literal with a trailing interpolation in plain
+  // dynamic-text position (no conditional) must not be double-wrapped either.
+  test('template literal in plain dynamic text is not double-wrapped', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Label() {
+  const [n, setN] = createSignal(0)
+  return <span>{\`count: \${n()}\`}</span>
+}
+`, adapter)
+    const { template } = adapter.generate(ir)
+    expect(template).not.toContain('{{count: ')
+    expect(template).toContain('count: {{.N}}')
+  })
+
+  // A bare string literal that merely *contains* `{{` (NOT a template literal)
+  // must still be WRAPPED in an action so html/template evaluates and escapes
+  // the string. Emitting the raw Go expression `"{{"` would print the literal
+  // quotes and bypass escaping. The skip-wrapping path is reserved for template
+  // literals + `{{`-leading action chains, so a substring `includes('{{')` check
+  // would wrongly treat this string as template text (#1937 review).
+  test('string literal containing "{{" is wrapped, not treated as template text', () => {
+    const adapter = new GoTemplateAdapter()
+    // Drive renderExpression directly: a JSX `{'{{'}` lowers `expr.expr` to the
+    // Go string literal `"{{"`, which contains `{{` but is not a template expr.
+    const out = adapter.renderExpression({ expr: `'{{'` } as IRExpression)
+    expect(out).toBe('{{"{{"}}')
+  })
+
+  // Control: a real template literal IS emitted as-is (mixed text + action),
+  // exercising the same code path with the opposite outcome.
+  test('template literal expression is emitted as-is via renderExpression', () => {
+    const adapter = new GoTemplateAdapter()
+    const out = adapter.renderExpression({ expr: '`a #${tag}`' } as IRExpression)
+    expect(out).toBe('a #{{.Tag}}')
+  })
+
+  // Attribute context: when a `${...}` interpolation lowers to a template
+  // literal, its literal text sits OUTSIDE the `{{...}}` actions and so bypasses
+  // html/template's attribute escaping. A `"` in a UnoCSS arbitrary value would
+  // break the surrounding `class="..."`. The literal parts must be escaped while
+  // interpolations stay as actions (#1937 review).
+  test('attribute-context template-literal interpolation escapes its literal text', () => {
+    const adapter = new GoTemplateAdapter()
+    const out = (adapter as unknown as {
+      substituteJsInterpolations(s: string): string
+    }).substituteJsInterpolations('content-["x"] ${`a-["y"] ${tag}`} z')
+    // The `"` from the nested template literal's literal part is escaped, not raw.
+    expect(out).toContain('a-[&quot;y&quot;] {{.Tag}}')
+    expect(out).not.toContain('a-["y"]')
+  })
+
+  // A template literal with an UNSUPPORTED interpolation lowers to the BF101
+  // sentinel `""` (the whole expression, not template text). It must still be
+  // WRAPPED (`{{""}}`) so the sentinel sits inside an action — not emitted raw,
+  // which would render literal quotes into the HTML. The template-literal
+  // classification must therefore be reported to `renderExpression` only for a
+  // *supported* parse, never for the error sentinel (#1937 review).
+  test('unsupported template-literal interpolation is wrapped, not emitted raw', () => {
+    const adapter = new GoTemplateAdapter()
+    const out = adapter.renderExpression({ expr: '`x ${new Date()}`' } as IRExpression)
+    expect(out).toBe('{{""}}')
+  })
+})
+
+// The wrap-or-not decision (`isTemplateFragment`) treats a leading `{{` as the
+// structural marker for "already a self-contained action block", and keys ONLY
+// template literals off their parsed kind. That is correct because of a
+// load-bearing invariant: a template literal is the *only* expression form that
+// interleaves author literal text with `{{...}}` actions, so every OTHER
+// fragment producer (ternary, find().prop, filter().length, …) emits a pure
+// action block that begins with `{{`. These tests pin that invariant: if a
+// future emitter prepends literal text to an action block, its output stops
+// starting with `{{`, this fails, and the fix is to give that shape a parsed
+// kind `isTemplateFragment` can detect (as template literals are handled) —
+// NOT to fall back to a fragile `{{` substring scan.
+describe('GoTemplateAdapter - template-fragment invariant (#1937)', () => {
+  const adapter = new GoTemplateAdapter()
+  const blockProducers: [string, string][] = [
+    ['ternary', "flag ? 'a' : 'b'"],
+    ['find().prop', 'items.find(i => i.active).name'],
+    ['findLast().prop', 'items.findLast(i => i.active).name'],
+    ['filter().length', 'items.filter(i => i.active).length'],
+  ]
+  for (const [label, expr] of blockProducers) {
+    test(`${label} lowers to a {{-leading action block (no leading literal text)`, () => {
+      const out = adapter.renderExpression({ expr } as IRExpression)
+      expect(out.startsWith('{{')).toBe(true)
+    })
+  }
 })
 
 describe('GoTemplateAdapter - Adapter Specific', () => {
