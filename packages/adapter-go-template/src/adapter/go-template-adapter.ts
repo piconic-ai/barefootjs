@@ -663,6 +663,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *  that's resolvable and non-colliding (#1897). */
   private referencedDerivedConsts: Set<string> = new Set()
 
+  /** Array-memo name → the handler-filled loop slice field its `.map()` feeds
+   *  (e.g. `visible` → `PostListItems`). Lets `<memo>().length` lower to
+   *  `len .<Slice>` instead of `len .<Memo>` (a nil/unset memo field) — the
+   *  slice IS the rendered (filtered) items, so its length is the count (#1897). */
+  private memoBackedLoopSlice: Map<string, string> = new Map()
+
   /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
@@ -748,6 +754,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const isIfStatement = ir.root.type === 'if-statement'
 
     this.rootScopeNodes = collectRootScopeNodes(ir.root)
+    // Map each array memo that backs a loop (`<memo>().map(...)`) to that loop's
+    // handler-filled slice field, so `<memo>().length` can lower to the slice's
+    // length (#1897 PostList status count). Built before rendering — the
+    // `.length` reference can appear before the loop in source order.
+    this.memoBackedLoopSlice = new Map()
+    for (const nested of this.findNestedComponents(ir.root)) {
+      const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
+      if (memoName) this.memoBackedLoopSlice.set(memoName, `${nested.name}s`)
+    }
     const templateBody = isIfStatement
       ? this.renderIfStatement(ir.root as IRIfStatement, { isRootOfClientComponent: hasInteractivity })
       : this.renderNode(ir.root, { isRootOfClientComponent: hasInteractivity && isRootComponent })
@@ -5376,6 +5391,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (property === 'length' && object.kind === 'higher-order') {
       const result = this.renderFilterLengthExpr(object, emit)
       if (result) return result
+    }
+
+    // `<memo>().length` where the memo's `.map()` feeds a handler-filled loop
+    // slice → `len .<Slice>` (#1897 PostList: `visible().length` →
+    // `len .PostListItems`). The slice holds the rendered (filtered) items, so
+    // its length is the count — unlike the memo's own field, which is unset.
+    if (
+      property === 'length' &&
+      object.kind === 'call' &&
+      object.callee.kind === 'identifier' &&
+      object.args.length === 0
+    ) {
+      const slice = this.memoBackedLoopSlice.get(object.callee.name)
+      if (slice) {
+        // Root field, so reach it through `$.` inside a loop (#1677).
+        const prefix = this.loopParamStack.length > 0 ? '$.' : '.'
+        return `len ${prefix}${slice}`
+      }
     }
 
     // find().property / findLast().property → {{with bf_find ...}}{{.Property}}{{end}}
