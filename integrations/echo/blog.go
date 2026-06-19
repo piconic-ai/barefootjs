@@ -245,32 +245,26 @@ func blogIndexHandler(c echo.Context) error {
 // NowPlaying), so the markup comes from post data, not hand-authored HTML.
 func blogPostHandler(c echo.Context) error {
 	slug := c.Param("slug")
-	i := blogPostIndex(slug)
-	if i < 0 {
+	a := blogArticleFor(slug)
+	if !a.Found {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
-	p := blogPosts[i]
-
 	in := PostArticleInput{
-		Slug:     p.Slug,
-		Title:    p.Title,
-		Date:     p.Date,
-		Tags:     p.Tags,
-		Body:     p.Body,
-		Position: i + 1,
-		Total:    len(blogPosts),
-		Base:     blogBasePath(),
-	}
-	if i > 0 {
-		in.PrevSlug = blogPosts[i-1].Slug
-		in.PrevTitle = blogPosts[i-1].Title
-	}
-	if i < len(blogPosts)-1 {
-		in.NextSlug = blogPosts[i+1].Slug
-		in.NextTitle = blogPosts[i+1].Title
+		Slug:      a.Post.Slug,
+		Title:     a.Post.Title,
+		Date:      a.Post.Date,
+		Tags:      a.Post.Tags,
+		Body:      a.Post.Body,
+		Position:  a.Position,
+		Total:     a.Total,
+		Base:      blogBasePath(),
+		PrevSlug:  a.PrevSlug,
+		PrevTitle: a.PrevTitle,
+		NextSlug:  a.NextSlug,
+		NextTitle: a.NextTitle,
 	}
 
-	html := blogPageHTML(p.Title+" — Barefoot Blog", func(frag blogFrag) template.HTML {
+	html := blogPageHTML(a.Post.Title+" — Barefoot Blog", func(frag blogFrag) template.HTML {
 		props := NewPostArticleProps(in)
 		return frag("PostArticle", &props)
 	})
