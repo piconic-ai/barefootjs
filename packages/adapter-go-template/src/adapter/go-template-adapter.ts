@@ -5356,7 +5356,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       (k) => k.name === name && k.isModule && !k.containsArrow,
     )
     if (!c || c.value === undefined) return null
-    const v = c.value.trim()
+    // `value` is reconstructed from source text, so a valid TS literal may carry
+    // numeric separators (`100_000`). Strip them between digits, then accept a
+    // plain decimal / float; Go template numeric literals don't allow `_`, so
+    // the stripped form is what gets emitted.
+    const v = c.value.trim().replace(/(?<=\d)_(?=\d)/g, '')
     return /^-?\d+(\.\d+)?$/.test(v) ? v : null
   }
 

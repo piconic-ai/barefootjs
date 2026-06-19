@@ -2191,6 +2191,18 @@ export function Tagged(props: { className?: string }) {
       expect(result.template).toContain('bf_add .N 12')
     })
 
+    test('module numeric const with separators inlines the stripped value', () => {
+      const result = compileAndGenerate(`
+        'use client'
+        const GAP = 100_000
+        export function Foo(props: { n: number }) {
+          return <div data-x={props.n + GAP}>hi</div>
+        }
+      `)
+      // 100_000 (TS numeric separator) → 100000; Go template literals reject "_".
+      expect(result.template).toContain('bf_add .N 100000')
+    })
+
     test('registry exposes the expected V1 callees', () => {
       // Pin the V1 surface so a future refactor doesn't accidentally
       // drop a primitive. New entries are additive — extend this

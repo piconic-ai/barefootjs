@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"sort"
+	"strings"
 
 	bf "github.com/barefootjs/runtime/bf"
 	"github.com/barefootjs/runtime/bf/bfdev"
@@ -36,10 +37,15 @@ var blogSortKeys = []string{"date", "title", "tag"}
 // router's query push reaches the islands' effects.
 func blogImportMap() string {
 	bjs := basePath + "/static/client/barefoot.js"
-	return fmt.Sprintf(
+	j := fmt.Sprintf(
 		`{"imports":{"@barefootjs/client":%q,"@barefootjs/client/runtime":%q,"@barefootjs/client/reactive":%q}}`,
 		bjs, bjs, bjs,
 	)
+	// Escape "<" so a stray "</script>" in the value (e.g. a misconfigured
+	// BASE_PATH) can't break out of the inline <script type="importmap">. The
+	// replacement is the JS unicode escape backslash-u003c, built by
+	// concatenation so it survives verbatim.
+	return strings.ReplaceAll(j, "<", `\`+"u003c")
 }
 
 // blogFrag renders one island subtree against shared script/portal collectors.
@@ -173,20 +179,25 @@ func firstTag(p BlogPost) string {
 }
 
 // blogPostListItems builds the per-row child props for the filtered+sorted
-// list. ScopeID is left empty so RenderFragment backfills a unique one;
-// BfDataKey carries the post slug so the keyed list reconciles by identity
-// (a pinned row keeps its state across a re-sort), matching `key={p.slug}`.
-func blogPostListItems(sortKey, tag string) []PostListItemProps {
+// list, following the contract documented on NewPostListProps in components.go:
+// each row mounts at slot "s13" under the list's scope (BfParent/BfMount), so it
+// gets the bf-h/bf-m hydration markers the runtime reconciles the loop through.
+// BfDataKey carries the post slug so the keyed list reconciles by identity (a
+// pinned row keeps its state across a re-sort), matching `key={p.slug}`.
+func blogPostListItems(parentScope, sortKey, tag string) []PostListItemProps {
 	visible := blogVisible(sortKey, tag)
 	items := make([]PostListItemProps, len(visible))
 	for i, p := range visible {
-		items[i] = PostListItemProps{
-			BfDataKey: p.Slug,
-			Href:      blogBasePath() + "/posts/" + p.Slug,
-			Title:     p.Title,
-			Date:      p.Date,
-			Meta:      blogMeta(p),
-		}
+		row := NewPostListItemProps(PostListItemInput{
+			Href:  blogBasePath() + "/posts/" + p.Slug,
+			Title: p.Title,
+			Date:  p.Date,
+			Meta:  blogMeta(p),
+		})
+		row.BfParent = parentScope
+		row.BfMount = "s13"
+		row.BfDataKey = p.Slug
+		items[i] = row
 	}
 	return items
 }
@@ -221,7 +232,7 @@ func blogIndexHandler(w http.ResponseWriter, req *http.Request) {
 			Base:         blogBasePath(),
 			SearchParams: sp,
 		})
-		listProps.PostListItems = blogPostListItems(sortKey, tag)
+		listProps.PostListItems = blogPostListItems(listProps.ScopeID, sortKey, tag)
 		listHTML := frag("PostList", &listProps)
 
 		// The player lives in the content region on the index too, marked
