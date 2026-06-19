@@ -321,6 +321,21 @@ export function Label() {
     expect(out).toBe('a #{{.Tag}}')
   })
 
+  // Attribute context: when a `${...}` interpolation lowers to a template
+  // literal, its literal text sits OUTSIDE the `{{...}}` actions and so bypasses
+  // html/template's attribute escaping. A `"` in a UnoCSS arbitrary value would
+  // break the surrounding `class="..."`. The literal parts must be escaped while
+  // interpolations stay as actions (#1937 review).
+  test('attribute-context template-literal interpolation escapes its literal text', () => {
+    const adapter = new GoTemplateAdapter()
+    const out = (adapter as unknown as {
+      substituteJsInterpolations(s: string): string
+    }).substituteJsInterpolations('content-["x"] ${`a-["y"] ${tag}`} z')
+    // The `"` from the nested template literal's literal part is escaped, not raw.
+    expect(out).toContain('a-[&quot;y&quot;] {{.Tag}}')
+    expect(out).not.toContain('a-["y"]')
+  })
+
   // A template literal with an UNSUPPORTED interpolation lowers to the BF101
   // sentinel `""` (the whole expression, not template text). It must still be
   // WRAPPED (`{{""}}`) so the sentinel sits inside an action — not emitted raw,

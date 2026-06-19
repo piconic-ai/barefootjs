@@ -6719,13 +6719,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       const inner = s.slice(open + 2, close).trim()
       if (inner) {
-        // Same `isTemplateFragment` guard as `renderExpression` /
-        // `templateLiteral` (#1896): a ternary lowers to a complete action
-        // chain. Thread the parsed kind out of `convertExpressionToGo` (reusing
-        // its single parse) so a nested template literal here is handled too.
+        // Thread the parsed kind out of `convertExpressionToGo` (reusing its
+        // single parse) so a nested template literal here is handled too.
         const cls: { parsed?: ParsedExpr } = {}
         const goExpr = this.convertExpressionToGo(inner, cls)
-        out += this.isTemplateFragment(goExpr, cls.parsed?.kind) ? goExpr : `{{${goExpr}}}`
+        const parsed = cls.parsed
+        if (parsed?.kind === 'template-literal') {
+          // Attribute context: a template literal lowers to literal text
+          // interleaved with `{{...}}` actions. That literal text sits OUTSIDE
+          // any action, so — unlike the `{{...}}` actions, which Go escapes for
+          // the attribute context at render time — it bypasses escaping. A `"`,
+          // `<`, or `&` in a UnoCSS arbitrary value (`content-["x"]`) would then
+          // break the surrounding `class="..."`. Escape each string part with
+          // `escapeAttrText`, keeping interpolations as fragment-aware actions
+          // (#1937 review). Mirrors the `templateLiteral` emitter, plus escaping.
+          for (const part of parsed.parts) {
+            if (part.type === 'string') {
+              out += this.escapeAttrText(part.value)
+            } else {
+              const e = this.renderParsedExpr(part.expr)
+              out += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${e}}}`
+            }
+          }
+        } else {
+          // Same `isTemplateFragment` guard as `renderExpression` (#1896): a
+          // ternary lowers to a complete `{{if}}` action chain — don't re-wrap.
+          out += this.isTemplateFragment(goExpr, parsed?.kind) ? goExpr : `{{${goExpr}}}`
+        }
       } else {
         out += s.slice(open, close + 1)
       }
