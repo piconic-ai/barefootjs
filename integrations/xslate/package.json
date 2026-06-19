@@ -1,6 +1,6 @@
 {
   "name": "barefootjs-xslate-example",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/build-client.ts && bun run scripts/assemble-deps.ts",
