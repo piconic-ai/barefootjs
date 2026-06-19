@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 
 	bf "github.com/barefootjs/runtime/bf"
 )
@@ -392,6 +393,256 @@ type ToggleProps struct {
 	ToggleItems []ToggleItemProps `json:"toggleItems"`
 }
 
+// LikeButtonInput is the user-facing input type.
+type LikeButtonInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// LikeButtonProps is the props type for the LikeButton component.
+type LikeButtonProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Likes int `json:"likes"`
+}
+
+// NowPlayingInput is the user-facing input type.
+type NowPlayingInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// NowPlayingProps is the props type for the NowPlaying component.
+type NowPlayingProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Playing bool `json:"playing"`
+	Elapsed int `json:"elapsed"`
+}
+
+// PageShellInput is the user-facing input type.
+type PageShellInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Children interface{}
+}
+
+// PageShellProps is the props type for the PageShell component.
+type PageShellProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Children interface{} `json:"children"`
+	ReaderToolbarSlot0 ReaderToolbarProps `json:"-"`
+}
+
+// PostArticleInput is the user-facing input type.
+type PostArticleInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Slug string
+	Title string
+	Date string
+	Tags []string
+	Body []string
+	Position int
+	Total int
+	Base string
+	PrevSlug string
+	PrevTitle string
+	NextSlug string
+	NextTitle string
+}
+
+// PostArticleProps is the props type for the PostArticle component.
+type PostArticleProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Slug string `json:"slug"`
+	Title string `json:"title"`
+	Date string `json:"date"`
+	Tags []string `json:"tags"`
+	Body []string `json:"body"`
+	Position int `json:"position"`
+	Total int `json:"total"`
+	Base string `json:"base"`
+	PrevSlug string `json:"prevSlug"`
+	PrevTitle string `json:"prevTitle"`
+	NextSlug string `json:"nextSlug"`
+	NextTitle string `json:"nextTitle"`
+	LikeButtonSlot9 LikeButtonProps `json:"-"`
+	ReadingTimerSlot10 ReadingTimerProps `json:"-"`
+	NowPlayingSlot11 NowPlayingProps `json:"-"`
+}
+
+// Item represents a item.
+type Item struct {
+	Slug string `json:"slug"`
+	Title string `json:"title"`
+	Date string `json:"date"`
+	Tags []string `json:"tags"`
+	Meta string `json:"meta"`
+}
+
+// SortKey is a string type.
+type SortKey = string
+
+// PostListInput is the user-facing input type.
+type PostListInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	SearchParams bf.SearchParams // Optional: request query for searchParams()
+	Items []Item
+	Tags []string
+	Base string
+}
+
+// PostListProps is the props type for the PostList component.
+type PostListProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	SearchParams bf.SearchParams `json:"-"`
+	Items []Item `json:"items"`
+	Tags []string `json:"tags"`
+	Base string `json:"base"`
+	Params map[string]interface{} `json:"params"`
+	Visible map[string]interface{} `json:"visible"`
+	Root string `json:"-"`
+	PostListItems []PostListItemProps `json:"-"`
+}
+
+// PostListItemInput is the user-facing input type.
+type PostListItemInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Href string
+	Title string
+	Date string
+	Meta string
+}
+
+// PostListItemProps is the props type for the PostListItem component.
+type PostListItemProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Href string `json:"href"`
+	Title string `json:"title"`
+	Date string `json:"date"`
+	Meta string `json:"meta"`
+	Pinned bool `json:"pinned"`
+}
+
+// ReaderToolbarInput is the user-facing input type.
+type ReaderToolbarInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// ReaderToolbarProps is the props type for the ReaderToolbar component.
+type ReaderToolbarProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Level int `json:"level"`
+}
+
+// ReadingTimerInput is the user-facing input type.
+type ReadingTimerInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// ReadingTimerProps is the props type for the ReadingTimer component.
+type ReadingTimerProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Secs int `json:"secs"`
+}
+
+// SidebarInput is the user-facing input type.
+type SidebarInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// SidebarProps is the props type for the Sidebar component.
+type SidebarProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Pins int `json:"pins"`
+}
+
+// ThemeToggleInput is the user-facing input type.
+type ThemeToggleInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// ThemeToggleProps is the props type for the ThemeToggle component.
+type ThemeToggleProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Light bool `json:"light"`
+}
+
 // NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
 func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps {
 	scopeID := in.ScopeID
@@ -717,5 +968,213 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		ToggleItems: toggleItems,
+	}
+}
+
+// NewLikeButtonProps creates LikeButtonProps from LikeButtonInput.
+func NewLikeButtonProps(in LikeButtonInput) LikeButtonProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "LikeButton_" + randomID(6)
+	}
+
+	return LikeButtonProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Likes: 0,
+	}
+}
+
+// NewNowPlayingProps creates NowPlayingProps from NowPlayingInput.
+func NewNowPlayingProps(in NowPlayingInput) NowPlayingProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "NowPlaying_" + randomID(6)
+	}
+
+	return NowPlayingProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Playing: false,
+		Elapsed: 0,
+	}
+}
+
+// NewPageShellProps creates PageShellProps from PageShellInput.
+func NewPageShellProps(in PageShellInput) PageShellProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "PageShell_" + randomID(6)
+	}
+
+	return PageShellProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Children: in.Children,
+		ReaderToolbarSlot0: NewReaderToolbarProps(ReaderToolbarInput{
+			ScopeID: scopeID + "_s0",
+			BfParent: scopeID,
+			BfMount: "s0",
+		}),
+	}
+}
+
+// NewPostArticleProps creates PostArticleProps from PostArticleInput.
+func NewPostArticleProps(in PostArticleInput) PostArticleProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "PostArticle_" + randomID(6)
+	}
+
+	return PostArticleProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Slug: in.Slug,
+		Title: in.Title,
+		Date: in.Date,
+		Tags: in.Tags,
+		Body: in.Body,
+		Position: in.Position,
+		Total: in.Total,
+		Base: in.Base,
+		PrevSlug: in.PrevSlug,
+		PrevTitle: in.PrevTitle,
+		NextSlug: in.NextSlug,
+		NextTitle: in.NextTitle,
+		LikeButtonSlot9: NewLikeButtonProps(LikeButtonInput{
+			ScopeID: scopeID + "_s9",
+			BfParent: scopeID,
+			BfMount: "s9",
+		}),
+		ReadingTimerSlot10: NewReadingTimerProps(ReadingTimerInput{
+			ScopeID: scopeID + "_s10",
+			BfParent: scopeID,
+			BfMount: "s10",
+		}),
+		NowPlayingSlot11: NewNowPlayingProps(NowPlayingInput{
+			ScopeID: scopeID + "_s11",
+			BfParent: scopeID,
+			BfMount: "s11",
+		}),
+	}
+}
+
+// NewPostListProps creates PostListProps from PostListInput.
+//
+// NOTE: `PostListItems` is populated by the route handler, not by
+// NewPostListProps — the SSR template iterates over it
+// dynamically (`.PostListItems`). Build the slice from your source data and
+// assign it before passing the props to your renderer. Example:
+//
+//   props := NewPostListProps(PostListInput{ /* ... */ })
+//   props.PostListItems = make([]PostListItemProps, len(items))
+//   for i, item := range items {
+//     props.PostListItems[i] = NewPostListItemProps(PostListItemInput{ /* fields */ })
+//     props.PostListItems[i].BfParent = props.ScopeID
+//     props.PostListItems[i].BfMount = "s13"
+//   }
+func NewPostListProps(in PostListInput) PostListProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "PostList_" + randomID(6)
+	}
+
+	return PostListProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		SearchParams: in.SearchParams,
+		Items: in.Items,
+		Tags: in.Tags,
+		Base: in.Base,
+		Params: map[string]interface{}{
+		"Sort": func() string { if bf.Includes([]string{"date", "title", "tag"}, in.SearchParams.Get("sort")) { return in.SearchParams.Get("sort") }; return "date" }(),
+		"Tag": in.SearchParams.Get("tag"),
+	},
+		Visible: nil,
+		Root: func() string { v := strings.TrimRight(in.Base, "/"); if v != "" { return v }; return "/" }(),
+	}
+}
+
+// NewPostListItemProps creates PostListItemProps from PostListItemInput.
+func NewPostListItemProps(in PostListItemInput) PostListItemProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "PostListItem_" + randomID(6)
+	}
+
+	return PostListItemProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Href: in.Href,
+		Title: in.Title,
+		Date: in.Date,
+		Meta: in.Meta,
+		Pinned: false,
+	}
+}
+
+// NewReaderToolbarProps creates ReaderToolbarProps from ReaderToolbarInput.
+func NewReaderToolbarProps(in ReaderToolbarInput) ReaderToolbarProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "ReaderToolbar_" + randomID(6)
+	}
+
+	return ReaderToolbarProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Level: 1,
+	}
+}
+
+// NewReadingTimerProps creates ReadingTimerProps from ReadingTimerInput.
+func NewReadingTimerProps(in ReadingTimerInput) ReadingTimerProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "ReadingTimer_" + randomID(6)
+	}
+
+	return ReadingTimerProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Secs: 0,
+	}
+}
+
+// NewSidebarProps creates SidebarProps from SidebarInput.
+func NewSidebarProps(in SidebarInput) SidebarProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "Sidebar_" + randomID(6)
+	}
+
+	return SidebarProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Pins: 0,
+	}
+}
+
+// NewThemeToggleProps creates ThemeToggleProps from ThemeToggleInput.
+func NewThemeToggleProps(in ThemeToggleInput) ThemeToggleProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "ThemeToggle_" + randomID(6)
+	}
+
+	return ThemeToggleProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Light: false,
 	}
 }

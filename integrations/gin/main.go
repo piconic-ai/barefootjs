@@ -56,6 +56,21 @@ func loadTemplates() *template.Template {
 	return root
 }
 
+// baseTemplates is the parsed template set, kept so the blog renderer (which
+// composes several islands via RenderFragment) can build its own bf.Renderer
+// without re-parsing in production. In dev, currentTemplates re-parses per
+// request so build:watch rebuilds show on refresh.
+var baseTemplates *template.Template
+
+// currentTemplates returns the parsed templates: re-parsed per call in dev so
+// `bun run build:watch` rebuilds appear on reload, the cached set otherwise.
+func currentTemplates() *template.Template {
+	if isDevEnv() {
+		return loadTemplates()
+	}
+	return baseTemplates
+}
+
 // isDevEnv reports whether the process is running in development.
 func isDevEnv() bool {
 	return bfdev.IsDevDefault()
@@ -228,7 +243,8 @@ func main() {
 		}
 	}
 	layoutFn = layout
-	renderer = bf.NewRenderer(loadTemplates(), layout)
+	baseTemplates = loadTemplates()
+	renderer = bf.NewRenderer(baseTemplates, layout)
 
 	r := gin.Default()
 
@@ -247,6 +263,11 @@ func main() {
 	g.GET("/conditional-return-link", conditionalReturnLinkHandler)
 	g.GET("/ai-chat", aiChatHandler)
 	g.GET("/api/ai-chat", aiChatSSEHandler)
+
+	// Blog — the @barefootjs/router showcase (partial navigation across a
+	// region shell), mounted under ${basePath}/blog.
+	g.GET("/blog", blogIndexHandler)
+	g.GET("/blog/posts/:slug", blogPostHandler)
 
 	// Todo API endpoints
 	g.GET("/api/todos", getTodosAPI)
@@ -285,7 +306,8 @@ func indexHandler(c *gin.Context) {
         <li><a href="%s/todos">Todo (@client)</a></li>
         <li><a href="%s/todos-ssr">Todo (no @client markers)</a></li>
         <li><a href="%s/ai-chat">AI Chat (SSE Streaming)</a></li>
-    </ul>`, basePath, basePath, basePath, basePath, basePath)
+        <li><a href="%s/blog">Blog (@barefootjs/router — partial navigation)</a></li>
+    </ul>`, basePath, basePath, basePath, basePath, basePath, basePath)
 
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en" class="dark">
