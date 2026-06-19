@@ -197,6 +197,17 @@ interface PropFallbackVar {
   zeroLiteral: string
 }
 
+/**
+ * Scope for `lowerCtorExpr` — lowering a JS expression to Go in the
+ * `NewXxxProps` constructor context (#1897 PostList derived state).
+ */
+interface CtorLowerEnv {
+  /** Local names bound to `searchParams()` (`const sp = searchParams()`). */
+  searchParamsVars: Set<string>
+  /** Helper-param name → its already-lowered Go argument, for inlining. */
+  params: Map<string, string>
+}
+
 export interface GoTemplateAdapterOptions {
   /** Go package name for generated types (default: 'components') */
   packageName?: string
@@ -4030,6 +4041,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       )
     }
 
+    // (#1897 PostList) Pattern: an object-returning block-body memo derived from
+    // `searchParams()` — `() => { const sp = searchParams(); return { sort:
+    // asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' } }`. Compute a Go
+    // `map[string]interface{}` whose values are lowered from the request query,
+    // so `.Params.Sort` / `.Params.Tag` resolve at execute time instead of
+    // reading a nil map. Returns null for any unsupported shape (→ nil fallback,
+    // no regression).
+    const objMemo = this.computeObjectMemoInitialValue(computation)
+    if (objMemo !== null) return objMemo
+
     return null
   }
 
@@ -4131,6 +4152,193 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } catch {
       return null
     }
+  }
+
+  /**
+   * (#1897 PostList) Compute the SSR value of an object-returning block-body
+   * memo derived from `searchParams()`:
+   *   () => { const sp = searchParams(); return { sort: asSortKey(sp.get('sort')),
+   *                                               tag: sp.get('tag') ?? '' } }
+   * Emits a Go `map[string]interface{}{ "Sort": …, "Tag": … }` whose values are
+   * lowered from the request query (see `lowerCtorExpr`). Keys are capitalized to
+   * match the template's `.Params.<Field>` map access. Returns null for any shape
+   * the lowerer can't represent, so the caller falls back to a nil map.
+   */
+  private computeObjectMemoInitialValue(computation: string): string | null {
+    const arrow = this.parseLiteralExpression(computation)
+    if (!arrow || !ts.isArrowFunction(arrow) || !ts.isBlock(arrow.body)) return null
+
+    // Collect `const <v> = searchParams()` bindings and the returned object.
+    const searchParamsVars = new Set<string>()
+    let retObj: ts.ObjectLiteralExpression | null = null
+    for (const s of arrow.body.statements) {
+      if (ts.isVariableStatement(s)) {
+        for (const d of s.declarationList.declarations) {
+          if (
+            ts.isIdentifier(d.name) &&
+            d.initializer &&
+            ts.isCallExpression(d.initializer) &&
+            ts.isIdentifier(d.initializer.expression) &&
+            this.searchParamsLocals.has(d.initializer.expression.text)
+          ) {
+            searchParamsVars.add(d.name.text)
+          }
+        }
+      } else if (ts.isReturnStatement(s) && s.expression) {
+        let e: ts.Expression = s.expression
+        while (ts.isParenthesizedExpression(e)) e = e.expression
+        if (ts.isObjectLiteralExpression(e)) retObj = e
+      }
+    }
+    if (!retObj || retObj.properties.length === 0) return null
+
+    const env: CtorLowerEnv = { searchParamsVars, params: new Map() }
+    const entries: string[] = []
+    for (const prop of retObj.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      const key =
+        ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
+      if (!key) return null
+      const go = this.lowerCtorExpr(prop.initializer, env)
+      if (go === null) return null
+      entries.push(`"${this.capitalizeFieldName(key)}": ${go}`)
+    }
+    return `map[string]interface{}{\n\t\t${entries.join(',\n\t\t')},\n\t}`
+  }
+
+  /**
+   * Lower a JS expression to a Go expression in the `NewXxxProps` constructor
+   * context. This is Go *code*, not template syntax — so a search-param read
+   * becomes `in.SearchParams.Get("k")` (method call), not the template's
+   * `.SearchParams.Get "k"`. Supports the narrow surface derived-state memos
+   * need: string/number literals, `<sp>.get('k')`, `<arr>.includes(<x>)`,
+   * module arrow-helper inlining, `<expr> ?? <fallback>`, and string ternaries.
+   * Returns null for anything else so the caller can fall back safely.
+   */
+  private lowerCtorExpr(node: ts.Expression, env: CtorLowerEnv): string | null {
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      return JSON.stringify(node.text)
+    }
+    if (ts.isNumericLiteral(node)) return node.text
+
+    // Identifier: a substituted helper param, else a module string const.
+    if (ts.isIdentifier(node)) {
+      const sub = env.params.get(node.text)
+      if (sub !== undefined) return sub
+      const c = this.localConstants.find(lc => lc.name === node.text && lc.isModule)
+      if (c?.value !== undefined) {
+        const lit = this.parseLiteralExpression(c.value)
+        if (lit && (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit))) {
+          return JSON.stringify(lit.text)
+        }
+      }
+      return null
+    }
+
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const method = node.expression.name.text
+      const recv = node.expression.expression
+      // `<sp>.get('k')` where <sp> is bound to searchParams().
+      if (
+        method === 'get' &&
+        ts.isIdentifier(recv) &&
+        env.searchParamsVars.has(recv.text) &&
+        node.arguments.length === 1 &&
+        ts.isStringLiteral(node.arguments[0])
+      ) {
+        return `in.SearchParams.Get(${JSON.stringify(node.arguments[0].text)})`
+      }
+      // `<arr>.includes(<x>)` → bf.Includes(<[]string{…}>, <x>) (bool).
+      if (method === 'includes' && node.arguments.length === 1) {
+        const arr = this.lowerCtorStringArray(recv)
+        const elem = this.lowerCtorExpr(node.arguments[0], env)
+        if (arr !== null && elem !== null) return `bf.Includes(${arr}, ${elem})`
+        return null
+      }
+      return null
+    }
+
+    // `helper(<args>)` where helper is a module arrow const → inline its body.
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const fnConst = this.localConstants.find(
+        lc => lc.name === (node.expression as ts.Identifier).text && lc.isModule,
+      )
+      if (fnConst?.value) {
+        const fn = this.parseLiteralExpression(fnConst.value)
+        if (
+          fn &&
+          ts.isArrowFunction(fn) &&
+          !ts.isBlock(fn.body) &&
+          fn.parameters.length === node.arguments.length
+        ) {
+          const params = new Map(env.params)
+          for (let i = 0; i < fn.parameters.length; i++) {
+            const p = fn.parameters[i]
+            if (!ts.isIdentifier(p.name)) return null
+            const argGo = this.lowerCtorExpr(node.arguments[i], env)
+            if (argGo === null) return null
+            params.set(p.name.text, argGo)
+          }
+          return this.lowerCtorExpr(fn.body, { searchParamsVars: env.searchParamsVars, params })
+        }
+      }
+      return null
+    }
+
+    // `<expr> ?? <fallback>`
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+    ) {
+      const left = this.lowerCtorExpr(node.left, env)
+      if (left === null) return null
+      let r: ts.Expression = node.right
+      while (ts.isParenthesizedExpression(r)) r = r.expression
+      // `?? ''` is a no-op: SearchParams.Get already returns "" for a missing key.
+      if ((ts.isStringLiteral(r) || ts.isNoSubstitutionTemplateLiteral(r)) && r.text === '') {
+        return left
+      }
+      const right = this.lowerCtorExpr(node.right, env)
+      if (right === null) return null
+      return `func() string { v := ${left}; if v != "" { return v }; return ${right} }()`
+    }
+
+    // `<cond> ? <t> : <f>` (string result)
+    if (ts.isConditionalExpression(node)) {
+      const cond = this.lowerCtorExpr(node.condition, env)
+      const t = this.lowerCtorExpr(node.whenTrue, env)
+      const f = this.lowerCtorExpr(node.whenFalse, env)
+      if (cond !== null && t !== null && f !== null) {
+        return `func() string { if ${cond} { return ${t} }; return ${f} }()`
+      }
+      return null
+    }
+
+    return null
+  }
+
+  /**
+   * Resolve a string-array expression (a `['a','b']` literal, or a module const
+   * bound to one) to a Go `[]string{…}` literal, or null when it isn't a pure
+   * string-array. Used by `lowerCtorExpr` for `<arr>.includes(<x>)`.
+   */
+  private lowerCtorStringArray(node: ts.Expression): string | null {
+    let arr: ts.Expression | null = node
+    if (ts.isIdentifier(node)) {
+      const c = this.localConstants.find(lc => lc.name === node.text && lc.isModule)
+      if (!c?.value) return null
+      arr = this.parseLiteralExpression(c.value)
+    }
+    if (!arr || !ts.isArrayLiteralExpression(arr)) return null
+    const elems: string[] = []
+    for (const el of arr.elements) {
+      if (ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)) {
+        elems.push(JSON.stringify(el.text))
+      } else return null
+    }
+    return `[]string{${elems.join(', ')}}`
   }
 
   /**
