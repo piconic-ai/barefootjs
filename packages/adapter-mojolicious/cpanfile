@@ -1,5 +1,5 @@
 requires 'perl', '5.020';
-requires 'BarefootJS';
+requires 'BarefootJS', '0.15.0';
 requires 'Mojolicious', '9.0';
 
 on 'test' => sub {
