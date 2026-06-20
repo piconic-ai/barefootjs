@@ -500,7 +500,26 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
         }
         expect(html).toBeTruthy()
 
-        // 2. Compare HTML output against reference
+        // 2. bf-p contract: children must not contain HTML markup (#1952).
+        //    Rendered children are already in the DOM; serialising them
+        //    into bf-p leaks nested scope IDs and causes the router's
+        //    region diff to false-swap on every navigation.
+        for (const m of html.matchAll(/bf-p="([^"]*)"/g)) {
+          const raw = m[1]
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&#39;/g, "'")
+          try {
+            const obj = JSON.parse(raw)
+            if (obj && typeof obj === 'object' && 'children' in obj && typeof obj.children === 'string') {
+              expect(obj.children).not.toMatch(/bf-s=/)
+            }
+          } catch { /* not JSON — skip */ }
+        }
+
+        // 3. Compare HTML output against reference
         if (referenceAdapter && referenceRender) {
           // Live reference: render with reference adapter and compare.
           // Strip the conditional-branch marker divergence on both sides

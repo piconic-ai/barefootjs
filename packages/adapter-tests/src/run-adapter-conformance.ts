@@ -26,7 +26,6 @@ import type { TemplateAdapter } from '../../jsx/src/types'
 import { runJSXConformanceTests, type RenderOptions } from './jsx-runner'
 import { runConformanceSuite } from './conformance'
 import { runMarkerConformance } from './marker-conformance'
-import { runBfPConformance } from './bf-p-conformance'
 import type { ExpectedDiagnostic } from './types'
 import {
   templatePrimitiveCases,
@@ -74,13 +73,6 @@ export interface RunAdapterConformanceOptions {
    */
   skipMarkerConformance?: ReadonlySet<string>
   /**
-   * Fixture ids to skip for bf-p serialization conformance (#1952).
-   * The suite checks that rendered HTML's `bf-p` attributes don't
-   * contain children with HTML markup (scope IDs). See
-   * `bf-p-conformance.ts`.
-   */
-  skipBfPConformance?: ReadonlySet<string>
-  /**
    * Per-fixture diagnostic contracts owned by this adapter. Keyed by
    * `JSXFixture.id`; the runner compiles the fixture and asserts each
    * `{ code, severity }` appears in `ir.errors`, then skips HTML
@@ -119,13 +111,5 @@ export function runAdapterConformanceTests(
     name: opts.name,
     factory: opts.factory,
     skipFixtures: opts.skipMarkerConformance,
-  })
-
-  runBfPConformance({
-    name: opts.name,
-    createAdapter: opts.factory,
-    render: opts.render,
-    onRenderError: opts.onRenderError,
-    skipFixtures: opts.skipBfPConformance,
   })
 }
