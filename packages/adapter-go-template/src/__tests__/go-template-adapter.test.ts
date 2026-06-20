@@ -1421,6 +1421,17 @@ export function Page() {
         expect(types).not.toContain('template.HTML')
       }
     })
+
+    test('children prop is excluded from bf-p serialization (json:"-") (#1952)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+export function Box({ children }: { children: any }) {
+  return <div>{children}</div>
+}
+`, adapter)
+      const types = adapter.generateTypes(ir)!
+      expect(types).toMatch(/Children\s+\S+\s+`json:"-"`/)
+    })
   })
 
   describe('generateTypes', () => {
