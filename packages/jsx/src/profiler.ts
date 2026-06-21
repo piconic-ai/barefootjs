@@ -1395,9 +1395,12 @@ export interface ProfileReport {
   coverage: ProfileCoverage
   /**
    * Normalized run status an agent can branch on without parsing prose (#1841):
-   * `ok` when nothing is flagged, `warning` when there are actionable findings.
-   * A failed *gate* escalates this to `error` — but gates are policy applied by
-   * the CLI from flags, so the builder only ever sets `ok`/`warning` here.
+   * `ok` when nothing is flagged, `warning` when any finding is severity
+   * `warning` or higher — regardless of its `actionable` flag, since an
+   * unresolved-but-real cost (e.g. a hot subscriber with no source loc) is still
+   * worth surfacing. A failed *gate* escalates this to `error` — but gates are
+   * policy applied by the CLI from flags, so the builder only ever sets
+   * `ok`/`warning` here.
    */
   status: ProfileStatus
   /**
