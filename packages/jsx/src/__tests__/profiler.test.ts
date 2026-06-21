@@ -20,6 +20,7 @@ import {
   buildIdIndex,
   joinProfilerEvents,
   findUninstrumentedEffects,
+  evaluateProfileGates,
 } from '../profiler'
 import { buildComponentAnalysis } from '../debug'
 import type { ProfilerEvent } from '@barefootjs/shared'
@@ -531,5 +532,153 @@ describe('findUninstrumentedEffects (#1849 B6)', () => {
     // Only the uninstrumented (line 8) call is a candidate; the instrumented
     // top-level effect (line 6) is excluded.
     expect(e1.candidates).toEqual([{ file: 'C.tsx', line: 8 }])
+  })
+})
+
+describe('agent contract: status, findings, guidance (#1841)', () => {
+  const src = `
+    'use client'
+    import { createSignal, createMemo } from '@barefootjs/client'
+    export function Calc() {
+      const [count, setCount] = createSignal(0)
+      const a = createMemo(() => count() * 2)
+      return <button onClick={() => setCount(count() + 1)}>{a()}</button>
+    }
+  `
+  let n = 0
+  const ev = (type: ProfilerEvent['type'], f: Partial<ProfilerEvent> = {}): ProfilerEvent =>
+    ({ type, seq: n++, turn: null, ...f })
+
+  // A memo that re-runs 3× in a single turn → runsPerTurn 3 → flagged `hot`.
+  function hotRunEvents(): ProfilerEvent[] {
+    n = 0
+    const turn = 'Calc#handler:s0:click'
+    const events: ProfilerEvent[] = [ev('turnBegin', { handlerId: turn })]
+    for (let i = 0; i < 3; i++) {
+      events.push(ev('effectEnter', { subscriber: 'Calc#memo:a', turn }))
+      events.push(ev('effectExit', { subscriber: 'Calc#memo:a', dur: 1, turn }))
+    }
+    events.push(ev('turnEnd', {}))
+    return events
+  }
+
+  test('a clean run is status ok with no findings', () => {
+    n = 0
+    // One memo run in a turn → runsPerTurn 1 → not hot, nothing flagged.
+    const turn = 'Calc#handler:s0:click'
+    const events: ProfilerEvent[] = [
+      ev('turnBegin', { handlerId: turn }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn }),
+      ev('effectExit', { subscriber: 'Calc#memo:a', dur: 1, turn }),
+      ev('turnEnd', {}),
+    ]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    expect(r.status).toBe('ok')
+    expect(r.findings).toHaveLength(0)
+    expect(r.coverage.ratio).toBe(1)
+    expect(r.guidance).toBeUndefined()
+  })
+
+  test('a hot subscriber becomes a warning finding with valid nextCommands', () => {
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events: hotRunEvents() })
+    expect(r.status).toBe('warning')
+    const hot = r.findings.find(f => f.kind === 'hot-subscriber')!
+    expect(hot.severity).toBe('warning')
+    expect(hot.actionable).toBe(true)
+    expect(hot.subscriber).toBe('Calc#memo:a')
+    // A memo id maps to a name `bf debug trace` accepts; graph is the fallback.
+    expect(hot.nextCommands).toContain('bf debug trace Calc a --json')
+    expect(hot.nextCommands).toContain('bf debug graph Calc --json')
+  })
+
+  test('an unresolved id is an actionable coverage-gap finding', () => {
+    n = 0
+    // A profiler-shaped id with no matching IR node → SR4 coverage gap.
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Calc#memo:ghost' })]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    const gap = r.findings.find(f => f.kind === 'coverage-gap')!
+    expect(gap.actionable).toBe(true)
+    expect(gap.subscriber).toBe('Calc#memo:ghost')
+  })
+
+  test('nextCommands target the component parsed from the id, not the root', () => {
+    n = 0
+    // A scenario-file run resolves subscribers from composed children: the id's
+    // component (`Child`) differs from the profiled root (`Calc`). Follow-up
+    // commands must target `Child`, or they point an agent at the wrong file.
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Child#memo:ghost' })]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    const gap = r.findings.find(f => f.kind === 'coverage-gap')!
+    expect(gap.nextCommands).toContain('bf debug trace Child ghost --json')
+    expect(gap.nextCommands).toContain('bf debug graph Child --json')
+    expect(gap.nextCommands.every(c => !c.includes('graph Calc'))).toBe(true)
+  })
+
+  test('coverage.ratio is clamped to 1 when the stream over-counts handlers', () => {
+    n = 0
+    // Calc exposes a single handler (handlersTotal 1), but a malformed stream
+    // reports two distinct turn ids — without clamping the ratio would be 2.0
+    // and silently pass a `--min-coverage` gate it shouldn't.
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s0:click' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s9:click' }),
+    ]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    expect(r.coverage.ratio).toBe(1)
+    expect(r.coverage.ratio).toBeLessThanOrEqual(1)
+  })
+
+  test('a zero-turn run emits guidance pointing at a story file', () => {
+    n = 0
+    // Handlers exist (the onClick) but none fired → no-interactions guidance.
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Calc#memo:a' })]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    expect(r.turns).toBe(0)
+    expect(r.guidance?.reason).toBe('no-interactions')
+    expect(r.guidance?.nextCommands[0]).toContain('--scenario <story.tsx>')
+  })
+
+  describe('evaluateProfileGates', () => {
+    test('hot gate fails when a subscriber exceeds the runs/turn budget', () => {
+      const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events: hotRunEvents() })
+      const fail = evaluateProfileGates(r, { maxRunsPerTurn: 2 })
+      expect(fail.passed).toBe(false)
+      expect(fail.failed).toContain('hot')
+      const pass = evaluateProfileGates(r, { maxRunsPerTurn: 5 })
+      expect(pass.passed).toBe(true)
+    })
+
+    test('bare --fail-on hot trips on any flagged hot subscriber', () => {
+      const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events: hotRunEvents() })
+      const g = evaluateProfileGates(r, { failOn: ['hot'] })
+      expect(g.passed).toBe(false)
+      expect(g.checks[0].threshold).toBeNull()
+    })
+
+    test('coverage gate compares ratio against --min-coverage', () => {
+      n = 0
+      // Handlers exist but only mount runs, no turn → ratio 0.
+      const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Calc#memo:a' })]
+      const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+      expect(r.coverage.ratio).toBe(0)
+      const g = evaluateProfileGates(r, { minCoverage: 0.8 })
+      expect(g.passed).toBe(false)
+      expect(g.failed).toContain('coverage')
+    })
+
+    test('unresolved gate counts actionable gaps against --max-unresolved', () => {
+      n = 0
+      const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Calc#memo:ghost' })]
+      const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+      expect(evaluateProfileGates(r, { maxUnresolved: 0 }).passed).toBe(false)
+      expect(evaluateProfileGates(r, { maxUnresolved: 5 }).passed).toBe(true)
+    })
+
+    test('no configured gate yields an empty, passing result', () => {
+      const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events: hotRunEvents() })
+      const g = evaluateProfileGates(r, {})
+      expect(g.passed).toBe(true)
+      expect(g.checks).toHaveLength(0)
+    })
   })
 })

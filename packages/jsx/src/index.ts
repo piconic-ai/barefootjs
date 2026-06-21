@@ -308,6 +308,7 @@ export {
   formatWastedReReruns,
   analyzeBatchAdvisor,
   formatBatchAdvisor,
+  evaluateProfileGates,
 } from './profiler.ts'
 export type {
   StaticBudget,
@@ -335,6 +336,14 @@ export type {
   BatchAdvisorResult,
   BatchCandidate,
   BatchSafety,
+  ProfileSeverity,
+  ProfileStatus,
+  AgentFinding,
+  ScenarioGuidance,
+  GateName,
+  GateConfig,
+  GateCheck,
+  GateResult,
 } from './profiler.ts'
 
 // Reactive profile — findings layer (#1690 dogfood: Bug A/C/D fixes, batch-candidate dedup,
