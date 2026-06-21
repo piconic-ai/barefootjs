@@ -75,12 +75,12 @@
   "accessibility": {
     "role": "grid",
     "ariaAttributes": [
-      "aria-selected",
-      "aria-label"
+      "aria-label",
+      "aria-selected"
     ],
     "dataAttributes": [
-      "data-disabled",
-      "data-slot"
+      "data-slot",
+      "data-disabled"
     ]
   },
   "dependencies": {
@@ -136,7 +136,9 @@
       "name": "weeks0",
       "deps": [
         "currentYear",
-        "currentMonth"
+        "currentMonth",
+        "selectedDate",
+        "selectedRange"
       ]
     },
     {
@@ -150,7 +152,9 @@
       "name": "weeks1",
       "deps": [
         "currentYear",
-        "currentMonth"
+        "currentMonth",
+        "selectedDate",
+        "selectedRange"
       ]
     },
     {
