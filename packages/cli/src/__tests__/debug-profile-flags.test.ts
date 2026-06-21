@@ -27,6 +27,32 @@ describe('bf debug profile — --scenario + --diff are mutually exclusive (#1849
   })
 })
 
+describe('bf debug profile — agent gate flag validation (#1841)', () => {
+  test('a dynamic gate without --scenario is a usage error', () => {
+    const r = runCli(['debug', 'profile', 'button', '--min-coverage', '0.8'])
+    expect(r.exitCode).toBe(1)
+    expect(r.stderr).toContain('--scenario')
+  })
+
+  test('--fail-on regression without --diff is a usage error', () => {
+    const r = runCli(['debug', 'profile', 'button', '--fail-on', 'regression'])
+    expect(r.exitCode).toBe(1)
+    expect(r.stderr).toContain('--diff')
+  })
+
+  test('an unknown gate name in --fail-on is rejected', () => {
+    const r = runCli(['debug', 'profile', 'button', '--scenario', 'auto', '--fail-on', 'bogus'])
+    expect(r.exitCode).toBe(1)
+    expect(r.stderr).toContain('unknown gate')
+  })
+
+  test('--min-coverage out of [0,1] is rejected', () => {
+    const r = runCli(['debug', 'profile', 'button', '--scenario', 'auto', '--min-coverage', '2'])
+    expect(r.exitCode).toBe(1)
+    expect(r.stderr).toContain('--min-coverage')
+  })
+})
+
 describe('bf debug profile — git stderr does not leak on a bad --diff ref (#1849 B8)', () => {
   test('git diagnostics fold into the CLI error, no raw "fatal:" line leaks', () => {
     const r = runCli(['debug', 'profile', 'button', '--diff', 'nonexistent-ref'])

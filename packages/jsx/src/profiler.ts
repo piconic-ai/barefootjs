@@ -1360,6 +1360,13 @@ export interface ProfileCoverage {
   handlersFired: number
   /** Handlers the IR knows about (`buildEventSummary`). */
   handlersTotal: number
+  /**
+   * `handlersFired / handlersTotal` in `[0,1]` — the fraction of known handlers
+   * this run exercised, so an agent can gate on it (`--min-coverage`) without
+   * dividing the two counts itself (#1841). `1` when the component has no
+   * handlers (nothing to cover ⇒ trivially complete, not a gap).
+   */
+  ratio: number
   /** SR4 ids the IR could not resolve — the honest, actionable gap. */
   unattributed: UnattributedId[]
   /**
@@ -1386,6 +1393,69 @@ export interface ProfileReport {
   wastedReReruns: WastedReRunsResult
   batchAdvisor: BatchAdvisorResult
   coverage: ProfileCoverage
+  /**
+   * Normalized run status an agent can branch on without parsing prose (#1841):
+   * `ok` when nothing is flagged, `warning` when there are actionable findings.
+   * A failed *gate* escalates this to `error` — but gates are policy applied by
+   * the CLI from flags, so the builder only ever sets `ok`/`warning` here.
+   */
+  status: ProfileStatus
+  /**
+   * Flattened, normalized findings (#1841): the hot/wasted/batch/coverage tables
+   * re-expressed with a single `severity` scale, an explicit `actionable` flag,
+   * and `nextCommands` — the exact follow-up `bf debug …` invocations to run.
+   * The structured tables above stay the source of truth; this is the agent view.
+   */
+  findings: AgentFinding[]
+  /**
+   * Coverage guidance for an under-exercised run (#1841): present only when the
+   * scenario fired no or only some handlers, which usually means a story file is
+   * needed (handlers live in composed children).
+   */
+  guidance?: ScenarioGuidance
+}
+
+// -- Agent contract (#1841): normalized severity, actionable findings, guidance
+
+/** Normalized finding severity an agent can branch on without parsing prose. */
+export type ProfileSeverity = 'info' | 'warning' | 'error'
+
+/** Top-level run status: `ok` (clean), `warning` (findings), `error` (gate failed). */
+export type ProfileStatus = 'ok' | 'warning' | 'error'
+
+/**
+ * One normalized, machine-actionable finding flattened from the per-analysis
+ * tables (hot subscribers / wasted re-runs / batch advisor / coverage gaps).
+ * Carries the agent contract fields the issue asks for: a normalized `severity`,
+ * an explicit `actionable` flag (`false` ⇒ internal bookkeeping noise, not worth
+ * a fix), and `nextCommands` — valid, ready-to-run `bf debug …` follow-ups.
+ */
+export interface AgentFinding {
+  kind: 'hot-subscriber' | 'wasted-re-run' | 'batch-candidate' | 'coverage-gap'
+  severity: ProfileSeverity
+  /** False for non-actionable findings (e.g. an unresolved id with no source). */
+  actionable: boolean
+  /** The compiler subscriber/turn id this finding is about, when it has one. */
+  subscriber?: string
+  /** Source location, when the id resolved to an IR node. */
+  loc?: { file: string; line: number }
+  /** One-line human summary — the same sentence the text report would print. */
+  message: string
+  /** Follow-up commands to run next — valid, ready-to-run `bf debug …` lines. */
+  nextCommands: string[]
+}
+
+/**
+ * Coverage guidance for an under-exercised run (#1841). `--scenario auto` can
+ * only fire handlers the IR exposes on *this* component; for a compound/context
+ * component whose handlers live in composed children it fires `0/N`, and the
+ * honest next step is a story/scenario file rather than trusting a thin run.
+ */
+export interface ScenarioGuidance {
+  /** Why coverage was incomplete — drives the suggested next step. */
+  reason: 'no-handlers' | 'no-interactions' | 'partial-coverage'
+  message: string
+  nextCommands: string[]
 }
 
 export interface ProfileReportInput {
@@ -1410,6 +1480,93 @@ export interface ProfileReportInput {
    * fraction in `[0,1]`. Default 0.5.
    */
   wastedRatio?: number
+}
+
+/**
+ * The follow-up `bf debug …` commands an agent should run to investigate a
+ * subscriber finding (#1841). Every command is valid and ready to run: a
+ * memo/signal id resolves to a name `bf debug trace` accepts; a DOM-binding id
+ * resolves to a slotId `bf debug why-update` accepts; `bf debug graph` is always
+ * applicable, so it is the universal fallback.
+ */
+function nextCommandsForSubscriber(component: string, subscriber: string): string[] {
+  const cmds: string[] = []
+  const parsed = parseProfilerId(subscriber)
+  if (parsed) {
+    if (parsed.kind === 'memo' || parsed.kind === 'signal') {
+      cmds.push(`bf debug trace ${component} ${parsed.rest} --json`)
+    } else if (parsed.kind === 'binding') {
+      cmds.push(`bf debug why-update ${component} ${parsed.rest} --json`)
+    }
+  }
+  cmds.push(`bf debug graph ${component} --json`)
+  return cmds
+}
+
+/**
+ * Flatten the per-analysis tables into the normalized agent findings (#1841).
+ * Only *flagged* rows become findings — a hot subscriber that isn't `hot`, or a
+ * subscriber below the wasted threshold, is data in the tables but not something
+ * the agent must act on. Coverage gaps (unresolved ids) are actionable findings;
+ * the non-actionable bookkeeping ids stay in `coverage.diagnostics`.
+ */
+function buildAgentFindings(
+  component: string,
+  hotSubscribers: HotSubscribersResult,
+  wastedReReruns: WastedReRunsResult,
+  batchAdvisor: BatchAdvisorResult,
+  unattributed: readonly UnattributedId[],
+): AgentFinding[] {
+  const findings: AgentFinding[] = []
+  for (const s of hotSubscribers.subscribers) {
+    if (!s.hot) continue
+    findings.push({
+      kind: 'hot-subscriber',
+      severity: 'warning',
+      actionable: s.loc !== undefined,
+      subscriber: s.subscriber,
+      loc: s.loc,
+      message: `${s.name ?? s.subscriber} ran ${s.runsPerTurn.toFixed(1)}×/turn — re-run pressure (split or batch).`,
+      nextCommands: nextCommandsForSubscriber(component, s.subscriber),
+    })
+  }
+  for (const s of wastedReReruns.subscribers) {
+    if (!s.wasted) continue
+    findings.push({
+      kind: 'wasted-re-run',
+      severity: 'warning',
+      actionable: s.loc !== undefined,
+      subscriber: s.subscriber,
+      loc: s.loc,
+      message: `${s.name ?? s.subscriber} produced identical output in ${Math.round(s.wastedRatio * 100)}% of runs — finer split.`,
+      nextCommands: nextCommandsForSubscriber(component, s.subscriber),
+    })
+  }
+  for (const c of batchAdvisor.candidates) {
+    findings.push({
+      kind: 'batch-candidate',
+      // Only a *proven-safe* batch is advised as actionable warning; an
+      // unverified one is surfaced as info so an agent doesn't apply a wrap that
+      // could change behavior (mirrors the batch advisor's own safety gate).
+      severity: c.safety === 'safe' ? 'warning' : 'info',
+      actionable: c.safety === 'safe' && c.loc !== undefined,
+      subscriber: c.turn,
+      loc: c.loc,
+      message: `${c.handler ?? c.turn} re-ran shared effects ${c.savings}× extra across ${c.writes} writes — batch() candidate (${c.safety}).`,
+      nextCommands: [`bf debug graph ${component} --json`],
+    })
+  }
+  for (const u of unattributed) {
+    findings.push({
+      kind: 'coverage-gap',
+      severity: 'warning',
+      actionable: true,
+      subscriber: u.id,
+      message: `Unresolved subscriber id "${u.id}" — could not map to source (scope caveat).`,
+      nextCommands: [`bf debug graph ${component} --json`],
+    })
+  }
+  return findings
 }
 
 /**
@@ -1524,6 +1681,38 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     }
   }
 
+  const findings = buildAgentFindings(primary.componentName, hotSubscribers, wastedReReruns, batchAdvisor, unattributed)
+  // Status is measurement-only here: any warning/error finding ⇒ `warning`. A
+  // failed gate escalates to `error`, but gates are CLI policy (flags), so the
+  // builder never sets `error` itself.
+  const status: ProfileStatus = findings.some(f => f.severity === 'warning' || f.severity === 'error') ? 'warning' : 'ok'
+
+  // Coverage ratio: 1 when there is nothing to cover (no handlers), else the
+  // exercised fraction. Drives `--min-coverage` and the guidance below.
+  const ratio = handlersTotal > 0 ? handlerIds.size / handlersTotal : 1
+  let guidance: ScenarioGuidance | undefined
+  if (turnSeqs.size === 0) {
+    guidance =
+      handlersTotal === 0
+        ? {
+            reason: 'no-handlers',
+            message: 'No event handlers — use the static budget instead of a dynamic run.',
+            nextCommands: [`bf debug profile ${primary.componentName} --json`],
+          }
+        : {
+            reason: 'no-interactions',
+            message:
+              'Handlers exist but none fired — they likely live in composed children. Drive the component with a story/scenario file.',
+            nextCommands: [`bf debug profile ${primary.componentName} --scenario <story.tsx> --json`],
+          }
+  } else if (ratio < 1) {
+    guidance = {
+      reason: 'partial-coverage',
+      message: `Only ${handlerIds.size}/${handlersTotal} handlers exercised — a story/scenario file can cover the rest.`,
+      nextCommands: [`bf debug profile ${primary.componentName} --scenario <story.tsx> --json`],
+    }
+  }
+
   return {
     kind: 'profile',
     schemaVersion: PROFILE_SCHEMA_VERSION,
@@ -1538,12 +1727,16 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
     coverage: {
       handlersFired: handlerIds.size,
       handlersTotal,
+      ratio,
       unattributed,
       // Roll the (potentially hundreds of) bookkeeping ids up to a count + a
       // small sample so JSON consumers aren't flooded (#1849 B7). `diagnostics`
       // is already sorted hottest-first by `joinProfilerEvents`.
       diagnostics: { count: diagnostics.length, sample: diagnostics.slice(0, 3).map(d => d.id) },
     },
+    status,
+    findings,
+    ...(guidance ? { guidance } : {}),
   }
 }
 
@@ -1579,5 +1772,116 @@ export function formatProfileReport(r: ProfileReport): string {
   if (c.diagnostics.count > 0) {
     lines.push(`  · ${c.diagnostics.count} anonymous runtime id(s) (non-actionable bookkeeping)`)
   }
+  // Agent contract footer (#1841): a normalized status and the single most
+  // useful next command, so a human reading the text output sees the same
+  // signal `--json` consumers branch on.
+  lines.push('')
+  lines.push(`status: ${r.status} (${r.findings.length} finding(s))`)
+  if (r.guidance) {
+    lines.push(`  guidance: ${r.guidance.message}`)
+    lines.push(`  next: ${r.guidance.nextCommands[0]}`)
+  } else if (r.findings.length > 0) {
+    lines.push(`  next: ${r.findings[0].nextCommands[0]}`)
+  }
   return lines.join('\n')
+}
+
+// -- Gates (#1841): turn a measured report into a pass/fail CI decision --------
+
+/** The gate names `--fail-on` accepts. `regression` applies to `--diff` mode. */
+export type GateName = 'unresolved' | 'hot' | 'coverage' | 'regression'
+
+/**
+ * Gate thresholds an agent/CI supplies via flags. A gate is *active* when it is
+ * named in `failOn` or its numeric threshold is set — so `--max-unresolved 0`
+ * enforces the unresolved gate without also passing `--fail-on unresolved`.
+ */
+export interface GateConfig {
+  failOn?: readonly GateName[]
+  /** `--min-coverage`: minimum `coverage.ratio` in `[0,1]`. */
+  minCoverage?: number
+  /** `--max-runs-per-turn`: budget for the hottest subscriber's runs/turn. */
+  maxRunsPerTurn?: number
+  /** `--max-unresolved`: maximum allowed unresolved (actionable) coverage gaps. */
+  maxUnresolved?: number
+}
+
+export interface GateCheck {
+  gate: string
+  passed: boolean
+  /** The measured value the gate compared (ratio, count, or runs/turn). */
+  observed: number
+  /** The threshold it was compared against; `null` for a boolean gate. */
+  threshold: number | null
+  message: string
+}
+
+export interface GateResult {
+  passed: boolean
+  /** Names of the gates that failed — the `gates.failed` an agent branches on. */
+  failed: string[]
+  checks: GateCheck[]
+}
+
+/**
+ * Evaluate the dynamic-run gates (#1841) against a measured report. Pure: maps a
+ * `ProfileReport` + thresholds to a pass/fail decision the CLI turns into an
+ * exit code. The `regression` gate is *not* evaluated here — it belongs to
+ * `--diff` mode, which the CLI gates directly off the `BudgetDiff`.
+ */
+export function evaluateProfileGates(report: ProfileReport, config: GateConfig): GateResult {
+  const failOn = new Set(config.failOn ?? [])
+  const checks: GateCheck[] = []
+
+  if (failOn.has('coverage') || config.minCoverage !== undefined) {
+    const threshold = config.minCoverage ?? 1
+    const observed = report.coverage.ratio
+    checks.push({
+      gate: 'coverage',
+      passed: observed >= threshold,
+      observed,
+      threshold,
+      message: `coverage ${(observed * 100).toFixed(0)}% ${observed >= threshold ? '≥' : '<'} required ${(threshold * 100).toFixed(0)}%`,
+    })
+  }
+
+  if (failOn.has('unresolved') || config.maxUnresolved !== undefined) {
+    const threshold = config.maxUnresolved ?? 0
+    const observed = report.coverage.unattributed.length
+    checks.push({
+      gate: 'unresolved',
+      passed: observed <= threshold,
+      observed,
+      threshold,
+      message: `${observed} unresolved id(s) ${observed <= threshold ? '≤' : '>'} allowed ${threshold}`,
+    })
+  }
+
+  if (failOn.has('hot') || config.maxRunsPerTurn !== undefined) {
+    const observed = report.hotSubscribers.subscribers.reduce((m, s) => Math.max(m, s.runsPerTurn), 0)
+    if (config.maxRunsPerTurn !== undefined) {
+      // Numeric budget: the hottest subscriber must not exceed it.
+      const threshold = config.maxRunsPerTurn
+      checks.push({
+        gate: 'hot',
+        passed: observed <= threshold,
+        observed,
+        threshold,
+        message: `max ${observed.toFixed(1)} runs/turn ${observed <= threshold ? '≤' : '>'} budget ${threshold}`,
+      })
+    } else {
+      // Bare `--fail-on hot`: any subscriber the analysis flagged `hot` fails it.
+      const anyHot = report.hotSubscribers.subscribers.some(s => s.hot)
+      checks.push({
+        gate: 'hot',
+        passed: !anyHot,
+        observed,
+        threshold: null,
+        message: anyHot ? `hot subscriber(s) present (max ${observed.toFixed(1)} runs/turn)` : 'no hot subscribers',
+      })
+    }
+  }
+
+  const failed = checks.filter(c => !c.passed).map(c => c.gate)
+  return { passed: failed.length === 0, failed, checks }
 }

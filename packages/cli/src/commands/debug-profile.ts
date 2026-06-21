@@ -15,10 +15,11 @@ import { execFileSync } from 'child_process'
 import { readFileSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
+import type { GateConfig, GateName, GateResult } from '@barefootjs/jsx'
 import { resolveComponentSource } from '../lib/resolve-source'
 
 const USAGE =
-  'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--wasted-pct <n>] [--json]'
+  'Usage: bf debug profile <component> [--diff <ref>] [--scenario auto|<file>] [--fanout <n>] [--top <n>] [--hot-ms <n>] [--wasted-pct <n>] [--fail-on <gates>] [--min-coverage <r>] [--max-runs-per-turn <n>] [--max-unresolved <n>] [--json]'
 
 // Full, self-contained guide (shown by `bf debug profile --help`). This is the
 // single source of truth for the profiler's UX — there is no separate spec doc
@@ -87,6 +88,25 @@ FLAGS
                       is additive-only. Stable schema with deterministic
                       tie-breaking; structural findings reproduce run-to-run
                       (wall-clock-timed ranks can shift near rounding boundaries).
+                      A dynamic run also carries \`status\`, normalized \`findings\`
+                      (severity + actionable + nextCommands), and — when handlers
+                      were under-exercised — \`guidance\` pointing at a story file.
+
+AGENT GATES (CI pass/fail with intent)
+  By default a run never fails CI. Opt into a gate and the command exits non-zero
+  when it trips, emitting a \`gates\` block ({passed, failed, checks}) in --json and
+  escalating \`status\` to "error". Gates compose with --json so an agent decides
+  fail-vs-continue without parsing prose.
+
+  --fail-on <gates>        Comma-separated: unresolved,hot,coverage (need
+                           --scenario) and regression (needs --diff). Each uses its
+                           default threshold unless a numeric flag below overrides.
+  --min-coverage <r>       Fail when coverage ratio < r (0–1). Implies the
+                           coverage gate. Needs --scenario.
+  --max-runs-per-turn <n>  Fail when the hottest subscriber exceeds n runs/turn.
+                           Implies the hot gate. Needs --scenario.
+  --max-unresolved <n>     Fail when more than n unresolved (actionable) coverage
+                           gaps remain. Implies the unresolved gate. Needs --scenario.
 
 EXAMPLES
   bf debug profile calendar                       # static budget, no run
@@ -94,6 +114,8 @@ EXAMPLES
   bf debug profile calendar --scenario auto --top 5 --hot-ms 1
   bf debug profile checkout --scenario ./stories/checkout.tsx --json
   bf debug profile checkout --diff origin/main    # regression gate (CI)
+  bf debug profile calendar --scenario auto --min-coverage 0.8 --fail-on hot --json
+  bf debug profile checkout --diff origin/main --fail-on regression --json
 
 NOTES
   • Instrumentation is dev-only and is stripped from production builds.
@@ -112,7 +134,34 @@ interface ProfileFlags {
   minMs?: number
   /** `--wasted-pct <n>`: flag a subscriber whose runs are ≥ n% identical output. */
   wastedPct?: number
+  /** `--fail-on <gates>`: comma-separated gate names that make the run exit non-zero. */
+  failOn?: GateName[]
+  /** `--min-coverage <r>`: minimum coverage ratio in [0,1] (gate). */
+  minCoverage?: number
+  /** `--max-runs-per-turn <n>`: budget for the hottest subscriber's runs/turn (gate). */
+  maxRunsPerTurn?: number
+  /** `--max-unresolved <n>`: maximum allowed unresolved coverage gaps (gate). */
+  maxUnresolved?: number
   positional: string[]
+}
+
+const GATE_NAMES: readonly GateName[] = ['unresolved', 'hot', 'coverage', 'regression']
+
+/** Parse and validate `--fail-on a,b,c` into a deduped list of known gate names. */
+function parseFailOn(raw: string): GateName[] {
+  const parts = raw
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+  if (parts.length === 0) fail('--fail-on requires at least one gate name.')
+  const out: GateName[] = []
+  for (const p of parts) {
+    if (!GATE_NAMES.includes(p as GateName)) {
+      fail(`--fail-on: unknown gate "${p}" (expected ${GATE_NAMES.join(', ')}).`)
+    }
+    if (!out.includes(p as GateName)) out.push(p as GateName)
+  }
+  return out
 }
 
 /**
@@ -162,6 +211,10 @@ function parseFlags(args: string[]): ProfileFlags {
     else if (a === '--top') flags.topN = num(args, ++i, '--top', { integer: true, min: 1 })
     else if (a === '--hot-ms') flags.minMs = num(args, ++i, '--hot-ms', { min: 0 })
     else if (a === '--wasted-pct') flags.wastedPct = num(args, ++i, '--wasted-pct', { min: 0, max: 100 })
+    else if (a === '--fail-on') flags.failOn = parseFailOn(value(args, ++i, '--fail-on'))
+    else if (a === '--min-coverage') flags.minCoverage = num(args, ++i, '--min-coverage', { min: 0, max: 1 })
+    else if (a === '--max-runs-per-turn') flags.maxRunsPerTurn = num(args, ++i, '--max-runs-per-turn', { min: 0 })
+    else if (a === '--max-unresolved') flags.maxUnresolved = num(args, ++i, '--max-unresolved', { integer: true, min: 0 })
     else if (a.startsWith('-')) fail(`Unknown flag "${a}".`)
     else flags.positional.push(a)
   }
@@ -172,6 +225,13 @@ function fail(message: string): never {
   console.error(`Error: ${message}`)
   console.error(USAGE)
   process.exit(1)
+}
+
+/** Render a gate result as a compact pass/fail block for the text output. */
+function formatGates(g: GateResult): string {
+  const lines = [`gates: ${g.passed ? 'PASS' : 'FAIL'}`]
+  for (const c of g.checks) lines.push(`  ${c.passed ? '✓' : '✗'} ${c.gate}: ${c.message}`)
+  return lines.join('\n')
 }
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
@@ -192,6 +252,25 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     fail('--scenario and --diff cannot be combined: --scenario measures a run, --diff compares two compiles. Pick one.')
   }
 
+  // Gates need the data their mode produces, so validate the pairing up front
+  // (#1841): the dynamic gates (coverage / unresolved / hot + their thresholds)
+  // need a measured run (`--scenario`); the `regression` gate needs a compile
+  // comparison (`--diff`). Mixing them — or using either without its mode — is a
+  // usage error, caught here rather than silently producing an empty gate set.
+  const wantsRegression = (flags.failOn ?? []).includes('regression')
+  const dynamicFailOn = (flags.failOn ?? []).filter((g): g is GateName => g !== 'regression')
+  const wantsDynamicGate =
+    dynamicFailOn.length > 0 ||
+    flags.minCoverage !== undefined ||
+    flags.maxRunsPerTurn !== undefined ||
+    flags.maxUnresolved !== undefined
+  if (wantsDynamicGate && !flags.scenario) {
+    fail('Coverage / unresolved / hot gates need a measured run — add --scenario auto|<file>.')
+  }
+  if (wantsRegression && !flags.diff) {
+    fail('--fail-on regression needs a compile comparison — add --diff <ref>.')
+  }
+
   const {
     buildStaticBudget,
     formatStaticBudget,
@@ -199,6 +278,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     formatBudgetDiff,
     buildProfileReport,
     formatProfileReport,
+    evaluateProfileGates,
   } = await import('@barefootjs/jsx')
 
   const componentName = flags.positional[0]
@@ -257,12 +337,30 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         // `--wasted-pct` is a percentage on the CLI; the analysis takes a [0,1] fraction.
         wastedRatio: flags.wastedPct !== undefined ? flags.wastedPct / 100 : undefined,
       })
+      // Gates (#1841): turn the measured report into a CI pass/fail. A gate is
+      // active only when the agent asked for it (named in --fail-on or its
+      // threshold set), so a plain run is unchanged — no gates, no exit code.
+      const gateConfig: GateConfig = {
+        failOn: dynamicFailOn,
+        minCoverage: flags.minCoverage,
+        maxRunsPerTurn: flags.maxRunsPerTurn,
+        maxUnresolved: flags.maxUnresolved,
+      }
+      const gates = wantsDynamicGate ? evaluateProfileGates(report, gateConfig) : undefined
+
       if (ctx.jsonFlag) {
-        console.log(JSON.stringify(report, null, 2))
+        // A failed gate escalates the measured status to `error`; merge the gate
+        // result in as a top-level field so an agent reads one object.
+        const out = gates
+          ? { ...report, status: gates.passed ? report.status : 'error', gates }
+          : report
+        console.log(JSON.stringify(out, null, 2))
       } else {
         console.log(formatProfileReport(report))
         if (fired === 0) console.log('  note: no interactive elements were found to fire.')
+        if (gates) console.log('\n' + formatGates(gates))
       }
+      if (gates && !gates.passed) process.exit(1)
     } catch (err) {
       console.error(`Error: ${(err as Error).message}`)
       process.exit(1)
@@ -290,10 +388,31 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     })
     const diff = diffStaticBudget(base, head)
 
+    // `--diff` is already CI-able: it exits non-zero on any structural
+    // regression. `--fail-on regression` (#1841) makes that contract explicit
+    // and emits a machine-readable `gates` block, but the exit behavior is
+    // unchanged so existing pipelines keep working without the flag.
+    const gates: GateResult | undefined = wantsRegression
+      ? {
+          passed: !diff.regressed,
+          failed: diff.regressed ? ['regression'] : [],
+          checks: [
+            {
+              gate: 'regression',
+              passed: !diff.regressed,
+              observed: diff.regressed ? 1 : 0,
+              threshold: 0,
+              message: diff.regressed ? 'a reactivity metric regressed' : 'no regression',
+            },
+          ],
+        }
+      : undefined
+
     if (ctx.jsonFlag) {
-      console.log(JSON.stringify(diff, null, 2))
+      console.log(JSON.stringify(gates ? { ...diff, gates } : diff, null, 2))
     } else {
       console.log(formatBudgetDiff(diff))
+      if (gates) console.log('\n' + formatGates(gates))
     }
     if (diff.regressed) process.exit(1)
     return
