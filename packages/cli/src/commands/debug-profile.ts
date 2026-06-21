@@ -347,14 +347,14 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
         maxUnresolved: flags.maxUnresolved,
       }
       const gates = wantsDynamicGate ? evaluateProfileGates(report, gateConfig) : undefined
+      // A tripped gate escalates the measured status to `error`. Apply it on the
+      // report itself so both the JSON object and the text report (which reads
+      // `report.status`) agree — the contract is one status, not per-format.
+      if (gates && !gates.passed) report.status = 'error'
 
       if (ctx.jsonFlag) {
-        // A failed gate escalates the measured status to `error`; merge the gate
-        // result in as a top-level field so an agent reads one object.
-        const out = gates
-          ? { ...report, status: gates.passed ? report.status : 'error', gates }
-          : report
-        console.log(JSON.stringify(out, null, 2))
+        // Merge the gate result in as a top-level field so an agent reads one object.
+        console.log(JSON.stringify(gates ? { ...report, gates } : report, null, 2))
       } else {
         console.log(formatProfileReport(report))
         if (fired === 0) console.log('  note: no interactive elements were found to fire.')

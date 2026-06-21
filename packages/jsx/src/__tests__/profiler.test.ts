@@ -614,6 +614,20 @@ describe('agent contract: status, findings, guidance (#1841)', () => {
     expect(gap.nextCommands.every(c => !c.includes('graph Calc'))).toBe(true)
   })
 
+  test('coverage.ratio is clamped to 1 when the stream over-counts handlers', () => {
+    n = 0
+    // Calc exposes a single handler (handlersTotal 1), but a malformed stream
+    // reports two distinct turn ids — without clamping the ratio would be 2.0
+    // and silently pass a `--min-coverage` gate it shouldn't.
+    const events: ProfilerEvent[] = [
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s0:click' }),
+      ev('effectEnter', { subscriber: 'Calc#memo:a', turn: 'Calc#handler:s9:click' }),
+    ]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    expect(r.coverage.ratio).toBe(1)
+    expect(r.coverage.ratio).toBeLessThanOrEqual(1)
+  })
+
   test('a zero-turn run emits guidance pointing at a story file', () => {
     n = 0
     // Handlers exist (the onClick) but none fired → no-interactions guidance.

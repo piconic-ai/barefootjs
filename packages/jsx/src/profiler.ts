@@ -1706,8 +1706,11 @@ export function buildProfileReport(input: ProfileReportInput): ProfileReport {
   const status: ProfileStatus = findings.some(f => f.severity === 'warning' || f.severity === 'error') ? 'warning' : 'ok'
 
   // Coverage ratio: 1 when there is nothing to cover (no handlers), else the
-  // exercised fraction. Drives `--min-coverage` and the guidance below.
-  const ratio = handlersTotal > 0 ? handlerIds.size / handlersTotal : 1
+  // exercised fraction. Clamped to `[0,1]` — a malformed stream (more distinct
+  // turn ids than `buildEventSummary` knows about, e.g. missing `extraSources`)
+  // must not push the ratio past 1 and break a gate's assumptions. Drives
+  // `--min-coverage` and the guidance below.
+  const ratio = handlersTotal > 0 ? Math.min(1, handlerIds.size / handlersTotal) : 1
   let guidance: ScenarioGuidance | undefined
   if (turnSeqs.size === 0) {
     guidance =
@@ -1825,7 +1828,7 @@ export interface GateConfig {
 }
 
 export interface GateCheck {
-  gate: string
+  gate: GateName
   passed: boolean
   /** The measured value the gate compared (ratio, count, or runs/turn). */
   observed: number
@@ -1837,7 +1840,7 @@ export interface GateCheck {
 export interface GateResult {
   passed: boolean
   /** Names of the gates that failed — the `gates.failed` an agent branches on. */
-  failed: string[]
+  failed: GateName[]
   checks: GateCheck[]
 }
 
