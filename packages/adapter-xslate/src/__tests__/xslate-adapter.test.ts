@@ -88,8 +88,12 @@ runAdapterConformanceTests({
     // #1467 Phase 2e: `data-table` is no longer pinned here — it
     // compiles clean now (`selected()[index]` → `index-access`,
     // `.toFixed(2)` → `$bf.to_fixed`, `/* @client */` memo SSR-folded)
-    // and is pinned in `skipJsx` above on the keyed-loop scope-ID
-    // divergence alone (#1896), not a BF101.
+    // and renders to Hono parity on real Text::Xslate. The keyed-loop
+    // scope-ID divergence (#1896) was fixed by the body-children
+    // `inLoop` reset (loop-item children get `_bf_slot`); data-table is
+    // off `skipJsx` entirely and only kept in `skipMarkerConformance`
+    // below for the shared `/* @client */` keyed-map slot-id elision
+    // contract (same as `todo-app`), not a render or BF101 gap.
     // `style-3-signals` / `style-object-dynamic` no longer pinned — a
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<: $color :>;padding:8px`) via

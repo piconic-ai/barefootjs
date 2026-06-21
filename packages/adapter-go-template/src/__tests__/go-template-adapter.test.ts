@@ -42,12 +42,15 @@ runAdapterConformanceTests({
   // `TemplateFuncMap`). Shapes the adapter intentionally refuses at
   // build time are pinned in `expectedDiagnostics` below.
   //
-  // `data-table` is the one remaining #1896 gap: its table body is a
-  // keyed `.map` over a `/* @client */`-sorted MEMO whose data is a
-  // module-const object array — a memo-derived dynamic loop of imported
-  // components, which the nested-component slice constructor can't bake
-  // yet (`item.ID` is on the loop datum, not the child's Input). Full
-  // coverage remains at the Hono SSR + fixture-hydrate layers.
+  // `data-table` — the last #1896 holdout — now renders to Hono byte
+  // parity on real Go and is fully un-skipped (run in CI). Its table
+  // body is a keyed `.map` over a `/* @client */`-sorted MEMO whose
+  // data is a module-const object array (a memo-derived dynamic loop of
+  // imported components); the nested-component slice constructor bakes
+  // it via loop-body children companion defines, a wrapper struct +
+  // constructor, and block-body memo folding (#1897). On Go it is
+  // un-skipped everywhere — including `skipMarkerConformance` below,
+  // since the SSR template emits the slot ids the IR declares.
   //
   // `search-params` (router v0.5) now renders on Go: `logical()` parenthesises
   // its multi-token operands so `searchParams().get(k) ?? d` lowers to
