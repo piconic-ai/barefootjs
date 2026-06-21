@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/router",
-  "version": "0.15.1",
+  "version": "0.15.2",
   "description": "Backend-agnostic partial-navigation client router for BarefootJS — swaps only the page region and re-hydrates the islands inside it",
   "type": "module",
   "main": "./src/index.ts",
@@ -58,7 +58,7 @@
     }
   },
   "devDependencies": {
-    "@barefootjs/client": "^0.15.1",
+    "@barefootjs/client": "^0.15.2",
     "@happy-dom/global-registrator": "^20.0.11",
     "typescript": "^5.0.0"
   }

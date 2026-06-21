@@ -1,5 +1,12 @@
 # @barefootjs/go-template
 
+## 0.15.2
+
+### Patch Changes
+
+- 8e0c10a: Exclude children prop from bf-p serialization to prevent nested scope ID leaks in router region diffs
+  - @barefootjs/shared@0.15.2
+
 ## 0.15.1
 
 ### Patch Changes
