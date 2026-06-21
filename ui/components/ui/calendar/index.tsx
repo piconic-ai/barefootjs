@@ -73,6 +73,71 @@ interface CalendarDay {
   isOutside: boolean
   isToday: boolean
   isDisabled: boolean
+  // --- Selection state, pre-computed into the day data ---
+  //
+  // Selection (single + range) is baked onto each day at grid-build time
+  // rather than computed by per-cell predicate calls in the template. A
+  // server-side template language (Go html/template, Mojo, Xslate) has no
+  // JS runtime and cannot call a user-defined predicate per cell, so a
+  // `dayIsSingleSelected(day)`-style call in an attribute raised BF102 on
+  // the Go adapter. Member access on pre-computed fields lowers cleanly to
+  // every adapter; the values recompute reactively because `weeks0`/`weeks1`
+  // depend on `selectedDate()`/`selectedRange()`, so a selection click
+  // re-renders the keyed grid (no imperative DOM patching needed).
+  isSingleSelected: boolean
+  isRangeStart: boolean
+  isRangeEnd: boolean
+  isRangeMiddle: boolean
+  ariaSelected: boolean
+  buttonClasses: string
+}
+
+// Determine the range position for a given date within the selected range.
+function computeRangePosition(
+  date: Date,
+  isOutside: boolean,
+  range: DateRange | undefined,
+): 'start' | 'end' | 'middle' | undefined {
+  if (isOutside) return undefined
+  if (!range?.from) return undefined
+  if (isSameDay(date, range.from)) {
+    return range.to ? 'start' : undefined
+  }
+  if (range.to && isSameDay(date, range.to)) return 'end'
+  if (isInRange(date, range)) return 'middle'
+  return undefined
+}
+
+// Build a fully-resolved CalendarDay with selection state baked in.
+function buildDay(
+  date: Date,
+  isOutside: boolean,
+  disabled: boolean | ((date: Date) => boolean) | undefined,
+  fromDate: Date | undefined,
+  toDate: Date | undefined,
+  selectedDate: Date | undefined,
+  selectedRange: DateRange | undefined,
+  isRangeMode: boolean,
+): CalendarDay {
+  const isDisabled = isDateDisabled(date, disabled, fromDate, toDate)
+  const rangePos = isRangeMode ? computeRangePosition(date, isOutside, selectedRange) : undefined
+  const isSingleSelected = !isRangeMode && !!selectedDate && isSameDay(selectedDate, date)
+  const isSelected = isSingleSelected ||
+    !!(isRangeMode && !isOutside && selectedRange?.from && !selectedRange?.to && isSameDay(date, selectedRange.from))
+  const day: CalendarDay = {
+    date,
+    isOutside,
+    isToday: isToday(date),
+    isDisabled,
+    isSingleSelected,
+    isRangeStart: rangePos === 'start',
+    isRangeEnd: rangePos === 'end',
+    isRangeMiddle: rangePos === 'middle',
+    ariaSelected: isSelected || rangePos !== undefined,
+    buttonClasses: '',
+  }
+  day.buttonClasses = getDayClasses(day, isSelected, rangePos)
+  return day
 }
 
 function generateCalendarDays(
@@ -83,6 +148,9 @@ function generateCalendarDays(
   fromDate: Date | undefined,
   toDate: Date | undefined,
   showOutsideDays: boolean,
+  selectedDate: Date | undefined,
+  selectedRange: DateRange | undefined,
+  isRangeMode: boolean,
 ): CalendarDay[][] {
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = new Date(year, month, 1).getDay()
@@ -99,24 +167,14 @@ function generateCalendarDays(
     const prevDaysInMonth = getDaysInMonth(prevYear, prevMonth)
     for (let i = offset - 1; i >= 0; i--) {
       const date = new Date(prevYear, prevMonth, prevDaysInMonth - i)
-      week.push({
-        date,
-        isOutside: true,
-        isToday: isToday(date),
-        isDisabled: isDateDisabled(date, disabled, fromDate, toDate),
-      })
+      week.push(buildDay(date, true, disabled, fromDate, toDate, selectedDate, selectedRange, isRangeMode))
     }
   }
 
   // Current month days
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
-    week.push({
-      date,
-      isOutside: false,
-      isToday: isToday(date),
-      isDisabled: isDateDisabled(date, disabled, fromDate, toDate),
-    })
+    week.push(buildDay(date, false, disabled, fromDate, toDate, selectedDate, selectedRange, isRangeMode))
     if (week.length === 7) {
       weeks.push(week)
       week = []
@@ -130,12 +188,7 @@ function generateCalendarDays(
     let nextDay = 1
     while (week.length < 7) {
       const date = new Date(nextYear, nextMonth, nextDay)
-      week.push({
-        date,
-        isOutside: true,
-        isToday: isToday(date),
-        isDisabled: isDateDisabled(date, disabled, fromDate, toDate),
-      })
+      week.push(buildDay(date, true, disabled, fromDate, toDate, selectedDate, selectedRange, isRangeMode))
       nextDay++
     }
     weeks.push(week)
@@ -290,10 +343,13 @@ function Calendar(props: CalendarProps) {
     (props.weekStartsOn ?? 0) === 1 ? WEEKDAYS_MON : WEEKDAYS_SUN
   )
 
+  // Grids depend on month AND selection: a selection click recomputes the
+  // baked-in selection fields and the keyed grid reconciles in place.
   const weeks0 = createMemo(() => {
     return generateCalendarDays(
       currentYear(), currentMonth(),
       props.weekStartsOn ?? 0, props.disabled, props.fromDate, props.toDate, props.showOutsideDays !== false,
+      selectedDate(), selectedRange(), isRangeMode(),
     )
   })
   const monthLabel0 = createMemo(() => formatMonthYear(new Date(currentYear(), currentMonth())))
@@ -304,6 +360,7 @@ function Calendar(props: CalendarProps) {
     return generateCalendarDays(
       y, m > 11 ? 0 : m,
       props.weekStartsOn ?? 0, props.disabled, props.fromDate, props.toDate, props.showOutsideDays !== false,
+      selectedDate(), selectedRange(), isRangeMode(),
     )
   })
   const monthLabel1 = createMemo(() => {
@@ -353,83 +410,9 @@ function Calendar(props: CalendarProps) {
     }
   }
 
-  // Restore day button classes based on its data attributes
-  const restoreDayClasses = (el: Element): void => {
-    const isOutside = el.hasAttribute('data-outside')
-    const isTodayEl = el.hasAttribute('data-today')
-    const isDisabledEl = el.hasAttribute('data-disabled')
-    let classes = dayButtonBaseClasses
-    if (isDisabledEl) {
-      classes += ` ${dayButtonDisabledClasses}`
-    } else if (isOutside) {
-      classes += ` ${dayButtonOutsideClasses}`
-    } else if (isTodayEl) {
-      classes += ` ${dayButtonTodayClasses}`
-    } else {
-      classes += ` ${dayButtonDefaultClasses}`
-    }
-    el.className = classes
-  }
-
-  // Update calendar UI after single day selection
-  const updateSingleUI = (container: HTMLElement, newDate: Date | undefined) => {
-    const prevSelected = container.querySelector('[data-selected-single]')
-    if (prevSelected) {
-      prevSelected.removeAttribute('data-selected-single')
-      prevSelected.removeAttribute('aria-selected')
-      restoreDayClasses(prevSelected)
-    }
-    if (newDate) {
-      const dayButton = container.querySelector(`[data-date="${toISODateString(newDate)}"]`) as HTMLElement | null
-      if (dayButton) {
-        dayButton.setAttribute('data-selected-single', '')
-        dayButton.setAttribute('aria-selected', 'true')
-        dayButton.className = `${dayButtonBaseClasses} ${dayButtonSelectedClasses}`
-      }
-    }
-  }
-
-  // Update calendar UI after range selection
-  const updateRangeUI = (container: HTMLElement, range: DateRange | undefined) => {
-    container.querySelectorAll('[data-selected-range-start], [data-selected-range-end], [data-selected-range-middle]').forEach(el => {
-      el.removeAttribute('data-selected-range-start')
-      el.removeAttribute('data-selected-range-end')
-      el.removeAttribute('data-selected-range-middle')
-      el.removeAttribute('aria-selected')
-      restoreDayClasses(el)
-    })
-    if (!range?.from) return
-
-    const startBtn = container.querySelector(`[data-date="${toISODateString(range.from)}"]`) as HTMLElement | null
-    if (startBtn) {
-      startBtn.setAttribute('data-selected-range-start', '')
-      startBtn.setAttribute('aria-selected', 'true')
-      startBtn.className = `${dayButtonBaseClasses} ${range.to ? dayButtonRangeStartClasses : dayButtonSelectedClasses}`
-    }
-
-    if (!range.to) return
-
-    const endBtn = container.querySelector(`[data-date="${toISODateString(range.to)}"]`) as HTMLElement | null
-    if (endBtn) {
-      endBtn.setAttribute('data-selected-range-end', '')
-      endBtn.setAttribute('aria-selected', 'true')
-      endBtn.className = `${dayButtonBaseClasses} ${dayButtonRangeEndClasses}`
-    }
-
-    const allDayButtons = container.querySelectorAll('[data-slot="calendar-day-button"][data-date]')
-    allDayButtons.forEach(btn => {
-      const dateStr = btn.getAttribute('data-date')!
-      const [y, m, d] = dateStr.split('-').map(Number)
-      const date = new Date(y, m - 1, d)
-      if (isInRange(date, range) && !btn.hasAttribute('data-outside')) {
-        btn.setAttribute('data-selected-range-middle', '')
-        btn.setAttribute('aria-selected', 'true')
-        btn.className = `${dayButtonBaseClasses} ${dayButtonRangeMiddleClasses}`
-      }
-    })
-  }
-
-  // Event delegation for day button clicks (day buttons are inside .map())
+  // Event delegation for day button clicks (day buttons are inside .map()).
+  // Selection state lives in signals; the grid re-renders reactively, so the
+  // handlers only update state and notify the parent — no imperative DOM.
   const handleCalendarClick = (e: MouseEvent) => {
     const el = e.target as HTMLElement
     const target = el.closest('[data-slot="calendar-day-button"]') as HTMLElement | null
@@ -456,8 +439,6 @@ function Calendar(props: CalendarProps) {
 
     setInternalSelected(newDate)
 
-    if (container) updateSingleUI(container, newDate)
-
     // Notify parent
     const scope = container?.closest('[bf-s]')
     // @ts-ignore - onselect is set by parent during hydration
@@ -483,7 +464,6 @@ function Calendar(props: CalendarProps) {
     }
 
     setInternalRange(newRange)
-    if (container) updateRangeUI(container, newRange)
 
     // Notify parent
     const scope = container?.closest('[bf-s]')
@@ -492,31 +472,6 @@ function Calendar(props: CalendarProps) {
     const handler = (props as CalendarRangeProps).onSelect || scopeCallback
     handler?.(newRange)
   }
-
-  // Determine range position for a day
-  const getRangePosition = (day: CalendarDay): 'start' | 'end' | 'middle' | undefined => {
-    if (day.isOutside) return undefined
-    const range = selectedRange()
-    if (!range?.from) return undefined
-    if (isSameDay(day.date, range.from)) {
-      return range.to ? 'start' : undefined
-    }
-    if (range.to && isSameDay(day.date, range.to)) return 'end'
-    if (isInRange(day.date, range)) return 'middle'
-    return undefined
-  }
-
-  // Per-day helpers: defined here so the inner map() callback has no local
-  // variable declarations. Without this, the compiler generates a nested
-  // mapArray callback that references `isSelected`/`rangePos` from an outer
-  // scope that doesn't exist inside the inner renderItem function, causing
-  // ReferenceError when the month changes and new day elements are created.
-  const dayRangePos = (day: CalendarDay) => isRangeMode() ? getRangePosition(day) : undefined
-  const dayIsSingleSelected = (day: CalendarDay) =>
-    !isRangeMode() && !!selectedDate() && isSameDay(selectedDate()!, day.date)
-  const dayIsSelected = (day: CalendarDay) =>
-    dayIsSingleSelected(day) ||
-    !!(isRangeMode() && !day.isOutside && selectedRange()?.from && !selectedRange()?.to && isSameDay(day.date, selectedRange()!.from))
 
   function renderMonthGrid(weeks: CalendarDay[][], label: string, showPrev: boolean, showNext: boolean) {
     return (
@@ -553,17 +508,17 @@ function Calendar(props: CalendarProps) {
                   <td key={toISODateString(day.date)} data-slot="calendar-day" className={dayCellClasses}>
                     <button
                       data-slot="calendar-day-button"
-                      className={getDayClasses(day, dayIsSelected(day), dayRangePos(day))}
+                      className={day.buttonClasses}
                       data-date={toISODateString(day.date)}
                       data-today={day.isToday || undefined}
                       data-outside={day.isOutside || undefined}
                       data-disabled={day.isDisabled || undefined}
                       data-current-month={!day.isOutside || undefined}
-                      data-selected-single={dayIsSingleSelected(day) || undefined}
-                      data-selected-range-start={dayRangePos(day) === 'start' || undefined}
-                      data-selected-range-end={dayRangePos(day) === 'end' || undefined}
-                      data-selected-range-middle={dayRangePos(day) === 'middle' || undefined}
-                      aria-selected={dayIsSelected(day) || dayRangePos(day) !== undefined || undefined}
+                      data-selected-single={day.isSingleSelected || undefined}
+                      data-selected-range-start={day.isRangeStart || undefined}
+                      data-selected-range-end={day.isRangeEnd || undefined}
+                      data-selected-range-middle={day.isRangeMiddle || undefined}
+                      aria-selected={day.ariaSelected || undefined}
                       disabled={day.isDisabled}
                     >
                       {day.date.getDate()}
