@@ -1427,13 +1427,20 @@ export type ProfileStatus = 'ok' | 'warning' | 'error'
  * One normalized, machine-actionable finding flattened from the per-analysis
  * tables (hot subscribers / wasted re-runs / batch advisor / coverage gaps).
  * Carries the agent contract fields the issue asks for: a normalized `severity`,
- * an explicit `actionable` flag (`false` ⇒ internal bookkeeping noise, not worth
- * a fix), and `nextCommands` — valid, ready-to-run `bf debug …` follow-ups.
+ * an explicit `actionable` flag (`false` ⇒ no safe direct fix — e.g. an
+ * unverified advisory), and `nextCommands` — valid, ready-to-run `bf debug …`
+ * follow-ups.
  */
 export interface AgentFinding {
   kind: 'hot-subscriber' | 'wasted-re-run' | 'batch-candidate' | 'coverage-gap'
   severity: ProfileSeverity
-  /** False for non-actionable findings (e.g. an unresolved id with no source). */
+  /**
+   * Whether this finding has a concrete fix worth acting on directly. `false`
+   * marks a finding an agent should *not* apply blindly — an unverified `batch()`
+   * advisory (the wrap could change behavior) or a finding whose source location
+   * the id index couldn't resolve. A coverage gap is `actionable: true`: the next
+   * step (widen the scenario, inspect the graph) is clear even without a `loc`.
+   */
   actionable: boolean
   /** The compiler subscriber/turn id this finding is about, when it has one. */
   subscriber?: string
@@ -1488,10 +1495,17 @@ export interface ProfileReportInput {
  * memo/signal id resolves to a name `bf debug trace` accepts; a DOM-binding id
  * resolves to a slotId `bf debug why-update` accepts; `bf debug graph` is always
  * applicable, so it is the universal fallback.
+ *
+ * Commands target the component parsed *from the id* (`<Component>#…`), not the
+ * primary component — a scenario-file run resolves subscribers from composed
+ * children (`extraSources`), so a child's finding must point at the child. The
+ * passed `fallbackComponent` is used only for ids that don't parse (e.g. an
+ * anonymous `e1`).
  */
-function nextCommandsForSubscriber(component: string, subscriber: string): string[] {
+function nextCommandsForSubscriber(fallbackComponent: string, subscriber: string): string[] {
   const cmds: string[] = []
   const parsed = parseProfilerId(subscriber)
+  const component = parsed?.component ?? fallbackComponent
   if (parsed) {
     if (parsed.kind === 'memo' || parsed.kind === 'signal') {
       cmds.push(`bf debug trace ${component} ${parsed.rest} --json`)
@@ -1553,7 +1567,9 @@ function buildAgentFindings(
       subscriber: c.turn,
       loc: c.loc,
       message: `${c.handler ?? c.turn} re-ran shared effects ${c.savings}× extra across ${c.writes} writes — batch() candidate (${c.safety}).`,
-      nextCommands: [`bf debug graph ${component} --json`],
+      // The turn id is `<Component>#handler:…` — for a scenario-file run it can be
+      // a composed child, so route through the helper to target the right one.
+      nextCommands: nextCommandsForSubscriber(component, c.turn),
     })
   }
   for (const u of unattributed) {
@@ -1563,7 +1579,9 @@ function buildAgentFindings(
       actionable: true,
       subscriber: u.id,
       message: `Unresolved subscriber id "${u.id}" — could not map to source (scope caveat).`,
-      nextCommands: [`bf debug graph ${component} --json`],
+      // `u.id` is shaped `<Component>#…` and may name a composed child — route
+      // through the helper so the command targets that component, not the root.
+      nextCommands: nextCommandsForSubscriber(component, u.id),
     })
   }
   return findings

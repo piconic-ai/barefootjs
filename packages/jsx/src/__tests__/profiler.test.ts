@@ -601,6 +601,19 @@ describe('agent contract: status, findings, guidance (#1841)', () => {
     expect(gap.subscriber).toBe('Calc#memo:ghost')
   })
 
+  test('nextCommands target the component parsed from the id, not the root', () => {
+    n = 0
+    // A scenario-file run resolves subscribers from composed children: the id's
+    // component (`Child`) differs from the profiled root (`Calc`). Follow-up
+    // commands must target `Child`, or they point an agent at the wrong file.
+    const events: ProfilerEvent[] = [ev('effectEnter', { subscriber: 'Child#memo:ghost' })]
+    const r = buildProfileReport({ source: src, filePath: 'Calc.tsx', scenario: 'auto', events })
+    const gap = r.findings.find(f => f.kind === 'coverage-gap')!
+    expect(gap.nextCommands).toContain('bf debug trace Child ghost --json')
+    expect(gap.nextCommands).toContain('bf debug graph Child --json')
+    expect(gap.nextCommands.every(c => !c.includes('graph Calc'))).toBe(true)
+  })
+
   test('a zero-turn run emits guidance pointing at a story file', () => {
     n = 0
     // Handlers exist (the onClick) but none fired → no-interactions guidance.
