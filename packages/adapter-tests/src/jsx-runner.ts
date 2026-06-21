@@ -500,12 +500,13 @@ export function runJSXConformanceTests(options: RunJSXConformanceOptions): void 
         }
         expect(html).toBeTruthy()
 
-        // 2. bf-p contract: children must not contain HTML markup (#1952).
+        // 2. bf-p contract: children must not leak scope IDs (#1952).
         //    Rendered children are already in the DOM; serialising them
-        //    into bf-p leaks nested scope IDs and causes the router's
-        //    region diff to false-swap on every navigation.
+        //    into bf-p leaks nested scope IDs (bf-s=) and causes the
+        //    router's region diff to false-swap on every navigation.
         for (const m of html.matchAll(/bf-p="([^"]*)"/g)) {
           const raw = m[1]
+            .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
             .replace(/&quot;/g, '"')
             .replace(/&amp;/g, '&')
             .replace(/&lt;/g, '<')
