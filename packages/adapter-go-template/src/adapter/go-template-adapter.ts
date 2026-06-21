@@ -1679,7 +1679,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Skip if this field will be replaced by a typed array for nested components
       if (nestedArrayFields.has(fieldName)) continue
       const goType = this.resolvePropGoType(param, propTypeOverrides)
-      const jsonTag = this.toJsonTag(param.name)
+      // Children are already rendered in the DOM; serialising them into bf-p
+      // leaks nested scope ids and bloats the attribute. Exclude from JSON
+      // so BfPropsAttr never marshals them (#1952).
+      const jsonTag = param.name === 'children' ? '-' : this.toJsonTag(param.name)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
       propFieldNames.add(fieldName)
     }
