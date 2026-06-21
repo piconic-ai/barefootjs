@@ -5495,8 +5495,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // through the same emitter so a loop-variable / arithmetic index
     // lowers correctly. A multi-token operand (`bf_add $i 1`) must be
     // parenthesised or Go parses it as extra `index` arguments. #1897
-    // (`selected()[index]`). (data-table's broader keyed-loop SSR stays
-    // tracked under #1896.)
+    // (`selected()[index]`). (data-table's broader keyed-loop SSR now
+    // renders at parity — #1896 resolved.)
     return `index ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(index))}`
   }
 
