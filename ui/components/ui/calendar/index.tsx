@@ -70,6 +70,14 @@ function toISODateString(date: Date): string {
 
 interface CalendarDay {
   date: Date
+  // Date-derived strings/numbers used by the template, pre-computed here so
+  // the template reads member fields instead of calling JS date helpers
+  // (`toISODateString(day.date)`, `day.date.getDate()`). A server-side
+  // template language (Go html/template, Mojo, Xslate) has no JS runtime and
+  // cannot call those helpers, so baking the results keeps the template a
+  // pure member-access read that lowers cleanly to every adapter.
+  isoDate: string
+  dayNumber: number
   isOutside: boolean
   isToday: boolean
   isDisabled: boolean
@@ -126,6 +134,8 @@ function buildDay(
     !!(isRangeMode && !isOutside && selectedRange?.from && !selectedRange?.to && isSameDay(date, selectedRange.from))
   const day: CalendarDay = {
     date,
+    isoDate: toISODateString(date),
+    dayNumber: date.getDate(),
     isOutside,
     isToday: isToday(date),
     isDisabled,
@@ -305,7 +315,10 @@ type CalendarProps = CalendarSingleProps | CalendarRangeProps
 function Calendar(props: CalendarProps) {
   const today = new Date()
   const isRangeMode = () => props.mode === 'range'
-  const numMonths = () => props.numberOfMonths ?? 1
+  // A memo (not a plain arrow) so the value materializes as template data on
+  // server-side adapters — the layout conditionals below read it in the
+  // template, where a no-JS backend can only reference data fields.
+  const numMonths = createMemo(() => props.numberOfMonths ?? 1)
 
   const initialMonth = props.defaultMonth
     ?? (props.mode === 'range' ? (props as CalendarRangeProps).selected?.from : undefined)
@@ -505,11 +518,11 @@ function Calendar(props: CalendarProps) {
             {weeks.map((week: CalendarDay[], wi: number) => (
               <tr key={wi} data-slot="calendar-week">
                 {week.map((day: CalendarDay) => (
-                  <td key={toISODateString(day.date)} data-slot="calendar-day" className={dayCellClasses}>
+                  <td key={day.isoDate} data-slot="calendar-day" className={dayCellClasses}>
                     <button
                       data-slot="calendar-day-button"
                       className={day.buttonClasses}
-                      data-date={toISODateString(day.date)}
+                      data-date={day.isoDate}
                       data-today={day.isToday || undefined}
                       data-outside={day.isOutside || undefined}
                       data-disabled={day.isDisabled || undefined}
@@ -521,7 +534,7 @@ function Calendar(props: CalendarProps) {
                       aria-selected={day.ariaSelected || undefined}
                       disabled={day.isDisabled}
                     >
-                      {day.date.getDate()}
+                      {day.dayNumber}
                     </button>
                   </td>
                 ))}

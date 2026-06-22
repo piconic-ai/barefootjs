@@ -117,6 +117,10 @@
   ],
   "memos": [
     {
+      "name": "numMonths",
+      "deps": []
+    },
+    {
       "name": "selectedDate",
       "deps": [
         "internalSelected"
@@ -175,7 +179,8 @@
       "name": "isNextDisabled",
       "deps": [
         "currentYear",
-        "currentMonth"
+        "currentMonth",
+        "numMonths"
       ]
     }
   ]
