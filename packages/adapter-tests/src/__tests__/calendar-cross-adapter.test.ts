@@ -10,7 +10,8 @@
  * the Go adapter (and was a latent hazard on the Perl adapters). This
  * test pins the fix: the Calendar component, the `date-picker` that
  * composes it, and the shipped Calendar demos must all compile to every
- * non-Hono adapter with zero error diagnostics.
+ * shipping adapter — Hono, Go, Mojolicious, and Text::Xslate — with zero
+ * error diagnostics.
  *
  * This is a *compile* conformance (diagnostics only), deliberately NOT a
  * frozen-HTML fixture in the `fixtures/` corpus: the grid renders the
@@ -26,6 +27,7 @@ import { fileURLToPath } from 'node:url'
 import { compileJSX } from '@barefootjs/jsx'
 import { goTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { mojoAdapter } from '@barefootjs/mojolicious/adapter'
+import { xslateAdapter } from '@barefootjs/xslate/adapter'
 import { honoAdapter } from '@barefootjs/hono/adapter'
 
 // `packages/adapter-tests` is ESM ("type": "module"), so `__dirname` is not
@@ -44,6 +46,7 @@ const sources: ReadonlyArray<readonly [label: string, relPath: string]> = [
 const adapters = [
   ['Go', goTemplateAdapter],
   ['Mojo', mojoAdapter],
+  ['Xslate', xslateAdapter],
   ['Hono', honoAdapter],
 ] as const
 
