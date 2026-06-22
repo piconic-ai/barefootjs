@@ -1752,3 +1752,36 @@ export function C() {
     expect(template).not.toContain('$JSON->{stringify}')
   })
 })
+
+// =============================================================================
+// #1966 — `/* @client */` defers ATTRIBUTE bindings (not just child/text)
+// =============================================================================
+//
+// `renderAttributes` skips SSR emission for `attr.clientOnly`, so a
+// deferred attribute predicate is omitted from the Mojo template (and the
+// unsupported-expression lowering is never reached → no BF101/BF102). The
+// client runtime sets the attribute on hydrate. Mirrors the Go pins.
+describe('MojoAdapter - #1966 @client defers attribute bindings', () => {
+  function compileAttr(attrExpr: string) {
+    const adapter = new MojoAdapter()
+    const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+export function C() {
+  const [sel] = createSignal(0)
+  const pred = (n: number) => sel() === n
+  return <div data-x={${attrExpr}}>hi</div>
+}
+`, adapter)
+    const template = adapter.generate(ir).template ?? ''
+    const errors = (adapter as unknown as { errors: { code: string }[] }).errors ?? []
+    return { errors, template }
+  }
+
+  test('bare emits data-x; @client omits it from SSR', () => {
+    expect(compileAttr('pred(1)').template).toContain('data-x')
+    const deferred = compileAttr('/* @client */ pred(1)')
+    expect(deferred.errors).toEqual([])
+    expect(deferred.template).not.toContain('data-x')
+  })
+})

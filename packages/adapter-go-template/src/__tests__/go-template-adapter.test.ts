@@ -3186,3 +3186,87 @@ export function C() {
     }
   })
 })
+
+// =============================================================================
+// #1966 — `/* @client */` defers ATTRIBUTE bindings (not just child/text)
+// =============================================================================
+//
+// Before #1966 the directive was honoured for JSX child/text expressions
+// but silently ignored on attribute initializers: a Go-unsupported
+// predicate in `data-x={/* @client */ pred(x)}` still got lowered, raising
+// BF101/BF102 even though the author had explicitly opted out of SSR. That
+// made the BF102 remediation ("defer it with /* @client */") misleading for
+// attribute-only reactive state (the Calendar case in #1467 / PR #1965).
+//
+// The fix carries the existing `attr.clientOnly` flag (already set in
+// jsx-to-ir, already honoured by the client-JS reactive-attribute path —
+// CSR template omits the attr and a mount effect sets it) through to the
+// adapter: `renderAttributes` skips SSR emission for `clientOnly` attrs, so
+// the unsupported-expression lowering is never reached.
+describe('GoTemplateAdapter - #1966 @client defers attribute bindings', () => {
+  function compileAttr(attrExpr: string) {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+export function C() {
+  const [sel] = createSignal(0)
+  const [s] = createSignal("a")
+  const pred = (n: number) => sel() === n
+  return <div data-x={${attrExpr}}>hi</div>
+}
+`.trimStart(), 'test.tsx', { adapter })
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    return { errors: result.errors ?? [], template }
+  }
+
+  test('Go-lowerable predicate: bare emits data-x; @client omits it from SSR', () => {
+    // `sel() === 1` lowers to `{{eq .Sel 1}}`, so the bare form is valid
+    // Go and emits the attribute — the directive is what removes it.
+    const bare = compileAttr('pred(1)')
+    expect(bare.errors).toEqual([])
+    expect(bare.template).toContain('data-x=')
+
+    const deferred = compileAttr('/* @client */ pred(1)')
+    expect(deferred.errors).toEqual([])
+    // Server omits the attribute; the client patches it on hydrate.
+    expect(deferred.template).not.toContain('data-x')
+  })
+
+  test('Go-unsupported predicate: bare raises BF101; @client clears it and omits the attr', () => {
+    const bare = compileAttr('/[0-9]/.test(s())')
+    expect(bare.errors.some(e => e.code === 'BF101' || e.code === 'BF102')).toBe(true)
+
+    const deferred = compileAttr('/* @client */ /[0-9]/.test(s())')
+    // No BF101/BF102 — the lowering is never reached for a deferred attr.
+    expect(deferred.errors).toEqual([])
+    expect(deferred.template).not.toContain('data-x')
+  })
+
+  test('@client attribute inside a keyed .map() loop body is also deferred', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+type Day = { n: number }
+export function C() {
+  const [sel] = createSignal(0)
+  const pred = (d: Day) => sel() === d.n
+  const days: Day[] = [{ n: 1 }, { n: 2 }]
+  return (
+    <div>
+      {days.map((day: Day) => (
+        <div key={day.n} data-x={/* @client */ pred(day)}>cell</div>
+      ))}
+    </div>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter })
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    expect(result.errors ?? []).toEqual([])
+    // The loop still renders (the array is a static const) but the deferred
+    // attribute is absent from the emitted `<div>` cell.
+    expect(template).toContain('range')
+    expect(template).not.toContain('data-x')
+  })
+})
