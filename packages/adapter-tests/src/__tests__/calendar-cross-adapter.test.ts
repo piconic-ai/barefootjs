@@ -21,14 +21,18 @@
  */
 import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { compileJSX } from '@barefootjs/jsx'
 import { goTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { mojoAdapter } from '@barefootjs/mojolicious/adapter'
 import { honoAdapter } from '@barefootjs/hono/adapter'
 
+// `packages/adapter-tests` is ESM ("type": "module"), so `__dirname` is not
+// defined — compute the dir from `import.meta.url` (same idiom as
+// `no-bun-coupling.test.ts`).
 // __tests__ -> src -> adapter-tests -> packages -> repo root
-const ROOT = resolve(__dirname, '../../../..')
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..')
 
 const sources: ReadonlyArray<readonly [label: string, relPath: string]> = [
   ['calendar UI', 'ui/components/ui/calendar/index.tsx'],
