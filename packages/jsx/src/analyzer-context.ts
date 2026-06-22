@@ -443,6 +443,69 @@ export function typeNodeToTypeInfo(
   return { kind: 'unknown', raw }
 }
 
+// Printer + blank source file reused across calls so checker-driven type
+// conversion never allocates a fresh `ts.createSourceFile` per memo on the
+// build hot path (the blank file is only printer context for synthetic
+// nodes, created once at module load).
+const _typePrinter = ts.createPrinter({ removeComments: true, omitTrailingSemicolon: true })
+const _blankTypeSourceFile = ts.createSourceFile('__bf_types__.ts', '', ts.ScriptTarget.Latest)
+
+function synthTypeNodeToTypeInfo(node: ts.TypeNode): TypeInfo {
+  let raw: string
+  try {
+    raw = _typePrinter.printNode(ts.EmitHint.Unspecified, node, _blankTypeSourceFile)
+  } catch {
+    raw = 'unknown'
+  }
+
+  switch (node.kind) {
+    case ts.SyntaxKind.StringKeyword:
+      return { kind: 'primitive', raw, primitive: 'string' }
+    case ts.SyntaxKind.NumberKeyword:
+      return { kind: 'primitive', raw, primitive: 'number' }
+    case ts.SyntaxKind.BooleanKeyword:
+      return { kind: 'primitive', raw, primitive: 'boolean' }
+    case ts.SyntaxKind.UndefinedKeyword:
+      return { kind: 'primitive', raw, primitive: 'undefined' }
+    case ts.SyntaxKind.NullKeyword:
+      return { kind: 'primitive', raw, primitive: 'null' }
+  }
+
+  if (ts.isArrayTypeNode(node)) {
+    return { kind: 'array', raw, elementType: synthTypeNodeToTypeInfo(node.elementType) }
+  }
+  if (ts.isUnionTypeNode(node)) {
+    return { kind: 'union', raw, unionTypes: node.types.map(synthTypeNodeToTypeInfo) }
+  }
+  if (ts.isTypeReferenceNode(node)) {
+    const name = ts.isIdentifier(node.typeName) ? node.typeName.text : ''
+    if ((name === 'Array' || name === 'ReadonlyArray') && node.typeArguments?.length === 1) {
+      return { kind: 'array', raw, elementType: synthTypeNodeToTypeInfo(node.typeArguments[0]) }
+    }
+    return { kind: 'interface', raw }
+  }
+  if (ts.isTypeLiteralNode(node)) {
+    return { kind: 'object', raw }
+  }
+  return { kind: 'unknown', raw }
+}
+
+/**
+ * Convert a resolved `ts.Type` to `TypeInfo` via the type checker. Used to
+ * sharpen `createMemo` field types the syntactic `inferTypeFromValue`
+ * heuristic can't reach — e.g. `createMemo(() => generateDays())` whose body
+ * is a local-function call (→ `CalendarDay[][]`) or a ternary of typed
+ * arrays (→ `string[]`). Without this the Go adapter renders such memos as
+ * `map[string]interface{}` / `bool` placeholders, so a typed backend can't
+ * populate the SSR data (#1968). Returns `null` when the type can't be
+ * lowered to a `ts.TypeNode`.
+ */
+export function tsTypeToTypeInfo(type: ts.Type, checker: ts.TypeChecker): TypeInfo | null {
+  const node = checker.typeToTypeNode(type, undefined, ts.NodeBuilderFlags.NoTruncation)
+  if (!node) return null
+  return synthTypeNodeToTypeInfo(node)
+}
+
 // =============================================================================
 // AST Helpers
 // =============================================================================

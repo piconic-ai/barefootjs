@@ -16,6 +16,7 @@ import {
   createAnalyzerContext,
   getSourceLocation,
   typeNodeToTypeInfo,
+  tsTypeToTypeInfo,
   membersToProperties,
   isComponentFunction,
   isArrowComponentFunction,
@@ -1360,6 +1361,27 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     const arrowBody = computation.replace(/^\s*\([^)]*\)\s*=>\s*/, '').trim()
     if (arrowBody && arrowBody !== computation) {
       type = inferTypeFromValue(arrowBody)
+    }
+  }
+
+  // When the syntactic heuristic above can't resolve a precise type
+  // (`object`/`unknown` — e.g. a local-function call or a ternary of typed
+  // arrays), ask the type checker for the memo body's actual type. This is
+  // what lets the Go adapter emit `[][]CalendarDay` / `[]string` / `bool`
+  // instead of `map[string]interface{}` / `bool` placeholders (#1968), so a
+  // typed backend can populate the SSR data. Only upgrades imprecise results —
+  // already-precise syntactic types are left untouched.
+  if (
+    ctx.checker &&
+    (type.kind === 'unknown' || type.kind === 'object') &&
+    callExpr.arguments[0] &&
+    (ts.isArrowFunction(callExpr.arguments[0]) || ts.isFunctionExpression(callExpr.arguments[0]))
+  ) {
+    const fnType = ctx.checker.getTypeAtLocation(callExpr.arguments[0])
+    const sig = fnType.getCallSignatures()[0]
+    if (sig) {
+      const inferred = tsTypeToTypeInfo(ctx.checker.getReturnTypeOfSignature(sig), ctx.checker)
+      if (inferred && inferred.kind !== 'unknown') type = inferred
     }
   }
 
