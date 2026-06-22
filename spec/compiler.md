@@ -793,6 +793,8 @@ The accumulator must be the binary expression's left operand (`acc + x`, not `x 
 
 When `@client` is present, the compiler skips template generation for that expression without emitting an error.
 
+This applies equally to **attribute bindings**, not just child/text expressions: `data-x={/* @client */ pred(item)}` defers the attribute to hydration. The adapters omit a `clientOnly` attribute from SSR (so the unsupported-expression lowering is never reached → no BF101/BF102), and the client runtime sets/patches it in a mount effect. This makes the BF102 remediation accurate for components whose reactive state is expressed purely as attributes (the Calendar case in #1966 / #1467).
+
 ### Known limitations — methods that don't lower to the template adapters
 
 The Go / Mojo template adapters lower a finite, growing catalogue of `Array.prototype` / `String.prototype` methods (see "Currently lowered" in the now-closed origin catalogue issue [#1448](https://github.com/piconic-ai/barefootjs/issues/1448), whose residual gaps are folded into the master known-limitations catalog [#1395](https://github.com/piconic-ai/barefootjs/issues/1395)). The shapes below are the residual gaps. They are intentional — each is either covered by an escape hatch or carries a cross-adapter design barrier — and `/* @client */` (or lifting the expression into an event handler / `createEffect`, where full JS is available) is the workaround for all of them.

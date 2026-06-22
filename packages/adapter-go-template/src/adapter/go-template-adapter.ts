@@ -8062,6 +8062,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const parts: string[] = []
 
     for (const attr of element.attrs) {
+      // `/* @client */` attribute bindings are deferred to hydrate: the
+      // client runtime sets/patches the attribute in a mount effect (see
+      // the reactive-attribute path in ir-to-client-js, which already
+      // omits `clientOnly` attrs from the CSR template and emits a
+      // `setAttribute`/`removeAttribute` effect). Skip SSR emission so the
+      // server omits the attribute — and, crucially, so the unsupported-
+      // expression lowering below is never reached for a deferred predicate
+      // (no BF101 / BF102). This makes the BF102 remediation ("defer it
+      // with /* @client */") accurate for attribute-only state. #1966
+      if (attr.clientOnly) continue
       // Rewrite JSX special-prop names to their HTML-attribute
       // counterparts. The Hono reference adapter relies on its JSX
       // runtime to strip `key` and emit `data-key` from a separate

@@ -1355,6 +1355,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     const parts: string[] = []
 
     for (const attr of element.attrs) {
+      // `/* @client */` attribute bindings are deferred to hydrate: the
+      // client runtime sets/patches the attribute in a mount effect (the
+      // CSR template omits it; ir-to-client-js emits the setAttribute
+      // effect). Skip SSR emission so the server omits the attribute and
+      // the unsupported-expression lowering is never reached for a deferred
+      // predicate (no BF101 / BF102). #1966
+      if (attr.clientOnly) continue
       // Rewrite JSX special-prop names to their HTML-attribute counterparts.
       let attrName: string
       if (attr.name === 'className') attrName = 'class'

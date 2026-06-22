@@ -1120,6 +1120,14 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const parts: string[] = []
 
     for (const attr of element.attrs) {
+      // `/* @client */` attribute bindings are deferred to hydrate: the
+      // client runtime sets/patches the attribute in a mount effect (the
+      // CSR template omits it; ir-to-client-js emits the setAttribute
+      // effect). Skip SSR emission so the server omits the attribute,
+      // matching the client-deferred shape and avoiding a hydration
+      // mismatch where the server renders an attribute the client would
+      // re-derive on mount. #1966
+      if (attr.clientOnly) continue
       const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attr.name)
       if (lowered) parts.push(lowered)
     }
