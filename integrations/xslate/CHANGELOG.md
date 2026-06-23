@@ -1,5 +1,12 @@
 # barefootjs-xslate-example
 
+## 0.1.4
+
+### Patch Changes
+
+- @barefootjs/client@0.16.0
+- @barefootjs/router@0.16.0
+
 ## 0.1.3
 
 ### Patch Changes
