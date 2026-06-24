@@ -55,6 +55,13 @@ export interface ExpectedDiagnostic {
  *   use `body` as the selector for document-level key handlers
  *   (overlay ESC-to-close), since the handler is on `document` and the
  *   event bubbles from wherever focus is.
+ * - `drag` — a pointer drag from the centre of the first match by
+ *   `deltaX`/`deltaY` CSS pixels (#1467 Phase 3, carousel). Issues real
+ *   `pointerdown` → `pointermove` (stepped) → `pointerup`, the gesture
+ *   pointer-based libraries like Embla bind. On a CSS-less host page the
+ *   resulting *scroll distance* is layout-dependent, so assert on the
+ *   deterministic fallout (aria/data attributes, button `disabled`)
+ *   rather than pixel offsets — see the determinism caveat in #1971.
  */
 export type InteractionStep =
   | { type: 'click'; selector: string }
@@ -72,6 +79,7 @@ export type InteractionStep =
   | { type: 'expectValue'; selector: string; value: string }
   | { type: 'hover'; selector: string; position?: { x: number; y: number } }
   | { type: 'press'; selector: string; key: string }
+  | { type: 'drag'; selector: string; deltaX?: number; deltaY?: number }
 
 /**
  * A JSX fixture defines a component source and optional props for rendering.
@@ -138,6 +146,38 @@ export interface JSXFixture {
    * hydration, then steps through each entry asserting DOM state.
    */
   interactions?: ReadonlyArray<InteractionStep>
+  /**
+   * Bare module specifiers the fixture's client JS resolves at runtime to
+   * a third-party ESM bundle on disk (#1467 Phase 3, carousel → embla).
+   * Maps each specifier (e.g. `'embla-carousel'`) to an absolute path to
+   * its ESM build.
+   *
+   * The fixture-hydrate host page serves each bundle and adds the matching
+   * importmap entry **only for fixtures that declare it** — so a bare
+   * `import('embla-carousel')` resolves in the browser without polluting
+   * the importmap of every other fixture (the gating the acceptance
+   * criteria require). Fixtures with no external deps omit this field and
+   * their host page keeps the bare `@barefootjs/client/runtime` importmap
+   * untouched.
+   */
+  externalImports?: Record<string, string>
+  /**
+   * Inline CSS injected into the fixture-hydrate host page `<head>`, gated
+   * the same way as `externalImports` — present only for fixtures that
+   * declare it, so every other fixture's host page stays CSS-less (#1467
+   * Phase 3).
+   *
+   * Reserved for the rare component whose hydrated behaviour depends on
+   * *some* layout existing, not on specific pixels: Embla measures slide
+   * geometry to decide whether it can scroll, and with zero CSS every
+   * slide collapses to the same position so `canScrollNext()` is
+   * permanently false and no interaction is possible. A few fixed-width
+   * flex rules give Embla a layout to measure; assertions still read only
+   * the layout-independent `disabled` state, never offsets (see the
+   * determinism caveat in #1971). Do **not** reach for this to restyle a
+   * component — the corpus is deliberately unstyled.
+   */
+  hostStyles?: string
 }
 
 /**
@@ -166,6 +206,8 @@ export function createFixture(input: {
   expectedHtml?: string
   expectedClientJs?: string
   interactions?: ReadonlyArray<InteractionStep>
+  externalImports?: Record<string, string>
+  hostStyles?: string
 }): JSXFixture {
   const trimmedComponents = input.components
     ? Object.fromEntries(

@@ -64,16 +64,20 @@ import { fixture as command } from './command'
 // seven href="#" links whose handlers must preventDefault) and
 // `data-table` (keyed-loop reorder on sort — the corpus's first keyed
 // reconciliation probe). `calendar` and `carousel` stay out of this
-// frozen-HTML corpus: the calendar grid renders the current month (SSR
-// output is a function of the wall clock — non-deterministic snapshot)
-// and carousel's embla arrives via a browser dynamic import the host
-// page can't resolve without a vendor-serving story. Their cross-adapter
-// SSR is still pinned, just not as frozen fixtures: calendar by the
-// deterministic compile conformance in
+// frozen-HTML cross-adapter corpus (`jsxFixtures`), for different
+// reasons: the calendar grid renders the current month (SSR output is a
+// function of the wall clock — non-deterministic snapshot), so its
+// cross-adapter SSR is pinned by the deterministic compile conformance in
 // `src/__tests__/calendar-cross-adapter.test.ts` (Go/Mojo/Xslate/Hono,
-// zero diagnostics — the #1467 predicate -> precomputed-field fix), and
-// runtime behavior by the `site/ui/e2e/{calendar,carousel}.spec.ts`
-// specs.
+// zero diagnostics — the #1467 predicate -> precomputed-field fix)
+// instead. `carousel` *does* join the real-browser **fixture-hydrate**
+// corpus as of #1971 — discovered there by directory convention
+// (`loadAllSharedFixtures`), not by this list — once the host page grew a
+// gated embla importmap + vendor-serving route (`externalImports`) and
+// the `drag` interaction step. Its SSR is static, but it carries a
+// browser-only embla dependency, so it stays a hydration fixture rather
+// than a frozen cross-adapter HTML snapshot. E2E runtime behavior for
+// both still lives in `site/ui/e2e/{calendar,carousel}.spec.ts`.
 import { fixture as pagination } from './pagination'
 import { fixture as dataTable } from './data-table'
 // #1694: text-content HTML-escaping (parallel to the #1692 attribute fix).
