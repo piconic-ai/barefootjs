@@ -104,6 +104,7 @@ import type {
 import { collectRootScopeNodes } from "./lib/ir-scope.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState } from "./lib/compile-state.ts"
+import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -290,7 +291,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.checkImportedLoopChildComponents(ir)
     }
 
-    const hasInteractivity = this.hasClientInteractivity(ir)
+    const hasInteractivity = hasClientInteractivity(ir)
     const isRootComponent = ir.root.type === 'component'
     const isIfStatement = ir.root.type === 'if-statement'
 
@@ -300,7 +301,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // length (#1897 PostList status count). Built before rendering — the
     // `.length` reference can appear before the loop in source order.
     this.state.memoBackedLoopSlice = new Map()
-    for (const nested of this.findNestedComponents(ir.root)) {
+    for (const nested of findNestedComponents(ir.root)) {
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
       if (memoName) this.state.memoBackedLoopSlice.set(memoName, `${nested.name}s`)
     }
@@ -342,107 +343,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       sections,
       types: types || undefined,
       extension: this.extension,
-    }
-  }
-
-  /**
-   * Check if a component has client interactivity (needs client JS).
-   * A component has client interactivity if it has:
-   * - Signals (reactive state)
-   * - Effects (side effects)
-   * - Events on elements
-   */
-  private hasClientInteractivity(ir: ComponentIR): boolean {
-    // Check for signals
-    if (ir.metadata.signals.length > 0) return true
-
-    // Check for effects
-    if (ir.metadata.effects.length > 0) return true
-
-    // Check for onMounts
-    if (ir.metadata.onMounts.length > 0) return true
-
-    // Check for events in the IR tree
-    if (this.hasEventsInTree(ir.root)) return true
-
-    // Check for child components (they need parent's hydration)
-    if (this.findChildComponentNames(ir.root).size > 0) return true
-
-    return false
-  }
-
-  /**
-   * Recursively check if any element in the tree has events.
-   */
-  private hasEventsInTree(node: IRNode): boolean {
-    if (node.type === 'element') {
-      const element = node as IRElement
-      if (element.events.length > 0) return true
-      for (const child of element.children) {
-        if (this.hasEventsInTree(child)) return true
-      }
-    } else if (node.type === 'fragment') {
-      const fragment = node as IRFragment
-      for (const child of fragment.children) {
-        if (this.hasEventsInTree(child)) return true
-      }
-    } else if (node.type === 'conditional') {
-      const cond = node as IRConditional
-      if (this.hasEventsInTree(cond.whenTrue)) return true
-      if (cond.whenFalse && this.hasEventsInTree(cond.whenFalse)) return true
-    } else if (node.type === 'loop') {
-      const loop = node as IRLoop
-      for (const child of loop.children) {
-        if (this.hasEventsInTree(child)) return true
-      }
-    } else if (node.type === 'if-statement') {
-      const ifStmt = node as IRIfStatement
-      if (this.hasEventsInTree(ifStmt.consequent)) return true
-      if (ifStmt.alternate && this.hasEventsInTree(ifStmt.alternate)) return true
-    }
-    return false
-  }
-
-  /**
-   * Find all child component names used in the IR tree.
-   */
-  private findChildComponentNames(node: IRNode): Set<string> {
-    const names = new Set<string>()
-    this.collectChildComponentNames(node, names)
-    return names
-  }
-
-  private collectChildComponentNames(node: IRNode, names: Set<string>): void {
-    if (node.type === 'component') {
-      const comp = node as IRComponent
-      names.add(comp.name)
-    } else if (node.type === 'element') {
-      const element = node as IRElement
-      for (const child of element.children) {
-        this.collectChildComponentNames(child, names)
-      }
-    } else if (node.type === 'fragment') {
-      const fragment = node as IRFragment
-      for (const child of fragment.children) {
-        this.collectChildComponentNames(child, names)
-      }
-    } else if (node.type === 'conditional') {
-      const cond = node as IRConditional
-      this.collectChildComponentNames(cond.whenTrue, names)
-      if (cond.whenFalse) {
-        this.collectChildComponentNames(cond.whenFalse, names)
-      }
-    } else if (node.type === 'loop') {
-      const loop = node as IRLoop
-      for (const child of loop.children) {
-        this.collectChildComponentNames(child, names)
-      }
-    } else if (node.type === 'if-statement') {
-      const ifStmt = node as IRIfStatement
-      this.collectChildComponentNames(ifStmt.consequent, names)
-      if (ifStmt.alternate) {
-        this.collectChildComponentNames(ifStmt.alternate, names)
-      }
     }
   }
 
@@ -552,7 +452,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string): string {
     // Check if this component has client interactivity
-    const hasInteractivity = this.hasClientInteractivity(ir)
+    const hasInteractivity = hasClientInteractivity(ir)
 
     if (!hasInteractivity) {
       return ''
@@ -726,7 +626,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // Find nested components (loops with childComponent)
-    const nestedComponents = this.findNestedComponents(ir.root)
+    const nestedComponents = findNestedComponents(ir.root)
 
     // (#1897) When a loop's `itemType` is null, resolve the element type
     // from the source array so wrapper structs get correct datum fields.
@@ -2102,74 +2002,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private toJsonTag(name: string): string {
     return name.charAt(0).toLowerCase() + name.slice(1)
-  }
-
-  /**
-   * Find all nested components (loops with childComponent).
-   * Returns extended info that includes whether the component comes from a dynamic (signal) array loop.
-   */
-  private findNestedComponents(node: IRNode): NestedComponentInfo[] {
-    const result: NestedComponentInfo[] = []
-    this.collectNestedComponents(node, result)
-    return result
-  }
-
-  private collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): void {
-    if (node.type === 'loop') {
-      const loop = node as IRLoop
-      if (loop.childComponent) {
-        // Check for duplicates
-        if (!result.some(c => c.name === loop.childComponent!.name)) {
-          const hasBodyChildren = loop.childComponent.children.length > 0
-          result.push({
-            ...loop.childComponent,
-            isDynamic: !loop.isStaticArray,
-            isPropDerived: !!loop.isPropDerivedArray,
-            loopKey: loop.key ?? undefined,
-            loopParam: loop.param ?? undefined,
-            bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,
-            loopArray: loop.array,
-            loopMarkerId: loop.markerId,
-            loopItemType: loop.itemType,
-          })
-        }
-      }
-      for (const child of loop.children) {
-        this.collectNestedComponents(child, result)
-      }
-    } else if (node.type === 'element') {
-      const element = node as IRElement
-      for (const child of element.children) {
-        this.collectNestedComponents(child, result)
-      }
-    } else if (node.type === 'fragment') {
-      const fragment = node as IRFragment
-      for (const child of fragment.children) {
-        this.collectNestedComponents(child, result)
-      }
-    } else if (node.type === 'conditional') {
-      const cond = node as IRConditional
-      this.collectNestedComponents(cond.whenTrue, result)
-      if (cond.whenFalse) {
-        this.collectNestedComponents(cond.whenFalse, result)
-      }
-    } else if (node.type === 'if-statement') {
-      const stmt = node as IRIfStatement
-      this.collectNestedComponents(stmt.consequent, result)
-      if (stmt.alternate) {
-        this.collectNestedComponents(stmt.alternate, result)
-      }
-    } else if (node.type === 'component') {
-      // (#1896) JSX children passed to an imported component render via
-      // a companion define with the PARENT's data, so a keyed loop
-      // nested inside them (DataTablePreviewDemo's `sortedData().map(…)`
-      // inside `<TableBody>`) needs its `<Name>s` slice on THIS
-      // component's props like any other nested loop.
-      const comp = node as IRComponent
-      for (const child of comp.children) {
-        this.collectNestedComponents(child, result)
-      }
-    }
   }
 
   /**
@@ -4589,7 +4421,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private collectPropFallbackVars(ir: ComponentIR): Map<string, PropFallbackVar> {
     const result = new Map<string, PropFallbackVar>()
     const localTaken = new Set(['scopeID'])
-    for (const nested of this.findNestedComponents(ir.root)) {
+    for (const nested of findNestedComponents(ir.root)) {
       localTaken.add(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
     }
 
