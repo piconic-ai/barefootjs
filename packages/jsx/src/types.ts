@@ -1082,6 +1082,16 @@ export interface MemoInfo {
   computation: string
   /** Computation with TypeScript type annotations preserved, for .tsx output */
   typedComputation?: string
+  /**
+   * Structured parse of the memo's arrow BODY expression (`() => <body>` →
+   * `parseExpression('<body>')`), computed once at analysis time. Lets
+   * adapters pattern-match the memo's shape on the structured tree instead of
+   * re-parsing `computation` with their own AST walks / regexes. Present only
+   * for expression-bodied arrows whose body `parseExpression` supports; absent
+   * for block-bodied memos (`() => { … }`) and shapes it can't represent, so
+   * consumers must fall back to `computation` when it's missing.
+   */
+  parsed?: ParsedExpr
   type: TypeInfo
   deps: string[]
   loc: SourceLocation

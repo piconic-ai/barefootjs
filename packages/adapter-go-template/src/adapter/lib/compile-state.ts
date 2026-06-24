@@ -22,6 +22,7 @@ import type {
   ContextConsumer,
   IRMetadata,
   IRNode,
+  MemoInfo,
   TypeDefinition,
   TypeInfo,
 } from '@barefootjs/jsx'
@@ -77,8 +78,9 @@ export class CompileState {
   localHelperNames: Set<string> = new Set()
 
   /** The current IR's memos, stashed like `localConstants` so nested memo
-   *  resolution can recurse without threading the list through every signature. */
-  currentMemos: Array<{ name: string; computation: string; deps: string[] }> = []
+   *  resolution can recurse without threading the list through every signature.
+   *  Full `MemoInfo` so consumers can read the analyzer-attached `parsed` tree. */
+  currentMemos: MemoInfo[] = []
 
   /** Full type definitions from the current IR, stashed for loop-datum field resolution (#1897). */
   currentTypeDefinitions: TypeDefinition[] = []

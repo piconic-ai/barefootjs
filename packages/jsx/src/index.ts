@@ -41,6 +41,7 @@ export type {
   IRProp,
   ParamInfo,
   PropertyInfo,
+  MemoInfo,
   TypeInfo,
   TypeDefinition,
   SourceLocation,
