@@ -344,11 +344,21 @@ function propertyNameText(
 
 export function typeNodeToTypeInfo(
   typeNode: ts.TypeNode | undefined,
-  sourceFile: ts.SourceFile
+  sourceFile: ts.SourceFile,
+  // When set, `raw` is derived from this extractor instead of
+  // `node.getText(sourceFile)`. Synthetic nodes (from `checker.typeToTypeNode`,
+  // used by `tsTypeToTypeInfo`) have no source positions, so `getText()` would
+  // throw — callers pass a printer-based extractor. In that mode the
+  // object-literal / function branches that need member/param source text emit
+  // a `raw`-only shape (those consumers only run on real source).
+  rawOf?: (node: ts.TypeNode) => string
 ): TypeInfo | null {
   if (!typeNode) return null
 
-  const raw = typeNode.getText(sourceFile)
+  const synthetic = rawOf !== undefined
+  const raw = rawOf ? rawOf(typeNode) : typeNode.getText(sourceFile)
+  const recurse = (n: ts.TypeNode): TypeInfo =>
+    typeNodeToTypeInfo(n, sourceFile, rawOf) ?? { kind: 'unknown', raw: 'unknown' }
 
   // Primitive types (check by SyntaxKind)
   switch (typeNode.kind) {
@@ -366,26 +376,12 @@ export function typeNodeToTypeInfo(
 
   // Array types
   if (ts.isArrayTypeNode(typeNode)) {
-    return {
-      kind: 'array',
-      raw,
-      elementType: typeNodeToTypeInfo(typeNode.elementType, sourceFile) ?? {
-        kind: 'unknown',
-        raw: 'unknown',
-      },
-    }
+    return { kind: 'array', raw, elementType: recurse(typeNode.elementType) }
   }
 
   // Union types
   if (ts.isUnionTypeNode(typeNode)) {
-    return {
-      kind: 'union',
-      raw,
-      unionTypes: typeNode.types.map(
-        (t) =>
-          typeNodeToTypeInfo(t, sourceFile) ?? { kind: 'unknown', raw: 'unknown' }
-      ),
-    }
+    return { kind: 'union', raw, unionTypes: typeNode.types.map(recurse) }
   }
 
   // Type literal (object type)
@@ -393,7 +389,9 @@ export function typeNodeToTypeInfo(
     return {
       kind: 'object',
       raw,
-      properties: membersToProperties(typeNode.members, sourceFile),
+      // Synthetic members have no source positions for membersToProperties'
+      // getText(); emit a property-less object in that mode.
+      ...(synthetic ? {} : { properties: membersToProperties(typeNode.members, sourceFile) }),
     }
   }
 
@@ -407,14 +405,7 @@ export function typeNodeToTypeInfo(
       (refName === 'Array' || refName === 'ReadonlyArray') &&
       typeNode.typeArguments?.length === 1
     ) {
-      return {
-        kind: 'array',
-        raw,
-        elementType: typeNodeToTypeInfo(typeNode.typeArguments[0], sourceFile) ?? {
-          kind: 'unknown',
-          raw: 'unknown',
-        },
-      }
+      return { kind: 'array', raw, elementType: recurse(typeNode.typeArguments[0]) }
     }
     return {
       kind: 'interface',
@@ -424,6 +415,8 @@ export function typeNodeToTypeInfo(
 
   // Function type
   if (ts.isFunctionTypeNode(typeNode)) {
+    // Param names/defaults come from getText — skip them for synthetic nodes.
+    if (synthetic) return { kind: 'function', raw }
     return {
       kind: 'function',
       raw,
@@ -441,6 +434,40 @@ export function typeNodeToTypeInfo(
   }
 
   return { kind: 'unknown', raw }
+}
+
+// Printer + blank source file reused across calls so checker-driven type
+// conversion never allocates a fresh `ts.createSourceFile` per memo on the
+// build hot path (the blank file is only printer context for synthetic
+// nodes, created once at module load).
+const _typePrinter = ts.createPrinter({ removeComments: true, omitTrailingSemicolon: true })
+const _blankTypeSourceFile = ts.createSourceFile('__bf_types__.ts', '', ts.ScriptTarget.Latest)
+
+/**
+ * Convert a resolved `ts.Type` to `TypeInfo` via the type checker. Used to
+ * sharpen `createMemo` field types the syntactic `inferTypeFromValue`
+ * heuristic can't reach — e.g. `createMemo(() => generateDays())` whose body
+ * is a local-function call (→ `CalendarDay[][]`) or a ternary of typed
+ * arrays (→ `string[]`). Without this the Go adapter renders such memos as
+ * `map[string]interface{}` / `bool` placeholders, so a typed backend can't
+ * populate the SSR data (#1968). Returns `null` when the type can't be
+ * lowered to a `ts.TypeNode`.
+ *
+ * Shares the structural lowering in `typeNodeToTypeInfo` (via the `rawOf`
+ * extractor) so node→TypeInfo logic lives in one place; the synthetic nodes
+ * from `typeToTypeNode` have no source text, so `raw` comes from the printer.
+ */
+export function tsTypeToTypeInfo(type: ts.Type, checker: ts.TypeChecker): TypeInfo | null {
+  const node = checker.typeToTypeNode(type, undefined, ts.NodeBuilderFlags.NoTruncation)
+  if (!node) return null
+  const rawOf = (n: ts.TypeNode): string => {
+    try {
+      return _typePrinter.printNode(ts.EmitHint.Unspecified, n, _blankTypeSourceFile)
+    } catch {
+      return 'unknown'
+    }
+  }
+  return typeNodeToTypeInfo(node, _blankTypeSourceFile, rawOf)
 }
 
 // =============================================================================

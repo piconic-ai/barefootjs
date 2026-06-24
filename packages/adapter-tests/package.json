@@ -20,6 +20,7 @@
     "@barefootjs/go-template": "workspace:*",
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/mojolicious": "workspace:*",
+    "@barefootjs/xslate": "workspace:*",
     "@playwright/test": "^1.57.0",
     "typescript": "^5.0.0"
   }
