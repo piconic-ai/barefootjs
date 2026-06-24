@@ -8,6 +8,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
+import { parseExpression } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -1385,10 +1386,22 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     }
   }
 
+  // Structured parse of the arrow BODY, so adapters can shape-match the memo
+  // on a tree instead of re-parsing `computation`. Expression-bodied arrows
+  // only — block bodies (`() => { … }`) and `parseExpression`-unsupported
+  // shapes leave `parsed` undefined and consumers fall back to `computation`.
+  const memoArrow = callExpr.arguments[0]
+  const parsedBody =
+    memoArrow && ts.isArrowFunction(memoArrow) && !ts.isBlock(memoArrow.body)
+      ? parseExpression(memoArrow.body.getText(ctx.sourceFile))
+      : undefined
+  const parsed = parsedBody && parsedBody.kind !== 'unsupported' ? parsedBody : undefined
+
   ctx.memos.push({
     name,
     computation,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
+    parsed,
     type,
     deps,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
