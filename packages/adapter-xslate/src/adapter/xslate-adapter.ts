@@ -1011,9 +1011,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       }
       // Inline object-literal child prop (carousel's `opts={{ align: 'start' }}`):
       // lower to a Kolon hashref so the child can serialize it (`data-opts`),
-      // instead of refusing the bare object with BF101. (#1971 Perl)
-      const hashref = this.objectLiteralExprToKolonHashref(value.expr)
-      if (hashref !== null) return `${kolonHashKey(name)} => ${hashref}`
+      // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
+      // guard so the common non-object case skips the AST parse.
+      if (value.expr.trim().startsWith('{')) {
+        const hashref = this.objectLiteralExprToKolonHashref(value.expr)
+        if (hashref !== null) return `${kolonHashKey(name)} => ${hashref}`
+      }
       return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr)}`
     },
     emitSpread: (value) => {

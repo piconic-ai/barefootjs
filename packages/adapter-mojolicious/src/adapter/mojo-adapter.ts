@@ -712,13 +712,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
   /**
    * (#1971) True when `src` is a bare identifier that doesn't resolve to a
-   * prop/signal/memo — i.e. a client-only function reference in a context
-   * value (a local handler const or a signal setter). See `providerDataNames`.
+   * prop/signal/memo or an SSR-inlinable module string const — i.e. a
+   * client-only function reference in a context value (a local handler const
+   * like `scrollPrev`, or a signal setter like `setCanScrollPrev`). See
+   * `providerDataNames`. Module-scope string consts (`carouselClasses`) ARE
+   * SSR-resolvable via `moduleStringConsts`, so they're excluded here.
    */
   private isClientOnlyContextIdentifier(src: string): boolean {
     const t = src.trim()
     if (!/^[A-Za-z_$][\w$]*$/.test(t)) return false
-    return !this.providerDataNames.has(t)
+    return !this.providerDataNames.has(t) && !this.moduleStringConsts.has(t)
   }
 
   /** Perl literal for a context-consumer's `createContext` default. */
@@ -1228,9 +1231,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       }
       // Inline object-literal child prop (carousel's `opts={{ align: 'start' }}`):
       // lower to a Perl hashref so the child can serialize it (`data-opts`),
-      // instead of refusing the bare object with BF101. (#1971 Perl)
-      const hashref = this.objectLiteralExprToPerlHashref(value.expr)
-      if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
+      // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
+      // guard so the common non-object case skips the AST parse.
+      if (value.expr.trim().startsWith('{')) {
+        const hashref = this.objectLiteralExprToPerlHashref(value.expr)
+        if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
+      }
       return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
     },
     emitSpread: (value) => {

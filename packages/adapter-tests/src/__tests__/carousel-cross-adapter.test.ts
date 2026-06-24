@@ -75,8 +75,10 @@ interface AdapterCase {
     components?: Record<string, string>
     componentName: string
   }) => Promise<string>
-  /** Error thrown when this adapter's runtime is absent (→ skip, not fail). */
-  notAvailable: new (...args: never[]) => Error
+  /** Error thrown when this adapter's runtime is absent (→ skip, not fail).
+   *  `any[]` (not `never[]`) so the concrete `(message: string)` ctors of the
+   *  *NotAvailableError classes assign cleanly; only used for `instanceof`. */
+  notAvailable: new (...args: any[]) => Error
 }
 
 const adapterCases: AdapterCase[] = [
