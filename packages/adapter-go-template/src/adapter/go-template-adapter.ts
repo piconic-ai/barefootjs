@@ -153,6 +153,13 @@ interface StaticChildInstance {
 interface ChildComponentShape {
   paramNames: Set<string>
   restBagField: string | null
+  /**
+   * (#1971) Child param names whose Go field is `map[string]interface{}` —
+   * an optional object/named-interface prop (carousel's `opts?:
+   * EmblaOptionsType`). A parent passing an inline object literal to such a
+   * param bakes it to a Go map literal so the keys round-trip faithfully.
+   */
+  mapTypedParamNames: Set<string>
 }
 
 /**
@@ -543,6 +550,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private pendingChildrenDefines: Array<{ name: string; content: string }> = []
   private loopParamStack: string[] = []
+  /**
+   * (#1971) Per-loop flag: is the current loop a scalar-item inline-literal
+   * loop (the body renders the bare range value)? When true, the loop body's
+   * `bf_tmpl` companion is fed `.BfLoopItem` (the wrapper's synthetic scalar
+   * field) instead of `.` (the wrapper), so `{n}` → `{{.}}` renders the value.
+   * Innermost last; mirrors `loopParamStack` push/pop.
+   */
+  private loopScalarItemStack: boolean[] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
    *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`). Innermost last.
@@ -1048,7 +1063,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.name))
     const restPropsName = ir.metadata.restPropsName ?? null
     const restBagField = restPropsName ? this.capitalizeFieldName(restPropsName) : null
-    this.childComponentShapes.set(name, { paramNames, restBagField })
+    // (#1971) Optional object/named-interface params lower to
+    // `map[string]interface{}` (see `resolvePropGoType`); track them so a
+    // parent baking an inline object literal targets a Go map literal.
+    const mapTypedParamNames = new Set(
+      (ir.metadata.propsParams ?? [])
+        .filter(
+          p =>
+            p.optional &&
+            (p.type.kind === 'object' ||
+              (p.type.kind === 'interface' && !!p.type.raw)),
+        )
+        .map(p => p.name),
+    )
+    this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames })
     // Record the contexts this child consumes so a parent wrapping it in
     // `<Ctx.Provider value>` can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
@@ -1494,7 +1522,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     param: IRMetadata['propsParams'][number],
     propTypeOverrides: Map<string, string>,
   ): string {
-    return propTypeOverrides.get(param.name) ?? this.typeInfoToGo(param.type, param.defaultValue)
+    const base = propTypeOverrides.get(param.name) ?? this.typeInfoToGo(param.type, param.defaultValue)
+    // (#1971) An OPTIONAL prop typed as a named struct (e.g. carousel's
+    // `opts?: EmblaOptionsType`) lowers to `map[string]interface{}` rather
+    // than the value struct. Two reasons: a value struct is always truthy in
+    // Go templates, so a `{{if .Opts}}`-guarded attribute (`data-opts={opts ?
+    // JSON.stringify(opts) : undefined}`) can never be omitted when the
+    // caller leaves it out; and a map round-trips through `bf_json` with only
+    // the keys actually supplied, matching JS `JSON.stringify` of a partial
+    // object literal instead of a zero-filled struct. A nil/empty map is
+    // falsy, so the omit-when-absent guard works for free.
+    // Gate on `localStructFields` (an actual generated struct), NOT
+    // `localTypeNames` — the latter also covers string-union aliases like
+    // `placement?: 'top' | 'right' | …` (tooltip), which must stay their
+    // scalar Go type, not become a map.
+    if (param.optional && this.localStructFields.has(base)) {
+      return 'map[string]interface{}'
+    }
+    return base
   }
 
   /**
@@ -1848,6 +1893,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const f of datumFields) {
       lines.push(`\t${f.goName} ${f.goType} \`json:"-"\``)
     }
+    // (#1971) Scalar-item loop (`[1,2,3,4,5].map(n => …{n}…)`) — no datum
+    // fields, so carry the whole range value here; the loop's body define is
+    // fed `.BfLoopItem` and renders the bare param.
+    const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArray, nested.loopItemType)
+    if (scalarLoopType && datumFields.length === 0) {
+      lines.push(`\tBfLoopItem ${scalarLoopType} \`json:"-"\``)
+    }
     for (const child of bodyChildInstances) {
       lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
     }
@@ -1894,6 +1946,35 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return Array.from(structFields, ([tsName, goName]) => ({ tsName, goName, goType: 'interface{}' }))
     }
     return []
+  }
+
+  /**
+   * (#1971) Go element type for a loop that iterates an inline array literal of
+   * primitives whose body renders the bare item (`[1,2,3,4,5].map(n => …{n}…)`).
+   * Such "scalar-item" loops have no datum FIELDS (the item is a whole value,
+   * not an object), so the body needs the value itself, carried on the wrapper
+   * as a synthetic `BfLoopItem`. Returns `'interface{}'` for a primitive-literal
+   * array, or null for object/field loops and non-literal sources (which keep
+   * the existing datum-field path). AST-based to avoid misreading literals.
+   */
+  private scalarLiteralLoopGoType(
+    arrayText: string | undefined,
+    itemType: TypeInfo | null | undefined,
+  ): string | null {
+    if (this.resolveLoopDatumFields(itemType).length > 0) return null
+    if (!arrayText) return null
+    const expr = this.parseLiteralExpression(arrayText)
+    if (!expr || !ts.isArrayLiteralExpression(expr) || expr.elements.length === 0) {
+      return null
+    }
+    for (const el of expr.elements) {
+      const isStr = ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)
+      const isNum =
+        ts.isNumericLiteral(el) ||
+        (ts.isPrefixUnaryExpression(el) && ts.isNumericLiteral(el.operand))
+      if (!isStr && !isNum) return null
+    }
+    return 'interface{}'
   }
 
   /** Collect static child instances from loop body children for the wrapper struct. */
@@ -2006,9 +2087,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
           )
         : null
-      const bakedValue = moduleConst?.type
+      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArray, nested.loopItemType)
+      let bakedValue = moduleConst?.type
         ? this.convertInitialValue(moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
         : null
+      // (#1971) Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no
+      // named module const to look up, so bake the literal slice directly so
+      // SSR renders the items (matching Hono) instead of an empty loop.
+      if (!bakedValue && scalarLoopType) {
+        bakedValue = this.jsLiteralToGo(nested.loopArray!, { kind: 'unknown', raw: 'unknown' })
+      }
       if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
 
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
@@ -2041,9 +2129,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
       lines.push(`\t\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+      // (#1971) Bake the loop-body component's own static props (e.g.
+      // `<CarouselItem orientation="vertical" className="basis-1/2">`) into its
+      // Input so SSR matches Hono. `key` becomes BfDataKey below; children flow
+      // through `bf_with_children`; hyphenated names have no Go field.
+      for (const prop of nested.props ?? []) {
+        if (prop.name === 'key' || prop.name === 'children' || prop.name.includes('-')) continue
+        if (prop.value.kind === 'literal') {
+          lines.push(`\t\t\t\t${this.capitalizeFieldName(prop.name)}: ${this.goLiteral(prop.value.value)},`)
+        } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
+          lines.push(`\t\t\t\t${this.capitalizeFieldName(prop.name)}: true,`)
+        }
+      }
       lines.push(`\t\t\t}),`)
       for (const f of datumFields) {
         lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
+      }
+      // (#1971) Scalar-item loop: carry the whole range value on the wrapper's
+      // synthetic `BfLoopItem` so the body template renders the bare param
+      // (`{n}` → `{{.}}` fed `.BfLoopItem`). Also consumes `item`, which would
+      // otherwise be an unused range var (compile error) for a datum-less loop.
+      if (scalarLoopType && datumFields.length === 0) {
+        lines.push(`\t\t\tBfLoopItem: item,`)
       }
       for (const child of bodyChildInstances) {
         lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
@@ -2054,6 +2161,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
       if (keyField) {
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+        this.usesFmt = true
+      } else if (scalarLoopType && nested.loopKey && nested.loopKey === nested.loopParam) {
+        // (#1971) `key={n}` where `n` is the scalar item itself — the key is
+        // the range value, not a field path.
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(item)`)
         this.usesFmt = true
       }
       lines.push('\t}')
@@ -2376,6 +2488,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // (its JS was discarded in favour of the parts structure), so skip.
             const exprText = prop.value.kind === 'template' ? '' : prop.value.expr
             if (!exprText) break
+            // (#1971) An inline object literal passed to a child's optional
+            // object prop (`opts={{ align: 'start' }}`) bakes to a Go map
+            // literal — the child field is `map[string]interface{}` and
+            // `resolveDynamicPropValue` can't represent an object literal.
+            if (childShape?.mapTypedParamNames.has(prop.name)) {
+              const goMap = this.objectLiteralToGoMap(exprText)
+              if (goMap !== null) {
+                emitChildField(prop.name, goMap)
+                break
+              }
+            }
             const resolvedValue = this.resolveDynamicPropValue(
               exprText,
               ir.metadata.signals,
@@ -3325,6 +3448,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * (#1971) Bake a pure object-literal expression (`{ align: 'start' }`) into a
+   * Go `map[string]interface{}` literal keyed by the SOURCE property names, so
+   * it round-trips through `bf_json` exactly like JS `JSON.stringify` of the
+   * same object — only the supplied keys, no zero-filled struct fields. Used
+   * when an inline object literal is passed to a child's optional object prop
+   * (`<Carousel opts={{ align: 'start' }}>`). Returns null for any non-literal
+   * or nested object/array value (carousel's opts are flat scalars).
+   */
+  private objectLiteralToGoMap(exprText: string): string | null {
+    const expr = this.parseLiteralExpression(exprText)
+    if (!expr || !ts.isObjectLiteralExpression(expr)) return null
+    const entries: string[] = []
+    for (const prop of expr.properties) {
+      if (!ts.isPropertyAssignment(prop)) return null
+      if (
+        !ts.isIdentifier(prop.name) &&
+        !ts.isStringLiteral(prop.name) &&
+        !ts.isNumericLiteral(prop.name)
+      ) {
+        return null
+      }
+      const val = this.tsLiteralToGo(prop.initializer)
+      if (val === null) return null
+      entries.push(`${JSON.stringify(prop.name.text)}: ${val}`)
+    }
+    if (entries.length === 0) return null
+    return `map[string]interface{}{${entries.join(', ')}}`
+  }
+
+  /**
    * Parse a JS expression string into its TS AST node (parentheses unwrapped),
    * or `null` when it isn't a single expression. Shared by the literal baker
    * and the struct-shape synthesiser.
@@ -3983,6 +4136,64 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return propRef(boolPassthrough[1])
     }
 
+    // (#1971) Pattern: () => cond() === 'lit' ? A : B (or !==), branches
+    // being string literals/module consts — carousel's `directionClasses`
+    // (`orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`).
+    // The condition operand is itself a signal/prop-shadow memo, so resolve
+    // it to a Go expression and emit a runtime conditional that tracks the
+    // caller's `orientation` rather than a statically-baked branch.
+    const ternCmpMatch = computation.match(
+      /^\(\)\s*=>\s*(\w+)\(\)\s*([!=]==?)\s*'([^']*)'\s*\?\s*([\w$]+|'[^']*')\s*:\s*([\w$]+|'[^']*')\s*$/,
+    )
+    if (ternCmpMatch) {
+      const [, condName, op, lit, whenTrue, whenFalse] = ternCmpMatch
+      const resolveBranch = (b: string): string | null => {
+        const l = /^'([^']*)'$/.exec(b)
+        if (l) return JSON.stringify(l[1])
+        const cv = this.moduleStringConsts.get(b)
+        return cv !== undefined ? JSON.stringify(cv) : null
+      }
+      const t = resolveBranch(whenTrue)
+      const f = resolveBranch(whenFalse)
+      const condGo = this.resolveGetterValueAsGo(condName, signals, propsParams, propFallbackVars)
+      if (t !== null && f !== null && condGo !== null) {
+        const goOp = op.startsWith('!') ? '!=' : '=='
+        // `whenTrue` fires when the comparison holds; for `!==` swap.
+        const eqBranch = goOp === '==' ? t : f
+        const neBranch = goOp === '==' ? f : t
+        return `func() string { if ${condGo} == ${JSON.stringify(lit)} { return ${eqBranch} }; return ${neBranch} }()`
+      }
+    }
+
+    // (#1971) Pattern: () => (props.X ?? 'def') === 'lit' ? A : B — an inline
+    // nullish-defaulted prop compared to a literal, branches being string
+    // literals/module consts (carousel's `CarouselItem.paddingClass`:
+    // `(props.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4'`).
+    // Like `ternCmpMatch` but the condition operand is the prop with its
+    // default folded in, not a getter call.
+    const ternPropCmpMatch = computation.match(
+      /^\(\)\s*=>\s*\(?\s*props\.(\w+)\s*\?\?\s*'([^']*)'\s*\)?\s*([!=]==?)\s*'([^']*)'\s*\?\s*([\w$]+|'[^']*')\s*:\s*([\w$]+|'[^']*')\s*$/,
+    )
+    if (ternPropCmpMatch) {
+      const [, propName, dflt, op, lit, whenTrue, whenFalse] = ternPropCmpMatch
+      const resolveBranch = (b: string): string | null => {
+        const l = /^'([^']*)'$/.exec(b)
+        if (l) return JSON.stringify(l[1])
+        const cv = this.moduleStringConsts.get(b)
+        return cv !== undefined ? JSON.stringify(cv) : null
+      }
+      const t = resolveBranch(whenTrue)
+      const f = resolveBranch(whenFalse)
+      if (t !== null && f !== null) {
+        const field = `in.${this.capitalizeFieldName(propName)}`
+        const condGo = `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${JSON.stringify(dflt)} }; return v }()`
+        const goOp = op.startsWith('!') ? '!=' : '=='
+        const eqBranch = goOp === '==' ? t : f
+        const neBranch = goOp === '==' ? f : t
+        return `func() string { if ${condGo} == ${JSON.stringify(lit)} { return ${eqBranch} }; return ${neBranch} }()`
+      }
+    }
+
     // Pattern: () => cond() ? A : B where each branch is a module string
     // const or a string literal, and `cond` is a signal/memo this
     // resolver can already evaluate (#1896, SelectItem's
@@ -4123,6 +4334,42 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const objMemo = this.computeObjectMemoInitialValue(computation)
     if (objMemo !== null) return objMemo
 
+    return null
+  }
+
+  /**
+   * (#1971) Resolve a signal/memo getter NAME to a Go value expression, for
+   * use as the condition operand of another memo's ternary (carousel's
+   * `directionClasses` reads the `orientation` memo). Handles a plain
+   * signal, a prop-shadow memo `() => props.X ?? 'lit'` (→ a nil/empty-
+   * tolerant field read mirroring the prop fold in `generateNewPropsFunction`),
+   * else recurses. Returns null when the shape isn't representable.
+   */
+  private resolveGetterValueAsGo(
+    name: string,
+    signals: { getter: string; initialValue: string }[],
+    propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    const signal = signals.find(s => s.getter === name)
+    if (signal) {
+      return this.getSignalInitialValueAsGo(signal.initialValue, propsParams, propFallbackVars)
+    }
+    const memo = (this.currentMemos ?? []).find(m => m.name === name)
+    if (memo) {
+      const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
+      const fb = this.extractPropFallback(stripped)
+      if (fb && this.capitalizeFieldName(fb.propName) === this.capitalizeFieldName(memo.name)) {
+        const field = `in.${this.capitalizeFieldName(fb.propName)}`
+        return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${fb.goFallback} }; return v }()`
+      }
+      return this.computeMemoInitialValueOrNull(memo, signals, propsParams, propFallbackVars)
+    }
+    const param = propsParams.find(p => p.name === name)
+    if (param) {
+      const hoisted = propFallbackVars.get(name)
+      return hoisted ? hoisted.varName : `in.${this.capitalizeFieldName(name)}`
+    }
     return null
   }
 
@@ -4611,6 +4858,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (not the int `0`) for `aria-checked={isChecked()}`, matching Hono's SSR
     // initial value. Only fires when the declared memo type is unknown so an
     // explicitly-typed memo still wins.
+    // (#1971) A string-literal-branch ternary memo (`directionClasses`) is a
+    // string even though its condition has `===`. Decide before the boolean
+    // heuristic so it's typed `string` (zero value `""`), not `interface{}`
+    // (whose nil zero renders `<nil>`).
+    if (this.typeInfoToGo(memo.type) === 'interface{}' && this.isStringTernaryMemo(memo.computation)) {
+      return 'string'
+    }
     if (this.typeInfoToGo(memo.type) === 'interface{}' && this.isBooleanMemo(memo, signals, propsParamMap)) {
       return 'bool'
     }
@@ -4638,6 +4892,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
   ): boolean {
     const c = memo.computation
+    // A ternary whose two branches are string literals is a STRING memo
+    // (`orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`),
+    // not boolean — the `===` lives in the *condition*, so the blanket
+    // comparison check below would misclassify it as bool and bake `false`
+    // (#1971 carousel `directionClasses`). Bail before that check.
+    if (this.isStringTernaryMemo(c)) return false
     if (/(!==|===|!=(?!=)|==(?!=))/.test(c)) return true
     if (/=>\s*!/.test(c)) return true
     // Ternary `() => cond() ? a() : b()` — boolean when both branches are
@@ -4662,6 +4922,42 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return isBoolGetter(ternary[1]) && isBoolGetter(ternary[2])
     }
     return false
+  }
+
+  /**
+   * (#1971) Does this memo's arrow body resolve to a string-valued ternary
+   * whose BOTH branches are string literals — e.g. `() => orientation() ===
+   * 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`? Such a memo is a string,
+   * not a bool, even though its condition contains `===`. AST-based (the
+   * repo idiom) so quotes inside class strings don't trip a regex.
+   */
+  private isStringTernaryMemo(computation: string): boolean {
+    try {
+      const sf = ts.createSourceFile(
+        '__memo.ts',
+        `const __x = (${computation});`,
+        ts.ScriptTarget.Latest,
+        false,
+      )
+      const stmt = sf.statements[0]
+      if (!stmt || !ts.isVariableStatement(stmt)) return false
+      let init = stmt.declarationList.declarations[0]?.initializer
+      while (init && ts.isParenthesizedExpression(init)) init = init.expression
+      if (!init || !ts.isArrowFunction(init)) return false
+      let body: ts.Node = init.body
+      while (ts.isParenthesizedExpression(body)) body = body.expression
+      if (!ts.isConditionalExpression(body)) return false
+      // A branch is string-valued when it's a string/template literal or an
+      // identifier bound to a module-scope string const (carousel's
+      // `positionClasses` → `prevVerticalClasses`/`prevHorizontalClasses`).
+      const isStr = (n: ts.Expression): boolean =>
+        ts.isStringLiteral(n) ||
+        ts.isNoSubstitutionTemplateLiteral(n) ||
+        (ts.isIdentifier(n) && this.moduleStringConsts.has(n.text))
+      return isStr(body.whenTrue) && isStr(body.whenFalse)
+    } catch {
+      return false
+    }
   }
 
   /**
@@ -7626,7 +7922,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         addedLoopVars.push(rangeIndex)
       }
     }
+    // (#1971) Tell the loop-body component renderer whether this is a
+    // scalar-item loop, so its `bf_tmpl` companion is fed `.BfLoopItem`
+    // instead of `.`. Pushed around the body render only; mirrors the
+    // wrapper/constructor `scalarLiteralLoopGoType` gate exactly.
+    this.loopScalarItemStack.push(
+      this.scalarLiteralLoopGoType(loop.array, loop.itemType) !== null,
+    )
     const children = this.renderChildren(loop.children)
+    this.loopScalarItemStack.pop()
     // Build the per-item anchor marker while the loop param is still on the
     // stack, so a `bodyIsItemConditional` key expression (#1665) resolves
     // against the range item (`.` context) like `data-key` does — popping
@@ -7799,7 +8103,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // while the loop param stack stays intact so datum references resolve.
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
       if (loopBodyDefine) {
-        templateCall = `{{template "${comp.name}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" .))}}`
+        // (#1971) Scalar-item loop: feed the body define the wrapper's
+        // `.BfLoopItem` (the bare range value) so `{n}` → `{{.}}` renders it;
+        // object loops keep `.` (the wrapper, whose embedded fields the body
+        // reads as `.Field`).
+        const bodyData = this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
+          ? '.BfLoopItem'
+          : '.'
+        templateCall = `{{template "${comp.name}" (bf_with_children . (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
       } else {
         templateCall = `{{template "${comp.name}" .}}`
       }
