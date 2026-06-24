@@ -4136,63 +4136,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return propRef(boolPassthrough[1])
     }
 
-    // (#1971) Pattern: () => cond() === 'lit' ? A : B (or !==), branches
-    // being string literals/module consts — carousel's `directionClasses`
-    // (`orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`).
-    // The condition operand is itself a signal/prop-shadow memo, so resolve
-    // it to a Go expression and emit a runtime conditional that tracks the
-    // caller's `orientation` rather than a statically-baked branch.
-    const ternCmpMatch = computation.match(
-      /^\(\)\s*=>\s*(\w+)\(\)\s*([!=]==?)\s*'([^']*)'\s*\?\s*([\w$]+|'[^']*')\s*:\s*([\w$]+|'[^']*')\s*$/,
+    // (#1971) Pattern: () => <operand> ===/!== 'lit' ? A : B, where each
+    // branch is a string literal/module-const and <operand> is a getter call
+    // (`orientation()`), an inline nullish-defaulted prop
+    // (`props.orientation ?? 'horizontal'`), or a bare `props.X` — carousel's
+    // `directionClasses` / `positionClasses` / `paddingClass`. Resolved via an
+    // AST walk (not regex) so quote style, parenthesization, and whitespace
+    // don't matter.
+    const cmpTernary = this.computeComparisonTernaryGo(
+      computation,
+      signals,
+      propsParams,
+      propFallbackVars,
     )
-    if (ternCmpMatch) {
-      const [, condName, op, lit, whenTrue, whenFalse] = ternCmpMatch
-      const resolveBranch = (b: string): string | null => {
-        const l = /^'([^']*)'$/.exec(b)
-        if (l) return JSON.stringify(l[1])
-        const cv = this.moduleStringConsts.get(b)
-        return cv !== undefined ? JSON.stringify(cv) : null
-      }
-      const t = resolveBranch(whenTrue)
-      const f = resolveBranch(whenFalse)
-      const condGo = this.resolveGetterValueAsGo(condName, signals, propsParams, propFallbackVars)
-      if (t !== null && f !== null && condGo !== null) {
-        const goOp = op.startsWith('!') ? '!=' : '=='
-        // `whenTrue` fires when the comparison holds; for `!==` swap.
-        const eqBranch = goOp === '==' ? t : f
-        const neBranch = goOp === '==' ? f : t
-        return `func() string { if ${condGo} == ${JSON.stringify(lit)} { return ${eqBranch} }; return ${neBranch} }()`
-      }
-    }
-
-    // (#1971) Pattern: () => (props.X ?? 'def') === 'lit' ? A : B — an inline
-    // nullish-defaulted prop compared to a literal, branches being string
-    // literals/module consts (carousel's `CarouselItem.paddingClass`:
-    // `(props.orientation ?? 'horizontal') === 'vertical' ? 'pt-4' : 'pl-4'`).
-    // Like `ternCmpMatch` but the condition operand is the prop with its
-    // default folded in, not a getter call.
-    const ternPropCmpMatch = computation.match(
-      /^\(\)\s*=>\s*\(?\s*props\.(\w+)\s*\?\?\s*'([^']*)'\s*\)?\s*([!=]==?)\s*'([^']*)'\s*\?\s*([\w$]+|'[^']*')\s*:\s*([\w$]+|'[^']*')\s*$/,
-    )
-    if (ternPropCmpMatch) {
-      const [, propName, dflt, op, lit, whenTrue, whenFalse] = ternPropCmpMatch
-      const resolveBranch = (b: string): string | null => {
-        const l = /^'([^']*)'$/.exec(b)
-        if (l) return JSON.stringify(l[1])
-        const cv = this.moduleStringConsts.get(b)
-        return cv !== undefined ? JSON.stringify(cv) : null
-      }
-      const t = resolveBranch(whenTrue)
-      const f = resolveBranch(whenFalse)
-      if (t !== null && f !== null) {
-        const field = `in.${this.capitalizeFieldName(propName)}`
-        const condGo = `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${JSON.stringify(dflt)} }; return v }()`
-        const goOp = op.startsWith('!') ? '!=' : '=='
-        const eqBranch = goOp === '==' ? t : f
-        const neBranch = goOp === '==' ? f : t
-        return `func() string { if ${condGo} == ${JSON.stringify(lit)} { return ${eqBranch} }; return ${neBranch} }()`
-      }
-    }
+    if (cmpTernary !== null) return cmpTernary
 
     // Pattern: () => cond() ? A : B where each branch is a module string
     // const or a string literal, and `cond` is a signal/memo this
@@ -4370,6 +4327,118 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const hoisted = propFallbackVars.get(name)
       return hoisted ? hoisted.varName : `in.${this.capitalizeFieldName(name)}`
     }
+    return null
+  }
+
+  /**
+   * (#1971) Resolve a string-ternary memo whose condition is a literal
+   * comparison — `() => <operand> === 'lit' ? A : B` (or `!==`) — to a Go
+   * runtime conditional, or null when the shape isn't supported. AST-based
+   * (the repo idiom): tolerant of quote style, parenthesization, and
+   * whitespace that a regex would miss. Branches must be string
+   * literals/module-string-consts; the operand resolves via
+   * `resolveComparisonOperandGo`.
+   */
+  private computeComparisonTernaryGo(
+    computation: string,
+    signals: { getter: string; initialValue: string }[],
+    propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    let arrow: ts.ArrowFunction | null = null
+    try {
+      const sf = ts.createSourceFile(
+        '__memo.ts',
+        `const __x = (${computation});`,
+        ts.ScriptTarget.Latest,
+        false,
+      )
+      const stmt = sf.statements[0]
+      if (stmt && ts.isVariableStatement(stmt)) {
+        let init = stmt.declarationList.declarations[0]?.initializer
+        while (init && ts.isParenthesizedExpression(init)) init = init.expression
+        if (init && ts.isArrowFunction(init)) arrow = init
+      }
+    } catch {
+      return null
+    }
+    if (!arrow) return null
+    let body: ts.Node = arrow.body
+    while (ts.isParenthesizedExpression(body)) body = body.expression
+    if (!ts.isConditionalExpression(body)) return null
+    const cond = body.condition
+    if (!ts.isBinaryExpression(cond) || !ts.isStringLiteral(cond.right)) return null
+    const opKind = cond.operatorToken.kind
+    const isEq =
+      opKind === ts.SyntaxKind.EqualsEqualsEqualsToken ||
+      opKind === ts.SyntaxKind.EqualsEqualsToken
+    const isNe =
+      opKind === ts.SyntaxKind.ExclamationEqualsEqualsToken ||
+      opKind === ts.SyntaxKind.ExclamationEqualsToken
+    if (!isEq && !isNe) return null
+
+    const branch = (bn: ts.Expression): string | null => {
+      if (ts.isStringLiteral(bn) || ts.isNoSubstitutionTemplateLiteral(bn)) {
+        return JSON.stringify(bn.text)
+      }
+      if (ts.isIdentifier(bn)) {
+        const cv = this.moduleStringConsts.get(bn.text)
+        return cv !== undefined ? JSON.stringify(cv) : null
+      }
+      return null
+    }
+    const t = branch(body.whenTrue)
+    const f = branch(body.whenFalse)
+    if (t === null || f === null) return null
+
+    const condGo = this.resolveComparisonOperandGo(
+      cond.left,
+      signals,
+      propsParams,
+      propFallbackVars,
+    )
+    if (condGo === null) return null
+
+    // `whenTrue` fires when the comparison holds; for `!==` the branches swap.
+    const eqBranch = isEq ? t : f
+    const neBranch = isEq ? f : t
+    return `func() string { if ${condGo} == ${JSON.stringify(cond.right.text)} { return ${eqBranch} }; return ${neBranch} }()`
+  }
+
+  /**
+   * (#1971) Resolve the left operand of a string-ternary memo's comparison
+   * condition to a Go expression: a zero-arg getter call (`orientation()` —
+   * a signal/prop-shadow memo), an inline `props.X ?? 'def'` (folds the
+   * default like `generateNewPropsFunction`), or a bare `props.X`. Returns
+   * null for anything else.
+   */
+  private resolveComparisonOperandGo(
+    node: ts.Expression,
+    signals: { getter: string; initialValue: string }[],
+    propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+    propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  ): string | null {
+    let n: ts.Expression = node
+    while (ts.isParenthesizedExpression(n)) n = n.expression
+    // getter(): a signal or memo getter call.
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.arguments.length === 0) {
+      return this.resolveGetterValueAsGo(n.expression.text, signals, propsParams, propFallbackVars)
+    }
+    // props.X ?? 'def' — nil/empty-tolerant field read with the default folded in.
+    if (
+      ts.isBinaryExpression(n) &&
+      n.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken &&
+      ts.isStringLiteral(n.right)
+    ) {
+      const propName = this.propsAccessName(n.left)
+      if (propName) {
+        const field = `in.${this.capitalizeFieldName(propName)}`
+        return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${JSON.stringify(n.right.text)} }; return v }()`
+      }
+    }
+    // Bare props.X.
+    const direct = this.propsAccessName(n)
+    if (direct) return `in.${this.capitalizeFieldName(direct)}`
     return null
   }
 

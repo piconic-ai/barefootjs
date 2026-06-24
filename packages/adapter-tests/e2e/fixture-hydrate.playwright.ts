@@ -60,6 +60,17 @@ const byId = new Map(fixtures.map(f => [f.id, f]))
 const externalModulePaths = new Map<string, string>()
 for (const fixture of fixtures) {
   for (const [specifier, path] of Object.entries(fixture.externalImports ?? {})) {
+    // Two fixtures may legitimately share a specifier (both pointing at the
+    // same embla bundle), but a specifier mapped to two DIFFERENT paths is a
+    // corpus mistake that would silently serve the wrong bundle to one of
+    // them — fail loud instead.
+    const existing = externalModulePaths.get(specifier)
+    if (existing !== undefined && existing !== path) {
+      throw new Error(
+        `Conflicting externalImports for '${specifier}': '${existing}' vs '${path}'. ` +
+          `A bare specifier must resolve to one bundle across the whole corpus.`,
+      )
+    }
     externalModulePaths.set(specifier, path)
   }
 }
