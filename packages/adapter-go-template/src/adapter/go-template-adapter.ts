@@ -111,7 +111,7 @@ import { lowerUrlBuilderHelperCall } from "./expr/url-builder.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
-export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx>, GoEmitContext {
+export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
   name = 'go-template'
   extension = '.tmpl'
 
@@ -186,7 +186,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * bookkeeping lives in one place rather than scattered across the
    * adapter's fields. See `CompileState` for the field-by-field docs.
    */
-  readonly state = new CompileState()
+  private readonly state = new CompileState()
+
+  /**
+   * The `GoEmitContext` handed to extracted emit modules. Built once over the
+   * adapter's own (private) state and recursive entry points, so the modules
+   * get the seam without `state` / `convert*` / `parseLiteralExpression`
+   * leaking onto the exported adapter's public type. `state` is captured by
+   * reference — `CompileState` is reset in place per compile, never reassigned
+   * — so a single `emitCtx` stays valid across `generate()` calls.
+   */
+  private readonly emitCtx: GoEmitContext = {
+    state: this.state,
+    parseLiteralExpression: (value) => this.parseLiteralExpression(value),
+    convertExpressionToGo: (jsExpr, out) => this.convertExpressionToGo(jsExpr, out),
+    convertConditionToGo: (jsCondition) => this.convertConditionToGo(jsCondition),
+  }
 
   /**
    * Diagnostics collected during the current compile. `generate()` merges
@@ -2839,7 +2854,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * or `null` when it isn't a single expression. Shared by the literal baker
    * and the struct-shape synthesiser.
    */
-  parseLiteralExpression(value: string): ts.Expression | null {
+  private parseLiteralExpression(value: string): ts.Expression | null {
     const sf = ts.createSourceFile(
       '__lit.ts', `(${value})`, ts.ScriptTarget.Latest, /* setParentNodes */ true,
     )
@@ -6267,7 +6282,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Convert a JS expression to Go template syntax.
    */
-  convertExpressionToGo(jsExpr: string, out?: { parsed?: ParsedExpr }): string {
+  private convertExpressionToGo(jsExpr: string, out?: { parsed?: ParsedExpr }): string {
     const trimmed = jsExpr.trim()
 
     // Handle null/undefined specially
@@ -6306,7 +6321,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `tagHref` delegating to it) lowers to a `bf_query` action — there is no Go
     // method backing a `.SortHref "date"` call. Tried before the generic inliner
     // because these helpers are block-bodied / delegate, which the inliner skips.
-    const urlBuilt = lowerUrlBuilderHelperCall(this, trimmed)
+    const urlBuilt = lowerUrlBuilderHelperCall(this.emitCtx, trimmed)
     if (urlBuilt !== null) return urlBuilt
 
     // Inline a call to a local, expression-bodied helper arrow
@@ -6316,7 +6331,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (`{{if eq .Params.Sort "date"}}sort on{{else}}sort{{end}}`). Only self-
     // contained helpers are inlined; one that delegates to another local helper
     // (e.g. `sortHref` → `hrefFor`) is left for a later capability.
-    const inlined = inlineLocalHelperCall(this, trimmed)
+    const inlined = inlineLocalHelperCall(this.emitCtx, trimmed)
     if (inlined !== null) {
       return this.convertExpressionToGo(inlined, out)
     }
@@ -6528,7 +6543,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Returns { condition, preamble } where preamble contains template blocks
    * that must be emitted before the {{if}} (e.g., every/some range blocks).
    */
-  convertConditionToGo(jsCondition: string): { condition: string; preamble: string } {
+  private convertConditionToGo(jsCondition: string): { condition: string; preamble: string } {
     const trimmed = jsCondition.trim()
     const parsed = parseExpression(trimmed)
     const support = isSupported(parsed)
