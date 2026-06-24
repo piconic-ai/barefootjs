@@ -55,11 +55,14 @@ describe('Calendar cross-adapter compile conformance (#1467)', () => {
     const source = readFileSync(resolve(ROOT, relPath), 'utf8').trimStart()
     const filename = relPath.split('/').pop()!
     for (const [adapterName, adapter] of adapters) {
+      // Each case builds a TS program for the type-based analysis (~2s cold);
+      // a generous timeout keeps the first cold-cache case from flaking past
+      // bun's 5s default (the matrix is source × 4 adapters).
       test(`${label} compiles on ${adapterName} with no error diagnostics`, () => {
         const result = compileJSX(source, filename, { adapter, outputIR: true })
         const errors = (result.errors ?? []).filter((e) => e.severity === 'error')
         expect(errors).toEqual([])
-      })
+      }, 30_000)
     }
   }
 })

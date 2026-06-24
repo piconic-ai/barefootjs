@@ -79,6 +79,10 @@ interface CalendarDay {
   isoDate: string
   dayNumber: number
   isOutside: boolean
+  // True for an outside (prev/next-month) day when `showOutsideDays` is off —
+  // the template renders an empty placeholder cell instead of a day button,
+  // keeping the 7-column grid shape.
+  isHidden: boolean
   isToday: boolean
   isDisabled: boolean
   // --- Selection state, pre-computed into the day data ---
@@ -123,6 +127,7 @@ function buildDay(
   disabled: boolean | ((date: Date) => boolean) | undefined,
   fromDate: Date | undefined,
   toDate: Date | undefined,
+  showOutsideDays: boolean,
   selectedDate: Date | undefined,
   selectedRange: DateRange | undefined,
   isRangeMode: boolean,
@@ -137,6 +142,7 @@ function buildDay(
     isoDate: toISODateString(date),
     dayNumber: date.getDate(),
     isOutside,
+    isHidden: isOutside && !showOutsideDays,
     isToday: isToday(date),
     isDisabled,
     isSingleSelected,
@@ -177,14 +183,14 @@ function generateCalendarDays(
     const prevDaysInMonth = getDaysInMonth(prevYear, prevMonth)
     for (let i = offset - 1; i >= 0; i--) {
       const date = new Date(prevYear, prevMonth, prevDaysInMonth - i)
-      week.push(buildDay(date, true, disabled, fromDate, toDate, selectedDate, selectedRange, isRangeMode))
+      week.push(buildDay(date, true, disabled, fromDate, toDate, showOutsideDays, selectedDate, selectedRange, isRangeMode))
     }
   }
 
   // Current month days
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
-    week.push(buildDay(date, false, disabled, fromDate, toDate, selectedDate, selectedRange, isRangeMode))
+    week.push(buildDay(date, false, disabled, fromDate, toDate, showOutsideDays, selectedDate, selectedRange, isRangeMode))
     if (week.length === 7) {
       weeks.push(week)
       week = []
@@ -198,17 +204,15 @@ function generateCalendarDays(
     let nextDay = 1
     while (week.length < 7) {
       const date = new Date(nextYear, nextMonth, nextDay)
-      week.push(buildDay(date, true, disabled, fromDate, toDate, selectedDate, selectedRange, isRangeMode))
+      week.push(buildDay(date, true, disabled, fromDate, toDate, showOutsideDays, selectedDate, selectedRange, isRangeMode))
       nextDay++
     }
     weeks.push(week)
   }
 
-  // Hide outside days if not showing them
-  if (!showOutsideDays) {
-    return weeks
-  }
-
+  // Outside (prev/next-month) days are kept in the grid for shape but flagged
+  // `isHidden` when `showOutsideDays` is off; the template renders an empty
+  // placeholder cell for them (see `buildDay`).
   return weeks
 }
 
@@ -519,23 +523,27 @@ function Calendar(props: CalendarProps) {
               <tr key={wi} data-slot="calendar-week">
                 {week.map((day: CalendarDay) => (
                   <td key={day.isoDate} data-slot="calendar-day" className={dayCellClasses}>
-                    <button
-                      data-slot="calendar-day-button"
-                      className={day.buttonClasses}
-                      data-date={day.isoDate}
-                      data-today={day.isToday || undefined}
-                      data-outside={day.isOutside || undefined}
-                      data-disabled={day.isDisabled || undefined}
-                      data-current-month={!day.isOutside || undefined}
-                      data-selected-single={day.isSingleSelected || undefined}
-                      data-selected-range-start={day.isRangeStart || undefined}
-                      data-selected-range-end={day.isRangeEnd || undefined}
-                      data-selected-range-middle={day.isRangeMiddle || undefined}
-                      aria-selected={day.ariaSelected || undefined}
-                      disabled={day.isDisabled}
-                    >
-                      {day.dayNumber}
-                    </button>
+                    {day.isHidden ? (
+                      <div className="size-8" />
+                    ) : (
+                      <button
+                        data-slot="calendar-day-button"
+                        className={day.buttonClasses}
+                        data-date={day.isoDate}
+                        data-today={day.isToday || undefined}
+                        data-outside={day.isOutside || undefined}
+                        data-disabled={day.isDisabled || undefined}
+                        data-current-month={!day.isOutside || undefined}
+                        data-selected-single={day.isSingleSelected || undefined}
+                        data-selected-range-start={day.isRangeStart || undefined}
+                        data-selected-range-end={day.isRangeEnd || undefined}
+                        data-selected-range-middle={day.isRangeMiddle || undefined}
+                        aria-selected={day.ariaSelected || undefined}
+                        disabled={day.isDisabled}
+                      >
+                        {day.dayNumber}
+                      </button>
+                    )}
                   </td>
                 ))}
               </tr>

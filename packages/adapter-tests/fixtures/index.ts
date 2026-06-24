@@ -70,8 +70,8 @@ import { fixture as command } from './command'
 // page can't resolve without a vendor-serving story. Their cross-adapter
 // SSR is still pinned, just not as frozen fixtures: calendar by the
 // deterministic compile conformance in
-// `src/__tests__/calendar-cross-adapter.test.ts` (Go/Mojo/Hono, zero
-// diagnostics — the #1467 predicate -> precomputed-field fix), and
+// `src/__tests__/calendar-cross-adapter.test.ts` (Go/Mojo/Xslate/Hono,
+// zero diagnostics — the #1467 predicate -> precomputed-field fix), and
 // runtime behavior by the `site/ui/e2e/{calendar,carousel}.spec.ts`
 // specs.
 import { fixture as pagination } from './pagination'
