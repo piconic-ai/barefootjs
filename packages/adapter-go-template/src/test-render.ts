@@ -9,19 +9,7 @@ import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter, ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './build.ts'
-
-/**
- * Capitalize a JSON key to its Go struct field name using the same
- * initialism rules as the adapter (`capitalizeFieldName`): a whole-word Go
- * initialism uppercases entirely (`id` → `ID`), otherwise just the first
- * letter. Keeps harness-emitted struct literals (`ItemInput{ID: …}`) matching
- * the generated exported field names. (#1297)
- */
-function capitalizeGoField(name: string): string {
-  if (!name) return name
-  if (GoTemplateAdapter.GO_INITIALISMS.has(name.toLowerCase())) return name.toUpperCase()
-  return name.charAt(0).toUpperCase() + name.slice(1)
-}
+import { capitalizeFieldName } from './adapter/lib/go-naming.ts'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -703,7 +691,7 @@ function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string): string 
 function goStructLiteral(obj: Record<string, unknown>, typeName: string): string {
   const fields: string[] = []
   for (const [k, v] of Object.entries(obj)) {
-    const goField = capitalizeGoField(k)
+    const goField = capitalizeFieldName(k)
     if (typeof v === 'string') fields.push(`${goField}: "${v.replace(/"/g, '\\"')}"`)
     else if (typeof v === 'number' || typeof v === 'boolean') fields.push(`${goField}: ${v}`)
     else if (v === null) fields.push(`${goField}: nil`)
