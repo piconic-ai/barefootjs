@@ -1387,13 +1387,17 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   }
 
   // Structured parse of the arrow BODY, so adapters can shape-match the memo
-  // on a tree instead of re-parsing `computation`. Expression-bodied arrows
-  // only — block bodies (`() => { … }`) and `parseExpression`-unsupported
-  // shapes leave `parsed` undefined and consumers fall back to `computation`.
+  // on a tree instead of re-parsing `computation`. Parse from the type-STRIPPED
+  // body (`ctx.getJS`, same source as `computation`) — `getText` would keep
+  // TypeScript-only syntax (`as T`, `!`, `satisfies`) that `parseExpression`
+  // rejects, leaving `parsed` undefined for typed bodies that the stripped
+  // `computation` would match. Expression-bodied arrows only — block bodies
+  // (`() => { … }`) and unsupported shapes leave `parsed` undefined and
+  // consumers fall back to `computation`.
   const memoArrow = callExpr.arguments[0]
   const parsedBody =
     memoArrow && ts.isArrowFunction(memoArrow) && !ts.isBlock(memoArrow.body)
-      ? parseExpression(memoArrow.body.getText(ctx.sourceFile))
+      ? parseExpression(ctx.getJS(memoArrow.body))
       : undefined
   const parsed = parsedBody && parsedBody.kind !== 'unsupported' ? parsedBody : undefined
 

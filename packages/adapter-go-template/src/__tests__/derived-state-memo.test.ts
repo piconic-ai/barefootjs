@@ -369,3 +369,26 @@ export function P(props: { items: { id: string }[] }) {
     expect(template).toContain('len .Items')
   })
 })
+
+describe('typed memo bodies parse from the type-stripped computation (#1976 review)', () => {
+  const mk = (body: string) => `
+"use client"
+import { createSignal, createMemo } from '@barefootjs/client'
+export function T() {
+  const [count, setCount] = createSignal(3)
+  const doubled = createMemo(() => ${body})
+  return <div>{doubled()}</div>
+}`
+
+  // `MemoInfo.parsed` is parsed from the type-STRIPPED body (`ctx.getJS`), not
+  // the raw source — otherwise TypeScript-only syntax (`as T`, `!`, satisfies)
+  // would make `parseExpression` bail, `parsed` would be undefined, and the
+  // adapter would lose the arithmetic shape it used to match on the stripped
+  // `computation` (changing the SSR default).
+  test('a TS-annotated memo body yields the same SSR as the untyped form', () => {
+    const typed = generate(mk('(count() as number) * 2'))
+    const untyped = generate(mk('count() * 2'))
+    expect(typed.types).toContain('Doubled: 3 * 2,')
+    expect(typed.types).toBe(untyped.types)
+  })
+})
