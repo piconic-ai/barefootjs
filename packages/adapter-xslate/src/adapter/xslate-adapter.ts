@@ -1009,6 +1009,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (value.parts) {
         return `${kolonHashKey(name)} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`
       }
+      // Inline object-literal child prop (carousel's `opts={{ align: 'start' }}`):
+      // lower to a Kolon hashref so the child can serialize it (`data-opts`),
+      // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
+      // guard so the common non-object case skips the AST parse.
+      if (value.expr.trim().startsWith('{')) {
+        const hashref = this.objectLiteralExprToKolonHashref(value.expr)
+        if (hashref !== null) return `${kolonHashKey(name)} => ${hashref}`
+      }
       return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr)}`
     },
     emitSpread: (value) => {
@@ -1625,6 +1633,23 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * lowering). Returns `null` for any computed/spread/dynamic key. Empty object
    * → `{}`. Mirror of `objectLiteralToPerlHashref`.
    */
+  /**
+   * (#1971 Perl) Parse a bare object-literal expression string
+   * (`{ align: 'start' }`) and lower it to a Kolon hashref via
+   * `objectLiteralToKolonHashref`, or null when it isn't a plain object
+   * literal. Used for inline object-literal child props (carousel `opts`).
+   */
+  private objectLiteralExprToKolonHashref(expr: string): string | null {
+    const sf = ts.createSourceFile('__obj.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
+    if (sf.statements.length !== 1) return null
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) return null
+    let node: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (!ts.isObjectLiteralExpression(node)) return null
+    return this.objectLiteralToKolonHashref(node, sf)
+  }
+
   private objectLiteralToKolonHashref(
     obj: ts.ObjectLiteralExpression,
     sf: ts.SourceFile,

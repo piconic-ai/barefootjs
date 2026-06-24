@@ -255,6 +255,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private propsParams: { name: string }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
+   * (#1971) Names that resolve to a real SSR template var — prop param, signal
+   * getter, or memo. A `<Ctx.Provider value>` member referencing a name NOT in
+   * this set is a client-only function (a local handler const like `scrollPrev`
+   * or a signal setter like `setCanScrollPrev`) with no SSR value: it would
+   * emit an undeclared `$var`, so it's lowered to `undef` instead.
+   */
+  private providerDataNames: Set<string> = new Set()
+  /**
    * Names (signal getters + props) whose value is a string, so `===`/`!==`
    * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
    * Perl's numeric `==` coerces non-numeric strings to 0, making `"b" == "a"`
@@ -336,6 +344,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // serialization happens before `generate`, so this mutation doesn't reach it).
     augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
+    // (#1971) SSR-resolvable context-value names: props, signal getters, memos.
+    this.providerDataNames = new Set<string>([
+      ...ir.metadata.propsParams.map(p => p.name),
+      ...(ir.metadata.signals ?? []).map(s => s.getter),
+      ...(ir.metadata.memos ?? []).map(m => m.name),
+    ])
     // Props whose declared TS type is boolean — a bare binding of one
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
@@ -685,9 +699,29 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       const key = `'${m.name.replace(/[\\']/g, c => `\\${c}`)}'`
       if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `${key} => undef`
       const src = m.kind === 'getter' ? m.body : m.expr
+      // (#1971) A member whose value is a bare identifier that doesn't resolve
+      // to a prop/signal/memo is a client-only function reference (a local
+      // handler const like `scrollPrev`, or a signal setter like
+      // `setCanScrollPrev`) — no SSR value, and emitting `$scrollPrev` would
+      // trip Perl strict mode on an undeclared var. Lower to undef.
+      if (this.isClientOnlyContextIdentifier(src)) return `${key} => undef`
       return `${key} => ${this.convertExpressionToPerl(src)}`
     })
     return `{ ${entries.join(', ')} }`
+  }
+
+  /**
+   * (#1971) True when `src` is a bare identifier that doesn't resolve to a
+   * prop/signal/memo or an SSR-inlinable module string const — i.e. a
+   * client-only function reference in a context value (a local handler const
+   * like `scrollPrev`, or a signal setter like `setCanScrollPrev`). See
+   * `providerDataNames`. Module-scope string consts (`carouselClasses`) ARE
+   * SSR-resolvable via `moduleStringConsts`, so they're excluded here.
+   */
+  private isClientOnlyContextIdentifier(src: string): boolean {
+    const t = src.trim()
+    if (!/^[A-Za-z_$][\w$]*$/.test(t)) return false
+    return !this.providerDataNames.has(t) && !this.moduleStringConsts.has(t)
   }
 
   /** Perl literal for a context-consumer's `createContext` default. */
@@ -1194,6 +1228,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // Perl template).
       if (value.parts) {
         return `${perlHashKey(name)} => ${this.convertTemplateLiteralPartsToPerl(value.parts)}`
+      }
+      // Inline object-literal child prop (carousel's `opts={{ align: 'start' }}`):
+      // lower to a Perl hashref so the child can serialize it (`data-opts`),
+      // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
+      // guard so the common non-object case skips the AST parse.
+      if (value.expr.trim().startsWith('{')) {
+        const hashref = this.objectLiteralExprToPerlHashref(value.expr)
+        if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
       }
       return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
     },
@@ -1913,6 +1955,23 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * values resolve via `convertExpressionToPerl`. Returns null for any
    * computed/spread/dynamic key. Empty object → `{}`.
    */
+  /**
+   * (#1971 Perl) Parse a bare object-literal expression string
+   * (`{ align: 'start' }`) and lower it to a Perl hashref via
+   * `objectLiteralToPerlHashref`, or null when it isn't a plain object
+   * literal. Used for inline object-literal child props (carousel `opts`).
+   */
+  private objectLiteralExprToPerlHashref(expr: string): string | null {
+    const sf = ts.createSourceFile('__obj.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
+    if (sf.statements.length !== 1) return null
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) return null
+    let node: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    if (!ts.isObjectLiteralExpression(node)) return null
+    return this.objectLiteralToPerlHashref(node, sf)
+  }
+
   private objectLiteralToPerlHashref(
     obj: ts.ObjectLiteralExpression,
     sf: ts.SourceFile,

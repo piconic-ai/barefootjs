@@ -3,32 +3,31 @@
  *
  * Unlike `calendar-cross-adapter` (compile-diagnostics only — the calendar
  * grid is wall-clock dependent), the carousel demos render a fully static
- * SSR template, so this asserts the stronger property: the Go adapter
- * produces byte-identical normalized HTML to the Hono reference for every
- * carousel demo.
+ * SSR template, so this asserts the stronger property: every server adapter
+ * (Go, Mojo, Xslate) produces byte-identical normalized HTML to the Hono
+ * reference for all three carousel demos.
  *
- * This pins the #1971 Go fixes, each of which previously diverged silently
- * (compiled clean, rendered wrong):
- *   - the `directionClasses` / `positionClasses` / `paddingClass` string
- *     ternary memos (were mistyped `bool` → `class="false"`);
- *   - the optional `opts` object prop (a value struct was always truthy, so
- *     `data-opts` was never omitted; and an inline `opts={{…}}` was dropped);
- *   - the inline `[1,2,3,4,5].map(...)` scalar-item loop (rendered zero
- *     items because the loop's scalar datum was never plumbed into the Go
- *     wrapper / body / constructor).
+ * This pins the #1971 SSR-parity fixes, each of which previously diverged
+ * silently (compiled clean / rendered wrong, or refused with BF101):
+ *   - string-ternary memos (`directionClasses` / `positionClasses` /
+ *     `paddingClass`) — Go mistyped them `bool`;
+ *   - the optional `opts` object prop — Go always-truthy struct, and an
+ *     inline `opts={{ … }}` was dropped (Go) or refused with BF101
+ *     (Mojo/Xslate);
+ *   - the inline `[1,2,3,4,5].map(...)` scalar-item loop — Go rendered zero
+ *     items;
+ *   - the carousel context value's client-only function members — Mojo
+ *     emitted undeclared `$scrollPrev` vars.
  *
- * Mojo/Xslate are intentionally NOT covered yet: the demo's
- * `opts={{ align: 'start' }}` inline object prop raises BF101 there, and the
- * scalar-literal loop has the same unmaterialised-SSR gap as Go did. Those
- * are tracked separately ("Go first", per the issue).
- *
- * Skips gracefully when no Go 1.25+ toolchain is available (the renderer
- * shells out to `go run`), matching the adapter-conformance suite's policy.
+ * Each adapter skips gracefully when its runtime isn't installed (Go 1.25+,
+ * or perl with Mojolicious / Text::Xslate), matching the adapter-conformance
+ * suite's policy.
  */
 import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { TemplateAdapter } from '@barefootjs/jsx'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { honoAdapter } from '@barefootjs/hono/adapter'
 import {
@@ -36,6 +35,16 @@ import {
   GoNotAvailableError,
 } from '@barefootjs/go-template/test-render'
 import { goTemplateAdapter } from '@barefootjs/go-template/adapter'
+import {
+  renderMojoComponent,
+  PerlNotAvailableError,
+} from '@barefootjs/mojolicious/test-render'
+import { mojoAdapter } from '@barefootjs/mojolicious/adapter'
+import {
+  renderXslateComponent,
+  XslateNotAvailableError,
+} from '@barefootjs/xslate/test-render'
+import { xslateAdapter } from '@barefootjs/xslate/adapter'
 import { normalizeHTML } from '../jsx-runner'
 import { resolveSiblingComponents } from '../../fixtures/_helpers'
 import { spec as carouselSpec } from '../../fixtures/carousel'
@@ -56,30 +65,52 @@ const demos = [
   'CarouselOrientationDemo',
 ] as const
 
+interface AdapterCase {
+  name: string
+  adapter: TemplateAdapter
+  render: (opts: {
+    source: string
+    adapter: TemplateAdapter
+    props: Record<string, unknown>
+    components?: Record<string, string>
+    componentName: string
+  }) => Promise<string>
+  /** Error thrown when this adapter's runtime is absent (→ skip, not fail).
+   *  `any[]` (not `never[]`) so the concrete `(message: string)` ctors of the
+   *  *NotAvailableError classes assign cleanly; only used for `instanceof`. */
+  notAvailable: new (...args: any[]) => Error
+}
+
+const adapterCases: AdapterCase[] = [
+  { name: 'Go', adapter: goTemplateAdapter, render: renderGoTemplateComponent, notAvailable: GoNotAvailableError },
+  { name: 'Mojo', adapter: mojoAdapter, render: renderMojoComponent, notAvailable: PerlNotAvailableError },
+  { name: 'Xslate', adapter: xslateAdapter, render: renderXslateComponent, notAvailable: XslateNotAvailableError },
+]
+
 describe('Carousel cross-adapter SSR render conformance (#1971)', () => {
   for (const componentName of demos) {
-    test(`${componentName} renders byte-identical on Go and Hono`, async () => {
-      const common = {
-        source,
-        props: { __instanceId: `${componentName}_test` },
-        components,
-        componentName,
-      }
-      const hono = normalizeHTML(
-        await renderHonoComponent({ adapter: honoAdapter, ...common }),
-      )
-      let go: string
-      try {
-        go = normalizeHTML(
-          await renderGoTemplateComponent({ adapter: goTemplateAdapter, ...common }),
+    for (const { name, adapter, render, notAvailable } of adapterCases) {
+      test(`${componentName} renders byte-identical on ${name} and Hono`, async () => {
+        const common = {
+          source,
+          props: { __instanceId: `${componentName}_test` },
+          components,
+          componentName,
+        }
+        const hono = normalizeHTML(
+          await renderHonoComponent({ adapter: honoAdapter, ...common }),
         )
-      } catch (err) {
-        // No Go toolchain (CI image without Go 1.25+): skip, same as the
-        // adapter-conformance renderer's `onRenderError` policy.
-        if (err instanceof GoNotAvailableError) return
-        throw err
-      }
-      expect(go).toBe(hono)
-    }, 30_000)
+        let out: string
+        try {
+          out = normalizeHTML(await render({ adapter, ...common }))
+        } catch (err) {
+          // Runtime not installed (CI image without Go 1.25+ / perl modules):
+          // skip, same as the adapter-conformance renderer's policy.
+          if (err instanceof notAvailable) return
+          throw err
+        }
+        expect(out).toBe(hono)
+      }, 30_000)
+    }
   }
 })
