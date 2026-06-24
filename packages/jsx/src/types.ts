@@ -323,6 +323,15 @@ export interface IRExpression {
   expr: string
   /** Pre-transformed expr with destructured prop refs rewritten to _p.xxx (for client JS templates). */
   templateExpr?: string
+  /**
+   * Structured parse of `expr` (`parseExpression(expr.trim())`), attached once
+   * during IR construction so SSR adapters emit from the tree instead of each
+   * re-parsing the string at emit time (and so a multi-adapter build parses it
+   * once, not per adapter). Plain serializable data. Absent only when `expr`
+   * is empty/whitespace; an unparsable expression is still present as an
+   * `{ kind: 'unsupported' }` node (the adapter's own support gate handles it).
+   */
+  parsed?: ParsedExpr
   typeInfo: TypeInfo | null
   reactive: boolean
   slotId: string | null

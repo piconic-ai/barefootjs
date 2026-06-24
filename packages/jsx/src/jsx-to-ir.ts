@@ -554,7 +554,45 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
 // Main Entry Point
 // =============================================================================
 
+/**
+ * Attach `parsed` (`parseExpression(expr.trim())`) to every `expression` node
+ * in the tree, so SSR adapters emit from the structured tree instead of each
+ * re-parsing the string at emit time. Best-effort: a node this walk misses (or
+ * an empty `expr`) simply has no `parsed`, and the adapter falls back to
+ * parsing — so under-coverage is safe, never a behavioural change.
+ */
+function attachParsedExpressions(node: IRNode): void {
+  if (node.type === 'expression') {
+    const trimmed = node.expr.trim()
+    if (trimmed) node.parsed = parseExpression(trimmed)
+  }
+  switch (node.type) {
+    case 'element':
+    case 'loop':
+    case 'component':
+    case 'fragment':
+    case 'provider':
+    case 'async':
+      for (const child of node.children) attachParsedExpressions(child)
+      break
+    case 'conditional':
+      attachParsedExpressions(node.whenTrue)
+      attachParsedExpressions(node.whenFalse)
+      break
+    case 'if-statement':
+      attachParsedExpressions(node.consequent)
+      if (node.alternate) attachParsedExpressions(node.alternate)
+      break
+  }
+}
+
 export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
+  const root = buildIRRoot(analyzer)
+  if (root) attachParsedExpressions(root)
+  return root
+}
+
+function buildIRRoot(analyzer: AnalyzerContext): IRNode | null {
   // If there are conditional returns (if statements with JSX returns),
   // build an if-statement chain instead of a single node
   if (analyzer.conditionalReturns.length > 0) {
