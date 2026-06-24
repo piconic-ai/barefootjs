@@ -117,6 +117,21 @@ export interface SharedFixtureSpec {
   props?: Record<string, unknown>
   /** Scripted post-hydration interactions; see `JSXFixture.interactions`. */
   interactions?: ReadonlyArray<InteractionStep>
+  /**
+   * Bare specifier → absolute ESM-bundle path for any third-party module
+   * the fixture's client JS resolves at runtime (#1467 Phase 3). Passed
+   * straight through to `JSXFixture.externalImports`; the fixture-hydrate
+   * host page serves the bundle and adds the importmap entry only for
+   * fixtures that declare it. `carousel` is the first user (embla).
+   */
+  externalImports?: Record<string, string>
+  /**
+   * Inline CSS injected into the host page `<head>`, gated like
+   * `externalImports`. Passed through to `JSXFixture.hostStyles`; reserved
+   * for components (carousel/embla) whose hydrated behaviour needs *some*
+   * layout to measure. See `JSXFixture.hostStyles`.
+   */
+  hostStyles?: string
 }
 
 export function sourceFileBasename(spec: SharedFixtureSpec): string {
@@ -422,6 +437,8 @@ function defineFixture(spec: SharedFixtureSpec): JSXFixture {
       ? readFileSync(clientJsPath, 'utf8')
       : undefined,
     interactions: spec.interactions,
+    externalImports: spec.externalImports,
+    hostStyles: spec.hostStyles,
   })
 }
 

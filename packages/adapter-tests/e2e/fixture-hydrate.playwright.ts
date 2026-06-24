@@ -51,6 +51,34 @@ let runtimeSource: string
 const fixtures: JSXFixture[] = await loadAllSharedFixtures()
 const byId = new Map(fixtures.map(f => [f.id, f]))
 
+// External third-party ESM bundles a fixture's client JS resolves at
+// runtime (#1467 Phase 3): bare specifier → absolute on-disk path,
+// unioned across every fixture that declares `externalImports`. The
+// server serves each at `/__external/<encoded-specifier>`; only the
+// fixtures that declared a specifier get its importmap entry, so existing
+// fixtures keep the bare `@barefootjs/client/runtime` importmap untouched.
+const externalModulePaths = new Map<string, string>()
+for (const fixture of fixtures) {
+  for (const [specifier, path] of Object.entries(fixture.externalImports ?? {})) {
+    // Two fixtures may legitimately share a specifier (both pointing at the
+    // same embla bundle), but a specifier mapped to two DIFFERENT paths is a
+    // corpus mistake that would silently serve the wrong bundle to one of
+    // them — fail loud instead.
+    const existing = externalModulePaths.get(specifier)
+    if (existing !== undefined && existing !== path) {
+      throw new Error(
+        `Conflicting externalImports for '${specifier}': '${existing}' vs '${path}'. ` +
+          `A bare specifier must resolve to one bundle across the whole corpus.`,
+      )
+    }
+    externalModulePaths.set(specifier, path)
+  }
+}
+
+function externalRoute(specifier: string): string {
+  return `/__external/${encodeURIComponent(specifier)}`
+}
+
 function hostPage(fixture: JSXFixture): string {
   // Importmap maps the bare specifier the compiled client JS uses to the
   // standalone runtime bundle. Order matters: importmap must precede the
@@ -61,14 +89,26 @@ function hostPage(fixture: JSXFixture): string {
   // mutate hydration inputs for any fixture whose DOM cares about
   // inter-element whitespace (e.g. `<pre>`, `<textarea>`).
   const html = fixture.rawExpectedHtml ?? fixture.expectedHtml ?? ''
+  // Gate external entries: only fixtures declaring `externalImports`
+  // widen their importmap. The runtime entry is always present.
+  const imports: Record<string, string> = {
+    '@barefootjs/client/runtime': '/__runtime.js',
+  }
+  for (const specifier of Object.keys(fixture.externalImports ?? {})) {
+    imports[specifier] = externalRoute(specifier)
+  }
+  // Gated host CSS: empty for every fixture except the few that need a
+  // layout to hydrate against (carousel/embla). Keeps the page otherwise
+  // CSS-less so visibility/attribute assertions stay layout-independent.
+  const styleTag = fixture.hostStyles ? `\n<style>${fixture.hostStyles}</style>` : ''
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>${fixture.id}</title>
 <script type="importmap">
-{ "imports": { "@barefootjs/client/runtime": "/__runtime.js" } }
-</script>
+${JSON.stringify({ imports })}
+</script>${styleTag}
 </head>
 <body>
 ${html}
@@ -99,6 +139,22 @@ test.beforeAll(async () => {
     // resolution table.
     if (url.pathname === '/__runtime.js') {
       res.writeHead(200, { 'content-type': 'application/javascript' }).end(runtimeSource)
+      return
+    }
+    // Third-party ESM bundles (#1467 Phase 3, embla). Served fixture-
+    // independently like the runtime so the importmap can use a stable
+    // absolute URL. Read fresh per request — this is a handful of bundles
+    // hit once each, not a hot path worth caching.
+    if (url.pathname.startsWith('/__external/')) {
+      const specifier = decodeURIComponent(url.pathname.slice('/__external/'.length))
+      const modPath = externalModulePaths.get(specifier)
+      if (!modPath || !existsSync(modPath)) {
+        res.writeHead(404).end('not found')
+        return
+      }
+      res
+        .writeHead(200, { 'content-type': 'application/javascript' })
+        .end(readFileSync(modPath, 'utf8'))
       return
     }
     const segments = url.pathname.split('/').filter(Boolean)
@@ -164,6 +220,26 @@ async function runStep(page: Page, step: InteractionStep): Promise<void> {
     case 'press':
       await page.locator(step.selector).first().press(step.key)
       return
+    case 'drag': {
+      // Real pointer drag from the element centre. Embla binds
+      // `pointerdown`/`pointermove`/`pointerup`, which Playwright's
+      // mouse API dispatches alongside the mouse events. Stepped move so
+      // the gesture registers as a drag, not a teleport.
+      const el = page.locator(step.selector).first()
+      const box = await el.boundingBox()
+      if (!box) {
+        throw new Error(`drag: no bounding box for selector ${step.selector}`)
+      }
+      const startX = box.x + box.width / 2
+      const startY = box.y + box.height / 2
+      await page.mouse.move(startX, startY)
+      await page.mouse.down()
+      await page.mouse.move(startX + (step.deltaX ?? 0), startY + (step.deltaY ?? 0), {
+        steps: 10,
+      })
+      await page.mouse.up()
+      return
+    }
     default:
       return assertNever(step)
   }
