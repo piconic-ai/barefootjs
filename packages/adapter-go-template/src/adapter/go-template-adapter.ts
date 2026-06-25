@@ -118,6 +118,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames } from "./props/prop-types.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -296,7 +297,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // participate in attribute omission and field binding uniformly. Shared
     // with the Mojo adapter (single source of truth in `@barefootjs/jsx`).
     augmentInheritedPropAccesses(ir)
-    this.state.nillablePropNames = this.collectNillablePropNames(ir)
+    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
 
     // Surface loop-body usages of components imported from sibling
     // .tsx files. The adapter emits `{{template "X" .}}` for these,
@@ -706,7 +707,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // Build prop type overrides from signal types
-    const propTypeOverrides = this.buildPropTypeOverrides(ir)
+    const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
 
     // Compute spread slot info once and thread it through all three
     // generators — `collectSpreadSlots` walks the IR tree, so caching
@@ -915,86 +916,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Build a map from prop name to a better Go type inferred from signals.
-   * When a signal is initialized from a prop (e.g., createSignal(props.initial ?? 0)),
-   * the signal's type annotation may be more specific than the prop's TypeInfo.
-   */
-  private buildPropTypeOverrides(ir: ComponentIR): Map<string, string> {
-    const overrides = new Map<string, string>()
-    for (const signal of ir.metadata.signals) {
-      // Check simple identifier reference
-      const propNames = [signal.initialValue]
-      const extracted = this.extractPropNameFromInitialValue(signal.initialValue)
-      if (extracted) propNames.push(extracted)
-
-      for (const propName of propNames) {
-        const param = ir.metadata.propsParams.find(p => p.name === propName)
-        if (!param) continue
-        const propGoType = typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
-        // Override when prop type is generic (interface{} or contains interface{})
-        if (propGoType.includes('interface{}')) {
-          const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
-          if (!signalGoType.includes('interface{}')) {
-            overrides.set(propName, signalGoType)
-          }
-        }
-      }
-    }
-    return overrides
-  }
-
-  /**
-   * Resolve a prop param's Go struct-field type using the SAME logic
-   * `generatePropsStruct` / `generateInputStruct` use for the field
-   * declaration: a `propTypeOverrides` entry (signal-inferred override)
-   * wins, otherwise `typeInfoToGo(param.type, param.defaultValue)`.
-   * Factored out so the nillable-field set (`collectNillablePropNames`)
-   * can't drift from the actual emitted field types.
-   */
-  private resolvePropGoType(
-    param: IRMetadata['propsParams'][number],
-    propTypeOverrides: Map<string, string>,
-  ): string {
-    const base = propTypeOverrides.get(param.name) ?? typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
-    // (#1971) An OPTIONAL prop typed as a named struct (e.g. carousel's
-    // `opts?: EmblaOptionsType`) lowers to `map[string]interface{}` rather
-    // than the value struct. Two reasons: a value struct is always truthy in
-    // Go templates, so a `{{if .Opts}}`-guarded attribute (`data-opts={opts ?
-    // JSON.stringify(opts) : undefined}`) can never be omitted when the
-    // caller leaves it out; and a map round-trips through `bf_json` with only
-    // the keys actually supplied, matching JS `JSON.stringify` of a partial
-    // object literal instead of a zero-filled struct. A nil/empty map is
-    // falsy, so the omit-when-absent guard works for free.
-    // Gate on `localStructFields` (an actual generated struct), NOT
-    // `localTypeNames` — the latter also covers string-union aliases like
-    // `placement?: 'top' | 'right' | …` (tooltip), which must stay their
-    // scalar Go type, not become a map.
-    if (param.optional && this.state.localStructFields.has(base)) {
-      return 'map[string]interface{}'
-    }
-    return base
-  }
-
-  /**
-   * Build the set of prop NAMES whose resolved Go field type is exactly
-   * `interface{}` (nillable). Uses the same `propTypeOverrides` +
-   * `resolvePropGoType` pipeline as the struct generators, so a prop
-   * that ends up `interface{}` on the Props struct — and only such a
-   * prop — is treated as nillable for Hono-style attribute omission.
-   * Concrete (`string`/`int`/`bool`/`[]T`/struct) types are excluded.
-   */
-  private collectNillablePropNames(ir: ComponentIR): Set<string> {
-    const propTypeOverrides = this.buildPropTypeOverrides(ir)
-    const nillable = new Set<string>()
-    for (const param of ir.metadata.propsParams) {
-      if (this.resolvePropGoType(param, propTypeOverrides) === 'interface{}') {
-        nillable.add(param.name)
-      }
-    }
-    return nillable
-  }
-
-  /**
    * Whether the component reads the request-scoped `searchParams()`
    * environment signal (router v0.5, #1922). Detected from `searchParamsLocals`
    * — the binding names the shared `searchParamsLocalNames` helper found at
@@ -1066,7 +987,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const param of ir.metadata.propsParams) {
       const fieldName = capitalizeFieldName(param.name)
       if (nestedArrayFields.has(fieldName)) continue
-      const goType = this.resolvePropGoType(param, propTypeOverrides)
+      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       lines.push(`\t${fieldName} ${goType}`)
     }
 
@@ -1156,7 +1077,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const fieldName = capitalizeFieldName(param.name)
       // Skip if this field will be replaced by a typed array for nested components
       if (nestedArrayFields.has(fieldName)) continue
-      const goType = this.resolvePropGoType(param, propTypeOverrides)
+      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       // Children are already rendered in the DOM; serialising them into bf-p
       // leaks nested scope ids and bloats the attribute. Exclude from JSON
       // so BfPropsAttr never marshals them (#1952).
@@ -1727,7 +1648,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         p => capitalizeFieldName(p.name) === capitalizeFieldName(memo.name),
       )
       if (!param) continue
-      const goType = this.resolvePropGoType(param, propTypeOverrides)
+      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       if (goType !== 'string' && goType !== 'interface{}') continue
       memoFallbacks.set(capitalizeFieldName(memo.name), { goFallback: m.goFallback, goType })
     }
