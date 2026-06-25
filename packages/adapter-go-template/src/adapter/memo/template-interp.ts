@@ -1,12 +1,13 @@
 /**
  * Template-literal memo lowering.
  *
- * Pure free functions over a {@link GoEmitContext} that compute the SSR initial
+ * Free functions over a {@link GoEmitContext} that compute the SSR initial
  * value of a template-literal memo (`() => `${a} ${props.x ?? ''} grid``) as a
  * Go `string` expression. Each quasi becomes a Go string literal; each
  * interpolation resolves to a module string const, a `Record`-index access, or
  * a `props.<name>` field read. They read the context's `state.localConstants` /
- * `state.propsObjectName` / `state.usesFmt` and `resolveModuleStringConst`.
+ * `state.propsObjectName` and `resolveModuleStringConst`, and set
+ * `state.usesFmt` when a `Record`-index interpolation emits `fmt.Sprint`.
  */
 
 import ts from 'typescript'
