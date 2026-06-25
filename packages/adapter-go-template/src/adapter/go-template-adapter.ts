@@ -928,177 +928,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     spreadSlots: SpreadSlotInfo[]
   ): void {
     const propsTypeName = `${componentName}Props`
-    lines.push(`// ${propsTypeName} is the props type for the ${componentName} component.`)
-    lines.push(`type ${propsTypeName} struct {`)
-    lines.push('\tScopeID string `json:"scopeID"`')
-    lines.push('\tBfIsRoot bool `json:"-"`')
-    lines.push('\tBfIsChild bool `json:"-"`')
-    // (#1249) Slot identity for child scopes: host scope id + slot id.
-    // Emitted as bf-h / bf-m HTML attributes by `bfHydrationAttrs`.
-    lines.push('\tBfParent string `json:"-"`')
-    lines.push('\tBfMount string `json:"-"`')
-    // (#1297) Keyed-loop reconciliation key, stamped per item by the parent's
-    // loop init and emitted as `data-key` on this component's scope root.
-    lines.push('\tBfDataKey string `json:"-"`')
+    this.emitPropsStructHeader(lines, ir, propsTypeName, componentName)
 
-    // Add Scripts field for dynamic script collection
-    lines.push('\tScripts *bf.ScriptCollector `json:"-"`')
+    this.emitPropsDataFields(lines, ir, nestedComponents, propTypeOverrides)
 
-    // (#1922) Request-scoped `searchParams()` SSR value. Read by the
-    // template as `.SearchParams.Get "key"`. Not serialised for hydration
-    // (`json:"-"`) — the client re-reads `window.location.search` itself.
-    if (this.usesSearchParams(ir)) {
-      lines.push('\tSearchParams bf.SearchParams `json:"-"`')
-    }
-
-    // Collect nested component array field names to skip from propsParams
-    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
-
-    // Track emitted prop field names to avoid duplicate fields when signal name matches prop name
-    const propFieldNames = new Set<string>()
-
-    for (const param of ir.metadata.propsParams) {
-      const fieldName = capitalizeFieldName(param.name)
-      // Skip if this field will be replaced by a typed array for nested components
-      if (nestedArrayFields.has(fieldName)) continue
-      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
-      // Children are already rendered in the DOM; serialising them into bf-p
-      // leaks nested scope ids and bloats the attribute. Exclude from JSON
-      // so BfPropsAttr never marshals them (#1952).
-      const jsonTag = param.name === 'children' ? '-' : this.toJsonTag(param.name)
-      lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
-      propFieldNames.add(fieldName)
-    }
-
-    // Find signal types by looking at their initial values
-    const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
-
-    for (const signal of ir.metadata.signals) {
-      const fieldName = capitalizeFieldName(signal.getter)
-      // Skip if a prop field with the same name was already emitted
-      if (propFieldNames.has(fieldName)) continue
-      const jsonTag = this.toJsonTag(signal.getter)
-      // A synthesised struct type (#1680) wins outright — the signal is an
-      // untyped object array we gave a concrete element type.
-      const synthType = this.state.synthStructTypes.get(signal.getter)
-      if (synthType) {
-        lines.push(`\t${fieldName} ${typeInfoToGo(this.emitCtx, synthType)} \`json:"${jsonTag}"\``)
-        continue
-      }
-      // Infer type from initial value or referenced prop's type
-      let goType: string
-      let referencedProp = propsParamMap.get(signal.initialValue)
-      if (!referencedProp) {
-        const propName = this.extractPropNameFromInitialValue(signal.initialValue)
-        if (propName) referencedProp = propsParamMap.get(propName)
-      }
-      if (referencedProp) {
-        const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue)
-        const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
-        // The "prop type wins" heuristic exists for cases where the
-        // signal infer is less specific than the prop (e.g. the signal
-        // is `createSignal(props.todos)` and we want `[]Todo`, not
-        // `interface{}`). It actively HURTS when the initial expression
-        // transforms the prop type — `createSignal((props.todos ?? []).length)`
-        // is a `number`, not the prop's `[]Todo`. Let a specific signal
-        // type override a less-specific prop type in either direction
-        // so `.length` / `.some()` / `.every()` chains land on their
-        // actual Go type (#1442 echo TodoApp repro).
-        if (propGoType.includes('interface{}')) {
-          goType = signalGoType
-        } else if (
-          !signalGoType.includes('interface{}') &&
-          signalGoType !== propGoType
-        ) {
-          // Both sides resolved, but they disagree — trust the signal's
-          // inferred shape (it's based on the literal expression text,
-          // including the trailing accessor).
-          goType = signalGoType
-        } else {
-          goType = propGoType
-        }
-      } else {
-        goType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
-      }
-      lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
-    }
-
-    // Add memos to Props (they are computed values needed for SSR).
-    // Skip a memo whose name collides with an already-emitted prop field
-    // (#1896): `const className = createMemo(() => props.className ?? '')`
-    // — common in site/ui (AccordionContent, PaginationLink) — would
-    // otherwise redeclare `ClassName`. Both readers (the memo usage and
-    // the inherited `props.className` access) lower to the same `.Field`,
-    // so the prop field carries the value; the memo's `?? fallback` is
-    // folded into the prop's initializer in `generateNewPropsFunction`.
-    for (const memo of ir.metadata.memos) {
-      const fieldName = capitalizeFieldName(memo.name)
-      if (propFieldNames.has(fieldName)) continue
-      const jsonTag = this.toJsonTag(memo.name)
-      // Memos that depend on number signals are usually numbers
-      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
-      lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
-    }
-
-    // (#1897 PostList) Computed fields for component-scope derived string consts
-    // the template references (e.g. `root = base || '/'`). Not serialised — the
-    // route handler doesn't supply them; `NewXxxProps` computes them.
-    const takenForDerivedConsts = new Set<string>([
-      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
-      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
-      ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
-    ])
-    for (const f of this.computeDerivedConstFields(takenForDerivedConsts)) {
-      lines.push(`\t${f.name} string \`json:"-"\``)
-    }
-
-    // `useContext` consumer fields (skip names already taken by a prop /
-    // signal / memo field).
-    const takenProps = new Set<string>([
-      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
-      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
-      ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
-    ])
-    for (const c of this.nonCollidingContextConsumers(takenProps)) {
-      const jsonTag = this.toJsonTag(c.localName)
-      lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
-    }
-
-    // Add array fields for nested components (for template rendering)
-    for (const nested of nestedComponents) {
-      // (#1897) Loop body with JSX children → use the wrapper struct type
-      const elemType = nested.bodyChildren?.length
-        ? this.loopBodyWrapperName(componentName, nested)
-        : `${nested.name}Props`
-      if (nested.isDynamic && !nested.isPropDerived) {
-        // Dynamic signal array loops: template-only, not in JSON
-        lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
-      } else {
-        // Static arrays and prop-derived dynamic arrays: include in JSON
-        // so the client can hydrate via mapArray or forEach
-        const jsonTag = this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
-        lines.push(`\t${nested.name}s []${elemType} \`json:"${jsonTag}"\``)
-      }
-    }
-
-    // Add fields for static child component instances
-    const staticChildren = this.collectStaticChildInstances(ir.root)
-    for (const child of staticChildren) {
-      lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
-    }
-
-    // (#1407) Add fields for top-level JSX intrinsic-element spreads.
-    // Each non-loop spread gets a `Spread_<slotId> map[string]any`
-    // field; the Go template references it as `.Spread_<slotId>` via
-    // `{{bf_spread_attrs}}`. Loop-internal spreads emit inline and
-    // don't appear here. The slot list is computed once in
-    // `generateTypes` and threaded through both struct/init emitters
-    // so the IR walk runs exactly once per `generate()` call (#1411
-    // review).
-    for (const slot of spreadSlots) {
-      const jsonTag = this.toJsonTag(slot.slotId)
-      lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
-    }
+    this.emitPropsAuxFields(lines, ir, componentName, nestedComponents, spreadSlots)
 
     lines.push('}')
     lines.push('')
@@ -1975,6 +1809,195 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     header.push('')
 
     return [...header, ...lines].join('\n')
+  }
+
+  private emitPropsStructHeader(lines: string[], ir: ComponentIR, propsTypeName: string, componentName: string): void {
+    lines.push(`// ${propsTypeName} is the props type for the ${componentName} component.`)
+    lines.push(`type ${propsTypeName} struct {`)
+    lines.push('\tScopeID string `json:"scopeID"`')
+    lines.push('\tBfIsRoot bool `json:"-"`')
+    lines.push('\tBfIsChild bool `json:"-"`')
+    // (#1249) Slot identity for child scopes: host scope id + slot id.
+    // Emitted as bf-h / bf-m HTML attributes by `bfHydrationAttrs`.
+    lines.push('\tBfParent string `json:"-"`')
+    lines.push('\tBfMount string `json:"-"`')
+    // (#1297) Keyed-loop reconciliation key, stamped per item by the parent's
+    // loop init and emitted as `data-key` on this component's scope root.
+    lines.push('\tBfDataKey string `json:"-"`')
+
+    // Add Scripts field for dynamic script collection
+    lines.push('\tScripts *bf.ScriptCollector `json:"-"`')
+
+    // (#1922) Request-scoped `searchParams()` SSR value. Read by the
+    // template as `.SearchParams.Get "key"`. Not serialised for hydration
+    // (`json:"-"`) — the client re-reads `window.location.search` itself.
+    if (this.usesSearchParams(ir)) {
+      lines.push('\tSearchParams bf.SearchParams `json:"-"`')
+    }
+  }
+
+  private emitPropsDataFields(
+    lines: string[],
+    ir: ComponentIR,
+    nestedComponents: NestedComponentInfo[],
+    propTypeOverrides: Map<string, string>,
+  ): void {
+    // Collect nested component array field names to skip from propsParams
+    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
+
+    // Track emitted prop field names to avoid duplicate fields when signal name matches prop name
+    const propFieldNames = new Set<string>()
+
+    for (const param of ir.metadata.propsParams) {
+      const fieldName = capitalizeFieldName(param.name)
+      // Skip if this field will be replaced by a typed array for nested components
+      if (nestedArrayFields.has(fieldName)) continue
+      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
+      // Children are already rendered in the DOM; serialising them into bf-p
+      // leaks nested scope ids and bloats the attribute. Exclude from JSON
+      // so BfPropsAttr never marshals them (#1952).
+      const jsonTag = param.name === 'children' ? '-' : this.toJsonTag(param.name)
+      lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
+      propFieldNames.add(fieldName)
+    }
+
+    // Find signal types by looking at their initial values
+    const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+
+    for (const signal of ir.metadata.signals) {
+      const fieldName = capitalizeFieldName(signal.getter)
+      // Skip if a prop field with the same name was already emitted
+      if (propFieldNames.has(fieldName)) continue
+      const jsonTag = this.toJsonTag(signal.getter)
+      // A synthesised struct type (#1680) wins outright — the signal is an
+      // untyped object array we gave a concrete element type.
+      const synthType = this.state.synthStructTypes.get(signal.getter)
+      if (synthType) {
+        lines.push(`\t${fieldName} ${typeInfoToGo(this.emitCtx, synthType)} \`json:"${jsonTag}"\``)
+        continue
+      }
+      // Infer type from initial value or referenced prop's type
+      let goType: string
+      let referencedProp = propsParamMap.get(signal.initialValue)
+      if (!referencedProp) {
+        const propName = this.extractPropNameFromInitialValue(signal.initialValue)
+        if (propName) referencedProp = propsParamMap.get(propName)
+      }
+      if (referencedProp) {
+        const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue)
+        const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
+        // The "prop type wins" heuristic exists for cases where the
+        // signal infer is less specific than the prop (e.g. the signal
+        // is `createSignal(props.todos)` and we want `[]Todo`, not
+        // `interface{}`). It actively HURTS when the initial expression
+        // transforms the prop type — `createSignal((props.todos ?? []).length)`
+        // is a `number`, not the prop's `[]Todo`. Let a specific signal
+        // type override a less-specific prop type in either direction
+        // so `.length` / `.some()` / `.every()` chains land on their
+        // actual Go type (#1442 echo TodoApp repro).
+        if (propGoType.includes('interface{}')) {
+          goType = signalGoType
+        } else if (
+          !signalGoType.includes('interface{}') &&
+          signalGoType !== propGoType
+        ) {
+          // Both sides resolved, but they disagree — trust the signal's
+          // inferred shape (it's based on the literal expression text,
+          // including the trailing accessor).
+          goType = signalGoType
+        } else {
+          goType = propGoType
+        }
+      } else {
+        goType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
+      }
+      lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
+    }
+
+    // Add memos to Props (they are computed values needed for SSR).
+    // Skip a memo whose name collides with an already-emitted prop field
+    // (#1896): `const className = createMemo(() => props.className ?? '')`
+    // — common in site/ui (AccordionContent, PaginationLink) — would
+    // otherwise redeclare `ClassName`. Both readers (the memo usage and
+    // the inherited `props.className` access) lower to the same `.Field`,
+    // so the prop field carries the value; the memo's `?? fallback` is
+    // folded into the prop's initializer in `generateNewPropsFunction`.
+    for (const memo of ir.metadata.memos) {
+      const fieldName = capitalizeFieldName(memo.name)
+      if (propFieldNames.has(fieldName)) continue
+      const jsonTag = this.toJsonTag(memo.name)
+      // Memos that depend on number signals are usually numbers
+      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
+      lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
+    }
+  }
+
+  private emitPropsAuxFields(
+    lines: string[],
+    ir: ComponentIR,
+    componentName: string,
+    nestedComponents: NestedComponentInfo[],
+    spreadSlots: SpreadSlotInfo[],
+  ): void {
+    // (#1897 PostList) Computed fields for component-scope derived string consts
+    // the template references (e.g. `root = base || '/'`). Not serialised — the
+    // route handler doesn't supply them; `NewXxxProps` computes them.
+    const takenForDerivedConsts = new Set<string>([
+      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
+    ])
+    for (const f of this.computeDerivedConstFields(takenForDerivedConsts)) {
+      lines.push(`\t${f.name} string \`json:"-"\``)
+    }
+
+    // `useContext` consumer fields (skip names already taken by a prop /
+    // signal / memo field).
+    const takenProps = new Set<string>([
+      ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
+      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
+      ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
+    ])
+    for (const c of this.nonCollidingContextConsumers(takenProps)) {
+      const jsonTag = this.toJsonTag(c.localName)
+      lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
+    }
+
+    // Add array fields for nested components (for template rendering)
+    for (const nested of nestedComponents) {
+      // (#1897) Loop body with JSX children → use the wrapper struct type
+      const elemType = nested.bodyChildren?.length
+        ? this.loopBodyWrapperName(componentName, nested)
+        : `${nested.name}Props`
+      if (nested.isDynamic && !nested.isPropDerived) {
+        // Dynamic signal array loops: template-only, not in JSON
+        lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
+      } else {
+        // Static arrays and prop-derived dynamic arrays: include in JSON
+        // so the client can hydrate via mapArray or forEach
+        const jsonTag = this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
+        lines.push(`\t${nested.name}s []${elemType} \`json:"${jsonTag}"\``)
+      }
+    }
+
+    // Add fields for static child component instances
+    const staticChildren = this.collectStaticChildInstances(ir.root)
+    for (const child of staticChildren) {
+      lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
+    }
+
+    // (#1407) Add fields for top-level JSX intrinsic-element spreads.
+    // Each non-loop spread gets a `Spread_<slotId> map[string]any`
+    // field; the Go template references it as `.Spread_<slotId>` via
+    // `{{bf_spread_attrs}}`. Loop-internal spreads emit inline and
+    // don't appear here. The slot list is computed once in
+    // `generateTypes` and threaded through both struct/init emitters
+    // so the IR walk runs exactly once per `generate()` call (#1411
+    // review).
+    for (const slot of spreadSlots) {
+      const jsonTag = this.toJsonTag(slot.slotId)
+      lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
+    }
   }
 
   /**
