@@ -568,12 +568,27 @@ function attachParsedExpressions(node: IRNode): void {
   }
   switch (node.type) {
     case 'element':
-    case 'loop':
     case 'component':
     case 'fragment':
     case 'provider':
-    case 'async':
       for (const child of node.children) attachParsedExpressions(child)
+      break
+    case 'async':
+      attachParsedExpressions(node.fallback)
+      for (const child of node.children) attachParsedExpressions(child)
+      break
+    case 'loop':
+      for (const child of node.children) attachParsedExpressions(child)
+      // Loops also hold expression nodes off the main `children` array.
+      if (node.childComponent) {
+        for (const child of node.childComponent.children) attachParsedExpressions(child)
+      }
+      for (const nested of node.nestedComponents ?? []) {
+        for (const child of nested.children) attachParsedExpressions(child)
+      }
+      for (const frag of node.flatMapCallback?.fragments ?? []) {
+        attachParsedExpressions(frag.ir)
+      }
       break
     case 'conditional':
       attachParsedExpressions(node.whenTrue)

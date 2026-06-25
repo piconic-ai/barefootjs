@@ -327,9 +327,14 @@ export interface IRExpression {
    * Structured parse of `expr` (`parseExpression(expr.trim())`), attached once
    * during IR construction so SSR adapters emit from the tree instead of each
    * re-parsing the string at emit time (and so a multi-adapter build parses it
-   * once, not per adapter). Plain serializable data. Absent only when `expr`
-   * is empty/whitespace; an unparsable expression is still present as an
-   * `{ kind: 'unsupported' }` node (the adapter's own support gate handles it).
+   * once, not per adapter). Plain serializable data.
+   *
+   * OPTIONAL by design — consumers MUST fall back to parsing `expr` when it is
+   * missing. It is absent for an empty/whitespace `expr`, and may also be
+   * absent for a node the IR-build walk doesn't reach (the walk is best-effort;
+   * under-coverage is a missed optimization, never a behavioural change). When
+   * present, an unparsable expression is a `{ kind: 'unsupported' }` node (the
+   * adapter's own support gate handles it).
    */
   parsed?: ParsedExpr
   typeInfo: TypeInfo | null
