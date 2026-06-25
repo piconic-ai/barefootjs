@@ -565,6 +565,9 @@ function attachParsedExpressions(node: IRNode): void {
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
     if (trimmed) node.parsed = parseExpression(trimmed)
+  } else if (node.type === 'conditional' || node.type === 'if-statement') {
+    const trimmed = node.condition.trim()
+    if (trimmed) node.parsedCondition = parseExpression(trimmed)
   }
   switch (node.type) {
     case 'element':

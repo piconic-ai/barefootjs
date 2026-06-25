@@ -6502,14 +6502,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   private renderIfStatement(ifStmt: IRIfStatement, ctx?: { isRootOfClientComponent?: boolean }): string {
-    const { condition: goCondition, preamble } = this.convertConditionToGo(ifStmt.condition)
+    const { condition: goCondition, preamble } = this.convertConditionToGo(ifStmt.condition, ifStmt.parsedCondition)
     const consequent = this.renderNode(ifStmt.consequent, ctx)
     let result = `${preamble}{{if ${goCondition}}}${consequent}`
 
     if (ifStmt.alternate) {
       if (ifStmt.alternate.type === 'if-statement') {
         const altIfStmt = ifStmt.alternate as IRIfStatement
-        const { condition: altCondition, preamble: altPreamble } = this.convertConditionToGo(altIfStmt.condition)
+        const { condition: altCondition, preamble: altPreamble } = this.convertConditionToGo(altIfStmt.condition, altIfStmt.parsedCondition)
         if (altPreamble) {
           // Preamble in else-if context is not supported
           this.state.errors.push({
@@ -6544,7 +6544,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.renderClientOnlyConditional(cond)
     }
 
-    const { condition: goCondition, preamble } = this.convertConditionToGo(cond.condition)
+    const { condition: goCondition, preamble } = this.convertConditionToGo(cond.condition, cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
 
     // If reactive (has slotId), wrap each branch with cond marker
@@ -6603,9 +6603,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Returns { condition, preamble } where preamble contains template blocks
    * that must be emitted before the {{if}} (e.g., every/some range blocks).
    */
-  private convertConditionToGo(jsCondition: string): { condition: string; preamble: string } {
+  private convertConditionToGo(
+    jsCondition: string,
+    // Pre-parsed tree from the IR (`IRConditional.parsedCondition` /
+    // `IRIfStatement.parsedCondition`), reused instead of re-parsing here.
+    preParsed?: ParsedExpr,
+  ): { condition: string; preamble: string } {
     const trimmed = jsCondition.trim()
-    const parsed = parseExpression(trimmed)
+    const parsed = preParsed ?? parseExpression(trimmed)
     const support = isSupported(parsed)
 
     if (!support.supported) {

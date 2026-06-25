@@ -361,6 +361,13 @@ export interface IRConditional {
   condition: string
   /** Pre-transformed condition with destructured prop refs rewritten to _p.xxx. */
   templateCondition?: string
+  /**
+   * Structured parse of `condition` (`parseExpression(condition.trim())`),
+   * attached during IR construction so adapters lower the condition from the
+   * tree instead of re-parsing the string. Optional/best-effort — see
+   * `IRExpression.parsed`; consumers fall back to parsing `condition`.
+   */
+  parsedCondition?: ParsedExpr
   conditionType: TypeInfo | null
   reactive: boolean
   whenTrue: IRNode
@@ -760,6 +767,13 @@ export interface IRIfStatement {
   condition: string
   /** Pre-transformed condition with destructured prop refs rewritten to _p.xxx. */
   templateCondition?: string
+  /**
+   * Structured parse of `condition` (`parseExpression(condition.trim())`),
+   * attached during IR construction so adapters lower the condition from the
+   * tree instead of re-parsing the string. Optional/best-effort — see
+   * `IRExpression.parsed`; consumers fall back to parsing `condition`.
+   */
+  parsedCondition?: ParsedExpr
   /** The JSX return in the then branch */
   consequent: IRNode
   /** The else branch: either another IRIfStatement (else if) or IRNode (final else) */
