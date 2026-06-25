@@ -867,6 +867,14 @@ export interface ExpressionAttr {
   /** `expr` with destructured prop refs rewritten to `_p.xxx`, for SSR
    *  template inlining. Absent when no rewrite was needed. */
   templateExpr?: string
+  /**
+   * Structured parse of `expr` (`parseExpression(expr.trim())`), attached
+   * during IR construction so adapters lower the attribute value from the tree
+   * instead of re-parsing the string (often several times per attribute).
+   * Optional/best-effort — see `IRExpression.parsed`; consumers fall back to
+   * parsing `expr`.
+   */
+  parsed?: ParsedExpr
   /** Set when the producer peeled an `expr || undefined` boolean-presence
    *  pattern; adapters fold this back into `(expr) || undefined` at emit. */
   presenceOrUndefined?: boolean

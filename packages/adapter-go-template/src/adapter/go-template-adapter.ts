@@ -7250,7 +7250,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (css !== null) return `style="${css}"`
       }
       if (isBooleanAttr(name) || value.presenceOrUndefined) {
-        const { condition: goCond, preamble } = this.convertConditionToGo(value.expr)
+        const { condition: goCond, preamble } = this.convertConditionToGo(value.expr, value.parsed)
         // ARIA attributes are string-valued ("true"/"false"), not HTML5
         // presence booleans — Hono renders the truthy presence form as
         // `aria-x="true"` (#1896, SelectItem's
@@ -7258,7 +7258,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const body = name.startsWith('aria-') ? `${name}="true"` : name
         return `${preamble}{{if ${goCond}}}${body}{{end}}`
       }
-      const parsed = parseExpression(value.expr.trim())
+      const parsed = value.parsed ?? parseExpression(value.expr.trim())
       if (parsed.kind === 'conditional') {
         // A ternary whose falsy branch is `undefined` / `null` OMITS the
         // attribute entirely on Hono (`aria-current={props.isActive ?
@@ -7308,13 +7308,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           : bareId
       if (/^[A-Za-z_$][\w$]*$/.test(propName) && this.state.nillablePropNames.has(propName)) {
         const field = `.${capitalizeFieldName(propName)}`
-        return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr)}}}"{{end}}`
+        return `{{if ne ${field} nil}}${name}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
       }
       // Lower once; if the result is already a self-contained action block (e.g.
       // an inlined `sortClass(k)` → `{{if …}}…{{end}}`, #1897), embed it as-is
       // rather than double-wrapping it in another `{{…}}`.
       const exprOut: { parsed?: ParsedExpr } = {}
-      const go = this.convertExpressionToGo(value.expr, exprOut)
+      const go = this.convertExpressionToGo(value.expr, exprOut, value.parsed)
       return this.isTemplateFragment(go, exprOut.parsed?.kind)
         ? `${name}="${go}"`
         : `${name}="{{${go}}}"`
