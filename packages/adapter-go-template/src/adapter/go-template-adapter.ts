@@ -4711,7 +4711,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // resolves via early returns (`null`/`undefined`, inlined consts) on the
     // `bf build` hot path.
     const classify: { parsed?: ParsedExpr } = {}
-    const goExpr = this.convertExpressionToGo(expr.expr, classify)
+    const goExpr = this.convertExpressionToGo(expr.expr, classify, expr.parsed)
 
     // If the lowered expression is already template text, don't wrap it again
     // in {{...}} (double-wrapping). Two distinct shapes reach here:
@@ -6333,7 +6333,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Convert a JS expression to Go template syntax.
    */
-  private convertExpressionToGo(jsExpr: string, out?: { parsed?: ParsedExpr }): string {
+  private convertExpressionToGo(
+    jsExpr: string,
+    out?: { parsed?: ParsedExpr },
+    // Pre-parsed tree from the IR (`IRExpression.parsed`), reused instead of
+    // re-parsing `jsExpr` here — but only after the string-based early returns
+    // below, which resolve null/undefined, static record indexes, inlined
+    // consts, and helper/url lowerings without a parse. Recursive calls (with
+    // derived strings) pass none and parse normally.
+    preParsed?: ParsedExpr,
+  ): string {
     const trimmed = jsExpr.trim()
 
     // Handle null/undefined specially
@@ -6394,7 +6403,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // expression (template literal vs. not) off this single `parseExpression`,
     // with no extra `ts.createSourceFile` on the `bf build` hot path and no
     // parse at all for the early-return shapes.
-    const parsed = parseExpression(trimmed)
+    const parsed = preParsed ?? parseExpression(trimmed)
     const support = isSupported(parsed)
 
     if (!support.supported) {
