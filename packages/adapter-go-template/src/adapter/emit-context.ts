@@ -37,4 +37,11 @@ export interface GoEmitContext {
 
   /** Extract the prop name from a `props.X ?? …` initial value, or null. */
   extractPropNameFromInitialValue(initialValue: string): string | null
+
+  /**
+   * Inline a module string const by name as a Go double-quoted literal
+   * (`"<escaped>"`), or null when the name is not such a const (loop vars and
+   * outer-loop params are excluded).
+   */
+  resolveModuleStringConst(name: string): string | null
 }
