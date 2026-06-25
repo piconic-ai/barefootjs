@@ -1,14 +1,15 @@
 /**
  * Constructor-context expression lowering (#1897 PostList derived state).
  *
- * Pure free functions over a {@link GoEmitContext} that lower the narrow
- * surface of JS expressions a derived-state memo needs into Go *code* (not
- * template syntax) evaluated in the `NewXxxProps` constructor — e.g. a
- * search-param read becomes `in.SearchParams.Get("k")`. Mutually recursive
- * (`lowerCtorExpr` ↔ `lowerCtorCond`), they read the context's
- * `state.localConstants` / `state.propsObjectName` / `state.needsStringsImport`
- * and `parseLiteralExpression`. Anything outside the supported surface returns
- * null so the caller can fall back to nil safely.
+ * Free functions over a {@link GoEmitContext} that lower the narrow surface of
+ * JS expressions a derived-state memo needs into Go *code* (not template
+ * syntax) evaluated in the `NewXxxProps` constructor — e.g. a search-param read
+ * becomes `in.SearchParams.Get("k")`. Mutually recursive (`lowerCtorExpr` ↔
+ * `lowerCtorCond`), they read the context's `state.localConstants` /
+ * `state.propsObjectName` and `parseLiteralExpression`, and set
+ * `state.needsStringsImport` when they emit a `strings.*` call. Anything
+ * outside the supported surface returns null so the caller can fall back to nil
+ * safely.
  */
 
 import ts from 'typescript'
