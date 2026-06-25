@@ -1403,102 +1403,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push('')
     }
 
-    // (#1897) Handle static nested components WITH body children.
-    // Bake the module-const array into the constructor so wrapper structs
-    // get their datum fields directly from the data, not from Input items
-    // (Input items only carry child-component params, not loop datum fields).
-    for (const nested of staticWithBody) {
-      const loopArray = nested.loopArray
-      const moduleConst = loopArray
-        ? (ir.metadata.localConstants ?? []).find(
-            c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
-          )
-        : null
-      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArray, nested.loopItemType)
-      let bakedValue = moduleConst?.type
-        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
-        : null
-      // (#1971) Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no
-      // named module const to look up, so bake the literal slice directly so
-      // SSR renders the items (matching Hono) instead of an empty loop.
-      if (!bakedValue && scalarLoopType) {
-        bakedValue = jsLiteralToGo(this.emitCtx, nested.loopArray!, { kind: 'unknown', raw: 'unknown' })
-      }
-      if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
-
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
-      const wrapperType = this.loopBodyWrapperName(componentName, nested)
-      const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
-
-      for (const child of bodyChildInstances) {
-        const childVar = `child_${child.fieldName}`
-        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
-        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
-        lines.push(`\t\tBfParent: scopeID,`)
-        lines.push(`\t\tBfMount: "${child.slotId}",`)
-        for (const prop of child.props) {
-          if (prop.value.kind === 'literal') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
-          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: true,`)
-          }
-        }
-        lines.push(`\t})`)
-      }
-      if (bodyChildInstances.length > 0) lines.push('')
-
-      const dataVar = `${varName}Data`
-      lines.push(`\t${dataVar} := ${bakedValue}`)
-      lines.push(`\t${varName} := make([]${wrapperType}, len(${dataVar}))`)
-      lines.push(`\tfor i, item := range ${dataVar} {`)
-      lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
-      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
-      lines.push(`\t\t\t\tBfParent: scopeID,`)
-      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-      // (#1971) Bake the loop-body component's own static props (e.g.
-      // `<CarouselItem orientation="vertical" className="basis-1/2">`) into its
-      // Input so SSR matches Hono. `key` becomes BfDataKey below; children flow
-      // through `bf_with_children`; hyphenated names have no Go field.
-      for (const prop of nested.props ?? []) {
-        if (prop.name === 'key' || prop.name === 'children' || prop.name.includes('-')) continue
-        if (prop.value.kind === 'literal') {
-          lines.push(`\t\t\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
-        } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
-          lines.push(`\t\t\t\t${capitalizeFieldName(prop.name)}: true,`)
-        }
-      }
-      lines.push(`\t\t\t}),`)
-      for (const f of datumFields) {
-        lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
-      }
-      // (#1971) Scalar-item loop: carry the whole range value on the wrapper's
-      // synthetic `BfLoopItem` so the body template renders the bare param
-      // (`{n}` → `{{.}}` fed `.BfLoopItem`). Also consumes `item`, which would
-      // otherwise be an unused range var (compile error) for a datum-less loop.
-      if (scalarLoopType && datumFields.length === 0) {
-        lines.push(`\t\t\tBfLoopItem: item,`)
-      }
-      for (const child of bodyChildInstances) {
-        lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
-      }
-      lines.push(`\t\t}`)
-      lines.push(`\t\t${varName}[i].BfParent = scopeID`)
-      lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
-      if (keyField) {
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-        this.state.usesFmt = true
-      } else if (scalarLoopType && nested.loopKey && nested.loopKey === nested.loopParam) {
-        // (#1971) `key={n}` where `n` is the scalar item itself — the key is
-        // the range value, not a field path.
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(item)`)
-        this.state.usesFmt = true
-      }
-      lines.push('\t}')
-      lines.push('')
-      emittedWrapperVars.add(varName)
-    }
+    this.emitStaticBodyWrappers(lines, ir, componentName, staticWithBody, emittedWrapperVars)
 
     // (#1423) Collect signal-time prop fallbacks: when a signal is
     // initialized via `createSignal(props.X ?? N)`, hoist `N` as a
@@ -1517,69 +1422,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     if (propFallbackVars.size > 0) lines.push('')
 
-    // (#1897) Build wrapper items for dynamic loop body components whose array
-    // bakes to a module-const via a memo. Creates the wrapper slice with
-    // embedded child Props + datum fields + static sub-component instances.
-    const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
-    for (const nested of dynamicWithBody) {
-      const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
-      if (!memoName) continue
-      const memo = ir.metadata.memos.find(m => m.name === memoName)
-      if (!memo) continue
-
-      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
-      const bakedValue = computeMemoInitialValue(this.emitCtx, 
-        memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType,
-      )
-      if (bakedValue === 'nil' || bakedValue === '0') continue
-
-      const wrapperType = this.loopBodyWrapperName(componentName, nested)
-      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
-      const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
-
-      // Create child sub-component instances once (identical scope IDs across rows)
-      for (const child of bodyChildInstances) {
-        const childVar = `child_${child.fieldName}`
-        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
-        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
-        lines.push(`\t\tBfParent: scopeID,`)
-        lines.push(`\t\tBfMount: "${child.slotId}",`)
-        for (const prop of child.props) {
-          if (prop.value.kind === 'literal') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
-          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
-            lines.push(`\t\t${capitalizeFieldName(prop.name)}: true,`)
-          }
-        }
-        lines.push(`\t})`)
-      }
-      if (bodyChildInstances.length > 0) lines.push('')
-
-      lines.push(`\tbakedData := ${bakedValue}`)
-      lines.push(`\t${varName} := make([]${wrapperType}, len(bakedData))`)
-      lines.push(`\tfor i, item := range bakedData {`)
-      lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
-      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
-      lines.push(`\t\t\t\tBfParent: scopeID,`)
-      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-      lines.push(`\t\t\t}),`)
-      for (const f of datumFields) {
-        lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
-      }
-      for (const child of bodyChildInstances) {
-        lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
-      }
-      lines.push(`\t\t}`)
-      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
-      if (keyField) {
-        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
-        this.state.usesFmt = true
-      }
-      lines.push(`\t}`)
-      lines.push('')
-      emittedWrapperVars.add(varName)
-    }
+    this.emitDynamicBodyWrappers(lines, ir, componentName, dynamicWithBody, propFallbackVars, emittedWrapperVars)
 
     lines.push(`\treturn ${propsTypeName}{`)
     lines.push('\t\tScopeID: scopeID,')
@@ -1933,6 +1776,184 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           },
         })
       }
+    }
+  }
+
+  private emitStaticBodyWrappers(
+    lines: string[],
+    ir: ComponentIR,
+    componentName: string,
+    staticWithBody: NestedComponentInfo[],
+    emittedWrapperVars: Set<string>,
+  ): void {
+    // (#1897) Handle static nested components WITH body children.
+    // Bake the module-const array into the constructor so wrapper structs
+    // get their datum fields directly from the data, not from Input items
+    // (Input items only carry child-component params, not loop datum fields).
+    for (const nested of staticWithBody) {
+      const loopArray = nested.loopArray
+      const moduleConst = loopArray
+        ? (ir.metadata.localConstants ?? []).find(
+            c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
+          )
+        : null
+      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArray, nested.loopItemType)
+      let bakedValue = moduleConst?.type
+        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
+        : null
+      // (#1971) Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no
+      // named module const to look up, so bake the literal slice directly so
+      // SSR renders the items (matching Hono) instead of an empty loop.
+      if (!bakedValue && scalarLoopType) {
+        bakedValue = jsLiteralToGo(this.emitCtx, nested.loopArray!, { kind: 'unknown', raw: 'unknown' })
+      }
+      if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
+
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const wrapperType = this.loopBodyWrapperName(componentName, nested)
+      const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+
+      for (const child of bodyChildInstances) {
+        const childVar = `child_${child.fieldName}`
+        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
+        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
+        lines.push(`\t\tBfParent: scopeID,`)
+        lines.push(`\t\tBfMount: "${child.slotId}",`)
+        for (const prop of child.props) {
+          if (prop.value.kind === 'literal') {
+            lines.push(`\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
+          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
+            lines.push(`\t\t${capitalizeFieldName(prop.name)}: true,`)
+          }
+        }
+        lines.push(`\t})`)
+      }
+      if (bodyChildInstances.length > 0) lines.push('')
+
+      const dataVar = `${varName}Data`
+      lines.push(`\t${dataVar} := ${bakedValue}`)
+      lines.push(`\t${varName} := make([]${wrapperType}, len(${dataVar}))`)
+      lines.push(`\tfor i, item := range ${dataVar} {`)
+      lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
+      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
+      lines.push(`\t\t\t\tBfParent: scopeID,`)
+      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+      // (#1971) Bake the loop-body component's own static props (e.g.
+      // `<CarouselItem orientation="vertical" className="basis-1/2">`) into its
+      // Input so SSR matches Hono. `key` becomes BfDataKey below; children flow
+      // through `bf_with_children`; hyphenated names have no Go field.
+      for (const prop of nested.props ?? []) {
+        if (prop.name === 'key' || prop.name === 'children' || prop.name.includes('-')) continue
+        if (prop.value.kind === 'literal') {
+          lines.push(`\t\t\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
+        } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
+          lines.push(`\t\t\t\t${capitalizeFieldName(prop.name)}: true,`)
+        }
+      }
+      lines.push(`\t\t\t}),`)
+      for (const f of datumFields) {
+        lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
+      }
+      // (#1971) Scalar-item loop: carry the whole range value on the wrapper's
+      // synthetic `BfLoopItem` so the body template renders the bare param
+      // (`{n}` → `{{.}}` fed `.BfLoopItem`). Also consumes `item`, which would
+      // otherwise be an unused range var (compile error) for a datum-less loop.
+      if (scalarLoopType && datumFields.length === 0) {
+        lines.push(`\t\t\tBfLoopItem: item,`)
+      }
+      for (const child of bodyChildInstances) {
+        lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
+      }
+      lines.push(`\t\t}`)
+      lines.push(`\t\t${varName}[i].BfParent = scopeID`)
+      lines.push(`\t\t${varName}[i].BfMount = "${nested.slotId}"`)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      if (keyField) {
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+        this.state.usesFmt = true
+      } else if (scalarLoopType && nested.loopKey && nested.loopKey === nested.loopParam) {
+        // (#1971) `key={n}` where `n` is the scalar item itself — the key is
+        // the range value, not a field path.
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(item)`)
+        this.state.usesFmt = true
+      }
+      lines.push('\t}')
+      lines.push('')
+      emittedWrapperVars.add(varName)
+    }
+  }
+
+  private emitDynamicBodyWrappers(
+    lines: string[],
+    ir: ComponentIR,
+    componentName: string,
+    dynamicWithBody: NestedComponentInfo[],
+    propFallbackVars: Map<string, PropFallbackVar>,
+    emittedWrapperVars: Set<string>,
+  ): void {
+    // (#1897) Build wrapper items for dynamic loop body components whose array
+    // bakes to a module-const via a memo. Creates the wrapper slice with
+    // embedded child Props + datum fields + static sub-component instances.
+    const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+    for (const nested of dynamicWithBody) {
+      const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
+      if (!memoName) continue
+      const memo = ir.metadata.memos.find(m => m.name === memoName)
+      if (!memo) continue
+
+      const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
+      const bakedValue = computeMemoInitialValue(this.emitCtx, 
+        memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType,
+      )
+      if (bakedValue === 'nil' || bakedValue === '0') continue
+
+      const wrapperType = this.loopBodyWrapperName(componentName, nested)
+      const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+
+      // Create child sub-component instances once (identical scope IDs across rows)
+      for (const child of bodyChildInstances) {
+        const childVar = `child_${child.fieldName}`
+        lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
+        lines.push(`\t\tScopeID: scopeID + "_${child.slotId}",`)
+        lines.push(`\t\tBfParent: scopeID,`)
+        lines.push(`\t\tBfMount: "${child.slotId}",`)
+        for (const prop of child.props) {
+          if (prop.value.kind === 'literal') {
+            lines.push(`\t\t${capitalizeFieldName(prop.name)}: ${goLiteral(prop.value.value)},`)
+          } else if (prop.value.kind === 'boolean-shorthand' || prop.value.kind === 'boolean-attr') {
+            lines.push(`\t\t${capitalizeFieldName(prop.name)}: true,`)
+          }
+        }
+        lines.push(`\t})`)
+      }
+      if (bodyChildInstances.length > 0) lines.push('')
+
+      lines.push(`\tbakedData := ${bakedValue}`)
+      lines.push(`\t${varName} := make([]${wrapperType}, len(bakedData))`)
+      lines.push(`\tfor i, item := range bakedData {`)
+      lines.push(`\t\t${varName}[i] = ${wrapperType}{`)
+      lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
+      lines.push(`\t\t\t\tBfParent: scopeID,`)
+      lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
+      lines.push(`\t\t\t}),`)
+      for (const f of datumFields) {
+        lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
+      }
+      for (const child of bodyChildInstances) {
+        lines.push(`\t\t\t${child.fieldName}: child_${child.fieldName},`)
+      }
+      lines.push(`\t\t}`)
+      const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+      if (keyField) {
+        lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
+        this.state.usesFmt = true
+      }
+      lines.push(`\t}`)
+      lines.push('')
+      emittedWrapperVars.add(varName)
     }
   }
 
