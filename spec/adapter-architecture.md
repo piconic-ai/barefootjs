@@ -117,20 +117,28 @@ Landed (Go adapter + shared layer):
   `resolveModuleStringConst`). `typeInfoToGo` was added then removed once it
   became a free function the other modules import directly.
 
-Go adapter, remaining toward the rules (snapshot):
+Go adapter, remaining toward the rules — counts for the **main adapter file**
+(`go-template-adapter.ts`):
 
 | Metric | Start | Now | Target |
 |--------|-------|-----|--------|
 | `parseExpression` calls | 4 | 4 | 0 |
 | `ts.createSourceFile` | 10 | 2 | 0 |
 | regex `.match`/`.exec` | 17 | 13 | 0 |
-| main file lines | ~7,600 | ~5,500 | ~2,000 (orchestrator) |
+| file lines | ~7,600 | ~5,500 | ~2,000 (orchestrator) |
 
-The residual `parseExpression` sites are all IR-carries **fallbacks**
-(`preParsed ?? parseExpression(...)`) — harmless when the analyzer attaches the
-tree; they drop to 0 as Roadmap A lands the remaining value-shaped fields. The
-two `ts.createSourceFile` sites are the shared `parseLiteralExpression` and the
-struct-shape synthesiser.
+These are **main-file** counts. Roadmap B *moved* several parse/regex sites into
+the extracted `memo/*` and `spread/*` modules rather than eliminating them, so
+the **package-wide** figures across `adapter/` are higher — `ts.createSourceFile`
+8, regex ~20. The constitution rule (no parse/regex in *any* adapter code)
+targets the package-wide count; both drop to 0 as Roadmap A carries the
+value-shaped fields structurally. The residual `parseExpression` sites (all in
+the main file) are IR-carries **fallbacks** (`preParsed ?? parseExpression(...)`)
+— harmless when the analyzer attaches the tree. The two main-file
+`ts.createSourceFile` sites are the shared `parseLiteralExpression` and the
+struct-shape synthesiser; the rest live in the memo-predicate / template / value
+modules (`memo/memo-type`, `memo/template-interp`, `memo/memo-value`,
+`memo/memo-compute`, `spread/spread-codegen`).
 
 ## Remaining roadmap
 
