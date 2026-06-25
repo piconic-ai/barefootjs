@@ -4,7 +4,10 @@ Target architecture for BarefootJS SSR adapters, and the reference shape every
 backend adapter (Go, Mojolicious, and future languages) should converge on.
 
 > Status: **in progress.** This is the agreed target plus a live record of what
-> has landed and what remains. It is adjusted as the work completes.
+> has landed and what remains. It is adjusted as the work completes. Roadmap B
+> (domain-module extraction) is substantially complete — nine modules extracted,
+> the Go adapter is ~5,500 lines (from ~7,600); Roadmap A (carry the last
+> value-shaped IR fields, driving parse/regex → 0) is the remaining work.
 
 ## Two principles
 
@@ -39,8 +42,8 @@ functions," consuming the same IR.
 │   • each method = dispatch + thin delegation                             │
 │         ↓ delegates to                                                   │
 │  Domain modules = pure free functions over an EmitContext                │
-│   type-codegen / props-codegen / expr-lowering / memo-lowering /         │
-│   value-lowering / node-rendering / analysis                            │
+│   value-lowering / type-codegen / memo (type·ctor·template·value·compute)│
+│   / spread-codegen / props (prop-types) / analysis                       │
 │         ↓                                                                │
 │  lib/ = fully pure, stateless helpers                                    │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -95,15 +98,39 @@ Landed (Go adapter + shared layer):
   - `IRExpression.parsed` — text interpolations.
   - `IRConditional.parsedCondition` / `IRIfStatement.parsedCondition`.
   - `ExpressionAttr.parsed` — intrinsic-element attribute expressions.
+- **Domain modules extracted (Roadmap B).** The lowering behaviour now lives in
+  pure free functions over `GoEmitContext`, leaving the adapter as the
+  orchestrator that composes them:
+  - `value/value-lowering.ts` — signal/const initial values → Go literals.
+  - `type/type-codegen.ts` — `TypeInfo` / raw-type-string / inferred → Go type.
+  - `memo/memo-type.ts` — memo type-inference predicates.
+  - `memo/ctor-lowering.ts` — `NewXxxProps` constructor-context expressions.
+  - `memo/template-interp.ts` — template-literal memo SSR value.
+  - `memo/memo-value.ts` — block-body / object memo value.
+  - `memo/memo-compute.ts` — the memo initial-value computation core.
+  - `spread/spread-codegen.ts` — `{...spread}` bag collection + initializers.
+  - `props/prop-types.ts` — prop Go-type resolution / nillable set.
+
+  The seam stayed minimal: a member was added only where an extracted module
+  genuinely calls back (`parseLiteralExpression`, `convertExpressionToGo`,
+  `convertConditionToGo`, `extractPropNameFromInitialValue`, `extractPropFallback`,
+  `resolveModuleStringConst`). `typeInfoToGo` was added then removed once it
+  became a free function the other modules import directly.
 
 Go adapter, remaining toward the rules (snapshot):
 
-| Metric | Now | Target |
-|--------|-----|--------|
-| `parseExpression` calls | 4 | 0 |
-| `ts.createSourceFile` | 10 | 0 |
-| regex `.match`/`.exec` | 17 | 0 |
-| main file lines | ~7,600 | ~2,000 (orchestrator) |
+| Metric | Start | Now | Target |
+|--------|-------|-----|--------|
+| `parseExpression` calls | 4 | 4 | 0 |
+| `ts.createSourceFile` | 10 | 2 | 0 |
+| regex `.match`/`.exec` | 17 | 13 | 0 |
+| main file lines | ~7,600 | ~5,500 | ~2,000 (orchestrator) |
+
+The residual `parseExpression` sites are all IR-carries **fallbacks**
+(`preParsed ?? parseExpression(...)`) — harmless when the analyzer attaches the
+tree; they drop to 0 as Roadmap A lands the remaining value-shaped fields. The
+two `ts.createSourceFile` sites are the shared `parseLiteralExpression` and the
+struct-shape synthesiser.
 
 ## Remaining roadmap
 
@@ -121,12 +148,19 @@ models array literals but **not object literals** (its `kind` union has no
 3. `localConstants` parsed values → same.
 4. Sweep the residual `ts.createSourceFile` / regex sites to 0.
 
-**B. Finish the adapter decomposition (behaviour → pure functions).**
-Mechanical, independent of A; each extraction goes through `EmitContext`:
-`type-codegen`, `value-lowering`, `memo-lowering`, `spread-codegen`,
-`props-codegen`, `array-lowering`. Node rendering (`renderElement` /
-`renderLoop` / `renderComponent` / `renderAttributes`) stays as the
-orchestrator core.
+**B. Adapter decomposition (behaviour → pure functions). — substantially done.**
+The lowering clusters were extracted as stacked, byte-identical PRs through
+`EmitContext`: `value-lowering`, `type-codegen`, the five `memo/*` modules,
+`spread-codegen`, and `props/prop-types` (the type-resolution slice of
+props-codegen). What deliberately **stays on the adapter** is the orchestrator
+core: node rendering (`renderElement` / `renderLoop` / `renderComponent` /
+`renderAttributes`) and the struct/constructor assembly (`generateInputStruct` /
+`generatePropsStruct` / `generateNewPropsFunction`). These compose the extracted
+modules and reach ~18 sibling helpers each; routing them through the seam would
+re-expose most of the adapter and defeat its purpose. The remaining shrink to
+the ~2,000-line target comes from Roadmap A (carrying the last value-shaped
+fields, which deletes the residual parse/regex these methods still hold), not
+from extracting the orchestrator.
 
 **C. Reference.** With A+B done, "a new language adapter" is: implement
 `ParsedExprEmitter` / `IRNodeEmitter` / `AttrValueEmitter`, hold a
