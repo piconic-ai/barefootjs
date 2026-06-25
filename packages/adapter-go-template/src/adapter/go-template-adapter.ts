@@ -115,6 +115,7 @@ import {
   getSignalInitialValueAsGo,
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
+import { isTemplateLiteralMemo, isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -3954,34 +3955,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Whether a memo is an arrow whose result is a template literal — either a
-   * concise body (`() => \`…\``) or a block body whose `return` is one.
-   */
-  private isTemplateLiteralMemo(computation: string): boolean {
-    const sf = ts.createSourceFile(
-      '__memo.ts', `const __x = (${computation});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isVariableStatement(stmt)) return false
-    let init = stmt.declarationList.declarations[0]?.initializer
-    while (init && ts.isParenthesizedExpression(init)) init = init.expression
-    if (!init || !ts.isArrowFunction(init)) return false
-    let body = init.body as ts.Node
-    while (ts.isParenthesizedExpression(body as ts.Expression)) {
-      body = (body as ts.ParenthesizedExpression).expression
-    }
-    if (ts.isBlock(body)) {
-      const ret = body.statements.find(ts.isReturnStatement)
-      if (!ret || !ret.expression) return false
-      body = ret.expression
-      while (ts.isParenthesizedExpression(body as ts.Expression)) {
-        body = (body as ts.ParenthesizedExpression).expression
-      }
-    }
-    return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
-  }
-
-  /**
    * Infer the Go type for a memo based on its computation and dependencies.
    */
   private inferMemoType(
@@ -3992,7 +3965,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // A template-literal memo always produces a string. Decide this first so a
     // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
     // heuristic below into `int`.
-    if (this.isTemplateLiteralMemo(memo.computation)) return 'string'
+    if (isTemplateLiteralMemo(memo.computation)) return 'string'
 
     // Check if computation involves multiplication (*) - likely number
     if (memo.computation.includes('*') || memo.computation.includes('/') ||
@@ -4031,10 +4004,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // string even though its condition has `===`. Decide before the boolean
     // heuristic so it's typed `string` (zero value `""`), not `interface{}`
     // (whose nil zero renders `<nil>`).
-    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && this.isStringTernaryMemo(memo.computation)) {
+    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isStringTernaryMemo(this.emitCtx, memo.computation)) {
       return 'string'
     }
-    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && this.isBooleanMemo(memo, signals, propsParamMap)) {
+    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isBooleanMemo(this.emitCtx, memo, signals, propsParamMap)) {
       return 'bool'
     }
 
@@ -4047,86 +4020,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Default to the memo's declared type
     return typeInfoToGo(this.emitCtx, memo.type)
-  }
-
-  /**
-   * (#checkbox) Heuristic: does this memo evaluate to a boolean? True when its
-   * computation is a comparison (`!==`/`===`/`!=`/`==`), a negation (`!x`), or
-   * a ternary whose branches are all boolean signals/props. Used to pick `bool`
-   * (zero value `false`) over the int `0` default for the SSR initial value.
-   */
-  private isBooleanMemo(
-    memo: { computation: string; deps: string[] },
-    signals: { getter: string; initialValue: string; type: TypeInfo }[],
-    propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
-  ): boolean {
-    const c = memo.computation
-    // A ternary whose two branches are string literals is a STRING memo
-    // (`orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`),
-    // not boolean — the `===` lives in the *condition*, so the blanket
-    // comparison check below would misclassify it as bool and bake `false`
-    // (#1971 carousel `directionClasses`). Bail before that check.
-    if (this.isStringTernaryMemo(c)) return false
-    if (/(!==|===|!=(?!=)|==(?!=))/.test(c)) return true
-    if (/=>\s*!/.test(c)) return true
-    // Ternary `() => cond() ? a() : b()` — boolean when both branches are
-    // boolean-resolving getters (signals whose value is boolean, or boolean
-    // props).
-    const isBoolGetter = (name: string): boolean => {
-      const sig = signals.find(s => s.getter === name)
-      if (sig) {
-        if (typeInfoToGo(this.emitCtx, sig.type) === 'bool') return true
-        // Signal initialised from `props.X ?? false` / a boolean prop.
-        if (/\?\?\s*(true|false)\b/.test(sig.initialValue)) return true
-        const propName = this.extractPropNameFromInitialValue(sig.initialValue) ?? sig.initialValue
-        const prop = propsParamMap.get(propName)
-        if (prop && typeInfoToGo(this.emitCtx, prop.type, prop.defaultValue) === 'bool') return true
-        return false
-      }
-      const prop = propsParamMap.get(name)
-      return !!prop && typeInfoToGo(this.emitCtx, prop.type, prop.defaultValue) === 'bool'
-    }
-    const ternary = c.match(/=>\s*\w+\(\)\s*\?\s*(\w+)\(\)\s*:\s*(\w+)\(\)/)
-    if (ternary) {
-      return isBoolGetter(ternary[1]) && isBoolGetter(ternary[2])
-    }
-    return false
-  }
-
-  /**
-   * (#1971) Does this memo's arrow body resolve to a string-valued ternary
-   * whose BOTH branches are string literals — e.g. `() => orientation() ===
-   * 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`? Such a memo is a string,
-   * not a bool, even though its condition contains `===`. AST-based (the
-   * repo idiom) so quotes inside class strings don't trip a regex.
-   */
-  private isStringTernaryMemo(computation: string): boolean {
-    try {
-      const sf = ts.createSourceFile(
-        '__memo.ts',
-        `const __x = (${computation});`,
-        ts.ScriptTarget.Latest,
-        false,
-      )
-      const stmt = sf.statements[0]
-      if (!stmt || !ts.isVariableStatement(stmt)) return false
-      let init = stmt.declarationList.declarations[0]?.initializer
-      while (init && ts.isParenthesizedExpression(init)) init = init.expression
-      if (!init || !ts.isArrowFunction(init)) return false
-      let body: ts.Node = init.body
-      while (ts.isParenthesizedExpression(body)) body = body.expression
-      if (!ts.isConditionalExpression(body)) return false
-      // A branch is string-valued when it's a string/template literal or an
-      // identifier bound to a module-scope string const (carousel's
-      // `positionClasses` → `prevVerticalClasses`/`prevHorizontalClasses`).
-      const isStr = (n: ts.Expression): boolean =>
-        ts.isStringLiteral(n) ||
-        ts.isNoSubstitutionTemplateLiteral(n) ||
-        (ts.isIdentifier(n) && this.state.moduleStringConsts.has(n.text))
-      return isStr(body.whenTrue) && isStr(body.whenFalse)
-    } catch {
-      return false
-    }
   }
 
   /**
