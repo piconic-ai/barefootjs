@@ -1358,23 +1358,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const signalDynamicNested = nestedComponents.filter(
       n => n.isDynamic && !n.isPropDerived && !(n.bodyChildren && n.bodyChildren.length > 0),
     )
-    lines.push(`// New${componentName}Props creates ${propsTypeName} from ${inputTypeName}.`)
-    for (const nested of signalDynamicNested) {
-      const arrayField = `${nested.name}s`
-      lines.push(`//`)
-      lines.push(`// NOTE: \`${arrayField}\` is populated by the route handler, not by`)
-      lines.push(`// New${componentName}Props — the SSR template iterates over it`)
-      lines.push(`// dynamically (\`.${arrayField}\`). Build the slice from your source data and`)
-      lines.push(`// assign it before passing the props to your renderer. Example:`)
-      lines.push(`//`)
-      lines.push(`//   props := New${componentName}Props(${inputTypeName}{ /* ... */ })`)
-      lines.push(`//   props.${arrayField} = make([]${nested.name}Props, len(items))`)
-      lines.push(`//   for i, item := range items {`)
-      lines.push(`//     props.${arrayField}[i] = New${nested.name}Props(${nested.name}Input{ /* fields */ })`)
-      lines.push(`//     props.${arrayField}[i].BfParent = props.ScopeID`)
-      lines.push(`//     props.${arrayField}[i].BfMount = "${nested.slotId}"`)
-      lines.push(`//   }`)
-    }
+    this.emitNewPropsDocComment(lines, componentName, inputTypeName, propsTypeName, signalDynamicNested)
     lines.push(`func New${componentName}Props(in ${inputTypeName}) ${propsTypeName} {`)
     lines.push('\tscopeID := in.ScopeID')
     lines.push('\tif scopeID == "" {')
@@ -1745,6 +1729,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // Add static child component instances
+    this.emitStaticChildInstances(lines, ir)
+
+    this.emitSpreadBagInits(lines, ir, spreadSlots)
+
+    lines.push('\t}')
+    lines.push('}')
+  }
+
+  private emitStaticChildInstances(lines: string[], ir: ComponentIR): void {
     const staticChildren = this.collectStaticChildInstances(ir.root)
     for (const child of staticChildren) {
       lines.push(`\t\t${child.fieldName}: New${child.name}Props(${child.name}Input{`)
@@ -1889,7 +1882,35 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       lines.push(`\t\t}),`)
     }
+  }
 
+  private emitNewPropsDocComment(
+    lines: string[],
+    componentName: string,
+    inputTypeName: string,
+    propsTypeName: string,
+    signalDynamicNested: NestedComponentInfo[],
+  ): void {
+    lines.push(`// New${componentName}Props creates ${propsTypeName} from ${inputTypeName}.`)
+    for (const nested of signalDynamicNested) {
+      const arrayField = `${nested.name}s`
+      lines.push(`//`)
+      lines.push(`// NOTE: \`${arrayField}\` is populated by the route handler, not by`)
+      lines.push(`// New${componentName}Props — the SSR template iterates over it`)
+      lines.push(`// dynamically (\`.${arrayField}\`). Build the slice from your source data and`)
+      lines.push(`// assign it before passing the props to your renderer. Example:`)
+      lines.push(`//`)
+      lines.push(`//   props := New${componentName}Props(${inputTypeName}{ /* ... */ })`)
+      lines.push(`//   props.${arrayField} = make([]${nested.name}Props, len(items))`)
+      lines.push(`//   for i, item := range items {`)
+      lines.push(`//     props.${arrayField}[i] = New${nested.name}Props(${nested.name}Input{ /* fields */ })`)
+      lines.push(`//     props.${arrayField}[i].BfParent = props.ScopeID`)
+      lines.push(`//     props.${arrayField}[i].BfMount = "${nested.slotId}"`)
+      lines.push(`//   }`)
+    }
+  }
+
+  private emitSpreadBagInits(lines: string[], ir: ComponentIR, spreadSlots: SpreadSlotInfo[]): void {
     // (#1407) Initialise spread bag fields. Unsupported shapes (e.g.
     // signal getters whose initialValue isn't a plain object literal,
     // identifiers that don't resolve to a propsParam) fall through to
@@ -1913,9 +1934,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         })
       }
     }
-
-    lines.push('\t}')
-    lines.push('}')
   }
 
   /**
