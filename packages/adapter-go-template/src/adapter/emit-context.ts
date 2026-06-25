@@ -18,7 +18,7 @@
 
 import type ts from 'typescript'
 
-import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { CompileState } from './lib/compile-state.ts'
 
@@ -34,9 +34,6 @@ export interface GoEmitContext {
 
   /** Lower a JS condition to a Go-template bool + any hoisted preamble. */
   convertConditionToGo(jsCondition: string): { condition: string; preamble: string }
-
-  /** Render a `TypeInfo` as its Go type string (inferring from `defaultValue`). */
-  typeInfoToGo(typeInfo: TypeInfo, defaultValue?: string): string
 
   /** Extract the prop name from a `props.X ?? …` initial value, or null. */
   extractPropNameFromInitialValue(initialValue: string): string | null
