@@ -39,6 +39,12 @@ export interface GoEmitContext {
   extractPropNameFromInitialValue(initialValue: string): string | null
 
   /**
+   * Parse a signal-time initial value `props.X ?? <literal>` into the source
+   * prop name and the Go-formatted fallback, or null when it isn't that shape.
+   */
+  extractPropFallback(initialValue: string): { propName: string; goFallback: string } | null
+
+  /**
    * Inline a module string const by name as a Go double-quoted literal
    * (`"<escaped>"`), or null when the name is not such a const (loop vars and
    * outer-loop params are excluded).
