@@ -1,0 +1,191 @@
+/**
+ * Memo value computation for block-body / object-returning memos.
+ *
+ * Free functions over a {@link GoEmitContext}:
+ *   - `resolveBlockBodyMemoModuleConst` recognises a guard-and-return-module-
+ *     const memo and reports the constant, reading `state.localConstants`.
+ *   - `computeObjectMemoInitialValue` lowers a `searchParams()`-derived
+ *     object-returning memo to a Go `map[string]interface{}` literal, reading
+ *     `state.searchParamsLocals` and `parseLiteralExpression` and delegating
+ *     value lowering to `lowerCtorExpr`.
+ */
+
+import ts from 'typescript'
+
+import type { TypeInfo } from '@barefootjs/jsx'
+
+import type { GoEmitContext } from '../emit-context.ts'
+import type { CtorLowerEnv } from '../lib/types.ts'
+import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { lowerCtorExpr } from './ctor-lowering.ts'
+
+/**
+ * (#1897) Recognises a block-body memo whose SSR path returns a module-const
+ * array when the guard signal starts falsy:
+ *   `() => { const k = getter(); if (!k) return MODULE_CONST; … }`
+ * Returns the constant's name and inferred type, or null.
+ */
+export function resolveBlockBodyMemoModuleConst(
+  ctx: GoEmitContext,
+  computation: string,
+  signals: { getter: string; initialValue: string }[],
+): { constName: string; constValue: string | undefined; constType: TypeInfo | undefined } | null {
+  try {
+    const sf = ts.createSourceFile(
+      '__memo.ts',
+      `const __x = (${computation});`,
+      ts.ScriptTarget.Latest,
+      false,
+    )
+    const stmt = sf.statements[0]
+    if (!stmt || !ts.isVariableStatement(stmt)) return null
+    let init = stmt.declarationList.declarations[0]?.initializer
+    while (init && ts.isParenthesizedExpression(init)) init = init.expression
+    if (!init || !ts.isArrowFunction(init)) return null
+    const body = init.body
+    if (!ts.isBlock(body)) return null
+
+    // Walk the block's statements collecting:
+    //   const <varName> = <signalGetter>()   →  varToSignal map
+    //   if (!<varName>) return <moduleConst>  →  match varName back to signal
+    const varToSignal = new Map<string, string>()
+    let guardSignalGetter: string | null = null
+    let returnedConst: string | null = null
+
+    for (const s of body.statements) {
+      if (ts.isVariableStatement(s)) {
+        for (const decl of s.declarationList.declarations) {
+          if (
+            ts.isIdentifier(decl.name) &&
+            decl.initializer &&
+            ts.isCallExpression(decl.initializer) &&
+            ts.isIdentifier(decl.initializer.expression)
+          ) {
+            const callee = decl.initializer.expression.text
+            if (signals.some(sg => sg.getter === callee)) {
+              varToSignal.set(decl.name.text, callee)
+            }
+          }
+        }
+      }
+      if (
+        ts.isIfStatement(s) &&
+        ts.isPrefixUnaryExpression(s.expression) &&
+        s.expression.operator === ts.SyntaxKind.ExclamationToken &&
+        ts.isIdentifier(s.expression.operand)
+      ) {
+        const guardVar = s.expression.operand.text
+        const signalGetter = varToSignal.get(guardVar)
+        if (!signalGetter) continue
+        const thenBlock = ts.isBlock(s.thenStatement)
+          ? s.thenStatement.statements
+          : [s.thenStatement]
+        for (const rs of thenBlock) {
+          if (
+            ts.isReturnStatement(rs) &&
+            rs.expression &&
+            ts.isIdentifier(rs.expression)
+          ) {
+            guardSignalGetter = signalGetter
+            returnedConst = rs.expression.text
+          }
+        }
+      }
+      if (guardSignalGetter && returnedConst) break
+    }
+
+    if (!guardSignalGetter || !returnedConst) return null
+
+    // The guard signal must start falsy (null, '', 0, false)
+    const guardSignal = signals.find(sg => sg.getter === guardSignalGetter)
+    if (!guardSignal) return null
+    const iv = guardSignal.initialValue.trim()
+    if (iv !== 'null' && iv !== "''" && iv !== '""' && iv !== '0' && iv !== 'false') {
+      return null
+    }
+
+    // The returned identifier must be a module-scope constant
+    const constant = ctx.state.localConstants.find(
+      c => c.name === returnedConst && c.origin?.scope === 'module',
+    )
+    if (!constant) return null
+
+    return {
+      constName: constant.name,
+      constValue: constant.value,
+      constType: constant.type ?? undefined,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * (#1897 PostList) Compute the SSR value of an object-returning block-body
+ * memo derived from `searchParams()`:
+ *   () => { const sp = searchParams(); return { sort: asSortKey(sp.get('sort')),
+ *                                               tag: sp.get('tag') ?? '' } }
+ * Emits a Go `map[string]interface{}{ "Sort": …, "Tag": … }` whose values are
+ * lowered from the request query (see `lowerCtorExpr`). Keys are capitalized to
+ * match the template's `.Params.<Field>` map access. Returns null for any shape
+ * the lowerer can't represent, so the caller falls back to a nil map.
+ */
+export function computeObjectMemoInitialValue(ctx: GoEmitContext, computation: string): string | null {
+  const arrow = ctx.parseLiteralExpression(computation)
+  if (!arrow || !ts.isArrowFunction(arrow) || !ts.isBlock(arrow.body)) return null
+
+  // Accept only a strict shape: zero or more `const`/`let` declarations
+  // followed by exactly one `return { … }` as the LAST statement. Any other
+  // statement kind — `if`, an early/extra `return`, a loop, a bare call —
+  // means the block has control flow this resolver can't reason about, so we
+  // bail to the nil fallback rather than silently lowering one of several
+  // returns (#1941 review). Along the way, collect `const <v> = searchParams()`
+  // bindings (the env for `<v>.get('k')`).
+  const searchParamsVars = new Set<string>()
+  let retObj: ts.ObjectLiteralExpression | null = null
+  const statements = arrow.body.statements
+  for (let i = 0; i < statements.length; i++) {
+    const s = statements[i]
+    if (ts.isVariableStatement(s)) {
+      for (const d of s.declarationList.declarations) {
+        if (
+          ts.isIdentifier(d.name) &&
+          d.initializer &&
+          ts.isCallExpression(d.initializer) &&
+          ts.isIdentifier(d.initializer.expression) &&
+          d.initializer.arguments.length === 0 &&
+          ctx.state.searchParamsLocals.has(d.initializer.expression.text)
+        ) {
+          searchParamsVars.add(d.name.text)
+        }
+      }
+      continue
+    }
+    if (ts.isReturnStatement(s)) {
+      // The return must be the last statement (so it's the only one) and
+      // return an object literal.
+      if (i !== statements.length - 1 || !s.expression) return null
+      let e: ts.Expression = s.expression
+      while (ts.isParenthesizedExpression(e)) e = e.expression
+      if (!ts.isObjectLiteralExpression(e)) return null
+      retObj = e
+      continue
+    }
+    // Any other statement kind → control flow we don't model → bail.
+    return null
+  }
+  if (!retObj || retObj.properties.length === 0) return null
+
+  const env: CtorLowerEnv = { searchParamsVars, params: new Map() }
+  const entries: string[] = []
+  for (const prop of retObj.properties) {
+    if (!ts.isPropertyAssignment(prop)) return null
+    const key =
+      ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
+    if (!key) return null
+    const go = lowerCtorExpr(ctx, prop.initializer, env)
+    if (go === null) return null
+    entries.push(`"${capitalizeFieldName(key)}": ${go}`)
+  }
+  return `map[string]interface{}{\n\t\t${entries.join(',\n\t\t')},\n\t}`
+}
