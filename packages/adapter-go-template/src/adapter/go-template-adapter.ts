@@ -114,6 +114,7 @@ import {
   objectLiteralToGoMap,
   getSignalInitialValueAsGo,
 } from "./value/value-lowering.ts"
+import { typeInfoToGo } from "./type/type-codegen.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -207,7 +208,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     parseLiteralExpression: (value) => this.parseLiteralExpression(value),
     convertExpressionToGo: (jsExpr, out) => this.convertExpressionToGo(jsExpr, out),
     convertConditionToGo: (jsCondition) => this.convertConditionToGo(jsCondition),
-    typeInfoToGo: (typeInfo, defaultValue) => this.typeInfoToGo(typeInfo, defaultValue),
     extractPropNameFromInitialValue: (initialValue) => this.extractPropNameFromInitialValue(initialValue),
   }
 
@@ -786,7 +786,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       fields.push({
         tsName: prop.name,
         goName: capitalizeFieldName(prop.name),
-        goType: this.typeInfoToGo(prop.type),
+        goType: typeInfoToGo(this.emitCtx, prop.type),
       })
     }
     return fields
@@ -910,26 +910,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Convert a raw TypeScript type string to a Go type string.
-   * Handles primitives (number, string, boolean) and basic arrays.
-   */
-  private tsTypeStringToGo(tsType: string): string {
-    const t = tsType.trim()
-    if (t === 'number') return 'int'
-    if (t === 'string') return 'string'
-    if (t === 'boolean' || t === 'bool') return 'bool'
-    if (t.endsWith('[]')) {
-      const elem = t.slice(0, -2)
-      return `[]${this.tsTypeStringToGo(elem)}`
-    }
-    const arrayMatch = t.match(/^Array<(.+)>$/)
-    if (arrayMatch) return `[]${this.tsTypeStringToGo(arrayMatch[1])}`
-    // Check if it's a known local type
-    if (this.state.localTypeNames.has(t)) return t
-    return 'interface{}'
-  }
-
-  /**
    * Build a map from prop name to a better Go type inferred from signals.
    * When a signal is initialized from a prop (e.g., createSignal(props.initial ?? 0)),
    * the signal's type annotation may be more specific than the prop's TypeInfo.
@@ -945,10 +925,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       for (const propName of propNames) {
         const param = ir.metadata.propsParams.find(p => p.name === propName)
         if (!param) continue
-        const propGoType = this.typeInfoToGo(param.type, param.defaultValue)
+        const propGoType = typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
         // Override when prop type is generic (interface{} or contains interface{})
         if (propGoType.includes('interface{}')) {
-          const signalGoType = this.typeInfoToGo(signal.type, signal.initialValue)
+          const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
           if (!signalGoType.includes('interface{}')) {
             overrides.set(propName, signalGoType)
           }
@@ -970,7 +950,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     param: IRMetadata['propsParams'][number],
     propTypeOverrides: Map<string, string>,
   ): string {
-    const base = propTypeOverrides.get(param.name) ?? this.typeInfoToGo(param.type, param.defaultValue)
+    const base = propTypeOverrides.get(param.name) ?? typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
     // (#1971) An OPTIONAL prop typed as a named struct (e.g. carousel's
     // `opts?: EmblaOptionsType`) lowers to `map[string]interface{}` rather
     // than the value struct. Two reasons: a value struct is always truthy in
@@ -1192,7 +1172,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // untyped object array we gave a concrete element type.
       const synthType = this.state.synthStructTypes.get(signal.getter)
       if (synthType) {
-        lines.push(`\t${fieldName} ${this.typeInfoToGo(synthType)} \`json:"${jsonTag}"\``)
+        lines.push(`\t${fieldName} ${typeInfoToGo(this.emitCtx, synthType)} \`json:"${jsonTag}"\``)
         continue
       }
       // Infer type from initial value or referenced prop's type
@@ -1203,8 +1183,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (propName) referencedProp = propsParamMap.get(propName)
       }
       if (referencedProp) {
-        const propGoType = this.typeInfoToGo(referencedProp.type, referencedProp.defaultValue)
-        const signalGoType = this.typeInfoToGo(signal.type, signal.initialValue)
+        const propGoType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue)
+        const signalGoType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
         // The "prop type wins" heuristic exists for cases where the
         // signal infer is less specific than the prop (e.g. the signal
         // is `createSignal(props.todos)` and we want `[]Todo`, not
@@ -1228,7 +1208,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           goType = propGoType
         }
       } else {
-        goType = this.typeInfoToGo(signal.type, signal.initialValue)
+        goType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
       }
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
@@ -1382,7 +1362,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           fields.push({
             tsName: prop.name,
             goName: capitalizeFieldName(prop.name),
-            goType: this.typeInfoToGo(prop.type),
+            goType: typeInfoToGo(this.emitCtx, prop.type),
           })
         }
         if (fields.length > 0) return fields
@@ -2753,52 +2733,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Convert TypeInfo to Go type string.
-   * If type is unknown, tries to infer from defaultValue.
-   */
-  private typeInfoToGo(typeInfo: TypeInfo, defaultValue?: string): string {
-    switch (typeInfo.kind) {
-      case 'primitive':
-        switch (typeInfo.primitive) {
-          case 'string':
-            return 'string'
-          case 'number':
-            return 'int'
-          case 'boolean':
-            return 'bool'
-          default:
-            return 'interface{}'
-        }
-      case 'array':
-        if (typeInfo.elementType) {
-          return `[]${this.typeInfoToGo(typeInfo.elementType)}`
-        }
-        return '[]interface{}'
-      case 'object':
-        return 'map[string]interface{}'
-      case 'interface':
-        // Check if raw type name matches a locally-defined type
-        if (typeInfo.raw && this.state.localTypeNames.has(typeInfo.raw)) {
-          return typeInfo.raw
-        }
-        // Try to parse raw type string as a known pattern (e.g., Array<Todo>)
-        if (typeInfo.raw) {
-          const resolved = this.tsTypeStringToGo(typeInfo.raw)
-          if (resolved !== 'interface{}') return resolved
-        }
-        return 'interface{}'
-      case 'unknown':
-        // Try to infer type from default value
-        if (defaultValue !== undefined) {
-          return this.inferTypeFromValue(defaultValue)
-        }
-        return 'interface{}'
-      default:
-        return 'interface{}'
-    }
-  }
-
-  /**
    * Resolve dynamic prop value (e.g., signal/memo getter calls) to Go initial value.
    * Handles expressions like `count()` → signal's initial value
    */
@@ -3328,7 +3262,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           if (hoisted) return `${hoisted.varName} ${operator} ${operand}`
           const fieldName = capitalizeFieldName(propName)
           if (param.type) {
-            const goType = this.typeInfoToGo(param.type, param.defaultValue)
+            const goType = typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
             if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
           }
           return `in.${fieldName} ${operator} ${operand}`
@@ -3343,7 +3277,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (param) {
           const fieldName = capitalizeFieldName(varName)
           if (param.type) {
-            const goType = this.typeInfoToGo(param.type, param.defaultValue)
+            const goType = typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
             if (goType === 'interface{}') return `in.${fieldName}.(int) ${operator} ${operand}`
           }
           return `in.${fieldName} ${operator} ${operand}`
@@ -4073,13 +4007,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             if (propName) referencedProp = propsParamMap.get(propName)
           }
           if (referencedProp) {
-            const propType = this.typeInfoToGo(referencedProp.type, referencedProp.defaultValue)
+            const propType = typeInfoToGo(this.emitCtx, referencedProp.type, referencedProp.defaultValue)
             if (propType === 'int' || propType === 'float64') {
               return 'int'
             }
           }
           // Check signal's own initial value
-          const signalType = this.typeInfoToGo(signal.type, signal.initialValue)
+          const signalType = typeInfoToGo(this.emitCtx, signal.type, signal.initialValue)
           if (signalType === 'int' || signalType === 'float64') {
             return 'int'
           }
@@ -4097,10 +4031,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // string even though its condition has `===`. Decide before the boolean
     // heuristic so it's typed `string` (zero value `""`), not `interface{}`
     // (whose nil zero renders `<nil>`).
-    if (this.typeInfoToGo(memo.type) === 'interface{}' && this.isStringTernaryMemo(memo.computation)) {
+    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && this.isStringTernaryMemo(memo.computation)) {
       return 'string'
     }
-    if (this.typeInfoToGo(memo.type) === 'interface{}' && this.isBooleanMemo(memo, signals, propsParamMap)) {
+    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && this.isBooleanMemo(memo, signals, propsParamMap)) {
       return 'bool'
     }
 
@@ -4108,11 +4042,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // constant's array type instead of the memo's generic `object`.
     const blockReturn = this.resolveBlockBodyMemoModuleConst(memo.computation, signals)
     if (blockReturn?.constType?.kind === 'array') {
-      return this.typeInfoToGo(blockReturn.constType)
+      return typeInfoToGo(this.emitCtx, blockReturn.constType)
     }
 
     // Default to the memo's declared type
-    return this.typeInfoToGo(memo.type)
+    return typeInfoToGo(this.emitCtx, memo.type)
   }
 
   /**
@@ -4141,16 +4075,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const isBoolGetter = (name: string): boolean => {
       const sig = signals.find(s => s.getter === name)
       if (sig) {
-        if (this.typeInfoToGo(sig.type) === 'bool') return true
+        if (typeInfoToGo(this.emitCtx, sig.type) === 'bool') return true
         // Signal initialised from `props.X ?? false` / a boolean prop.
         if (/\?\?\s*(true|false)\b/.test(sig.initialValue)) return true
         const propName = this.extractPropNameFromInitialValue(sig.initialValue) ?? sig.initialValue
         const prop = propsParamMap.get(propName)
-        if (prop && this.typeInfoToGo(prop.type, prop.defaultValue) === 'bool') return true
+        if (prop && typeInfoToGo(this.emitCtx, prop.type, prop.defaultValue) === 'bool') return true
         return false
       }
       const prop = propsParamMap.get(name)
-      return !!prop && this.typeInfoToGo(prop.type, prop.defaultValue) === 'bool'
+      return !!prop && typeInfoToGo(this.emitCtx, prop.type, prop.defaultValue) === 'bool'
     }
     const ternary = c.match(/=>\s*\w+\(\)\s*\?\s*(\w+)\(\)\s*:\s*(\w+)\(\)/)
     if (ternary) {
@@ -4193,29 +4127,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } catch {
       return false
     }
-  }
-
-  /**
-   * Infer Go type from a JavaScript value literal.
-   */
-  private inferTypeFromValue(value: string): string {
-    // Boolean literals
-    if (value === 'true' || value === 'false') return 'bool'
-    // Number literals (int)
-    if (/^-?\d+$/.test(value)) return 'int'
-    // Number literals (float)
-    if (/^-?\d+\.\d+$/.test(value)) return 'float64'
-    // String literals
-    if ((value.startsWith("'") && value.endsWith("'")) ||
-        (value.startsWith('"') && value.endsWith('"'))) {
-      return 'string'
-    }
-    // Empty string
-    if (value === '""' || value === "''") return 'string'
-    // Array literals
-    if (value.startsWith('[')) return '[]interface{}'
-    // Default
-    return 'interface{}'
   }
 
   /**

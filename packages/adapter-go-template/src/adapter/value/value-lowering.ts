@@ -5,8 +5,9 @@
  * initial values into the SSR data context — scalars, prop references, and
  * fully-literal arrays/objects — and falls back to `nil`/`0` for anything the
  * parser can't reduce to a literal. They depend on the context's `state`
- * (struct-field / type-alias tables), `parseLiteralExpression`,
- * `typeInfoToGo`, and `extractPropNameFromInitialValue`.
+ * (struct-field / type-alias tables), `parseLiteralExpression`, and
+ * `extractPropNameFromInitialValue`, plus `typeInfoToGo` from the type-codegen
+ * module.
  */
 
 import ts from 'typescript'
@@ -16,6 +17,7 @@ import type { TypeInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { typeInfoToGo } from '../type/type-codegen.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
@@ -190,7 +192,7 @@ export function tsLiteralToGo(
     // `[]interface{}`); elements are converted against the element type.
     const elemType = typeInfo?.kind === 'array' ? typeInfo.elementType : undefined
     const sliceHeader = typeInfo?.kind === 'array'
-      ? ctx.typeInfoToGo(typeInfo)
+      ? typeInfoToGo(ctx, typeInfo)
       : '[]interface{}'
     const elems: string[] = []
     for (const el of node.elements) {
@@ -208,7 +210,7 @@ export function tsLiteralToGo(
     // source of truth: it tells us the exact Go field name for each source
     // key and, by omission, which keys the struct doesn't declare. Bail
     // (→ nil) when the type isn't a known struct.
-    const goType = typeInfo ? ctx.typeInfoToGo(typeInfo) : 'interface{}'
+    const goType = typeInfo ? typeInfoToGo(ctx, typeInfo) : 'interface{}'
     const structFields = ctx.state.localStructFields.get(goType)
     if (!structFields) return null
     const entries: string[] = []
