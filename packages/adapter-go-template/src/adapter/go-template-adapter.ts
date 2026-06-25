@@ -112,13 +112,11 @@ import {
   convertInitialValue,
   jsLiteralToGo,
   objectLiteralToGoMap,
-  getSignalInitialValueAsGo,
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
 import { isTemplateLiteralMemo, isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
-import { computeTemplateLiteralMemoInitialValue, propsAccessName } from "./memo/template-interp.ts"
-import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from "./memo/memo-value.ts"
+import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
