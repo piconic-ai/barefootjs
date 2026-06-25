@@ -271,16 +271,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Generate template output for a component.
-   * @param ir - The component IR
-   * @param options - Generation options
+   * Prime the per-compile state that BOTH `generate()` and `generateTypes()`
+   * derive from the IR: the props-object / rest-binding names, the module-const
+   * and local-const tables (and the helper-name set), the current memos / type
+   * definitions, the context consumers, and the request-scoped `searchParams`
+   * locals — then enumerate inherited-attribute accesses. `generateTypes` runs
+   * on a separately round-tripped IR, so it must prime identically or the
+   * emitted Input/Props structs drift from `generate()` (#1896 `{...props}` bag,
+   * #checkbox inherited attrs). `propsObjectName` is set before
+   * `augmentInheritedPropAccesses` because the inherited-attr scan keys off it.
    */
-  generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
-    this.state.componentName = ir.metadata.componentName
-    this.state.errors = []
-    this.state.referencedDerivedConsts = new Set()
-    this.state.templateVarCounter = 0
-    this.state.pendingChildrenDefines = []
+  private primeCompileState(ir: ComponentIR): void {
     this.state.propsObjectName = ir.metadata.propsObjectName
     this.state.restPropsName = ir.metadata.restPropsName ?? null
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
@@ -292,11 +293,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
-    // (#checkbox) Enumerate inherited-attribute accesses (props-object pattern)
-    // before computing the nillable set / rendering, so the synthetic params
-    // participate in attribute omission and field binding uniformly. Shared
-    // with the Mojo adapter (single source of truth in `@barefootjs/jsx`).
     augmentInheritedPropAccesses(ir)
+  }
+
+  /**
+   * Generate template output for a component.
+   * @param ir - The component IR
+   * @param options - Generation options
+   */
+  generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
+    this.state.componentName = ir.metadata.componentName
+    this.state.errors = []
+    this.state.referencedDerivedConsts = new Set()
+    this.state.templateVarCounter = 0
+    this.state.pendingChildrenDefines = []
+    this.primeCompileState(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
 
     // Surface loop-body usages of components imported from sibling
@@ -568,34 +579,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   generateTypes(ir: ComponentIR): string | null {
     this.state.usesHtmlTemplate = false
     this.state.usesFmt = false
-    // (#checkbox) Mirror `generate()`: enumerate inherited-attribute accesses
-    // so the Input/Props structs expose `ClassName`/`ID`/`Disabled` fields the
-    // template + caller bind against. `generateTypes` runs on a separately
-    // round-tripped IR, so this must be applied here too; the method is
-    // idempotent. `propsObjectName` is needed by the scan.
-    this.state.propsObjectName = ir.metadata.propsObjectName
-    // Mirror `generate()` for the rest binding too (#1896):
-    // `classifySpreadBagSource` decides whether a `{...props}` slot is an
-    // Input-side bag by comparing against `this.state.restPropsName`. Without
-    // this line the stash holds whichever component `generate()` ran
-    // LAST — in a multi-component file (`tabs/index.tsx`) that is a
-    // different component, so the Input struct dropped its `Props`
-    // bag field while `NewXxxProps` (which reads the per-IR metadata)
-    // still emitted `Spread_N: in.Props` — `in.Props undefined`.
-    this.state.restPropsName = ir.metadata.restPropsName ?? null
-    augmentInheritedPropAccesses(ir)
-    // Mirror `generate()`: the `NewXxxProps` initializer computes memo SSR
-    // values, which inline module string consts and resolve `Record`-index
-    // lookups — both need the const tables populated on this standalone entry.
-    this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
-    this.state.localConstants = ir.metadata.localConstants ?? []
-    this.state.localHelperNames = new Set(
-      this.state.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
-    )
-    this.state.currentMemos = ir.metadata.memos ?? []
-    this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
-    this.state.contextConsumers = collectContextConsumers(ir.metadata)
-    this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
+    // Prime the per-compile state from this (separately round-tripped) IR — the
+    // same setup `generate()` does, so the standalone `generateTypes` entry
+    // resolves module string consts, context consumers, and inherited-attribute
+    // accesses identically (otherwise the structs would drift from `generate()`,
+    // e.g. a `{...props}` bag field present in one entry but not the other).
+    this.primeCompileState(ir)
     const lines: string[] = []
 
     const componentName = ir.metadata.componentName
