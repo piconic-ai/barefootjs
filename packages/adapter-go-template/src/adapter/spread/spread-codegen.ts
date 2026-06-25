@@ -329,7 +329,7 @@ export function buildSpreadInitializer(
  * filter):
  *
  *   func() map[string]any {
- *     if in.DescribedBy != nil && in.DescribedBy != "" {
+ *     if bf.Truthy(in.DescribedBy) {
  *       return map[string]any{"aria-describedby": in.DescribedBy}
  *     }
  *     return map[string]any{}
@@ -385,9 +385,11 @@ function unwrapParens(node: ts.Expression): ts.Expression {
  *   string  → `in.X != ""`
  *   boolean → `in.X`
  *   number  → `in.X != 0`
- *   unknown / interface{} → `in.X != nil && in.X != ""`
- *     (faithful JS string-truthiness for an interface holding a
- *     string — textarea's `describedBy` resolves to interface{}).
+ *   unknown / interface{} → `bf.Truthy(in.X)`
+ *     (faithful JS truthiness for an interface holding a string /
+ *     number / bool — textarea's `describedBy` resolves to interface{};
+ *     a string-biased `!= ""` test would misread `0` / `false` as truthy,
+ *     Copilot review #1752).
  * Returns null for any other shape (caller → BF101).
  */
 function conditionToGoBool(
