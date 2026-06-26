@@ -117,7 +117,9 @@ A few rules the codebase enforces (see [`CLAUDE.md`](CLAUDE.md) for the full set
   direct dependency; do not add a second parser.
 - **Do not add compiler options/hooks for tool-specific output rewriting.**
   Tools that need to adjust emitted client JS post-process it themselves.
-- TypeScript with Go template adapters; CSS via UnoCSS.
+- The codebase is TypeScript. Adapters target a range of backends (Hono,
+  Go `html/template`, Mojolicious, and more), so keep core compiler and
+  runtime code adapter-agnostic. CSS uses UnoCSS.
 
 ## Changesets
 
