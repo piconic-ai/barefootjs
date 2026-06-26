@@ -10,8 +10,6 @@
  * delegate to the value / type / template / memo-value modules.
  */
 
-import ts from 'typescript'
-
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -19,7 +17,7 @@ import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { convertInitialValue, getSignalInitialValueAsGo } from '../value/value-lowering.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
-import { computeTemplateLiteralMemoInitialValue, propsAccessName } from './template-interp.ts'
+import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
 import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from './memo-value.ts'
 
 /** Default for the optional `propFallbackVars` argument. */
