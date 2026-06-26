@@ -12,7 +12,7 @@
 
 import ts from 'typescript'
 
-import type { TypeInfo } from '@barefootjs/jsx'
+import type { ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -27,96 +27,64 @@ import { lowerCtorExpr } from './ctor-lowering.ts'
  */
 export function resolveBlockBodyMemoModuleConst(
   ctx: GoEmitContext,
-  computation: string,
+  parsedBlock: ParsedStatement[] | undefined,
   signals: { getter: string; initialValue: string }[],
 ): { constName: string; constValue: string | undefined; constType: TypeInfo | undefined } | null {
-  try {
-    const sf = ts.createSourceFile(
-      '__memo.ts',
-      `const __x = (${computation});`,
-      ts.ScriptTarget.Latest,
-      false,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isVariableStatement(stmt)) return null
-    let init = stmt.declarationList.declarations[0]?.initializer
-    while (init && ts.isParenthesizedExpression(init)) init = init.expression
-    if (!init || !ts.isArrowFunction(init)) return null
-    const body = init.body
-    if (!ts.isBlock(body)) return null
+  if (!parsedBlock) return null
 
-    // Walk the block's statements collecting:
-    //   const <varName> = <signalGetter>()   →  varToSignal map
-    //   if (!<varName>) return <moduleConst>  →  match varName back to signal
-    const varToSignal = new Map<string, string>()
-    let guardSignalGetter: string | null = null
-    let returnedConst: string | null = null
+  // Walk the analyzer-carried statements collecting:
+  //   const <varName> = <signalGetter>()   →  varToSignal map
+  //   if (!<varName>) return <moduleConst>  →  match varName back to signal
+  const varToSignal = new Map<string, string>()
+  let guardSignalGetter: string | null = null
+  let returnedConst: string | null = null
 
-    for (const s of body.statements) {
-      if (ts.isVariableStatement(s)) {
-        for (const decl of s.declarationList.declarations) {
-          if (
-            ts.isIdentifier(decl.name) &&
-            decl.initializer &&
-            ts.isCallExpression(decl.initializer) &&
-            ts.isIdentifier(decl.initializer.expression)
-          ) {
-            const callee = decl.initializer.expression.text
-            if (signals.some(sg => sg.getter === callee)) {
-              varToSignal.set(decl.name.text, callee)
-            }
-          }
+  for (const s of parsedBlock) {
+    if (s.kind === 'var-decl' && s.init.kind === 'call' && s.init.callee.kind === 'identifier') {
+      const callee = s.init.callee.name
+      if (signals.some(sg => sg.getter === callee)) {
+        varToSignal.set(s.name, callee)
+      }
+    }
+    if (
+      s.kind === 'if' &&
+      s.condition.kind === 'unary' &&
+      s.condition.op === '!' &&
+      s.condition.argument.kind === 'identifier'
+    ) {
+      const guardVar = s.condition.argument.name
+      const signalGetter = varToSignal.get(guardVar)
+      if (!signalGetter) continue
+      for (const rs of s.consequent) {
+        if (rs.kind === 'return' && rs.value.kind === 'identifier') {
+          guardSignalGetter = signalGetter
+          returnedConst = rs.value.name
         }
       }
-      if (
-        ts.isIfStatement(s) &&
-        ts.isPrefixUnaryExpression(s.expression) &&
-        s.expression.operator === ts.SyntaxKind.ExclamationToken &&
-        ts.isIdentifier(s.expression.operand)
-      ) {
-        const guardVar = s.expression.operand.text
-        const signalGetter = varToSignal.get(guardVar)
-        if (!signalGetter) continue
-        const thenBlock = ts.isBlock(s.thenStatement)
-          ? s.thenStatement.statements
-          : [s.thenStatement]
-        for (const rs of thenBlock) {
-          if (
-            ts.isReturnStatement(rs) &&
-            rs.expression &&
-            ts.isIdentifier(rs.expression)
-          ) {
-            guardSignalGetter = signalGetter
-            returnedConst = rs.expression.text
-          }
-        }
-      }
-      if (guardSignalGetter && returnedConst) break
     }
+    if (guardSignalGetter && returnedConst) break
+  }
 
-    if (!guardSignalGetter || !returnedConst) return null
+  if (!guardSignalGetter || !returnedConst) return null
 
-    // The guard signal must start falsy (null, '', 0, false)
-    const guardSignal = signals.find(sg => sg.getter === guardSignalGetter)
-    if (!guardSignal) return null
-    const iv = guardSignal.initialValue.trim()
-    if (iv !== 'null' && iv !== "''" && iv !== '""' && iv !== '0' && iv !== 'false') {
-      return null
-    }
-
-    // The returned identifier must be a module-scope constant
-    const constant = ctx.state.localConstants.find(
-      c => c.name === returnedConst && c.origin?.scope === 'module',
-    )
-    if (!constant) return null
-
-    return {
-      constName: constant.name,
-      constValue: constant.value,
-      constType: constant.type ?? undefined,
-    }
-  } catch {
+  // The guard signal must start falsy (null, '', 0, false)
+  const guardSignal = signals.find(sg => sg.getter === guardSignalGetter)
+  if (!guardSignal) return null
+  const iv = guardSignal.initialValue.trim()
+  if (iv !== 'null' && iv !== "''" && iv !== '""' && iv !== '0' && iv !== 'false') {
     return null
+  }
+
+  // The returned identifier must be a module-scope constant
+  const constant = ctx.state.localConstants.find(
+    c => c.name === returnedConst && c.origin?.scope === 'module',
+  )
+  if (!constant) return null
+
+  return {
+    constName: constant.name,
+    constValue: constant.value,
+    constType: constant.type ?? undefined,
   }
 }
 

@@ -12,7 +12,7 @@
 
 import ts from 'typescript'
 
-import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
@@ -269,7 +269,7 @@ export function memoInitialFromParsedBody(
  */
 export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
-  memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr },
+  memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
   signals: { getter: string; initialValue: string }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
@@ -323,7 +323,7 @@ export function computeMemoInitialValueOrNull(
   // null, the SSR value is the module-const array. The constant's literal
   // value (not the identifier) is passed to the baker so `jsLiteralToGo`
   // can reduce it to a Go slice.
-  const blockReturn = resolveBlockBodyMemoModuleConst(ctx, computation, signals)
+  const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo.parsedBlock, signals)
   if (blockReturn !== null && blockReturn.constValue && blockReturn.constType) {
     return convertInitialValue(ctx,
       blockReturn.constValue,

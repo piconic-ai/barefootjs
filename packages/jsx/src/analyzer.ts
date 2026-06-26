@@ -8,7 +8,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
-import { parseExpression } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -1442,9 +1442,21 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
       ? parsedBody
       : undefined
 
+  // Block-bodied memos: carry the statements (tolerant — unparseable ones are
+  // omitted) so adapters can pattern-match block shapes (e.g. a guard-and-
+  // return-const memo) without re-parsing `computation`. Unwrap parens around
+  // the arrow to match the former adapter walks.
+  let arrowNode: ts.Node | undefined = memoArrow
+  while (arrowNode && ts.isParenthesizedExpression(arrowNode)) arrowNode = arrowNode.expression
+  const parsedBlock =
+    arrowNode && ts.isArrowFunction(arrowNode) && ts.isBlock(arrowNode.body)
+      ? parseBlockBodyTolerant(arrowNode.body, ctx.sourceFile, node => ctx.getJS(node))
+      : undefined
+
   ctx.memos.push({
     name,
     computation,
+    parsedBlock,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
     bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(memoArrow),

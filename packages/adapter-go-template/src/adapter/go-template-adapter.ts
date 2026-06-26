@@ -1765,8 +1765,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (memoName) {
         const memo = ir.metadata.memos.find(m => m.name === memoName)
         if (memo) {
-          const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx, 
-            memo.computation, ir.metadata.signals,
+          const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx,
+            memo.parsedBlock, ir.metadata.signals,
           )
           if (blockReturn) {
             const constant = (ir.metadata.localConstants ?? []).find(
@@ -2385,7 +2385,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Infer the Go type for a memo based on its computation and dependencies.
    */
   private inferMemoType(
-    memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr },
+    memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
@@ -2441,7 +2441,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // (#1897) Block-body memo returning a module-const array: use the
     // constant's array type instead of the memo's generic `object`.
-    const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx, memo.computation, signals)
+    const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx, memo.parsedBlock, signals)
     if (blockReturn?.constType?.kind === 'array') {
       return typeInfoToGo(this.emitCtx, blockReturn.constType)
     }
