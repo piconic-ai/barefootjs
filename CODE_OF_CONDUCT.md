@@ -36,6 +36,16 @@ Examples of unacceptable behavior include:
 - Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
+## Unconscious bias and microaggressions
+
+Harassment is not always intentional. Everyone carries unconscious bias, and
+because it cannot be eliminated entirely, what matters is recognizing that we
+each may hold assumptions and reflecting honestly on our own words and actions.
+Even without ill intent, small biased remarks or attitudes can accumulate —
+microaggressions — and unintentionally exclude or hurt others. We ask everyone
+to imagine the impact their words and actions have on others, and to
+communicate with care and mutual respect.
+
 ## Enforcement Responsibilities
 
 Community leaders are responsible for clarifying and enforcing our standards of
@@ -72,58 +82,28 @@ reporter of any incident.
 
 ## Enforcement Guidelines
 
-Community leaders will follow these Community Impact Guidelines in determining
-the consequences for any action they deem in violation of this Code of Conduct:
+There is no fixed escalation ladder. Community leaders assess each reported
+incident on a case-by-case basis and apply whatever response they judge
+appropriate and proportionate to the situation — ranging from a private word,
+to editing or removing contributions, to a temporary or permanent ban.
 
-### 1. Correction
-
-**Community Impact**: Use of inappropriate language or other behavior deemed
-unprofessional or unwelcome in the community.
-
-**Consequence**: A private, written warning from community leaders, providing
-clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
-
-### 2. Warning
-
-**Community Impact**: A violation through a single incident or series of
-actions.
-
-**Consequence**: A warning with consequences for continued behavior. No
-interaction with the people involved, including unsolicited interaction with
-those enforcing the Code of Conduct, for a specified period of time. This
-includes avoiding interactions in community spaces as well as external channels
-like social media. Violating these terms may lead to a temporary or permanent
-ban.
-
-### 3. Temporary Ban
-
-**Community Impact**: A serious violation of community standards, including
-sustained inappropriate behavior.
-
-**Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
-with those enforcing the Code of Conduct, is allowed during this period.
-Violating these terms may lead to a permanent ban.
-
-### 4. Permanent Ban
-
-**Community Impact**: Demonstrating a pattern of violation of community
-standards, including sustained inappropriate behavior, harassment of an
-individual, or aggression toward or disparagement of classes of individuals.
-
-**Consequence**: A permanent ban from any sort of public interaction within the
-community.
+A minor, good-faith first offense may warrant only a quiet, private correction.
+A serious or malicious violation — harassment, threats, or deliberate abuse —
+may result in an immediate and permanent ban, without prior warning, at the
+maintainers' sole discretion.
 
 ## Attribution
 
 This Code of Conduct is adapted from the [Contributor Covenant][homepage],
 version 2.1, available at
 [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
+The standard escalation ladder has been replaced with case-by-case
+enforcement at the maintainers' discretion.
 
-Community Impact Guidelines were inspired by
-[Mozilla's code of conduct enforcement ladder][mozilla coc].
+The "Unconscious bias and microaggressions" section is adapted from the
+[YAPC::Japan / Japan.pm Code of Conduct][yapc], licensed under
+[CC BY 3.0][ccby] and itself based on the jsconf.us 2012 and Ada Initiative
+codes of conduct.
 
 For answers to common questions about this code of conduct, see the FAQ at
 [https://www.contributor-covenant.org/faq][faq]. Translations are available at
@@ -131,6 +111,7 @@ For answers to common questions about this code of conduct, see the FAQ at
 
 [homepage]: https://www.contributor-covenant.org
 [v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
-[mozilla coc]: https://github.com/mozilla/diversity
+[yapc]: https://japan.perlassociation.org/entry/yapc/code_of_conduct
+[ccby]: https://creativecommons.org/licenses/by/3.0/
 [faq]: https://www.contributor-covenant.org/faq
 [translations]: https://www.contributor-covenant.org/translations
