@@ -1328,6 +1328,17 @@ export interface FunctionInfo {
 export interface ConstantInfo {
   name: string
   value?: string
+  /**
+   * `value` parsed into a structured tree (Roadmap A). Attached best-effort by
+   * the analyzer (parsed from the parenthesised value so a bare object literal
+   * — which TS reads as a block at statement position — resolves to an
+   * `object-literal` rather than failing). Lets adapters lower a constant value
+   * (e.g. a module-scope record's `{ … }`) from structure instead of
+   * re-parsing the string with `ts.createSourceFile`. Absent when the constant
+   * has no `value` string (e.g. an inlined-JSX const) or when the analyzer
+   * couldn't structure it (best-effort — consumers fall back to the string).
+   */
+  parsed?: ParsedExpr
   /** Value with TypeScript type annotations preserved, for .tsx output */
   typedValue?: string
   valueBranches?: string[]
