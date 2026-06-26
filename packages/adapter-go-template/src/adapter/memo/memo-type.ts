@@ -5,39 +5,14 @@
  * computation so `inferMemoType` can pick the right Go field type (and thus the
  * right SSR zero value). They read the context's `state.moduleStringConsts`,
  * `extractPropNameFromInitialValue`, and `typeInfoToGo` from the type-codegen
- * module. `isTemplateLiteralMemo` is fully pure (no context).
+ * module. (Template-literal classification now rides on the IR as
+ * `MemoInfo.bodyIsTemplateLiteral`, set by the analyzer, so it isn't here.)
  */
 
-import ts from 'typescript'
-
-import type { TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
-
-export function isTemplateLiteralMemo(computation: string): boolean {
-  const sf = ts.createSourceFile(
-    '__memo.ts', `const __x = (${computation});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
-  )
-  const stmt = sf.statements[0]
-  if (!stmt || !ts.isVariableStatement(stmt)) return false
-  let init = stmt.declarationList.declarations[0]?.initializer
-  while (init && ts.isParenthesizedExpression(init)) init = init.expression
-  if (!init || !ts.isArrowFunction(init)) return false
-  let body = init.body as ts.Node
-  while (ts.isParenthesizedExpression(body as ts.Expression)) {
-    body = (body as ts.ParenthesizedExpression).expression
-  }
-  if (ts.isBlock(body)) {
-    const ret = body.statements.find(ts.isReturnStatement)
-    if (!ret || !ret.expression) return false
-    body = ret.expression
-    while (ts.isParenthesizedExpression(body as ts.Expression)) {
-      body = (body as ts.ParenthesizedExpression).expression
-    }
-  }
-  return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
-}
 
 /**
  * (#checkbox) Heuristic: does this memo evaluate to a boolean? True when its
@@ -47,7 +22,7 @@ export function isTemplateLiteralMemo(computation: string): boolean {
  */
 export function isBooleanMemo(
   ctx: GoEmitContext,
-  memo: { computation: string; deps: string[] },
+  memo: { computation: string; deps: string[]; parsed?: ParsedExpr },
   signals: { getter: string; initialValue: string; type: TypeInfo }[],
   propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
 ): boolean {
@@ -57,7 +32,7 @@ export function isBooleanMemo(
   // not boolean — the `===` lives in the *condition*, so the blanket
   // comparison check below would misclassify it as bool and bake `false`
   // (#1971 carousel `directionClasses`). Bail before that check.
-  if (isStringTernaryMemo(ctx, c)) return false
+  if (isStringTernaryMemo(ctx, memo.parsed)) return false
   if (/(!==|===|!=(?!=)|==(?!=))/.test(c)) return true
   if (/=>\s*!/.test(c)) return true
   // Ternary `() => cond() ? a() : b()` — boolean when both branches are
@@ -86,36 +61,24 @@ export function isBooleanMemo(
 
 /**
  * (#1971) Does this memo's arrow body resolve to a string-valued ternary
- * whose BOTH branches are string literals — e.g. `() => orientation() ===
+ * whose BOTH branches are string-valued — e.g. `() => orientation() ===
  * 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`? Such a memo is a string,
- * not a bool, even though its condition contains `===`. AST-based (the
- * repo idiom) so quotes inside class strings don't trip a regex.
+ * not a bool, even though its condition contains `===`.
+ *
+ * Reads the analyzer-carried body tree (`MemoInfo.parsed`) instead of
+ * re-parsing `computation`. A block-bodied memo has no `parsed`, so it returns
+ * false — matching the former predicate, which only inspected an expression
+ * body and never descended a block. A no-substitution `` `lit` `` branch folds
+ * to a plain string literal in `ParsedExpr`, which `isStr` accepts just as the
+ * old `isNoSubstitutionTemplateLiteral` check did, so output is unchanged.
  */
-export function isStringTernaryMemo(ctx: GoEmitContext, computation: string): boolean {
-  try {
-    const sf = ts.createSourceFile(
-      '__memo.ts',
-      `const __x = (${computation});`,
-      ts.ScriptTarget.Latest,
-      false,
-    )
-    const stmt = sf.statements[0]
-    if (!stmt || !ts.isVariableStatement(stmt)) return false
-    let init = stmt.declarationList.declarations[0]?.initializer
-    while (init && ts.isParenthesizedExpression(init)) init = init.expression
-    if (!init || !ts.isArrowFunction(init)) return false
-    let body: ts.Node = init.body
-    while (ts.isParenthesizedExpression(body)) body = body.expression
-    if (!ts.isConditionalExpression(body)) return false
-    // A branch is string-valued when it's a string/template literal or an
-    // identifier bound to a module-scope string const (carousel's
-    // `positionClasses` → `prevVerticalClasses`/`prevHorizontalClasses`).
-    const isStr = (n: ts.Expression): boolean =>
-      ts.isStringLiteral(n) ||
-      ts.isNoSubstitutionTemplateLiteral(n) ||
-      (ts.isIdentifier(n) && ctx.state.moduleStringConsts.has(n.text))
-    return isStr(body.whenTrue) && isStr(body.whenFalse)
-  } catch {
-    return false
-  }
+export function isStringTernaryMemo(ctx: GoEmitContext, parsed: ParsedExpr | undefined): boolean {
+  if (!parsed || parsed.kind !== 'conditional') return false
+  // A branch is string-valued when it's a string literal or an identifier
+  // bound to a module-scope string const (carousel's `positionClasses` →
+  // `prevVerticalClasses` / `prevHorizontalClasses`).
+  const isStr = (n: ParsedExpr): boolean =>
+    (n.kind === 'literal' && n.literalType === 'string') ||
+    (n.kind === 'identifier' && ctx.state.moduleStringConsts.has(n.name))
+  return isStr(parsed.consequent) && isStr(parsed.alternate)
 }

@@ -1136,6 +1136,16 @@ export interface MemoInfo {
    * consumers must fall back to `computation` when it's missing.
    */
   parsed?: ParsedExpr
+  /**
+   * Whether the memo's effective body is a template literal (`() => `…`` or a
+   * block body whose first `return` is one), classified once at analysis time
+   * from the real arrow AST. Lets the Go adapter pick the `string` field type
+   * without re-parsing `computation` with `ts.createSourceFile`. A template
+   * literal — including a no-substitution `` `plain` `` — folds to a plain
+   * string `ParsedExpr` literal, losing the backtick distinction, so this is a
+   * dedicated flag rather than a `parsed.kind` check.
+   */
+  bodyIsTemplateLiteral?: boolean
   type: TypeInfo
   deps: string[]
   loc: SourceLocation
