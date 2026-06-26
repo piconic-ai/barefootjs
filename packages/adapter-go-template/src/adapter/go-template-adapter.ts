@@ -25,6 +25,7 @@ import type {
   CompilerError,
   SourceLocation,
   ParsedExpr,
+  ObjectLiteralProperty,
   ParsedStatement,
   SortComparator,
   ReduceOp,
@@ -3275,6 +3276,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `bf_arr ${parts.join(' ')}`
   }
 
+  objectLiteral(_properties: ObjectLiteralProperty[], raw: string, _emit: (e: ParsedExpr) => string): string {
+    // Not yet lowered structurally from `properties`: emit exactly as an
+    // object literal did before the `object-literal` kind existed — through
+    // the `unsupported` path (`[UNSUPPORTED: …]`). Byte-identical (Roadmap
+    // A-1). A later unit lowers it to a `bf_map …` runtime call. Object
+    // values that DO reach a Go map today (signal/const inits, spread bags)
+    // go through the dedicated `objectLiteralToGoMap` lowering, not here.
+    return this.unsupported(raw, 'object literal')
+  }
+
   higherOrder(
     method: HigherOrderMethod,
     object: ParsedExpr,
@@ -4800,6 +4811,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return plain(this.renderParsedExpr(expr))
 
       case 'unsupported':
+      // `raw` holds the original expression string, so a bare object literal
+      // in a condition lowers identically to the pre-`object-literal`
+      // behaviour (byte-identical; Roadmap A-1).
+      case 'object-literal':
         return plain(expr.raw)
     }
   }

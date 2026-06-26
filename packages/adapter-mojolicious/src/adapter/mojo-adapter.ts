@@ -71,7 +71,7 @@ import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
  * the `IRNodeEmitter` interface.
  */
 type MojoRenderCtx = Record<string, never>
-import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '@barefootjs/jsx'
+import type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
@@ -2698,6 +2698,14 @@ class MojoFilterEmitter implements ParsedExprEmitter {
   unsupported(_raw: string, _reason: string): string {
     return '1'
   }
+
+  objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
+    // Filter-predicate context: an object literal is not a boolean leaf, so
+    // emit the truthy sentinel exactly as `unsupported` does (byte-identical
+    // with the pre-`object-literal` fallback; Roadmap A-1). Object *values*
+    // are lowered to Perl hashrefs in the conditional/attr paths, not here.
+    return '1'
+  }
 }
 
 /**
@@ -2970,6 +2978,15 @@ class MojoTopLevelEmitter implements ParsedExprEmitter {
     // recurses, so a top-level supported expression never contains an
     // `unsupported` node. Return a safe Perl empty-string literal in
     // case a future caller renders a node tree directly.
+    return "''"
+  }
+
+  objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
+    // Mirror `unsupported`: a bare object literal reaching the dispatcher
+    // lowers to the safe Perl empty-string literal, exactly as before the
+    // `object-literal` kind existed (byte-identical; Roadmap A-1). Object
+    // values that round-trip to a Perl hashref go through the dedicated
+    // `objectLiteralToPerlHashref` lowering in the conditional/attr paths.
     return "''"
   }
 }

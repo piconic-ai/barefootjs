@@ -85,7 +85,7 @@ import ts from 'typescript'
  * `IRNodeEmitter` interface.
  */
 type XslateRenderCtx = Record<string, never>
-import type { ParsedExpr, ParsedStatement, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '@barefootjs/jsx'
+import type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 interface PrimitiveSpec {
@@ -2311,6 +2311,14 @@ class XslateFilterEmitter implements ParsedExprEmitter {
   unsupported(_raw: string, _reason: string): string {
     return '1'
   }
+
+  objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
+    // Filter-predicate context: emit the truthy sentinel exactly as
+    // `unsupported` does, byte-identical with the pre-`object-literal`
+    // fallback (Roadmap A-1). Object values lower to Kolon hashrefs in the
+    // conditional/attr paths, not through this dispatcher.
+    return '1'
+  }
 }
 
 /**
@@ -2537,6 +2545,15 @@ class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   unsupported(_raw: string, _reason: string): string {
+    return "''"
+  }
+
+  objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
+    // Mirror `unsupported`: a bare object literal reaching the dispatcher
+    // lowers to the safe empty-string literal, exactly as before the
+    // `object-literal` kind existed (byte-identical; Roadmap A-1). Object
+    // values that round-trip to a Kolon hashref go through the dedicated
+    // `objectLiteralToKolonHashref` lowering in the conditional/attr paths.
     return "''"
   }
 }
