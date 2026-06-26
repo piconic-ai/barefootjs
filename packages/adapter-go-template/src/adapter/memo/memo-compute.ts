@@ -310,7 +310,7 @@ export function computeMemoInitialValueOrNull(
   // don't matter.
   const cmpTernary = computeComparisonTernaryGo(
     ctx,
-    computation,
+    memo.parsed,
     signals,
     propsParams,
     propFallbackVars,
@@ -393,55 +393,37 @@ export function resolveGetterValueAsGo(
  */
 export function computeComparisonTernaryGo(
   ctx: GoEmitContext,
-  computation: string,
+  parsed: ParsedExpr | undefined,
   signals: { getter: string; initialValue: string }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
-  let arrow: ts.ArrowFunction | null = null
-  try {
-    const sf = ts.createSourceFile(
-      '__memo.ts',
-      `const __x = (${computation});`,
-      ts.ScriptTarget.Latest,
-      false,
-    )
-    const stmt = sf.statements[0]
-    if (stmt && ts.isVariableStatement(stmt)) {
-      let init = stmt.declarationList.declarations[0]?.initializer
-      while (init && ts.isParenthesizedExpression(init)) init = init.expression
-      if (init && ts.isArrowFunction(init)) arrow = init
-    }
-  } catch {
+  // Reads the analyzer-carried body tree (`MemoInfo.parsed`) instead of
+  // re-parsing `computation`. The former predicate only ever matched an
+  // expression-bodied conditional (a block arrow `body` is not a conditional,
+  // so it returned null) — a block-bodied memo has no `parsed`, so this returns
+  // null too, preserving that behaviour.
+  if (!parsed || parsed.kind !== 'conditional') return null
+  const cond = parsed.test
+  if (cond.kind !== 'binary' || !(cond.right.kind === 'literal' && cond.right.literalType === 'string')) {
     return null
   }
-  if (!arrow) return null
-  let body: ts.Node = arrow.body
-  while (ts.isParenthesizedExpression(body)) body = body.expression
-  if (!ts.isConditionalExpression(body)) return null
-  const cond = body.condition
-  if (!ts.isBinaryExpression(cond) || !ts.isStringLiteral(cond.right)) return null
-  const opKind = cond.operatorToken.kind
-  const isEq =
-    opKind === ts.SyntaxKind.EqualsEqualsEqualsToken ||
-    opKind === ts.SyntaxKind.EqualsEqualsToken
-  const isNe =
-    opKind === ts.SyntaxKind.ExclamationEqualsEqualsToken ||
-    opKind === ts.SyntaxKind.ExclamationEqualsToken
+  const isEq = cond.op === '===' || cond.op === '=='
+  const isNe = cond.op === '!==' || cond.op === '!='
   if (!isEq && !isNe) return null
 
-  const branch = (bn: ts.Expression): string | null => {
-    if (ts.isStringLiteral(bn) || ts.isNoSubstitutionTemplateLiteral(bn)) {
-      return JSON.stringify(bn.text)
+  const branch = (bn: ParsedExpr): string | null => {
+    if (bn.kind === 'literal' && bn.literalType === 'string') {
+      return JSON.stringify(bn.value)
     }
-    if (ts.isIdentifier(bn)) {
-      const cv = ctx.state.moduleStringConsts.get(bn.text)
+    if (bn.kind === 'identifier') {
+      const cv = ctx.state.moduleStringConsts.get(bn.name)
       return cv !== undefined ? JSON.stringify(cv) : null
     }
     return null
   }
-  const t = branch(body.whenTrue)
-  const f = branch(body.whenFalse)
+  const t = branch(parsed.consequent)
+  const f = branch(parsed.alternate)
   if (t === null || f === null) return null
 
   const condGo = resolveComparisonOperandGo(
@@ -453,10 +435,10 @@ export function computeComparisonTernaryGo(
   )
   if (condGo === null) return null
 
-  // `whenTrue` fires when the comparison holds; for `!==` the branches swap.
+  // `consequent` fires when the comparison holds; for `!==` the branches swap.
   const eqBranch = isEq ? t : f
   const neBranch = isEq ? f : t
-  return `func() string { if ${condGo} == ${JSON.stringify(cond.right.text)} { return ${eqBranch} }; return ${neBranch} }()`
+  return `func() string { if ${condGo} == ${JSON.stringify(cond.right.value)} { return ${eqBranch} }; return ${neBranch} }()`
 }
 
 /**
@@ -468,31 +450,36 @@ export function computeComparisonTernaryGo(
  */
 export function resolveComparisonOperandGo(
   ctx: GoEmitContext,
-  node: ts.Expression,
+  node: ParsedExpr,
   signals: { getter: string; initialValue: string }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
-  let n: ts.Expression = node
-  while (ts.isParenthesizedExpression(n)) n = n.expression
   // getter(): a signal or memo getter call.
-  if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.arguments.length === 0) {
-    return resolveGetterValueAsGo(ctx, n.expression.text, signals, propsParams, propFallbackVars)
+  if (node.kind === 'call' && node.callee.kind === 'identifier' && node.args.length === 0) {
+    return resolveGetterValueAsGo(ctx, node.callee.name, signals, propsParams, propFallbackVars)
   }
   // props.X ?? 'def' — nil/empty-tolerant field read with the default folded in.
-  if (
-    ts.isBinaryExpression(n) &&
-    n.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken &&
-    ts.isStringLiteral(n.right)
-  ) {
-    const propName = propsAccessName(ctx, n.left)
+  if (node.kind === 'logical' && node.op === '??' && node.right.kind === 'literal' && node.right.literalType === 'string') {
+    const propName = propsAccessNameFromParsed(ctx, node.left)
     if (propName) {
       const field = `in.${capitalizeFieldName(propName)}`
-      return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${JSON.stringify(n.right.text)} }; return v }()`
+      return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${JSON.stringify(node.right.value)} }; return v }()`
     }
   }
   // Bare props.X.
-  const direct = propsAccessName(ctx, n)
+  const direct = propsAccessNameFromParsed(ctx, node)
   if (direct) return `in.${capitalizeFieldName(direct)}`
   return null
+}
+
+/**
+ * `ParsedExpr` counterpart of `propsAccessName`: if `node` is a
+ * `<propsObjectName>.<name>` member access, return `<name>`, else null.
+ */
+function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string | null {
+  if (node.kind !== 'member' || node.computed) return null
+  if (node.object.kind !== 'identifier') return null
+  if (!ctx.state.propsObjectName || node.object.name !== ctx.state.propsObjectName) return null
+  return node.property
 }
