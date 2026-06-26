@@ -2957,10 +2957,10 @@ export function parseBlockBody(
  * represent is **skipped** rather than failing the whole block. Used to carry a
  * block-body memo's structure on the IR for adapters that only pattern-match a
  * recognised prefix of statements (e.g. a `const k = getter(); if (!k) return
- * CONST` guard) and ignore the rest — including a trailing
- * `return /* @client *​/ …` that the strict parser would reject. Mirrors the
- * tolerant `continue`-on-unrecognised walks those adapters previously ran over
- * a re-parsed source string, so it never carries a *more* permissive result.
+ * CONST` guard) and ignore the rest — including a trailing client-directive
+ * (`@client`) return that the strict parser would reject. Mirrors the tolerant
+ * `continue`-on-unrecognised walks those adapters previously ran over a
+ * re-parsed source string, so it never carries a *more* permissive result.
  */
 export function parseBlockBodyTolerant(
   block: ts.Block,
