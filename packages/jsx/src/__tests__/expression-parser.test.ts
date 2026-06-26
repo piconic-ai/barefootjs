@@ -300,6 +300,52 @@ describe('expression-parser', () => {
       }
     })
 
+    // Object literal → `object-literal` kind (Roadmap A-1). Carried so
+    // adapters can lower an object value structurally instead of
+    // re-parsing the source with `ts.createSourceFile`. Object literals
+    // reach the parser parenthesised — `() => ({ … })`, a prop value —
+    // because a leading `{` at statement position is a block, not an
+    // expression (covered below).
+    test('parses object literal into object-literal kind', () => {
+      const result = parseExpression('({ a: 1, b: x, "c-d": foo() })')
+      expect(result.kind).toBe('object-literal')
+      if (result.kind === 'object-literal') {
+        expect(result.properties.map(p => p.key)).toEqual(['a', 'b', 'c-d'])
+        expect(result.properties.map(p => p.value.kind)).toEqual([
+          'literal', 'identifier', 'call',
+        ])
+        expect(result.properties.every(p => !p.shorthand)).toBe(true)
+        // `raw` preserves the original string for byte-identical fallback.
+        expect(result.raw).toBe('({ a: 1, b: x, "c-d": foo() })')
+      }
+    })
+
+    test('parses shorthand object literal, expanding `{ a }` to `a: a`', () => {
+      const result = parseExpression('({ a, b: 2 })')
+      expect(result.kind).toBe('object-literal')
+      if (result.kind === 'object-literal') {
+        expect(result.properties[0]).toMatchObject({
+          key: 'a', shorthand: true, value: { kind: 'identifier', name: 'a' },
+        })
+        expect(result.properties[1]).toMatchObject({ key: 'b', shorthand: false })
+      }
+    })
+
+    test('falls through to unsupported for spread / computed-key object literals', () => {
+      // A spread member is not a plain map property — preserves the
+      // pre-A-1 `unsupported` behaviour (byte-identical).
+      expect(parseExpression('({ ...rest, a: 1 })').kind).toBe('unsupported')
+      // Computed key `[k]: v` can't resolve to a static name.
+      expect(parseExpression('({ [k]: 1 })').kind).toBe('unsupported')
+    })
+
+    test('a bare `{ … }` at statement position is a block, not an object literal', () => {
+      // TS parses a leading `{` as a block statement, so a non-parenthesised
+      // object literal string is `unsupported` (`Not an expression
+      // statement`). Real call sites always supply the parenthesised form.
+      expect(parseExpression('{ a: 1 }').kind).toBe('unsupported')
+    })
+
     // Destructured filter param (#1443). The parser rewrites the
     // shorthand binding `({done})` into the equivalent dotted-access
     // form on a synthetic param (`_t.done`), so adapters can reuse

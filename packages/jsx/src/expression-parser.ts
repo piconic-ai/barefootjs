@@ -33,6 +33,19 @@ export type ParsedExpr =
   | { kind: 'arrow-fn'; param: string; body: ParsedExpr }
   | { kind: 'higher-order'; method: 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'; object: ParsedExpr; param: string; predicate: ParsedExpr }
   | { kind: 'array-literal'; elements: ParsedExpr[] }
+  // Object literal `{ a: 1, b: x }` / shorthand `{ a }`. Carried so an
+  // adapter that lowers an object *value* (Go `map[string]interface{}`,
+  // Perl hashref) can emit from structure instead of re-parsing the
+  // source with `ts.createSourceFile`. Only produced for plain literals:
+  // every property is a non-computed `key: value` or shorthand `{ key }`.
+  // Spreads, computed keys, methods, and getters/setters fall through to
+  // `unsupported` (unchanged). `raw` is the original expression string —
+  // the same value the old `unsupported` fallback carried — so an adapter
+  // that does not yet consume `properties` stays byte-identical by
+  // emitting it exactly as it emits `unsupported`. Extending the type
+  // adds a TS compile error in every exhaustive `ParsedExpr` switch, the
+  // same drift defence used for `array-literal` / `array-method`.
+  | { kind: 'object-literal'; properties: ObjectLiteralProperty[]; raw: string }
   // Non-higher-order array methods. Discriminated by `method` so each
   // adapter handles the full set via one exhaustive switch instead of
   // sprinkling per-method branches across the call / member emitters.
@@ -126,6 +139,22 @@ export type ParsedExpr =
       flatMapOp: FlatMapOp
     }
   | { kind: 'unsupported'; raw: string; reason: string }
+
+/**
+ * One property of an `object-literal` `ParsedExpr`. The key is the
+ * resolved (non-computed) property name — for `{ a: 1 }` and shorthand
+ * `{ a }` it is `a`; for `{ 'a-b': 1 }` it is `a-b`. Computed keys
+ * (`{ [k]: 1 }`) are not represented; such literals fall through to
+ * `unsupported` at parse time.
+ */
+export type ObjectLiteralProperty = {
+  key: string
+  // Shorthand `{ a }` (the value is the identifier `a`) vs explicit
+  // `{ a: <value> }`. The `value` already carries the resolved tree
+  // either way; this flag is kept for re-stringification fidelity.
+  shorthand: boolean
+  value: ParsedExpr
+}
 
 /**
  * One comparison key inside a sort comparator. A simple
@@ -670,6 +699,19 @@ export function parseExpression(expr: string): ParsedExpr {
 }
 
 /**
+ * Resolve a non-computed object-literal property key to its string name.
+ * Identifier / string / numeric names resolve to their text; a computed
+ * (`[expr]`) or otherwise non-plain key returns null so the caller treats
+ * the whole literal as `unsupported`.
+ */
+function objectLiteralKeyName(name: ts.PropertyName): string | null {
+  if (ts.isIdentifier(name)) return name.text
+  if (ts.isStringLiteral(name)) return name.text
+  if (ts.isNumericLiteral(name)) return name.text
+  return null
+}
+
+/**
  * Convert a TypeScript AST node to ParsedExpr.
  */
 function convertNode(node: ts.Node, raw: string): ParsedExpr {
@@ -965,14 +1007,18 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
               'String.prototype.replace supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */',
           }
         }
+        // Treat an object-literal argument like `unsupported` — a `.replace`
+        // with an object pattern/replacement isn't lowerable, same as before
+        // the `object-literal` kind existed (byte-identical; Roadmap A-1).
         const badArg =
-          args[0].kind === 'unsupported'
+          args[0].kind === 'unsupported' || args[0].kind === 'object-literal'
             ? args[0]
-            : args[1].kind === 'unsupported'
+            : args[1].kind === 'unsupported' || args[1].kind === 'object-literal'
               ? args[1]
               : undefined
-        if (badArg && badArg.kind === 'unsupported') {
-          return { kind: 'unsupported', raw, reason: badArg.reason }
+        if (badArg) {
+          const reason = badArg.kind === 'unsupported' ? badArg.reason : 'Unsupported syntax: ObjectLiteralExpression'
+          return { kind: 'unsupported', raw, reason }
         }
         return { kind: 'array-method', method: 'replace', object: callee.object, args }
       }
@@ -1132,6 +1178,29 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     return { kind: 'array-literal', elements }
   }
 
+  // Object literal: { a: 1, b: x, shorthand }. Only plain literals are
+  // structured — every property must be a non-computed `key: value` or a
+  // shorthand `{ key }`. Anything else (spread, computed key, method,
+  // getter/setter) falls through to the generic `unsupported` fallback
+  // below, exactly as before this kind existed.
+  if (ts.isObjectLiteralExpression(node)) {
+    const properties: ObjectLiteralProperty[] = []
+    for (const prop of node.properties) {
+      if (ts.isPropertyAssignment(prop)) {
+        const key = objectLiteralKeyName(prop.name)
+        if (key === null) return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
+        properties.push({ key, shorthand: false, value: convertNode(prop.initializer, raw) })
+      } else if (ts.isShorthandPropertyAssignment(prop)) {
+        const key = prop.name.text
+        properties.push({ key, shorthand: true, value: { kind: 'identifier', name: key } })
+      } else {
+        // Spread assignment, method, getter/setter — not a plain map.
+        return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
+      }
+    }
+    return { kind: 'object-literal', properties, raw }
+  }
+
   // Property access: user.name, items().length
   if (ts.isPropertyAccessExpression(node)) {
     const object = convertNode(node.expression, raw)
@@ -1164,7 +1233,10 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // (the literal forms above fold into a static property path; this
     // one can't). #1897 (data-table).
     const index = convertNode(argNode, raw)
-    if (index.kind === 'unsupported') return index
+    // An object-literal index (`arr[{…}]`) isn't lowerable — surface it
+    // as the whole expression, exactly as an `unsupported` index did
+    // before the kind existed (byte-identical; Roadmap A-1).
+    if (index.kind === 'unsupported' || index.kind === 'object-literal') return index
     return { kind: 'index-access', object, index }
   }
 
@@ -2070,8 +2142,12 @@ function collectDestructureBindings(
     let defaultExpr: ParsedExpr | undefined
     if (el.initializer) {
       const parsed = convertNode(el.initializer, raw)
-      if (parsed.kind === 'unsupported') {
-        return { ok: false, reason: `Default value in destructured filter param failed to parse: ${parsed.reason}` }
+      // An object-literal default isn't lowered into a destructured filter
+      // predicate yet — refuse it exactly as before the kind existed, with
+      // the same reason text the `unsupported` fallback produced (A-1).
+      if (parsed.kind === 'unsupported' || parsed.kind === 'object-literal') {
+        const reason = parsed.kind === 'unsupported' ? parsed.reason : 'Unsupported syntax: ObjectLiteralExpression'
+        return { ok: false, reason: `Default value in destructured filter param failed to parse: ${reason}` }
       }
       defaultExpr = parsed
     }
@@ -2114,6 +2190,7 @@ function findImpureDefaultNode(expr: ParsedExpr): string | null {
     case 'literal':
     case 'identifier':
     case 'unsupported':
+    case 'object-literal':
       return null
     case 'member':
       return findImpureDefaultNode(expr.object)
@@ -2271,6 +2348,7 @@ function validateRestUsage(
         return
       case 'literal':
       case 'unsupported':
+      case 'object-literal':
         return
     }
   }
@@ -2386,6 +2464,9 @@ function collectIdentifiers(expr: ParsedExpr, out: Set<string>): void {
       return
     case 'literal':
     case 'unsupported':
+    // Mirror `unsupported`: an object literal was not carried before this
+    // kind existed, so it collects no identifiers (byte-identical A-1).
+    case 'object-literal':
       return
   }
 }
@@ -2506,6 +2587,9 @@ function substituteDestructuredFields(
         return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
       case 'literal':
       case 'unsupported':
+      // Mirror `unsupported`: object literals were not substituted into
+      // before this kind existed — return verbatim (byte-identical A-1).
+      case 'object-literal':
         return e
     }
   }
@@ -2566,6 +2650,15 @@ function checkSupport(expr: ParsedExpr): SupportResult {
   switch (expr.kind) {
     case 'unsupported':
       return { supported: false, reason: expr.reason }
+
+    // A bare object literal is still refused as a standalone template
+    // expression — adapters that lower one as a *value* (Go map / Perl
+    // hashref) do so in their own emitter, like `array-literal`, not
+    // through this support gate. The reason string is the exact text the
+    // `unsupported` fallback produced before the `object-literal` kind
+    // existed, so diagnostics stay byte-identical (Roadmap A-1).
+    case 'object-literal':
+      return { supported: false, reason: 'Unsupported syntax: ObjectLiteralExpression' }
 
     case 'identifier':
       return { supported: true, level: 'L1' }
@@ -2864,7 +2957,10 @@ function parseStatement(
     const name = decl.name.text
     const initText = getJS(decl.initializer)
     const init = parseExpression(initText)
-    if (init.kind === 'unsupported') {
+    // `object-literal` is not yet lowered by the block-body consumers, so
+    // treat it like `unsupported` here — the memo/block path falls back to
+    // its `ts.createSourceFile` lowering (byte-identical; Roadmap A-1).
+    if (init.kind === 'unsupported' || init.kind === 'object-literal') {
       return null
     }
     return { kind: 'var-decl', name, init }
@@ -2878,7 +2974,9 @@ function parseStatement(
     }
     const valueText = getJS(stmt.expression)
     const value = parseExpression(valueText)
-    if (value.kind === 'unsupported') {
+    // See the var-decl note above: object literals fall back to the
+    // block-body's createSourceFile lowering for now (Roadmap A-1).
+    if (value.kind === 'unsupported' || value.kind === 'object-literal') {
       return null
     }
     return { kind: 'return', value }
@@ -2888,7 +2986,7 @@ function parseStatement(
   if (ts.isIfStatement(stmt)) {
     const conditionText = getJS(stmt.expression)
     const condition = parseExpression(conditionText)
-    if (condition.kind === 'unsupported') {
+    if (condition.kind === 'unsupported' || condition.kind === 'object-literal') {
       return null
     }
 
@@ -3010,6 +3108,9 @@ export function exprToString(expr: ParsedExpr): string {
       }
       return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
     case 'unsupported':
+    // `raw` holds the original expression string (same value the old
+    // `unsupported` carried), so the round-trip stays byte-identical.
+    case 'object-literal':
       return `[UNSUPPORTED: ${expr.raw}]`
   }
 }
@@ -3097,6 +3198,9 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
       }
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
     case 'unsupported':
+    // `raw` is the original expression string, so re-stringification is
+    // byte-identical to the pre-`object-literal` behaviour (Roadmap A-1).
+    case 'object-literal':
       return expr.raw
   }
 }

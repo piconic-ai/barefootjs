@@ -1399,7 +1399,14 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     memoArrow && ts.isArrowFunction(memoArrow) && !ts.isBlock(memoArrow.body)
       ? parseExpression(ctx.getJS(memoArrow.body))
       : undefined
-  const parsed = parsedBody && parsedBody.kind !== 'unsupported' ? parsedBody : undefined
+  // `object-literal` is excluded alongside `unsupported`: an object-returning
+  // memo (`() => ({ … })`) isn't lowered from the parsed tree yet, so leaving
+  // `parsed` undefined keeps the adapter on its existing object-memo lowering
+  // (byte-identical; flipped in a later Roadmap A unit).
+  const parsed =
+    parsedBody && parsedBody.kind !== 'unsupported' && parsedBody.kind !== 'object-literal'
+      ? parsedBody
+      : undefined
 
   ctx.memos.push({
     name,

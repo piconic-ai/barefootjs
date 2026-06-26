@@ -33,7 +33,7 @@
  *     be added in one place.
  */
 
-import type { ParsedExpr, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart } from '../expression-parser.ts'
+import type { ParsedExpr, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -148,6 +148,14 @@ export interface ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string
+  // Emit an object literal `{ a: 1, b: x }`. `raw` is the original
+  // expression string so an adapter that doesn't lower object values yet
+  // can delegate to `unsupported(raw, …)` and stay byte-identical.
+  objectLiteral(
+    properties: ObjectLiteralProperty[],
+    raw: string,
+    emit: (e: ParsedExpr) => string,
+  ): string
   arrayMethod(
     method: ArrayMethod,
     object: ParsedExpr,
@@ -223,6 +231,8 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.higherOrder(expr.method, expr.object, expr.param, expr.predicate, emit)
     case 'array-literal':
       return emitter.arrayLiteral(expr.elements, emit)
+    case 'object-literal':
+      return emitter.objectLiteral(expr.properties, expr.raw, emit)
     case 'array-method':
       if (expr.method === 'sort' || expr.method === 'toSorted') {
         return emitter.sortMethod(expr.method, expr.object, expr.comparator, emit)
