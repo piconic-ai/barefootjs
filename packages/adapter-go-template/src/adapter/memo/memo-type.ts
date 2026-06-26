@@ -5,7 +5,8 @@
  * computation so `inferMemoType` can pick the right Go field type (and thus the
  * right SSR zero value). They read the context's `state.moduleStringConsts`,
  * `extractPropNameFromInitialValue`, and `typeInfoToGo` from the type-codegen
- * module. `isTemplateLiteralMemo` is fully pure (no context).
+ * module. (Template-literal classification now rides on the IR as
+ * `MemoInfo.bodyIsTemplateLiteral`, set by the analyzer, so it isn't here.)
  */
 
 import ts from 'typescript'
@@ -14,30 +15,6 @@ import type { TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
-
-export function isTemplateLiteralMemo(computation: string): boolean {
-  const sf = ts.createSourceFile(
-    '__memo.ts', `const __x = (${computation});`, ts.ScriptTarget.Latest, /*setParentNodes*/ false,
-  )
-  const stmt = sf.statements[0]
-  if (!stmt || !ts.isVariableStatement(stmt)) return false
-  let init = stmt.declarationList.declarations[0]?.initializer
-  while (init && ts.isParenthesizedExpression(init)) init = init.expression
-  if (!init || !ts.isArrowFunction(init)) return false
-  let body = init.body as ts.Node
-  while (ts.isParenthesizedExpression(body as ts.Expression)) {
-    body = (body as ts.ParenthesizedExpression).expression
-  }
-  if (ts.isBlock(body)) {
-    const ret = body.statements.find(ts.isReturnStatement)
-    if (!ret || !ret.expression) return false
-    body = ret.expression
-    while (ts.isParenthesizedExpression(body as ts.Expression)) {
-      body = (body as ts.ParenthesizedExpression).expression
-    }
-  }
-  return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
-}
 
 /**
  * (#checkbox) Heuristic: does this memo evaluate to a boolean? True when its

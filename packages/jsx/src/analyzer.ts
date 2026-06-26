@@ -1348,6 +1348,28 @@ function isMemoDeclaration(node: ts.VariableDeclaration, ctx: AnalyzerContext): 
   return resolvePrimitiveKind(node.initializer, ctx) === 'memo'
 }
 
+/**
+ * Does the memo arrow's effective body resolve to a template literal? Mirrors
+ * the Go adapter's former `isTemplateLiteralMemo` (which re-parsed `computation`
+ * with `ts.createSourceFile`) but runs on the real arrow node at analysis time:
+ * unwrap parens, descend a block body to its first `return`, and check for a
+ * template expression / no-substitution template literal.
+ */
+function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolean {
+  let node: ts.Node | undefined = memoArrow
+  while (node && ts.isParenthesizedExpression(node)) node = node.expression
+  if (!node || !ts.isArrowFunction(node)) return false
+  let body: ts.Node = node.body
+  while (ts.isParenthesizedExpression(body)) body = body.expression
+  if (ts.isBlock(body)) {
+    const ret = body.statements.find(ts.isReturnStatement)
+    if (!ret || !ret.expression) return false
+    body = ret.expression
+    while (ts.isParenthesizedExpression(body)) body = body.expression
+  }
+  return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
+}
+
 function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   const name = (node.name as ts.Identifier).text
   const callExpr = node.initializer as ts.CallExpression
@@ -1425,6 +1447,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     computation,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
+    bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(memoArrow),
     type,
     deps,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),

@@ -114,7 +114,7 @@ import {
   objectLiteralToGoMap,
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
-import { isTemplateLiteralMemo, isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
+import { isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
@@ -2385,14 +2385,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Infer the Go type for a memo based on its computation and dependencies.
    */
   private inferMemoType(
-    memo: { name: string; computation: string; type: TypeInfo; deps: string[] },
+    memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean },
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
     // A template-literal memo always produces a string. Decide this first so a
     // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
-    // heuristic below into `int`.
-    if (isTemplateLiteralMemo(memo.computation)) return 'string'
+    // heuristic below into `int`. The analyzer classified the body shape from
+    // the real arrow AST (`MemoInfo.bodyIsTemplateLiteral`), so no re-parse here.
+    if (memo.bodyIsTemplateLiteral) return 'string'
 
     // Check if computation involves multiplication (*) - likely number
     if (memo.computation.includes('*') || memo.computation.includes('/') ||
