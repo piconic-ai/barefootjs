@@ -2385,7 +2385,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Infer the Go type for a memo based on its computation and dependencies.
    */
   private inferMemoType(
-    memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean },
+    memo: { name: string; computation: string; type: TypeInfo; deps: string[]; bodyIsTemplateLiteral?: boolean; parsed?: ParsedExpr },
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
@@ -2432,7 +2432,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // string even though its condition has `===`. Decide before the boolean
     // heuristic so it's typed `string` (zero value `""`), not `interface{}`
     // (whose nil zero renders `<nil>`).
-    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isStringTernaryMemo(this.emitCtx, memo.computation)) {
+    if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isStringTernaryMemo(this.emitCtx, memo.parsed)) {
       return 'string'
     }
     if (typeInfoToGo(this.emitCtx, memo.type) === 'interface{}' && isBooleanMemo(this.emitCtx, memo, signals, propsParamMap)) {
