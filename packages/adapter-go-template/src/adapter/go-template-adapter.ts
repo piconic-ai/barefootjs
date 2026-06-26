@@ -4443,19 +4443,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // string here. Falls through to the `ts.createSourceFile` path below when
     // the value wasn't carried as a plain object literal (a spread / computed-
     // key / template-key record stays `unsupported`, handled there unchanged).
+    // Prefer the IR-carried structured value, but ONLY for string-literal
+    // record values. A parsed numeric literal has already been through
+    // `parseFloat` (in the expression parser), which can change the spelling
+    // (e.g. `1e3` → `1000`) or lose precision for integers beyond
+    // `Number.MAX_SAFE_INTEGER`, whereas the `ts.createSourceFile` fallback
+    // below preserves the exact `NumericLiteral.text` token. So for numbers —
+    // and anything that isn't a plain string literal — fall through to that
+    // path, which stays byte-identical. (A later Roadmap A unit carries a raw
+    // numeric spelling on the IR, at which point numbers can use the fast path
+    // too.) Strings are already escape-equivalent to the fallback's
+    // `JSON.stringify(text)`, so the common icon-registry record short-circuits.
     const carried = constInfo.parsed
     if (carried?.kind === 'object-literal') {
-      for (const prop of carried.properties) {
-        if (prop.key !== key) continue
-        const v = prop.value
-        // Mirror the `tsLiteralToGo`-style return below: a numeric value
-        // passes through verbatim, a string value is Go-quoted, anything
-        // else (a member/call/nested literal) yields null.
-        if (v.kind === 'literal' && v.literalType === 'number') return String(v.value)
-        if (v.kind === 'literal' && v.literalType === 'string') return JSON.stringify(v.value)
-        return null
+      const hit = carried.properties.find(prop => prop.key === key)
+      if (hit && hit.value.kind === 'literal' && hit.value.literalType === 'string') {
+        return JSON.stringify(hit.value.value)
       }
-      return null
+      // else: fall through to the exact-text createSourceFile path below.
     }
 
     const sf = ts.createSourceFile(

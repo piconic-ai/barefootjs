@@ -1334,8 +1334,9 @@ export interface ConstantInfo {
    * — which TS reads as a block at statement position — resolves to an
    * `object-literal` rather than failing). Lets adapters lower a constant value
    * (e.g. a module-scope record's `{ … }`) from structure instead of
-   * re-parsing the string with `ts.createSourceFile`. Absent when there's no
-   * value (conditional `valueBranches`) or the value is inlined JSX.
+   * re-parsing the string with `ts.createSourceFile`. Absent when the constant
+   * has no `value` string (e.g. an inlined-JSX const) or when the analyzer
+   * couldn't structure it (best-effort — consumers fall back to the string).
    */
   parsed?: ParsedExpr
   /** Value with TypeScript type annotations preserved, for .tsx output */
