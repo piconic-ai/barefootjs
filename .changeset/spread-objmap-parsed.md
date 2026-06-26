@@ -15,3 +15,9 @@ computed init leaves `parsed` absent or non-object, returning null exactly as
 the former string parser did. Byte-identical — verified by go unit (556),
 conformance (786), and jsx unit (2216). Drops the adapter's package-wide
 `ts.createSourceFile` count by one.
+
+Also adds an optional `ObjectLiteralProperty.keyKind` (`identifier` / `string` /
+`numeric`) to the shared `ParsedExpr` so the spread lowering can keep rejecting
+numeric object keys (`{ 1: 'a' }`) exactly as the former parser did — `key`
+normalises numeric and string keys to the same text. Additive and optional;
+other consumers ignore it.

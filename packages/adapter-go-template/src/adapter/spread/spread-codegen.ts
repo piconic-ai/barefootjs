@@ -158,6 +158,10 @@ function parsedObjectLiteralToGoMap(parsed: ParsedExpr | undefined): string | nu
   if (!parsed || parsed.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of parsed.properties) {
+    // A numeric key (`{ 1: 'a' }`) was rejected by the former parser (only
+    // identifier / string keys were accepted), so keep refusing it — `key`
+    // alone can't distinguish it from a string `'1'` key, hence `keyKind`.
+    if (prop.keyKind === 'numeric') return null
     const v = prop.value
     let goVal: string
     if (v.kind === 'literal' && v.literalType === 'string') {
