@@ -1075,6 +1075,14 @@ export interface SignalInfo {
   getter: string
   setter: string | null
   initialValue: string
+  /**
+   * `initialValue` parsed into a structured tree (Roadmap A). Attached
+   * best-effort by the analyzer so adapters can lower a literal initial value
+   * (e.g. `useState(['a', 'b'])`) from structure instead of re-parsing the
+   * string with `ts.createSourceFile`. Absent when the shape isn't supported;
+   * consumers fall back to parsing `initialValue`.
+   */
+  parsed?: ParsedExpr
   /** Initial value with TypeScript type annotations preserved, for .tsx output */
   typedInitialValue?: string
   type: TypeInfo

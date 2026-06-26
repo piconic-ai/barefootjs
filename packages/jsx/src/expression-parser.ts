@@ -14,7 +14,16 @@ import ts from 'typescript'
 
 export type ParsedExpr =
   | { kind: 'identifier'; name: string }
-  | { kind: 'literal'; value: string | number | boolean | null; literalType: 'string' | 'number' | 'boolean' | 'null' }
+  // `raw` is the numeric literal's `ts.NumericLiteral.text` — the token TS
+  // itself normalises (separators stripped, radix / exponent folded to
+  // decimal: `1_000`/`0x10`/`1e3` → `1000`/`16`/`1000`). It is NOT the
+  // verbatim source spelling. Its value is that it equals the exact string an
+  // adapter's literal lowering already emits, so a structured lowering matches
+  // byte-for-byte — which the lossy `parseFloat` `value` can't guarantee (e.g.
+  // `parseFloat('1_000')` is 1, and large integers lose precision). Only
+  // populated for numeric literals; string / boolean / null carry their
+  // canonical form in `value`.
+  | { kind: 'literal'; value: string | number | boolean | null; literalType: 'string' | 'number' | 'boolean' | 'null'; raw?: string }
   | { kind: 'call'; callee: ParsedExpr; args: ParsedExpr[] }
   | { kind: 'member'; object: ParsedExpr; property: string; computed: boolean }
   // Element access with a NON-literal index (`selected()[index]`,
@@ -725,10 +734,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     return { kind: 'literal', value: node.text, literalType: 'string' }
   }
 
-  // Numeric literal: 0, 5, 3.14
+  // Numeric literal: 0, 5, 3.14. Keep `ts.NumericLiteral.text` in `raw` (TS's
+  // normalised token — `1_000`/`0x10`/`1e3` → `1000`/`16`/`1000`) so an adapter
+  // emits the exact string its own literal lowering already produces; `value`
+  // is the parsed number for structural reasoning.
   if (ts.isNumericLiteral(node)) {
     const value = parseFloat(node.text)
-    return { kind: 'literal', value, literalType: 'number' }
+    return { kind: 'literal', value, literalType: 'number', raw: node.text }
   }
 
   // Boolean literals and null

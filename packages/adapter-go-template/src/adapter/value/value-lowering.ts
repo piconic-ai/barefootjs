@@ -12,12 +12,13 @@
 
 import ts from 'typescript'
 
-import type { TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
+import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
@@ -27,6 +28,7 @@ export function convertInitialValue(
   value: string,
   typeInfo: TypeInfo,
   propsParams?: { name: string }[],
+  preParsed?: ParsedExpr,
 ): string {
   // Check if it's a simple identifier (props param reference)
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
@@ -79,7 +81,7 @@ export function convertInitialValue(
     // Bake a fully-literal initial value into a Go slice literal; anything
     // the parser can't reduce to a literal — a call, an identifier, `null` /
     // `undefined`, or an empty array — yields null and we keep `nil`.
-    return jsLiteralToGo(ctx, value, typeInfo) ?? 'nil'
+    return jsLiteralToGo(ctx, value, typeInfo, preParsed) ?? 'nil'
   }
 
   // String alias (e.g., Filter = string) — return string value instead of nil
@@ -116,7 +118,18 @@ export function jsLiteralToGo(
   ctx: GoEmitContext,
   value: string,
   typeInfo: TypeInfo,
+  preParsed?: ParsedExpr,
 ): string | null {
+  // Roadmap A: when the analyzer carried a structured parse, lower the literal
+  // from the tree first. `parsedLiteralToGo` reproduces the scalar / scalar-
+  // array shapes exactly and returns null to DEFER everything else (object
+  // baking, empty arrays, `as const`, …) to the `ts.createSourceFile` path
+  // below, so behaviour stays byte-identical — only the reproduced shapes skip
+  // the re-parse.
+  if (preParsed) {
+    const structured = parsedLiteralToGo(ctx, preParsed, typeInfo)
+    if (structured !== null) return structured
+  }
   const expr = ctx.parseLiteralExpression(value)
   if (!expr) return null
   return tsLiteralToGo(ctx, expr, typeInfo)
