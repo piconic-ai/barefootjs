@@ -2759,9 +2759,21 @@ function collectConstant(
     }
   }
 
+  // Structure a module-scope constant's value for adapters (Roadmap A). Only
+  // module consts are carried — they're the ones adapters resolve as
+  // compile-time records (e.g. a `strokePaths` icon map). Parse the
+  // PARENTHESISED value so a bare object literal (`{ … }`), which TS reads as
+  // a block at statement position, resolves to an `object-literal` instead of
+  // failing. Best-effort and inert for inlined JSX (no usable value tree).
+  const parsed =
+    isModule && value && !isJsx && !isJsxFunction
+      ? parseExpression(`(${value.trim()})`)
+      : undefined
+
   ctx.localConstants.push({
     name,
     value,
+    parsed,
     typedValue: typedValue !== value ? typedValue : undefined,
     valueBranches,
     declarationKind,

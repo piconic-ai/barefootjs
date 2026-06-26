@@ -4436,6 +4436,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       c => c.name === m[1] && c.isModule,
     )
     if (constInfo?.value === undefined) return null
+
+    // Prefer the IR-carried structured value (Roadmap A): the analyzer parses
+    // a module record's `{ key: 'lit' }` once into an `object-literal`, so the
+    // key lookup reads the structured tree instead of re-parsing the value
+    // string here. Falls through to the `ts.createSourceFile` path below when
+    // the value wasn't carried as a plain object literal (a spread / computed-
+    // key / template-key record stays `unsupported`, handled there unchanged).
+    const carried = constInfo.parsed
+    if (carried?.kind === 'object-literal') {
+      for (const prop of carried.properties) {
+        if (prop.key !== key) continue
+        const v = prop.value
+        // Mirror the `tsLiteralToGo`-style return below: a numeric value
+        // passes through verbatim, a string value is Go-quoted, anything
+        // else (a member/call/nested literal) yields null.
+        if (v.kind === 'literal' && v.literalType === 'number') return String(v.value)
+        if (v.kind === 'literal' && v.literalType === 'string') return JSON.stringify(v.value)
+        return null
+      }
+      return null
+    }
+
     const sf = ts.createSourceFile(
       '__rec.ts',
       `(${constInfo.value})`,
