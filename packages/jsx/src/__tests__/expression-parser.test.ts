@@ -331,6 +331,28 @@ describe('expression-parser', () => {
       }
     })
 
+    test('carries the raw numeric token (= ts NumericLiteral.text) (Roadmap A-3)', () => {
+      // `raw` is the TS `NumericLiteral.text` — the exact token the adapter's
+      // `tsLiteralToGo` already emits — so a structured lowering matches it
+      // byte-for-byte. TS normalises separators / radix / exponent in `.text`
+      // (`1_000`/`0x10`/`1e3` → decimal), which is precisely why carrying the
+      // token beats the lossy `parseFloat` `value` (e.g. `parseFloat('1_000')`
+      // is 1, not 1000).
+      for (const [src, value, raw] of [
+        ['1', 1, '1'],
+        ['3.14', 3.14, '3.14'],
+        ['0x10', 16, '16'],
+        ['1e3', 1000, '1000'],
+        ['1_000', 1000, '1000'],
+      ] as const) {
+        const r = parseExpression(src)
+        expect(r).toMatchObject({ kind: 'literal', literalType: 'number', value, raw })
+      }
+      // Non-numeric literals don't carry `raw` (their `value` is canonical).
+      expect((parseExpression("'x'") as { raw?: string }).raw).toBeUndefined()
+      expect((parseExpression('true') as { raw?: string }).raw).toBeUndefined()
+    })
+
     test('falls through to unsupported for spread / computed-key object literals', () => {
       // A spread member is not a plain map property — preserves the
       // pre-A-1 `unsupported` behaviour (byte-identical).

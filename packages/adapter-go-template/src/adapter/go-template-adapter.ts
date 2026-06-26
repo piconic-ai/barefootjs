@@ -1242,7 +1242,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Bake against the synthesised struct type when one was inferred for
         // this untyped object-array signal (#1680), else the signal's own type.
         const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-        const initialValue = convertInitialValue(this.emitCtx, signal.initialValue, bakeType, ir.metadata.propsParams)
+        const initialValue = convertInitialValue(this.emitCtx, signal.initialValue, bakeType, ir.metadata.propsParams, signal.parsed)
         lines.push(`\t\t${fieldName}: ${initialValue},`)
       }
     }
@@ -2329,7 +2329,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   private resolveDynamicPropValue(
     expr: string,
-    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo }[],
+    signals: { getter: string; setter: string | null; initialValue: string; type: TypeInfo; parsed?: ParsedExpr }[],
     memos: { name: string; computation: string; deps: string[] }[],
     propsParams: { name: string }[]
   ): string | null {
@@ -2366,7 +2366,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Check if it's a signal
       const signal = signals.find(s => s.getter === getterName)
       if (signal) {
-        return convertInitialValue(this.emitCtx, signal.initialValue, signal.type, propsParams)
+        return convertInitialValue(this.emitCtx, signal.initialValue, signal.type, propsParams, signal.parsed)
       }
 
       // Check if it's a memo. Use the pattern-matching core: when no

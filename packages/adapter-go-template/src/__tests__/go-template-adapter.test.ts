@@ -735,6 +735,28 @@ export function Tags() {
       )
     })
 
+    test('bakes a numeric scalar array from the carried tree (Roadmap A-3)', () => {
+      // The analyzer carries `SignalInfo.parsed`, so the scalar-array bake
+      // reads the structured tree (`parsedLiteralToGo`) instead of re-parsing
+      // the value string with `ts.createSourceFile`. Each numeric element uses
+      // the carried raw token (= `NumericLiteral.text`), so the bake matches
+      // the fallback byte-for-byte — including TS's `.text` normalisation of
+      // `1e3` → `1000` and `0x10` → `16`.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Nums() {
+  const [ns] = createSignal<number[]>([1, 2, 1e3, 0x10])
+  return <ul>{ns().map((n) => <li key={n}>{n}</li>)}</ul>
+}
+`)
+      expect(adapter.generate(ir).types!).toContain(
+        'Ns: []int{1, 2, 1000, 16},',
+      )
+    })
+
     test('synthesises a struct for an untyped object array and bakes it (#1680)', () => {
       // An untyped object array has no element type to bake against. Rather
       // than leave it nil (empty SSR loop), infer a struct from the literal's
