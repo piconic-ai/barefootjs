@@ -10,7 +10,8 @@
  * null for anything it does not reproduce exactly (an object whose target type
  * isn't a known struct, a key the struct doesn't declare, a nested object /
  * array property value, empty arrays, identifiers / calls, or a numeric literal
- * whose raw spelling wasn't carried). The caller then falls back to the
+ * that didn't carry its `raw` token — the normalised `ts.NumericLiteral.text`,
+ * not the verbatim source spelling). The caller then falls back to the
  * `ts.createSourceFile` path, so only the shapes reproduced here short-circuit
  * and behaviour stays byte-identical.
  */
