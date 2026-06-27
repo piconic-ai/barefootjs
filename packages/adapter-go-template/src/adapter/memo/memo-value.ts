@@ -28,7 +28,12 @@ export function resolveBlockBodyMemoModuleConst(
   ctx: GoEmitContext,
   parsedBlock: ParsedStatement[] | undefined,
   signals: { getter: string; initialValue: string }[],
-): { constName: string; constValue: string | undefined; constType: TypeInfo | undefined } | null {
+): {
+  constName: string
+  constValue: string | undefined
+  constType: TypeInfo | undefined
+  constParsed: ParsedExpr | undefined
+} | null {
   if (!parsedBlock) return null
 
   // Walk the analyzer-carried statements collecting:
@@ -84,6 +89,7 @@ export function resolveBlockBodyMemoModuleConst(
     constName: constant.name,
     constValue: constant.value,
     constType: constant.type ?? undefined,
+    constParsed: constant.parsed,
   }
 }
 

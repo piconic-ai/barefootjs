@@ -1549,7 +1549,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         : null
       const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
       let bakedValue = moduleConst?.type
-        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
+        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams, moduleConst.parsed)
         : null
       // (#1971) Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no
       // named module const to look up, so bake the literal slice directly so
