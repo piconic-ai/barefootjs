@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { type ParsedExpr2, parseExpression2 } from '../expression-parser'
+import {
+  type ParsedExpr2,
+  parseExpression2,
+  parsedExpr2ToParsedExpr,
+  stringifyParsedExpr,
+} from '../expression-parser'
 
 /**
  * `parseExpression2` is the Go-adapter constructor-lowering bridge tree
@@ -158,5 +163,88 @@ describe('parseExpression2', () => {
   test('empty / non-expression input is unsupported', () => {
     expect(parseExpression2('').kind).toBe('unsupported')
     expect(parseExpression2('   ').kind).toBe('unsupported')
+  })
+})
+
+/**
+ * `parsedExpr2ToParsedExpr` is the reverse bridge (#2006): it recovers a
+ * component-scope helper body (carried as `parsed2`) as a `ParsedExpr` the Go
+ * inliner can substitute the call args into, then re-stringifies the result for
+ * the normal lowering. It is a faithful structural *mirror*, not a re-parse, so
+ * the round-trip invariant is over `stringifyParsedExpr`: the mirror must
+ * stringify back to a source string that means the same expression.
+ */
+describe('parsedExpr2ToParsedExpr', () => {
+  test.each([
+    "params().sort === k ? 'sort on' : 'sort'",
+    'a || b',
+    'a ?? b',
+    '!open',
+    'a + b * c',
+    'arr[i]',
+    'a.b.c',
+    "f(x, 'y', 1)",
+    "base.replace('x', '')",
+  ])('round-trips through stringifyParsedExpr for %p', src => {
+    const back = parsedExpr2ToParsedExpr(parseExpression2(`(${src})`))
+    expect(back).not.toBeNull()
+    // Re-parsing the stringified mirror yields the same ParsedExpr2 — i.e. the
+    // mirror preserves the expression's meaning across the round-trip.
+    if (back) expect(parseExpression2(stringifyParsedExpr(back))).toEqual(parseExpression2(src))
+  })
+
+  test('conditional helper body mirrors structurally', () => {
+    const back = parsedExpr2ToParsedExpr(
+      parseExpression2("(params().sort === k ? 'sort on' : 'sort')"),
+    )
+    expect(back).toEqual({
+      kind: 'conditional',
+      test: {
+        kind: 'binary',
+        op: '===',
+        left: {
+          kind: 'member',
+          object: { kind: 'call', callee: { kind: 'identifier', name: 'params' }, args: [] },
+          property: 'sort',
+          computed: false,
+        },
+        right: { kind: 'identifier', name: 'k' },
+      },
+      consequent: { kind: 'literal', value: 'sort on', literalType: 'string' },
+      alternate: { kind: 'literal', value: 'sort', literalType: 'string' },
+    })
+  })
+
+  test('arrow and regex have no ParsedExpr form → null', () => {
+    expect(parsedExpr2ToParsedExpr(parseExpression2('(a, b) => a + b'))).toBeNull()
+    expect(parsedExpr2ToParsedExpr(parseExpression2('/\\/+$/'))).toBeNull()
+    // A nested arrow/regex anywhere in the tree poisons the whole conversion.
+    expect(parsedExpr2ToParsedExpr(parseExpression2('xs.map(x => x)'))).toBeNull()
+    expect(parsedExpr2ToParsedExpr(parseExpression2("base.replace(/\\/+$/, '')"))).toBeNull()
+  })
+
+  test('literal element access folds to a computed member (matches parseExpression)', () => {
+    // `parseExpression` folds `obj['key']` / `arr[0]` into a computed `member`;
+    // the mirror replicates that so the lowering (keyed to `parseExpression`'s
+    // shapes) treats them identically. A variable index stays `index-access`.
+    expect(parsedExpr2ToParsedExpr(parseExpression2("(obj['key'])"))).toEqual({
+      kind: 'member',
+      object: { kind: 'identifier', name: 'obj' },
+      property: 'key',
+      computed: true,
+    })
+    expect(parsedExpr2ToParsedExpr(parseExpression2('(arr[0])'))).toEqual({
+      kind: 'member',
+      object: { kind: 'identifier', name: 'arr' },
+      property: '0',
+      computed: true,
+    })
+    const idx = parsedExpr2ToParsedExpr(parseExpression2('(rows[i])'))
+    expect(idx?.kind).toBe('index-access')
+  })
+
+  test('unsupported round-trips as unsupported (the fallback sentinel)', () => {
+    const u = parsedExpr2ToParsedExpr({ kind: 'unsupported', raw: 'a ** b', reason: 'x' })
+    expect(u).toEqual({ kind: 'unsupported', raw: 'a ** b', reason: 'x' })
   })
 })

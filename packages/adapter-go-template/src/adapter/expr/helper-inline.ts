@@ -3,86 +3,125 @@
  *
  * Extracted from `go-template-adapter.ts` (Phase 4 decomposition). When a JSX
  * expression calls a local `const f = (a) => …` helper, the Go adapter has no
- * function to emit — it inlines the helper body with the call args spliced in
- * for the params, so the result lowers like any inline expression. The splicer
- * is scope-blind, so the guards here reject bodies where a textual identifier
+ * function to emit — it inlines the helper body with the call args substituted
+ * for the params, so the result lowers like any inline expression. The
+ * substitution is scope-blind, so the guards here reject bodies where a param
  * replacement could be wrong.
  *
- * `substituteHelperParams` is exported because the URL-builder lowering reuses
- * it; the other helpers are module-internal.
+ * The whole path is structural (#2006): the call arrives already parsed (its
+ * `ParsedExpr` tree, threaded from `convertExpressionToGo`'s `preParsed`), and
+ * the helper body is the analyzer-attached `ConstantInfo.parsed2` tree — so no
+ * `ts.createSourceFile` re-parse is needed.
  */
 
-import ts from 'typescript'
+import { type ParsedExpr, parsedExpr2ToParsedExpr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 
 /**
- * Inline a call to a local arrow-const helper, returning the spliced body
- * source, or null when the expression isn't such a call or the body isn't
- * splice-safe (nested functions, helper-calling helpers, spread args, …).
+ * Inline a call to a local arrow-const helper, returning the substituted body
+ * tree, or null when the expression isn't such a call or the body isn't
+ * substitution-safe (nested functions, helper-calling helpers, spread args, …).
+ *
+ * `callParsed` is the call's already-built `ParsedExpr` (the `preParsed` tree
+ * threaded from `convertExpressionToGo`). It must be a `call` node; without it
+ * (a call site that didn't carry a tree) inlining is declined — every site that
+ * legitimately inlines a helper threads its IR `parsed`.
  */
-export function inlineLocalHelperCall(ctx: GoEmitContext, jsExpr: string): string | null {
+export function inlineLocalHelperCall(
+  ctx: GoEmitContext,
+  jsExpr: string,
+  callParsed?: ParsedExpr,
+): ParsedExpr | null {
   if (ctx.state.localHelperNames.size === 0) return null
-  // Fast path: skip the AST parse unless the expression begins with a known
-  // helper name applied as a call (`<helper>(`). The leading-identifier match
-  // is an unambiguous prefix — the real shape check is the AST parse below.
+  // Fast path: skip the work unless the expression begins with a known helper
+  // name applied as a call (`<helper>(`). The leading-identifier match is an
+  // unambiguous prefix — the real shape check is the tree inspection below.
   const head = /^\s*([A-Za-z_$][\w$]*)\s*\(/.exec(jsExpr)
   if (!head || !ctx.state.localHelperNames.has(head[1])) return null
 
-  const call = ctx.parseLiteralExpression(jsExpr)
-  if (!call || !ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) return null
-  // A spread arg (`f(...xs)`) can't map to positional params by text splice.
-  if (call.arguments.some(a => ts.isSpreadElement(a))) return null
-  const fnConst = ctx.state.localConstants.find(
-    c => c.name === (call.expression as ts.Identifier).text && !c.isModule && c.value,
-  )
-  if (!fnConst?.value) return null
-  const fn = ctx.parseLiteralExpression(fnConst.value)
-  if (!fn || !ts.isArrowFunction(fn) || ts.isBlock(fn.body)) return null
-  if (fn.parameters.length !== call.arguments.length) return null
-  // Don't half-inline a helper that calls another local helper.
-  if (bodyCallsLocalHelper(ctx, fn.body)) return null
-
-  const subs = new Map<string, string>()
-  for (let i = 0; i < fn.parameters.length; i++) {
-    const p = fn.parameters[i]
-    if (!ts.isIdentifier(p.name)) return null
-    // Parenthesize the arg so its own precedence survives the splice into the
-    // body (e.g. `x === <param>` with arg `a || b` must not become
-    // `x === a || b`).
-    subs.set(p.name.text, `(${call.arguments[i].getText()})`)
+  if (!callParsed || callParsed.kind !== 'call' || callParsed.callee.kind !== 'identifier') {
+    return null
   }
-  // The splicer is scope-blind, so reject bodies where a textual identifier
-  // replacement could be wrong: nested function scopes (shadowing / param
-  // positions) and object shorthand keys that are params.
-  if (!isSpliceSafeHelperBody(fn.body, new Set(subs.keys()))) return null
-  return substituteHelperParams(fn.body, subs)
+  const calleeName = callParsed.callee.name
+  if (!ctx.state.localHelperNames.has(calleeName)) return null
+
+  const fnConst = ctx.state.localConstants.find(
+    c => c.name === calleeName && !c.isModule && c.parsed2,
+  )
+  const arrow = fnConst?.parsed2
+  if (!arrow || arrow.kind !== 'arrow') return null
+  if (arrow.params.length !== callParsed.args.length) return null
+
+  // The body must lower to a `ParsedExpr` — a nested arrow / regex (the shapes
+  // `ParsedExpr` can't model) refuses here, which subsumes the
+  // nested-function-scope guard (a nested `(x) => …` in the body converts to
+  // null) the former text splicer enforced separately.
+  const body = parsedExpr2ToParsedExpr(arrow.body)
+  if (!body || body.kind === 'unsupported') return null
+
+  // Don't half-inline a helper that calls another local helper.
+  if (bodyCallsLocalHelper(ctx, body)) return null
+
+  // Refuse a body containing a method call (`x.foo(…)`). The structural body
+  // tree models it as a generic `call`, but `parseExpression` (which the rest
+  // of the lowering is keyed to) folds the string / array method family
+  // (`.replace`, `.toLowerCase`, `.includes`, `.filter`, …) into specialised
+  // `array-method` / `higher-order` nodes — so lowering this tree directly
+  // would diverge. The current inliner fixtures (`sortClass` / `tagClass`) have
+  // no method-call bodies; one that did falls back to the generic path
+  // (#2006). (`x()` with an identifier callee — `params()` — is fine.)
+  if (bodyHasMethodCall(body)) return null
+
+  const subs = new Map<string, ParsedExpr>()
+  for (let i = 0; i < arrow.params.length; i++) {
+    subs.set(arrow.params[i], callParsed.args[i])
+  }
+  // Reject bodies where a param name appears as an object shorthand key
+  // (`{ k }`, which can't be rewritten to `{ (arg) }`).
+  if (!isSubstituteSafeBody(body, new Set(subs.keys()))) return null
+  return substituteHelperParams(body, subs)
 }
 
 /**
- * Guard for `substituteHelperParams`: the span splicer replaces identifiers by
- * name without scope tracking, so it is only safe on bodies free of
- * constructs where a param name could appear in a position the splice can't
- * handle — a nested function scope (shadowing or its own parameters), or an
- * object shorthand key (`{ k }`, which can't be rewritten to `{ (arg) }`).
+ * Guard for `substituteHelperParams`: the substitution replaces value-position
+ * identifiers by name, but an `object-literal` lowers opaquely from its `raw`
+ * source string downstream — `substituteHelperParams` leaves it untouched — so a
+ * param referenced ANYWHERE inside an object literal survives un-substituted:
+ * not just a shorthand key (`{ p }`, which also isn't a value position) but a
+ * value position too (`{ x: p }`, `{ x: f(p) }`). Either would emit the param's
+ * original name instead of the call arg, producing a wrong template. So a body
+ * is substitute-safe only when no object literal it contains references any
+ * param. (Nested function scopes are already rejected upstream — their
+ * `ParsedExpr2` `arrow` doesn't convert to `ParsedExpr`.)
  */
-function isSpliceSafeHelperBody(body: ts.Node, paramNames: ReadonlySet<string>): boolean {
+function isSubstituteSafeBody(body: ParsedExpr, paramNames: ReadonlySet<string>): boolean {
+  // True when `n`'s subtree references any param (handling object-literal
+  // shorthand keys, which carry the param name on the key rather than a value).
+  const referencesParam = (n: ParsedExpr): boolean => {
+    if (n.kind === 'identifier') return paramNames.has(n.name)
+    if (n.kind === 'object-literal') {
+      return n.properties.some(
+        p => (p.shorthand && paramNames.has(p.key)) || referencesParam(p.value),
+      )
+    }
+    let hit = false
+    forEachValueChild(n, c => {
+      if (referencesParam(c)) hit = true
+    })
+    return hit
+  }
+
   let safe = true
-  const visit = (n: ts.Node): void => {
+  const visit = (n: ParsedExpr): void => {
     if (!safe) return
-    if (
-      ts.isArrowFunction(n) ||
-      ts.isFunctionExpression(n) ||
-      ts.isFunctionDeclaration(n)
-    ) {
-      safe = false
+    if (n.kind === 'object-literal') {
+      // The whole object literal lowers from `raw`; if it mentions a param
+      // anywhere, that reference can't be substituted — decline the body.
+      if (referencesParam(n)) safe = false
       return
     }
-    if (ts.isShorthandPropertyAssignment(n) && paramNames.has(n.name.text)) {
-      safe = false
-      return
-    }
-    ts.forEachChild(n, visit)
+    forEachValueChild(n, visit)
   }
   visit(body)
   return safe
@@ -93,69 +132,162 @@ function isSpliceSafeHelperBody(body: ts.Node, paramNames: ReadonlySet<string>):
  * const — the signal that inlining `body` here would only push the problem to
  * another un-lowered helper (e.g. `sortHref`'s body calls `hrefFor`).
  */
-function bodyCallsLocalHelper(ctx: GoEmitContext, body: ts.Node): boolean {
+function bodyCallsLocalHelper(ctx: GoEmitContext, body: ParsedExpr): boolean {
   let found = false
-  const visit = (n: ts.Node): void => {
+  const visit = (n: ParsedExpr): void => {
     if (found) return
-    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
-      const name = n.expression.text
-      if (
-        ctx.state.localConstants.some(c => c.name === name && !c.isModule && c.containsArrow)
-      ) {
+    if (n.kind === 'call' && n.callee.kind === 'identifier') {
+      const name = n.callee.name
+      if (ctx.state.localConstants.some(c => c.name === name && !c.isModule && c.containsArrow)) {
         found = true
         return
       }
     }
-    ts.forEachChild(n, visit)
+    forEachValueChild(n, visit)
   }
   visit(body)
   return found
 }
 
 /**
- * Re-emit `body` to source with each identifier named in `subs` replaced by
- * the substitution's source text. Implemented as span splicing over `body`'s
- * own source (single source file — args are passed as text, not cross-file
- * AST nodes, which would corrupt a printer keyed to `body`'s source). The walk
- * skips non-value identifier positions — the property NAME in `a.b` and a
- * plain object-literal key in `{ k: … }` — so a param sharing a name with a
- * member or key is left untouched. (`isSpliceSafeHelperBody` has already
- * rejected nested functions and `{ k }` shorthand keys.)
+ * True when `body` contains a method call (`x.foo(…)` — a `call` whose callee
+ * is a `member`). Such calls are folded by `parseExpression` into specialised
+ * `array-method` / `higher-order` nodes that the structural body tree models as
+ * a generic `call` instead, so a method-call body must not be lowered from this
+ * tree (see the guard in `inlineLocalHelperCall`).
  */
-export function substituteHelperParams(
-  body: ts.Expression,
-  subs: ReadonlyMap<string, string>,
-): string {
-  const sf = body.getSourceFile()
-  const base = body.getStart(sf)
-  // Collect replacement spans (relative to the body's start), right-to-left.
-  const repls: { start: number; end: number; text: string }[] = []
-  const visit = (node: ts.Node): void => {
-    if (ts.isPropertyAccessExpression(node)) {
-      visit(node.expression) // skip `.name`
+function bodyHasMethodCall(body: ParsedExpr): boolean {
+  let found = false
+  const visit = (n: ParsedExpr): void => {
+    if (found) return
+    if (n.kind === 'call' && n.callee.kind === 'member') {
+      found = true
       return
     }
-    if (ts.isPropertyAssignment(node)) {
-      // A plain identifier/string key isn't a value position; only a computed
-      // key (`[expr]`) is. Visit the initializer (and computed key) only.
-      if (ts.isComputedPropertyName(node.name)) visit(node.name)
-      visit(node.initializer)
-      return
-    }
-    if (ts.isIdentifier(node)) {
-      const sub = subs.get(node.text)
-      if (sub !== undefined) {
-        repls.push({ start: node.getStart(sf) - base, end: node.getEnd() - base, text: sub })
-        return
-      }
-    }
-    ts.forEachChild(node, visit)
+    forEachValueChild(n, visit)
   }
   visit(body)
+  return found
+}
 
-  let text = body.getText(sf)
-  for (const r of repls.sort((a, b) => b.start - a.start)) {
-    text = text.slice(0, r.start) + r.text + text.slice(r.end)
+/**
+ * Re-build `body` with each identifier named in `subs` replaced by the
+ * substitution's `ParsedExpr` subtree. A structural rewrite (#2006): the
+ * substitution is the arg subtree itself, so operator precedence survives
+ * without parenthesisation (the tree *is* the precedence). Non-value identifier
+ * positions — the property NAME in `a.b`, a plain `{ k: … }` key — are not
+ * visited, so a param sharing a name with a member or key is left untouched.
+ * (`isSubstituteSafeBody` has already rejected `{ k }` shorthand keys; nested
+ * functions were rejected at conversion, so `arrow-fn` / `higher-order` /
+ * `array-method` callbacks never reach here in practice — they pass through
+ * unchanged.)
+ */
+export function substituteHelperParams(
+  body: ParsedExpr,
+  subs: ReadonlyMap<string, ParsedExpr>,
+): ParsedExpr {
+  const go = (n: ParsedExpr): ParsedExpr => {
+    switch (n.kind) {
+      case 'identifier': {
+        const sub = subs.get(n.name)
+        return sub !== undefined ? sub : n
+      }
+      // `object-literal` / `unsupported` lower from their `raw` string, so
+      // re-lowering structured children would have no effect — leave as-is
+      // (a param inside such a node is rejected by the shorthand guard or
+      // simply never observed).
+      case 'literal':
+      case 'object-literal':
+      case 'unsupported':
+        return n
+      case 'member':
+        return { ...n, object: go(n.object) }
+      case 'index-access':
+        return { ...n, object: go(n.object), index: go(n.index) }
+      case 'call':
+        return { ...n, callee: go(n.callee), args: n.args.map(go) }
+      case 'binary':
+        return { ...n, left: go(n.left), right: go(n.right) }
+      case 'logical':
+        return { ...n, left: go(n.left), right: go(n.right) }
+      case 'unary':
+        return { ...n, argument: go(n.argument) }
+      case 'conditional':
+        return { ...n, test: go(n.test), consequent: go(n.consequent), alternate: go(n.alternate) }
+      case 'template-literal':
+        return {
+          ...n,
+          parts: n.parts.map(p =>
+            p.type === 'expression' ? { type: 'expression', expr: go(p.expr) } : p,
+          ),
+        }
+      case 'array-literal':
+        return { ...n, elements: n.elements.map(go) }
+      case 'arrow-fn':
+        return { ...n, body: go(n.body) }
+      case 'higher-order':
+        return { ...n, object: go(n.object), predicate: go(n.predicate) }
+      case 'array-method':
+        // `object` is the only re-lowered child; the structured op
+        // (comparator / reduceOp / …) is opaque to substitution.
+        return { ...n, object: go(n.object) } as ParsedExpr
+    }
   }
-  return text
+  return go(body)
+}
+
+/**
+ * Visit the value-position `ParsedExpr` children of `n` (the property name in
+ * `a.b` and a plain `{ k: v }` key are skipped — they aren't value positions;
+ * `object-literal` is handled by the caller because its shorthand keys carry a
+ * guard).
+ */
+function forEachValueChild(n: ParsedExpr, visit: (c: ParsedExpr) => void): void {
+  switch (n.kind) {
+    case 'identifier':
+    case 'literal':
+    case 'unsupported':
+    case 'object-literal':
+      return
+    case 'member':
+      visit(n.object)
+      return
+    case 'index-access':
+      visit(n.object)
+      visit(n.index)
+      return
+    case 'call':
+      visit(n.callee)
+      n.args.forEach(visit)
+      return
+    case 'binary':
+    case 'logical':
+      visit(n.left)
+      visit(n.right)
+      return
+    case 'unary':
+      visit(n.argument)
+      return
+    case 'conditional':
+      visit(n.test)
+      visit(n.consequent)
+      visit(n.alternate)
+      return
+    case 'template-literal':
+      for (const p of n.parts) if (p.type === 'expression') visit(p.expr)
+      return
+    case 'array-literal':
+      n.elements.forEach(visit)
+      return
+    case 'arrow-fn':
+      visit(n.body)
+      return
+    case 'higher-order':
+      visit(n.object)
+      visit(n.predicate)
+      return
+    case 'array-method':
+      visit(n.object)
+      return
+  }
 }

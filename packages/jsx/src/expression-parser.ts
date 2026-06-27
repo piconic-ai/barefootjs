@@ -3527,6 +3527,119 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
 }
 
 /**
+ * Convert a {@link ParsedExpr2} into a structurally faithful {@link ParsedExpr}
+ * mirror, or `null` when the tree contains a shape `ParsedExpr` can't model.
+ * `ParsedExpr2` carries two extras with no `ParsedExpr` arm — `regex` (a `/…/`
+ * literal) and `arrow` (a multi-param `(a, b) => …`); a tree containing either
+ * (anywhere) returns `null`. `unsupported` maps to `unsupported` (the caller
+ * already treats it as the fallback sentinel).
+ *
+ * The Go helper-inliner uses this to recover a component-scope helper's body
+ * (carried structurally as `ConstantInfo.parsed2`) as a tree it can substitute
+ * the call args into, then re-stringifies the substituted result for the normal
+ * string lowering (#2006) — eliminating the helper-inline `ts.createSourceFile`
+ * re-parse. The mirror is NOT a full re-parse: it does not fold method calls
+ * into the `array-method` / `higher-order` shapes `parseExpression` recognises —
+ * that fold happens when the stringified body is re-parsed downstream. It DOES,
+ * however, fold a literal element access (`obj['key']`, `arr[0]`) into a
+ * computed `member`, mirroring `parseExpression` so the result matches the shape
+ * the rest of the lowering is keyed to (a non-literal index like `rows[i]` stays
+ * an `index-access`). Otherwise the mirror only needs to round-trip through
+ * `stringifyParsedExpr` faithfully (any node it can't model already lives in
+ * `ParsedExpr2` as `arrow` / `regex` and returns `null`).
+ */
+export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
+  switch (expr.kind) {
+    case 'identifier':
+      return { kind: 'identifier', name: expr.name }
+    case 'literal':
+      return expr.raw !== undefined
+        ? { kind: 'literal', value: expr.value, literalType: expr.literalType, raw: expr.raw }
+        : { kind: 'literal', value: expr.value, literalType: expr.literalType }
+    case 'member': {
+      const object = parsedExpr2ToParsedExpr(expr.object)
+      return object && { kind: 'member', object, property: expr.property, computed: expr.computed }
+    }
+    case 'index-access': {
+      const object = parsedExpr2ToParsedExpr(expr.object)
+      if (!object) return null
+      // `parseExpression` folds a literal string / numeric element access
+      // (`obj['key']`, `arr[0]`) into a computed `member`; `parseExpression2`
+      // keeps it an `index-access`. Replicate the fold so the mirror matches
+      // the shape the rest of the lowering is keyed to (a non-literal index —
+      // `rows[i]` — stays an `index-access`, as in both parsers).
+      if (
+        expr.index.kind === 'literal' &&
+        (expr.index.literalType === 'string' || expr.index.literalType === 'number')
+      ) {
+        const property = expr.index.raw ?? String(expr.index.value)
+        return { kind: 'member', object, property, computed: true }
+      }
+      const index = parsedExpr2ToParsedExpr(expr.index)
+      return index ? { kind: 'index-access', object, index } : null
+    }
+    case 'call': {
+      const callee = parsedExpr2ToParsedExpr(expr.callee)
+      if (!callee) return null
+      const args: ParsedExpr[] = []
+      for (const a of expr.args) {
+        const c = parsedExpr2ToParsedExpr(a)
+        if (!c) return null
+        args.push(c)
+      }
+      return { kind: 'call', callee, args }
+    }
+    case 'logical': {
+      const left = parsedExpr2ToParsedExpr(expr.left)
+      const right = parsedExpr2ToParsedExpr(expr.right)
+      return left && right ? { kind: 'logical', op: expr.op, left, right } : null
+    }
+    case 'binary': {
+      const left = parsedExpr2ToParsedExpr(expr.left)
+      const right = parsedExpr2ToParsedExpr(expr.right)
+      return left && right ? { kind: 'binary', op: expr.op, left, right } : null
+    }
+    case 'unary': {
+      const argument = parsedExpr2ToParsedExpr(expr.argument)
+      return argument && { kind: 'unary', op: expr.op, argument }
+    }
+    case 'conditional': {
+      const test = parsedExpr2ToParsedExpr(expr.test)
+      const consequent = parsedExpr2ToParsedExpr(expr.consequent)
+      const alternate = parsedExpr2ToParsedExpr(expr.alternate)
+      return test && consequent && alternate
+        ? { kind: 'conditional', test, consequent, alternate }
+        : null
+    }
+    case 'array-literal': {
+      const elements: ParsedExpr[] = []
+      for (const e of expr.elements) {
+        const c = parsedExpr2ToParsedExpr(e)
+        if (!c) return null
+        elements.push(c)
+      }
+      return { kind: 'array-literal', elements }
+    }
+    case 'object-literal': {
+      const properties: ObjectLiteralProperty[] = []
+      for (const p of expr.properties) {
+        const value = parsedExpr2ToParsedExpr(p.value)
+        if (!value) return null
+        properties.push({ key: p.key, keyKind: p.keyKind, shorthand: p.shorthand, value })
+      }
+      return { kind: 'object-literal', properties, raw: expr.raw }
+    }
+    case 'unsupported':
+      return { kind: 'unsupported', raw: expr.raw, reason: expr.reason }
+    // `regex` and `arrow` have no `ParsedExpr` representation — refuse so the
+    // caller falls back to its string path.
+    case 'regex':
+    case 'arrow':
+      return null
+  }
+}
+
+/**
  * Extract the textual identifier path from a parsed expression's
  * callee — `{kind:'identifier', name:'String'}` → `"String"`,
  * `{kind:'member', object:{kind:'identifier', name:'JSON'},

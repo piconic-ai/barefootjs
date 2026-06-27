@@ -12,7 +12,6 @@ import ts from 'typescript'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { wrapIfMultiToken } from '../lib/go-emit.ts'
-import { substituteHelperParams } from './helper-inline.ts'
 
 type UrlBuilderShape = {
   base: ts.Expression
@@ -219,4 +218,57 @@ function lowerUrlGuard(
     ctx.convertExpressionToGo(substituteHelperParams(guard, subs)),
   )
   return `ne ${valueGo} ""`
+}
+
+/**
+ * Re-emit `body` to source with each identifier named in `subs` replaced by the
+ * substitution's source text. Span splicing over `body`'s own source (single
+ * source file — args are passed as text, not cross-file AST nodes, which would
+ * corrupt a printer keyed to `body`'s source). The walk skips non-value
+ * identifier positions — the property NAME in `a.b` and a plain object-literal
+ * key in `{ k: … }` — so a param sharing a name with a member or key is left
+ * untouched.
+ *
+ * The URL-builder lowering keeps this text path (#2006): its block-bodied
+ * `URLSearchParams` helpers aren't representable as a `ParsedExpr2` (only
+ * expression-bodied arrows are), so there is no structured body tree to
+ * substitute in — the spliced string is re-parsed by `convertExpressionToGo` /
+ * `convertConditionToGo` / the delegate recursion.
+ */
+function substituteHelperParams(
+  body: ts.Expression,
+  subs: ReadonlyMap<string, string>,
+): string {
+  const sf = body.getSourceFile()
+  const base = body.getStart(sf)
+  // Collect replacement spans (relative to the body's start), right-to-left.
+  const repls: { start: number; end: number; text: string }[] = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isPropertyAccessExpression(node)) {
+      visit(node.expression) // skip `.name`
+      return
+    }
+    if (ts.isPropertyAssignment(node)) {
+      // A plain identifier/string key isn't a value position; only a computed
+      // key (`[expr]`) is. Visit the initializer (and computed key) only.
+      if (ts.isComputedPropertyName(node.name)) visit(node.name)
+      visit(node.initializer)
+      return
+    }
+    if (ts.isIdentifier(node)) {
+      const sub = subs.get(node.text)
+      if (sub !== undefined) {
+        repls.push({ start: node.getStart(sf) - base, end: node.getEnd() - base, text: sub })
+        return
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(body)
+
+  let text = body.getText(sf)
+  for (const r of repls.sort((a, b) => b.start - a.start)) {
+    text = text.slice(0, r.start) + r.text + text.slice(r.end)
+  }
+  return text
 }
