@@ -6,13 +6,13 @@
  * syntax) evaluated in the `NewXxxProps` constructor — e.g. a search-param read
  * becomes `in.SearchParams.Get("k")`. Mutually recursive (`lowerCtorExpr` ↔
  * `lowerCtorCond`), they read the context's `state.localConstants` /
- * `state.propsObjectName` and `parseLiteralExpression`, and set
- * `state.needsStringsImport` when they emit a `strings.*` call. Anything
- * outside the supported surface returns null so the caller can fall back to nil
- * safely.
+ * `state.propsObjectName` and each const's carried {@link ParsedExpr2}
+ * (`ConstantInfo.parsed2`), and set `state.needsStringsImport` when they emit a
+ * `strings.*` call. Anything outside the supported surface returns null so the
+ * caller can fall back to nil safely.
  */
 
-import ts from 'typescript'
+import type { ParsedExpr2 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -29,38 +29,38 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
  */
 export function lowerCtorExpr(
   ctx: GoEmitContext,
-  node: ts.Expression,
+  node: ParsedExpr2,
   env: CtorLowerEnv,
 ): string | null {
-  while (ts.isParenthesizedExpression(node)) node = node.expression
-
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-    return JSON.stringify(node.text)
+  if (node.kind === 'literal' && node.literalType === 'string') {
+    return JSON.stringify(node.value)
   }
-  if (ts.isNumericLiteral(node)) return node.text
+  if (node.kind === 'literal' && node.literalType === 'number') {
+    return node.raw ?? String(node.value)
+  }
 
   // Identifier: a substituted helper param, a module string const, or a
   // component-scope derived const inlined recursively (e.g. `root` → its
   // `base || '/'` value).
-  if (ts.isIdentifier(node)) {
-    const sub = env.params.get(node.text)
+  if (node.kind === 'identifier') {
+    const sub = env.params.get(node.name)
     if (sub !== undefined) return sub
-    const c = ctx.state.localConstants.find(lc => lc.name === node.text)
+    const c = ctx.state.localConstants.find(lc => lc.name === node.name)
     if (c?.value !== undefined) {
       if (c.isModule) {
-        const lit = ctx.parseLiteralExpression(c.value)
-        if (lit && (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit))) {
-          return JSON.stringify(lit.text)
+        const lit = c.parsed2
+        if (lit && lit.kind === 'literal' && lit.literalType === 'string') {
+          return JSON.stringify(lit.value)
         }
         return null
       }
       // Component-scope const: inline its computed value, guarding cycles.
-      if (env.consts?.has(node.text)) return null
-      const inner = ctx.parseLiteralExpression(c.value)
+      if (env.consts?.has(node.name)) return null
+      const inner = c.parsed2
       if (!inner) return null
       return lowerCtorExpr(ctx, inner, {
         ...env,
-        consts: new Set([...(env.consts ?? []), node.text]),
+        consts: new Set([...(env.consts ?? []), node.name]),
       })
     }
     return null
@@ -68,30 +68,32 @@ export function lowerCtorExpr(
 
   // `props.<X>` → the constructor input field `in.<X>`.
   if (
-    ts.isPropertyAccessExpression(node) &&
-    ts.isIdentifier(node.expression) &&
-    node.expression.text === ctx.state.propsObjectName
+    node.kind === 'member' &&
+    node.object.kind === 'identifier' &&
+    node.object.name === ctx.state.propsObjectName &&
+    !node.computed
   ) {
-    return `in.${capitalizeFieldName(node.name.text)}`
+    return `in.${capitalizeFieldName(node.property)}`
   }
 
-  if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
-    const method = node.expression.name.text
-    const recv = node.expression.expression
+  if (node.kind === 'call' && node.callee.kind === 'member') {
+    const method = node.callee.property
+    const recv = node.callee.object
     // `<sp>.get('k')` where <sp> is bound to searchParams().
     if (
       method === 'get' &&
-      ts.isIdentifier(recv) &&
-      env.searchParamsVars.has(recv.text) &&
-      node.arguments.length === 1 &&
-      ts.isStringLiteral(node.arguments[0])
+      recv.kind === 'identifier' &&
+      env.searchParamsVars.has(recv.name) &&
+      node.args.length === 1 &&
+      node.args[0].kind === 'literal' &&
+      node.args[0].literalType === 'string'
     ) {
-      return `in.SearchParams.Get(${JSON.stringify(node.arguments[0].text)})`
+      return `in.SearchParams.Get(${JSON.stringify(node.args[0].value)})`
     }
     // `<arr>.includes(<x>)` → bf.Includes(<[]string{…}>, <x>) (bool).
-    if (method === 'includes' && node.arguments.length === 1) {
+    if (method === 'includes' && node.args.length === 1) {
       const arr = lowerCtorStringArray(ctx, recv)
-      const elem = lowerCtorExpr(ctx, node.arguments[0], env)
+      const elem = lowerCtorExpr(ctx, node.args[0], env)
       if (arr !== null && elem !== null) return `bf.Includes(${arr}, ${elem})`
       return null
     }
@@ -100,12 +102,12 @@ export function lowerCtorExpr(
     // replace would need Go's regexp; out of scope).
     if (
       method === 'replace' &&
-      node.arguments.length === 2 &&
-      node.arguments[0].kind === ts.SyntaxKind.RegularExpressionLiteral &&
-      (node.arguments[0] as ts.Node).getText() === '/\\/+$/' &&
-      (ts.isStringLiteral(node.arguments[1]) ||
-        ts.isNoSubstitutionTemplateLiteral(node.arguments[1])) &&
-      node.arguments[1].text === ''
+      node.args.length === 2 &&
+      node.args[0].kind === 'regex' &&
+      node.args[0].raw === '/\\/+$/' &&
+      node.args[1].kind === 'literal' &&
+      node.args[1].literalType === 'string' &&
+      node.args[1].value === ''
     ) {
       const recvGo = lowerCtorExpr(ctx, recv, env)
       if (recvGo === null) return null
@@ -116,25 +118,19 @@ export function lowerCtorExpr(
   }
 
   // `helper(<args>)` where helper is a module arrow const → inline its body.
-  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+  if (node.kind === 'call' && node.callee.kind === 'identifier') {
+    const calleeName = node.callee.name
     const fnConst = ctx.state.localConstants.find(
-      lc => lc.name === (node.expression as ts.Identifier).text && lc.isModule,
+      lc => lc.name === calleeName && lc.isModule,
     )
     if (fnConst?.value) {
-      const fn = ctx.parseLiteralExpression(fnConst.value)
-      if (
-        fn &&
-        ts.isArrowFunction(fn) &&
-        !ts.isBlock(fn.body) &&
-        fn.parameters.length === node.arguments.length
-      ) {
+      const fn = fnConst.parsed2
+      if (fn && fn.kind === 'arrow' && fn.params.length === node.args.length) {
         const params = new Map(env.params)
-        for (let i = 0; i < fn.parameters.length; i++) {
-          const p = fn.parameters[i]
-          if (!ts.isIdentifier(p.name)) return null
-          const argGo = lowerCtorExpr(ctx, node.arguments[i], env)
+        for (let i = 0; i < fn.params.length; i++) {
+          const argGo = lowerCtorExpr(ctx, node.args[i], env)
           if (argGo === null) return null
-          params.set(p.name.text, argGo)
+          params.set(fn.params[i], argGo)
         }
         return lowerCtorExpr(ctx, fn.body, { searchParamsVars: env.searchParamsVars, params })
       }
@@ -143,16 +139,12 @@ export function lowerCtorExpr(
   }
 
   // `<expr> ?? <fallback>`
-  if (
-    ts.isBinaryExpression(node) &&
-    node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
-  ) {
+  if (node.kind === 'logical' && node.op === '??') {
     const left = lowerCtorExpr(ctx, node.left, env)
     if (left === null) return null
-    let r: ts.Expression = node.right
-    while (ts.isParenthesizedExpression(r)) r = r.expression
+    const r = node.right
     // `?? ''` is a no-op: SearchParams.Get already returns "" for a missing key.
-    if ((ts.isStringLiteral(r) || ts.isNoSubstitutionTemplateLiteral(r)) && r.text === '') {
+    if (r.kind === 'literal' && r.literalType === 'string' && r.value === '') {
       return left
     }
     const right = lowerCtorExpr(ctx, node.right, env)
@@ -162,10 +154,7 @@ export function lowerCtorExpr(
 
   // `<expr> || <fallback>` (string `||` — falsy = empty, like `?? ''` but the
   // left can itself be empty): `base || '/'`.
-  if (
-    ts.isBinaryExpression(node) &&
-    node.operatorToken.kind === ts.SyntaxKind.BarBarToken
-  ) {
+  if (node.kind === 'logical' && node.op === '||') {
     const left = lowerCtorExpr(ctx, node.left, env)
     const right = lowerCtorExpr(ctx, node.right, env)
     if (left === null || right === null) return null
@@ -173,15 +162,15 @@ export function lowerCtorExpr(
   }
 
   // `<cond> ? <t> : <f>` (string result)
-  if (ts.isConditionalExpression(node)) {
+  if (node.kind === 'conditional') {
     // The condition must be lowered as a *boolean* (`lowerCtorCond`), not a
     // value: a string-valued JS condition like `sp.get('tag') ? a : b` is
     // truthy in JS, but `if "<string>"` does not compile in Go — such shapes
     // return null so the memo falls back to nil rather than emitting invalid
     // code (#1941 review).
-    const cond = lowerCtorCond(ctx, node.condition, env)
-    const t = lowerCtorExpr(ctx, node.whenTrue, env)
-    const f = lowerCtorExpr(ctx, node.whenFalse, env)
+    const cond = lowerCtorCond(ctx, node.test, env)
+    const t = lowerCtorExpr(ctx, node.consequent, env)
+    const f = lowerCtorExpr(ctx, node.alternate, env)
     if (cond !== null && t !== null && f !== null) {
       return `func() string { if ${cond} { return ${t} }; return ${f} }()`
     }
@@ -200,44 +189,33 @@ export function lowerCtorExpr(
  */
 export function lowerCtorCond(
   ctx: GoEmitContext,
-  node: ts.Expression,
+  node: ParsedExpr2,
   env: CtorLowerEnv,
 ): string | null {
-  while (ts.isParenthesizedExpression(node)) node = node.expression
-
-  if (node.kind === ts.SyntaxKind.TrueKeyword) return 'true'
-  if (node.kind === ts.SyntaxKind.FalseKeyword) return 'false'
+  if (node.kind === 'literal' && node.literalType === 'boolean') {
+    return String(node.value)
+  }
 
   // `!<cond>`
-  if (
-    ts.isPrefixUnaryExpression(node) &&
-    node.operator === ts.SyntaxKind.ExclamationToken
-  ) {
-    const inner = lowerCtorCond(ctx, node.operand, env)
+  if (node.kind === 'unary' && node.op === '!') {
+    const inner = lowerCtorCond(ctx, node.argument, env)
     return inner === null ? null : `!(${inner})`
   }
 
   // `<a> && <b>` / `<a> || <b>` — both operands must themselves be boolean.
-  if (ts.isBinaryExpression(node)) {
-    const op =
-      node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
-        ? '&&'
-        : node.operatorToken.kind === ts.SyntaxKind.BarBarToken
-          ? '||'
-          : null
-    if (op) {
-      const l = lowerCtorCond(ctx, node.left, env)
-      const r = lowerCtorCond(ctx, node.right, env)
-      return l !== null && r !== null ? `(${l} ${op} ${r})` : null
-    }
+  if (node.kind === 'logical' && (node.op === '&&' || node.op === '||')) {
+    const op = node.op
+    const l = lowerCtorCond(ctx, node.left, env)
+    const r = lowerCtorCond(ctx, node.right, env)
+    return l !== null && r !== null ? `(${l} ${op} ${r})` : null
   }
 
   // `<arr>.includes(<x>)` is the one value-shape `lowerCtorExpr` lowers to a
   // Go bool (`bf.Includes(...)`); reuse it for that case only.
   if (
-    ts.isCallExpression(node) &&
-    ts.isPropertyAccessExpression(node.expression) &&
-    node.expression.name.text === 'includes'
+    node.kind === 'call' &&
+    node.callee.kind === 'member' &&
+    node.callee.property === 'includes'
   ) {
     return lowerCtorExpr(ctx, node, env)
   }
@@ -250,18 +228,18 @@ export function lowerCtorCond(
  * bound to one) to a Go `[]string{…}` literal, or null when it isn't a pure
  * string-array. Used by `lowerCtorExpr` for `<arr>.includes(<x>)`.
  */
-export function lowerCtorStringArray(ctx: GoEmitContext, node: ts.Expression): string | null {
-  let arr: ts.Expression | null = node
-  if (ts.isIdentifier(node)) {
-    const c = ctx.state.localConstants.find(lc => lc.name === node.text && lc.isModule)
+export function lowerCtorStringArray(ctx: GoEmitContext, node: ParsedExpr2): string | null {
+  let arr: ParsedExpr2 | null = node
+  if (node.kind === 'identifier') {
+    const c = ctx.state.localConstants.find(lc => lc.name === node.name && lc.isModule)
     if (!c?.value) return null
-    arr = ctx.parseLiteralExpression(c.value)
+    arr = c.parsed2 ?? null
   }
-  if (!arr || !ts.isArrayLiteralExpression(arr)) return null
+  if (!arr || arr.kind !== 'array-literal') return null
   const elems: string[] = []
   for (const el of arr.elements) {
-    if (ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)) {
-      elems.push(JSON.stringify(el.text))
+    if (el.kind === 'literal' && el.literalType === 'string') {
+      elems.push(JSON.stringify(el.value))
     } else return null
   }
   return `[]string{${elems.join(', ')}}`

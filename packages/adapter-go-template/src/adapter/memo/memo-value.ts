@@ -13,6 +13,7 @@
 import ts from 'typescript'
 
 import type { ParsedStatement, TypeInfo } from '@barefootjs/jsx'
+import { tsNodeToParsedExpr2 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -151,7 +152,7 @@ export function computeObjectMemoInitialValue(ctx: GoEmitContext, computation: s
     const key =
       ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
     if (!key) return null
-    const go = lowerCtorExpr(ctx, prop.initializer, env)
+    const go = lowerCtorExpr(ctx, tsNodeToParsedExpr2(prop.initializer), env)
     if (go === null) return null
     entries.push(`"${capitalizeFieldName(key)}": ${go}`)
   }

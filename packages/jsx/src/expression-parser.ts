@@ -792,6 +792,25 @@ export function parseExpression2(expr: string): ParsedExpr2 {
   return convertNode2(firstStmt.expression, expr)
 }
 
+/**
+ * Convert an already-parsed TypeScript node directly into a {@link ParsedExpr2}.
+ * The caller-2 bridge for the Go ctor lowering: lets a consumer that already
+ * holds a `ts.Node` (e.g. a return-object initializer) reuse the same structured
+ * conversion without re-parsing source via `ts.createSourceFile`.
+ */
+export function tsNodeToParsedExpr2(node: ts.Node): ParsedExpr2 {
+  // Preserve the node's source in `raw` (like `parseExpression2`), so an
+  // `unsupported` result still carries the original text for debugging. A
+  // synthetic node with no source file can't yield text — fall back to ''.
+  let raw = ''
+  try {
+    raw = node.getText()
+  } catch {
+    /* synthetic node without a source file */
+  }
+  return convertNode2(node, raw)
+}
+
 /** Convert a TypeScript AST node to {@link ParsedExpr2} (parentheses unwrapped). */
 function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
   while (ts.isParenthesizedExpression(node)) node = node.expression
