@@ -66,14 +66,27 @@ import {
   collectRootScopeNodes,
   referencedVarsAreAvailable,
 } from './lib/ir-scope.ts'
-import {
-  parsePureStringLiteral,
-  isStringTypeInfo,
-  isBareStringLiteral,
-} from './value/parsed-literal.ts'
 import { renderSortMethod } from './expr/array-method.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
 import type { MojoEmitContext } from './emit-context.ts'
+import {
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+} from './analysis/component-tree.ts'
+import {
+  conditionalSpreadToPerl,
+  objectLiteralExprToPerlHashref,
+} from './spread/spread-codegen.ts'
+import {
+  generateContextConsumerSeed,
+  generateDerivedMemoSeed,
+} from './memo/seed.ts'
+import {
+  collectProviderDataNames,
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
+  collectStringValueNames,
+} from './props/prop-classes.ts'
 
 export type { MojoAdapterOptions } from './lib/types.ts'
 import type { MojoAdapterOptions } from './lib/types.ts'
@@ -100,7 +113,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   templatePrimitives: TemplatePrimitiveRegistry = MOJO_PRIMITIVE_EMIT_MAP
 
-  private componentName: string = ''
+  componentName: string = ''
   /** The component's root scope element(s) — each carries `data-key` for a
    *  keyed loop item (set by the child renderer from the JSX `key` prop). A
    *  plain element root is a single node; an `if-statement` (early-return) root
@@ -108,7 +121,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    *  the rendered root at runtime. */
   private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<MojoAdapterOptions>
-  private errors: CompilerError[] = []
+  errors: CompilerError[] = []
   private inLoop: boolean = false
   /**
    * SolidJS-style props identifier (`function(props: P)`) and the
@@ -118,7 +131,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * the IR (#1407 follow-up).
    */
   private propsObjectName: string | null = null
-  private propsParams: { name: string }[] = []
+  propsParams: { name: string }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * (#1971) Names that resolve to a real SSR template var — prop param, signal
@@ -162,7 +175,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * module-const object literal it indexes (#checkbox / icon). Populated
    * at `generate()` entry alongside `moduleStringConsts`.
    */
-  private localConstants: IRMetadata['localConstants'] = []
+  localConstants: IRMetadata['localConstants'] = []
   /**
    * Names currently bound by an enclosing loop body — the `my $<param>` and
    * `my $<index>` bindings `renderLoop` introduces — ref-counted so nested
@@ -210,60 +223,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // serialization happens before `generate`, so this mutation doesn't reach it).
     augmentInheritedPropAccesses(ir)
     this.propsParams = ir.metadata.propsParams.map(p => ({ name: p.name }))
-    // (#1971) SSR-resolvable context-value names: props, signal getters, memos.
-    this.providerDataNames = new Set<string>([
-      ...ir.metadata.propsParams.map(p => p.name),
-      ...(ir.metadata.signals ?? []).map(s => s.getter),
-      ...(ir.metadata.memos ?? []).map(m => m.name),
-    ])
-    // Props whose declared TS type is boolean — a bare binding of one
-    // (`data-active={props.isActive}`) must stringify as JS
-    // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
-    // (#1897, pagination's data-active).
-    this.booleanTypedProps = new Set(
-      ir.metadata.propsParams
-        .filter(prop => prop.type?.primitive === 'boolean' || prop.type?.raw === 'boolean')
-        .map(prop => prop.name),
-    )
-    // No-destructure-default props → `undef` when the caller omits them
-    // → guard their bare-reference attribute emission with Perl `defined`
-    // so the attribute drops instead of rendering `attr=""` (Hono-style
-    // nullish omission). A prop WITH a destructure default (`value = ''`)
-    // is never `undef` in the body and must stay unconditional, so it is
-    // excluded. This mirrors the Go adapter's nillable-field guard: there
-    // the witness is the resolved `interface{}` field type; here it is
-    // the absence of a default (the analyzer reports `rows` — a
-    // `TextareaHTMLAttributes` member destructured without a default — as
-    // no-default, `type.kind: 'unknown'`).
-    // Excludes concrete-primitive types (`string`/`number`/`boolean`)
-    // to match the Go adapter's scope, which guards only `interface{}`
-    // (nillable) fields and leaves concrete fields unconditional. So a
-    // required, no-default `string` prop still emits `attr=""` like Hono,
-    // and only nillable (`unknown`/object/array) no-default props guard.
-    this.nullableOptionalProps = new Set(
-      ir.metadata.propsParams
-        .filter(
-          p =>
-            p.defaultValue === undefined &&
-            !p.isRest &&
-            p.type?.kind !== 'primitive',
-        )
-        .map(p => p.name),
-    )
-    // Record string-typed signals and props so equality comparisons against
-    // them lower to `eq`/`ne` (#1672). A signal is string-typed when its
-    // inferred type is `string` (the analyzer infers this from a string-literal
-    // initial value) or, defensively, when its initial value is a bare string
-    // literal; a prop when its annotated type is `string`.
-    this.stringValueNames = new Set<string>()
-    for (const s of ir.metadata.signals) {
-      if (isStringTypeInfo(s.type) || isBareStringLiteral(s.initialValue)) {
-        this.stringValueNames.add(s.getter)
-      }
-    }
-    for (const p of ir.metadata.propsParams) {
-      if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
-    }
+    // Per-compile prop classifications (see `props/prop-classes.ts`).
+    this.providerDataNames = collectProviderDataNames(ir)
+    this.booleanTypedProps = collectBooleanTypedProps(ir)
+    this.nullableOptionalProps = collectNullableOptionalProps(ir)
+    this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
@@ -283,7 +247,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // sibling templates are registered on the same template instance
     // at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.checkImportedLoopChildComponents(ir)
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
     }
 
     this.rootScopeNodes = collectRootScopeNodes(ir.root)
@@ -300,14 +264,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // from the active provider value (or the `createContext` default) so the
     // body's `$x` resolves. The provider side pushes the value via
     // `emitProvider`; here the consumer reads it. (#1297)
-    const ctxSeed = this.generateContextConsumerSeed(ir)
+    const ctxSeed = generateContextConsumerSeed(ir)
 
     // Prop/signal-derived memos that aren't statically evaluable (e.g.
     // `createMemo(() => props.value * 10)`) have a `null` SSR default, so
     // their `$x` would render empty. Compute them in-template from the
     // already-seeded prop/signal vars — mirroring Go's generated child
     // constructor that evaluates the memo from the passed prop. (#1297)
-    const memoSeed = this.generateDerivedMemoSeed(ir)
+    const memoSeed = generateDerivedMemoSeed(this, ir)
 
     const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
 
@@ -427,7 +391,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   // ===========================================================================
 
   private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string): string {
-    const hasInteractivity = this.hasClientInteractivity(ir)
+    const hasInteractivity = hasClientInteractivity(ir)
     if (!hasInteractivity) return ''
 
     const name = scriptBaseName ?? ir.metadata.componentName
@@ -439,15 +403,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     lines.push(`% bf->register_script('${clientJsPath}');`)
     lines.push('')
     return lines.join('\n')
-  }
-
-  private hasClientInteractivity(ir: ComponentIR): boolean {
-    return (
-      ir.metadata.signals.length > 0 ||
-      ir.metadata.effects.length > 0 ||
-      ir.metadata.onMounts.length > 0 ||
-      (ir.metadata.clientAnalysis?.needsInit ?? false)
-    )
   }
 
   // ===========================================================================
@@ -590,106 +545,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return !this.providerDataNames.has(t) && !this.moduleStringConsts.has(t)
   }
 
-  /** Perl literal for a context-consumer's `createContext` default. */
-  private contextDefaultPerl(c: ContextConsumer): string {
-    const d = c.defaultValue
-    if (d === null || d === undefined) return 'undef'
-    if (typeof d === 'string') return `'${d.replace(/[\\']/g, m => `\\${m}`)}'`
-    if (typeof d === 'boolean') return d ? '1' : '0'
-    return String(d)
-  }
-
-  /**
-   * Emit one `% my $<local> = bf->use_context(...)` seed line per context
-   * consumer so the template body's bare `$<local>` resolves to the active
-   * provider value (or the `createContext` default). (#1297)
-   */
-  private generateContextConsumerSeed(ir: ComponentIR): string {
-    const consumers = collectContextConsumers(ir.metadata)
-    if (consumers.length === 0) return ''
-    return (
-      consumers
-        .map(
-          c =>
-            `% my $${c.localName} = bf->use_context('${c.contextName}', ${this.contextDefaultPerl(c)});`,
-        )
-        .join('\n') + '\n'
-    )
-  }
-
-  /**
-   * Seed memos whose SSR default is `null` (not statically evaluable) by
-   * computing them in-template from the already-seeded prop / signal vars.
-   * Targets the prop-derived memo shape (`createMemo(() => props.value * 10)`)
-   * that the static `extractSsrDefaults` evaluator can't fold — without this
-   * the memo's `$x` renders empty (the reason `props-reactivity-comparison`
-   * was skipped). Only emitted when the lowered expression references vars the
-   * template already has in scope (props params + signals + prior memos), so a
-   * memo over an out-of-scope binding stays on the null path rather than
-   * tripping Perl strict mode. (#1297)
-   */
-  private generateDerivedMemoSeed(ir: ComponentIR): string {
-    const memos = ir.metadata.memos ?? []
-    const signals = ir.metadata.signals ?? []
-    if (memos.length === 0 && signals.length === 0) return ''
-    // Props seed first; each signal/memo adds its own name as it lands so a
-    // later one can reference an earlier one.
-    const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
-    const lines: string[] = []
-
-    // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
-    // a loop-child render receives no stash seed for the signal, so its `$on`
-    // would trip strict mode; and even when an entry render seeds it, the
-    // static default can't capture the per-call prop. Seed it in-template from
-    // the passed prop — but ONLY when the init lowers cleanly AND references an
-    // in-scope var (i.e. it's genuinely derived). Object/array/constant inits
-    // (`createSignal({…})`, `createSignal([…])`, `createSignal('b')`) keep the
-    // existing ssr-defaults seeding, so the spread / loop fixtures are
-    // untouched.
-    for (const signal of signals) {
-      const perl = this.tryLowerToPerl(signal.initialValue, available)
-      if (perl !== null) lines.push(`% my $${signal.getter} = ${perl};`)
-      available.add(signal.getter)
-    }
-
-    for (const memo of memos) {
-      // Seed every memo whose body lowers cleanly — not just the ones whose
-      // static SSR default is null. A statically-foldable prop-derived memo
-      // (`createMemo(() => props.disabled ?? false)` → default `false`)
-      // still depends on the per-call prop: the static stash seed bakes in
-      // the absent-prop fold, so a caller passing `disabled => 1` would
-      // render the default branch (#1897, select's disabled item). The
-      // in-template recomputation reads the prop lexical the stash already
-      // seeded, so it's correct per call; block-bodied arrows /
-      // out-of-scope references fall back to the static ssr-defaults seed.
-      const body = extractArrowBodyExpression(memo.computation)
-      if (body !== null) {
-        const perl = this.tryLowerToPerl(body, available)
-        if (perl !== null) lines.push(`% my $${memo.name} = ${perl};`)
-      }
-      available.add(memo.name)
-    }
-    return lines.length > 0 ? lines.join('\n') + '\n' : ''
-  }
-
-  /**
-   * Lower a signal init / memo body to Perl for an in-template SSR seed, or
-   * `null` when it shouldn't be seeded this way. Returns null — without
-   * recording a BF101 — when the expression isn't a supported shape
-   * (`isSupported` pre-check, so object/array literals don't fail the build),
-   * when the lowering references no in-scope var (a constant — keep the
-   * existing ssr-defaults seeding), or when it references an out-of-scope
-   * binding. (#1297)
-   */
-  private tryLowerToPerl(expr: string, available: ReadonlySet<string>): string | null {
-    const trimmed = expr.trim()
-    if (!trimmed) return null
-    if (!isSupported(parseExpression(trimmed)).supported) return null
-    const perl = this.convertExpressionToPerl(trimmed)
-    if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) return null
-    return referencedVarsAreAvailable(perl, available) ? perl : null
-  }
-
   emitAsync(node: IRAsync, _ctx: MojoRenderCtx, _emit: EmitIRNode<MojoRenderCtx>): string {
     return this.renderAsync(node)
   }
@@ -821,90 +676,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
     // Fall back to comment markers for non-element content
     return `<%== bf->comment("cond-start:${condId}") %>${content}<%== bf->comment("cond-end:${condId}") %>`
-  }
-
-  // ===========================================================================
-  // Imported-component-in-loop check (BF103, #1266)
-  // ===========================================================================
-
-  /**
-   * Push a `BF103` diagnostic for every component reference inside a
-   * loop body whose name is imported from a relative-path module.
-   * Mirror of the Go adapter's check — the Mojo adapter has the same
-   * cross-template-registration constraint at request time.
-   */
-  private checkImportedLoopChildComponents(ir: ComponentIR): void {
-    // Collect every name imported from a relative-path module (no
-    // case filter — `IRComponent` nodes only exist for PascalCase JSX
-    // usages, so a lowercase utility import in the set can't match
-    // anyway, and any heuristic on the import name itself would be
-    // strictly less robust than the structural IR check below).
-    const relativeImports = new Set<string>()
-    for (const imp of ir.metadata.templateImports ?? ir.metadata.imports ?? []) {
-      if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
-      if (imp.isTypeOnly) continue
-      for (const spec of imp.specifiers) {
-        relativeImports.add(spec.alias ?? spec.name)
-      }
-    }
-    if (relativeImports.size === 0) return
-
-    const loc = { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
-    const visit = (node: IRNode, inLoop: boolean): void => {
-      switch (node.type) {
-        case 'component': {
-          const comp = node as IRComponent
-          if (inLoop && relativeImports.has(comp.name)) {
-            this.errors.push({
-              code: 'BF103',
-              severity: 'error',
-              message: `Component <${comp.name}> is imported from a sibling module and used inside a loop. The Mojo adapter emits a cross-template call; the child template must be registered alongside the parent at render time.`,
-              loc: comp.loc ?? loc,
-              suggestion: {
-                message:
-                  `Options:\n` +
-                  `  1. Compile '${comp.name}' (its source file) with the same adapter and register the resulting Mojo template alongside the parent at render time.\n` +
-                  `  2. Inline <${comp.name}> directly inside the loop body so no cross-file template lookup is needed.\n` +
-                  `  3. Mark the loop position as @client-only so the template is materialised on the client instead of at SSR time.`,
-              },
-            })
-          }
-          for (const child of comp.children) visit(child, inLoop)
-          break
-        }
-        case 'element':
-          for (const child of (node as IRElement).children) visit(child, inLoop)
-          break
-        case 'fragment':
-          for (const child of (node as IRFragment).children) visit(child, inLoop)
-          break
-        case 'conditional': {
-          const cond = node as IRConditional
-          visit(cond.whenTrue, inLoop)
-          if (cond.whenFalse) visit(cond.whenFalse, inLoop)
-          break
-        }
-        case 'loop':
-          for (const child of (node as IRLoop).children) visit(child, true)
-          break
-        case 'if-statement': {
-          const stmt = node as IRIfStatement
-          visit(stmt.consequent, inLoop)
-          if (stmt.alternate) visit(stmt.alternate, inLoop)
-          break
-        }
-        case 'provider':
-          for (const child of (node as IRProvider).children) visit(child, inLoop)
-          break
-        case 'async': {
-          const a = node as IRAsync
-          visit(a.fallback, inLoop)
-          for (const child of a.children) visit(child, inLoop)
-          break
-        }
-      }
-    }
-    visit(ir.root, false)
   }
 
   // ===========================================================================
@@ -1100,7 +871,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
       // guard so the common non-object case skips the AST parse.
       if (value.expr.trim().startsWith('{')) {
-        const hashref = this.objectLiteralExprToPerlHashref(value.expr)
+        const hashref = objectLiteralExprToPerlHashref(this, value.expr)
         if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
       }
       return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
@@ -1419,7 +1190,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // OMITS the key (`bf->spread_attrs` does NOT filter empty
       // strings, so we cannot always-include it). Mirrors the Go
       // adapter's IIFE-of-maps lowering (#textarea).
-      const ternaryHashref = this.conditionalSpreadToPerl(trimmed)
+      const ternaryHashref = conditionalSpreadToPerl(this, trimmed)
       if (ternaryHashref !== null) {
         return `<%== bf->spread_attrs(${ternaryHashref}) %>`
       }
@@ -1436,7 +1207,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         if (localConst?.value !== undefined) {
           const initTrimmed = localConst.value.trim()
           if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            const resolved = this.conditionalSpreadToPerl(initTrimmed)
+            const resolved = conditionalSpreadToPerl(this, initTrimmed)
             if (resolved !== null) {
               return `<%== bf->spread_attrs(${resolved}) %>`
             }
@@ -1771,162 +1542,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return true
   }
 
-
-  /**
-   * Lower a conditional inline-object spread expression
-   *   `(COND ? { 'aria-describedby': describedBy } : {})`
-   * (either branch possibly `{}`) into a Perl inline ternary of
-   * hashrefs for `bf->spread_attrs`:
-   *   `$describedBy ? { 'aria-describedby' => $describedBy } : {}`
-   *
-   * The condition is translated via `convertExpressionToPerl` (a bare
-   * prop ident becomes `$describedBy`; Perl truthiness handles the
-   * test). Object literals become Perl hashrefs with `=>`; string-
-   * literal keys are quoted, values resolve via `convertExpressionToPerl`.
-   *
-   * Returns null when the expression is NOT this shape, or when a part
-   * can't be faithfully lowered (non-static key, etc.) so the caller
-   * falls back to the standard `convertExpressionToPerl` path (which
-   * records BF101). Scoped strictly to ternary-of-object-literals so no
-   * other spread shape regresses.
-   */
-  private conditionalSpreadToPerl(expr: string): string | null {
-    const sf = ts.createSourceFile('__spread.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
-    if (sf.statements.length !== 1) return null
-    const stmt = sf.statements[0]
-    if (!ts.isExpressionStatement(stmt)) return null
-    let node: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(node)) node = node.expression
-    if (!ts.isConditionalExpression(node)) return null
-    const unwrap = (e: ts.Expression): ts.Expression => {
-      let n = e
-      while (ts.isParenthesizedExpression(n)) n = n.expression
-      return n
-    }
-    const whenTrue = unwrap(node.whenTrue)
-    const whenFalse = unwrap(node.whenFalse)
-    if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
-      return null
-    }
-    const condPerl = this.convertExpressionToPerl(node.condition.getText(sf))
-    const truePerl = this.objectLiteralToPerlHashref(whenTrue, sf)
-    const falsePerl = this.objectLiteralToPerlHashref(whenFalse, sf)
-    if (truePerl === null || falsePerl === null) return null
-    return `${condPerl} ? ${truePerl} : ${falsePerl}`
-  }
-
-  /**
-   * Convert a static object literal into a Perl hashref string for a
-   * conditional spread. Only static string/identifier keys are allowed;
-   * values resolve via `convertExpressionToPerl`. Returns null for any
-   * computed/spread/dynamic key. Empty object → `{}`.
-   */
-  /**
-   * (#1971 Perl) Parse a bare object-literal expression string
-   * (`{ align: 'start' }`) and lower it to a Perl hashref via
-   * `objectLiteralToPerlHashref`, or null when it isn't a plain object
-   * literal. Used for inline object-literal child props (carousel `opts`).
-   */
-  private objectLiteralExprToPerlHashref(expr: string): string | null {
-    const sf = ts.createSourceFile('__obj.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
-    if (sf.statements.length !== 1) return null
-    const stmt = sf.statements[0]
-    if (!ts.isExpressionStatement(stmt)) return null
-    let node: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(node)) node = node.expression
-    if (!ts.isObjectLiteralExpression(node)) return null
-    return this.objectLiteralToPerlHashref(node, sf)
-  }
-
-  private objectLiteralToPerlHashref(
-    obj: ts.ObjectLiteralExpression,
-    sf: ts.SourceFile,
-  ): string | null {
-    const entries: string[] = []
-    for (const prop of obj.properties) {
-      if (!ts.isPropertyAssignment(prop)) return null
-      let key: string
-      if (ts.isIdentifier(prop.name)) {
-        key = prop.name.text
-      } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
-        key = prop.name.text
-      } else {
-        return null
-      }
-      const initNode = (() => {
-        let n: ts.Expression = prop.initializer
-        while (ts.isParenthesizedExpression(n)) n = n.expression
-        return n
-      })()
-      const indexed = this.recordIndexAccessToPerl(initNode)
-      if (
-        indexed === null &&
-        ts.isElementAccessExpression(initNode) &&
-        initNode.argumentExpression &&
-        !ts.isNumericLiteral(initNode.argumentExpression) &&
-        !ts.isStringLiteral(initNode.argumentExpression)
-      ) {
-        // Variable-index record access (`sizeMap[size]`) that the
-        // static-inline path couldn't resolve — a non-scalar record
-        // value, or a non-const receiver. Since #1897 made variable
-        // indices parseable (`index-access`), the generic value lowering
-        // would now emit `$sizeMap->{$size}` against an UNBOUND module
-        // const instead of refusing. Record BF101 and bail so the whole
-        // spread surfaces the out-of-shape diagnostic, matching the
-        // pre-#1897 behaviour (the refusal then was a side effect of the
-        // value lowering). (A bound receiver — a signal getter like
-        // `selected()[index]` — is an attribute value, not a spread
-        // member, and never reaches here.)
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Spread object value '${initNode.getText(sf)}' indexes a record map whose values aren't scalar literals — it can't lower to an inline Perl hashref.`,
-          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message: 'Index a record whose values are number/string literals, or move the spread into a `\'use client\'` component so hydration computes it.',
-          },
-        })
-        return null
-      }
-      const valPerl =
-        indexed !== null
-          ? indexed
-          : this.convertExpressionToPerl(prop.initializer.getText(sf))
-      entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
-    }
-    return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
-  }
-
-  /**
-   * Lower a spread-object VALUE of the form `IDENT[KEY]` where:
-   *   - `IDENT` resolves via `localConstants` to a MODULE-scope object
-   *     literal whose property values are all scalar (number/string)
-   *     literals under static (string-literal or identifier) keys
-   *     (a `Record<staticKeys, scalar>` map like `sizeMap`), AND
-   *   - `KEY` is a bare identifier that is a prop.
-   * Emits an inline indexed Perl hashref:
-   *   `{ 'sm' => 16, 'md' => 20, ... }->{$size}`
-   *
-   * Returns the Perl string when convertible, else `null` so the caller
-   * falls back to its normal value lowering (which records BF101 for an
-   * unsupported shape). Mirror of the Go adapter's `recordIndexAccessToGoMap`.
-   */
-  private recordIndexAccessToPerl(val: ts.Expression): string | null {
-    // Shared structural parse (single source of truth in `@barefootjs/jsx`);
-    // this wrapper only does the Perl-specific emit (single-quote escaping)
-    // from the structured result.
-    const parsed = parseRecordIndexAccess(val, this.localConstants, this.propsParams)
-    if (!parsed) return null
-    const entries = parsed.entries.map(e => {
-      const mapVal =
-        e.value.kind === 'number' ? e.value.text : `'${e.value.text.replace(/'/g, "\\'")}'`
-      return `'${e.key.replace(/'/g, "\\'")}' => ${mapVal}`
-    })
-    return `{ ${entries.join(', ')} }->{$${parsed.indexPropName}}`
-  }
-
-
-  private convertExpressionToPerl(expr: string): string {
+  convertExpressionToPerl(expr: string): string {
     // Parse-first lowering — parity with the Go adapter's
     // `convertExpressionToGo`. Parse the JS expression once, gate it on
     // the shared `isSupported`, and render every supported shape through

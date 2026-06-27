@@ -15,7 +15,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata } from '@barefootjs/jsx'
 
 export interface MojoEmitContext {
   /**
@@ -47,4 +47,40 @@ export interface MojoEmitContext {
 
   /** Lower a filter/predicate body to its Perl form, bound to `param`. */
   _renderPerlFilterExprPublic(expr: ParsedExpr, param: string): string
+}
+
+/**
+ * The contract the extracted object-literal / conditional-spread lowering
+ * (`spread/spread-codegen.ts`) depends on. The spread lowering recurses into
+ * the core expression lowering and records its own BF101 diagnostics, so it
+ * needs the recursive entry point plus the per-compile bookkeeping the
+ * adapter owns. Declared separately from `MojoEmitContext` so each extracted
+ * module's real coupling is documented precisely.
+ */
+export interface MojoSpreadContext {
+  /** Component name, for diagnostic source locations. */
+  readonly componentName: string
+
+  /** Per-compile diagnostic list the spread lowering appends to. */
+  readonly errors: CompilerError[]
+
+  /** Local-constant metadata, for resolving `Record[key]` spread values. */
+  readonly localConstants: IRMetadata['localConstants']
+
+  /** Prop params, for classifying a bare-identifier index as a prop. */
+  readonly propsParams: { name: string }[]
+
+  /** Lower a JS expression to its Perl form (the core recursive entry). */
+  convertExpressionToPerl(expr: string): string
+}
+
+/**
+ * The contract the extracted in-template memo / context seeding
+ * (`memo/seed.ts`) depends on. The seed lowering recurses into the core
+ * expression lowering to compute a derived signal/memo value or a context
+ * default; that recursive entry is its only adapter coupling.
+ */
+export interface MojoMemoContext {
+  /** Lower a JS expression to its Perl form (the core recursive entry). */
+  convertExpressionToPerl(expr: string): string
 }
