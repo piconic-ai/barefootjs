@@ -1,0 +1,133 @@
+package bf
+
+import (
+	"encoding/json"
+	"os"
+	"testing"
+)
+
+// loadEvalExprJSON returns the JSON of a committed eval-vector's `expr` tree
+// (a real compiler-produced ParsedExpr), looked up by its note. This lets the
+// fold tests drive the evaluator with genuine trees rather than hand-rolled
+// ones.
+func loadEvalExprJSON(t *testing.T, note string) string {
+	t.Helper()
+	data, err := os.ReadFile(evalVectorsPath)
+	if os.IsNotExist(err) {
+		t.Skipf("eval vectors not available outside the monorepo checkout (%s)", evalVectorsPath)
+	}
+	if err != nil {
+		t.Fatalf("read %s: %v", evalVectorsPath, err)
+	}
+	var file evalVectorFile
+	if err := json.Unmarshal(data, &file); err != nil {
+		t.Fatalf("parse %s: %v", evalVectorsPath, err)
+	}
+	for _, c := range file.Cases {
+		if c.Note == note {
+			return string(c.Expr)
+		}
+	}
+	t.Fatalf("no eval-vector case with note %q", note)
+	return ""
+}
+
+// mustJSON marshals a hand-built ParsedExpr tree to its JSON encoding.
+func mustJSON(t *testing.T, node map[string]any) string {
+	t.Helper()
+	b, err := json.Marshal(node)
+	if err != nil {
+		t.Fatalf("marshal node: %v", err)
+	}
+	return string(b)
+}
+
+// Small ParsedExpr constructors for the hand-built comparator trees.
+func nid(name string) map[string]any { return map[string]any{"kind": "identifier", "name": name} }
+func nmem(obj map[string]any, prop string) map[string]any {
+	return map[string]any{"kind": "member", "object": obj, "property": prop, "computed": false}
+}
+func nbin(op string, l, r map[string]any) map[string]any {
+	return map[string]any{"kind": "binary", "op": op, "left": l, "right": r}
+}
+func ncallMath(fn string, arg map[string]any) map[string]any {
+	return map[string]any{
+		"kind":   "call",
+		"callee": nmem(nid("Math"), fn),
+		"args":   []any{arg},
+	}
+}
+
+// FoldEval lifts bf_reduce's op restriction and acc-canonical form: the
+// reducer body `acc + item.price * item.qty` mixes `acc` with a product of two
+// fields — impossible in the +/* self/field catalogue, trivial for the
+// evaluator.
+func TestFoldEval_LiftsReducerRestriction(t *testing.T) {
+	body := loadEvalExprJSON(t, "reduce body: running total with precedence")
+	items := []any{
+		map[string]any{"price": 5, "qty": 3},
+		map[string]any{"price": 2, "qty": 4},
+	}
+	got := FoldEval(items, body, "acc", "item", 0, "left")
+	if evalToNumber(got) != 23 { // 0 + 5*3 + 2*4
+		t.Errorf("FoldEval = %v, want 23", got)
+	}
+}
+
+// reduceRight is observable for string concatenation; the same evaluator body
+// folds both directions.
+func TestFoldEval_DirectionObservableForConcat(t *testing.T) {
+	body := loadEvalExprJSON(t, "+ concatenates once an operand is a string")
+	items := []any{"a", "b", "c"}
+	if got := FoldEval(items, body, "acc", "item", "", "left"); got != "abc" {
+		t.Errorf("FoldEval left = %v, want abc", got)
+	}
+	if got := FoldEval(items, body, "acc", "item", "", "right"); got != "cba" {
+		t.Errorf("FoldEval right = %v, want cba", got)
+	}
+}
+
+// SortEval lifts bf_sort's comparator pattern restriction: a comparator that
+// calls Math.abs on each operand's field (`Math.abs(a.v) - Math.abs(b.v)`) is
+// outside the subtraction / localeCompare / relational-ternary catalogue, but
+// is just another pure expression to the evaluator.
+func TestSortEval_LiftsComparatorRestriction(t *testing.T) {
+	cmp := mustJSON(t, nbin("-",
+		ncallMath("abs", nmem(nid("a"), "v")),
+		ncallMath("abs", nmem(nid("b"), "v")),
+	))
+	items := []any{
+		map[string]any{"v": -5},
+		map[string]any{"v": 3},
+		map[string]any{"v": -1},
+	}
+	got := SortEval(items, cmp, "a", "b")
+	want := []float64{-1, 3, -5} // by ascending |v|: 1, 3, 5
+	if len(got) != len(want) {
+		t.Fatalf("SortEval len = %d, want %d", len(got), len(want))
+	}
+	for i, w := range want {
+		m := got[i].(map[string]any)
+		if evalToNumber(m["v"]) != w {
+			t.Errorf("SortEval[%d].v = %v, want %v", i, m["v"], w)
+		}
+	}
+}
+
+// Descending is just a reversed comparator body — no separate direction knob.
+func TestSortEval_DescendingViaReversedComparator(t *testing.T) {
+	cmp := mustJSON(t, nbin("-", nmem(nid("b"), "x"), nmem(nid("a"), "x")))
+	items := []any{
+		map[string]any{"x": 10},
+		map[string]any{"x": 30},
+		map[string]any{"x": 20},
+	}
+	got := SortEval(items, cmp, "a", "b")
+	want := []float64{30, 20, 10}
+	for i, w := range want {
+		m := got[i].(map[string]any)
+		if evalToNumber(m["x"]) != w {
+			t.Errorf("SortEval desc[%d].x = %v, want %v", i, m["x"], w)
+		}
+	}
+}
