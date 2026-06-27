@@ -29,8 +29,17 @@ export interface GoEmitContext {
   /** Parse a JS expression source string into a TS expression node, or null. */
   parseLiteralExpression(value: string): ts.Expression | null
 
-  /** Lower a JS expression to its Go-template form (the core recursive entry). */
-  convertExpressionToGo(jsExpr: string, out?: { parsed?: ParsedExpr }): string
+  /**
+   * Lower a JS expression to its Go-template form (the core recursive entry).
+   * `preParsed` reuses an already-built tree instead of re-parsing `jsExpr`
+   * (the helper-inliner lowers a structurally substituted body this way, with
+   * no `ts.createSourceFile`, #2006).
+   */
+  convertExpressionToGo(
+    jsExpr: string,
+    out?: { parsed?: ParsedExpr },
+    preParsed?: ParsedExpr,
+  ): string
 
   /** Lower a JS condition to a Go-template bool + any hoisted preamble. */
   convertConditionToGo(jsCondition: string): { condition: string; preamble: string }

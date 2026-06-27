@@ -54,6 +54,7 @@ import {
   type SupportResult,
   isBooleanAttr,
   parseExpression,
+  stringifyParsedExpr,
   parseStyleObjectEntries,
   isSupported,
   exprToString,
@@ -212,7 +213,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private readonly emitCtx: GoEmitContext = {
     state: this.state,
     parseLiteralExpression: (value) => this.parseLiteralExpression(value),
-    convertExpressionToGo: (jsExpr, out) => this.convertExpressionToGo(jsExpr, out),
+    convertExpressionToGo: (jsExpr, out, preParsed) =>
+      this.convertExpressionToGo(jsExpr, out, preParsed),
     convertConditionToGo: (jsCondition) => this.convertConditionToGo(jsCondition),
     extractPropNameFromInitialValue: (initialValue) => this.extractPropNameFromInitialValue(initialValue),
     extractPropFallback: (initialValue) => this.extractPropFallback(initialValue),
@@ -4401,9 +4403,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (`{{if eq .Params.Sort "date"}}sort on{{else}}sort{{end}}`). Only self-
     // contained helpers are inlined; one that delegates to another local helper
     // (e.g. `sortHref` → `hrefFor`) is left for a later capability.
-    const inlined = inlineLocalHelperCall(this.emitCtx, trimmed)
+    const inlined = inlineLocalHelperCall(this.emitCtx, trimmed, preParsed)
     if (inlined !== null) {
-      return this.convertExpressionToGo(inlined, out)
+      // Lower the substituted body *tree* directly (as `preParsed`), so operator
+      // precedence is carried by the structure — a compound arg subtree
+      // (`props.a ?? props.b`) substituted into `sig() === k` keeps `===` the
+      // outer op without the parenthesisation the former text splice needed. The
+      // stringified form only drives the string-keyed early returns above (a body
+      // that resolves to a bare literal const / static index re-resolves
+      // identically). The inliner rejects method-call bodies, so the tree never
+      // carries a generic `call` that `parseExpression` would have specialised
+      // into `array-method` (#2006).
+      return this.convertExpressionToGo(stringifyParsedExpr(inlined), out, inlined)
     }
 
     // Parse only here — *after* the early returns above, which resolve
