@@ -913,9 +913,10 @@ export interface SpreadAttr {
    * Structured parse of `expr` (`parseExpression(expr.trim())`), attached
    * during IR construction so adapters lower the spread bag from the tree
    * instead of re-parsing the string with `ts.createSourceFile`. Optional /
-   * best-effort — mirrors `ExpressionAttr.parsed`: a node the attach walk
-   * misses, an empty `expr`, or an `unsupported` parse simply leaves the
-   * adapter to fall back to its former string path.
+   * best-effort — mirrors `ExpressionAttr.parsed`: it may be absent (a node the
+   * attach walk misses, or an empty `expr`), and parsing may yield
+   * `{ kind: 'unsupported' }`, which adapters treat as unlowerable and handle
+   * via their existing non-conditional spread paths (or BF101).
    */
   parsed?: ParsedExpr
   /**

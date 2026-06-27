@@ -133,7 +133,9 @@ export interface SpreadSlotInfo {
    * Best-effort structured parse of `expr` carried from `SpreadAttr.parsed`
    * (#2006). Lets `buildConditionalSpreadInitializer` lower the conditional
    * inline-object spread from the tree instead of re-parsing `expr` with
-   * `ts.createSourceFile`. Absent / `unsupported` → former string path.
+   * `ts.createSourceFile`. When absent, `buildSpreadInitializer` parses `expr`
+   * once with `parseExpression`; a non-conditional or `unsupported` tree just
+   * falls through to the other spread shapes (there is no separate legacy path).
    */
   parsed: ParsedExpr | undefined
   templateExpr: string | undefined
