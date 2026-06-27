@@ -264,13 +264,16 @@ export function analyzeComponent(
 
   // Roadmap A: carry a best-effort structured parse of each signal's initial
   // value so adapters lower a literal init (`useState(['a', 'b'])`) from the
-  // tree instead of re-parsing the string with `ts.createSourceFile`. Parse
-  // the SAME (type-stripped) `initialValue` the adapter consumes; an
-  // unsupported shape leaves `parsed` undefined and the adapter falls back.
-  // Runs after `scanImportedClientSignals` so imported signals are covered too.
+  // tree instead of re-parsing the string with `ts.createSourceFile`. The value
+  // is parenthesised before parsing so a bare object-literal init
+  // (`createSignal({ a: 1 })`) resolves to an `object-literal` rather than being
+  // read as a block statement; `parseExpression` unwraps the parens, so arrays /
+  // scalars / prop refs are unchanged. An unsupported shape leaves `parsed`
+  // undefined and the adapter falls back. Runs after `scanImportedClientSignals`
+  // so imported signals are covered too.
   for (const signal of ctx.signals) {
     if (!signal.initialValue) continue
-    const parsed = parseExpression(signal.initialValue)
+    const parsed = parseExpression(`(${signal.initialValue})`)
     if (parsed.kind !== 'unsupported') signal.parsed = parsed
   }
 
