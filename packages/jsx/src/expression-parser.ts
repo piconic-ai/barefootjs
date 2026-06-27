@@ -811,6 +811,74 @@ export function tsNodeToParsedExpr2(node: ts.Node): ParsedExpr2 {
   return convertNode2(node, raw)
 }
 
+/**
+ * Structurally convert a {@link ParsedExpr} (the shared template-lowering tree)
+ * into a {@link ParsedExpr2} (the Go ctor-lowering tree). A pure 1:1 recursive
+ * mapping — no `ts`, no re-parsing — covering the object-memo value surface
+ * (literals, identifiers, member / index access, calls, logical / binary /
+ * unary / conditional operators, array and object literals). Any `ParsedExpr`
+ * kind outside that surface (`higher-order`, `array-method`, `template-literal`,
+ * `arrow-fn`, `unsupported`, …) maps to `unsupported`, carrying its `raw` when
+ * present, so a caller falls back exactly as the former re-parse + null path
+ * did. The structured replacement for the object-memo path's last
+ * `ts.createSourceFile` (`parseLiteralExpression`). #2006.
+ */
+export function parsedExprToParsedExpr2(e: ParsedExpr): ParsedExpr2 {
+  const rec = parsedExprToParsedExpr2
+  switch (e.kind) {
+    case 'literal':
+      return { kind: 'literal', value: e.value, literalType: e.literalType, raw: e.raw }
+    case 'identifier':
+      return { kind: 'identifier', name: e.name }
+    case 'member':
+      return { kind: 'member', object: rec(e.object), property: e.property, computed: e.computed }
+    case 'index-access':
+      return { kind: 'index-access', object: rec(e.object), index: rec(e.index) }
+    case 'call':
+      return { kind: 'call', callee: rec(e.callee), args: e.args.map(rec) }
+    case 'logical':
+      return { kind: 'logical', op: e.op, left: rec(e.left), right: rec(e.right) }
+    case 'binary':
+      return { kind: 'binary', op: e.op, left: rec(e.left), right: rec(e.right) }
+    case 'unary':
+      return { kind: 'unary', op: e.op, argument: rec(e.argument) }
+    case 'conditional':
+      return {
+        kind: 'conditional',
+        test: rec(e.test),
+        consequent: rec(e.consequent),
+        alternate: rec(e.alternate),
+      }
+    case 'array-literal':
+      return { kind: 'array-literal', elements: e.elements.map(rec) }
+    case 'object-literal':
+      return {
+        kind: 'object-literal',
+        properties: e.properties.map(p => ({
+          key: p.key,
+          keyKind: p.keyKind ?? 'identifier',
+          shorthand: p.shorthand,
+          value: rec(p.value),
+        })),
+        raw: e.raw,
+      }
+    // An already-`unsupported` node carries its own diagnostic `reason` from
+    // the original parse — preserve it (and its `raw`) so downstream debugging
+    // stays consistent rather than collapsing to the generic message below.
+    case 'unsupported':
+      return { kind: 'unsupported', raw: e.raw, reason: e.reason }
+    default:
+      // The remaining out-of-surface kinds (`template-literal`, `arrow-fn`,
+      // `higher-order`, `array-method`) carry no `raw` field, so there is none
+      // to preserve here.
+      return {
+        kind: 'unsupported',
+        raw: '',
+        reason: 'unsupported in ParsedExpr2',
+      }
+  }
+}
+
 /** Convert a TypeScript AST node to {@link ParsedExpr2} (parentheses unwrapped). */
 function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
   while (ts.isParenthesizedExpression(node)) node = node.expression
@@ -3206,10 +3274,7 @@ function parseStatement(
     const name = decl.name.text
     const initText = getJS(decl.initializer)
     const init = parseExpression(initText)
-    // `object-literal` is not yet lowered by the block-body consumers, so
-    // treat it like `unsupported` here — the memo/block path falls back to
-    // its `ts.createSourceFile` lowering (byte-identical; Roadmap A-1).
-    if (init.kind === 'unsupported' || init.kind === 'object-literal') {
+    if (init.kind === 'unsupported') {
       return null
     }
     return { kind: 'var-decl', name, init }
@@ -3221,11 +3286,18 @@ function parseStatement(
       // return; (no value) -> return undefined, treat as return true
       return { kind: 'return', value: { kind: 'literal', value: true, literalType: 'boolean' } }
     }
-    const valueText = getJS(stmt.expression)
-    const value = parseExpression(valueText)
-    // See the var-decl note above: object literals fall back to the
-    // block-body's createSourceFile lowering for now (Roadmap A-1).
-    if (value.kind === 'unsupported' || value.kind === 'object-literal') {
+    // A bare object-literal return (`return { a: 1 }`) re-parses as a *block*
+    // statement if its braces lead the source, yielding `unsupported`. Unwrap
+    // any parens, and when the returned expression is an object literal, wrap
+    // the text in parens to force expression context so it parses as an
+    // `object-literal` ParsedExpr (consumed by the Go object-memo lowering).
+    let retExpr: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(retExpr)) retExpr = retExpr.expression
+    const valueText = getJS(retExpr)
+    const value = parseExpression(
+      ts.isObjectLiteralExpression(retExpr) ? `(${valueText})` : valueText,
+    )
+    if (value.kind === 'unsupported') {
       return null
     }
     return { kind: 'return', value }

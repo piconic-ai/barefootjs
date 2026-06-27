@@ -267,7 +267,7 @@ export function memoInitialFromParsedBody(
  */
 export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
-  memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
+  memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
   signals: { getter: string; initialValue: string }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
@@ -337,7 +337,7 @@ export function computeMemoInitialValueOrNull(
   // so `.Params.Sort` / `.Params.Tag` resolve at execute time instead of
   // reading a nil map. Returns null for any unsupported shape (→ nil fallback,
   // no regression).
-  const objMemo = computeObjectMemoInitialValue(ctx, computation)
+  const objMemo = computeObjectMemoInitialValue(ctx, memo)
   if (objMemo !== null) return objMemo
 
   return null
