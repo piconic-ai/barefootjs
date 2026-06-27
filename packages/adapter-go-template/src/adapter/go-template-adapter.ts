@@ -2237,15 +2237,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * and the struct-shape synthesiser.
    *
    * This is the **last** `ts.createSourceFile` in the adapter — the terminal
-   * sweep's architectural floor (see issue #2006). Unlike the dedicated sites
-   * that were removed by carrying a parsed tree on the IR, this is a shared
-   * parser with 13 live callers, several of which are full TS-expression
-   * *interpreters* (`lowerCtorExpr` evaluates `.get`/`.includes`/`.replace`,
-   * regex literals, arrow-helper inlining, and `??`/`||`/`?:`). Removing it
-   * requires expanding the shared `ParsedExpr` (in `@barefootjs/jsx`, consumed
-   * by all adapters) into a near-complete expression AST and rewriting every
-   * caller — a multi-PR re-architecture, intentionally deferred and tracked in
-   * #2006. Do NOT add new callers: read a carried `ParsedExpr` field instead.
+   * sweep's final target (issue #2006). Unlike the dedicated sites that were
+   * removed by carrying a parsed tree on the IR, this is a shared parser with
+   * many call sites across the adapter's constructor/value lowering, several of
+   * which are full TS-expression *interpreters* (`lowerCtorExpr` evaluates
+   * `.get`/`.includes`/`.replace`, regex literals, arrow-helper inlining, and
+   * `??`/`||`/`?:`). It is being removed incrementally via the Go-only
+   * `ParsedExpr2` bridge (a separate tree carrying the multi-param-arrow and
+   * regex shapes `ParsedExpr` can't model, so the shared `ParsedExpr` /
+   * `ParsedExprEmitter` — and thus mojo/xslate — are untouched; see #2006).
+   * Do NOT add new callers: read a carried `ParsedExpr2` / `ParsedExpr` field
+   * instead.
    */
   private parseLiteralExpression(value: string): ts.Expression | null {
     const sf = ts.createSourceFile(
