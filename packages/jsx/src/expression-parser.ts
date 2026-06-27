@@ -712,6 +712,194 @@ export function parseExpression(expr: string): ParsedExpr {
   return convertNode(firstStmt.expression, expr)
 }
 
+// =============================================================================
+// ParsedExpr2 — Go-adapter constructor/helper lowering bridge (issue #2006)
+// =============================================================================
+
+/**
+ * A focused, self-contained expression tree for the Go adapter's
+ * *constructor-context* lowering (`lowerCtorExpr`, module/helper inlining,
+ * conditional spread, string-array baking).
+ *
+ * Deliberately separate from {@link ParsedExpr}: it adds the two shapes the Go
+ * ctor lowerers need that `ParsedExpr` cannot model — multi-parameter arrow
+ * functions (helper inlining) and a regex literal (the `/\/+$/` trailing-slash
+ * strip, `String.replace`) — WITHOUT touching the shared `ParsedExpr` /
+ * `ParsedExprEmitter`, so the other adapters (mojolicious, xslate) are not
+ * forced to handle new kinds before their own refactor. Method calls are
+ * modelled uniformly as `call` + `member` (the ctor lowering dispatches on
+ * `member.property` — `get` / `includes` / `replace`), so the `array-method` /
+ * `higher-order` abstractions that exist for template lowering are
+ * intentionally omitted from this narrow surface.
+ *
+ * This is a temporary bridge for the terminal sweep: it is the structured
+ * replacement for the adapter's last `ts.createSourceFile`
+ * (`parseLiteralExpression`). When the mojo/xslate refactor lands, the gap
+ * kinds fold back into a unified `ParsedExpr`. Tracked in #2006.
+ */
+export type ParsedExpr2 =
+  | { kind: 'literal'; value: string | number | boolean | null; literalType: 'string' | 'number' | 'boolean' | 'null'; raw?: string }
+  | { kind: 'identifier'; name: string }
+  | { kind: 'member'; object: ParsedExpr2; property: string; computed: boolean }
+  | { kind: 'index-access'; object: ParsedExpr2; index: ParsedExpr2 }
+  | { kind: 'call'; callee: ParsedExpr2; args: ParsedExpr2[] }
+  // A regex literal carried as its exact source text (`/\/+$/`), so the ctor
+  // lowering matches the one trailing-slash-strip pattern it recognises.
+  | { kind: 'regex'; raw: string }
+  // Multi-parameter, expression-bodied arrow (`(a, b) => …`) for module/helper
+  // inlining. Block-bodied arrows resolve to `unsupported`.
+  | { kind: 'arrow'; params: string[]; body: ParsedExpr2 }
+  | { kind: 'logical'; op: '&&' | '||' | '??'; left: ParsedExpr2; right: ParsedExpr2 }
+  | { kind: 'binary'; op: string; left: ParsedExpr2; right: ParsedExpr2 }
+  | { kind: 'unary'; op: string; argument: ParsedExpr2 }
+  | { kind: 'conditional'; test: ParsedExpr2; consequent: ParsedExpr2; alternate: ParsedExpr2 }
+  | { kind: 'array-literal'; elements: ParsedExpr2[] }
+  | { kind: 'object-literal'; properties: ParsedExpr2Property[]; raw: string }
+  | { kind: 'unsupported'; raw: string; reason: string }
+
+/** A plain `key: value` / shorthand `{ key }` property of a {@link ParsedExpr2} object literal. */
+export interface ParsedExpr2Property {
+  key: string
+  keyKind: 'identifier' | 'string' | 'numeric'
+  shorthand: boolean
+  value: ParsedExpr2
+}
+
+/**
+ * Parse a JS expression string into a {@link ParsedExpr2}, the Go adapter's
+ * constructor-lowering tree. Mirrors {@link parseExpression} but targets the
+ * narrow self-contained surface above; a shape outside it resolves to
+ * `unsupported` (so the caller falls back exactly as the former
+ * `parseLiteralExpression` + null path did).
+ */
+export function parseExpression2(expr: string): ParsedExpr2 {
+  const trimmed = expr.trim()
+  if (!trimmed) return { kind: 'unsupported', raw: expr, reason: 'Empty expression' }
+  const sourceFile = ts.createSourceFile(
+    'expression2.ts',
+    trimmed,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  )
+  if (sourceFile.statements.length === 0) {
+    return { kind: 'unsupported', raw: expr, reason: 'No statements found' }
+  }
+  const firstStmt = sourceFile.statements[0]
+  if (!ts.isExpressionStatement(firstStmt)) {
+    return { kind: 'unsupported', raw: expr, reason: 'Not an expression statement' }
+  }
+  return convertNode2(firstStmt.expression, expr)
+}
+
+/** Convert a TypeScript AST node to {@link ParsedExpr2} (parentheses unwrapped). */
+function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
+  while (ts.isParenthesizedExpression(node)) node = node.expression
+
+  if (ts.isIdentifier(node)) return { kind: 'identifier', name: node.text }
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return { kind: 'literal', value: node.text, literalType: 'string' }
+  }
+  if (ts.isNumericLiteral(node)) {
+    return { kind: 'literal', value: parseFloat(node.text), literalType: 'number', raw: node.text }
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return { kind: 'literal', value: true, literalType: 'boolean' }
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return { kind: 'literal', value: false, literalType: 'boolean' }
+  if (node.kind === ts.SyntaxKind.NullKeyword) return { kind: 'literal', value: null, literalType: 'null' }
+
+  if (ts.isRegularExpressionLiteral(node)) return { kind: 'regex', raw: node.getText() }
+
+  if (ts.isPropertyAccessExpression(node)) {
+    return { kind: 'member', object: convertNode2(node.expression, raw), property: node.name.text, computed: false }
+  }
+  if (ts.isElementAccessExpression(node)) {
+    return {
+      kind: 'index-access',
+      object: convertNode2(node.expression, raw),
+      index: convertNode2(node.argumentExpression, raw),
+    }
+  }
+  if (ts.isCallExpression(node)) {
+    return {
+      kind: 'call',
+      callee: convertNode2(node.expression, raw),
+      args: node.arguments.map(a => convertNode2(a, raw)),
+    }
+  }
+  if (ts.isArrowFunction(node)) {
+    if (ts.isBlock(node.body)) {
+      return { kind: 'unsupported', raw, reason: 'Block body arrow functions are not supported' }
+    }
+    const params: string[] = []
+    for (const p of node.parameters) {
+      if (!ts.isIdentifier(p.name)) {
+        return { kind: 'unsupported', raw, reason: 'Only identifier arrow parameters are supported' }
+      }
+      params.push(p.name.text)
+    }
+    return { kind: 'arrow', params, body: convertNode2(node.body, raw) }
+  }
+  if (ts.isBinaryExpression(node)) {
+    const left = convertNode2(node.left, raw)
+    const right = convertNode2(node.right, raw)
+    const k = node.operatorToken.kind
+    if (k === ts.SyntaxKind.AmpersandAmpersandToken) return { kind: 'logical', op: '&&', left, right }
+    if (k === ts.SyntaxKind.BarBarToken) return { kind: 'logical', op: '||', left, right }
+    if (k === ts.SyntaxKind.QuestionQuestionToken) return { kind: 'logical', op: '??', left, right }
+    // An operator outside the recognised set yields `'unknown'`; keep the
+    // narrow-surface contract by resolving to `unsupported` rather than a
+    // `binary` node a consumer might mis-handle.
+    const op = getOperatorString(k)
+    if (op === 'unknown') return { kind: 'unsupported', raw, reason: `Unsupported binary operator ${ts.SyntaxKind[k]}` }
+    return { kind: 'binary', op, left, right }
+  }
+  if (ts.isPrefixUnaryExpression(node)) {
+    // `++x` / `--x` etc. resolve to `'unknown'` — opt out to `unsupported`
+    // rather than emitting a `unary` node with a meaningless operator.
+    const op = getUnaryOperatorString(node.operator)
+    if (op === 'unknown') return { kind: 'unsupported', raw, reason: `Unsupported unary operator ${ts.SyntaxKind[node.operator]}` }
+    return { kind: 'unary', op, argument: convertNode2(node.operand, raw) }
+  }
+  if (ts.isConditionalExpression(node)) {
+    return {
+      kind: 'conditional',
+      test: convertNode2(node.condition, raw),
+      consequent: convertNode2(node.whenTrue, raw),
+      alternate: convertNode2(node.whenFalse, raw),
+    }
+  }
+  if (ts.isArrayLiteralExpression(node)) {
+    return { kind: 'array-literal', elements: node.elements.map(e => convertNode2(e, raw)) }
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    const properties: ParsedExpr2Property[] = []
+    for (const prop of node.properties) {
+      if (ts.isPropertyAssignment(prop)) {
+        const named = objectLiteralKeyName(prop.name)
+        if (named === null) return { kind: 'unsupported', raw, reason: 'Computed or non-plain object key' }
+        properties.push({
+          key: named.key,
+          keyKind: named.keyKind,
+          shorthand: false,
+          value: convertNode2(prop.initializer, raw),
+        })
+      } else if (ts.isShorthandPropertyAssignment(prop)) {
+        properties.push({
+          key: prop.name.text,
+          keyKind: 'identifier',
+          shorthand: true,
+          value: { kind: 'identifier', name: prop.name.text },
+        })
+      } else {
+        return { kind: 'unsupported', raw, reason: 'Spread, method, or accessor object property' }
+      }
+    }
+    return { kind: 'object-literal', properties, raw: node.getText() }
+  }
+
+  return { kind: 'unsupported', raw, reason: `Unsupported node kind ${ts.SyntaxKind[node.kind]}` }
+}
+
 /**
  * Resolve a non-computed object-literal property key to its string name.
  * Identifier / string / numeric names resolve to their text; a computed
