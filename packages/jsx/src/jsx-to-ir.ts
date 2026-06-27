@@ -569,12 +569,29 @@ function attachParsedExpressions(node: IRNode): void {
     const trimmed = node.condition.trim()
     if (trimmed) node.parsedCondition = parseExpression(trimmed)
   }
+  // Attach `parsed` to every expression-valued attribute / prop so adapters can
+  // lower from the tree instead of re-parsing the string. Element attrs,
+  // component props (e.g. `opts={{ … }}` → Go map), and a provider's `value`
+  // prop all carry it; only `expression` values do (a `spread` / `template`
+  // value can't be the inline object literal the consumers read).
   if (node.type === 'element') {
     for (const attr of node.attrs) {
       if (attr.value.kind === 'expression') {
         const trimmed = attr.value.expr.trim()
         if (trimmed) attr.value.parsed = parseExpression(trimmed)
       }
+    }
+  } else if (node.type === 'component') {
+    for (const prop of node.props) {
+      if (prop.value.kind === 'expression') {
+        const trimmed = prop.value.expr.trim()
+        if (trimmed) prop.value.parsed = parseExpression(trimmed)
+      }
+    }
+  } else if (node.type === 'provider') {
+    if (node.valueProp.value.kind === 'expression') {
+      const trimmed = node.valueProp.value.expr.trim()
+      if (trimmed) node.valueProp.value.parsed = parseExpression(trimmed)
     }
   }
   switch (node.type) {
