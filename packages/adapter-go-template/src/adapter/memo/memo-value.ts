@@ -150,6 +150,12 @@ export function computeObjectMemoInitialValue(
   const env: CtorLowerEnv = { searchParamsVars, params: new Map() }
   const entries: string[] = []
   for (const prop of retObj.properties) {
+    // Bail on a shorthand property (`return { tag }`). The former walk only
+    // accepted `ts.PropertyAssignment` and bailed on `ShorthandPropertyAssignment`;
+    // preserve that strictness so this stays byte-identical (a shorthand value
+    // is a bare identifier whose name need not match a `.Params.<Field>`
+    // accessor, and lowering it would silently widen the accepted shape).
+    if (prop.shorthand) return null
     // The key must be identifier- or string-named (a numeric key has no
     // matching `.Params.<Field>` accessor), matching the old
     // `ts.isIdentifier || ts.isStringLiteral` check.

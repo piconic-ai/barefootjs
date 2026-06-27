@@ -862,10 +862,18 @@ export function parsedExprToParsedExpr2(e: ParsedExpr): ParsedExpr2 {
         })),
         raw: e.raw,
       }
+    // An already-`unsupported` node carries its own diagnostic `reason` from
+    // the original parse — preserve it (and its `raw`) so downstream debugging
+    // stays consistent rather than collapsing to the generic message below.
+    case 'unsupported':
+      return { kind: 'unsupported', raw: e.raw, reason: e.reason }
     default:
+      // The remaining out-of-surface kinds (`template-literal`, `arrow-fn`,
+      // `higher-order`, `array-method`) carry no `raw` field, so there is none
+      // to preserve here.
       return {
         kind: 'unsupported',
-        raw: ('raw' in e ? e.raw : '') ?? '',
+        raw: '',
         reason: 'unsupported in ParsedExpr2',
       }
   }
