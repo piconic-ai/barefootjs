@@ -588,7 +588,13 @@ function attachParsedExpressions(node: IRNode): void {
       attachParsedExpressions(node.fallback)
       for (const child of node.children) attachParsedExpressions(child)
       break
-    case 'loop':
+    case 'loop': {
+      // Attach the parse of the SAME `array` string the adapters consume
+      // (the Go adapter's scalar-literal loop typing reads `loop.array` /
+      // `nested.loopArray`, which is exactly `loop.array`), so it can read
+      // the tree instead of re-parsing with `ts.createSourceFile`.
+      const trimmedArray = node.array.trim()
+      if (trimmedArray) node.arrayParsed = parseExpression(trimmedArray)
       for (const child of node.children) attachParsedExpressions(child)
       // Loops also hold expression nodes off the main `children` array.
       if (node.childComponent) {
@@ -601,6 +607,7 @@ function attachParsedExpressions(node: IRNode): void {
         attachParsedExpressions(frag.ir)
       }
       break
+    }
     case 'conditional':
       attachParsedExpressions(node.whenTrue)
       attachParsedExpressions(node.whenFalse)

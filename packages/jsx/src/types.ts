@@ -425,6 +425,14 @@ export interface IRLoop {
    */
   method?: 'flatMap'
   array: string
+  /**
+   * Structured parse of `array` (`parseExpression(array.trim())`), attached
+   * during IR construction so adapters lower the loop's array from the tree
+   * instead of re-parsing the string (e.g. the Go adapter's scalar-literal
+   * loop typing). Optional/best-effort — mirrors `IRExpression.parsed`;
+   * consumers fall back to parsing `array`.
+   */
+  arrayParsed?: ParsedExpr
   /** Pre-transformed array expr with destructured prop refs rewritten to _p.xxx. */
   templateArray?: string
   arrayType: TypeInfo | null
