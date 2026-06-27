@@ -701,7 +701,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * existing type) returns `null`.
    */
   private synthesizeStructFromSignal(
-    signal: { getter: string; type: TypeInfo; initialValue: string },
+    signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
     componentName: string,
   ): { name: string; fields: Array<{ tsName: string; goName: string; goType: string }> } | null {
     // Only untyped arrays: a typed (`Item[]`) or scalar (`string[]`) element
@@ -710,8 +710,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const elem = signal.type.elementType
     if (elem && elem.kind !== 'unknown') return null
 
-    const node = this.parseLiteralExpression(signal.initialValue)
-    if (!node || !ts.isArrayLiteralExpression(node) || node.elements.length === 0) return null
+    // Walk the analyzer-carried structured tree (#2006) instead of re-parsing
+    // `initialValue` with `ts.createSourceFile`. Absent / non-array-literal
+    // initial values simply don't synthesise a struct.
+    const node = signal.parsed
+    if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
 
     // Collect the field order + per-key Go types from the first element, then
     // require every other element to match exactly.
@@ -719,20 +722,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const goTypes = new Map<string, string>()
     for (let i = 0; i < node.elements.length; i++) {
       const el = node.elements[i]
-      if (!ts.isObjectLiteralExpression(el)) return null
+      if (el.kind !== 'object-literal') return null
       const seen = new Set<string>()
       for (const prop of el.properties) {
-        if (!ts.isPropertyAssignment(prop)) return null
-        if (
-          !ts.isIdentifier(prop.name) &&
-          !ts.isStringLiteral(prop.name) &&
-          !ts.isNumericLiteral(prop.name)
-        ) {
-          return null
-        }
-        const key = prop.name.text
+        // Shorthand `{ a }` is not a `ts.PropertyAssignment`, so the old
+        // ts-AST walk bailed synthesis on it; keep that.
+        if (prop.shorthand) return null
+        const key = prop.key
         if (!GO_IDENTIFIER.test(key)) return null
-        const goType = this.scalarLiteralGoType(prop.initializer)
+        const goType = this.scalarParsedGoType(prop.value)
         if (!goType) return null
         seen.add(key)
         const prev = goTypes.get(key)
@@ -765,23 +763,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * The Go type for a scalar JS literal used as a synthesised struct field
-   * value, or `null` for anything non-scalar (objects, arrays, identifiers,
-   * calls, interpolated templates) so the caller bails out of synthesis.
+   * The Go type for a scalar literal `ParsedExpr` used as a synthesised struct
+   * field value, or `null` for anything non-scalar (objects, arrays,
+   * identifiers, calls, interpolated templates) so the caller bails out of
+   * synthesis. Mirrors the former ts-AST `scalarLiteralGoType` byte-for-byte:
+   * a string / no-substitution template literal → `string`, a numeric literal
+   * (optionally prefix-negated) → its int/float64 type via `numericLiteralGoType`
+   * over the carried `raw` token, a boolean → `bool` (#2006).
    */
-  private scalarLiteralGoType(node: ts.Expression): string | null {
-    if (
-      ts.isPrefixUnaryExpression(node) &&
-      node.operator === ts.SyntaxKind.MinusToken &&
-      ts.isNumericLiteral(node.operand)
-    ) {
-      return this.numericLiteralGoType(node.operand.text)
+  private scalarParsedGoType(value: ParsedExpr): string | null {
+    // `-5` parses to a unary minus over a numeric literal; classify by the
+    // inner literal exactly like the old `ts.isPrefixUnaryExpression` branch.
+    if (value.kind === 'unary' && value.op === '-' && value.argument.kind === 'literal') {
+      const inner = value.argument
+      if (inner.literalType === 'number') return this.numericLiteralGoType(inner.raw ?? String(inner.value))
+      return null
     }
-    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return 'string'
-    if (ts.isNumericLiteral(node)) return this.numericLiteralGoType(node.text)
-    if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) {
-      return 'bool'
-    }
+    if (value.kind !== 'literal') return null
+    if (value.literalType === 'string') return 'string'
+    if (value.literalType === 'number') return this.numericLiteralGoType(value.raw ?? String(value.value))
+    if (value.literalType === 'boolean') return 'bool'
     return null
   }
 
@@ -970,7 +971,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (#1971) Scalar-item loop (`[1,2,3,4,5].map(n => …{n}…)`) — no datum
     // fields, so carry the whole range value here; the loop's body define is
     // fed `.BfLoopItem` and renders the bare param.
-    const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArray, nested.loopItemType)
+    const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
     if (scalarLoopType && datumFields.length === 0) {
       lines.push(`\tBfLoopItem ${scalarLoopType} \`json:"-"\``)
     }
@@ -1032,20 +1033,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * the existing datum-field path). AST-based to avoid misreading literals.
    */
   private scalarLiteralLoopGoType(
-    arrayText: string | undefined,
+    arrayParsed: ParsedExpr | undefined,
     itemType: TypeInfo | null | undefined,
   ): string | null {
     if (this.resolveLoopDatumFields(itemType).length > 0) return null
-    if (!arrayText) return null
-    const expr = this.parseLiteralExpression(arrayText)
-    if (!expr || !ts.isArrayLiteralExpression(expr) || expr.elements.length === 0) {
+    // Roadmap A: read the carried `ParsedExpr` tree (the parse of the SAME
+    // `array` string this used to re-parse) instead of `ts.createSourceFile`.
+    // Absent / non-array tree → null, same as a non-array string did.
+    if (!arrayParsed) return null
+    if (arrayParsed.kind !== 'array-literal' || arrayParsed.elements.length === 0) {
       return null
     }
-    for (const el of expr.elements) {
-      const isStr = ts.isStringLiteral(el) || ts.isNoSubstitutionTemplateLiteral(el)
+    for (const el of arrayParsed.elements) {
+      const isStr = el.kind === 'literal' && el.literalType === 'string'
+      // A bare numeric literal, or a unary-minus wrapping a numeric literal
+      // (`-1`) — mirrors the old `isNumericLiteral || (isPrefixUnary &&
+      // isNumericLiteral(operand))` check.
       const isNum =
-        ts.isNumericLiteral(el) ||
-        (ts.isPrefixUnaryExpression(el) && ts.isNumericLiteral(el.operand))
+        (el.kind === 'literal' && el.literalType === 'number') ||
+        (el.kind === 'unary' &&
+          el.op === '-' &&
+          el.argument.kind === 'literal' &&
+          el.argument.literalType === 'number')
       if (!isStr && !isNum) return null
     }
     return 'interface{}'
@@ -1402,8 +1411,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // object prop (`opts={{ align: 'start' }}`) bakes to a Go map
             // literal — the child field is `map[string]interface{}` and
             // `resolveDynamicPropValue` can't represent an object literal.
-            if (childShape?.mapTypedParamNames.has(prop.name)) {
-              const goMap = objectLiteralToGoMap(this.emitCtx, exprText)
+            // The carried `ParsedExpr` (attached to `ExpressionAttr` by the
+            // analyzer since Roadmap A-2) lets the map lowering read the tree
+            // instead of re-parsing `exprText` with `ts.createSourceFile`.
+            // Only an `expression` attr carries `.parsed`; a `spread` /
+            // `template` value can't be an inline object literal here.
+            const parsedValue =
+              prop.value.kind === 'expression' ? prop.value.parsed : undefined
+            if (
+              parsedValue &&
+              childShape?.mapTypedParamNames.has(prop.name)
+            ) {
+              const goMap = objectLiteralToGoMap(this.emitCtx, parsedValue)
               if (goMap !== null) {
                 emitChildField(prop.name, goMap)
                 break
@@ -1528,7 +1547,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             c => c.name === loopArray && c.origin?.scope === 'module' && c.value && c.type,
           )
         : null
-      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArray, nested.loopItemType)
+      const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
       let bakedValue = moduleConst?.type
         ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
         : null
@@ -4960,7 +4979,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // instead of `.`. Pushed around the body render only; mirrors the
     // wrapper/constructor `scalarLiteralLoopGoType` gate exactly.
     this.loopScalarItemStack.push(
-      this.scalarLiteralLoopGoType(loop.array, loop.itemType) !== null,
+      this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null,
     )
     const children = this.renderChildren(loop.children)
     this.loopScalarItemStack.pop()

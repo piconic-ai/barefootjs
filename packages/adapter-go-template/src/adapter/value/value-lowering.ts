@@ -144,22 +144,29 @@ export function jsLiteralToGo(
  * (`<Carousel opts={{ align: 'start' }}>`). Returns null for any non-literal
  * or nested object/array value (carousel's opts are flat scalars).
  */
-export function objectLiteralToGoMap(ctx: GoEmitContext, exprText: string): string | null {
-  const expr = ctx.parseLiteralExpression(exprText)
-  if (!expr || !ts.isObjectLiteralExpression(expr)) return null
+export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
+  // Roadmap A: read the carried `ParsedExpr` tree instead of re-parsing the
+  // source with `ts.createSourceFile`. The tree is only an `object-literal`
+  // when every property is a non-computed `key: value` / shorthand `{ key }`
+  // (spreads, computed keys, methods fall through to `unsupported` upstream),
+  // which is exactly the shape the old `ts.isObjectLiteralExpression` +
+  // `ts.isPropertyAssignment` checks accepted.
+  if (expr.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of expr.properties) {
-    if (!ts.isPropertyAssignment(prop)) return null
-    if (
-      !ts.isIdentifier(prop.name) &&
-      !ts.isStringLiteral(prop.name) &&
-      !ts.isNumericLiteral(prop.name)
-    ) {
-      return null
-    }
-    const val = tsLiteralToGo(ctx, prop.initializer)
+    // Shorthand `{ a }` carried an identifier value upstream; the old code
+    // refused a `ShorthandPropertyAssignment`, so bail here too.
+    if (prop.shorthand) return null
+    // `parsedLiteralToGo` with no typeInfo reproduces `tsLiteralToGo`'s scalar
+    // output byte-for-byte (string via `JSON.stringify`, number via the
+    // carried `raw` token, boolean/null literally). Nested object / array
+    // property values lower to null and defer — matching the old behaviour,
+    // where carousel's flat-scalar opts were the only supported shape.
+    const val = parsedLiteralToGo(ctx, prop.value)
     if (val === null) return null
-    entries.push(`${JSON.stringify(prop.name.text)}: ${val}`)
+    // `prop.key` is the resolved key text (identifier / string / numeric all
+    // normalised to a string), exactly like the old `prop.name.text`.
+    entries.push(`${JSON.stringify(prop.key)}: ${val}`)
   }
   if (entries.length === 0) return null
   return `map[string]interface{}{${entries.join(', ')}}`

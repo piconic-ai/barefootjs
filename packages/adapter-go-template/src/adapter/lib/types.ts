@@ -43,6 +43,9 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
   bodyChildren?: IRNode[]
   /** The loop's array expression for baking (e.g. `sortedData()`) */
   loopArray?: string
+  /** Structured parse of `loopArray` (the loop's `array` string), carried so
+   *  scalar-literal loop typing reads the tree instead of re-parsing. */
+  loopArrayParsed?: ParsedExpr
   /** The enclosing loop's `markerId` (e.g. `l0`) for unique naming */
   loopMarkerId?: string
   /** The loop item's TS type (`Payment` from `sortedData().map(payment => …)`),
