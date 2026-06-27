@@ -25,6 +25,7 @@ import type {
   CompilerError,
   SourceLocation,
   ParsedExpr,
+  ParsedExpr2,
   ObjectLiteralProperty,
   ParsedStatement,
   SortComparator,
@@ -2845,7 +2846,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (takenFieldNames.has(fieldName)) continue
       const c = this.state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
       if (!c?.value) continue
-      const expr = this.parseLiteralExpression(c.value)
+      const expr = c.parsed2
       if (!expr) continue
       // The field is typed `string`; only emit when the value is provably a Go
       // string, so a numeric/other const referenced in the template can't be
@@ -2870,48 +2871,43 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * string-valued, and a component-const reference to such a value. Anything
    * unproven (numbers, `props.X`, calls it doesn't know) returns false.
    */
-  private isStringExpr(node: ts.Expression, seen: Set<string>): boolean {
-    while (ts.isParenthesizedExpression(node)) node = node.expression
-    if (
-      ts.isStringLiteral(node) ||
-      ts.isNoSubstitutionTemplateLiteral(node) ||
-      ts.isTemplateExpression(node)
-    ) {
+  private isStringExpr(node: ParsedExpr2, seen: Set<string>): boolean {
+    // `+` and `||` / `??` are carried as `binary` / `logical`; the parser
+    // resolves template literals with substitutions to `unsupported` (so
+    // `parsed2` is undefined upstream), and a substitution-free template to a
+    // string `literal`.
+    if (node.kind === 'literal' && node.literalType === 'string') {
       return true
     }
-    if (ts.isBinaryExpression(node)) {
-      const op = node.operatorToken.kind
+    if (node.kind === 'binary' && node.op === '+') {
       // `+`: a string on *either* side forces string concatenation.
-      if (op === ts.SyntaxKind.PlusToken) {
-        return this.isStringExpr(node.left, seen) || this.isStringExpr(node.right, seen)
-      }
+      return this.isStringExpr(node.left, seen) || this.isStringExpr(node.right, seen)
+    }
+    if (node.kind === 'logical' && (node.op === '||' || node.op === '??')) {
       // `||` / `??` evaluate to *one* operand, so the result is only provably a
       // string when *both* sides are (`props.count ?? ''` is not — it can be the
       // number) (#1945 review).
-      if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
-        return this.isStringExpr(node.left, seen) && this.isStringExpr(node.right, seen)
-      }
-      return false
+      return this.isStringExpr(node.left, seen) && this.isStringExpr(node.right, seen)
     }
-    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
-      const m = node.expression.name.text
+    if (node.kind === 'call' && node.callee.kind === 'member') {
+      const m = node.callee.property
       const STRING_METHODS = new Set([
         'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
         'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
       ])
       return STRING_METHODS.has(m)
     }
-    if (ts.isConditionalExpression(node)) {
+    if (node.kind === 'conditional') {
       return (
-        this.isStringExpr(node.whenTrue, seen) && this.isStringExpr(node.whenFalse, seen)
+        this.isStringExpr(node.consequent, seen) && this.isStringExpr(node.alternate, seen)
       )
     }
-    if (ts.isIdentifier(node)) {
-      if (seen.has(node.text)) return false
-      const c = this.state.localConstants.find(lc => lc.name === node.text && !lc.isModule && lc.value)
+    if (node.kind === 'identifier') {
+      if (seen.has(node.name)) return false
+      const c = this.state.localConstants.find(lc => lc.name === node.name && !lc.isModule && lc.value)
       if (c?.value) {
-        const inner = this.parseLiteralExpression(c.value)
-        if (inner) return this.isStringExpr(inner, new Set([...seen, node.text]))
+        const inner = c.parsed2
+        if (inner) return this.isStringExpr(inner, new Set([...seen, node.name]))
       }
     }
     return false
