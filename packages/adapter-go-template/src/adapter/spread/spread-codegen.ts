@@ -25,6 +25,7 @@ import type {
   IRComponent,
   IRProvider,
   IRAsync,
+  ParsedExpr,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -142,62 +143,50 @@ function collectSpreadSlotsRecursive(ctx: GoEmitContext, node: IRNode, result: S
 }
 
 /**
- * Parse a JS object-literal source text (the raw string captured
- * for a signal's `initialValue` or a spread expression's argument)
- * into a Go `map[string]any{...}` literal source (#1407).
+ * Lower a signal's carried object-literal initial value (`MemoInfo`-style
+ * `SignalInfo.parsed`) into a Go `map[string]any{...}` literal source (#1407),
+ * instead of re-parsing the `initialValue` string with `ts.createSourceFile`.
  *
- * Supports a deliberately conservative subset so the Go output is
- * a 1:1 translation of the JS source: string/number/boolean/null
- * values keyed by identifier or string-literal keys. Returns null
- * for unsupported shapes (nested objects, computed values,
- * function calls, spread elements) — callers fall back to BF101.
+ * Supports a deliberately conservative subset so the Go output is a 1:1
+ * translation of the source: string/number/boolean/null values (and a
+ * signed-number `{count: -1}`) keyed by identifier or string-literal keys.
+ * Returns null for any other shape — a non-object init (`parsed` absent or not
+ * an `object-literal`), a shorthand / nested-object / computed / call value —
+ * so callers fall back to BF101.
  */
-function parseJsObjectLiteralToGoMap(jsText: string): string | null {
-  const sf = ts.createSourceFile('inline.ts', `(${jsText})`, ts.ScriptTarget.Latest, true)
-  if (sf.statements.length !== 1) return null
-  const stmt = sf.statements[0]
-  if (!ts.isExpressionStatement(stmt)) return null
-  let expr: ts.Expression = stmt.expression
-  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-  if (!ts.isObjectLiteralExpression(expr)) return null
+function parsedObjectLiteralToGoMap(parsed: ParsedExpr | undefined): string | null {
+  if (!parsed || parsed.kind !== 'object-literal') return null
   const entries: string[] = []
-  for (const prop of expr.properties) {
-    if (!ts.isPropertyAssignment(prop)) return null
-    let key: string
-    if (ts.isIdentifier(prop.name)) {
-      key = prop.name.text
-    } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
-      key = prop.name.text
-    } else {
-      return null
-    }
-    const val = prop.initializer
+  for (const prop of parsed.properties) {
+    // A numeric key (`{ 1: 'a' }`) was rejected by the former parser (only
+    // identifier / string keys were accepted), so keep refusing it — `key`
+    // alone can't distinguish it from a string `'1'` key, hence `keyKind`.
+    if (prop.keyKind === 'numeric') return null
+    const v = prop.value
     let goVal: string
-    if (ts.isStringLiteral(val) || ts.isNoSubstitutionTemplateLiteral(val)) {
-      goVal = JSON.stringify(val.text)
-    } else if (ts.isNumericLiteral(val)) {
-      goVal = val.text
+    if (v.kind === 'literal' && v.literalType === 'string') {
+      goVal = JSON.stringify(v.value)
+    } else if (v.kind === 'literal' && v.literalType === 'number') {
+      // `raw` is the exact numeric token; `value` is the fallback.
+      goVal = v.raw ?? String(v.value)
     } else if (
-      // TypeScript parses `-1` and `+1` as `PrefixUnaryExpression`
-      // rather than `NumericLiteral` — accept both signs explicitly
-      // so a bag like `{count: -1}` doesn't collapse to BF101
-      // (#1411 review).
-      ts.isPrefixUnaryExpression(val)
-      && (val.operator === ts.SyntaxKind.MinusToken || val.operator === ts.SyntaxKind.PlusToken)
-      && ts.isNumericLiteral(val.operand)
+      // `-1` / `+1` parse as a unary expression over a numeric literal — accept
+      // both signs so a bag like `{count: -1}` doesn't collapse to BF101.
+      v.kind === 'unary'
+      && (v.op === '-' || v.op === '+')
+      && v.argument.kind === 'literal'
+      && v.argument.literalType === 'number'
     ) {
-      const sign = val.operator === ts.SyntaxKind.MinusToken ? '-' : ''
-      goVal = `${sign}${val.operand.text}`
-    } else if (val.kind === ts.SyntaxKind.TrueKeyword) {
-      goVal = 'true'
-    } else if (val.kind === ts.SyntaxKind.FalseKeyword) {
-      goVal = 'false'
-    } else if (val.kind === ts.SyntaxKind.NullKeyword) {
+      const sign = v.op === '-' ? '-' : ''
+      goVal = `${sign}${v.argument.raw ?? String(v.argument.value)}`
+    } else if (v.kind === 'literal' && v.literalType === 'boolean') {
+      goVal = v.value ? 'true' : 'false'
+    } else if (v.kind === 'literal' && v.literalType === 'null') {
       goVal = 'nil'
     } else {
       return null
     }
-    entries.push(`${JSON.stringify(key)}: ${goVal}`)
+    entries.push(`${JSON.stringify(prop.key)}: ${goVal}`)
   }
   return `map[string]any{${entries.join(', ')}}`
 }
@@ -251,7 +240,7 @@ export function buildSpreadInitializer(
     const getterName = callMatch[1]
     const signal = ir.metadata.signals.find(s => s.getter === getterName)
     if (signal && signal.initialValue) {
-      const goMap = parseJsObjectLiteralToGoMap(signal.initialValue)
+      const goMap = parsedObjectLiteralToGoMap(signal.parsed)
       if (goMap) return goMap
     }
     return null

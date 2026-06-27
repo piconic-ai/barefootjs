@@ -320,6 +320,18 @@ describe('expression-parser', () => {
       }
     })
 
+    test('records the key kind so numeric and string keys are distinguishable', () => {
+      const result = parseExpression('({ a: 1, "1": 2, 3: 4 })')
+      expect(result.kind).toBe('object-literal')
+      if (result.kind === 'object-literal') {
+        // `key` normalises all three to a string ('a' / '1' / '3'), but
+        // `keyKind` keeps `{ '1': … }` (string) distinct from `{ 3: … }`
+        // (numeric) — a consumer that rejects numeric keys needs this.
+        expect(result.properties.map(p => p.key)).toEqual(['a', '1', '3'])
+        expect(result.properties.map(p => p.keyKind)).toEqual(['identifier', 'string', 'numeric'])
+      }
+    })
+
     test('parses shorthand object literal, expanding `{ a }` to `a: a`', () => {
       const result = parseExpression('({ a, b: 2 })')
       expect(result.kind).toBe('object-literal')

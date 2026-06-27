@@ -158,6 +158,11 @@ export type ParsedExpr =
  */
 export type ObjectLiteralProperty = {
   key: string
+  // The syntactic kind of the key, since `key` normalises all three to a
+  // string and so loses the distinction. A consumer that must treat a numeric
+  // key (`{ 1: 'a' }`) differently from a same-text string key (`{ '1': 'a' }`)
+  // reads this; most consumers ignore it. `identifier` for shorthand.
+  keyKind?: 'identifier' | 'string' | 'numeric'
   // Shorthand `{ a }` (the value is the identifier `a`) vs explicit
   // `{ a: <value> }`. The `value` already carries the resolved tree
   // either way; this flag is kept for re-stringification fidelity.
@@ -713,10 +718,12 @@ export function parseExpression(expr: string): ParsedExpr {
  * (`[expr]`) or otherwise non-plain key returns null so the caller treats
  * the whole literal as `unsupported`.
  */
-function objectLiteralKeyName(name: ts.PropertyName): string | null {
-  if (ts.isIdentifier(name)) return name.text
-  if (ts.isStringLiteral(name)) return name.text
-  if (ts.isNumericLiteral(name)) return name.text
+function objectLiteralKeyName(
+  name: ts.PropertyName,
+): { key: string; keyKind: 'identifier' | 'string' | 'numeric' } | null {
+  if (ts.isIdentifier(name)) return { key: name.text, keyKind: 'identifier' }
+  if (ts.isStringLiteral(name)) return { key: name.text, keyKind: 'string' }
+  if (ts.isNumericLiteral(name)) return { key: name.text, keyKind: 'numeric' }
   return null
 }
 
@@ -1199,12 +1206,12 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     const properties: ObjectLiteralProperty[] = []
     for (const prop of node.properties) {
       if (ts.isPropertyAssignment(prop)) {
-        const key = objectLiteralKeyName(prop.name)
-        if (key === null) return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
-        properties.push({ key, shorthand: false, value: convertNode(prop.initializer, raw) })
+        const k = objectLiteralKeyName(prop.name)
+        if (k === null) return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
+        properties.push({ key: k.key, keyKind: k.keyKind, shorthand: false, value: convertNode(prop.initializer, raw) })
       } else if (ts.isShorthandPropertyAssignment(prop)) {
         const key = prop.name.text
-        properties.push({ key, shorthand: true, value: { kind: 'identifier', name: key } })
+        properties.push({ key, keyKind: 'identifier', shorthand: true, value: { kind: 'identifier', name: key } })
       } else {
         // Spread assignment, method, getter/setter — not a plain map.
         return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
