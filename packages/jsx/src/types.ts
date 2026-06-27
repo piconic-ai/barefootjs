@@ -1146,6 +1146,15 @@ export interface MemoInfo {
    * dedicated flag rather than a `parsed.kind` check.
    */
   bodyIsTemplateLiteral?: boolean
+  /**
+   * A block-bodied memo's statements, parsed best-effort (tolerant: a statement
+   * the parser can't represent is omitted). Lets the Go adapter pattern-match
+   * block-body memo shapes — e.g. the `const k = getter(); if (!k) return CONST`
+   * guard — on the structured statements instead of re-parsing `computation`
+   * with `ts.createSourceFile`. Absent for expression-bodied memos (those carry
+   * `parsed` instead) and when the arrow has no block body.
+   */
+  parsedBlock?: ParsedStatement[]
   type: TypeInfo
   deps: string[]
   loc: SourceLocation

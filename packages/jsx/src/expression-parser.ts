@@ -2960,6 +2960,29 @@ export function parseBlockBody(
 }
 
 /**
+ * Like {@link parseBlockBody} but tolerant: a statement `parseStatement` can't
+ * represent is **skipped** rather than failing the whole block. Used to carry a
+ * block-body memo's structure on the IR for adapters that only pattern-match a
+ * recognised prefix of statements (e.g. a `const k = getter(); if (!k) return
+ * CONST` guard) and ignore the rest — including a trailing client-directive
+ * (`@client`) return that the strict parser would reject. Mirrors the tolerant
+ * `continue`-on-unrecognised walks those adapters previously ran over a
+ * re-parsed source string, so it never carries a *more* permissive result.
+ */
+export function parseBlockBodyTolerant(
+  block: ts.Block,
+  sourceFile: ts.SourceFile,
+  getJS: (node: ts.Node) => string
+): ParsedStatement[] {
+  const statements: ParsedStatement[] = []
+  for (const stmt of block.statements) {
+    const parsed = parseStatement(stmt, sourceFile, getJS)
+    if (parsed !== null) statements.push(parsed)
+  }
+  return statements
+}
+
+/**
  * Parse a single statement into ParsedStatement.
  */
 function parseStatement(
