@@ -2235,6 +2235,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Parse a JS expression string into its TS AST node (parentheses unwrapped),
    * or `null` when it isn't a single expression. Shared by the literal baker
    * and the struct-shape synthesiser.
+   *
+   * This is the **last** `ts.createSourceFile` in the adapter — the terminal
+   * sweep's final target (issue #2006). Unlike the dedicated sites that were
+   * removed by carrying a parsed tree on the IR, this is a shared parser with
+   * many call sites across the adapter's constructor/value lowering, several of
+   * which are full TS-expression *interpreters* (`lowerCtorExpr` evaluates
+   * `.get`/`.includes`/`.replace`, regex literals, arrow-helper inlining, and
+   * `??`/`||`/`?:`). It is being removed incrementally via the Go-only
+   * `ParsedExpr2` bridge (a separate tree carrying the multi-param-arrow and
+   * regex shapes `ParsedExpr` can't model, so the shared `ParsedExpr` /
+   * `ParsedExprEmitter` — and thus mojo/xslate — are untouched; see #2006).
+   * Do NOT add new callers: read a carried `ParsedExpr2` / `ParsedExpr` field
+   * instead.
    */
   private parseLiteralExpression(value: string): ts.Expression | null {
     const sf = ts.createSourceFile(
