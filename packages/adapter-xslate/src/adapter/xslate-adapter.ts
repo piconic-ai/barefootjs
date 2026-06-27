@@ -81,13 +81,26 @@ import {
   collectRootScopeNodes,
   referencedVarsAreAvailable,
 } from './lib/ir-scope.ts'
-import {
-  isStringTypeInfo,
-  isBareStringLiteral,
-} from './value/parsed-literal.ts'
 import { renderSortMethod } from './expr/array-method.ts'
 import { XslateFilterEmitter, XslateTopLevelEmitter } from './expr/emitters.ts'
 import type { XslateEmitContext } from './emit-context.ts'
+import {
+  hasClientInteractivity,
+  collectImportedLoopChildComponentErrors,
+} from './analysis/component-tree.ts'
+import {
+  conditionalSpreadToKolon,
+  objectLiteralExprToKolonHashref,
+} from './spread/spread-codegen.ts'
+import {
+  generateContextConsumerSeed,
+  generateDerivedMemoSeed,
+} from './memo/seed.ts'
+import {
+  collectBooleanTypedProps,
+  collectNullableOptionalProps,
+  collectStringValueNames,
+} from './props/prop-classes.ts'
 
 export type { XslateAdapterOptions } from './lib/types.ts'
 import type { XslateAdapterOptions } from './lib/types.ts'
@@ -108,14 +121,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   templatePrimitives: TemplatePrimitiveRegistry = XSLATE_PRIMITIVE_EMIT_MAP
 
-  private componentName: string = ''
+  componentName: string = ''
   /** Component root scope element(s) — each carries `data-key` for a keyed loop
    *  item (set by the child renderer from the JSX `key` prop). A plain element
    *  root is one node; an `if-statement` (early-return) root contributes the
    *  top element of every branch. */
   private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<XslateAdapterOptions>
-  private errors: CompilerError[] = []
+  errors: CompilerError[] = []
   private inLoop: boolean = false
   /**
    * SolidJS-style props identifier (`function(props: P)`) and the
@@ -124,7 +137,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * an inline Kolon hashref literal without re-walking the IR.
    */
   private propsObjectName: string | null = null
-  private propsParams: { name: string }[] = []
+  propsParams: { name: string }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * Names (signal getters + props) whose value is a string, so `===`/`!==`
@@ -160,7 +173,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * Stashed at `generate()` entry so `emitSpread` can resolve a bare local
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
-  private localConstants: IRMetadata['localConstants'] = []
+  localConstants: IRMetadata['localConstants'] = []
 
   /**
    * Optional, no-default props that are `undef` when the caller omits them.
@@ -191,38 +204,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // (`data-active={props.isActive}`) must stringify as JS
     // `String(boolean)` ("true"/"false"), not Perl's native `1`/`''`
     // (#1897, pagination's data-active).
-    this.booleanTypedProps = new Set(
-      ir.metadata.propsParams
-        .filter(prop => prop.type?.primitive === 'boolean' || prop.type?.raw === 'boolean')
-        .map(prop => prop.name),
-    )
+    // Per-compile prop classifications (see `props/prop-classes.ts`).
+    this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
-    // Bare references to optional, no-default, non-primitive props (e.g.
-    // textarea's `rows`) are `undef` when omitted → `defined`-guarded in
-    // `emitExpression`. See the `nullableOptionalProps` field docstring.
-    this.nullableOptionalProps = new Set(
-      ir.metadata.propsParams
-        .filter(
-          p =>
-            p.defaultValue === undefined &&
-            !p.isRest &&
-            p.type?.kind !== 'primitive',
-        )
-        .map(p => p.name),
-    )
-    // Record string-typed signals and props so equality comparisons against
-    // them lower to `eq`/`ne`. A signal is string-typed when its inferred
-    // type is `string` (or, defensively, when its initial value is a bare
-    // string literal); a prop when its annotated type is `string`.
-    this.stringValueNames = new Set<string>()
-    for (const s of ir.metadata.signals) {
-      if (isStringTypeInfo(s.type) || isBareStringLiteral(s.initialValue)) {
-        this.stringValueNames.add(s.getter)
-      }
-    }
-    for (const p of ir.metadata.propsParams) {
-      if (isStringTypeInfo(p.type)) this.stringValueNames.add(p.name)
-    }
+    this.nullableOptionalProps = collectNullableOptionalProps(ir)
+    this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this.errors = []
@@ -235,7 +221,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Surface it loudly here. Suppressed when the caller guarantees that all
     // sibling templates are registered on the same instance at render time.
     if (!options?.siblingTemplatesRegistered) {
-      this.checkImportedLoopChildComponents(ir)
+      this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName))
     }
 
     this.rootScopeNodes = collectRootScopeNodes(ir.root)
@@ -251,13 +237,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // SSR context consumers (`const x = useContext(Ctx)`): seed each local
     // from the active provider value (or the `createContext` default). The
     // provider side pushes the value via `emitProvider`. (#1297)
-    const ctxSeed = this.generateContextConsumerSeed(ir)
+    const ctxSeed = generateContextConsumerSeed(ir)
 
     // Prop/signal-derived memos with a `null` static SSR default (e.g.
     // `createMemo(() => props.value * 10)`) are computed in-template from the
     // already-seeded prop/signal vars — mirroring Go's generated child
     // constructor. (#1297)
-    const memoSeed = this.generateDerivedMemoSeed(ir)
+    const memoSeed = generateDerivedMemoSeed(this, ir)
 
     const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
 
@@ -289,7 +275,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // ===========================================================================
 
   private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string): string {
-    const hasInteractivity = this.hasClientInteractivity(ir)
+    const hasInteractivity = hasClientInteractivity(ir)
     if (!hasInteractivity) return ''
 
     const name = scriptBaseName ?? ir.metadata.componentName
@@ -307,15 +293,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     lines.push(`: my $_bf_reg1 = $bf.register_script('${clientJsPath}');`)
     lines.push('')
     return lines.join('\n')
-  }
-
-  private hasClientInteractivity(ir: ComponentIR): boolean {
-    return (
-      ir.metadata.signals.length > 0 ||
-      ir.metadata.effects.length > 0 ||
-      ir.metadata.onMounts.length > 0 ||
-      (ir.metadata.clientAnalysis?.needsInit ?? false)
-    )
   }
 
   // ===========================================================================
@@ -436,105 +413,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return `${key} => ${this.convertExpressionToKolon(src)}`
     })
     return `{ ${entries.join(', ')} }`
-  }
-
-  /** Kolon literal for a context-consumer's `createContext` default. */
-  private contextDefaultKolon(c: ContextConsumer): string {
-    const d = c.defaultValue
-    if (d === null || d === undefined) return 'nil'
-    if (typeof d === 'string') return `'${d.replace(/[\\']/g, m => `\\${m}`)}'`
-    if (typeof d === 'boolean') return d ? '1' : '0'
-    return String(d)
-  }
-
-  /**
-   * Emit one `: my $<local> = $bf.use_context(...)` line-statement per
-   * context consumer so the body's bare `$<local>` resolves to the active
-   * provider value (or the `createContext` default). (#1297)
-   */
-  private generateContextConsumerSeed(ir: ComponentIR): string {
-    const consumers = collectContextConsumers(ir.metadata)
-    if (consumers.length === 0) return ''
-    return (
-      consumers
-        .map(
-          c =>
-            `: my $${c.localName} = $bf.use_context('${c.contextName}', ${this.contextDefaultKolon(c)});`,
-        )
-        .join('\n') + '\n'
-    )
-  }
-
-  /**
-   * Seed memos whose SSR default is `null` (not statically evaluable) by
-   * computing them in-template from the already-seeded prop / signal vars
-   * (`createMemo(() => props.value * 10)` → `: my $x = $value * 10;`). Without
-   * this the memo's `$x` renders empty — the reason
-   * `props-reactivity-comparison` was skipped. Only emitted when every var the
-   * lowering references is already in scope. (#1297)
-   */
-  private generateDerivedMemoSeed(ir: ComponentIR): string {
-    const memos = ir.metadata.memos ?? []
-    const signals = ir.metadata.signals ?? []
-    if (memos.length === 0 && signals.length === 0) return ''
-    // Props seed first; each signal/memo adds its own name as it lands.
-    const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
-    const lines: string[] = []
-
-    // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
-    // a loop-child render gets no stash seed, so its `$on` would render nil;
-    // and the static default can't capture the per-call prop. Seed it
-    // in-template when the init lowers cleanly AND references an in-scope var.
-    // Object/array/constant inits keep the existing ssr-defaults seeding.
-    for (const signal of signals) {
-      const kolon = this.tryLowerToKolon(signal.initialValue, available)
-      // Kolon can't express `: my $x = … $x …` — declaring `my $x` makes the
-      // RHS `$x` an undefined lexical rather than the render var. A same-name
-      // signal (`createSignal(props.x ?? d)`, getter == prop) is just the prop
-      // with a default, which the harness already seeds correctly from the
-      // passed prop — skip the in-template seed for it. (Different-name
-      // prop-derived signals like toggle's `on` from `defaultOn` are unaffected.)
-      const refsSelf = kolon !== null && new RegExp(`\\$${signal.getter}\\b`).test(kolon)
-      if (kolon !== null && !refsSelf) lines.push(`: my $${signal.getter} = ${kolon};`)
-      available.add(signal.getter)
-    }
-
-    for (const memo of memos) {
-      // Seed every memo whose body lowers cleanly — not just the ones whose
-      // static SSR default is null. A statically-foldable prop-derived memo
-      // (`createMemo(() => props.disabled ?? false)` → default `false`)
-      // still depends on the per-call prop: the static stash seed bakes in
-      // the absent-prop fold, so a caller passing `disabled => 1` would
-      // render the default branch (#1897, select's disabled item). The
-      // in-template recomputation reads the prop lexical already in scope;
-      // block-bodied arrows / out-of-scope references fall back to the
-      // static ssr-defaults seed. Same self-reference guard as the signal
-      // loop above — Kolon's `my` shadows the render var on the RHS.
-      const body = extractArrowBodyExpression(memo.computation)
-      if (body !== null) {
-        const kolon = this.tryLowerToKolon(body, available)
-        const refsSelf = kolon !== null && new RegExp(`\\$${memo.name}\\b`).test(kolon)
-        if (kolon !== null && !refsSelf) lines.push(`: my $${memo.name} = ${kolon};`)
-      }
-      available.add(memo.name)
-    }
-    return lines.length > 0 ? lines.join('\n') + '\n' : ''
-  }
-
-  /**
-   * Lower a signal init / memo body to Kolon for an in-template SSR seed, or
-   * `null` when it shouldn't be seeded this way: not a supported shape
-   * (`isSupported` pre-check, so object/array literals don't fail the build),
-   * references no in-scope var (a constant — keep ssr-defaults seeding), or
-   * references an out-of-scope binding. (#1297)
-   */
-  private tryLowerToKolon(expr: string, available: ReadonlySet<string>): string | null {
-    const trimmed = expr.trim()
-    if (!trimmed) return null
-    if (!isSupported(parseExpression(trimmed)).supported) return null
-    const kolon = this.convertExpressionToKolon(trimmed)
-    if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) return null
-    return referencedVarsAreAvailable(kolon, available) ? kolon : null
   }
 
   emitAsync(node: IRAsync, _ctx: XslateRenderCtx, _emit: EmitIRNode<XslateRenderCtx>): string {
@@ -668,85 +546,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     }
     // Fall back to comment markers for non-element content
     return `<: $bf.comment("cond-start:${condId}") | mark_raw :>${content}<: $bf.comment("cond-end:${condId}") | mark_raw :>`
-  }
-
-  // ===========================================================================
-  // Imported-component-in-loop check (BF103)
-  // ===========================================================================
-
-  /**
-   * Push a `BF103` diagnostic for every component reference inside a loop body
-   * whose name is imported from a relative-path module. Mirror of the Mojo
-   * adapter's check — the Xslate adapter has the same cross-template-
-   * registration constraint at request time.
-   */
-  private checkImportedLoopChildComponents(ir: ComponentIR): void {
-    const relativeImports = new Set<string>()
-    for (const imp of ir.metadata.templateImports ?? ir.metadata.imports ?? []) {
-      if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
-      if (imp.isTypeOnly) continue
-      for (const spec of imp.specifiers) {
-        relativeImports.add(spec.alias ?? spec.name)
-      }
-    }
-    if (relativeImports.size === 0) return
-
-    const loc = { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
-    const visit = (node: IRNode, inLoop: boolean): void => {
-      switch (node.type) {
-        case 'component': {
-          const comp = node as IRComponent
-          if (inLoop && relativeImports.has(comp.name)) {
-            this.errors.push({
-              code: 'BF103',
-              severity: 'error',
-              message: `Component <${comp.name}> is imported from a sibling module and used inside a loop. The Xslate adapter emits a cross-template call; the child template must be registered alongside the parent at render time.`,
-              loc: comp.loc ?? loc,
-              suggestion: {
-                message:
-                  `Options:\n` +
-                  `  1. Compile '${comp.name}' (its source file) with the same adapter and register the resulting Xslate template alongside the parent at render time.\n` +
-                  `  2. Inline <${comp.name}> directly inside the loop body so no cross-file template lookup is needed.\n` +
-                  `  3. Mark the loop position as @client-only so the template is materialised on the client instead of at SSR time.`,
-              },
-            })
-          }
-          for (const child of comp.children) visit(child, inLoop)
-          break
-        }
-        case 'element':
-          for (const child of (node as IRElement).children) visit(child, inLoop)
-          break
-        case 'fragment':
-          for (const child of (node as IRFragment).children) visit(child, inLoop)
-          break
-        case 'conditional': {
-          const cond = node as IRConditional
-          visit(cond.whenTrue, inLoop)
-          if (cond.whenFalse) visit(cond.whenFalse, inLoop)
-          break
-        }
-        case 'loop':
-          for (const child of (node as IRLoop).children) visit(child, true)
-          break
-        case 'if-statement': {
-          const stmt = node as IRIfStatement
-          visit(stmt.consequent, inLoop)
-          if (stmt.alternate) visit(stmt.alternate, inLoop)
-          break
-        }
-        case 'provider':
-          for (const child of (node as IRProvider).children) visit(child, inLoop)
-          break
-        case 'async': {
-          const a = node as IRAsync
-          visit(a.fallback, inLoop)
-          for (const child of a.children) visit(child, inLoop)
-          break
-        }
-      }
-    }
-    visit(ir.root, false)
   }
 
   // ===========================================================================
@@ -911,7 +710,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
       // guard so the common non-object case skips the AST parse.
       if (value.expr.trim().startsWith('{')) {
-        const hashref = this.objectLiteralExprToKolonHashref(value.expr)
+        const hashref = objectLiteralExprToKolonHashref(this, value.expr)
         if (hashref !== null) return `${kolonHashKey(name)} => ${hashref}`
       }
       return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr)}`
@@ -1189,7 +988,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // Emit a Kolon inline ternary of hashrefs — Perl truthiness handles the
       // condition for free, and the falsy `{}` branch OMITS the key
       // (`spread_attrs` does NOT emit empty hashref entries).
-      const ternaryHashref = this.conditionalSpreadToKolon(trimmed)
+      const ternaryHashref = conditionalSpreadToKolon(this, trimmed)
       if (ternaryHashref !== null) {
         return `<: $bf.spread_attrs(${ternaryHashref}) | mark_raw :>`
       }
@@ -1206,7 +1005,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         if (localConst?.value !== undefined) {
           const initTrimmed = localConst.value.trim()
           if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
-            const resolved = this.conditionalSpreadToKolon(initTrimmed)
+            const resolved = conditionalSpreadToKolon(this, initTrimmed)
             if (resolved !== null) {
               return `<: $bf.spread_attrs(${resolved}) | mark_raw :>`
             }
@@ -1489,141 +1288,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return true
   }
 
-  /**
-   * Lower a conditional inline-object spread
-   *   `COND ? { 'aria-describedby': describedBy } : {}`
-   * to a Kolon inline ternary of hashrefs
-   *   `$describedBy ? { 'aria-describedby' => $describedBy } : {}`.
-   * Both branches must be object literals; the condition + values route through
-   * `convertExpressionToKolon`. Returns `null` for any other shape so the caller
-   * falls back to its normal lowering. Mirror of `conditionalSpreadToPerl`.
-   */
-  private conditionalSpreadToKolon(expr: string): string | null {
-    const sf = ts.createSourceFile('__spread.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
-    if (sf.statements.length !== 1) return null
-    const stmt = sf.statements[0]
-    if (!ts.isExpressionStatement(stmt)) return null
-    let node: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(node)) node = node.expression
-    if (!ts.isConditionalExpression(node)) return null
-    const unwrap = (e: ts.Expression): ts.Expression => {
-      let n = e
-      while (ts.isParenthesizedExpression(n)) n = n.expression
-      return n
-    }
-    const whenTrue = unwrap(node.whenTrue)
-    const whenFalse = unwrap(node.whenFalse)
-    if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
-      return null
-    }
-    const condPerl = this.convertExpressionToKolon(node.condition.getText(sf))
-    const truePerl = this.objectLiteralToKolonHashref(whenTrue, sf)
-    const falsePerl = this.objectLiteralToKolonHashref(whenFalse, sf)
-    if (truePerl === null || falsePerl === null) return null
-    return `${condPerl} ? ${truePerl} : ${falsePerl}`
-  }
-
-  /**
-   * Convert a static object literal into a Kolon hashref string for a
-   * conditional spread. Only static string/identifier keys are allowed; values
-   * resolve via `convertExpressionToKolon` (or the `Record[propKey]` index
-   * lowering). Returns `null` for any computed/spread/dynamic key. Empty object
-   * → `{}`. Mirror of `objectLiteralToPerlHashref`.
-   */
-  /**
-   * (#1971 Perl) Parse a bare object-literal expression string
-   * (`{ align: 'start' }`) and lower it to a Kolon hashref via
-   * `objectLiteralToKolonHashref`, or null when it isn't a plain object
-   * literal. Used for inline object-literal child props (carousel `opts`).
-   */
-  private objectLiteralExprToKolonHashref(expr: string): string | null {
-    const sf = ts.createSourceFile('__obj.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
-    if (sf.statements.length !== 1) return null
-    const stmt = sf.statements[0]
-    if (!ts.isExpressionStatement(stmt)) return null
-    let node: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(node)) node = node.expression
-    if (!ts.isObjectLiteralExpression(node)) return null
-    return this.objectLiteralToKolonHashref(node, sf)
-  }
-
-  private objectLiteralToKolonHashref(
-    obj: ts.ObjectLiteralExpression,
-    sf: ts.SourceFile,
-  ): string | null {
-    const entries: string[] = []
-    for (const prop of obj.properties) {
-      if (!ts.isPropertyAssignment(prop)) return null
-      let key: string
-      if (ts.isIdentifier(prop.name)) {
-        key = prop.name.text
-      } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
-        key = prop.name.text
-      } else {
-        return null
-      }
-      const initNode = (() => {
-        let n: ts.Expression = prop.initializer
-        while (ts.isParenthesizedExpression(n)) n = n.expression
-        return n
-      })()
-      const indexed = this.recordIndexAccessToKolon(initNode)
-      if (
-        indexed === null &&
-        ts.isElementAccessExpression(initNode) &&
-        initNode.argumentExpression &&
-        !ts.isNumericLiteral(initNode.argumentExpression) &&
-        !ts.isStringLiteral(initNode.argumentExpression)
-      ) {
-        // Variable-index record access (`sizeMap[size]`) the static-inline
-        // path couldn't resolve (non-scalar value / non-const receiver).
-        // Since #1897 made variable indices parseable (`index-access`),
-        // the generic value lowering would emit `$sizeMap[$size]` against
-        // an UNBOUND module const instead of refusing — record BF101 and
-        // bail so the spread surfaces the out-of-shape diagnostic,
-        // matching pre-#1897 behaviour. (Mirrors the Mojo adapter.)
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Spread object value '${initNode.getText(sf)}' indexes a record map whose values aren't scalar literals — it can't lower to an inline Kolon hashref.`,
-          loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message: 'Index a record whose values are number/string literals, or move the spread into a `\'use client\'` component so hydration computes it.',
-          },
-        })
-        return null
-      }
-      const valPerl =
-        indexed !== null
-          ? indexed
-          : this.convertExpressionToKolon(prop.initializer.getText(sf))
-      entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valPerl}`)
-    }
-    return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
-  }
-
-  /**
-   * Lower a spread-object VALUE of the form `IDENT[KEY]` (CheckIcon's
-   * `sizeMap[size]`) to an inline indexed Kolon hashref
-   *   `{ 'sm' => 16, 'md' => 20, ... }[$size]`.
-   * Reuses the shared structural parse (`parseRecordIndexAccess`); this wrapper
-   * only does the single-quote escaping + Kolon index emit. NB: Kolon indexes a
-   * hashref literal with bracket syntax `{…}[$key]`, NOT Perl's arrow-deref
-   * `{…}->{$key}` (which Kolon's parser rejects) — this is the one divergence
-   * from the Mojo `recordIndexAccessToPerl` emit.
-   */
-  private recordIndexAccessToKolon(val: ts.Expression): string | null {
-    const parsed = parseRecordIndexAccess(val, this.localConstants ?? [], this.propsParams)
-    if (!parsed) return null
-    const entries = parsed.entries.map(e => {
-      const mapVal =
-        e.value.kind === 'number' ? e.value.text : `'${escapeKolonSingleQuoted(e.value.text)}'`
-      return `'${escapeKolonSingleQuoted(e.key)}' => ${mapVal}`
-    })
-    return `{ ${entries.join(', ')} }[$${parsed.indexPropName}]`
-  }
-
-  private convertExpressionToKolon(expr: string): string {
+  convertExpressionToKolon(expr: string): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST

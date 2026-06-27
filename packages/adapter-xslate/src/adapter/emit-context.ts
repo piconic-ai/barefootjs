@@ -16,7 +16,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata } from '@barefootjs/jsx'
 
 export interface XslateEmitContext {
   /**
@@ -45,4 +45,40 @@ export interface XslateEmitContext {
 
   /** Lower a filter/predicate body to its Kolon form, bound to `param`. */
   _renderKolonFilterExprPublic(expr: ParsedExpr, param: string): string
+}
+
+/**
+ * The contract the extracted object-literal / conditional-spread lowering
+ * (`spread/spread-codegen.ts`) depends on. The spread lowering recurses into
+ * the core expression lowering and records its own BF101 diagnostics, so it
+ * needs the recursive entry point plus the per-compile bookkeeping the
+ * adapter owns. Declared separately from `XslateEmitContext` so each
+ * extracted module's real coupling is documented precisely.
+ */
+export interface XslateSpreadContext {
+  /** Component name, for diagnostic source locations. */
+  readonly componentName: string
+
+  /** Per-compile diagnostic list the spread lowering appends to. */
+  readonly errors: CompilerError[]
+
+  /** Local-constant metadata, for resolving `Record[key]` spread values. */
+  readonly localConstants: IRMetadata['localConstants']
+
+  /** Prop params, for classifying a bare-identifier index as a prop. */
+  readonly propsParams: { name: string }[]
+
+  /** Lower a JS expression to its Kolon form (the core recursive entry). */
+  convertExpressionToKolon(expr: string): string
+}
+
+/**
+ * The contract the extracted in-template memo / context seeding
+ * (`memo/seed.ts`) depends on. The seed lowering recurses into the core
+ * expression lowering to compute a derived signal/memo value or a context
+ * default; that recursive entry is its only adapter coupling.
+ */
+export interface XslateMemoContext {
+  /** Lower a JS expression to its Kolon form (the core recursive entry). */
+  convertExpressionToKolon(expr: string): string
 }
