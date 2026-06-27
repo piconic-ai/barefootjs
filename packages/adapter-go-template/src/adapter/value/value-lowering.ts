@@ -5,19 +5,15 @@
  * initial values into the SSR data context — scalars, prop references, and
  * fully-literal arrays/objects — and falls back to `nil`/`0` for anything the
  * parser can't reduce to a literal. They depend on the context's `state`
- * (struct-field / type-alias tables), `parseLiteralExpression`, and
- * `extractPropNameFromInitialValue`, plus `typeInfoToGo` from the type-codegen
- * module.
+ * (struct-field / type-alias tables) and `extractPropNameFromInitialValue`,
+ * plus `typeInfoToGo` from the type-codegen module.
  */
-
-import ts from 'typescript'
 
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
@@ -81,7 +77,7 @@ export function convertInitialValue(
     // Bake a fully-literal initial value into a Go slice literal; anything
     // the parser can't reduce to a literal — a call, an identifier, `null` /
     // `undefined`, or an empty array — yields null and we keep `nil`.
-    return jsLiteralToGo(ctx, value, typeInfo, preParsed) ?? 'nil'
+    return jsLiteralToGo(ctx, typeInfo, preParsed) ?? 'nil'
   }
 
   // String alias (e.g., Filter = string) — return string value instead of nil
@@ -100,39 +96,43 @@ export function convertInitialValue(
 }
 
 /**
- * Convert a fully-literal JS expression string into an equivalent Go literal
- * whose Go type matches `typeInfo` (#1672), used to bake a signal's inline
- * initial value into the SSR data context:
+ * Convert a fully-literal JS expression — carried as the analyzer's structured
+ * `ParsedExpr` tree (#2006) — into an equivalent Go literal whose Go type
+ * matches `typeInfo` (#1672), used to bake a signal's inline initial value into
+ * the SSR data context:
  *
  *   `["x", "y"]`             (string[])  → `[]string{"x", "y"}`
  *   `["x", "y"]`             (unknown[]) → `[]interface{}{"x", "y"}`
  *   `[{ id: "a" }]`          (Item[])    → `[]Item{Item{ID: "a"}}`
  *
- * Returns `null` — so the caller keeps `nil` — when the expression (or any
- * nested element) is not a pure literal (a call, identifier, template with
- * interpolation, …) or cannot be expressed in the target Go type without a
- * render/compile mismatch (e.g. an object element in a `[]interface{}` field,
- * which the SSR template reaches via struct field access the map lacks).
+ * Returns `null` — so the caller keeps `nil` — when no structured tree was
+ * carried (the analyzer's `parseExpression` returned `unsupported`), or when
+ * the tree (or any nested element) is not a pure literal (a call, identifier,
+ * template with interpolation, …) or cannot be expressed in the target Go type
+ * without a render/compile mismatch (e.g. an object element in a `[]interface{}`
+ * field, which the SSR template reaches via struct field access the map lacks).
  */
 export function jsLiteralToGo(
   ctx: GoEmitContext,
-  value: string,
   typeInfo: TypeInfo,
   preParsed?: ParsedExpr,
 ): string | null {
-  // Roadmap A: when the analyzer carried a structured parse, lower the literal
-  // from the tree first. `parsedLiteralToGo` reproduces the scalar / scalar-
-  // array shapes exactly and returns null to DEFER everything else (object
-  // baking, empty arrays, `as const`, …) to the `ts.createSourceFile` path
-  // below, so behaviour stays byte-identical — only the reproduced shapes skip
-  // the re-parse.
+  // Roadmap A (terminal sweep, #2006): lower the literal from the carried
+  // structured parse only. `parsedLiteralToGo` reproduces every bakeable shape
+  // (scalars, a unary-minus number, scalar arrays, and objects against a local
+  // struct) and returns null to keep `nil` for everything else (empty arrays,
+  // objects with no known struct, identifiers / calls, nested object/array
+  // values, `as const`). The former `ctx.parseLiteralExpression` +
+  // `tsLiteralToGo` re-parse fallback covered the same bakeable shapes — every
+  // shape the analyzer's `parseExpression` leaves `unsupported` (so `preParsed`
+  // is absent) is also one the fallback's own `ts.is*` checks declined — so
+  // dropping it is byte-identical (verified by the 786/556 adapter gauntlet,
+  // the project's byte-identity authority).
   if (preParsed) {
     const structured = parsedLiteralToGo(ctx, preParsed, typeInfo)
     if (structured !== null) return structured
   }
-  const expr = ctx.parseLiteralExpression(value)
-  if (!expr) return null
-  return tsLiteralToGo(ctx, expr, typeInfo)
+  return null
 }
 
 /**
@@ -170,100 +170,6 @@ export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): stri
   }
   if (entries.length === 0) return null
   return `map[string]interface{}{${entries.join(', ')}}`
-}
-
-/**
- * Recursively convert a TS literal AST node to a Go literal typed as
- * `typeInfo`, or null when the node is not a pure literal / cannot be
- * represented in that Go type.
- */
-export function tsLiteralToGo(
-  ctx: GoEmitContext,
-  node: ts.Expression,
-  typeInfo?: TypeInfo,
-): string | null {
-  // Unwrap a leading unary minus on a numeric literal (`-1`).
-  if (
-    ts.isPrefixUnaryExpression(node) &&
-    node.operator === ts.SyntaxKind.MinusToken &&
-    ts.isNumericLiteral(node.operand)
-  ) {
-    return `-${node.operand.text}`
-  }
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-    return JSON.stringify(node.text)
-  }
-  // Pass the numeric literal's source spelling through verbatim. Every form
-  // the TS parser accepts here (`1`, `1.5`, `1e3`, `0x10`, `1_000`) is also a
-  // valid Go numeric literal, so no re-formatting is needed.
-  if (ts.isNumericLiteral(node)) return node.text
-  if (node.kind === ts.SyntaxKind.TrueKeyword) return 'true'
-  if (node.kind === ts.SyntaxKind.FalseKeyword) return 'false'
-  if (node.kind === ts.SyntaxKind.NullKeyword) return 'nil'
-
-  if (ts.isArrayLiteralExpression(node)) {
-    // An empty array literal (`[]`, and — since the TS parser tolerates
-    // whitespace/comments — `[ ]`, `[/* */]`) carries no items, so there's
-    // nothing to bake. Returning null keeps the field `nil`, which JSON-
-    // marshals as `null` rather than the `[]` an empty slice would produce.
-    if (node.elements.length === 0) return null
-
-    // Slice header mirrors the field's Go type (`[]string`, `[]Item`,
-    // `[]interface{}`); elements are converted against the element type.
-    const elemType = typeInfo?.kind === 'array' ? typeInfo.elementType : undefined
-    const sliceHeader = typeInfo?.kind === 'array'
-      ? typeInfoToGo(ctx, typeInfo)
-      : '[]interface{}'
-    const elems: string[] = []
-    for (const el of node.elements) {
-      const go = tsLiteralToGo(ctx, el, elemType)
-      if (go === null) return null
-      elems.push(go)
-    }
-    return `${sliceHeader}{${elems.join(', ')}}`
-  }
-
-  if (ts.isObjectLiteralExpression(node)) {
-    // An object can only be baked when the target Go type is a concrete
-    // struct — otherwise it would land in `interface{}` / a map the SSR
-    // template can't reach via field access. The struct's field map is the
-    // source of truth: it tells us the exact Go field name for each source
-    // key and, by omission, which keys the struct doesn't declare. Bail
-    // (→ nil) when the type isn't a known struct.
-    const goType = typeInfo ? typeInfoToGo(ctx, typeInfo) : 'interface{}'
-    const structFields = ctx.state.localStructFields.get(goType)
-    if (!structFields) return null
-    const entries: string[] = []
-    for (const prop of node.properties) {
-      // Only plain `key: scalar` pairs are baked; spreads, methods,
-      // shorthand, computed/accessor members, and nested object/array
-      // values (whose struct field types we don't track here) bail to nil.
-      if (!ts.isPropertyAssignment(prop)) return null
-      if (
-        !ts.isIdentifier(prop.name) &&
-        !ts.isStringLiteral(prop.name) &&
-        !ts.isNumericLiteral(prop.name)
-      ) {
-        return null
-      }
-      // Resolve the Go field name from the struct's own field map rather
-      // than re-deriving it. A key the struct doesn't declare (a typo, or a
-      // non-identifier key like `"data-id"` that never became a field) is
-      // absent here, so we bail to nil instead of emitting a literal that
-      // names a nonexistent field and won't compile.
-      const goField = structFields.get(prop.name.text)
-      if (!goField) return null
-      const init = prop.initializer
-      if (ts.isObjectLiteralExpression(init) || ts.isArrayLiteralExpression(init)) {
-        return null
-      }
-      const go = tsLiteralToGo(ctx, init)
-      if (go === null) return null
-      entries.push(`${goField}: ${go}`)
-    }
-    return `${goType}{${entries.join(', ')}}`
-  }
-  return null
 }
 
 /**
