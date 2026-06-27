@@ -799,7 +799,16 @@ export function parseExpression2(expr: string): ParsedExpr2 {
  * conversion without re-parsing source via `ts.createSourceFile`.
  */
 export function tsNodeToParsedExpr2(node: ts.Node): ParsedExpr2 {
-  return convertNode2(node, '')
+  // Preserve the node's source in `raw` (like `parseExpression2`), so an
+  // `unsupported` result still carries the original text for debugging. A
+  // synthetic node with no source file can't yield text — fall back to ''.
+  let raw = ''
+  try {
+    raw = node.getText()
+  } catch {
+    /* synthetic node without a source file */
+  }
+  return convertNode2(node, raw)
 }
 
 /** Convert a TypeScript AST node to {@link ParsedExpr2} (parentheses unwrapped). */
