@@ -663,7 +663,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * properties — no string parsing of the definition. This is the single
    * source of truth for which fields a generated struct has and each field's Go
    * name/type; both the struct emitter ({@link typeDefinitionToGo}) and the
-   * object-literal baker ({@link tsLiteralToGo}) consume it, so a baked literal
+   * object-literal baker ({@link parsedLiteralToGo}) consume it, so a baked literal
    * can never name a field the struct doesn't declare.
    *
    * A property whose source key isn't a valid Go identifier (`"data-id"`, a
@@ -1549,13 +1549,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         : null
       const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
       let bakedValue = moduleConst?.type
-        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams)
+        ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams, moduleConst.parsed)
         : null
       // (#1971) Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no
       // named module const to look up, so bake the literal slice directly so
       // SSR renders the items (matching Hono) instead of an empty loop.
       if (!bakedValue && scalarLoopType) {
-        bakedValue = jsLiteralToGo(this.emitCtx, nested.loopArray!, { kind: 'unknown', raw: 'unknown' })
+        bakedValue = jsLiteralToGo(
+          this.emitCtx,
+          { kind: 'unknown', raw: 'unknown' },
+          nested.loopArrayParsed,
+        )
       }
       if (!bakedValue || bakedValue === 'nil' || bakedValue === '0') continue
 

@@ -327,6 +327,7 @@ export function computeMemoInitialValueOrNull(
       blockReturn.constValue,
       blockReturn.constType,
       propsParams,
+      blockReturn.constParsed,
     )
   }
 
