@@ -552,6 +552,52 @@ interface level; `JsxAdapter` is purely code reuse.
 
 When implementing a new adapter, handle these concerns in addition to the basic `TemplateAdapter` interface:
 
+#### ParsedExpr Evaluator Semantics
+
+> Status: contract defined (issue [#2018](https://github.com/piconic-ai/barefootjs/issues/2018), Track A). Go (`bf.go`) and shared Perl (`BarefootJS::Evaluator`) implementations land in Tracks B / C.
+
+Templates carry ordinary expressions structurally and lower them to **template-native** syntax — that is unchanged, and the evaluator described here is **not** a general expression engine. The one place a template genuinely cannot express the source is a **higher-order callback body**: `reduce` / `sort` / `map` / `filter` / `find` `(…) => expr`. A template cannot hold a lambda in expression position, which is *why* the adapter historically special-cased these callbacks into fixed shapes (`bf_sort`'s comparator catalogue, `bf_reduce`'s `+`/`*` fold with an `acc`-canonical form). This evaluator replaces that ad-hoc list: each backend runtime carries the callback **body** as a `ParsedExpr` subtree and **evaluates** it against an environment.
+
+This subsection pins the evaluator's contract so the backends stay byte-isomorphic. The semantic source of truth is the JS reference evaluator at `packages/adapter-tests/helper-vectors/eval-reference.ts`; the cross-language golden vectors are `eval-vectors.json` (generated from `eval-cases.ts`, consumed by the Go and Perl harnesses).
+
+**The environment.** Evaluation is against a flat map of names to values: the higher-order parameters (`acc`, `item`, and the second `sort` operand) plus any captured free variables (outer `const` / signal references). A reference to a name not in the environment is **refused** (the callback is not a closed pure expression).
+
+**Value domain.** JSON-shaped values: IEEE-754 number, string, boolean, null, array, object. There is no `undefined` — a missing object field and an out-of-range array index both read as **null** (the backends' single absent value).
+
+**Accepted node kinds** (any other kind in a callback body — `arrow-fn`, `higher-order`, `array-method`, etc. — is refused):
+
+| Kind | Semantics |
+|---|---|
+| `literal` | the literal value |
+| `identifier` | environment lookup; an unbound name is refused |
+| `binary` | `+` `-` `*` `/` `%`, relational `<` `<=` `>` `>=`, strict `===` `!==` (see below) |
+| `unary` | `!` (logical not), `-` (numeric negate), `+` (numeric coerce) |
+| `logical` | `&&` `\|\|` `??` — short-circuit, **operand-returning** (not coerced to boolean) |
+| `conditional` | ternary; the test uses JS truthiness; only the taken branch is evaluated |
+| `member` | `obj.field` → field or null; `.length` on a string/array; reading a field of null is refused |
+| `index-access` | `obj[i]` → array element (integer, in-range, else null) or object field by string key |
+| `template-literal` | string parts verbatim; expression parts coerced via ToString |
+| `array-literal` / `object-literal` | element/property values evaluated left-to-right |
+| `call` | **allowlisted builtins only**: `Math.max` / `Math.min` / `Math.abs` / `Math.floor` / `Math.ceil` / `Math.round`, and `String` / `Number` / `Boolean`. Any other callee is refused. |
+
+**Evaluation order.** Strict left-to-right. Operands are evaluated before the operator is applied, except for the short-circuiting forms (`&&`, `||`, `??`, and the ternary), which evaluate the right/branch operand only when reached.
+
+**Coercion (the literal JS rules — not the divergent `bf->string` / `bf_reduce` helper conventions):**
+- *ToNumber*: number → itself; boolean → 1 / 0; null → 0; string → trimmed parse (empty → 0, non-numeric → NaN).
+- *ToString*: string → itself; number → JS number-to-string; boolean → `"true"` / `"false"`; null → `"null"`.
+- *ToBoolean* (truthiness, used by `!`, `&&`, `||`, ternary): the JS falsy set is `false`, `0`, `NaN`, `""`, `null`. Everything else is truthy — notably the string `"0"`, an empty array, and an empty object.
+
+**Operator details:**
+- `+` is overloaded exactly like JS: if either operand is a string, both are ToString'd and concatenated; otherwise both are ToNumber'd and added. `-` `*` `/` `%` are always numeric.
+- Relational `<` `<=` `>` `>=` follow JS Abstract Relational Comparison: if **both** operands are strings, compare by code unit (case-sensitive — uppercase sorts before lowercase); otherwise ToNumber both (a NaN operand makes the comparison false).
+- Equality is **strict only** (`===` / `!==`): equal type and value, no coercion; a non-primitive operand is refused. Loose `==` / `!=` and bitwise/shift operators are deliberately **out of the subset** (their coercion is hard to keep byte-isomorphic).
+- `&&` returns its left operand when that is falsy, else the right; `||` returns its left when truthy, else the right; `??` returns its left unless the left is null. All three return the operand value, not a coerced boolean.
+- `Math.round` rounds a half **toward +Infinity** (`2.5 → 3`, `-2.5 → -2`), matching the existing `round` helper rather than Go's `math.Round` (which rounds half away from zero).
+
+**Deliberate exclusions for isomorphism.** Locale-sensitive operations are not in the subset — most importantly `String.prototype.localeCompare`, whose ICU collation cannot be guaranteed byte-equal across JS / Go (`golang.org/x/text/collate`) / Perl (`Unicode::Collate`). This is the same barrier already documented for the `bf_sort` `string` key (see "Sort comparator follow-ups" under Known limitations); string ordering inside a comparator must use relational `<` / `>` (code-unit order), and non-ASCII relational comparison is a known divergence region.
+
+**Refusal.** A callback body using anything outside this subset (an unaccepted node kind, operator, builtin, or an unbound identifier) is **unsupported** and surfaces **BF101** upstream, with `/* @client */` as the escape hatch — exactly as the off-catalogue `.reduce` does today. The evaluator is **growing-only**: widening the subset adds vectors and never removes a previously-accepted shape.
+
 #### Child Component Rendering
 
 Child components produce `IRComponent` nodes. The adapter emits a call to the runtime's child-render mechanism (e.g., `render_child('name', prop => val)`). Key rules:

@@ -10,6 +10,7 @@
   },
   "scripts": {
     "generate:helper-vectors": "bun helper-vectors/generate.ts",
+    "generate:eval-vectors": "bun helper-vectors/eval-generate.ts",
     "test:fixture-hydrate": "bunx playwright test --config=playwright.config.ts"
   },
   "dependencies": {

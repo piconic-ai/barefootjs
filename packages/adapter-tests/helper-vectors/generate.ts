@@ -32,7 +32,7 @@ export interface VectorFile {
  * encodable. Args must stay finite (refused loudly) until a
  * composition case needs otherwise.
  */
-function assertEncodable(value: unknown, context: string): void {
+export function assertEncodable(value: unknown, context: string): void {
   if (value === undefined) throw new Error(`${context}: undefined is not encodable in vectors.json`)
   if (typeof value === 'number' && !Number.isFinite(value)) {
     throw new Error(`${context}: non-finite number ${value} is not encodable in vectors.json`)
@@ -44,7 +44,7 @@ function assertEncodable(value: unknown, context: string): void {
   }
 }
 
-function encodeExpect(value: unknown, context: string): unknown {
+export function encodeExpect(value: unknown, context: string): unknown {
   // JS distinguishes undefined from null; the template backends have a
   // single absent value (Go nil / Perl undef). Per the spec, an
   // undefined EXPECT encodes as null (value-compat).
