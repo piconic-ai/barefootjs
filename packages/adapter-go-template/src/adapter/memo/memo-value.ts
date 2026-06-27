@@ -6,14 +6,12 @@
  *     const memo and reports the constant, reading `state.localConstants`.
  *   - `computeObjectMemoInitialValue` lowers a `searchParams()`-derived
  *     object-returning memo to a Go `map[string]interface{}` literal, reading
- *     `state.searchParamsLocals` and `parseLiteralExpression` and delegating
- *     value lowering to `lowerCtorExpr`.
+ *     the analyzer-carried `parsedBlock` and `state.searchParamsLocals` and
+ *     delegating value lowering to `lowerCtorExpr`.
  */
 
-import ts from 'typescript'
-
-import type { ParsedStatement, TypeInfo } from '@barefootjs/jsx'
-import { tsNodeToParsedExpr2 } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
+import { parsedExprToParsedExpr2 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -99,48 +97,52 @@ export function resolveBlockBodyMemoModuleConst(
  * match the template's `.Params.<Field>` map access. Returns null for any shape
  * the lowerer can't represent, so the caller falls back to a nil map.
  */
-export function computeObjectMemoInitialValue(ctx: GoEmitContext, computation: string): string | null {
-  const arrow = ctx.parseLiteralExpression(computation)
-  if (!arrow || !ts.isArrowFunction(arrow) || !ts.isBlock(arrow.body)) return null
+export function computeObjectMemoInitialValue(
+  ctx: GoEmitContext,
+  memo: { parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
+): string | null {
+  // Read the analyzer-carried block statements instead of re-parsing the
+  // `computation` source with `ts.createSourceFile` (#2006). An incomplete
+  // block (`parsedBlockComplete === false`) means a statement was omitted from
+  // the tolerant parse — it could hide control flow this resolver can't model,
+  // so bail to the nil fallback exactly as the former bail-on-unknown-statement
+  // walk did.
+  if (!memo.parsedBlock || !memo.parsedBlockComplete) return null
 
   // Accept only a strict shape: zero or more `const`/`let` declarations
   // followed by exactly one `return { … }` as the LAST statement. Any other
-  // statement kind — `if`, an early/extra `return`, a loop, a bare call —
-  // means the block has control flow this resolver can't reason about, so we
-  // bail to the nil fallback rather than silently lowering one of several
-  // returns (#1941 review). Along the way, collect `const <v> = searchParams()`
-  // bindings (the env for `<v>.get('k')`).
+  // statement kind — `if`, an early/extra `return` — means the block has
+  // control flow this resolver can't reason about, so we bail to the nil
+  // fallback rather than silently lowering one of several returns (#1941
+  // review). Along the way, collect `const <v> = searchParams()` bindings
+  // (the env for `<v>.get('k')`).
   const searchParamsVars = new Set<string>()
-  let retObj: ts.ObjectLiteralExpression | null = null
-  const statements = arrow.body.statements
+  let retObj: Extract<ParsedExpr, { kind: 'object-literal' }> | null = null
+  const statements = memo.parsedBlock
   for (let i = 0; i < statements.length; i++) {
     const s = statements[i]
-    if (ts.isVariableStatement(s)) {
-      for (const d of s.declarationList.declarations) {
-        if (
-          ts.isIdentifier(d.name) &&
-          d.initializer &&
-          ts.isCallExpression(d.initializer) &&
-          ts.isIdentifier(d.initializer.expression) &&
-          d.initializer.arguments.length === 0 &&
-          ctx.state.searchParamsLocals.has(d.initializer.expression.text)
-        ) {
-          searchParamsVars.add(d.name.text)
-        }
+    if (s.kind === 'var-decl') {
+      // `const <v> = searchParams()` — a zero-arg call to a searchParams
+      // local. Any other var-decl (a non-searchParams binding) is accepted
+      // and ignored, matching the old code that accepted any const.
+      if (
+        s.init.kind === 'call' &&
+        s.init.callee.kind === 'identifier' &&
+        s.init.args.length === 0 &&
+        ctx.state.searchParamsLocals.has(s.init.callee.name)
+      ) {
+        searchParamsVars.add(s.name)
       }
       continue
     }
-    if (ts.isReturnStatement(s)) {
+    if (s.kind === 'return') {
       // The return must be the last statement (so it's the only one) and
       // return an object literal.
-      if (i !== statements.length - 1 || !s.expression) return null
-      let e: ts.Expression = s.expression
-      while (ts.isParenthesizedExpression(e)) e = e.expression
-      if (!ts.isObjectLiteralExpression(e)) return null
-      retObj = e
+      if (i !== statements.length - 1 || s.value.kind !== 'object-literal') return null
+      retObj = s.value
       continue
     }
-    // Any other statement kind → control flow we don't model → bail.
+    // Any other statement kind (`if`) → control flow we don't model → bail.
     return null
   }
   if (!retObj || retObj.properties.length === 0) return null
@@ -148,13 +150,15 @@ export function computeObjectMemoInitialValue(ctx: GoEmitContext, computation: s
   const env: CtorLowerEnv = { searchParamsVars, params: new Map() }
   const entries: string[] = []
   for (const prop of retObj.properties) {
-    if (!ts.isPropertyAssignment(prop)) return null
-    const key =
-      ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
-    if (!key) return null
-    const go = lowerCtorExpr(ctx, tsNodeToParsedExpr2(prop.initializer), env)
+    // The key must be identifier- or string-named (a numeric key has no
+    // matching `.Params.<Field>` accessor), matching the old
+    // `ts.isIdentifier || ts.isStringLiteral` check.
+    if (prop.keyKind !== undefined && prop.keyKind !== 'identifier' && prop.keyKind !== 'string') {
+      return null
+    }
+    const go = lowerCtorExpr(ctx, parsedExprToParsedExpr2(prop.value), env)
     if (go === null) return null
-    entries.push(`"${capitalizeFieldName(key)}": ${go}`)
+    entries.push(`"${capitalizeFieldName(prop.key)}": ${go}`)
   }
   return `map[string]interface{}{\n\t\t${entries.join(',\n\t\t')},\n\t}`
 }
