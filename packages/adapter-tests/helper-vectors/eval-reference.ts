@@ -176,9 +176,16 @@ function unary(op: string, v: EvalValue): EvalValue {
 // I/O-ish builtins are deliberately excluded to keep backends isomorphic.
 // ---------------------------------------------------------------------------
 
-/** JS `Math.round`: half rounds toward +Infinity (2.5→3, -2.5→-2). */
+/**
+ * JS `Math.round` — the reference is literal JS, so it inherits JS's exact
+ * semantics: a half rounds toward +Infinity (2.5→3, -2.5→-2) and the sign of
+ * zero is preserved (-0.4 → -0, so `1 / Math.round(-0.4)` is -Infinity). The
+ * backends approximate this with `floor(n + 0.5)`, which agrees on every
+ * JSON-representable result — a -0 result serializes to 0 in the vectors, so
+ * the sign-of-zero edge is not observable across the contract.
+ */
 function mathRound(n: number): number {
-  return Math.floor(n + 0.5)
+  return Math.round(n)
 }
 
 function callBuiltin(name: string, args: EvalValue[]): EvalValue {
@@ -229,8 +236,11 @@ function readProperty(obj: EvalValue, key: string): EvalValue {
     throw new EvalUnsupported(`property '${key}' on an array is not in the evaluator subset`)
   }
   if (obj !== null && typeof obj === 'object') {
-    // Missing keys read as `null` (the backends' single absent value).
-    return key in obj ? obj[key] : null
+    // Own-property only: a missing field reads as `null` (the backends'
+    // single absent value). `key in obj` would walk the prototype chain and
+    // surface `toString` / `constructor` as "present", returning non-JSON
+    // values that Go maps / Perl hashes have no analogue for.
+    return Object.prototype.hasOwnProperty.call(obj, key) ? (obj as { [k: string]: EvalValue })[key] : null
   }
   throw new EvalUnsupported(`cannot read property '${key}' of ${obj === null ? 'null' : typeof obj}`)
 }
