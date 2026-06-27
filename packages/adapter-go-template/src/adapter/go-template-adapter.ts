@@ -4453,9 +4453,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `ts.createSourceFile`), so the key lookup reads the structured tree here.
     //   - string values map to `JSON.stringify(text)` (escape-equivalent to the
     //     former fallback's string branch);
-    //   - number values emit `literal.raw`, the exact `NumericLiteral.text`
-    //     token captured by the parser, so the spelling (`1e3`, large ints) is
-    //     preserved byte-for-byte without going through `parseFloat`.
+    //   - number values emit `literal.raw`, TypeScript's normalised
+    //     `NumericLiteral.text` token (`1e3`/`1_000`/`0x10` → `1000`/`1000`/`16`
+    //     — not the source spelling). That token is exactly what the adapter's
+    //     own numeric lowering already emits, so the structured path stays
+    //     byte-for-byte identical to the former `ts.createSourceFile` fallback
+    //     while avoiding a round-trip through the parsed numeric `value` (the
+    //     analyzer derived it via `parseFloat`, lossy for some spellings).
     // Any non-record / non-string-or-number value resolves to null, matching
     // the former fallback's bail. The corpus's record consts are all plain
     // string-keyed string/number object literals (icon registries, variant/size
