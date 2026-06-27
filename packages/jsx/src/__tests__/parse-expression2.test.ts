@@ -86,6 +86,15 @@ describe('parseExpression2', () => {
     expect((parseExpression2("a === b") as ParsedExpr2 & { kind: 'binary' }).op).toBe('===')
   })
 
+  test('out-of-surface binary / unary operators resolve to unsupported (not op: "unknown")', () => {
+    // Operators getOperatorString/getUnaryOperatorString don't recognise must
+    // opt out, not emit a node with a meaningless `op` a consumer could mishandle.
+    expect(parseExpression2('a instanceof B').kind).toBe('unsupported')
+    expect(parseExpression2('a ** b').kind).toBe('unsupported')
+    expect(parseExpression2('++x').kind).toBe('unsupported')
+    expect(parseExpression2('--x').kind).toBe('unsupported')
+  })
+
   test('nested: base.replace(/\\/+$/, "") || "/"', () => {
     const r = parseExpression2("base.replace(/\\/+$/, '') || '/'")
     expect(r.kind).toBe('logical')

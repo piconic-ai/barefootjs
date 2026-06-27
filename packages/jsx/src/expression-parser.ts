@@ -846,10 +846,19 @@ function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
     if (k === ts.SyntaxKind.AmpersandAmpersandToken) return { kind: 'logical', op: '&&', left, right }
     if (k === ts.SyntaxKind.BarBarToken) return { kind: 'logical', op: '||', left, right }
     if (k === ts.SyntaxKind.QuestionQuestionToken) return { kind: 'logical', op: '??', left, right }
-    return { kind: 'binary', op: getOperatorString(k), left, right }
+    // An operator outside the recognised set yields `'unknown'`; keep the
+    // narrow-surface contract by resolving to `unsupported` rather than a
+    // `binary` node a consumer might mis-handle.
+    const op = getOperatorString(k)
+    if (op === 'unknown') return { kind: 'unsupported', raw, reason: `Unsupported binary operator ${ts.SyntaxKind[k]}` }
+    return { kind: 'binary', op, left, right }
   }
   if (ts.isPrefixUnaryExpression(node)) {
-    return { kind: 'unary', op: getUnaryOperatorString(node.operator), argument: convertNode2(node.operand, raw) }
+    // `++x` / `--x` etc. resolve to `'unknown'` — opt out to `unsupported`
+    // rather than emitting a `unary` node with a meaningless operator.
+    const op = getUnaryOperatorString(node.operator)
+    if (op === 'unknown') return { kind: 'unsupported', raw, reason: `Unsupported unary operator ${ts.SyntaxKind[node.operator]}` }
+    return { kind: 'unary', op, argument: convertNode2(node.operand, raw) }
   }
   if (ts.isConditionalExpression(node)) {
     return {
