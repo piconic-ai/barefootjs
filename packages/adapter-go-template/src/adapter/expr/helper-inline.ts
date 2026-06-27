@@ -85,24 +85,40 @@ export function inlineLocalHelperCall(
 
 /**
  * Guard for `substituteHelperParams`: the substitution replaces value-position
- * identifiers by name, so it is only safe on bodies free of an object shorthand
- * key (`{ k }`) whose name is a param — that key isn't a value position and
- * can't be rewritten to `{ (arg) }`. Nested function scopes are already
- * rejected upstream (their `ParsedExpr2` `arrow` doesn't convert to
- * `ParsedExpr`), so this only checks shorthand keys.
+ * identifiers by name, but an `object-literal` lowers opaquely from its `raw`
+ * source string downstream — `substituteHelperParams` leaves it untouched — so a
+ * param referenced ANYWHERE inside an object literal survives un-substituted:
+ * not just a shorthand key (`{ p }`, which also isn't a value position) but a
+ * value position too (`{ x: p }`, `{ x: f(p) }`). Either would emit the param's
+ * original name instead of the call arg, producing a wrong template. So a body
+ * is substitute-safe only when no object literal it contains references any
+ * param. (Nested function scopes are already rejected upstream — their
+ * `ParsedExpr2` `arrow` doesn't convert to `ParsedExpr`.)
  */
 function isSubstituteSafeBody(body: ParsedExpr, paramNames: ReadonlySet<string>): boolean {
+  // True when `n`'s subtree references any param (handling object-literal
+  // shorthand keys, which carry the param name on the key rather than a value).
+  const referencesParam = (n: ParsedExpr): boolean => {
+    if (n.kind === 'identifier') return paramNames.has(n.name)
+    if (n.kind === 'object-literal') {
+      return n.properties.some(
+        p => (p.shorthand && paramNames.has(p.key)) || referencesParam(p.value),
+      )
+    }
+    let hit = false
+    forEachValueChild(n, c => {
+      if (referencesParam(c)) hit = true
+    })
+    return hit
+  }
+
   let safe = true
   const visit = (n: ParsedExpr): void => {
     if (!safe) return
     if (n.kind === 'object-literal') {
-      for (const p of n.properties) {
-        if (p.shorthand && paramNames.has(p.key)) {
-          safe = false
-          return
-        }
-        visit(p.value)
-      }
+      // The whole object literal lowers from `raw`; if it mentions a param
+      // anywhere, that reference can't be substituted — decline the body.
+      if (referencesParam(n)) safe = false
       return
     }
     forEachValueChild(n, visit)

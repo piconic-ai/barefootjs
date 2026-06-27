@@ -3538,12 +3538,15 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
  * (carried structurally as `ConstantInfo.parsed2`) as a tree it can substitute
  * the call args into, then re-stringifies the substituted result for the normal
  * string lowering (#2006) — eliminating the helper-inline `ts.createSourceFile`
- * re-parse. The mirror is NOT a re-parse: it does not fold method calls into
- * the `array-method` / `higher-order` shapes `parseExpression` recognises, nor
- * literal element access into a computed `member` — those folds happen when the
- * stringified body is re-parsed downstream, so the mirror only needs to
- * round-trip through `stringifyParsedExpr` faithfully (any node it can't model
- * already lives in `ParsedExpr2` as `arrow` / `regex` and returns `null`).
+ * re-parse. The mirror is NOT a full re-parse: it does not fold method calls
+ * into the `array-method` / `higher-order` shapes `parseExpression` recognises —
+ * that fold happens when the stringified body is re-parsed downstream. It DOES,
+ * however, fold a literal element access (`obj['key']`, `arr[0]`) into a
+ * computed `member`, mirroring `parseExpression` so the result matches the shape
+ * the rest of the lowering is keyed to (a non-literal index like `rows[i]` stays
+ * an `index-access`). Otherwise the mirror only needs to round-trip through
+ * `stringifyParsedExpr` faithfully (any node it can't model already lives in
+ * `ParsedExpr2` as `arrow` / `regex` and returns `null`).
  */
 export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
   switch (expr.kind) {
