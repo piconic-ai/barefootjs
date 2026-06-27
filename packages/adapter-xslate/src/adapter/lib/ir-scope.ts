@@ -3,6 +3,13 @@
  *
  * Extracted from `xslate-adapter.ts` (domain-module refactor, issue #2018
  * track D). Pure functions over the IR tree — no adapter instance state.
+ *
+ * SHARED CANDIDATE: the bodies here are byte-identical to the Mojo
+ * adapter's `lib/ir-scope.ts`. They are adapter-agnostic (no Perl/Kolon
+ * specifics), so they are the obvious first extraction into a shared
+ * Perl-family codegen module once one exists — the groundwork for the
+ * future Perl evaluator integration (issue #2018 track D). Kept per-adapter
+ * for now, matching the repo convention (the Go adapter keeps its own copy).
  */
 
 import type { IRNode, IRProp, IRIfStatement, IRFragment } from '@barefootjs/jsx'

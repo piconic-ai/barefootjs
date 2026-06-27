@@ -4,6 +4,13 @@
  * Extracted from `mojo-adapter.ts` (domain-module refactor, issue #2018
  * track D). Pure functions over const-initializer source text and
  * analyzer type info — no adapter instance state.
+ *
+ * SHARED CANDIDATE: `isStringTypeInfo` and `isBareStringLiteral` are
+ * byte-identical to the Xslate adapter's copies and adapter-agnostic —
+ * extraction candidates for a shared Perl-family codegen module (groundwork
+ * for the future Perl evaluator integration, issue #2018 track D).
+ * `parsePureStringLiteral` deliberately differs (Mojo uses the TS parser;
+ * Xslate hand-parses), so it stays per-adapter.
  */
 
 import ts from 'typescript'

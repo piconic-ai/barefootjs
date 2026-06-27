@@ -6,6 +6,12 @@
  * track D). Pure functions over `ParsedExpr` — they take an `isStringName`
  * predicate (supplied by the emitter from adapter state) rather than reading
  * adapter instance state directly.
+ *
+ * SHARED CANDIDATE: `isStringTypedOperand` is byte-identical to the Xslate
+ * adapter's copy and is adapter-agnostic — an extraction candidate for a
+ * shared Perl-family codegen module (groundwork for the future Perl evaluator
+ * integration, issue #2018 track D). `emitIndexAccessPerl` stays Mojo-specific
+ * (Perl's `->[]` vs `->{}` split has no Kolon equivalent).
  */
 
 import type { ParsedExpr } from '@barefootjs/jsx'
