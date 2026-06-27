@@ -574,6 +574,9 @@ function attachParsedExpressions(node: IRNode): void {
       if (attr.value.kind === 'expression') {
         const trimmed = attr.value.expr.trim()
         if (trimmed) attr.value.parsed = parseExpression(trimmed)
+      } else if (attr.value.kind === 'spread') {
+        const trimmed = attr.value.expr.trim()
+        if (trimmed) attr.value.parsed = parseExpression(trimmed)
       }
     }
   }
