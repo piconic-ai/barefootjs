@@ -281,7 +281,7 @@ export function computeMemoInitialValueOrNull(
   // `resolveModuleStringConst`) and resolves `props.X ?? ''` / bare `props.X`
   // to the corresponding `in.Field`. Returns null when any interpolation
   // isn't representable, so the existing patterns below still apply.
-  const tmplMemo = computeTemplateLiteralMemoInitialValue(ctx, computation, propsParams)
+  const tmplMemo = computeTemplateLiteralMemoInitialValue(ctx, memo, propsParams)
   if (tmplMemo !== null) return tmplMemo
 
   // Expression-bodied memo shapes (`getter() === 'lit'`, `props.X ?? false`,

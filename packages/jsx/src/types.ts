@@ -1155,6 +1155,17 @@ export interface MemoInfo {
    * `parsed` instead) and when the arrow has no block body.
    */
   parsedBlock?: ParsedStatement[]
+  /**
+   * Whether {@link parsedBlock} represents EVERY statement of the block (true)
+   * or the tolerant parser omitted at least one it couldn't represent (false).
+   * A consumer that must reason about the whole block — e.g. one that bails on
+   * any statement it doesn't recognise (the template-literal memo lowering) —
+   * reads this and falls back when it's `false`, since omitted statements are
+   * otherwise invisible. Consumers that scan for a recognised prefix and ignore
+   * the rest (the guard-and-return-const lowering) can disregard it. Only set
+   * when `parsedBlock` is.
+   */
+  parsedBlockComplete?: boolean
   type: TypeInfo
   deps: string[]
   loc: SourceLocation

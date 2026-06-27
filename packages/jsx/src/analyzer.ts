@@ -1451,15 +1451,24 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   // the arrow to match the former adapter walks.
   let arrowNode: ts.Node | undefined = memoArrow
   while (arrowNode && ts.isParenthesizedExpression(arrowNode)) arrowNode = arrowNode.expression
-  const parsedBlock =
+  const blockBody =
     arrowNode && ts.isArrowFunction(arrowNode) && ts.isBlock(arrowNode.body)
-      ? parseBlockBodyTolerant(arrowNode.body, ctx.sourceFile, node => ctx.getJS(node))
+      ? arrowNode.body
       : undefined
+  const parsedBlock = blockBody
+    ? parseBlockBodyTolerant(blockBody, ctx.sourceFile, node => ctx.getJS(node))
+    : undefined
+  // `parseBlockBodyTolerant` runs `parseStatement` once per source statement and
+  // pushes only the non-null results, so equal lengths mean every statement was
+  // represented — nothing silently omitted (see `MemoInfo.parsedBlockComplete`).
+  const parsedBlockComplete =
+    parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
 
   ctx.memos.push({
     name,
     computation,
     parsedBlock,
+    parsedBlockComplete,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
     bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(memoArrow),

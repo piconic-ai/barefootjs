@@ -12,8 +12,7 @@
 
 import ts from 'typescript'
 
-import { parseRecordIndexAccess } from '@barefootjs/jsx'
-import type { TypeInfo } from '@barefootjs/jsx'
+import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
@@ -39,71 +38,62 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
  */
 export function computeTemplateLiteralMemoInitialValue(
   ctx: GoEmitContext,
-  computation: string,
+  memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
 ): string | null {
-  const sf = ts.createSourceFile(
-    '__memo.ts',
-    `const __x = (${computation});`,
-    ts.ScriptTarget.Latest,
-    /*setParentNodes*/ false,
-  )
-  const stmt = sf.statements[0]
-  if (!stmt || !ts.isVariableStatement(stmt)) return null
-  let init = stmt.declarationList.declarations[0]?.initializer
-  while (init && ts.isParenthesizedExpression(init)) init = init.expression
-  if (!init || !ts.isArrowFunction(init)) return null
-  let body = init.body as ts.Node
-  while (ts.isParenthesizedExpression(body as ts.Expression)) {
-    body = (body as ts.ParenthesizedExpression).expression
-  }
-
-  // Block-bodied arrow (the Toggle `classes` memo): collect leading
-  // `const X = props.Y ?? 'lit'` key bindings, then resolve against the
-  // single returned template literal. The bindings let `variantClasses[variant]`
-  // resolve `variant` to prop `variant` with its `'default'` fallback key.
+  // Resolve the template value (a `template-literal` ParsedExpr, or a plain
+  // string `literal` for a no-substitution `` `plain` `` which folds to one)
+  // plus any memo-local `const X = props.Y ?? 'lit'` key bindings, from the
+  // analyzer-carried tree instead of re-parsing `computation`.
   const localKeyBindings = new Map<string, { propName: string; defaultLiteral?: string }>()
-  if (ts.isBlock(body)) {
-    let returned: ts.Node | null = null
-    for (const s of body.statements) {
-      if (ts.isVariableStatement(s)) {
-        for (const d of s.declarationList.declarations) {
-          if (!ts.isIdentifier(d.name) || !d.initializer) continue
-          const binding = parseLocalKeyBinding(ctx, d.initializer)
-          if (binding) localKeyBindings.set(d.name.text, binding)
-        }
-      } else if (ts.isReturnStatement(s) && s.expression) {
-        returned = s.expression
-      } else if (ts.isExpressionStatement(s) || ts.isEmptyStatement(s)) {
-        // ignore
+  let templateValue: ParsedExpr | undefined
+  if (memo.parsedBlock) {
+    // Block-bodied arrow (the Toggle `classes` memo): collect leading key
+    // bindings, then resolve against the single returned template literal. Any
+    // statement that isn't a var-decl or the return (an `if`, a loop) is shape
+    // we don't model — bail to the existing patterns, matching the former walk.
+    //
+    // `parsedBlock` is tolerant — it OMITS statements it can't represent (a
+    // `for`/`while`/`switch`), so an incomplete block could otherwise look like
+    // just `var-decl`s + `return` and be lowered when the former TS-AST walk
+    // would have bailed on the unrepresented statement. Bail when it isn't
+    // complete so behaviour matches that walk.
+    if (!memo.parsedBlockComplete) return null
+    for (const s of memo.parsedBlock) {
+      if (s.kind === 'var-decl') {
+        const binding = parseLocalKeyBinding(ctx, s.init)
+        if (binding) localKeyBindings.set(s.name, binding)
+      } else if (s.kind === 'return') {
+        templateValue = s.value
       } else {
-        return null // unsupported statement shape — bail to existing patterns
+        return null
       }
     }
-    if (!returned) return null
-    body = returned
-    while (ts.isParenthesizedExpression(body as ts.Expression)) {
-      body = (body as ts.ParenthesizedExpression).expression
-    }
-  }
-
-  if (!ts.isTemplateExpression(body) && !ts.isNoSubstitutionTemplateLiteral(body)) {
+    if (!templateValue) return null
+  } else if (memo.parsed) {
+    templateValue = memo.parsed
+  } else {
     return null
   }
+
   const propNames = new Set(propsParams.map(p => p.name))
   const escGo = (s: string) => `"${escapeGoString(s)}"`
-  const segments: string[] = []
 
-  if (ts.isNoSubstitutionTemplateLiteral(body)) {
-    return escGo(body.text)
+  // A no-substitution template literal folds to a plain string literal.
+  if (templateValue.kind === 'literal' && templateValue.literalType === 'string') {
+    return escGo(String(templateValue.value))
   }
-  // head + each span
-  if (body.head.text) segments.push(escGo(body.head.text))
-  for (const span of body.templateSpans) {
-    const resolved = resolveTemplateInterpolation(ctx, span.expression, propNames, localKeyBindings)
-    if (resolved === null) return null
-    segments.push(resolved)
-    if (span.literal.text) segments.push(escGo(span.literal.text))
+  if (templateValue.kind !== 'template-literal') return null
+
+  const segments: string[] = []
+  for (const part of templateValue.parts) {
+    if (part.type === 'string') {
+      if (part.value) segments.push(escGo(part.value))
+    } else {
+      const resolved = resolveTemplateInterpolation(ctx, part.expr, propNames, localKeyBindings)
+      if (resolved === null) return null
+      segments.push(resolved)
+    }
   }
   if (segments.length === 0) return '""'
   return segments.join(' + ')
@@ -111,43 +101,33 @@ export function computeTemplateLiteralMemoInitialValue(
 
 /**
  * (#checkbox) Resolve one `${expr}` interpolation of a template-literal memo
- * to a Go string expression, or null when unsupported. See
- * `computeTemplateLiteralMemoInitialValue` for the supported shapes.
+ * to a Go string expression, or null when unsupported. Operates on the
+ * carried `ParsedExpr`. See `computeTemplateLiteralMemoInitialValue` for the
+ * supported shapes.
  */
-export function resolveTemplateInterpolation(
+function resolveTemplateInterpolation(
   ctx: GoEmitContext,
-  expr: ts.Expression,
+  node: ParsedExpr,
   propNames: Set<string>,
-  localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }> = new Map(),
+  localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }>,
 ): string | null {
-  let node: ts.Expression = expr
-  while (ts.isParenthesizedExpression(node)) node = node.expression
-
   // Identifier → module string const inline.
-  if (ts.isIdentifier(node)) {
-    const inlined = ctx.resolveModuleStringConst(node.text)
-    if (inlined !== null) return inlined
-    return null
+  if (node.kind === 'identifier') {
+    return ctx.resolveModuleStringConst(node.name)
   }
 
   // `recordConst[key]` → inline indexed Go map (the Toggle `classes` memo's
-  // `variantClasses[variant]` / `sizeClasses[size]`).
-  if (ts.isElementAccessExpression(node)) {
-    const indexed = recordIndexInterpolationToGo(ctx, node, propNames, localKeyBindings)
-    if (indexed !== null) return indexed
-    return null
+  // `variantClasses[variant]` / `sizeClasses[size]`). A bare-identifier index
+  // parses as `index-access`.
+  if (node.kind === 'index-access') {
+    return recordIndexInterpolationToGo(ctx, node, propNames, localKeyBindings)
   }
 
-  // `props.X ?? '...'` — string-typed prop with an empty-string fallback.
-  if (
-    ts.isBinaryExpression(node) &&
-    node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
-  ) {
+  // `props.X ?? ''` — string-typed prop with an empty-string fallback.
+  if (node.kind === 'logical' && node.op === '??') {
     const right = node.right
-    const isEmptyStr =
-      (ts.isStringLiteral(right) || ts.isNoSubstitutionTemplateLiteral(right)) &&
-      right.text === ''
-    const propName = propsAccessName(ctx, node.left)
+    const isEmptyStr = right.kind === 'literal' && right.literalType === 'string' && right.value === ''
+    const propName = propsAccessNameFromParsed(ctx, node.left)
     if (propName && propNames.has(propName) && isEmptyStr) {
       // Unset string field is "" in Go — same as `?? ''`.
       return `in.${capitalizeFieldName(propName)}`
@@ -156,7 +136,7 @@ export function resolveTemplateInterpolation(
   }
 
   // Bare `props.X` (string-typed prop).
-  const propName = propsAccessName(ctx, node)
+  const propName = propsAccessNameFromParsed(ctx, node)
   if (propName && propNames.has(propName)) {
     return `in.${capitalizeFieldName(propName)}`
   }
@@ -164,32 +144,24 @@ export function resolveTemplateInterpolation(
 }
 
 /**
- * Parse a memo-local `const X = …` initializer into a `Record`-index key
- * binding: `props.Y ?? 'lit'` → `{ propName: 'Y', defaultLiteral: 'lit' }`,
- * or bare `props.Y` → `{ propName: 'Y' }`. Returns null for any other shape
- * (a literal const, a call, etc.) so it simply isn't registered as a key.
+ * Parse a memo-local `const X = …` initializer (`ParsedExpr`) into a
+ * `Record`-index key binding: `props.Y ?? 'lit'` → `{ propName: 'Y',
+ * defaultLiteral: 'lit' }`, or bare `props.Y` → `{ propName: 'Y' }`. Returns
+ * null for any other shape, so it isn't registered as a key.
  */
-export function parseLocalKeyBinding(
+function parseLocalKeyBinding(
   ctx: GoEmitContext,
-  init: ts.Expression,
+  node: ParsedExpr,
 ): { propName: string; defaultLiteral?: string } | null {
-  let node: ts.Expression = init
-  while (ts.isParenthesizedExpression(node)) node = node.expression
-  if (
-    ts.isBinaryExpression(node) &&
-    node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
-  ) {
-    const propName = propsAccessName(ctx, node.left)
+  if (node.kind === 'logical' && node.op === '??') {
+    const propName = propsAccessNameFromParsed(ctx, node.left)
     const right = node.right
-    if (
-      propName &&
-      (ts.isStringLiteral(right) || ts.isNoSubstitutionTemplateLiteral(right))
-    ) {
-      return { propName, defaultLiteral: right.text }
+    if (propName && right.kind === 'literal' && right.literalType === 'string') {
+      return { propName, defaultLiteral: String(right.value) }
     }
     return null
   }
-  const propName = propsAccessName(ctx, node)
+  const propName = propsAccessNameFromParsed(ctx, node)
   if (propName) return { propName }
   return null
 }
@@ -197,36 +169,76 @@ export function parseLocalKeyBinding(
 /**
  * Lower a `recordConst[key]` interpolation to an inline indexed Go map,
  * emitting `map[string]string{…}[fmt.Sprint(in.Field)]` (or `map[string]any`
- * for mixed values). `key` is a bare prop or a memo-local const bound to
- * `props.X ?? 'default'` (resolved via `localKeyBindings`); a `'default'`
- * fallback also maps `""` to that entry, so an unset prop (Go zero value `""`)
- * renders the default — matching Hono's `props.X ?? 'default'`. Returns null
- * for any non-record / non-resolvable key so the caller falls through.
+ * for mixed values). `recordConst` resolves via the carried
+ * `ConstantInfo.parsed` object-literal (module-scope `Record<keys, scalar>`);
+ * `key` is a bare prop or a memo-local const bound to `props.X ?? 'default'`
+ * (via `localKeyBindings`), whose `'default'` fallback also maps `""` so an
+ * unset prop renders the default. Returns null for any non-record /
+ * non-resolvable key so the caller falls through.
  */
-export function recordIndexInterpolationToGo(
+function recordIndexInterpolationToGo(
   ctx: GoEmitContext,
-  node: ts.ElementAccessExpression,
+  node: ParsedExpr & { kind: 'index-access' },
   propNames: Set<string>,
   localKeyBindings: ReadonlyMap<string, { propName: string; defaultLiteral?: string }>,
 ): string | null {
-  const parsed = parseRecordIndexAccess(
-    node,
-    ctx.state.localConstants ?? [],
-    [...propNames].map(name => ({ name })),
-    name => localKeyBindings.get(name) ?? null,
-  )
-  if (!parsed) return null
+  if (node.object.kind !== 'identifier' || node.index.kind !== 'identifier') return null
+  const objName = node.object.name
+  const keyName = node.index.name
+
+  // KEY resolution: a memo-local binding wins (carries the `'default'` key),
+  // else the key must be a bare prop.
+  let indexPropName: string
+  let defaultKey: string | undefined
+  const resolved = localKeyBindings.get(keyName)
+  if (resolved) {
+    indexPropName = resolved.propName
+    defaultKey = resolved.defaultLiteral
+  } else if (propNames.has(keyName)) {
+    indexPropName = keyName
+  } else {
+    return null
+  }
+
+  // IDENT must be a module-scope object-literal const carried as `parsed`.
+  const constInfo = (ctx.state.localConstants ?? []).find(c => c.name === objName && c.isModule)
+  const parsedConst = constInfo?.parsed
+  if (!parsedConst || parsedConst.kind !== 'object-literal') return null
+
+  const entries: { key: string; value: { kind: 'number' | 'string'; text: string } }[] = []
+  for (const prop of parsedConst.properties) {
+    const v = prop.value
+    if (v.kind === 'literal' && v.literalType === 'number') {
+      entries.push({ key: prop.key, value: { kind: 'number', text: v.raw ?? String(v.value) } })
+    } else if (v.kind === 'literal' && v.literalType === 'string') {
+      entries.push({ key: prop.key, value: { kind: 'string', text: String(v.value) } })
+    } else {
+      return null
+    }
+  }
+
   const goVal = (v: { kind: 'number' | 'string'; text: string }) =>
     v.kind === 'number' ? v.text : JSON.stringify(v.text)
-  const entries = parsed.entries.map(e => `${JSON.stringify(e.key)}: ${goVal(e.value)}`)
-  if (parsed.defaultKey !== undefined) {
-    const def = parsed.entries.find(e => e.key === parsed.defaultKey)
-    if (def) entries.unshift(`"": ${goVal(def.value)}`)
+  const ents = entries.map(e => `${JSON.stringify(e.key)}: ${goVal(e.value)}`)
+  if (defaultKey !== undefined) {
+    const def = entries.find(e => e.key === defaultKey)
+    if (def) ents.unshift(`"": ${goVal(def.value)}`)
   }
-  const allString = parsed.entries.every(e => e.value.kind === 'string')
+  const allString = entries.every(e => e.value.kind === 'string')
   const mapType = allString ? 'map[string]string' : 'map[string]any'
   ctx.state.usesFmt = true
-  return `${mapType}{${entries.join(', ')}}[fmt.Sprint(in.${capitalizeFieldName(parsed.indexPropName)})]`
+  return `${mapType}{${ents.join(', ')}}[fmt.Sprint(in.${capitalizeFieldName(indexPropName)})]`
+}
+
+/**
+ * `ParsedExpr` counterpart of `propsAccessName`: if `node` is a
+ * `<propsObjectName>.<name>` member access, return `<name>`, else null.
+ */
+function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string | null {
+  if (node.kind !== 'member' || node.computed) return null
+  if (node.object.kind !== 'identifier') return null
+  if (!ctx.state.propsObjectName || node.object.name !== ctx.state.propsObjectName) return null
+  return node.property
 }
 
 /**
