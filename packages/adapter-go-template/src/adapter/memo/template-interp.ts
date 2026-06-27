@@ -38,7 +38,7 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
  */
 export function computeTemplateLiteralMemoInitialValue(
   ctx: GoEmitContext,
-  memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[] },
+  memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
 ): string | null {
   // Resolve the template value (a `template-literal` ParsedExpr, or a plain
@@ -52,6 +52,13 @@ export function computeTemplateLiteralMemoInitialValue(
     // bindings, then resolve against the single returned template literal. Any
     // statement that isn't a var-decl or the return (an `if`, a loop) is shape
     // we don't model — bail to the existing patterns, matching the former walk.
+    //
+    // `parsedBlock` is tolerant — it OMITS statements it can't represent (a
+    // `for`/`while`/`switch`), so an incomplete block could otherwise look like
+    // just `var-decl`s + `return` and be lowered when the former TS-AST walk
+    // would have bailed on the unrepresented statement. Bail when it isn't
+    // complete so behaviour matches that walk.
+    if (!memo.parsedBlockComplete) return null
     for (const s of memo.parsedBlock) {
       if (s.kind === 'var-decl') {
         const binding = parseLocalKeyBinding(ctx, s.init)
