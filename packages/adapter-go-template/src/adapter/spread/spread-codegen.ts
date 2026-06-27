@@ -8,13 +8,15 @@
  *     initial value placed inside `NewXxxProps` (#1407): signal-getter object
  *     literals, destructured / SolidJS-style / rest props, and conditional
  *     inline-object spreads.
- * They read `state.restPropsName` / `state.usesFmt` and `parseLiteralExpression`;
- * everything else comes from the per-call `ComponentIR`.
+ * They read `state.restPropsName` / `state.usesFmt`; the conditional inline-
+ * object spread is lowered from the carried `SpreadAttr.parsed` tree (#2006)
+ * rather than re-parsing the source with `ts.createSourceFile`. Everything else
+ * comes from the per-call `ComponentIR`.
  */
 
 import ts from 'typescript'
 
-import { parseRecordIndexAccess } from '@barefootjs/jsx'
+import { parseExpression, parseRecordIndexAccess } from '@barefootjs/jsx'
 import type {
   ComponentIR,
   IRNode,
@@ -76,6 +78,7 @@ function collectSpreadSlotsRecursive(ctx: GoEmitContext, node: IRNode, result: S
       result.push({
         slotId: attr.value.slotId,
         expr: attr.value.expr,
+        parsed: attr.value.parsed,
         templateExpr: attr.value.templateExpr,
         bagSource: classifySpreadBagSource(ctx, attr.value.expr),
       })
@@ -222,6 +225,7 @@ export function buildSpreadInitializer(
   ctx: GoEmitContext,
   spreadExpr: string,
   ir: ComponentIR,
+  parsed?: ParsedExpr,
 ): string | null {
   const trimmed = spreadExpr.trim()
   // Conditional inline-object spread:
@@ -231,7 +235,12 @@ export function buildSpreadInitializer(
   // is OMITTED rather than rendered as `k=""` — `SpreadAttrs` does
   // NOT filter empty strings). Returns null for any shape it can't
   // faithfully convert so the caller falls back to BF101 (#textarea).
-  const conditional = buildConditionalSpreadInitializer(ctx, trimmed, ir)
+  // Consume the carried `SpreadAttr.parsed` tree (#2006); when absent
+  // (older/hand-built IR), parse `trimmed` once as a fallback so the
+  // shape is still recognised without re-introducing the per-attribute
+  // `ts.createSourceFile` parse on the build hot path.
+  const conditionalTree = parsed ?? parseExpression(trimmed)
+  const conditional = buildConditionalSpreadInitializer(ctx, conditionalTree, ir)
   if (conditional !== undefined) return conditional
   // Signal-getter call: `attrs()` — pluck the signal's initialValue
   // and translate the JS object literal to a Go map literal.
@@ -298,7 +307,7 @@ export function buildSpreadInitializer(
       // Reject a const resolving to a bare identifier to avoid an
       // unbounded resolution loop / non-literal forwarding.
       if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-        const resolved = buildConditionalSpreadInitializer(ctx, initTrimmed, ir)
+        const resolved = buildConditionalSpreadInitializer(ctx, parseExpression(initTrimmed), ir)
         // `undefined` → not a conditional-spread shape; fall through to
         // BF101. `null` → that shape but unconvertible; also BF101.
         if (resolved) return resolved
@@ -334,18 +343,19 @@ export function buildSpreadInitializer(
  */
 function buildConditionalSpreadInitializer(
   ctx: GoEmitContext,
-  spreadExpr: string,
+  expr: ParsedExpr | undefined,
   ir: ComponentIR,
 ): string | null | undefined {
-  const expr = ctx.parseLiteralExpression(spreadExpr)
-  if (!expr || !ts.isConditionalExpression(expr)) return undefined
-  const whenTrue = unwrapParens(expr.whenTrue)
-  const whenFalse = unwrapParens(expr.whenFalse)
-  if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
+  // `parseExpression` already unwraps redundant parentheses, so the
+  // conditional / object-literal shapes surface directly.
+  if (!expr || expr.kind !== 'conditional') return undefined
+  const whenTrue = expr.consequent
+  const whenFalse = expr.alternate
+  if (whenTrue.kind !== 'object-literal' || whenFalse.kind !== 'object-literal') {
     return undefined
   }
   // Condition → Go bool against `in.`, type-aware on the prop.
-  const goCond = conditionToGoBool(expr.condition, ir)
+  const goCond = conditionToGoBool(expr.test, ir)
   if (goCond === null) return null
   const trueMap = objectLiteralToGoSpreadMap(ctx, whenTrue, ir)
   const falseMap = objectLiteralToGoSpreadMap(ctx, whenFalse, ir)
@@ -358,13 +368,6 @@ function buildConditionalSpreadInitializer(
     `\t\treturn ${falseMap}\n` +
     `\t}()`
   )
-}
-
-/** Strip redundant parenthesised wrappers off a TS expression. */
-function unwrapParens(node: ts.Expression): ts.Expression {
-  let e = node
-  while (ts.isParenthesizedExpression(e)) e = e.expression
-  return e
 }
 
 /**
@@ -382,17 +385,18 @@ function unwrapParens(node: ts.Expression): ts.Expression {
  * Returns null for any other shape (caller → BF101).
  */
 function conditionToGoBool(
-  condition: ts.Expression,
+  condition: ParsedExpr,
   ir: ComponentIR,
 ): string | null {
-  let node = unwrapParens(condition)
+  // Parens are already stripped by `parseExpression`.
+  let node = condition
   let negate = false
-  if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.ExclamationToken) {
+  if (node.kind === 'unary' && node.op === '!') {
     negate = true
-    node = unwrapParens(node.operand)
+    node = node.argument
   }
-  if (!ts.isIdentifier(node)) return null
-  const param = ir.metadata.propsParams.find(p => p.name === node.text)
+  if (node.kind !== 'identifier') return null
+  const param = ir.metadata.propsParams.find(p => p.name === node.name)
   if (!param) return null
   const field = `in.${capitalizeFieldName(param.name)}`
   const prim = param.type.kind === 'primitive' ? param.type.primitive : undefined
@@ -429,26 +433,25 @@ function conditionToGoBool(
  */
 function objectLiteralToGoSpreadMap(
   ctx: GoEmitContext,
-  obj: ts.ObjectLiteralExpression,
+  obj: Extract<ParsedExpr, { kind: 'object-literal' }>,
   ir: ComponentIR,
 ): string | null {
   const entries: string[] = []
   for (const prop of obj.properties) {
-    if (!ts.isPropertyAssignment(prop)) return null
-    let key: string
-    if (ts.isIdentifier(prop.name)) {
-      key = prop.name.text
-    } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
-      key = prop.name.text
-    } else {
-      return null
-    }
-    const val = unwrapParens(prop.initializer)
+    // Shorthand (`{ describedBy }`) was a `ShorthandPropertyAssignment` — not a
+    // `PropertyAssignment` — so the former parser rejected it; keep refusing.
+    if (prop.shorthand) return null
+    // Numeric keys (`{ 1: x }`) were rejected by the former parser (only
+    // identifier / string-literal names were accepted); `keyKind` distinguishes
+    // them from a string `'1'` key.
+    if (prop.keyKind === 'numeric') return null
+    const key = prop.key
+    const val = prop.value
     let goVal: string
-    if (ts.isStringLiteral(val) || ts.isNoSubstitutionTemplateLiteral(val)) {
-      goVal = JSON.stringify(val.text)
-    } else if (ts.isIdentifier(val)) {
-      const param = ir.metadata.propsParams.find(p => p.name === val.text)
+    if (val.kind === 'literal' && val.literalType === 'string') {
+      goVal = JSON.stringify(val.value)
+    } else if (val.kind === 'identifier') {
+      const param = ir.metadata.propsParams.find(p => p.name === val.name)
       if (!param) return null
       goVal = `in.${capitalizeFieldName(param.name)}`
     } else {
@@ -479,13 +482,29 @@ function objectLiteralToGoSpreadMap(
  */
 function recordIndexAccessToGoMap(
   ctx: GoEmitContext,
-  val: ts.Expression,
+  val: ParsedExpr,
   ir: ComponentIR,
 ): string | null {
+  // `parseRecordIndexAccess` (the shared single-source-of-truth parser) takes a
+  // `ts.Expression`. The only shape it accepts is `IDENT[KEY]` with identifier
+  // object and index, so rebuild exactly that node from the carried tree via
+  // `ts.factory` — no source-text re-parse needed. Any other shape can't match
+  // and short-circuits to `null` here.
+  if (
+    val.kind !== 'index-access'
+    || val.object.kind !== 'identifier'
+    || val.index.kind !== 'identifier'
+  ) {
+    return null
+  }
+  const tsVal = ts.factory.createElementAccessExpression(
+    ts.factory.createIdentifier(val.object.name),
+    ts.factory.createIdentifier(val.index.name),
+  )
   // Shared structural parse (single source of truth in `@barefootjs/jsx`);
   // this wrapper only does the Go-specific emit from the structured result.
   const parsed = parseRecordIndexAccess(
-    val,
+    tsVal,
     ir.metadata.localConstants ?? [],
     ir.metadata.propsParams,
   )

@@ -11,6 +11,7 @@ import type {
   IRLoopChildComponent,
   IRNode,
   IRProp,
+  ParsedExpr,
   TypeInfo,
 } from '@barefootjs/jsx'
 
@@ -128,6 +129,13 @@ export interface ChildComponentShape {
 export interface SpreadSlotInfo {
   slotId: string
   expr: string
+  /**
+   * Best-effort structured parse of `expr` carried from `SpreadAttr.parsed`
+   * (#2006). Lets `buildConditionalSpreadInitializer` lower the conditional
+   * inline-object spread from the tree instead of re-parsing `expr` with
+   * `ts.createSourceFile`. Absent / `unsupported` → former string path.
+   */
+  parsed: ParsedExpr | undefined
   templateExpr: string | undefined
   bagSource: 'inline' | 'input-bag'
 }

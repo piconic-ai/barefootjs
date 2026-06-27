@@ -1492,7 +1492,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `spreadSlots` is computed once in `generateTypes` and threaded
     // through to avoid a second IR walk (#1411 review).
     for (const slot of spreadSlots) {
-      const goExpr = buildSpreadInitializer(this.emitCtx, slot.expr, ir)
+      const goExpr = buildSpreadInitializer(this.emitCtx, slot.expr, ir, slot.parsed)
       if (goExpr) {
         lines.push(`\t\t${slot.slotId}: ${goExpr},`)
       } else {
