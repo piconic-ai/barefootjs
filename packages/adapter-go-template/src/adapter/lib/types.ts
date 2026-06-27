@@ -1,10 +1,8 @@
 /**
- * Internal type definitions for the Go html/template adapter.
- *
- * Extracted from `go-template-adapter.ts` (Phase 2 refactor). These describe
- * the adapter's intermediate bookkeeping shapes (nested-component info, static
- * child instances, spread slots, ctor-lowering scope, etc.) plus the public
- * `GoTemplateAdapterOptions`. They carry no behaviour — pure type surface.
+ * Internal type definitions for the Go html/template adapter: the adapter's
+ * intermediate bookkeeping shapes (nested-component info, static child
+ * instances, spread slots, ctor-lowering scope, …) plus the public
+ * `GoTemplateAdapterOptions`. Pure type surface — no behaviour.
  */
 
 import type {
@@ -36,10 +34,8 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
    *  name (`item`), so the loop-child init can stamp `data-key` per item. */
   loopKey?: string
   loopParam?: string
-  /** The loop body component's JSX children (e.g. the 4 `<TableCell>` nodes
-   *  inside `<TableRow>` in data-table's `.map(payment => <TableRow>…</TableRow>)`).
-   *  Non-empty when the loop body component has children that need a companion
-   *  define rendered via `bf_with_children` + `bf_tmpl`. (#1897) */
+  /** The loop body component's JSX children. Non-empty when those children need
+   *  a companion define rendered via `bf_with_children` + `bf_tmpl`. */
   bodyChildren?: IRNode[]
   /** The loop's array expression for baking (e.g. `sortedData()`) */
   loopArray?: string
@@ -59,86 +55,72 @@ export interface StaticChildInstance {
   props: IRProp[]
   fieldName: string
   /** Concatenated text content from JSX children (e.g. `+1` for
-   *  `<Button>+1</Button>`). Null when children include any non-text
-   *  node; those go through the `childrenHtml` path when they're
-   *  purely static HTML, otherwise they're dropped. */
+   *  `<Button>+1</Button>`). Null when children include any non-text node;
+   *  those take the `childrenHtml` path if purely static HTML, else dropped. */
   childrenText: string | null
-  /** Rendered Go-template fragment for purely-static, non-text JSX
-   *  children (e.g. `<Card><span>x</span></Card>`). Forwarded to the
-   *  child via `Children: template.HTML(...)` so the child's
-   *  `{{or .Children ""}}` skips re-escaping. Null when children are
-   *  text-only or absent — and also null when the rendered fragment
-   *  contains any `{{...}}` action (signal expressions, nested
-   *  components, conditionals, etc.) since those wouldn't re-evaluate
-   *  through the parent's `{{.Children}}` read; those cases stay on
-   *  the existing drop path. */
+  /** Rendered Go-template fragment for purely-static, non-text JSX children,
+   *  forwarded via `Children: template.HTML(...)` so the child's
+   *  `{{or .Children ""}}` skips re-escaping. Null when children are text-only
+   *  or absent, OR when the fragment contains any `{{...}}` action (those
+   *  wouldn't re-evaluate through the parent's `{{.Children}}` read — kept on
+   *  the drop path). */
   childrenHtml: string | null
   /** Go string-concat expression for hoisted-JSX children that carry a
-   *  `needsScope` root (`children={<span/>}` — #1326 / #1335). The root's
-   *  `bf-s` resolves to the PARENT scope (mirroring the client
-   *  `__BF_PARENT_SCOPE__` placeholder + Mojo's begin/end capture), so the
-   *  fragment can't bake to a static string — the runtime `scopeID` is
-   *  spliced in (`"<span bf-s=\"" + scopeID + "\">x</span>"`). Null when the
-   *  static `childrenHtml` path already covers the children, or when any
-   *  other template action survives (genuinely dynamic — kept on the drop
-   *  path). */
+   *  `needsScope` root (`children={<span/>}`). The root's `bf-s` resolves to
+   *  the PARENT scope, so the fragment can't bake to a static string — the
+   *  runtime `scopeID` is spliced in (`"<span bf-s=\"" + scopeID + "\">x</span>"`).
+   *  Null when static `childrenHtml` already covers the children, or when any
+   *  other template action survives (genuinely dynamic — drop path). */
   childrenScopedHtmlExpr: string | null
   /**
    * Context values from enclosing `<Ctx.Provider value>` ancestors
    * (`createContext` identifier → Go value literal), wired into this child
    * slot's input against its own context-consumer fields. Empty/undefined when
-   * the child isn't under any provider. (#1297)
+   * the child isn't under any provider.
    */
   contextBindings?: ReadonlyMap<string, string>
 }
 
 /**
- * Cross-component shape of a child component the parent renders (#checkbox).
+ * Cross-component shape of a child component the parent renders.
  * `paramNames` are the child's declared `propsParams`; `restBagField` is the
- * Go field name of the child's open-ended rest bag (`Capitalize(restPropsName)`),
- * or null when the child has no `...props` rest spread.
+ * Go field name of the child's open-ended rest bag
+ * (`Capitalize(restPropsName)`), or null when the child has no `...props` rest.
  */
 export interface ChildComponentShape {
   paramNames: Set<string>
   restBagField: string | null
   /**
-   * (#1971) Child param names whose Go field is `map[string]interface{}` —
-   * an optional object/named-interface prop (carousel's `opts?:
-   * EmblaOptionsType`). A parent passing an inline object literal to such a
-   * param bakes it to a Go map literal so the keys round-trip faithfully.
+   * Child param names whose Go field is `map[string]interface{}` — an optional
+   * object/named-interface prop (`opts?: EmblaOptionsType`). A parent passing
+   * an inline object literal to such a param bakes it to a Go map literal so
+   * the keys round-trip faithfully.
    */
   mapTypedParamNames: Set<string>
 }
 
 /**
- * Top-level (non-loop) JSX intrinsic-element spread slot (#1407).
- * Collected by `collectSpreadSlots` so the adapter can emit one
- * `Spread_<slotId> map[string]any` field on the component's Props
- * struct and initialise it in `NewXxxProps` from the source JS
- * expression. Loop-internal spreads don't appear here — they emit
- * the bag inline via the loop's iteration variable instead.
+ * Top-level (non-loop) JSX intrinsic-element spread slot. The adapter emits one
+ * `Spread_<slotId> map[string]any` field on the component's Props struct and
+ * initialises it in `NewXxxProps` from the source JS expression. Loop-internal
+ * spreads don't appear here — they emit the bag inline via the loop's iteration
+ * variable instead.
  *
- * `bagSource` records how the bag is supplied so the Input struct
- * and `NewXxxProps` can be wired correctly (#1407 follow-up):
- *
- * - `'inline'`: bag is constructed inside `NewXxxProps` from
- *   compile-time-known data (signal initial values, prop refs,
- *   propsObject enumeration). No Input field needed.
- * - `'input-bag'`: bag is provided by the caller as a
- *   `Spread_<slotId> map[string]any` field on the Input struct
- *   (used for `restPropsName` spreads where the rest's keys are
- *   open-ended and Go's static typing can't enumerate them).
+ * `bagSource` records how the bag is supplied:
+ * - `'inline'`: constructed inside `NewXxxProps` from compile-time-known data
+ *   (signal initial values, prop refs, propsObject enumeration). No Input field.
+ * - `'input-bag'`: provided by the caller as a `Spread_<slotId> map[string]any`
+ *   field on the Input struct (for `restPropsName` spreads whose keys are
+ *   open-ended and can't be enumerated under Go's static typing).
  */
 export interface SpreadSlotInfo {
   slotId: string
   expr: string
   /**
-   * Best-effort structured parse of `expr` carried from `SpreadAttr.parsed`
-   * (#2006). Lets `buildConditionalSpreadInitializer` lower the conditional
-   * inline-object spread from the tree instead of re-parsing `expr` with
-   * `ts.createSourceFile`. When absent, `buildSpreadInitializer` parses `expr`
-   * once with `parseExpression`; a non-conditional or `unsupported` tree just
-   * falls through to the other spread shapes (there is no separate legacy path).
+   * Best-effort structured parse of `expr`. Lets the conditional inline-object
+   * spread lower from the tree instead of re-parsing `expr`. When absent, a
+   * non-conditional / `unsupported` tree falls through to the other spread
+   * shapes.
    */
   parsed: ParsedExpr | undefined
   templateExpr: string | undefined
@@ -146,9 +128,8 @@ export interface SpreadSlotInfo {
 }
 
 /**
- * (#1423) Hoisted local var representing a prop with a signal-time
- * `??` fallback. Used by `generateNewPropsFunction` to share the
- * fallback-applied value across the prop, signal, and memo fields.
+ * Hoisted local var representing a prop with a signal-time `??` fallback. Used
+ * to share the fallback-applied value across the prop, signal, and memo fields.
  */
 export interface PropFallbackVar {
   /** Local variable name (typically the lowercase prop identifier). */
@@ -163,7 +144,7 @@ export interface PropFallbackVar {
 
 /**
  * Scope for `lowerCtorExpr` — lowering a JS expression to Go in the
- * `NewXxxProps` constructor context (#1897 PostList derived state).
+ * `NewXxxProps` constructor context.
  */
 export interface CtorLowerEnv {
   /** Local names bound to `searchParams()` (`const sp = searchParams()`). */
@@ -191,11 +172,9 @@ export interface GoTemplateAdapterOptions {
 }
 
 /**
- * Single source of truth for the Go adapter's template-primitive
- * surface (#1188). Each entry pairs the expected arity with the
- * emit function so adding / removing a primitive is a one-line
- * change and the two derived maps (`templatePrimitives` and
- * `templatePrimitiveArities`) can't drift out of sync.
+ * Single source of truth for the Go adapter's template-primitive surface. Each
+ * entry pairs the expected arity with the emit function so the two derived maps
+ * (`templatePrimitives` and `templatePrimitiveArities`) can't drift out of sync.
  */
 export interface PrimitiveSpec {
   arity: number

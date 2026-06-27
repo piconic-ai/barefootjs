@@ -3,10 +3,7 @@
  *
  * Pure free functions over a {@link GoEmitContext} that classify a memo's
  * computation so `inferMemoType` can pick the right Go field type (and thus the
- * right SSR zero value). They read the context's `state.moduleStringConsts`,
- * `extractPropNameFromInitialValue`, and `typeInfoToGo` from the type-codegen
- * module. (Template-literal classification now rides on the IR as
- * `MemoInfo.bodyIsTemplateLiteral`, set by the analyzer, so it isn't here.)
+ * right SSR zero value).
  */
 
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
@@ -15,10 +12,10 @@ import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
- * (#checkbox) Heuristic: does this memo evaluate to a boolean? True when its
- * computation is a comparison (`!==`/`===`/`!=`/`==`), a negation (`!x`), or
- * a ternary whose branches are all boolean signals/props. Used to pick `bool`
- * (zero value `false`) over the int `0` default for the SSR initial value.
+ * Heuristic: does this memo evaluate to a boolean? True when its computation is
+ * a comparison (`!==`/`===`/`!=`/`==`), a negation (`!x`), or a ternary whose
+ * branches are all boolean signals/props. Used to pick `bool` (zero value
+ * `false`) over the int `0` default for the SSR initial value.
  */
 export function isBooleanMemo(
   ctx: GoEmitContext,
@@ -27,11 +24,9 @@ export function isBooleanMemo(
   propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
 ): boolean {
   const c = memo.computation
-  // A ternary whose two branches are string literals is a STRING memo
-  // (`orientation() === 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`),
-  // not boolean — the `===` lives in the *condition*, so the blanket
-  // comparison check below would misclassify it as bool and bake `false`
-  // (#1971 carousel `directionClasses`). Bail before that check.
+  // A ternary whose two branches are string literals is a STRING memo, not
+  // boolean — the `===` lives in the *condition*, so the blanket comparison
+  // check below would misclassify it as bool and bake `false`. Bail first.
   if (isStringTernaryMemo(ctx, memo.parsed)) return false
   if (/(!==|===|!=(?!=)|==(?!=))/.test(c)) return true
   if (/=>\s*!/.test(c)) return true
@@ -60,17 +55,10 @@ export function isBooleanMemo(
 }
 
 /**
- * (#1971) Does this memo's arrow body resolve to a string-valued ternary
- * whose BOTH branches are string-valued — e.g. `() => orientation() ===
- * 'vertical' ? 'flex-col -mt-4' : 'flex -ml-4'`? Such a memo is a string,
- * not a bool, even though its condition contains `===`.
- *
- * Reads the analyzer-carried body tree (`MemoInfo.parsed`) instead of
- * re-parsing `computation`. A block-bodied memo has no `parsed`, so it returns
- * false — matching the former predicate, which only inspected an expression
- * body and never descended a block. A no-substitution `` `lit` `` branch folds
- * to a plain string literal in `ParsedExpr`, which `isStr` accepts just as the
- * old `isNoSubstitutionTemplateLiteral` check did, so output is unchanged.
+ * Does this memo's arrow body resolve to a ternary whose BOTH branches are
+ * string-valued — e.g. `() => orientation() === 'vertical' ? 'flex-col' :
+ * 'flex'`? Such a memo is a string, not a bool, even though its condition
+ * contains `===`. A block-bodied memo has no `parsed`, so it returns false.
  */
 export function isStringTernaryMemo(ctx: GoEmitContext, parsed: ParsedExpr | undefined): boolean {
   if (!parsed || parsed.kind !== 'conditional') return false

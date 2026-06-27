@@ -1,12 +1,8 @@
 /**
- * Value lowering: convert JS signal/const initial values into Go literals.
- *
- * Pure free functions over a {@link GoEmitContext}. The cluster bakes inline
- * initial values into the SSR data context — scalars, prop references, and
- * fully-literal arrays/objects — and falls back to `nil`/`0` for anything the
- * parser can't reduce to a literal. They depend on the context's `state`
- * (struct-field / type-alias tables) and `extractPropNameFromInitialValue`,
- * plus `typeInfoToGo` from the type-codegen module.
+ * Value lowering: convert a JS signal/const initial value into a Go literal for
+ * the SSR data context — scalars, prop references, and fully-literal
+ * arrays/objects — falling back to `nil`/`0` for anything not reducible to a
+ * literal. Pure free functions over a {@link GoEmitContext}.
  */
 
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
@@ -19,6 +15,14 @@ import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
 
+/**
+ * Lower a signal/const initial value to its Go SSR literal.
+ *
+ * @param value     the initial-value source text
+ * @param preParsed the analyzer's structured parse of `value`, when available
+ * @returns the Go literal; `in.<Field>` for a prop reference; or the type's
+ *   zero (`nil` / `0` / `""`) when `value` is not a bakeable literal
+ */
 export function convertInitialValue(
   ctx: GoEmitContext,
   value: string,
@@ -26,15 +30,14 @@ export function convertInitialValue(
   propsParams?: { name: string }[],
   preParsed?: ParsedExpr,
 ): string {
-  // Check if it's a simple identifier (props param reference)
+  // A bare identifier matching a props param → its input field.
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
-    // Check if this matches a props param
     if (propsParams?.some(p => p.name === value)) {
       return `in.${capitalizeFieldName(value)}`
     }
   }
 
-  // Check for props.xxx pattern (e.g., "props.initial ?? 0")
+  // `props.X ?? …` referencing a props param → its input field.
   const propName = ctx.extractPropNameFromInitialValue(value)
   if (propName && propsParams?.some(p => p.name === propName)) {
     return `in.${capitalizeFieldName(propName)}`
@@ -45,13 +48,12 @@ export function convertInitialValue(
       return value === 'true' ? 'true' : 'false'
     }
     if (typeInfo.primitive === 'number') {
-      // Check if it's a simple number
       if (/^\d+$/.test(value)) return value
       if (/^\d+\.\d+$/.test(value)) return value
       return '0'
     }
     if (typeInfo.primitive === 'string') {
-      // Remove quotes if present and add Go string syntax
+      // Normalize single-quoted / unquoted source to a Go string literal.
       if (value.startsWith("'") || value.endsWith("'")) {
         return value.replace(/'/g, '"')
       }
@@ -62,25 +64,15 @@ export function convertInitialValue(
     }
   }
 
-  // For arrays, bake a fully-literal initial value into a Go slice literal
-  // so the SSR data context carries the items (#1672). Empty / nullish
-  // literals collapse to nil, and any non-literal element (a call, a
-  // variable reference, …) falls back to nil so the handler populates it.
-  //
-  // The baked literal is element-type-aware so it both compiles and renders:
-  //   - scalar elements →  `[]string{…}` / `[]interface{}{…}`  (template `{{.}}`)
-  //   - struct elements →  `[]Item{Item{ID: …}}`               (template `.ID`)
-  // An untyped object array would land in a `[]interface{}` field whose
-  // `map[string]interface{}` items the template can't reach via field access
-  // (`.ID` → <nil>), so `jsLiteralToGo` returns null there and we keep nil.
+  // Bake a fully-literal array into a Go slice literal so the SSR context
+  // carries the items, element-type-aware so it both compiles and renders
+  // (`[]string{…}` / `[]Item{Item{ID: …}}`). A call / identifier / empty array /
+  // object-in-`[]interface{}` yields null → keep `nil`.
   if (typeInfo.kind === 'array') {
-    // Bake a fully-literal initial value into a Go slice literal; anything
-    // the parser can't reduce to a literal — a call, an identifier, `null` /
-    // `undefined`, or an empty array — yields null and we keep `nil`.
     return jsLiteralToGo(ctx, typeInfo, preParsed) ?? 'nil'
   }
 
-  // String alias (e.g., Filter = string) — return string value instead of nil
+  // String alias (e.g. `type Filter = string`) → the string value, not nil.
   if (typeInfo.kind === 'interface' && typeInfo.raw) {
     const aliasBase = ctx.state.localTypeAliases.get(typeInfo.raw)
     if (aliasBase === 'string') {
@@ -96,38 +88,26 @@ export function convertInitialValue(
 }
 
 /**
- * Convert a fully-literal JS expression — carried as the analyzer's structured
- * `ParsedExpr` tree (#2006) — into an equivalent Go literal whose Go type
- * matches `typeInfo` (#1672), used to bake a signal's inline initial value into
- * the SSR data context:
+ * Lower a fully-literal value — from the analyzer's carried `ParsedExpr` tree —
+ * to a Go literal typed as `typeInfo`:
  *
- *   `["x", "y"]`             (string[])  → `[]string{"x", "y"}`
- *   `["x", "y"]`             (unknown[]) → `[]interface{}{"x", "y"}`
- *   `[{ id: "a" }]`          (Item[])    → `[]Item{Item{ID: "a"}}`
+ *   `["x", "y"]`    (string[])  → `[]string{"x", "y"}`
+ *   `["x", "y"]`    (unknown[]) → `[]interface{}{"x", "y"}`
+ *   `[{ id: "a" }]` (Item[])    → `[]Item{Item{ID: "a"}}`
  *
- * Returns `null` — so the caller keeps `nil` — when no structured tree was
- * carried (the analyzer's `parseExpression` returned `unsupported`), or when
- * the tree (or any nested element) is not a pure literal (a call, identifier,
- * template with interpolation, …) or cannot be expressed in the target Go type
- * without a render/compile mismatch (e.g. an object element in a `[]interface{}`
- * field, which the SSR template reaches via struct field access the map lacks).
+ * @returns `null` (→ caller keeps `nil`) when no tree was carried, the tree
+ *   isn't a pure literal, or it can't be expressed in the target Go type
+ *   without a render/compile mismatch (e.g. an object element in a
+ *   `[]interface{}`, unreachable via the template's struct-field access).
  */
 export function jsLiteralToGo(
   ctx: GoEmitContext,
   typeInfo: TypeInfo,
   preParsed?: ParsedExpr,
 ): string | null {
-  // Roadmap A (terminal sweep, #2006): lower the literal from the carried
-  // structured parse only. `parsedLiteralToGo` reproduces every bakeable shape
-  // (scalars, a unary-minus number, scalar arrays, and objects against a local
-  // struct) and returns null to keep `nil` for everything else (empty arrays,
-  // objects with no known struct, identifiers / calls, nested object/array
-  // values, `as const`). The former `ctx.parseLiteralExpression` +
-  // `tsLiteralToGo` re-parse fallback covered the same bakeable shapes — every
-  // shape the analyzer's `parseExpression` leaves `unsupported` (so `preParsed`
-  // is absent) is also one the fallback's own `ts.is*` checks declined — so
-  // dropping it is byte-identical (verified by the 786/556 adapter gauntlet,
-  // the project's byte-identity authority).
+  // `parsedLiteralToGo` reproduces every bakeable shape (scalars, unary-minus
+  // number, scalar arrays, objects against a local struct) and returns null to
+  // keep `nil` for anything else.
   if (preParsed) {
     const structured = parsedLiteralToGo(ctx, preParsed, typeInfo)
     if (structured !== null) return structured
@@ -136,36 +116,24 @@ export function jsLiteralToGo(
 }
 
 /**
- * (#1971) Bake a pure object-literal expression (`{ align: 'start' }`) into a
- * Go `map[string]interface{}` literal keyed by the SOURCE property names, so
- * it round-trips through `bf_json` exactly like JS `JSON.stringify` of the
- * same object — only the supplied keys, no zero-filled struct fields. Used
- * when an inline object literal is passed to a child's optional object prop
- * (`<Carousel opts={{ align: 'start' }}>`). Returns null for any non-literal
- * or nested object/array value (carousel's opts are flat scalars).
+ * Bake a flat object literal (`{ align: 'start' }`) into a Go
+ * `map[string]interface{}` keyed by the SOURCE property names, so it
+ * round-trips through `bf_json` like `JSON.stringify` — only the supplied keys,
+ * no zero-filled struct fields. Used for an inline object passed to a child's
+ * optional object prop (`<Carousel opts={{ align: 'start' }}>`).
+ *
+ * @returns `null` for a non-object-literal, a shorthand property, a nested
+ *   object/array value, or an empty object.
  */
 export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
-  // Roadmap A: read the carried `ParsedExpr` tree instead of re-parsing the
-  // source with `ts.createSourceFile`. The tree is only an `object-literal`
-  // when every property is a non-computed `key: value` / shorthand `{ key }`
-  // (spreads, computed keys, methods fall through to `unsupported` upstream),
-  // which is exactly the shape the old `ts.isObjectLiteralExpression` +
-  // `ts.isPropertyAssignment` checks accepted.
   if (expr.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of expr.properties) {
-    // Shorthand `{ a }` carried an identifier value upstream; the old code
-    // refused a `ShorthandPropertyAssignment`, so bail here too.
+    // Shorthand `{ a }` (identifier value) is unsupported.
     if (prop.shorthand) return null
-    // `parsedLiteralToGo` with no typeInfo reproduces `tsLiteralToGo`'s scalar
-    // output byte-for-byte (string via `JSON.stringify`, number via the
-    // carried `raw` token, boolean/null literally). Nested object / array
-    // property values lower to null and defer — matching the old behaviour,
-    // where carousel's flat-scalar opts were the only supported shape.
+    // Scalar lowering (no typeInfo); a nested object/array value defers to null.
     const val = parsedLiteralToGo(ctx, prop.value)
     if (val === null) return null
-    // `prop.key` is the resolved key text (identifier / string / numeric all
-    // normalised to a string), exactly like the old `prop.name.text`.
     entries.push(`${JSON.stringify(prop.key)}: ${val}`)
   }
   if (entries.length === 0) return null
@@ -173,12 +141,13 @@ export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): stri
 }
 
 /**
- * Get signal's initial value as Go code.
- * Handles both literal values (0, true, "str") and props references (initial).
+ * Get a signal's initial value as Go code — a literal (`0`, `true`, `"str"`) or
+ * a props reference.
  *
- * (#1423) When the signal references a prop via `props.X ?? N` and
- * the caller hoisted a fallback variable for `X`, return the hoisted
- * variable's name so the memo inherits the signal-time fallback.
+ * @param propFallbackVars when the signal is `props.X ?? N` and the caller
+ *   hoisted a fallback var for `X`, its name is returned so the memo inherits
+ *   the signal-time fallback.
+ * @returns the Go expression, or `0` for an unrecognized value
  */
 export function getSignalInitialValueAsGo(
   ctx: GoEmitContext,
@@ -186,14 +155,14 @@ export function getSignalInitialValueAsGo(
   propsParams: { name: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
 ): string {
-  // Check if it's a props param reference
+  // A bare props-param reference → its input field (or the hoisted fallback var).
   if (propsParams.some(p => p.name === initialValue)) {
     const hoisted = propFallbackVars.get(initialValue)
     if (hoisted) return hoisted.varName
     return `in.${capitalizeFieldName(initialValue)}`
   }
 
-  // Check for props.xxx pattern (e.g., "props.initial ?? 0")
+  // `props.X ?? …` referencing a props param → its input field / fallback var.
   const propName = ctx.extractPropNameFromInitialValue(initialValue)
   if (propName && propsParams.some(p => p.name === propName)) {
     const hoisted = propFallbackVars.get(propName)
@@ -201,24 +170,20 @@ export function getSignalInitialValueAsGo(
     return `in.${capitalizeFieldName(propName)}`
   }
 
-  // Check if it's a literal value
-  // Number literals
+  // Literals pass through (single quotes normalized to Go double quotes).
   if (/^-?\d+$/.test(initialValue)) {
     return initialValue
   }
   if (/^-?\d+\.\d+$/.test(initialValue)) {
     return initialValue
   }
-  // Boolean literals
   if (initialValue === 'true' || initialValue === 'false') {
     return initialValue
   }
-  // String literals
   if ((initialValue.startsWith("'") && initialValue.endsWith("'")) ||
       (initialValue.startsWith('"') && initialValue.endsWith('"'))) {
     return initialValue.replace(/'/g, '"')
   }
 
-  // Default: return 0 for unknown
   return '0'
 }

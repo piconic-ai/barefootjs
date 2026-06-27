@@ -1,11 +1,10 @@
 /**
  * Type codegen: render TypeScript types as Go type strings.
  *
- * Pure free functions over a {@link GoEmitContext}. They resolve a prop /
- * signal / const's TypeScript type (`TypeInfo`, a raw type string, or — as a
- * last resort — an inferred shape from a literal value) into the Go type used
- * for its struct field. They read only the context's `state.localTypeNames`
- * table; `inferTypeFromValue` is fully pure (no context needed).
+ * Free functions over a {@link GoEmitContext}. They resolve a prop/signal/const's
+ * type (`TypeInfo`, a raw type string, or — as a last resort — an inferred shape
+ * from a literal value) into the Go type used for its struct field. They read
+ * only `state.localTypeNames`; `inferTypeFromValue` is fully pure.
  */
 
 import type { TypeInfo } from '@barefootjs/jsx'
@@ -13,8 +12,10 @@ import type { TypeInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 
 /**
- * Convert TypeInfo to Go type string.
- * If type is unknown, tries to infer from defaultValue.
+ * Convert a `TypeInfo` to a Go type string.
+ *
+ * @param defaultValue used to infer the type when `typeInfo.kind` is `unknown`
+ * @returns the Go type, falling back to `interface{}` when unresolvable
  */
 export function typeInfoToGo(
   ctx: GoEmitContext,
@@ -41,18 +42,16 @@ export function typeInfoToGo(
     case 'object':
       return 'map[string]interface{}'
     case 'interface':
-      // Check if raw type name matches a locally-defined type
       if (typeInfo.raw && ctx.state.localTypeNames.has(typeInfo.raw)) {
         return typeInfo.raw
       }
-      // Try to parse raw type string as a known pattern (e.g., Array<Todo>)
+      // Resolve a raw type string pattern (e.g. `Array<Todo>`).
       if (typeInfo.raw) {
         const resolved = tsTypeStringToGo(ctx, typeInfo.raw)
         if (resolved !== 'interface{}') return resolved
       }
       return 'interface{}'
     case 'unknown':
-      // Try to infer type from default value
       if (defaultValue !== undefined) {
         return inferTypeFromValue(defaultValue)
       }
@@ -63,8 +62,8 @@ export function typeInfoToGo(
 }
 
 /**
- * Convert a raw TypeScript type string to a Go type string.
- * Handles primitives (number, string, boolean) and basic arrays.
+ * Convert a raw TypeScript type string to a Go type string. Handles primitives,
+ * `T[]` / `Array<T>` arrays, and known local types; else `interface{}`.
  */
 export function tsTypeStringToGo(ctx: GoEmitContext, tsType: string): string {
   const t = tsType.trim()
@@ -77,30 +76,20 @@ export function tsTypeStringToGo(ctx: GoEmitContext, tsType: string): string {
   }
   const arrayMatch = t.match(/^Array<(.+)>$/)
   if (arrayMatch) return `[]${tsTypeStringToGo(ctx, arrayMatch[1])}`
-  // Check if it's a known local type
   if (ctx.state.localTypeNames.has(t)) return t
   return 'interface{}'
 }
 
-/**
- * Infer Go type from a JavaScript value literal.
- */
+/** Infer a Go type from a JS value literal; `interface{}` when unrecognized. */
 export function inferTypeFromValue(value: string): string {
-  // Boolean literals
   if (value === 'true' || value === 'false') return 'bool'
-  // Number literals (int)
   if (/^-?\d+$/.test(value)) return 'int'
-  // Number literals (float)
   if (/^-?\d+\.\d+$/.test(value)) return 'float64'
-  // String literals
   if ((value.startsWith("'") && value.endsWith("'")) ||
       (value.startsWith('"') && value.endsWith('"'))) {
     return 'string'
   }
-  // Empty string
   if (value === '""' || value === "''") return 'string'
-  // Array literals
   if (value.startsWith('[')) return '[]interface{}'
-  // Default
   return 'interface{}'
 }

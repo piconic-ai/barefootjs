@@ -19,10 +19,11 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { lowerCtorExpr } from './ctor-lowering.ts'
 
 /**
- * (#1897) Recognises a block-body memo whose SSR path returns a module-const
- * array when the guard signal starts falsy:
+ * Recognise a block-body memo whose SSR path returns a module-const array when
+ * the guard signal starts falsy:
  *   `() => { const k = getter(); if (!k) return MODULE_CONST; … }`
- * Returns the constant's name and inferred type, or null.
+ *
+ * @returns the constant's name, value, inferred type and parsed tree, or null
  */
 export function resolveBlockBodyMemoModuleConst(
   ctx: GoEmitContext,
@@ -94,34 +95,32 @@ export function resolveBlockBodyMemoModuleConst(
 }
 
 /**
- * (#1897 PostList) Compute the SSR value of an object-returning block-body
- * memo derived from `searchParams()`:
+ * Compute the SSR value of an object-returning block-body memo derived from
+ * `searchParams()`:
  *   () => { const sp = searchParams(); return { sort: asSortKey(sp.get('sort')),
  *                                               tag: sp.get('tag') ?? '' } }
  * Emits a Go `map[string]interface{}{ "Sort": …, "Tag": … }` whose values are
  * lowered from the request query (see `lowerCtorExpr`). Keys are capitalized to
- * match the template's `.Params.<Field>` map access. Returns null for any shape
- * the lowerer can't represent, so the caller falls back to a nil map.
+ * match the template's `.Params.<Field>` map access.
+ *
+ * @returns the Go map literal, or null for any shape the lowerer can't
+ *   represent (→ nil-map fallback)
  */
 export function computeObjectMemoInitialValue(
   ctx: GoEmitContext,
   memo: { parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
 ): string | null {
-  // Read the analyzer-carried block statements instead of re-parsing the
-  // `computation` source with `ts.createSourceFile` (#2006). An incomplete
-  // block (`parsedBlockComplete === false`) means a statement was omitted from
-  // the tolerant parse — it could hide control flow this resolver can't model,
-  // so bail to the nil fallback exactly as the former bail-on-unknown-statement
-  // walk did.
+  // An incomplete block (`parsedBlockComplete === false`) means a statement was
+  // omitted from the tolerant parse — it could hide control flow this resolver
+  // can't model, so bail to the nil fallback.
   if (!memo.parsedBlock || !memo.parsedBlockComplete) return null
 
   // Accept only a strict shape: zero or more `const`/`let` declarations
   // followed by exactly one `return { … }` as the LAST statement. Any other
   // statement kind — `if`, an early/extra `return` — means the block has
-  // control flow this resolver can't reason about, so we bail to the nil
-  // fallback rather than silently lowering one of several returns (#1941
-  // review). Along the way, collect `const <v> = searchParams()` bindings
-  // (the env for `<v>.get('k')`).
+  // control flow this resolver can't reason about, so bail to the nil fallback
+  // rather than silently lowering one of several returns. Along the way,
+  // collect `const <v> = searchParams()` bindings (the env for `<v>.get('k')`).
   const searchParamsVars = new Set<string>()
   let retObj: Extract<ParsedExpr, { kind: 'object-literal' }> | null = null
   const statements = memo.parsedBlock
@@ -129,8 +128,7 @@ export function computeObjectMemoInitialValue(
     const s = statements[i]
     if (s.kind === 'var-decl') {
       // `const <v> = searchParams()` — a zero-arg call to a searchParams
-      // local. Any other var-decl (a non-searchParams binding) is accepted
-      // and ignored, matching the old code that accepted any const.
+      // local. Any other var-decl is accepted and ignored.
       if (
         s.init.kind === 'call' &&
         s.init.callee.kind === 'identifier' &&
@@ -156,15 +154,11 @@ export function computeObjectMemoInitialValue(
   const env: CtorLowerEnv = { searchParamsVars, params: new Map() }
   const entries: string[] = []
   for (const prop of retObj.properties) {
-    // Bail on a shorthand property (`return { tag }`). The former walk only
-    // accepted `ts.PropertyAssignment` and bailed on `ShorthandPropertyAssignment`;
-    // preserve that strictness so this stays byte-identical (a shorthand value
-    // is a bare identifier whose name need not match a `.Params.<Field>`
-    // accessor, and lowering it would silently widen the accepted shape).
+    // Bail on a shorthand property (`return { tag }`): its value is a bare
+    // identifier whose name need not match a `.Params.<Field>` accessor.
     if (prop.shorthand) return null
     // The key must be identifier- or string-named (a numeric key has no
-    // matching `.Params.<Field>` accessor), matching the old
-    // `ts.isIdentifier || ts.isStringLiteral` check.
+    // matching `.Params.<Field>` accessor).
     if (prop.keyKind !== undefined && prop.keyKind !== 'identifier' && prop.keyKind !== 'string') {
       return null
     }
