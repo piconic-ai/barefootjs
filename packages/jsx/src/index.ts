@@ -254,9 +254,9 @@ export {
 export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors.ts'
 
 // Expression Parser
-export { parseExpression, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, type ProviderObjectMember } from './expression-parser.ts'
+export { parseExpression, parseExpression2, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, type ProviderObjectMember } from './expression-parser.ts'
 export type { StyleObjectEntry } from './expression-parser.ts'
-export type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, SortKey, ReduceOp, FlatDepth, FlatMapOp, FlatMapLeaf, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
+export type { ParsedExpr, ParsedExpr2, ParsedExpr2Property, ObjectLiteralProperty, ParsedStatement, SortComparator, SortKey, ReduceOp, FlatDepth, FlatMapOp, FlatMapLeaf, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
 export { buildLoopChainExpr } from './loop-chain.ts'
 export type { LoopChainInputs } from './loop-chain.ts'
 export { isLowerableObjectRestDestructure } from './loop-destructure.ts'
