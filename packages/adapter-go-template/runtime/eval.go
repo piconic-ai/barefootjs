@@ -45,8 +45,10 @@ import (
 // and no corpus vector exercises the astral range.
 
 // EvalExpr evaluates a pure ParsedExpr (carried as its JSON encoding) against
-// env. The result is a value in the JSON domain (float64, string, bool, nil,
-// []any, map[string]any). A malformed tree yields nil.
+// env. The result is a value in the JSON domain: a number (Go int or float64 —
+// both are the single JS number type; e.g. `.length` returns int, arithmetic
+// returns float64), string, bool, nil, []any, or map[string]any. A malformed
+// tree yields nil.
 func EvalExpr(exprJSON string, env map[string]any) any {
 	var node any
 	if err := json.Unmarshal([]byte(exprJSON), &node); err != nil {
@@ -237,6 +239,12 @@ func evalToString(v any) string {
 			return "-Infinity"
 		}
 	}
+	// Non-primitive operands (arrays / objects) in ToString position are
+	// outside the evaluator subset — the JS reference refuses them, and the
+	// compiler gates such a callback body with BF101 before it ever reaches
+	// the runtime. This evaluator runs already-validated bodies, so it does
+	// not re-reject here; String() (fmt %v) is a best-effort fallback for that
+	// unreachable path, never exercised by the in-subset corpus.
 	return String(v)
 }
 
@@ -342,6 +350,12 @@ func evalStrictEq(l, r any) bool {
 		rv, ok := r.(bool)
 		return ok && rv == lv
 	}
+	// Non-primitive operands (arrays / objects) are outside the subset: the JS
+	// reference refuses `===` on them and the compiler gates such a body with
+	// BF101 upstream, so this is unreachable for an in-subset corpus. The
+	// runtime trusts that gate rather than re-validating, returning false
+	// here (it does not attempt JS reference identity, which templates can't
+	// model anyway).
 	return false
 }
 
