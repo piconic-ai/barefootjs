@@ -607,6 +607,20 @@ func SortEval(items any, cmpJSON, paramA, paramB string, baseEnv map[string]any)
 	return arr
 }
 
+// Env builds the captured-free-var environment for FoldEval / SortEval from a
+// flat key, value, key, value, … argument list — the adapter emits
+// `bf_env "k1" v1 "k2" v2 …` for the free variables a callback body references
+// beyond its own params. An odd trailing key with no value is ignored; with no
+// pairs it returns an empty (non-nil) map, the no-capture case.
+func Env(pairs ...any) map[string]any {
+	env := make(map[string]any, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		key, _ := pairs[i].(string)
+		env[key] = pairs[i+1]
+	}
+	return env
+}
+
 func evalReadIndex(obj any, index any) any {
 	switch o := obj.(type) {
 	case []any:

@@ -91,6 +91,16 @@ func FuncMap() template.FuncMap {
 		"bf_sort":            Sort,
 		"bf_reduce":          Reduce,
 
+		// Evaluator-driven higher-order folds (#2018): the comparator / reducer
+		// body travels as a serialized ParsedExpr (JSON) evaluated per element,
+		// generalizing bf_sort / bf_reduce beyond their fixed catalogues. The
+		// adapter falls back to bf_sort for a comparator the evaluator can't
+		// model (e.g. localeCompare). `bf_env` builds the captured-free-var
+		// environment passed as the trailing base_env argument.
+		"bf_sort_eval":   SortEval,
+		"bf_reduce_eval": FoldEval,
+		"bf_env":         Env,
+
 		// Comment marker (for hydration)
 		"bfComment":   Comment,
 		"bfTextStart": TextStart,
