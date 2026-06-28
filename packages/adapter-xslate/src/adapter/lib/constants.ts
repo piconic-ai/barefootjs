@@ -5,7 +5,7 @@
  * track D).
  */
 
-import type { PrimitiveSpec } from "./types.ts"
+import type { PrimitiveSpec } from './types.ts'
 
 /**
  * Single source of truth for the Xslate adapter's template-primitive

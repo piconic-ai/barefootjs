@@ -43,10 +43,12 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * String-typed signals and props, so equality comparisons against them lower
- * to `eq`/`ne`. A signal is string-typed when its inferred type is `string`
- * (or, defensively, when its initial value is a bare string literal); a prop
- * when its annotated type is `string`.
+ * String-typed signals and props. A signal is string-typed when its inferred
+ * type is `string` (or, defensively, when its initial value is a bare string
+ * literal); a prop when its annotated type is `string`. In the Mojo adapter
+ * this drives `eq`/`ne` selection for string equality; the Kolon emitters
+ * don't consume the distinction (Kolon's `==`/`!=` compare strings and numbers
+ * correctly), so this set is carried for parity with the Mojo adapter.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
