@@ -6,10 +6,12 @@
  * with the adapter's own const/record resolution and its filter-predicate
  * emitter, so the extracted `XslateTopLevelEmitter` still needs to call back
  * into shared per-compile state and recursive entry points. `XslateEmitContext`
- * is that seam: the emitter takes a `XslateEmitContext` (the adapter passes
- * `this`), depending on this narrow interface rather than the full ~2.5k-line
- * class, so the coupling is explicit and the emitter is unit-testable against
- * a stub.
+ * is that seam: the emitter takes a `XslateEmitContext` built by the adapter's
+ * private `emitCtx` getter (the adapter does NOT `implements` this interface,
+ * so the wrapped members stay private and off its exported public type —
+ * matching the Go adapter's `emitCtx`). The emitter depends on this narrow
+ * interface rather than the full ~2.5k-line class, so the coupling is explicit
+ * and it's unit-testable against a stub.
  *
  * Keep this surface minimal: add a member only when an extracted module
  * genuinely needs it, so the seam documents the real cross-module coupling
@@ -68,7 +70,14 @@ export interface XslateSpreadContext {
   /** Prop params, for classifying a bare-identifier index as a prop. */
   readonly propsParams: { name: string }[]
 
-  /** Lower a JS expression to its Kolon form (the core recursive entry). */
+  /**
+   * Lower a JS expression to its Kolon form (the core recursive entry).
+   *
+   * String-in today. Once the IR-carries-semantics work (#2018) lands, this
+   * seam should also accept an already-parsed `ParsedExpr` — cf. go-template's
+   * `convertExpressionToGo(jsExpr, out?, preParsed?)` — so the future Perl
+   * evaluator can thread a structured tree instead of re-parsing source text.
+   */
   convertExpressionToKolon(expr: string): string
 }
 
@@ -79,6 +88,13 @@ export interface XslateSpreadContext {
  * default; that recursive entry is its only adapter coupling.
  */
 export interface XslateMemoContext {
-  /** Lower a JS expression to its Kolon form (the core recursive entry). */
+  /**
+   * Lower a JS expression to its Kolon form (the core recursive entry).
+   *
+   * String-in today. Once the IR-carries-semantics work (#2018) lands, this
+   * seam should also accept an already-parsed `ParsedExpr` — cf. go-template's
+   * `convertExpressionToGo(jsExpr, out?, preParsed?)` — so the future Perl
+   * evaluator can thread a structured tree instead of re-parsing source text.
+   */
   convertExpressionToKolon(expr: string): string
 }

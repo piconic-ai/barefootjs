@@ -104,7 +104,7 @@ import {
 export type { XslateAdapterOptions } from './lib/types.ts'
 import type { XslateAdapterOptions } from './lib/types.ts'
 
-export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRenderCtx>, XslateEmitContext {
+export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRenderCtx> {
   name = 'xslate'
   extension = '.tx'
   templatesPerComponent = true
@@ -167,7 +167,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * the generic dot deref. Set at `generate()` entry from `ir.metadata.imports`;
    * read by the top-level ParsedExpr emitter.
    */
-  _searchParamsLocals: Set<string> = new Set()
+  private _searchParamsLocals: Set<string> = new Set()
 
   /**
    * Local + module constants from the IR, used by the conditional-spread and
@@ -1291,6 +1291,25 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   /**
+   * Build the EmitContext seam the top-level `ParsedExpr` emitter depends on.
+   * Built as a private object (the adapter does NOT `implements XslateEmitContext`)
+   * so the wrapped bookkeeping — `_searchParamsLocals`, the const/record
+   * resolvers, BF101 recording, the filter-predicate entry — stays private and
+   * off the exported adapter's public type, matching the Go adapter's
+   * `emitCtx` and the `spreadCtx` / `memoCtx` seams below.
+   */
+  private get emitCtx(): XslateEmitContext {
+    return {
+      _searchParamsLocals: this._searchParamsLocals,
+      _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
+      _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
+      _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
+      _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
+      _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
+    }
+  }
+
+  /**
    * Build the narrow context the extracted spread lowering depends on. Passing
    * a purpose-built object (rather than `this`) keeps the adapter's bookkeeping
    * members private — they stay internal implementation detail, not part of the
@@ -1346,12 +1365,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * expressions where identifiers are signals / template vars.
    */
   private renderParsedExprToKolon(expr: ParsedExpr): string {
-    return emitParsedExpr(expr, new XslateTopLevelEmitter(this))
+    return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx))
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an
    *  equality comparison against it should use Perl `eq`/`ne`. */
-  _isStringValueName(name: string): boolean {
+  private _isStringValueName(name: string): boolean {
     return this.stringValueNames.has(name)
   }
 
@@ -1413,7 +1432,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * pagination) — function-scope consts never reach the per-render
    * stash, so a bare `$totalPages` renders empty.
    */
-  _resolveLiteralConst(name: string): string | null {
+  private _resolveLiteralConst(name: string): string | null {
     const c = (this.localConstants ?? []).find(lc => lc.name === name)
     if (c?.value === undefined) return null
     const v = c.value.trim()
@@ -1423,7 +1442,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return null
   }
 
-  _resolveStaticRecordLiteral(objectName: string, key: string): string | null {
+  private _resolveStaticRecordLiteral(objectName: string, key: string): string | null {
     const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
     if (!hit) return null
     return hit.kind === 'number'
@@ -1431,7 +1450,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       : `'${hit.text.replace(/[\\']/g, m => `\\${m}`)}'`
   }
 
-  _resolveModuleStringConst(name: string): string | null {
+  private _resolveModuleStringConst(name: string): string | null {
     // A loop body may bind `my $<param>` that shadows a module const of the
     // same name; never inline inside one (conservative — drop to `$name`).
     if (this.inLoop) return null
@@ -1440,7 +1459,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
   }
 
-  _recordExprBF101(message: string, reason?: string): void {
+  private _recordExprBF101(message: string, reason?: string): void {
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -1455,7 +1474,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
-  _renderKolonFilterExprPublic(expr: ParsedExpr, param: string): string {
+  private _renderKolonFilterExprPublic(expr: ParsedExpr, param: string): string {
     return this.renderKolonFilterExpr(expr, param)
   }
 }

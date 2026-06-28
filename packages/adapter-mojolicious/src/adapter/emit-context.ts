@@ -6,9 +6,12 @@
  * the adapter's own const/record resolution and its filter-predicate emitter,
  * so the extracted `MojoTopLevelEmitter` still needs to call back into shared
  * per-compile state and recursive entry points. `MojoEmitContext` is that
- * seam: the emitter takes a `MojoEmitContext` (the adapter passes `this`),
- * depending on this narrow interface rather than the full ~3k-line class, so
- * the coupling is explicit and the emitter is unit-testable against a stub.
+ * seam: the emitter takes a `MojoEmitContext` built by the adapter's private
+ * `emitCtx` getter (the adapter does NOT `implements` this interface, so the
+ * wrapped members stay private and off its exported public type — matching the
+ * Go adapter's `emitCtx`). The emitter depends on this narrow interface rather
+ * than the full ~3k-line class, so the coupling is explicit and it's
+ * unit-testable against a stub.
  *
  * Keep this surface minimal: add a member only when an extracted module
  * genuinely needs it, so the seam documents the real cross-module coupling
@@ -70,7 +73,14 @@ export interface MojoSpreadContext {
   /** Prop params, for classifying a bare-identifier index as a prop. */
   readonly propsParams: { name: string }[]
 
-  /** Lower a JS expression to its Perl form (the core recursive entry). */
+  /**
+   * Lower a JS expression to its Perl form (the core recursive entry).
+   *
+   * String-in today. Once the IR-carries-semantics work (#2018) lands, this
+   * seam should also accept an already-parsed `ParsedExpr` — cf. go-template's
+   * `convertExpressionToGo(jsExpr, out?, preParsed?)` — so the future Perl
+   * evaluator can thread a structured tree instead of re-parsing source text.
+   */
   convertExpressionToPerl(expr: string): string
 }
 
@@ -81,6 +91,13 @@ export interface MojoSpreadContext {
  * default; that recursive entry is its only adapter coupling.
  */
 export interface MojoMemoContext {
-  /** Lower a JS expression to its Perl form (the core recursive entry). */
+  /**
+   * Lower a JS expression to its Perl form (the core recursive entry).
+   *
+   * String-in today. Once the IR-carries-semantics work (#2018) lands, this
+   * seam should also accept an already-parsed `ParsedExpr` — cf. go-template's
+   * `convertExpressionToGo(jsExpr, out?, preParsed?)` — so the future Perl
+   * evaluator can thread a structured tree instead of re-parsing source text.
+   */
   convertExpressionToPerl(expr: string): string
 }

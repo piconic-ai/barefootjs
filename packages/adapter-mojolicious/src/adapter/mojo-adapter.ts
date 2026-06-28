@@ -90,7 +90,7 @@ import {
 export type { MojoAdapterOptions } from './lib/types.ts'
 import type { MojoAdapterOptions } from './lib/types.ts'
 
-export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx>, MojoEmitContext {
+export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRenderCtx> {
   name = 'mojolicious'
   extension = '.html.ep'
   templatesPerComponent = true
@@ -155,7 +155,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * the generic hash deref. Set at `generate()` entry from `ir.metadata.imports`;
    * read by the top-level ParsedExpr emitter.
    */
-  _searchParamsLocals: Set<string> = new Set()
+  private _searchParamsLocals: Set<string> = new Set()
   /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at
    * file top-level), keyed by name → resolved literal value. Populated at
@@ -356,7 +356,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * function-scope consts never reach the per-render stash, so a bare
    * `$totalPages` faults under strict mode.
    */
-  resolveLiteralConst(name: string): string | null {
+  private resolveLiteralConst(name: string): string | null {
     if (this.loopBoundNames?.has?.(name)) return null
     const c = (this.localConstants ?? []).find(lc => lc.name === name)
     if (c?.value === undefined) return null
@@ -367,7 +367,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return null
   }
 
-  resolveStaticRecordLiteral(objectName: string, key: string): string | null {
+  private resolveStaticRecordLiteral(objectName: string, key: string): string | null {
     if (this.loopBoundNames?.has?.(objectName)) return null
     const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
     if (!hit) return null
@@ -376,7 +376,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       : `'${hit.text.replace(/[\\']/g, m => `\\${m}`)}'`
   }
 
-  resolveModuleStringConst(name: string): string | null {
+  private resolveModuleStringConst(name: string): string | null {
     // A loop body introduces `my $<param>` / `my $<index>` bindings that
     // shadow a module const of the same name — never inline inside one.
     if (this.loopBoundNames.has(name)) return null
@@ -1542,6 +1542,26 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   /**
+   * Build the EmitContext seam the top-level `ParsedExpr` emitter depends on.
+   * Built as a private object (the adapter does NOT `implements MojoEmitContext`)
+   * so the wrapped bookkeeping — `_searchParamsLocals`, the const/record
+   * resolvers, BF101 recording, the filter-predicate entry — stays private and
+   * off the exported adapter's public type, matching the Go adapter's
+   * `emitCtx` and the `spreadCtx` / `memoCtx` seams below.
+   */
+  private get emitCtx(): MojoEmitContext {
+    return {
+      _searchParamsLocals: this._searchParamsLocals,
+      resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
+      resolveLiteralConst: (name) => this.resolveLiteralConst(name),
+      resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
+      _isStringValueName: (name) => this._isStringValueName(name),
+      _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
+      _renderPerlFilterExprPublic: (e, p) => this._renderPerlFilterExprPublic(e, p),
+    }
+  }
+
+  /**
    * Build the narrow context the extracted spread lowering depends on. Passing
    * a purpose-built object (rather than `this`) keeps the adapter's bookkeeping
    * members private — they stay internal implementation detail, not part of the
@@ -1606,7 +1626,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * (#1250 phase 1B).
    */
   private renderParsedExprToPerl(expr: ParsedExpr): string {
-    return emitParsedExpr(expr, new MojoTopLevelEmitter(this))
+    return emitParsedExpr(expr, new MojoTopLevelEmitter(this.emitCtx))
   }
 
   /**
@@ -1616,11 +1636,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   /** Whether `name` (a signal getter or prop) holds a string value, so an
    *  equality comparison against it should use Perl `eq`/`ne` (#1672). */
-  _isStringValueName(name: string): boolean {
+  private _isStringValueName(name: string): boolean {
     return this.stringValueNames.has(name)
   }
 
-  _recordExprBF101(message: string, reason?: string): void {
+  private _recordExprBF101(message: string, reason?: string): void {
     this.errors.push({
       code: 'BF101',
       severity: 'error',
@@ -1635,7 +1655,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   }
 
   /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
-  _renderPerlFilterExprPublic(expr: ParsedExpr, param: string): string {
+  private _renderPerlFilterExprPublic(expr: ParsedExpr, param: string): string {
     return this.renderPerlFilterExpr(expr, param)
   }
 }
