@@ -40,6 +40,11 @@ export function conditionalSpreadToPerl(
   if (whenTrue.kind !== 'object-literal' || whenFalse.kind !== 'object-literal') {
     return null
   }
+  // TODO(#2018): round-trip — the condition's `ParsedExpr` is re-stringified
+  // here and re-parsed inside `convertExpressionToPerl`. Retire once
+  // `convertExpressionToPerl` takes a `preParsed?: ParsedExpr` (cf.
+  // go-template's `convertExpressionToGo(jsExpr, out?, preParsed?)`), so the
+  // carried tree threads straight through instead of stringify→re-parse.
   const condPerl = ctx.convertExpressionToPerl(stringifyParsedExpr(expr.test))
   const truePerl = objectLiteralToPerlHashref(ctx, whenTrue)
   const falsePerl = objectLiteralToPerlHashref(ctx, whenFalse)
@@ -113,6 +118,9 @@ export function objectLiteralToPerlHashref(
     const valPerl =
       indexed !== null
         ? indexed
+        // TODO(#2018): round-trip — re-stringify + re-parse via
+        // `convertExpressionToPerl`. Thread the carried `val` tree directly once
+        // `convertExpressionToPerl` gains a `preParsed?: ParsedExpr` param.
         : ctx.convertExpressionToPerl(stringifyParsedExpr(val))
     entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
   }

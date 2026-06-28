@@ -47,6 +47,11 @@ export function conditionalSpreadToKolon(
   if (whenTrue.kind !== 'object-literal' || whenFalse.kind !== 'object-literal') {
     return null
   }
+  // TODO(#2018): round-trip — the condition's `ParsedExpr` is re-stringified
+  // here and re-parsed inside `convertExpressionToKolon`. Retire once
+  // `convertExpressionToKolon` takes a `preParsed?: ParsedExpr` (cf.
+  // go-template's `convertExpressionToGo(jsExpr, out?, preParsed?)`), so the
+  // carried tree threads straight through instead of stringify→re-parse.
   const condKolon = ctx.convertExpressionToKolon(stringifyParsedExpr(expr.test))
   const trueKolon = objectLiteralToKolonHashref(ctx, whenTrue)
   const falseKolon = objectLiteralToKolonHashref(ctx, whenFalse)
@@ -117,6 +122,9 @@ export function objectLiteralToKolonHashref(
     const valKolon =
       indexed !== null
         ? indexed
+        // TODO(#2018): round-trip — re-stringify + re-parse via
+        // `convertExpressionToKolon`. Thread the carried `val` tree directly once
+        // `convertExpressionToKolon` gains a `preParsed?: ParsedExpr` param.
         : ctx.convertExpressionToKolon(stringifyParsedExpr(val))
     entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valKolon}`)
   }
