@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // =============================================================================
@@ -238,6 +239,12 @@ func evalToString(v any) string {
 		if math.IsInf(f, -1) {
 			return "-Infinity"
 		}
+		// JS `String(-0)` is "0", but fmt %v renders Go's negative zero as
+		// "-0". `f == 0` matches both ±0, normalising to JS's spelling. (A
+		// unary `-` on a zero operand is the way the evaluator can produce -0.)
+		if f == 0 {
+			return "0"
+		}
 	}
 	// Non-primitive operands (arrays / objects) in ToString position are
 	// outside the evaluator subset — the JS reference refuses them, and the
@@ -462,7 +469,10 @@ func evalReadProperty(obj any, key string) any {
 	switch o := obj.(type) {
 	case string:
 		if key == "length" {
-			return len([]rune(o))
+			// Code-point count (== JS UTF-16 length across the BMP, == Perl
+			// `length`). RuneCountInString avoids the []rune allocation since
+			// this can run inside comparator / reducer evaluation.
+			return utf8.RuneCountInString(o)
 		}
 		return nil
 	case []any:
@@ -516,11 +526,13 @@ func toAnySlice(items any) []any {
 
 // FoldEval folds items into a value via the ParsedExpr evaluator. The reducer
 // body is a pure ParsedExpr (JSON) evaluated against `{accName: acc, itemName:
-// item}` for each element; `init` seeds the accumulator and `direction` is
-// "left" (reduce) or "right" (reduceRight). This is the evaluator-based
-// generalization of bf_reduce — any reducer body, not just the `+`/`*`
-// arithmetic catalogue, and `acc` may appear anywhere in the body.
-func FoldEval(items any, bodyJSON, accName, itemName string, init any, direction string) any {
+// item}` plus the captured free vars in `baseEnv` for each element; `init`
+// seeds the accumulator and `direction` is "left" (reduce) or "right"
+// (reduceRight). This is the evaluator-based generalization of bf_reduce — any
+// reducer body, not just the `+`/`*` arithmetic catalogue, and `acc` may
+// appear anywhere in the body. `baseEnv` may be nil when the body captures no
+// outer references; the accName / itemName keys shadow any same-named base key.
+func FoldEval(items any, bodyJSON, accName, itemName string, init any, direction string, baseEnv map[string]any) any {
 	var body any
 	if err := json.Unmarshal([]byte(bodyJSON), &body); err != nil {
 		return init
@@ -532,7 +544,12 @@ func FoldEval(items any, bodyJSON, accName, itemName string, init any, direction
 		}
 	}
 	acc := init
-	env := make(map[string]any, 2)
+	// Seed the env from the captured free vars once; acc / item are
+	// overwritten each iteration (constant base keys carry through).
+	env := make(map[string]any, len(baseEnv)+2)
+	for k, v := range baseEnv {
+		env[k] = v
+	}
 	for _, item := range arr {
 		env[accName] = acc
 		env[itemName] = item
@@ -542,11 +559,12 @@ func FoldEval(items any, bodyJSON, accName, itemName string, init any, direction
 }
 
 // SortEval returns a new stable-sorted slice ordered by a ParsedExpr
-// comparator body (JSON) evaluated against `{paramA: a, paramB: b}` to a
-// number (negative / zero / positive, like a JS comparator). This is the
-// evaluator-based generalization of bf_sort — any comparator body, not just
-// the subtraction / relational-ternary catalogue. Non-mutating.
-func SortEval(items any, cmpJSON, paramA, paramB string) []any {
+// comparator body (JSON) evaluated against `{paramA: a, paramB: b}` plus the
+// captured free vars in `baseEnv` to a number (negative / zero / positive,
+// like a JS comparator). This is the evaluator-based generalization of bf_sort
+// — any comparator body, not just the subtraction / relational-ternary
+// catalogue. `baseEnv` may be nil. Non-mutating.
+func SortEval(items any, cmpJSON, paramA, paramB string, baseEnv map[string]any) []any {
 	arr := toAnySlice(items)
 	if arr == nil {
 		return nil
@@ -555,8 +573,15 @@ func SortEval(items any, cmpJSON, paramA, paramB string) []any {
 	if err := json.Unmarshal([]byte(cmpJSON), &cmp); err != nil {
 		return arr
 	}
+	// One env seeded from the captured free vars; the two operand keys are
+	// overwritten per comparison (the comparator runs synchronously).
+	env := make(map[string]any, len(baseEnv)+2)
+	for k, v := range baseEnv {
+		env[k] = v
+	}
 	sort.SliceStable(arr, func(i, j int) bool {
-		env := map[string]any{paramA: arr[i], paramB: arr[j]}
+		env[paramA] = arr[i]
+		env[paramB] = arr[j]
 		return evalToNumber(EvalNode(cmp, env)) < 0
 	})
 	return arr

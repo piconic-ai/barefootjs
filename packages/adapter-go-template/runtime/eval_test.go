@@ -69,7 +69,7 @@ func TestFoldEval_LiftsReducerRestriction(t *testing.T) {
 		map[string]any{"price": 5, "qty": 3},
 		map[string]any{"price": 2, "qty": 4},
 	}
-	got := FoldEval(items, body, "acc", "item", 0, "left")
+	got := FoldEval(items, body, "acc", "item", 0, "left", nil)
 	if evalToNumber(got) != 23 { // 0 + 5*3 + 2*4
 		t.Errorf("FoldEval = %v, want 23", got)
 	}
@@ -80,10 +80,10 @@ func TestFoldEval_LiftsReducerRestriction(t *testing.T) {
 func TestFoldEval_DirectionObservableForConcat(t *testing.T) {
 	body := loadEvalExprJSON(t, "+ concatenates once an operand is a string")
 	items := []any{"a", "b", "c"}
-	if got := FoldEval(items, body, "acc", "item", "", "left"); got != "abc" {
+	if got := FoldEval(items, body, "acc", "item", "", "left", nil); got != "abc" {
 		t.Errorf("FoldEval left = %v, want abc", got)
 	}
-	if got := FoldEval(items, body, "acc", "item", "", "right"); got != "cba" {
+	if got := FoldEval(items, body, "acc", "item", "", "right", nil); got != "cba" {
 		t.Errorf("FoldEval right = %v, want cba", got)
 	}
 }
@@ -102,7 +102,7 @@ func TestSortEval_LiftsComparatorRestriction(t *testing.T) {
 		map[string]any{"v": 3},
 		map[string]any{"v": -1},
 	}
-	got := SortEval(items, cmp, "a", "b")
+	got := SortEval(items, cmp, "a", "b", nil)
 	want := []float64{-1, 3, -5} // by ascending |v|: 1, 3, 5
 	if len(got) != len(want) {
 		t.Fatalf("SortEval len = %d, want %d", len(got), len(want))
@@ -141,10 +141,10 @@ func TestEvalToString_NonFinite(t *testing.T) {
 // FoldEval returns the init unchanged, SortEval returns nil (no panic).
 func TestFoldSortEval_NilReceiver(t *testing.T) {
 	body := mustJSON(t, nid("acc"))
-	if got := FoldEval(nil, body, "acc", "item", 42, "left"); evalToNumber(got) != 42 {
+	if got := FoldEval(nil, body, "acc", "item", 42, "left", nil); evalToNumber(got) != 42 {
 		t.Errorf("FoldEval(nil) = %v, want the init 42", got)
 	}
-	if got := SortEval(nil, body, "a", "b"); got != nil {
+	if got := SortEval(nil, body, "a", "b", nil); got != nil {
 		t.Errorf("SortEval(nil) = %v, want nil", got)
 	}
 }
@@ -157,12 +157,38 @@ func TestSortEval_DescendingViaReversedComparator(t *testing.T) {
 		map[string]any{"x": 30},
 		map[string]any{"x": 20},
 	}
-	got := SortEval(items, cmp, "a", "b")
+	got := SortEval(items, cmp, "a", "b", nil)
 	want := []float64{30, 20, 10}
 	for i, w := range want {
 		m := got[i].(map[string]any)
 		if evalToNumber(m["x"]) != w {
 			t.Errorf("SortEval desc[%d].x = %v, want %v", i, m["x"], w)
+		}
+	}
+}
+
+// Captured free vars flow through baseEnv: a reducer / comparator body can
+// reference an outer const that is neither the accumulator/item nor a sort
+// operand.
+func TestFoldSortEval_CapturedFreeVars(t *testing.T) {
+	// reduce: acc + item * factor, with `factor` captured.
+	body := mustJSON(t, nbin("+", nid("acc"), nbin("*", nid("item"), nid("factor"))))
+	items := []any{1, 2, 3}
+	got := FoldEval(items, body, "acc", "item", 0, "left", map[string]any{"factor": 10})
+	if evalToNumber(got) != 60 { // 0 + 1*10 + 2*10 + 3*10
+		t.Errorf("FoldEval with captured factor = %v, want 60", got)
+	}
+
+	// sort by distance from a captured `pivot`: |a-pivot| - |b-pivot|.
+	cmp := mustJSON(t, nbin("-",
+		ncallMath("abs", nbin("-", nid("a"), nid("pivot"))),
+		ncallMath("abs", nbin("-", nid("b"), nid("pivot"))),
+	))
+	sorted := SortEval([]any{1, 8, 4}, cmp, "a", "b", map[string]any{"pivot": 5})
+	wantOrder := []float64{4, 8, 1} // distances 1, 3, 4
+	for i, w := range wantOrder {
+		if evalToNumber(sorted[i]) != w {
+			t.Errorf("SortEval with captured pivot [%d] = %v, want %v", i, sorted[i], w)
 		}
 	}
 }
