@@ -187,7 +187,18 @@ describe('freeVarsInBody', () => {
   })
 
   test('template + index + call cover their value positions', () => {
+    // `Math` is a builtin callee resolved syntactically by the evaluator — it
+    // is NOT captured (it would emit an undefined `$Math` / `.Math` base_env
+    // entry). The real refs `k`, `n`, `row` are.
     const body = parseExpression('`${row[k]}-${Math.abs(n)}`')
-    expect(freeVarsInBody(body, new Set())).toEqual(['Math', 'k', 'n', 'row'])
+    expect(freeVarsInBody(body, new Set())).toEqual(['k', 'n', 'row'])
+  })
+
+  test('builtin call callees (Math.<fn> / String / Number / Boolean) are not captured', () => {
+    // Each builtin is resolved syntactically by the evaluator, so its
+    // identifier must not enter base_env (Copilot review #2031). The
+    // arguments, however, ARE real references.
+    const body = parseExpression('Math.max(a, factor) + Number(label) + String(x) + Boolean(flag)')
+    expect(freeVarsInBody(body, new Set(['a']))).toEqual(['factor', 'flag', 'label', 'x'])
   })
 })

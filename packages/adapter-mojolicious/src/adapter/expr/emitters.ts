@@ -35,6 +35,8 @@ import {
   renderArrayMethod,
   renderSortMethod,
   renderReduceMethod,
+  renderSortEval,
+  renderReduceEval,
   renderFlatMethod,
   renderFlatMapMethod,
 } from './array-method.ts'
@@ -190,11 +192,17 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     comparator: SortComparator,
     emit: (e: ParsedExpr) => string,
   ): string {
-    return renderSortMethod(emit(object), comparator)
+    const recv = emit(object)
+    // Evaluator path (#2018): serialize the comparator body + emit
+    // `bf->sort_eval`; fall back to the structured `bf->sort` when the
+    // body is outside the evaluator surface (e.g. `localeCompare`).
+    return renderSortEval(recv, comparator, emit) ?? renderSortMethod(recv, comparator)
   }
 
   reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    return renderReduceMethod(emit(object), reduceOp, method === 'reduceRight' ? 'right' : 'left')
+    const recv = emit(object)
+    const direction = method === 'reduceRight' ? 'right' : 'left'
+    return renderReduceEval(recv, reduceOp, direction, emit) ?? renderReduceMethod(recv, reduceOp, direction)
   }
 
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
@@ -430,11 +438,17 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     comparator: SortComparator,
     emit: (e: ParsedExpr) => string,
   ): string {
-    return renderSortMethod(emit(object), comparator)
+    const recv = emit(object)
+    // Evaluator path (#2018): serialize the comparator body + emit
+    // `bf->sort_eval`; fall back to the structured `bf->sort` when the
+    // body is outside the evaluator surface (e.g. `localeCompare`).
+    return renderSortEval(recv, comparator, emit) ?? renderSortMethod(recv, comparator)
   }
 
   reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    return renderReduceMethod(emit(object), reduceOp, method === 'reduceRight' ? 'right' : 'left')
+    const recv = emit(object)
+    const direction = method === 'reduceRight' ? 'right' : 'left'
+    return renderReduceEval(recv, reduceOp, direction, emit) ?? renderReduceMethod(recv, reduceOp, direction)
   }
 
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {

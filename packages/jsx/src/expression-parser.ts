@@ -3586,7 +3586,13 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
         visit(e.index)
         return
       case 'call':
-        visit(e.callee)
+        // A builtin callee (`String`/`Number`/`Boolean`, or `Math.<fn>`) is
+        // resolved syntactically by the evaluator — its identifier is NOT a
+        // captured free var. Visiting it would add `Math` / `String` to the
+        // env, making the adapter emit an undefined `$Math` / `.Math` base_env
+        // entry (Copilot review #2031). Skip the callee identifier in that
+        // case; the arguments are still real references and are visited.
+        if (evalBuiltinCalleeName(e.callee) === null) visit(e.callee)
         e.args.forEach(visit)
         return
       case 'template-literal':

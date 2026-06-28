@@ -11,6 +11,11 @@
  * `bf->NAME`.
  */
 
+import {
+  parseExpression,
+  serializeParsedExpr,
+  freeVarsInBody,
+} from '@barefootjs/jsx'
 import type {
   ParsedExpr,
   ArrayMethod,
@@ -149,6 +154,78 @@ export function renderArrayMethod(
       )
     }
   }
+}
+
+/** Escape a string for embedding in a Perl single-quoted literal. */
+function escapePerlSingleQuote(s: string): string {
+  // Double every backslash and escape apostrophes: Perl single-quote
+  // un-escaping then restores the original bytes (a JSON `\\` must reach
+  // `JSON::PP->decode` as `\\`, so it travels as `\\\\` in the literal).
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+/**
+ * Build the `base_env` hashref argument for an evaluator call: the
+ * comparator / reducer body's free variables (body idents minus the
+ * callback params), each materialised to its SSR value via `emit`. An
+ * empty capture set yields `{}` — the runtime's seed-once env.
+ */
+function emitEvalEnvArg(
+  body: ParsedExpr,
+  params: string[],
+  emit: (e: ParsedExpr) => string,
+): string {
+  const free = freeVarsInBody(body, new Set(params))
+  if (free.length === 0) return '{}'
+  const pairs = free.map(
+    n => `'${escapePerlSingleQuote(n)}' => ${emit({ kind: 'identifier', name: n })}`,
+  )
+  return `{ ${pairs.join(', ')} }`
+}
+
+/**
+ * Emit a `.sort(cmp)` / `.toSorted(cmp)` via the runtime evaluator (#2018):
+ * the comparator body travels as serialized-ParsedExpr JSON, evaluated per
+ * comparison against `{paramA, paramB, …captured}`. Returns null when the
+ * body is outside the evaluator surface (e.g. a `localeCompare` comparator —
+ * `serializeParsedExpr` refuses it), so the caller falls back to the
+ * structured `$bf.sort`.
+ */
+export function renderSortEval(
+  recv: string,
+  c: SortComparator,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(c.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [c.paramA, c.paramB], emit)
+  return `$bf.sort_eval(${recv}, '${escapePerlSingleQuote(json)}', '${c.paramA}', '${c.paramB}', ${env})`
+}
+
+/**
+ * Emit a `.reduce(fn, init)` / `.reduceRight(fn, init)` via the runtime
+ * evaluator (#2018): the reducer body travels as serialized-ParsedExpr JSON,
+ * folded over the receiver from `init` in `direction` order. Returns null when
+ * the body is outside the evaluator surface (→ caller falls back to
+ * `$bf.reduce`). A numeric seed passes through as a bare Perl number; a concat
+ * seed as a single-quoted string.
+ */
+export function renderReduceEval(
+  recv: string,
+  op: ReduceOp,
+  direction: 'left' | 'right',
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(op.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [op.paramAcc, op.paramItem], emit)
+  const init =
+    op.type === 'string'
+      ? `'${escapePerlSingleQuote(op.init)}'`
+      : op.init
+  return `$bf.reduce_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.paramAcc}', '${op.paramItem}', ${init}, '${direction}', ${env})`
 }
 
 /**
