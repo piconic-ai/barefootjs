@@ -50,6 +50,8 @@ import {
   type SupportResult,
   isBooleanAttr,
   parseExpression,
+  serializeParsedExpr,
+  freeVarsInBody,
   stringifyParsedExpr,
   parseStyleObjectEntries,
   isSupported,
@@ -82,6 +84,8 @@ import {
   wrapGoArg,
   emitBfSort,
   emitBfReduce,
+  emitSortEval,
+  emitReduceEval,
   stringTolerantEqOperands,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
@@ -3152,7 +3156,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `.sort().map()` loop hoist in `renderLoop` (both feed `bf_sort` the same 4
     // string operands). `method` is preserved for future divergence but unused.
     void method
-    return emitBfSort(emit(object), comparator)
+    const recv = emit(object)
+    // Prefer the evaluator (#2018): the comparator body is serialized and
+    // evaluated per comparison. Falls back to the structured `bf_sort` for a
+    // comparator the evaluator can't model (e.g. localeCompare).
+    return emitSortEval(recv, comparator, emit) ?? emitBfSort(recv, comparator)
   }
 
   reduceMethod(
@@ -3166,7 +3174,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // feed the `bf_reduce` runtime helper, which folds the receiver into a
     // scalar.
     const direction = method === 'reduceRight' ? 'right' : 'left'
-    return emitBfReduce(emit(object), reduceOp, direction)
+    const recv = emit(object)
+    // Prefer the evaluator (#2018): the reducer body is serialized and folded
+    // per element. Falls back to the structured `bf_reduce` if it can't model
+    // the body (the arithmetic-fold catalogue always serializes, so this is
+    // defensive).
+    return emitReduceEval(recv, reduceOp, direction, emit) ?? emitBfReduce(recv, reduceOp, direction)
   }
 
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {

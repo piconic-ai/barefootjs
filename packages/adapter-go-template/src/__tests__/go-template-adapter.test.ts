@@ -2864,14 +2864,17 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     // standalone shapes inline the helper at the call site.
     { fixture: arraySortFieldAscFixture,  expect: 'bf_sort .Items "field" "Price" "numeric" "asc"' },
     { fixture: arraySortFieldDescFixture, expect: 'bf_sort .Items "field" "Price" "numeric" "desc"' },
-    { fixture: arraySortPrimitiveFixture, expect: 'bf_sort .Nums "self" "" "numeric" "asc"' },
+    // Standalone numeric sorts now lower through the evaluator (#2018): the
+    // comparator body travels as serialized ParsedExpr to `bf_sort_eval`.
+    { fixture: arraySortPrimitiveFixture, expect: 'bf_sort_eval .Nums' },
+    // localeCompare can't be evaluated, so it keeps the legacy `bf_sort` path.
     { fixture: arraySortLocaleFixture,    expect: 'bf_sort .Names "self" "" "string" "asc"' },
     // Multi-key (`||`-chain): one 4-string group per comparison key,
     // applied in priority order as tie-breakers.
     { fixture: arraySortMultiKeyFixture,  expect: 'bf_sort .Items "field" "Price" "numeric" "asc" "field" "Name" "string" "asc"' },
     // Relational-ternary comparator lowers to a single `auto` key.
     { fixture: arraySortTernaryFixture,   expect: 'bf_sort .Items "field" "Rank" "auto" "asc"' },
-    { fixture: arrayToSortedFixture,      expect: 'bf_sort .Nums "self" "" "numeric" "asc"' },
+    { fixture: arrayToSortedFixture,      expect: 'bf_sort_eval .Nums' },
     // #1448 Tier B — iteration shapes. These are loop-level
     // patterns (range binding order), not helper function calls.
     { fixture: arrayEntriesFixture,       expect: '{{range $i, $v := .Items}}' },
@@ -2916,14 +2919,14 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
 // now listed in `UNSUPPORTED_METHODS`, so `isSupported` refuses them
 // and `convertExpressionToGo` records BF101 — the same treatment the
 // unsupported array methods already got. These tests pin that parity.
-describe('GoTemplateAdapter - #1448 Tier C reduce field capitalisation', () => {
-  // #1728 review: `bf_reduce`'s projected field name must use the same
-  // initialism-aware capitalisation the adapter applies when generating
-  // struct fields (`capitalizeFieldName`), or the runtime reflect lookup
-  // misses the exported field (`id` → struct `ID`, not `Id`) and folds a
-  // zero value. Pin the emitted key so a regression to plain
-  // first-letter capitalisation fails here.
-  test('reduce over an initialism field emits the Go-initialism key (ID, not Id)', () => {
+describe('GoTemplateAdapter - #2018 reduce via the evaluator', () => {
+  // A standalone `.reduce(fn, init)` now lowers through the evaluator: the
+  // reducer body is serialized to ParsedExpr JSON and folded by `bf_reduce_eval`.
+  // The body carries the JS field name (`x.id`); the runtime field reader
+  // (`getFieldValue`) resolves it case-variantly against the Go struct field
+  // (`ID`) at render time, so no compile-time capitalisation is needed (the
+  // former #1728 initialism gotcha is moot on this path).
+  test('reduce over a field lowers to bf_reduce_eval with the serialized body', () => {
     const adapter = new GoTemplateAdapter()
     const ir = compileToIR(`
 function C({ items }: { items: { id: number }[] }) {
@@ -2932,8 +2935,9 @@ function C({ items }: { items: { id: number }[] }) {
 export { C }
 `, adapter)
     const template = adapter.generate(ir).template ?? ''
-    expect(template).toContain('bf_reduce .Items "+" "field" "ID" "numeric" "0"')
-    expect(template).not.toContain('"Id"')
+    expect(template).toContain('bf_reduce_eval .Items')
+    // The seed is threaded through bf_number; the body is the serialized tree.
+    expect(template).toContain('(bf_number "0")')
   })
 })
 

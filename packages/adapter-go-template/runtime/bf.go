@@ -1612,7 +1612,18 @@ func getFieldValue(item any, field string) any {
 
 	fieldVal := v.FieldByName(field)
 	if !fieldVal.IsValid() {
-		return nil
+		// Case-variant fallback: the evaluator carries the JS field name
+		// (`id` / `url`) against a Go-capitalised struct field (`ID` / `URL`),
+		// which exact `FieldByName` misses and the initialism rules can't be
+		// reproduced char-for-char here. Match case-insensitively instead —
+		// `FieldByNameFunc` returns the zero Value (→ nil) for an ambiguous
+		// match, so it stays safe. The legacy bf_sort/bf_reduce pass an
+		// already-capitalised name, so they hit the exact match above and never
+		// reach this fallback.
+		fieldVal = v.FieldByNameFunc(func(n string) bool { return strings.EqualFold(n, field) })
+		if !fieldVal.IsValid() {
+			return nil
+		}
 	}
 	return fieldVal.Interface()
 }

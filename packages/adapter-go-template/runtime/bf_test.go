@@ -950,6 +950,32 @@ func TestEvalTemplateFuncs(t *testing.T) {
 	}
 }
 
+// SSR data is Go structs with capitalised fields, but a serialized callback
+// body carries the JS field name (`x.id`). Verify the evaluator's field reader
+// resolves it case-variantly against the struct field (ID) for both fold and
+// sort — the path the real template render uses.
+func TestEvalFoldSortOverStruct(t *testing.T) {
+	type item struct{ ID int }
+	items := []item{{ID: 10}, {ID: 5}, {ID: 7}}
+
+	// reduce: acc + x.id, seed 0 → 22
+	body := mustJSON(t, nbin("+", nid("acc"), nmem(nid("x"), "id")))
+	if got := evalToNumber(FoldEval(items, body, "acc", "x", 0.0, "left", nil)); got != 22 {
+		t.Fatalf("FoldEval over struct = %v, want 22", got)
+	}
+
+	// sort: a.id - b.id → ascending by ID
+	cmp := mustJSON(t, nbin("-", nmem(nid("a"), "id"), nmem(nid("b"), "id")))
+	sorted := SortEval(items, cmp, "a", "b", nil)
+	got := make([]int, len(sorted))
+	for i, s := range sorted {
+		got[i] = s.(item).ID
+	}
+	if got[0] != 5 || got[1] != 7 || got[2] != 10 {
+		t.Fatalf("SortEval over struct = %v, want [5 7 10]", got)
+	}
+}
+
 // =============================================================================
 // Portal HTML Rendering Tests
 // =============================================================================

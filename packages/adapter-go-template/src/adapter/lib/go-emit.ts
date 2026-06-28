@@ -4,7 +4,8 @@
  * Pure free functions — none read adapter instance state.
  */
 
-import type { SortComparator, ReduceOp, SupportResult } from '@barefootjs/jsx'
+import type { SortComparator, ReduceOp, SupportResult, ParsedExpr } from '@barefootjs/jsx'
+import { parseExpression, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -84,6 +85,64 @@ export function emitBfReduce(recv: string, op: ReduceOp, direction: 'left' | 'ri
   // `op.init` is the decoded seed value (canonical decimal / escape-free
   // contents); passed as a quoted operand the runtime interprets by `type`.
   return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(op.init)}" "${direction}"`
+}
+
+/**
+ * Build the `bf_env` base_env argument for a callback body: one `"name" <value>`
+ * pair per captured free variable (a body identifier that isn't a callback
+ * param), each lowered to its Go template value via `emit`. No captures →
+ * the bare `bf_env` (an empty env).
+ */
+function emitEvalEnvArg(body: ParsedExpr, params: string[], emit: (e: ParsedExpr) => string): string {
+  const free = freeVarsInBody(body, new Set(params))
+  if (free.length === 0) return 'bf_env'
+  const pairs = free.map(
+    n => `"${escapeGoString(n)}" ${wrapIfMultiToken(emit({ kind: 'identifier', name: n }))}`,
+  )
+  return `(bf_env ${pairs.join(' ')})`
+}
+
+/**
+ * Emit a `.sort(cmp)` via the evaluator (#2018): the comparator body travels as
+ * serialized-ParsedExpr JSON, evaluated per comparison against `{paramA, paramB,
+ * …captured}`. Returns null when the comparator can't be evaluated (e.g. a
+ * `localeCompare` body — `serializeParsedExpr` refuses it), so the caller falls
+ * back to the structured `bf_sort`. A `||`-chained multi-key comparator needs no
+ * special handling — JS `0 || next` is exactly the tie-break semantics.
+ */
+export function emitSortEval(
+  recv: string,
+  c: SortComparator,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(c.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [c.paramA, c.paramB], emit)
+  return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${c.paramA}" "${c.paramB}" ${env}`
+}
+
+/**
+ * Emit a `.reduce(fn, init)` via the evaluator (#2018): the reducer body travels
+ * as serialized-ParsedExpr JSON, folded over the receiver from `init`. Returns
+ * null when the body can't be evaluated (→ caller falls back to `bf_reduce`). A
+ * numeric seed is passed through `bf_number` (handles any decimal incl. negative
+ * / float); a concat seed as a quoted string.
+ */
+export function emitReduceEval(
+  recv: string,
+  op: ReduceOp,
+  direction: 'left' | 'right',
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(op.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [op.paramAcc, op.paramItem], emit)
+  const init = op.type === 'string'
+    ? `"${escapeGoString(op.init)}"`
+    : `(bf_number "${escapeGoString(op.init)}")`
+  return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${op.paramAcc}" "${op.paramItem}" ${init} "${direction}" ${env}`
 }
 
 /**
