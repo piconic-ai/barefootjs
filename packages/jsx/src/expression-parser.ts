@@ -3527,6 +3527,196 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
 }
 
 /**
+ * Serialize a pure-expression `ParsedExpr` (a higher-order callback body) into
+ * the minimal JSON the runtime evaluator consumes — the format pinned by the
+ * `eval-vectors` golden cases and read by Go `eval.go` `EvalNode` / Perl
+ * `Evaluator.pm` `evaluate`. Only the evaluator-recognized fields are emitted
+ * per kind (a literal carries just `value`; `literalType` / `raw` / `computed`
+ * are dropped — the evaluator never reads them), keeping the embedded body blob
+ * small and stable.
+ *
+ * Returns `null` when the tree contains a shape outside the evaluator's surface
+ * — a folded `higher-order` / `array-method`, an `arrow-fn`, or an `unsupported`
+ * node — so the caller refuses the body (BF101 / `@client`) instead of emitting
+ * a blob the evaluator would read as nil. The evaluator's support criterion is
+ * purely-functional expressibility; this is its compile-time gate. (#2018)
+ */
+export function serializeParsedExpr(expr: ParsedExpr): string | null {
+  const node = toEvalNode(expr)
+  return node === null ? null : JSON.stringify(node)
+}
+
+/**
+ * The free variables a higher-order callback body references — every bare
+ * identifier in a value position, minus the callback's own `params`. The
+ * adapter materializes each into the evaluator's `base_env` (mapping the JS name
+ * to its SSR value). Walks exactly the value positions {@link serializeParsedExpr}
+ * serializes (so it sees object-literal *values* and template-expression parts,
+ * and skips member property names / object keys, which are not references).
+ * Returns a sorted, de-duplicated list for stable emit. (#2018)
+ */
+export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): string[] {
+  const found = new Set<string>()
+  const visit = (e: ParsedExpr): void => {
+    switch (e.kind) {
+      case 'identifier':
+        if (!params.has(e.name)) found.add(e.name)
+        return
+      case 'binary':
+      case 'logical':
+        visit(e.left)
+        visit(e.right)
+        return
+      case 'unary':
+        visit(e.argument)
+        return
+      case 'conditional':
+        visit(e.test)
+        visit(e.consequent)
+        visit(e.alternate)
+        return
+      case 'member':
+        visit(e.object)
+        return
+      case 'index-access':
+        visit(e.object)
+        visit(e.index)
+        return
+      case 'call':
+        visit(e.callee)
+        e.args.forEach(visit)
+        return
+      case 'template-literal':
+        for (const p of e.parts) if (p.type === 'expression') visit(p.expr)
+        return
+      case 'array-literal':
+        e.elements.forEach(visit)
+        return
+      case 'object-literal':
+        // Object *values* are references; keys are not. (Shorthand `{ x }`
+        // carries the ref on its `value` identifier, which is visited here.)
+        for (const p of e.properties) visit(p.value)
+        return
+      // Folded / non-expression kinds don't occur in a serializable body
+      // (serializeParsedExpr returns null for them); nothing to collect.
+      case 'literal':
+      case 'higher-order':
+      case 'array-method':
+      case 'arrow-fn':
+      case 'unsupported':
+        return
+    }
+  }
+  visit(body)
+  return [...found].sort()
+}
+
+// Operators the evaluator implements (Go `eval.go` evalBinary / evalUnary, Perl
+// `Evaluator.pm` _binary / _unary). An op outside these sets — loose `==`,
+// `instanceof`, `**`, bitwise/shift, or the parser's `'unknown'` sentinel — is
+// refused so the body falls back to BF101 rather than serializing an op the
+// evaluator would silently mis-handle.
+const EVAL_BINARY_OPS: ReadonlySet<string> = new Set([
+  '+', '-', '*', '/', '%', '<', '<=', '>', '>=', '===', '!==',
+])
+const EVAL_UNARY_OPS: ReadonlySet<string> = new Set(['!', '-', '+'])
+
+/** Build the evaluator's minimal node object, or null for an out-of-surface kind. */
+function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
+  switch (e.kind) {
+    case 'literal':
+      return { kind: 'literal', value: e.value }
+    case 'identifier':
+      return { kind: 'identifier', name: e.name }
+    case 'binary': {
+      if (!EVAL_BINARY_OPS.has(e.op)) return null
+      const left = toEvalNode(e.left)
+      const right = toEvalNode(e.right)
+      return left && right ? { kind: 'binary', op: e.op, left, right } : null
+    }
+    case 'logical': {
+      // `op` is the fixed `&&` | `||` | `??` union — all evaluator-supported.
+      const left = toEvalNode(e.left)
+      const right = toEvalNode(e.right)
+      return left && right ? { kind: 'logical', op: e.op, left, right } : null
+    }
+    case 'unary': {
+      if (!EVAL_UNARY_OPS.has(e.op)) return null
+      const argument = toEvalNode(e.argument)
+      return argument ? { kind: 'unary', op: e.op, argument } : null
+    }
+    case 'conditional': {
+      const test = toEvalNode(e.test)
+      const consequent = toEvalNode(e.consequent)
+      const alternate = toEvalNode(e.alternate)
+      return test && consequent && alternate
+        ? { kind: 'conditional', test, consequent, alternate }
+        : null
+    }
+    case 'member': {
+      // The evaluator reads `object` + `property` only (a literal computed key
+      // like `obj['x']` folds to a `member` whose property is the key).
+      const object = toEvalNode(e.object)
+      return object ? { kind: 'member', object, property: e.property } : null
+    }
+    case 'index-access': {
+      const object = toEvalNode(e.object)
+      const index = toEvalNode(e.index)
+      return object && index ? { kind: 'index-access', object, index } : null
+    }
+    case 'call': {
+      const callee = toEvalNode(e.callee)
+      if (!callee) return null
+      const args: Record<string, unknown>[] = []
+      for (const a of e.args) {
+        const c = toEvalNode(a)
+        if (!c) return null
+        args.push(c)
+      }
+      return { kind: 'call', callee, args }
+    }
+    case 'template-literal': {
+      const parts: Record<string, unknown>[] = []
+      for (const p of e.parts) {
+        if (p.type === 'string') {
+          parts.push({ type: 'string', value: p.value })
+        } else {
+          const expr = toEvalNode(p.expr)
+          if (!expr) return null
+          parts.push({ type: 'expression', expr })
+        }
+      }
+      return { kind: 'template-literal', parts }
+    }
+    case 'array-literal': {
+      const elements: Record<string, unknown>[] = []
+      for (const el of e.elements) {
+        const c = toEvalNode(el)
+        if (!c) return null
+        elements.push(c)
+      }
+      return { kind: 'array-literal', elements }
+    }
+    case 'object-literal': {
+      const properties: Record<string, unknown>[] = []
+      for (const p of e.properties) {
+        const value = toEvalNode(p.value)
+        if (!value) return null
+        properties.push({ key: p.key, value })
+      }
+      return { kind: 'object-literal', properties }
+    }
+    // Outside the evaluator's pure-expression surface — refuse so the caller
+    // falls back to BF101 / `@client`.
+    case 'higher-order':
+    case 'array-method':
+    case 'arrow-fn':
+    case 'unsupported':
+      return null
+  }
+}
+
+/**
  * Convert a {@link ParsedExpr2} into a structurally faithful {@link ParsedExpr}
  * mirror, or `null` when the tree contains a shape `ParsedExpr` can't model.
  * `ParsedExpr2` carries two extras with no `ParsedExpr` arm — `regex` (a `/…/`
