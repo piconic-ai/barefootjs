@@ -132,6 +132,40 @@ func TestPredicateEvalHelpers(t *testing.T) {
 	}
 }
 
+// FlatMapEval projects + flattens one level: a field projection yielding a
+// slice contributes its elements; a tuple (array-literal) projection
+// contributes its leaves; a scalar projection is kept as a single element.
+func TestFlatMapEval(t *testing.T) {
+	rows := []any{
+		map[string]any{"tags": []any{"a", "b"}},
+		map[string]any{"tags": []any{"c"}},
+	}
+	// field: i => i.tags  → ["a","b","c"]
+	field := mustJSON(t, nmem(nid("i"), "tags"))
+	if got := FlatMapEval(rows, field, "i", nil); len(got) != 3 || got[0] != "a" || got[2] != "c" {
+		t.Fatalf("FlatMapEval field = %v, want [a b c]", got)
+	}
+
+	// tuple: p => [p.x, p.y]  → [1,2,3,4]
+	pts := []any{
+		map[string]any{"x": 1.0, "y": 2.0},
+		map[string]any{"x": 3.0, "y": 4.0},
+	}
+	tuple := mustJSON(t, map[string]any{
+		"kind":     "array-literal",
+		"elements": []any{nmem(nid("p"), "x"), nmem(nid("p"), "y")},
+	})
+	got := FlatMapEval(pts, tuple, "p", nil)
+	if len(got) != 4 || evalToNumber(got[0]) != 1 || evalToNumber(got[3]) != 4 {
+		t.Fatalf("FlatMapEval tuple = %v, want [1 2 3 4]", got)
+	}
+
+	// A scalar (self) projection of non-array items keeps each as one element.
+	if got := FlatMapEval([]any{1.0, 2.0}, mustJSON(t, nid("i")), "i", nil); len(got) != 2 {
+		t.Fatalf("FlatMapEval self-scalar = %v, want length 2", got)
+	}
+}
+
 // FoldEval lifts bf_reduce's op restriction and acc-canonical form: the
 // reducer body `acc + item.price * item.qty` mixes `acc` with a product of two
 // fields — impossible in the +/* self/field catalogue, trivial for the

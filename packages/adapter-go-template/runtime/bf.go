@@ -111,6 +111,9 @@ func FuncMap() template.FuncMap {
 		"bf_some_eval":       SomeEval,
 		"bf_find_eval":       FindEval,
 		"bf_find_index_eval": FindIndexEval,
+		// `.flatMap(proj)`: project each element through the serialized
+		// projection body, then flatten one level.
+		"bf_flat_map_eval": FlatMapEval,
 
 		// Comment marker (for hydration)
 		"bfComment":   Comment,

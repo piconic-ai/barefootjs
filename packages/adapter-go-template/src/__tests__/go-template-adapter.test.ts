@@ -3000,20 +3000,24 @@ export { C }
     return adapter.generate(ir).template ?? ''
   }
 
-  test('.flatMap(i => i.field) emits bf_flat_map with the Go-capitalised field', () => {
-    expect(emitFlatMap('rows.flatMap(i => i.tags).join(" ")')).toContain('bf_flat_map .Rows "field" "Tags"')
+  // #2018 P3: `.flatMap(proj)` lowers through the evaluator — the projection
+  // body serializes to ParsedExpr JSON and `bf_flat_map_eval` flattens the
+  // results one level. The raw (lowercase) field name travels in the JSON; the
+  // runtime field reader resolves it case-insensitively against Go data.
+  // (The serialized projection JSON is embedded in a Go-template double-quoted
+  // string — its quotes are backslash-escaped — so these pins assert the helper
+  // + receiver; the projection JSON itself is verified by the render
+  // conformance fixtures + the runtime TestFlatMapEval.)
+  test('.flatMap(i => i.field) emits bf_flat_map_eval', () => {
+    expect(emitFlatMap('rows.flatMap(i => i.tags).join(" ")')).toContain('bf_flat_map_eval .Rows')
   })
 
-  test('.flatMap(i => i) emits the self projection', () => {
-    expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain('bf_flat_map .Rows "self" ""')
+  test('.flatMap(i => i) emits bf_flat_map_eval (self projection)', () => {
+    expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain('bf_flat_map_eval .Rows')
   })
 
-  test('.flatMap(i => [i.a, i.b]) emits bf_flat_map_tuple with capitalised leaves', () => {
-    expect(emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')).toContain('bf_flat_map_tuple .Rows "field" "A" "field" "B"')
-  })
-
-  test('tuple self + field leaves', () => {
-    expect(emitFlatMap('rows.flatMap(i => [i, i.a]).join(" ")')).toContain('bf_flat_map_tuple .Rows "self" "" "field" "A"')
+  test('.flatMap(i => [i.a, i.b]) emits bf_flat_map_eval (array-literal projection)', () => {
+    expect(emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')).toContain('bf_flat_map_eval .Rows')
   })
 })
 

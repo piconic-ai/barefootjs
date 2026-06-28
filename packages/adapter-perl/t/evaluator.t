@@ -238,4 +238,28 @@ subtest 'filter / every / some / find / find_index over a predicate body' => sub
         'find_index with unmet captured threshold → -1');
 };
 
+# #2018 P3: flat_map projects each element through a projection body and
+# flattens one level — a field projection yielding an arrayref contributes its
+# elements; an array-literal (tuple) projection contributes its leaves. Mirrors
+# the Go TestFlatMapEval shapes.
+subtest 'flat_map projects + flattens one level' => sub {
+    my @rows = ({ tags => [ 'a', 'b' ] }, { tags => [ 'c' ] });
+    my $field = nmem(nid('i'), 'tags');
+    is_deeply(BarefootJS::Evaluator::flat_map(\@rows, $field, 'i'), [ 'a', 'b', 'c' ],
+        'field projection flattens the per-item arrays');
+
+    my @pts = ({ x => 1, y => 2 }, { x => 3, y => 4 });
+    my $tuple = {
+        kind     => 'array-literal',
+        elements => [ nmem(nid('p'), 'x'), nmem(nid('p'), 'y') ],
+    };
+    is_deeply(BarefootJS::Evaluator::flat_map(\@pts, $tuple, 'p'), [ 1, 2, 3, 4 ],
+        'array-literal projection flattens the leaf tuples');
+
+    # JSON seam.
+    my $fj = BarefootJS::Evaluator::flat_map_json(\@rows,
+        JSON::PP->new->encode($field), 'i');
+    is_deeply($fj, [ 'a', 'b', 'c' ], 'flat_map_json decodes + projects');
+};
+
 done_testing;

@@ -255,6 +255,24 @@ export function renderPredicateEval(
 }
 
 /**
+ * Emit a `.flatMap(proj)` via the runtime evaluator (#2018, P3): the projection
+ * body (`FlatMapOp.raw`) serializes to JSON and `$bf.flat_map_eval` projects +
+ * flattens one level. Returns null when the projection is outside the evaluator
+ * surface (→ caller falls back to the structured `$bf.flat_map`).
+ */
+export function renderFlatMapEval(
+  recv: string,
+  op: FlatMapOp,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(op.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [op.param], emit)
+  return `$bf.flat_map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.param}', ${env})`
+}
+
+/**
  * Shared Kolon emit for `.sort(cmp)` / `.toSorted(cmp)`. Used by both the
  * filter-context emitter and the top-level emitter, plus the loop-array
  * wrap in `renderLoop`. The runtime `$bf.sort` accepts a hashref opts bag and

@@ -4,7 +4,7 @@
  * Pure free functions — none read adapter instance state.
  */
 
-import type { SortComparator, ReduceOp, SupportResult, ParsedExpr } from '@barefootjs/jsx'
+import type { SortComparator, ReduceOp, FlatMapOp, SupportResult, ParsedExpr } from '@barefootjs/jsx'
 import { parseExpression, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
@@ -174,6 +174,26 @@ export function emitPredicateEval(
   const env = emitEvalEnvArg(predicate, [param], emit)
   const extra = extraArgs.length > 0 ? ` ${extraArgs.join(' ')}` : ''
   return `${funcName} ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}"${extra} ${env}`
+}
+
+/**
+ * Emit a `.flatMap(proj)` via the evaluator (#2018, P3): the projection body
+ * (`FlatMapOp.raw`, e.g. `i.tags` / `[i.a, i.b]`) is serialized and evaluated
+ * per element by `bf_flat_map_eval`, which flattens the results one level.
+ * Generalizes the structured `bf_flat_map` / `bf_flat_map_tuple` (self / field /
+ * tuple) to any pure projection. Returns null when the projection is outside
+ * the evaluator surface (→ caller falls back to the structured helper).
+ */
+export function emitFlatMapEval(
+  recv: string,
+  op: FlatMapOp,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(op.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [op.param], emit)
+  return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${op.param}" ${env}`
 }
 
 /**

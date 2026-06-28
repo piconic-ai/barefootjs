@@ -343,6 +343,26 @@ export function renderPredicateEval(
 }
 
 /**
+ * Emit a `.flatMap(proj)` via the runtime evaluator (#2018, P3): the projection
+ * body (`FlatMapOp.raw`) serializes to JSON and `bf->flat_map_eval` projects +
+ * flattens one level. Generalizes the structured `bf->flat_map` /
+ * `bf->flat_map_tuple` to any pure projection; returns null when the projection
+ * is outside the evaluator surface (→ caller falls back to the structured
+ * helper).
+ */
+export function renderFlatMapEval(
+  recv: string,
+  op: FlatMapOp,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const body = parseExpression(op.raw)
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [op.param], emit)
+  return `bf->flat_map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.param}', ${env})`
+}
+
+/**
  * Shared Mojo emit for `.sort(cmp)` / `.toSorted(cmp)` (#1448 Tier B).
  * Used by both the filter-context emitter and the top-level emitter,
  * plus the loop-hoist path in `renderLoop` — same emit shape across
