@@ -159,4 +159,35 @@ subtest 'sort_by is stable for equal keys' => sub {
     is_deeply([ map { $_->{id} } @$mixed ], [ 'y', 'x', 'z' ], 'tie (x,z) stays in input order');
 };
 
+# fold_json / sort_by_json are the JSON-string seam the adapters emit into:
+# the serialized ParsedExpr body travels as a `bf->reduce_eval` / `bf->sort_eval`
+# argument and is decoded here, then handed to fold / sort_by. These exercise
+# the exact shapes the #2018 EXPR2 reduce/sort migration emits (field access
+# over hashref rows keyed by the raw JS prop name), with the captured-env arg.
+subtest 'fold_json / sort_by_json decode a JSON body and evaluate it' => sub {
+    my @rows = ({ duration => 95 }, { duration => 213 }, { duration => 185 });
+
+    # reduce: sum + t.duration, seed 0 → 493
+    my $reduce = JSON::PP->new->encode(
+        nbin('+', nid('sum'), nmem(nid('t'), 'duration')));
+    is(BarefootJS::Evaluator::fold_json(\@rows, $reduce, 'sum', 't', 0, 'left', {}),
+        493, 'fold_json sums a field');
+
+    # reduceRight concat is order-observable: cba, not abc.
+    my @labels = ({ label => 'a' }, { label => 'b' }, { label => 'c' });
+    my $concat = JSON::PP->new->encode(
+        nbin('+', nid('acc'), nmem(nid('x'), 'label')));
+    is(BarefootJS::Evaluator::fold_json(\@labels, $concat, 'acc', 'x', '', 'left', {}),
+        'abc', 'fold_json concat left → abc');
+    is(BarefootJS::Evaluator::fold_json(\@labels, $concat, 'acc', 'x', '', 'right', {}),
+        'cba', 'fold_json concat right → cba');
+
+    # sort: a.duration - b.duration → ascending
+    my $cmp = JSON::PP->new->encode(
+        nbin('-', nmem(nid('a'), 'duration'), nmem(nid('b'), 'duration')));
+    my $sorted = BarefootJS::Evaluator::sort_by_json(\@rows, $cmp, 'a', 'b', {});
+    is_deeply([ map { $_->{duration} } @$sorted ], [ 95, 185, 213 ],
+        'sort_by_json orders by a field');
+};
+
 done_testing;

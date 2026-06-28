@@ -1355,19 +1355,26 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     // #1448 Tier B — string → string, padded to a target width.
     { fixture: stringPadStartFixture,   expect: `bf->pad_start($value, 5, '0')` },
     { fixture: stringPadEndFixture,     expect: `bf->pad_end($value, 5, '.')` },
-    // #1448 Tier B — sort / toSorted. The loop-chained field cases
-    // hoist into a `my $bf_iter_lN = bf->sort(...)` local; the
-    // standalone primitive cases inline the call. Each comparison key
-    // is one hash under `keys` (a single-key comparator → one element).
+    // #1448 Tier B — sort / toSorted. EXPR2 migration (#2018): a
+    // STANDALONE `.sort(cmp)` value call serializes the comparator body
+    // and emits `bf->sort_eval(...)` (JSON body + param names + captured
+    // env). The loop-chained `.sort().map()` field cases still hoist into
+    // a `my $bf_iter_lN = bf->sort(...)` legacy local (loop-hoist de-fold
+    // is P3, not this phase). `localeCompare` comparators fall back to the
+    // structured `bf->sort` — `serializeParsedExpr` refuses them.
     { fixture: arraySortFieldAscFixture,  expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] })` },
     { fixture: arraySortFieldDescFixture, expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' }] })` },
-    { fixture: arraySortPrimitiveFixture, expect: `bf->sort($nums, { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] })` },
+    { fixture: arraySortPrimitiveFixture, expect: `bf->sort_eval($nums, '{"kind":"binary","op":"-","left":{"kind":"identifier","name":"a"},"right":{"kind":"identifier","name":"b"}}', 'a', 'b', {})` },
+    // localeCompare → outside the evaluator surface → legacy `bf->sort`.
     { fixture: arraySortLocaleFixture,    expect: `bf->sort($names, { keys => [{ key_kind => 'self', compare_type => 'string', direction => 'asc' }] })` },
-    // Multi-key (`||`-chain): one hash per comparison key, in order.
+    // Multi-key (`||`-chain): the second key is a `localeCompare`, so the
+    // whole comparator falls back to the structured `bf->sort` (one hash
+    // per comparison key, in order).
     { fixture: arraySortMultiKeyFixture,  expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }, { key_kind => 'field', key => 'name', compare_type => 'string', direction => 'asc' }] })` },
-    // Relational-ternary comparator lowers to a single `auto` key.
+    // Relational-ternary comparator — loop-hoisted (`.sort().map()`), so
+    // it stays on the legacy `auto`-key `bf->sort` until P3.
     { fixture: arraySortTernaryFixture,   expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'rank', compare_type => 'auto', direction => 'asc' }] })` },
-    { fixture: arrayToSortedFixture,      expect: `bf->sort($nums, { keys => [{ key_kind => 'self', compare_type => 'numeric', direction => 'asc' }] })` },
+    { fixture: arrayToSortedFixture,      expect: `bf->sort_eval($nums, '{"kind":"binary","op":"-","left":{"kind":"identifier","name":"a"},"right":{"kind":"identifier","name":"b"}}', 'a', 'b', {})` },
     // #1448 Tier B — iteration shapes. These are loop-level patterns.
     // .entries() → for loop with both $i index var and $v value var
     { fixture: arrayEntriesFixture,       expect: '% my $v = $items->[$i];' },
@@ -1375,17 +1382,19 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: arrayKeysFixture,          expect: '% for my $k (0..$#{$items})' },
     // .values() → standard for loop (same as plain .map())
     { fixture: arrayValuesFixture,        expect: '% my $v = $items->[$_i];' },
-    // #1448 Tier C — .reduce(fn, init) arithmetic fold. The structured
-    // ReduceOp lowers to a single `bf->reduce(...)` call with op /
-    // key / type / init / direction in the options hash. Each shape
-    // exercises one arm: field-numeric sum, self-numeric sum,
-    // string-concat fold, the product (`*`) operator, and the
-    // right-to-left `direction` of reduceRight.
-    { fixture: reduceSumFieldFixture,     expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'duration', type => 'numeric', init => 0, direction => 'left' })` },
-    { fixture: reduceSumSelfFixture,      expect: `bf->reduce($nums, { op => '+', key_kind => 'self', type => 'numeric', init => 0, direction => 'left' })` },
-    { fixture: reduceConcatFixture,       expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'label', type => 'string', init => '', direction => 'left' })` },
-    { fixture: reduceProductFixture,      expect: `bf->reduce($items, { op => '*', key_kind => 'field', key => 'qty', type => 'numeric', init => 1, direction => 'left' })` },
-    { fixture: reduceRightConcatFixture,  expect: `bf->reduce($items, { op => '+', key_kind => 'field', key => 'label', type => 'string', init => '', direction => 'right' })` },
+    // #1448 Tier C — .reduce(fn, init) arithmetic fold. EXPR2 migration
+    // (#2018): the reducer body is serialized to ParsedExpr JSON and
+    // folded by `bf->reduce_eval(json, accName, itemName, init, direction,
+    // env)` — the runtime evaluator subsumes the old `+`/`*` catalogue.
+    // A numeric seed passes through bare (`0` / `1`); a concat seed as a
+    // single-quoted string (`''`). Each shape exercises one arm: field-
+    // numeric sum, self-numeric sum, string-concat fold, the product
+    // (`*`) operator, and the right-to-left `direction` of reduceRight.
+    { fixture: reduceSumFieldFixture,     expect: `bf->reduce_eval($items, '{"kind":"binary","op":"+","left":{"kind":"identifier","name":"sum"},"right":{"kind":"member","object":{"kind":"identifier","name":"t"},"property":"duration"}}', 'sum', 't', 0, 'left', {})` },
+    { fixture: reduceSumSelfFixture,      expect: `bf->reduce_eval($nums, '{"kind":"binary","op":"+","left":{"kind":"identifier","name":"a"},"right":{"kind":"identifier","name":"b"}}', 'a', 'b', 0, 'left', {})` },
+    { fixture: reduceConcatFixture,       expect: `bf->reduce_eval($items, '{"kind":"binary","op":"+","left":{"kind":"identifier","name":"acc"},"right":{"kind":"member","object":{"kind":"identifier","name":"x"},"property":"label"}}', 'acc', 'x', '', 'left', {})` },
+    { fixture: reduceProductFixture,      expect: `bf->reduce_eval($items, '{"kind":"binary","op":"*","left":{"kind":"identifier","name":"acc"},"right":{"kind":"member","object":{"kind":"identifier","name":"x"},"property":"qty"}}', 'acc', 'x', 1, 'left', {})` },
+    { fixture: reduceRightConcatFixture,  expect: `bf->reduce_eval($items, '{"kind":"binary","op":"+","left":{"kind":"identifier","name":"acc"},"right":{"kind":"member","object":{"kind":"identifier","name":"x"},"property":"label"}}', 'acc', 'x', '', 'right', {})` },
   ]
 
   for (const { fixture, expect: expectedHelper } of cases) {

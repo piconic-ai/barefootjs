@@ -8,6 +8,7 @@ no warnings 'experimental::signatures';
 
 use POSIX ();
 use Scalar::Util qw(looks_like_number weaken);
+use BarefootJS::Evaluator ();
 
 # NOTE: This runtime is template-engine-agnostic AND framework-agnostic by
 # design, so it can ship as a standalone CPAN distribution. It depends only on
@@ -1088,6 +1089,19 @@ sub pad_end ($self, $recv, $target, $pad = undef) {
 #
 # A future `nulls => 'first' | 'last'` knob can land per key without
 # churn — the opts hash is the right place to grow.
+
+# Evaluator-driven sort / reduce (#2018): the comparator / reducer body rides
+# as a serialized-ParsedExpr JSON string and is evaluated per element, delegating
+# to the shared BarefootJS::Evaluator. The adapter emits `bf->sort_eval(...)` /
+# `bf->reduce_eval(...)` for any pure comparator / reducer body; a body it can't
+# model (e.g. localeCompare) keeps the legacy `bf->sort` / `bf->reduce` path.
+sub sort_eval ($self, $recv, $cmp_json, $param_a, $param_b, $base_env = {}) {
+    return BarefootJS::Evaluator::sort_by_json($recv, $cmp_json, $param_a, $param_b, $base_env);
+}
+
+sub reduce_eval ($self, $recv, $body_json, $acc_name, $item_name, $init, $direction = 'left', $base_env = {}) {
+    return BarefootJS::Evaluator::fold_json($recv, $body_json, $acc_name, $item_name, $init, $direction, $base_env);
+}
 
 sub sort ($self, $recv, $opts = {}) {
     return [] unless ref($recv) eq 'ARRAY';

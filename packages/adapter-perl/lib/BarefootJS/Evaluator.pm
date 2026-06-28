@@ -436,4 +436,17 @@ sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     return [ map { $_->[1] } @sorted ];
 }
 
+# JSON entry points for the adapters: decode the callback body once, then fold /
+# sort. Mirror the Go `bf_reduce_eval` / `bf_sort_eval` template funcs, which the
+# adapters emit with a serialized-ParsedExpr body argument.
+sub fold_json ($items, $body_json, $acc_name, $item_name, $init, $direction = 'left', $base_env = undef) {
+    require JSON::PP;
+    return fold($items, JSON::PP->new->decode($body_json), $acc_name, $item_name, $init, $direction, $base_env);
+}
+
+sub sort_by_json ($items, $cmp_json, $param_a, $param_b, $base_env = undef) {
+    require JSON::PP;
+    return sort_by($items, JSON::PP->new->decode($cmp_json), $param_a, $param_b, $base_env);
+}
+
 1;
