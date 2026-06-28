@@ -87,4 +87,21 @@ subtest 'non-finite: division by zero and JS stringification' => sub {
     is(BarefootJS::Evaluator::_to_string($inf - $inf), 'NaN',   'String(NaN)');
 };
 
+# Captured free vars flow through $base_env (mirrors the Go FoldEval/SortEval
+# baseEnv test) — a reducer / comparator body can reference an outer const.
+subtest 'captured free vars via base_env' => sub {
+    # reduce: acc + item * factor, with `factor` captured.
+    my $body = nbin('+', nid('acc'), nbin('*', nid('item'), nid('factor')));
+    my $sum = BarefootJS::Evaluator::fold([1, 2, 3], $body, 'acc', 'item', 0, 'left', { factor => 10 });
+    is($sum, 60, '0 + 1*10 + 2*10 + 3*10 with captured factor');
+
+    # sort by distance from a captured `pivot`: |a-pivot| - |b-pivot|.
+    my $cmp = nbin('-',
+        ncall_math('abs', nbin('-', nid('a'), nid('pivot'))),
+        ncall_math('abs', nbin('-', nid('b'), nid('pivot'))),
+    );
+    my $sorted = BarefootJS::Evaluator::sort_by([1, 8, 4], $cmp, 'a', 'b', { pivot => 5 });
+    is_deeply($sorted, [4, 8, 1], 'ascending by distance from captured pivot');
+};
+
 done_testing;

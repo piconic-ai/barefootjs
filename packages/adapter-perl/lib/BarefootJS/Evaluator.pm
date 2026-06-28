@@ -363,33 +363,44 @@ sub _read_index ($obj, $index) {
 # bf_sort onto the evaluator) — the runtime half both Perl backends share.
 # ---------------------------------------------------------------------------
 
-# fold($items, $body, $acc_name, $item_name, $init, $direction)
+# fold($items, $body, $acc_name, $item_name, $init, $direction, $base_env)
 #
 # Fold an arrayref into a value via the evaluator. The reducer $body is a
 # pure ParsedExpr node evaluated against `{$acc_name => acc, $item_name =>
-# item}` per element; $init seeds the accumulator and $direction is "left"
-# (reduce) or "right" (reduceRight). Generalizes bf_reduce — any reducer body,
-# not just the +/* arithmetic catalogue, and acc may appear anywhere.
-sub fold ($items, $body, $acc_name, $item_name, $init, $direction = 'left') {
+# item}` plus the captured free vars in $base_env per element; $init seeds the
+# accumulator and $direction is "left" (reduce) or "right" (reduceRight).
+# Generalizes bf_reduce — any reducer body, not just the +/* arithmetic
+# catalogue, and acc may appear anywhere. $base_env is optional; the
+# acc/item keys shadow any same-named base key. Mirrors Go's FoldEval.
+sub fold ($items, $body, $acc_name, $item_name, $init, $direction = 'left', $base_env = undef) {
     my @arr = ref $items eq 'ARRAY' ? @$items : ();
     @arr = reverse @arr if ($direction // '') eq 'right';
+    # Seed the env from the captured free vars once; acc / item are
+    # overwritten each iteration (constant base keys carry through).
+    my %env = $base_env ? %$base_env : ();
     my $acc = $init;
     for my $item (@arr) {
-        $acc = evaluate($body, { $acc_name => $acc, $item_name => $item });
+        $env{$acc_name}  = $acc;
+        $env{$item_name} = $item;
+        $acc = evaluate($body, \%env);
     }
     return $acc;
 }
 
-# sort_by($items, $cmp, $param_a, $param_b)
+# sort_by($items, $cmp, $param_a, $param_b, $base_env)
 #
 # Return a new arrayref ordered by a ParsedExpr comparator $cmp evaluated
-# against `{$param_a => a, $param_b => b}` to a number (negative / zero /
-# positive, like a JS comparator). Generalizes bf_sort — any comparator body.
-# Stable (`use sort 'stable'`), non-mutating.
-sub sort_by ($items, $cmp, $param_a, $param_b) {
+# against `{$param_a => a, $param_b => b}` plus the captured free vars in
+# $base_env to a number (negative / zero / positive, like a JS comparator).
+# Generalizes bf_sort — any comparator body. $base_env is optional. Stable
+# (`use sort 'stable'`), non-mutating. Mirrors Go's SortEval.
+sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     return undef unless ref $items eq 'ARRAY';
+    my %env = $base_env ? %$base_env : ();
     my @sorted = sort {
-        _to_number(evaluate($cmp, { $param_a => $a, $param_b => $b })) <=> 0
+        $env{$param_a} = $a;
+        $env{$param_b} = $b;
+        _to_number(evaluate($cmp, \%env)) <=> 0
     } @$items;
     return \@sorted;
 }
