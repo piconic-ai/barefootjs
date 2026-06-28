@@ -313,7 +313,11 @@ export function evaluate(expr: ParsedExpr, env: EvalEnv): EvalValue {
       return expr.elements.map((e) => evaluate(e, env))
 
     case 'object-literal': {
-      const out: { [k: string]: EvalValue } = {}
+      // Null-prototype so every key is data-only — a `__proto__` key can't
+      // mutate the prototype chain (which a plain `{}` would allow via
+      // assignment), keeping parity with Go maps / Perl hashes that treat
+      // every key as data.
+      const out: { [k: string]: EvalValue } = Object.create(null)
       for (const prop of expr.properties) out[prop.key] = evaluate(prop.value, env)
       return out
     }
