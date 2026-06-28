@@ -501,8 +501,12 @@ func evalReadProperty(obj any, key string) any {
 		}
 		return nil
 	case map[string]any:
-		// A missing key reads as null (the backends' single absent value).
-		return o[key]
+		// Case-variant lookup: a callback body reads the raw JS property
+		// (`t.duration`), but test data / Go-keyed maps may carry PascalCase
+		// keys (`{"Duration": …}`). Reuse the field reader the sort / reduce
+		// helpers use — it resolves `duration` → `Duration` and reads a
+		// genuinely missing key as null (the backends' single absent value).
+		return getFieldValue(o, key)
 	case nil:
 		return nil
 	default:

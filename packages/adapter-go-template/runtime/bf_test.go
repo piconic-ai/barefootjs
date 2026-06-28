@@ -976,6 +976,38 @@ func TestEvalFoldSortOverStruct(t *testing.T) {
 	}
 }
 
+// TestEvalFoldSortOverPascalKeyedMap reproduces the conformance render shape:
+// an inline anonymous prop (`items: { duration: number }[]`) has no named Go
+// struct, so the test harness emits `[]any{map[string]any{"Duration": 95}, …}`
+// with PascalCase keys (test-render.ts goArrayLiteralFromArray, capitalizeKeys).
+// The callback body carries the raw JS property (`t.duration`), so the map read
+// must resolve `duration` → `Duration` case-insensitively — otherwise the field
+// reads as null and the fold collapses to its seed (#2030 reduce-sum-field).
+func TestEvalFoldSortOverPascalKeyedMap(t *testing.T) {
+	items := []any{
+		map[string]any{"Duration": 95.0},
+		map[string]any{"Duration": 213.0},
+		map[string]any{"Duration": 185.0},
+	}
+
+	// reduce: sum + t.duration, seed 0 → 493
+	body := mustJSON(t, nbin("+", nid("sum"), nmem(nid("t"), "duration")))
+	if got := evalToNumber(FoldEval(items, body, "sum", "t", 0.0, "left", nil)); got != 493 {
+		t.Fatalf("FoldEval over PascalCase-keyed map = %v, want 493", got)
+	}
+
+	// sort: a.duration - b.duration → ascending
+	cmp := mustJSON(t, nbin("-", nmem(nid("a"), "duration"), nmem(nid("b"), "duration")))
+	sorted := SortEval(items, cmp, "a", "b", nil)
+	got := make([]float64, len(sorted))
+	for i, s := range sorted {
+		got[i] = s.(map[string]any)["Duration"].(float64)
+	}
+	if got[0] != 95 || got[1] != 185 || got[2] != 213 {
+		t.Fatalf("SortEval over PascalCase-keyed map = %v, want [95 185 213]", got)
+	}
+}
+
 // =============================================================================
 // Portal HTML Rendering Tests
 // =============================================================================
