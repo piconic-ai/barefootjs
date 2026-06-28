@@ -130,6 +130,40 @@ describe('serializeParsedExpr', () => {
   test('purity gate: a folded subtree anywhere poisons the whole body', () => {
     expect(serializeParsedExpr(parseExpression('acc + item.name.toUpperCase()'))).toBeNull()
   })
+
+  test('purity gate: a non-builtin call is refused (evaluator would read it as nil)', () => {
+    // Bare function call — not on the evaluator allowlist.
+    expect(serializeParsedExpr(parseExpression('foo(item)'))).toBeNull()
+    // Method call on a value — generic `call` with a non-Math member callee.
+    expect(serializeParsedExpr(parseExpression('item.compute(2)'))).toBeNull()
+    // `parseInt` etc. are not the allowlisted `Number`/`String`/`Boolean`.
+    expect(serializeParsedExpr(parseExpression('parseInt(item.s)'))).toBeNull()
+    // A computed builtin reference the evaluator rejects (`Math['max']`).
+    expect(serializeParsedExpr(parseExpression("Math['max'](a, b)"))).toBeNull()
+  })
+
+  test('allowlisted builtins serialize (Math.* / String / Number / Boolean)', () => {
+    expect(serializeParsedExpr(parseExpression('Math.floor(item.x)'))).not.toBeNull()
+    expect(serializeParsedExpr(parseExpression('String(item.n)'))).not.toBeNull()
+    expect(serializeParsedExpr(parseExpression('Number(item.s)'))).not.toBeNull()
+    expect(serializeParsedExpr(parseExpression('Boolean(item.s)'))).not.toBeNull()
+  })
+
+  test('a computed member value carries `computed: true` (plain access omits it)', () => {
+    // `row['price']` folds to a computed `member`; the flag is preserved so a
+    // computed member stays distinguishable. (`row.price` carries no `computed`.)
+    expect(evalJSON("row['price']")).toEqual({
+      kind: 'member',
+      object: { kind: 'identifier', name: 'row' },
+      property: 'price',
+      computed: true,
+    })
+    expect(evalJSON('row.price')).toEqual({
+      kind: 'member',
+      object: { kind: 'identifier', name: 'row' },
+      property: 'price',
+    })
+  })
 })
 
 describe('freeVarsInBody', () => {

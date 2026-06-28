@@ -3531,14 +3531,17 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
  * the minimal JSON the runtime evaluator consumes — the format pinned by the
  * `eval-vectors` golden cases and read by Go `eval.go` `EvalNode` / Perl
  * `Evaluator.pm` `evaluate`. Only the evaluator-recognized fields are emitted
- * per kind (a literal carries just `value`; `literalType` / `raw` / `computed`
- * are dropped — the evaluator never reads them), keeping the embedded body blob
- * small and stable.
+ * per kind (a literal carries just `value`; `literalType` / `raw` are dropped —
+ * the evaluator never reads them; `member.computed` is kept when set so a
+ * computed member stays distinguishable), keeping the embedded body blob small
+ * and stable.
  *
  * Returns `null` when the tree contains a shape outside the evaluator's surface
- * — a folded `higher-order` / `array-method`, an `arrow-fn`, or an `unsupported`
- * node — so the caller refuses the body (BF101 / `@client`) instead of emitting
- * a blob the evaluator would read as nil. The evaluator's support criterion is
+ * — a folded `higher-order` / `array-method`, an `arrow-fn`, an `unsupported`
+ * node, an operator the evaluator doesn't implement, or a `call` whose callee
+ * isn't an allowlisted builtin (`Math.*` / `String` / `Number` / `Boolean`) — so
+ * the caller refuses the body (BF101 / `@client`) instead of emitting a blob the
+ * evaluator would read as nil. The evaluator's support criterion is
  * purely-functional expressibility; this is its compile-time gate. (#2018)
  */
 export function serializeParsedExpr(expr: ParsedExpr): string | null {
@@ -3621,6 +3624,34 @@ const EVAL_BINARY_OPS: ReadonlySet<string> = new Set([
 ])
 const EVAL_UNARY_OPS: ReadonlySet<string> = new Set(['!', '-', '+'])
 
+// The only call shapes the evaluator executes (Go `eval.go` evalBuiltinName /
+// evalCallBuiltin, Perl `Evaluator.pm` _call_builtin): a bare `String` / `Number`
+// / `Boolean`, or a NON-computed `Math.<fn>` for a fixed `<fn>` set. Any other
+// callee — a bare function (`foo(x)`), a method (`x.bar(...)`), or a *computed*
+// builtin (`Math['max']`, which the evaluator rejects) — evaluates to nil at
+// runtime, so the gate refuses it at compile time instead (BF101 / `@client`).
+const EVAL_BUILTIN_IDENTS: ReadonlySet<string> = new Set(['String', 'Number', 'Boolean'])
+const EVAL_MATH_METHODS: ReadonlySet<string> = new Set([
+  'max', 'min', 'abs', 'floor', 'ceil', 'round',
+])
+
+/** The allowlisted builtin name a call callee resolves to (`Math.max` / `String`), or null. */
+function evalBuiltinCalleeName(callee: ParsedExpr): string | null {
+  if (callee.kind === 'identifier') {
+    return EVAL_BUILTIN_IDENTS.has(callee.name) ? callee.name : null
+  }
+  if (
+    callee.kind === 'member' &&
+    !callee.computed &&
+    callee.object.kind === 'identifier' &&
+    callee.object.name === 'Math' &&
+    EVAL_MATH_METHODS.has(callee.property)
+  ) {
+    return `Math.${callee.property}`
+  }
+  return null
+}
+
 /** Build the evaluator's minimal node object, or null for an out-of-surface kind. */
 function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
   switch (e.kind) {
@@ -3654,10 +3685,15 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
         : null
     }
     case 'member': {
-      // The evaluator reads `object` + `property` only (a literal computed key
-      // like `obj['x']` folds to a `member` whose property is the key).
       const object = toEvalNode(e.object)
-      return object ? { kind: 'member', object, property: e.property } : null
+      if (!object) return null
+      // Carry `computed` only when set (absent reads as `false`): the evaluator
+      // reads it to reject a computed builtin (`Math['max']`), so preserving it
+      // keeps a computed member distinguishable from a plain `.prop` access. (A
+      // computed builtin *call* is already refused by the callee gate above.)
+      const node: Record<string, unknown> = { kind: 'member', object, property: e.property }
+      if (e.computed) node.computed = true
+      return node
     }
     case 'index-access': {
       const object = toEvalNode(e.object)
@@ -3665,6 +3701,9 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
       return object && index ? { kind: 'index-access', object, index } : null
     }
     case 'call': {
+      // The evaluator executes only the builtin allowlist; a non-builtin callee
+      // would evaluate to nil at runtime, so refuse it here (the purity gate).
+      if (evalBuiltinCalleeName(e.callee) === null) return null
       const callee = toEvalNode(e.callee)
       if (!callee) return null
       const args: Record<string, unknown>[] = []
