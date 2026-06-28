@@ -9,6 +9,7 @@ use sort 'stable';
 
 use B ();
 use POSIX ();
+use JSON::PP ();
 use Scalar::Util qw(looks_like_number);
 
 # Lightweight evaluator for the pure `ParsedExpr` subset, scoped to
@@ -189,6 +190,13 @@ sub _truthy ($v) {
     return ($n != 0 && $n == $n) ? 1 : 0;              # nonzero and not NaN
 }
 
+# _bool: wrap a Perl truthy/falsy into a JS boolean (JSON::PP::Boolean), so
+# boolean-valued operators (relational, ===, !, Boolean()) return a real
+# boolean rather than 1/0 — matching the Go evaluator's bool (e.g.
+# String(a < b) is "true", and `'x' + (a < b)` is "xtrue"). The coercions
+# above already treat JSON::PP::Boolean correctly.
+sub _bool ($t) { $t ? JSON::PP::true() : JSON::PP::false() }
+
 # ---------------------------------------------------------------------------
 # Operators
 # ---------------------------------------------------------------------------
@@ -221,8 +229,8 @@ sub _binary ($op, $l, $r) {
         return POSIX::fmod(_to_number($l), $rn);
     }
     return _relational($op, $l, $r) if $op eq '<' || $op eq '<=' || $op eq '>' || $op eq '>=';
-    return _strict_eq($l, $r)       if $op eq '===';
-    return (_strict_eq($l, $r) ? 0 : 1) if $op eq '!==';
+    return _bool(_strict_eq($l, $r))  if $op eq '===';
+    return _bool(!_strict_eq($l, $r)) if $op eq '!==';
     # Loose equality / bitwise / shift are out of the subset.
     return undef;
 }
@@ -237,14 +245,14 @@ sub _relational ($op, $l, $r) {
     else {
         my $ln = _to_number($l);
         my $rn = _to_number($r);
-        return 0 if $ln != $ln || $rn != $rn;    # NaN
+        return _bool(0) if $ln != $ln || $rn != $rn;    # NaN → false
         $c = $ln < $rn ? -1 : $ln > $rn ? 1 : 0;
     }
-    return ($c < 0  ? 1 : 0) if $op eq '<';
-    return ($c <= 0 ? 1 : 0) if $op eq '<=';
-    return ($c > 0  ? 1 : 0) if $op eq '>';
-    return ($c >= 0 ? 1 : 0) if $op eq '>=';
-    return 0;
+    return _bool($c < 0)  if $op eq '<';
+    return _bool($c <= 0) if $op eq '<=';
+    return _bool($c > 0)  if $op eq '>';
+    return _bool($c >= 0) if $op eq '>=';
+    return _bool(0);
 }
 
 sub _strict_eq ($l, $r) {
@@ -270,7 +278,7 @@ sub _strict_eq ($l, $r) {
 }
 
 sub _unary ($op, $v) {
-    return (_truthy($v) ? 0 : 1) if $op eq '!';
+    return _bool(!_truthy($v)) if $op eq '!';
     return -_to_number($v) if $op eq '-';
     return _to_number($v)  if $op eq '+';
     return undef;
@@ -322,7 +330,7 @@ sub _call_builtin ($name, $args) {
     return _math_round(_to_number($args->[0]))  if $name eq 'Math.round';
     return _to_string($args->[0])              if $name eq 'String';
     return _to_number($args->[0])              if $name eq 'Number';
-    return _truthy($args->[0])                 if $name eq 'Boolean';
+    return _bool(_truthy($args->[0]))          if $name eq 'Boolean';
     # Any other callee is outside the subset (refused upstream).
     return undef;
 }
@@ -340,8 +348,11 @@ sub _read_property ($obj, $key) {
         return $key eq 'length' ? scalar(@$obj) : undef;
     }
     return undef if ref $obj;
-    # plain scalar (string)
-    return length($obj) if $key eq 'length';
+    # `.length` is a string property only — a numeric scalar (123) has no
+    # `.length` in the subset (JS `(123).length` is undefined → null), so
+    # guard on _is_string rather than coercing the number to a string.
+    # Matches the Go evaluator (numbers fall through to nil there).
+    return length($obj) if $key eq 'length' && _is_string($obj);
     return undef;
 }
 
@@ -400,7 +411,12 @@ sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     my @sorted = sort {
         $env{$param_a} = $a;
         $env{$param_b} = $b;
-        _to_number(evaluate($cmp, \%env)) <=> 0
+        my $c = _to_number(evaluate($cmp, \%env));
+        # Explicit sign test rather than `<=> 0`: a NaN comparator result
+        # warns / is undefined under `<=>`, whereas `< 0` / `> 0` are both
+        # false for NaN, yielding 0 (no reordering) — matching JS (NaN
+        # comparator ⇒ keep order) and the Go SortEval sign test.
+        $c < 0 ? -1 : $c > 0 ? 1 : 0
     } @$items;
     return \@sorted;
 }

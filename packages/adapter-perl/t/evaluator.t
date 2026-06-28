@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use FindBin;
+use JSON::PP ();
 
 use lib "$FindBin::Bin/../lib";
 use BarefootJS::Evaluator;
@@ -12,6 +13,7 @@ use BarefootJS::Evaluator;
 sub nid  { return { kind => 'identifier', name => $_[0] } }
 sub nmem { return { kind => 'member', object => $_[0], property => $_[1], computed => JSON_false() } }
 sub nbin { return { kind => 'binary', op => $_[0], left => $_[1], right => $_[2] } }
+sub nstr { return { kind => 'literal', value => $_[0], literalType => 'string' } }
 
 sub ncall_math {
     my ($fn, $arg) = @_;
@@ -102,6 +104,34 @@ subtest 'captured free vars via base_env' => sub {
     );
     my $sorted = BarefootJS::Evaluator::sort_by([1, 8, 4], $cmp, 'a', 'b', { pivot => 5 });
     is_deeply($sorted, [4, 8, 1], 'ascending by distance from captured pivot');
+};
+
+# Boolean-valued operators return JS booleans (JSON::PP::Boolean), not 1/0 —
+# matching the Go evaluator, so they stringify "true"/"false" and concatenate
+# as JS does.
+subtest 'boolean-valued ops return JS booleans, not 1/0' => sub {
+    my $lt = BarefootJS::Evaluator::evaluate(nbin('<', nid('a'), nid('b')), { a => 1, b => 2 });
+    ok(JSON::PP::is_bool($lt), 'a < b is a JS boolean');
+    is(BarefootJS::Evaluator::_to_string($lt), 'true', 'String(a < b) is "true", not "1"');
+
+    my $cat = BarefootJS::Evaluator::evaluate(
+        nbin('+', nstr('x'), nbin('<', nid('a'), nid('b'))), { a => 1, b => 2 });
+    is($cat, 'xtrue', "'x' + (a < b) is 'xtrue', not 'x1'");
+
+    my $eq = BarefootJS::Evaluator::evaluate(nbin('===', nid('a'), nid('b')), { a => 1, b => 1 });
+    ok(JSON::PP::is_bool($eq), '1 === 1 is a JS boolean');
+
+    my $not = BarefootJS::Evaluator::evaluate({ kind => 'unary', op => '!', argument => nstr('') }, {});
+    is(BarefootJS::Evaluator::_to_string($not), 'true', 'String(!"") is "true"');
+
+    my $b = BarefootJS::Evaluator::evaluate(
+        { kind => 'call', callee => nid('Boolean'), args => [nstr('')] }, {});
+    ok(JSON::PP::is_bool($b), 'Boolean("") is a JS boolean');
+    is(BarefootJS::Evaluator::_to_string($b), 'false', 'String(Boolean("")) is "false", not "0"');
+
+    # `.length` is a string/array property only; a numeric scalar has none.
+    my $len = BarefootJS::Evaluator::evaluate(nmem(nid('n'), 'length'), { n => 123 });
+    ok(!defined $len, '(123).length is null, not 3');
 };
 
 done_testing;

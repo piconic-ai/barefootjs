@@ -75,6 +75,10 @@ sub _match {
         return $got == ($kind eq 'Infinity' ? $inf : -$inf) ? 1 : 0;
     }
     if (JSON::PP::is_bool($expect)) {
+        # The result must itself be a JS boolean (JSON::PP::Boolean), not a
+        # truthy/falsy 1/0 — otherwise a boolean-valued expression returning
+        # the number 1 instead of `true` would pass and mask the divergence.
+        return 0 unless JSON::PP::is_bool($got);
         return (!!$got eq !!$expect) ? 1 : 0;
     }
     if (ref $expect eq 'ARRAY') {
