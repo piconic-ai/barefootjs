@@ -166,6 +166,17 @@ sub _to_number ($v) {
 sub _to_string ($v) {
     return 'null' if !defined $v;
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 'true' : 'false' }
+    # JS spells the non-finite doubles "Infinity" / "-Infinity" / "NaN";
+    # Perl stringifies them "Inf" / "-Inf" / "NaN", so the non-finite cases
+    # are pinned here to stay JS-faithful (and match the Go evaluator's
+    # evalToString). Finite numbers and strings fall through to plain
+    # interpolation.
+    if (_is_number($v)) {
+        my $n = $v + 0;
+        return 'NaN'       if $n != $n;
+        return 'Infinity'  if $n == 9**9**9;
+        return '-Infinity' if $n == -(9**9**9);
+    }
     return "$v";
 }
 
@@ -191,7 +202,19 @@ sub _binary ($op, $l, $r) {
     }
     return _to_number($l) - _to_number($r) if $op eq '-';
     return _to_number($l) * _to_number($r) if $op eq '*';
-    return _to_number($l) / _to_number($r) if $op eq '/';
+    if ($op eq '/') {
+        my $ln = _to_number($l);
+        my $rn = _to_number($r);
+        # JS division by zero is finite-valued, not an error: x/0 is ±Infinity
+        # (NaN for 0/0). Perl's native `/` dies on a zero divisor, so guard it
+        # to stay JS-faithful and match the Go evaluator (Go float division
+        # already yields ±Inf / NaN).
+        if ($rn == 0) {
+            return _nan() if $ln == 0 || $ln != $ln;
+            return $ln > 0 ? 9**9**9 : -(9**9**9);
+        }
+        return $ln / $rn;
+    }
     if ($op eq '%') {
         my $rn = _to_number($r);
         return _nan() if $rn == 0;

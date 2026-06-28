@@ -65,4 +65,26 @@ subtest 'sort_by: descending via a reversed comparator' => sub {
     is_deeply([ map { $_->{x} } @$sorted ], [ 30, 20, 10 ], 'descending by x');
 };
 
+# Non-finite coercion stays JS-faithful (and matches the Go evaluator):
+# division by zero is ±Infinity / NaN rather than a Perl die, and those
+# values stringify as "Infinity" / "-Infinity" / "NaN" (not Perl's "Inf").
+subtest 'non-finite: division by zero and JS stringification' => sub {
+    my $div = sub {
+        my ($a, $b) = @_;
+        BarefootJS::Evaluator::evaluate(
+            nbin('/', { kind => 'identifier', name => 'a' }, { kind => 'identifier', name => 'b' }),
+            { a => $a, b => $b },
+        );
+    };
+    my $inf = 9**9**9;
+    is($div->(1, 0),  $inf,  '1/0 is +Infinity, not a die');
+    is($div->(-1, 0), -$inf, '-1/0 is -Infinity');
+    my $nan = $div->(0, 0);
+    ok($nan != $nan, '0/0 is NaN');
+
+    is(BarefootJS::Evaluator::_to_string($inf),    'Infinity',  'String(Infinity)');
+    is(BarefootJS::Evaluator::_to_string(-$inf),   '-Infinity', 'String(-Infinity)');
+    is(BarefootJS::Evaluator::_to_string($inf - $inf), 'NaN',   'String(NaN)');
+};
+
 done_testing;
