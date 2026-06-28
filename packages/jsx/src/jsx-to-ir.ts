@@ -555,13 +555,6 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
 // =============================================================================
 
 /**
- * Attach `parsed` (`parseExpression(expr.trim())`) to every `expression` node
- * in the tree, so SSR adapters emit from the structured tree instead of each
- * re-parsing the string at emit time. Best-effort: a node this walk misses (or
- * an empty `expr`) simply has no `parsed`, and the adapter falls back to
- * parsing — so under-coverage is safe, never a behavioural change.
- */
-/**
  * Parse an attribute / prop / provider value expression. An inline object
  * literal (`opts={{ align: 'start' }}`, `style={{ … }}`) parses as a block
  * statement unless parenthesized, so a bare `{ … }` would land as `unsupported`
@@ -575,6 +568,13 @@ function parseValueExpr(trimmed: string): ParsedExpr {
   return parseExpression(trimmed.startsWith('{') ? `(${trimmed})` : trimmed)
 }
 
+/**
+ * Attach `parsed` (`parseExpression(expr.trim())`) to every `expression` node
+ * in the tree, so SSR adapters emit from the structured tree instead of each
+ * re-parsing the string at emit time. Best-effort: a node this walk misses (or
+ * an empty `expr`) simply has no `parsed`, and the adapter falls back to
+ * parsing — so under-coverage is safe, never a behavioural change.
+ */
 function attachParsedExpressions(node: IRNode): void {
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
