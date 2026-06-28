@@ -1010,6 +1010,39 @@ export { A }`, 'A.tsx', { adapter })
     }
   })
 
+  test('lowers .every / .some via the evaluator, with grep fallback for a method-call predicate', () => {
+    // #2018 P2: a pure predicate routes `.every` / `.some` through
+    // `bf->every_eval` / `bf->some_eval`; a method-call predicate the
+    // evaluator can't model (`serializeParsedExpr` → null) falls back to the
+    // inline `grep` form.
+    const evalCases: Array<[string, string]> = [
+      ['every', 'every_eval'],
+      ['some', 'some_eval'],
+    ]
+    for (const [js, helper] of evalCases) {
+      const adapter = new MojoAdapter()
+      const result = compileJSX(`function A({ items }: { items: { done: boolean }[] }) {
+  return <div>{items.${js}(x => x.done) ? 'y' : 'n'}</div>
+}
+export { A }`, 'A.tsx', { adapter })
+      expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+      const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+      expect(template).toContain(`bf->${helper}($items,`)
+      expect(template).toContain('"property":"done"')
+    }
+
+    // Fallback: a method-call predicate (`x => x.name.includes('a')`) is
+    // outside the evaluator surface, so `.every` keeps the inline grep form.
+    const adapter = new MojoAdapter()
+    const fb = compileJSX(`function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+}
+export { A }`, 'A.tsx', { adapter })
+    const fbTemplate = fb.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(fbTemplate).toContain('grep {')
+    expect(fbTemplate).not.toContain('every_eval')
+  })
+
   test('lowers .reverse().join(\' \') via bf->reverse + join (#1448 Tier A)', () => {
     // SSR templates render a snapshot, so `.reverse` and
     // `.toReversed` share a Mojo lowering — both return a new

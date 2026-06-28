@@ -291,3 +291,58 @@ export function C() {
     expect(deferred.template).not.toContain('data-x')
   })
 })
+
+// #2018 P2: higher-order predicates lower through the runtime evaluator
+// (`$bf.*_eval`), isomorphic with the Go / Mojo `*_eval` helpers. A predicate
+// the evaluator can't model (a method-call predicate) falls back to the Kolon
+// lambda runtime call. Template-text pins guard against silent divergence.
+describe('XslateAdapter - higher-order predicate lowering (#2018 P2)', () => {
+  test('a serializable predicate lowers to $bf.filter_eval with the JSON body + env', () => {
+    // A standalone `.filter().length` exercises the higher-order emitter (the
+    // `.filter().map()` form is a loop-hoist with an inline `: if`, handled by
+    // renderLoop, not this emitter).
+    const { template } = compileAndGenerate(`
+function A({ items }: { items: { done: boolean }[] }) {
+  return <div>{items.filter(x => x.done).length}</div>
+}
+export { A }
+`)
+    expect(template).toContain('$bf.filter_eval(')
+    expect(template).toContain('"property":"done"')
+    expect(template).toContain("'x'")
+  })
+
+  test('.find / .findLast share $bf.find_eval, distinguished by the forward flag', () => {
+    const find = compileAndGenerate(`
+function A({ items }: { items: { done: boolean }[] }) {
+  return <div>{items.find(x => x.done) ? 'y' : 'n'}</div>
+}
+export { A }
+`).template
+    expect(find).toContain('$bf.find_eval(')
+    expect(find).toContain(', 1, {})')
+
+    const findLast = compileAndGenerate(`
+function A({ items }: { items: { done: boolean }[] }) {
+  return <div>{items.findLast(x => x.done) ? 'y' : 'n'}</div>
+}
+export { A }
+`).template
+    expect(findLast).toContain('$bf.find_eval(')
+    expect(findLast).toContain(', 0, {})')
+  })
+
+  test('a method-call predicate falls back to the Kolon-lambda runtime call', () => {
+    const { template } = compileAndGenerate(`
+function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+}
+export { A }
+`)
+    // No evaluator helper — the unsupported predicate keeps the `-> $x { … }`
+    // lambda form passed to the runtime `$bf.every`.
+    expect(template).not.toContain('every_eval')
+    expect(template).toContain('$bf.every(')
+    expect(template).toContain('-> $x {')
+  })
+})
