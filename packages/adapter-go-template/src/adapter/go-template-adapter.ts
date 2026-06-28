@@ -3274,11 +3274,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Render a higher-order expression (filter, every, some, find, findIndex) to
-   * Go template, or null when the shape isn't supported. `renderArray` is passed
-   * in so the array can recurse through different lowering methods.
-   */
-  /**
    * Emit a higher-order method through the runtime evaluator (#2018 P2):
    * `bf_filter_eval` / `bf_every_eval` / `bf_some_eval` / `bf_find_eval` /
    * `bf_find_index_eval`, carrying the serialized predicate body + captured
@@ -3318,6 +3313,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return null
   }
 
+  /**
+   * Render a higher-order expression (filter, every, some, find, findIndex) to
+   * Go template, or null when the shape isn't supported. `renderArray` is passed
+   * in so the array can recurse through different lowering methods.
+   */
   private renderHigherOrderExpr(
     expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
     renderArray: (e: ParsedExpr) => string
