@@ -137,6 +137,25 @@ func TestEvalToString_NonFinite(t *testing.T) {
 	}
 }
 
+// JS Math.round preserves -0 for inputs in [-0.5, -0], so 1/Math.round(-0.5)
+// is -Infinity (not +Infinity). Through ToString both ±0 still render "0".
+func TestEvalMathRound_NegativeZero(t *testing.T) {
+	r := evalMathRound(-0.5)
+	if r != 0 || !math.Signbit(r) {
+		t.Errorf("evalMathRound(-0.5) = %v (signbit %v), want -0", r, math.Signbit(r))
+	}
+	if got := 1 / r; !math.IsInf(got, -1) {
+		t.Errorf("1/Math.round(-0.5) = %v, want -Inf", got)
+	}
+	if evalToString(r) != "0" {
+		t.Errorf("evalToString(-0) = %q, want \"0\"", evalToString(r))
+	}
+	// A positive small value still rounds to +0.
+	if p := evalMathRound(0.3); p != 0 || math.Signbit(p) {
+		t.Errorf("evalMathRound(0.3) = %v (signbit %v), want +0", p, math.Signbit(p))
+	}
+}
+
 // FoldEval / SortEval tolerate a nil receiver like bf_reduce / bf_sort:
 // FoldEval returns the init unchanged, SortEval returns nil (no panic).
 func TestFoldSortEval_NilReceiver(t *testing.T) {

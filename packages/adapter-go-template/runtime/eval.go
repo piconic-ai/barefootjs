@@ -226,9 +226,21 @@ func evalToString(v any) string {
 	// JS spells the non-finite doubles "Infinity" / "-Infinity" / "NaN"; the
 	// runtime String() helper (fmt %v) would render "+Inf" / "-Inf" / "NaN",
 	// so the non-finite cases are pinned here to stay JS-faithful (and match
-	// the Perl evaluator's _to_string). Finite numbers, strings and bools fall
-	// through to String(), which is JS-faithful for those — and nil is already
-	// handled above as "null" (String() would give "").
+	// the Perl evaluator's _to_string). Strings, bools and nil are JS-faithful
+	// through String() (nil is already handled above as "null").
+	//
+	// Finite-number formatting is a documented divergence region. Go's fmt is
+	// shortest-round-trip (it matches JS's *digits*, e.g. 0.1+0.2 →
+	// "0.30000000000000004"), but its exponent threshold/padding differ from
+	// JS Number::toString for very large / very small magnitudes (Go renders
+	// 1e6 as "1e+06" where JS keeps "1000000", and "1e-07" vs JS "1e-7").
+	// Perl's `%.15g` instead diverges on *precision* (the pinned helper-vector
+	// "0.3" case). A fully JS-faithful Number::toString is not reimplemented
+	// here because Perl has no shortest-round-trip formatter, so the three
+	// could never all agree; the common integer / short-decimal range — what
+	// arithmetic over template data produces — renders identically across all
+	// three. Only the ±0 sign is normalised below, since it is cheap and the
+	// realisticly-reachable case.
 	if f, ok := v.(float64); ok {
 		if math.IsNaN(f) {
 			return "NaN"
@@ -412,7 +424,15 @@ func evalBuiltinName(callee any) string {
 // evalMathRound rounds a half toward +Infinity (JS Math.round: 2.5→3,
 // -2.5→-2), matching the existing `round` helper rather than Go's math.Round.
 func evalMathRound(n float64) float64 {
-	return math.Floor(n + 0.5)
+	r := math.Floor(n + 0.5)
+	// JS Math.round preserves the sign of zero: for x in [-0.5, -0] the
+	// result is -0 (so `1 / Math.round(-0.5)` is -Infinity). floor(n+0.5)
+	// yields +0 there, so restore the negative sign. (Through ToString both
+	// ±0 render as "0"; this only matters for a subsequent division.)
+	if r == 0 && math.Signbit(n) {
+		return math.Copysign(0, -1)
+	}
+	return r
 }
 
 func evalCallBuiltin(name string, args []any) any {
