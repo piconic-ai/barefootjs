@@ -117,6 +117,19 @@ func TestPredicateEvalHelpers(t *testing.T) {
 	if got := FindIndexEval(empty, pred, "u", true, nil); got != -1 {
 		t.Errorf("FindIndexEval(empty) = %d, want -1", got)
 	}
+
+	// Captured base_env: a predicate `u => u.age >= threshold` reads the
+	// outer `threshold` from base_env, and changing it changes the result —
+	// pins the capture plumbing (Copilot review #2032).
+	capPred := mustJSON(t, nbin(">=", nmem(nid("u"), "age"), nid("threshold")))
+	hi := FilterEval(rows, capPred, "u", map[string]any{"threshold": 18.0})
+	lo := FilterEval(rows, capPred, "u", map[string]any{"threshold": 100.0})
+	if len(hi) != 2 || len(lo) != 0 {
+		t.Fatalf("FilterEval with captured threshold: hi=%d lo=%d, want 2/0", len(hi), len(lo))
+	}
+	if FindIndexEval(rows, capPred, "u", true, map[string]any{"threshold": 100.0}) != -1 {
+		t.Errorf("FindIndexEval with unmet captured threshold should be -1")
+	}
 }
 
 // FoldEval lifts bf_reduce's op restriction and acc-canonical form: the
