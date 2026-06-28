@@ -2,8 +2,8 @@
  * In-template memo / context seeding for the Mojolicious EP template adapter.
  *
  * Extracted from `mojo-adapter.ts` (domain-module refactor, issue #2018
- * track D). Free functions taking a `MojoMemoContext` (the adapter passes
- * `this`) so the cluster depends only on the recursive expression entry, not
+ * track D). Free functions taking a `MojoMemoContext` (built by the adapter's
+ * `memoCtx` getter) so the cluster depends only on the recursive expression entry, not
  * the whole adapter class. These emit the `% my $x = ...;` seed lines that let
  * the template body's bare `$x` resolve to a derived signal/memo value or an
  * active context value at SSR time. Mirror of the Go adapter's `memo/*`.

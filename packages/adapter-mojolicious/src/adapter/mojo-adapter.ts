@@ -67,7 +67,7 @@ import {
 } from './lib/ir-scope.ts'
 import { renderSortMethod } from './expr/array-method.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
-import type { MojoEmitContext } from './emit-context.ts'
+import type { MojoEmitContext, MojoSpreadContext, MojoMemoContext } from './emit-context.ts'
 import {
   hasClientInteractivity,
   collectImportedLoopChildComponentErrors,
@@ -112,7 +112,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    */
   templatePrimitives: TemplatePrimitiveRegistry = MOJO_PRIMITIVE_EMIT_MAP
 
-  componentName: string = ''
+  private componentName: string = ''
   /** The component's root scope element(s) — each carries `data-key` for a
    *  keyed loop item (set by the child renderer from the JSX `key` prop). A
    *  plain element root is a single node; an `if-statement` (early-return) root
@@ -120,7 +120,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    *  the rendered root at runtime. */
   private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<MojoAdapterOptions>
-  errors: CompilerError[] = []
+  private errors: CompilerError[] = []
   private inLoop: boolean = false
   /**
    * SolidJS-style props identifier (`function(props: P)`) and the
@@ -130,7 +130,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * the IR (#1407 follow-up).
    */
   private propsObjectName: string | null = null
-  propsParams: { name: string }[] = []
+  private propsParams: { name: string }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
    * (#1971) Names that resolve to a real SSR template var — prop param, signal
@@ -174,7 +174,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * module-const object literal it indexes (#checkbox / icon). Populated
    * at `generate()` entry alongside `moduleStringConsts`.
    */
-  localConstants: IRMetadata['localConstants'] = []
+  private localConstants: IRMetadata['localConstants'] = []
   /**
    * Names currently bound by an enclosing loop body — the `my $<param>` and
    * `my $<index>` bindings `renderLoop` introduces — ref-counted so nested
@@ -270,7 +270,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // their `$x` would render empty. Compute them in-template from the
     // already-seeded prop/signal vars — mirroring Go's generated child
     // constructor that evaluates the memo from the passed prop. (#1297)
-    const memoSeed = generateDerivedMemoSeed(this, ir)
+    const memoSeed = generateDerivedMemoSeed(this.memoCtx, ir)
 
     const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
 
@@ -870,7 +870,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
       // guard so the common non-object case skips the AST parse.
       if (value.expr.trim().startsWith('{')) {
-        const hashref = objectLiteralExprToPerlHashref(this, value.expr)
+        const hashref = objectLiteralExprToPerlHashref(this.spreadCtx, value.expr)
         if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
       }
       return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
@@ -1189,7 +1189,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // OMITS the key (`bf->spread_attrs` does NOT filter empty
       // strings, so we cannot always-include it). Mirrors the Go
       // adapter's IIFE-of-maps lowering (#textarea).
-      const ternaryHashref = conditionalSpreadToPerl(this, trimmed)
+      const ternaryHashref = conditionalSpreadToPerl(this.spreadCtx, trimmed)
       if (ternaryHashref !== null) {
         return `<%== bf->spread_attrs(${ternaryHashref}) %>`
       }
@@ -1206,7 +1206,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         if (localConst?.value !== undefined) {
           const initTrimmed = localConst.value.trim()
           if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            const resolved = conditionalSpreadToPerl(this, initTrimmed)
+            const resolved = conditionalSpreadToPerl(this.spreadCtx, initTrimmed)
             if (resolved !== null) {
               return `<%== bf->spread_attrs(${resolved}) %>`
             }
@@ -1541,7 +1541,28 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     return true
   }
 
-  convertExpressionToPerl(expr: string): string {
+  /**
+   * Build the narrow context the extracted spread lowering depends on. Passing
+   * a purpose-built object (rather than `this`) keeps the adapter's bookkeeping
+   * members private — they stay internal implementation detail, not part of the
+   * exported class's public surface.
+   */
+  private get spreadCtx(): MojoSpreadContext {
+    return {
+      componentName: this.componentName,
+      errors: this.errors,
+      localConstants: this.localConstants,
+      propsParams: this.propsParams,
+      convertExpressionToPerl: (e) => this.convertExpressionToPerl(e),
+    }
+  }
+
+  /** Build the narrow context the extracted memo seeding depends on. */
+  private get memoCtx(): MojoMemoContext {
+    return { convertExpressionToPerl: (e) => this.convertExpressionToPerl(e) }
+  }
+
+  private convertExpressionToPerl(expr: string): string {
     // Parse-first lowering — parity with the Go adapter's
     // `convertExpressionToGo`. Parse the JS expression once, gate it on
     // the shared `isSupported`, and render every supported shape through

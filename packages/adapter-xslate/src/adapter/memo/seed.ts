@@ -2,8 +2,8 @@
  * In-template memo / context seeding for the Text::Xslate template adapter.
  *
  * Extracted from `xslate-adapter.ts` (domain-module refactor, issue #2018
- * track D). Free functions taking a `XslateMemoContext` (the adapter passes
- * `this`) so the cluster depends only on the recursive expression entry, not
+ * track D). Free functions taking a `XslateMemoContext` (built by the adapter's
+ * `memoCtx` getter) so the cluster depends only on the recursive expression entry, not
  * the whole adapter class. These emit the `: my $x = ...;` line-statements
  * that let the body's bare `$x` resolve to a derived signal/memo value or an
  * active context value at SSR time. Mirror of the Go / Mojo adapter's `memo/*`.

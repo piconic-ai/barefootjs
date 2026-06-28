@@ -82,7 +82,7 @@ import {
 } from './lib/ir-scope.ts'
 import { renderSortMethod } from './expr/array-method.ts'
 import { XslateFilterEmitter, XslateTopLevelEmitter } from './expr/emitters.ts'
-import type { XslateEmitContext } from './emit-context.ts'
+import type { XslateEmitContext, XslateSpreadContext, XslateMemoContext } from './emit-context.ts'
 import {
   hasClientInteractivity,
   collectImportedLoopChildComponentErrors,
@@ -120,14 +120,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    */
   templatePrimitives: TemplatePrimitiveRegistry = XSLATE_PRIMITIVE_EMIT_MAP
 
-  componentName: string = ''
+  private componentName: string = ''
   /** Component root scope element(s) — each carries `data-key` for a keyed loop
    *  item (set by the child renderer from the JSX `key` prop). A plain element
    *  root is one node; an `if-statement` (early-return) root contributes the
    *  top element of every branch. */
   private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<XslateAdapterOptions>
-  errors: CompilerError[] = []
+  private errors: CompilerError[] = []
   private inLoop: boolean = false
   /**
    * SolidJS-style props identifier (`function(props: P)`) and the
@@ -136,13 +136,16 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * an inline Kolon hashref literal without re-walking the IR.
    */
   private propsObjectName: string | null = null
-  propsParams: { name: string }[] = []
+  private propsParams: { name: string }[] = []
   private booleanTypedProps: Set<string> = new Set()
   /**
-   * Names (signal getters + props) whose value is a string, so `===`/`!==`
-   * against them lowers to Perl `eq`/`ne` rather than numeric `==`/`!=`.
-   * Kolon comparison operators delegate to Perl semantics, so the same
-   * string-vs-numeric distinction the Mojo adapter makes applies here.
+   * Names (signal getters + props) whose value is a string. In the Mojo
+   * adapter this drives choosing Perl `eq`/`ne` over numeric `==`/`!=` for a
+   * string `===`/`!==`. The Kolon emitters do NOT consume this: Kolon's
+   * `==`/`!=` are value-equality operators that compare strings and numbers
+   * correctly, so `===`/`!==` always map to `==`/`!=`. The set is populated
+   * and threaded for parity with the Mojo adapter (and as groundwork for a
+   * shared Perl-family codegen surface), not because Kolon needs it today.
    */
   private stringValueNames: Set<string> = new Set()
 
@@ -172,7 +175,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * Stashed at `generate()` entry so `emitSpread` can resolve a bare local
    * const (`const sizeAttrs = size ? {…} : {}`) to its initializer text.
    */
-  localConstants: IRMetadata['localConstants'] = []
+  private localConstants: IRMetadata['localConstants'] = []
 
   /**
    * Optional, no-default props that are `undef` when the caller omits them.
@@ -242,7 +245,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // `createMemo(() => props.value * 10)`) are computed in-template from the
     // already-seeded prop/signal vars — mirroring Go's generated child
     // constructor. (#1297)
-    const memoSeed = generateDerivedMemoSeed(this, ir)
+    const memoSeed = generateDerivedMemoSeed(this.memoCtx, ir)
 
     const template = `${scriptReg}${ctxSeed}${memoSeed}${templateBody}\n`
 
@@ -709,7 +712,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
       // guard so the common non-object case skips the AST parse.
       if (value.expr.trim().startsWith('{')) {
-        const hashref = objectLiteralExprToKolonHashref(this, value.expr)
+        const hashref = objectLiteralExprToKolonHashref(this.spreadCtx, value.expr)
         if (hashref !== null) return `${kolonHashKey(name)} => ${hashref}`
       }
       return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr)}`
@@ -987,7 +990,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // Emit a Kolon inline ternary of hashrefs — Perl truthiness handles the
       // condition for free, and the falsy `{}` branch OMITS the key
       // (`spread_attrs` does NOT emit empty hashref entries).
-      const ternaryHashref = conditionalSpreadToKolon(this, trimmed)
+      const ternaryHashref = conditionalSpreadToKolon(this.spreadCtx, trimmed)
       if (ternaryHashref !== null) {
         return `<: $bf.spread_attrs(${ternaryHashref}) | mark_raw :>`
       }
@@ -1004,7 +1007,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         if (localConst?.value !== undefined) {
           const initTrimmed = localConst.value.trim()
           if (!/^[A-Za-z_$][\w$]*$/.test(initTrimmed)) {
-            const resolved = conditionalSpreadToKolon(this, initTrimmed)
+            const resolved = conditionalSpreadToKolon(this.spreadCtx, initTrimmed)
             if (resolved !== null) {
               return `<: $bf.spread_attrs(${resolved}) | mark_raw :>`
             }
@@ -1287,7 +1290,28 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     return true
   }
 
-  convertExpressionToKolon(expr: string): string {
+  /**
+   * Build the narrow context the extracted spread lowering depends on. Passing
+   * a purpose-built object (rather than `this`) keeps the adapter's bookkeeping
+   * members private — they stay internal implementation detail, not part of the
+   * exported class's public surface.
+   */
+  private get spreadCtx(): XslateSpreadContext {
+    return {
+      componentName: this.componentName,
+      errors: this.errors,
+      localConstants: this.localConstants,
+      propsParams: this.propsParams,
+      convertExpressionToKolon: (e) => this.convertExpressionToKolon(e),
+    }
+  }
+
+  /** Build the narrow context the extracted memo seeding depends on. */
+  private get memoCtx(): XslateMemoContext {
+    return { convertExpressionToKolon: (e) => this.convertExpressionToKolon(e) }
+  }
+
+  private convertExpressionToKolon(expr: string): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST

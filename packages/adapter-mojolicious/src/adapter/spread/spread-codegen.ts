@@ -3,8 +3,8 @@
  * Mojolicious EP template adapter.
  *
  * Extracted from `mojo-adapter.ts` (domain-module refactor, issue #2018
- * track D). Free functions taking a `MojoSpreadContext` (the adapter passes
- * `this`) so the cluster depends on the narrow seam — the recursive
+ * track D). Free functions taking a `MojoSpreadContext` (built by the adapter's
+ * `spreadCtx` getter) so the cluster depends on the narrow seam — the recursive
  * expression entry plus per-compile bookkeeping — rather than the whole
  * adapter class. Mirror of the Go adapter's `spread/spread-codegen.ts`.
  */

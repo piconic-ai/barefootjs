@@ -3,8 +3,8 @@
  * Text::Xslate template adapter.
  *
  * Extracted from `xslate-adapter.ts` (domain-module refactor, issue #2018
- * track D). Free functions taking a `XslateSpreadContext` (the adapter passes
- * `this`) so the cluster depends on the narrow seam — the recursive
+ * track D). Free functions taking a `XslateSpreadContext` (built by the adapter's
+ * `spreadCtx` getter) so the cluster depends on the narrow seam — the recursive
  * expression entry plus per-compile bookkeeping — rather than the whole
  * adapter class. Mirror of the Go / Mojo adapter's `spread/spread-codegen.ts`.
  */
@@ -42,11 +42,11 @@ export function conditionalSpreadToKolon(ctx: XslateSpreadContext, expr: string)
   if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
     return null
   }
-  const condPerl = ctx.convertExpressionToKolon(node.condition.getText(sf))
-  const truePerl = objectLiteralToKolonHashref(ctx, whenTrue, sf)
-  const falsePerl = objectLiteralToKolonHashref(ctx, whenFalse, sf)
-  if (truePerl === null || falsePerl === null) return null
-  return `${condPerl} ? ${truePerl} : ${falsePerl}`
+  const condKolon = ctx.convertExpressionToKolon(node.condition.getText(sf))
+  const trueKolon = objectLiteralToKolonHashref(ctx, whenTrue, sf)
+  const falseKolon = objectLiteralToKolonHashref(ctx, whenFalse, sf)
+  if (trueKolon === null || falseKolon === null) return null
+  return `${condKolon} ? ${trueKolon} : ${falseKolon}`
 }
 
 /**
@@ -120,11 +120,11 @@ export function objectLiteralToKolonHashref(
       })
       return null
     }
-    const valPerl =
+    const valKolon =
       indexed !== null
         ? indexed
         : ctx.convertExpressionToKolon(prop.initializer.getText(sf))
-    entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valPerl}`)
+    entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valKolon}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
 }
