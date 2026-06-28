@@ -875,6 +875,7 @@ func TestFuncMap(t *testing.T) {
 		"bf_len", "bf_at", "bf_includes", "bf_first", "bf_last",
 		"bf_arr", "bf_filter_truthy",
 		"bf_every", "bf_some", "bf_filter", "bf_find", "bf_find_index", "bf_sort",
+		"bf_sort_eval", "bf_reduce_eval", "bf_env",
 		"bfComment", "bfTextStart", "bfTextEnd", "bfPortalHTML",
 	}
 
@@ -882,6 +883,133 @@ func TestFuncMap(t *testing.T) {
 		if _, ok := fm[name]; !ok {
 			t.Errorf("FuncMap missing function: %s", name)
 		}
+	}
+}
+
+func TestEnv(t *testing.T) {
+	env := Env("factor", 2, "label", "x")
+	if env["factor"] != 2 || env["label"] != "x" {
+		t.Fatalf("Env built wrong map: %v", env)
+	}
+	if got := Env(); len(got) != 0 {
+		t.Fatalf("Env() with no pairs should be empty, got %v", got)
+	}
+	if got := Env("k"); len(got) != 0 {
+		t.Fatalf("Env with a dangling key should drop it, got %v", got)
+	}
+	// A non-string key (only reachable by a malformed template call) is
+	// skipped, not collapsed into an `env[""]` slot.
+	if got := Env(42, "v", "real", 7); len(got) != 1 || got["real"] != 7 {
+		t.Fatalf("Env should skip a non-string key, got %v", got)
+	}
+}
+
+// End-to-end wiring of the #2018 evaluator-driven folds through the template
+// FuncMap, driven by the exact JSON `serializeParsedExpr` emits for the callback
+// body — proves the P1 path from template call (`bf_sort_eval` / `bf_reduce_eval`
+// / `bf_env`) to result, including a captured free var in base_env.
+func TestEvalTemplateFuncs(t *testing.T) {
+	fm := FuncMap()
+	items := []any{
+		map[string]any{"price": 3.0},
+		map[string]any{"price": 1.0},
+		map[string]any{"price": 2.0},
+	}
+
+	// sort: a.price - b.price → ascending by price, no captures.
+	cmp := mustJSON(t, nbin("-", nmem(nid("a"), "price"), nmem(nid("b"), "price")))
+	sortTmpl := template.Must(template.New("s").Funcs(fm).Parse(
+		`{{range bf_sort_eval .Items .Cmp "a" "b" bf_env}}{{.price}} {{end}}`))
+	var sb strings.Builder
+	if err := sortTmpl.Execute(&sb, map[string]any{"Items": items, "Cmp": cmp}); err != nil {
+		t.Fatalf("sort tmpl: %v", err)
+	}
+	if got := sb.String(); got != "1 2 3 " {
+		t.Fatalf("bf_sort_eval = %q, want %q", got, "1 2 3 ")
+	}
+
+	// reduce: acc + item.price, init 0 → sum 6.
+	body := mustJSON(t, nbin("+", nid("acc"), nmem(nid("item"), "price")))
+	redTmpl := template.Must(template.New("r").Funcs(fm).Parse(
+		`{{bf_reduce_eval .Items .Body "acc" "item" 0.0 "left" bf_env}}`))
+	sb.Reset()
+	if err := redTmpl.Execute(&sb, map[string]any{"Items": items, "Body": body}); err != nil {
+		t.Fatalf("reduce tmpl: %v", err)
+	}
+	if got := sb.String(); got != "6" {
+		t.Fatalf("bf_reduce_eval = %q, want %q", got, "6")
+	}
+
+	// captured free var: comparator reads `factor` from base_env (bf_env).
+	cmp2 := mustJSON(t, nbin("-",
+		nbin("*", nmem(nid("a"), "price"), nid("factor")),
+		nbin("*", nmem(nid("b"), "price"), nid("factor"))))
+	capTmpl := template.Must(template.New("c").Funcs(fm).Parse(
+		`{{range bf_sort_eval .Items .Cmp "a" "b" (bf_env "factor" .Factor)}}{{.price}} {{end}}`))
+	sb.Reset()
+	if err := capTmpl.Execute(&sb, map[string]any{"Items": items, "Cmp": cmp2, "Factor": 2.0}); err != nil {
+		t.Fatalf("capture tmpl: %v", err)
+	}
+	if got := sb.String(); got != "1 2 3 " {
+		t.Fatalf("bf_sort_eval w/ base_env = %q, want %q", got, "1 2 3 ")
+	}
+}
+
+// SSR data is Go structs with capitalised fields, but a serialized callback
+// body carries the JS field name (`x.id`). Verify the evaluator's field reader
+// resolves it case-variantly against the struct field (ID) for both fold and
+// sort — the path the real template render uses.
+func TestEvalFoldSortOverStruct(t *testing.T) {
+	type item struct{ ID int }
+	items := []item{{ID: 10}, {ID: 5}, {ID: 7}}
+
+	// reduce: acc + x.id, seed 0 → 22
+	body := mustJSON(t, nbin("+", nid("acc"), nmem(nid("x"), "id")))
+	if got := evalToNumber(FoldEval(items, body, "acc", "x", 0.0, "left", nil)); got != 22 {
+		t.Fatalf("FoldEval over struct = %v, want 22", got)
+	}
+
+	// sort: a.id - b.id → ascending by ID
+	cmp := mustJSON(t, nbin("-", nmem(nid("a"), "id"), nmem(nid("b"), "id")))
+	sorted := SortEval(items, cmp, "a", "b", nil)
+	got := make([]int, len(sorted))
+	for i, s := range sorted {
+		got[i] = s.(item).ID
+	}
+	if got[0] != 5 || got[1] != 7 || got[2] != 10 {
+		t.Fatalf("SortEval over struct = %v, want [5 7 10]", got)
+	}
+}
+
+// TestEvalFoldSortOverPascalKeyedMap reproduces the conformance render shape:
+// an inline anonymous prop (`items: { duration: number }[]`) has no named Go
+// struct, so the test harness emits `[]any{map[string]any{"Duration": 95}, …}`
+// with PascalCase keys (test-render.ts goArrayLiteralFromArray, capitalizeKeys).
+// The callback body carries the raw JS property (`t.duration`), so the map read
+// must resolve `duration` → `Duration` case-insensitively — otherwise the field
+// reads as null and the fold collapses to its seed (#2030 reduce-sum-field).
+func TestEvalFoldSortOverPascalKeyedMap(t *testing.T) {
+	items := []any{
+		map[string]any{"Duration": 95.0},
+		map[string]any{"Duration": 213.0},
+		map[string]any{"Duration": 185.0},
+	}
+
+	// reduce: sum + t.duration, seed 0 → 493
+	body := mustJSON(t, nbin("+", nid("sum"), nmem(nid("t"), "duration")))
+	if got := evalToNumber(FoldEval(items, body, "sum", "t", 0.0, "left", nil)); got != 493 {
+		t.Fatalf("FoldEval over PascalCase-keyed map = %v, want 493", got)
+	}
+
+	// sort: a.duration - b.duration → ascending
+	cmp := mustJSON(t, nbin("-", nmem(nid("a"), "duration"), nmem(nid("b"), "duration")))
+	sorted := SortEval(items, cmp, "a", "b", nil)
+	got := make([]float64, len(sorted))
+	for i, s := range sorted {
+		got[i] = s.(map[string]any)["Duration"].(float64)
+	}
+	if got[0] != 95 || got[1] != 185 || got[2] != 213 {
+		t.Fatalf("SortEval over PascalCase-keyed map = %v, want [95 185 213]", got)
 	}
 }
 

@@ -91,6 +91,16 @@ func FuncMap() template.FuncMap {
 		"bf_sort":            Sort,
 		"bf_reduce":          Reduce,
 
+		// Evaluator-driven higher-order folds (#2018): the comparator / reducer
+		// body travels as a serialized ParsedExpr (JSON) evaluated per element,
+		// generalizing bf_sort / bf_reduce beyond their fixed catalogues. The
+		// adapter falls back to bf_sort for a comparator the evaluator can't
+		// model (e.g. localeCompare). `bf_env` builds the captured-free-var
+		// environment passed as the trailing base_env argument.
+		"bf_sort_eval":   SortEval,
+		"bf_reduce_eval": FoldEval,
+		"bf_env":         Env,
+
 		// Comment marker (for hydration)
 		"bfComment":   Comment,
 		"bfTextStart": TextStart,
@@ -1602,7 +1612,18 @@ func getFieldValue(item any, field string) any {
 
 	fieldVal := v.FieldByName(field)
 	if !fieldVal.IsValid() {
-		return nil
+		// Case-variant fallback: the evaluator carries the JS field name
+		// (`id` / `url`) against a Go-capitalised struct field (`ID` / `URL`),
+		// which exact `FieldByName` misses and the initialism rules can't be
+		// reproduced char-for-char here. Match case-insensitively instead —
+		// `FieldByNameFunc` returns the zero Value (→ nil) for an ambiguous
+		// match, so it stays safe. The legacy bf_sort/bf_reduce pass an
+		// already-capitalised name, so they hit the exact match above and never
+		// reach this fallback.
+		fieldVal = v.FieldByNameFunc(func(n string) bool { return strings.EqualFold(n, field) })
+		if !fieldVal.IsValid() {
+			return nil
+		}
 	}
 	return fieldVal.Interface()
 }
