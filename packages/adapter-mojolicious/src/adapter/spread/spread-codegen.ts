@@ -7,57 +7,58 @@
  * `spreadCtx` getter) so the cluster depends on the narrow seam — the recursive
  * expression entry plus per-compile bookkeeping — rather than the whole
  * adapter class. Mirror of the Go adapter's `spread/spread-codegen.ts`.
+ *
+ * The conditional-spread / object-literal entries read the IR-carried
+ * structured `ParsedExpr` tree (#2018, mirroring go-template's U5/U6) instead
+ * of re-parsing the source with `ts.createSourceFile`. The condition and scalar
+ * values are re-stringified with `stringifyParsedExpr` and routed back through
+ * `ctx.convertExpressionToPerl`, which re-parses — so the emitted Perl stays
+ * byte-identical to the former AST-text path. The `ts.factory` rebuild in
+ * `recordIndexAccessToPerl` only reconstructs the `IDENT[KEY]` node the shared
+ * `parseRecordIndexAccess` parser accepts; no source-text re-parse.
  */
 
 import ts from 'typescript'
-import { parseRecordIndexAccess } from '@barefootjs/jsx'
+import { parseRecordIndexAccess, stringifyParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { MojoSpreadContext } from '../emit-context.ts'
 
 /**
- * Parse a `cond ? {…} : {…}` conditional-spread expression and lower it to a
- * Perl ternary over two hashrefs, or null when it isn't that shape.
+ * Lower a `cond ? {…} : {…}` conditional-spread expression — carried as the
+ * IR's structured `ParsedExpr` tree — to a Perl ternary over two hashrefs, or
+ * null when it isn't that shape. `parseExpression` already strips redundant
+ * parentheses, so the conditional / object-literal shapes surface directly.
  */
-export function conditionalSpreadToPerl(ctx: MojoSpreadContext, expr: string): string | null {
-  const sf = ts.createSourceFile('__spread.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
-  if (sf.statements.length !== 1) return null
-  const stmt = sf.statements[0]
-  if (!ts.isExpressionStatement(stmt)) return null
-  let node: ts.Expression = stmt.expression
-  while (ts.isParenthesizedExpression(node)) node = node.expression
-  if (!ts.isConditionalExpression(node)) return null
-  const unwrap = (e: ts.Expression): ts.Expression => {
-    let n = e
-    while (ts.isParenthesizedExpression(n)) n = n.expression
-    return n
-  }
-  const whenTrue = unwrap(node.whenTrue)
-  const whenFalse = unwrap(node.whenFalse)
-  if (!ts.isObjectLiteralExpression(whenTrue) || !ts.isObjectLiteralExpression(whenFalse)) {
+export function conditionalSpreadToPerl(
+  ctx: MojoSpreadContext,
+  expr: ParsedExpr | undefined,
+): string | null {
+  if (!expr || expr.kind !== 'conditional') return null
+  const whenTrue = expr.consequent
+  const whenFalse = expr.alternate
+  if (whenTrue.kind !== 'object-literal' || whenFalse.kind !== 'object-literal') {
     return null
   }
-  const condPerl = ctx.convertExpressionToPerl(node.condition.getText(sf))
-  const truePerl = objectLiteralToPerlHashref(ctx, whenTrue, sf)
-  const falsePerl = objectLiteralToPerlHashref(ctx, whenFalse, sf)
+  const condPerl = ctx.convertExpressionToPerl(stringifyParsedExpr(expr.test))
+  const truePerl = objectLiteralToPerlHashref(ctx, whenTrue)
+  const falsePerl = objectLiteralToPerlHashref(ctx, whenFalse)
   if (truePerl === null || falsePerl === null) return null
   return `${condPerl} ? ${truePerl} : ${falsePerl}`
 }
 
 /**
- * (#1971 Perl) Parse a bare object-literal expression string
- * (`{ align: 'start' }`) and lower it to a Perl hashref via
- * `objectLiteralToPerlHashref`, or null when it isn't a plain object
- * literal. Used for inline object-literal child props (carousel `opts`).
+ * (#1971 Perl) Lower a bare object-literal expression (`{ align: 'start' }`),
+ * carried as the IR's structured `ParsedExpr` tree, to a Perl hashref via
+ * `objectLiteralToPerlHashref`, or null when it isn't a plain object literal.
+ * Used for inline object-literal child props (carousel `opts`).
  */
-export function objectLiteralExprToPerlHashref(ctx: MojoSpreadContext, expr: string): string | null {
-  const sf = ts.createSourceFile('__obj.ts', `(${expr})`, ts.ScriptTarget.Latest, true)
-  if (sf.statements.length !== 1) return null
-  const stmt = sf.statements[0]
-  if (!ts.isExpressionStatement(stmt)) return null
-  let node: ts.Expression = stmt.expression
-  while (ts.isParenthesizedExpression(node)) node = node.expression
-  if (!ts.isObjectLiteralExpression(node)) return null
-  return objectLiteralToPerlHashref(ctx, node, sf)
+export function objectLiteralExprToPerlHashref(
+  ctx: MojoSpreadContext,
+  expr: ParsedExpr | undefined,
+): string | null {
+  if (!expr || expr.kind !== 'object-literal') return null
+  return objectLiteralToPerlHashref(ctx, expr)
 }
 
 /**
@@ -68,32 +69,24 @@ export function objectLiteralExprToPerlHashref(ctx: MojoSpreadContext, expr: str
  */
 export function objectLiteralToPerlHashref(
   ctx: MojoSpreadContext,
-  obj: ts.ObjectLiteralExpression,
-  sf: ts.SourceFile,
+  obj: Extract<ParsedExpr, { kind: 'object-literal' }>,
 ): string | null {
   const entries: string[] = []
   for (const prop of obj.properties) {
-    if (!ts.isPropertyAssignment(prop)) return null
-    let key: string
-    if (ts.isIdentifier(prop.name)) {
-      key = prop.name.text
-    } else if (ts.isStringLiteral(prop.name) || ts.isNoSubstitutionTemplateLiteral(prop.name)) {
-      key = prop.name.text
-    } else {
-      return null
-    }
-    const initNode = (() => {
-      let n: ts.Expression = prop.initializer
-      while (ts.isParenthesizedExpression(n)) n = n.expression
-      return n
-    })()
-    const indexed = recordIndexAccessToPerl(ctx, initNode)
+    // Shorthand `{ a }` was a `ShorthandPropertyAssignment` (not a
+    // `PropertyAssignment`), so the former parser rejected it — keep refusing.
+    if (prop.shorthand) return null
+    // A numeric key (`{ 1: x }`) was rejected by the former parser (only
+    // identifier / string-literal names were accepted); `keyKind`
+    // distinguishes it from a same-text string `'1'` key.
+    if (prop.keyKind === 'numeric') return null
+    const key = prop.key
+    const val = prop.value
+    const indexed = recordIndexAccessToPerl(ctx, val)
     if (
       indexed === null &&
-      ts.isElementAccessExpression(initNode) &&
-      initNode.argumentExpression &&
-      !ts.isNumericLiteral(initNode.argumentExpression) &&
-      !ts.isStringLiteral(initNode.argumentExpression)
+      val.kind === 'index-access' &&
+      !isLiteralIndex(val.index)
     ) {
       // Variable-index record access (`sizeMap[size]`) that the
       // static-inline path couldn't resolve — a non-scalar record
@@ -109,7 +102,7 @@ export function objectLiteralToPerlHashref(
       ctx.errors.push({
         code: 'BF101',
         severity: 'error',
-        message: `Spread object value '${initNode.getText(sf)}' indexes a record map whose values aren't scalar literals — it can't lower to an inline Perl hashref.`,
+        message: `Spread object value '${stringifyParsedExpr(val)}' indexes a record map whose values aren't scalar literals — it can't lower to an inline Perl hashref.`,
         loc: { file: ctx.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message: 'Index a record whose values are number/string literals, or move the spread into a `\'use client\'` component so hydration computes it.',
@@ -120,10 +113,18 @@ export function objectLiteralToPerlHashref(
     const valPerl =
       indexed !== null
         ? indexed
-        : ctx.convertExpressionToPerl(prop.initializer.getText(sf))
+        : ctx.convertExpressionToPerl(stringifyParsedExpr(val))
     entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
+}
+
+/** True when a parsed index is a numeric or string literal (`arr[0]`, `m['k']`). */
+function isLiteralIndex(index: ParsedExpr): boolean {
+  return (
+    index.kind === 'literal' &&
+    (index.literalType === 'number' || index.literalType === 'string')
+  )
 }
 
 /**
@@ -140,11 +141,27 @@ export function objectLiteralToPerlHashref(
  * falls back to its normal value lowering (which records BF101 for an
  * unsupported shape). Mirror of the Go adapter's `recordIndexAccessToGoMap`.
  */
-export function recordIndexAccessToPerl(ctx: MojoSpreadContext, val: ts.Expression): string | null {
+export function recordIndexAccessToPerl(ctx: MojoSpreadContext, val: ParsedExpr): string | null {
+  // `parseRecordIndexAccess` (the shared single-source-of-truth parser) takes a
+  // `ts.Expression`. The only shape it accepts is `IDENT[KEY]` with identifier
+  // object and index, so rebuild exactly that node from the carried tree via
+  // `ts.factory` — no source-text re-parse needed. Any other shape can't match
+  // and short-circuits to `null` here.
+  if (
+    val.kind !== 'index-access' ||
+    val.object.kind !== 'identifier' ||
+    val.index.kind !== 'identifier'
+  ) {
+    return null
+  }
+  const tsVal = ts.factory.createElementAccessExpression(
+    ts.factory.createIdentifier(val.object.name),
+    ts.factory.createIdentifier(val.index.name),
+  )
   // Shared structural parse (single source of truth in `@barefootjs/jsx`);
   // this wrapper only does the Perl-specific emit (single-quote escaping)
   // from the structured result.
-  const parsed = parseRecordIndexAccess(val, ctx.localConstants, ctx.propsParams)
+  const parsed = parseRecordIndexAccess(tsVal, ctx.localConstants, ctx.propsParams)
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =

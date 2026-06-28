@@ -867,10 +867,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       }
       // Inline object-literal child prop (carousel's `opts={{ align: 'start' }}`):
       // lower to a Perl hashref so the child can serialize it (`data-opts`),
-      // instead of refusing the bare object with BF101. (#1971 Perl) Cheap `{`
-      // guard so the common non-object case skips the AST parse.
-      if (value.expr.trim().startsWith('{')) {
-        const hashref = objectLiteralExprToPerlHashref(this.spreadCtx, value.expr)
+      // instead of refusing the bare object with BF101. (#1971 Perl) Read the
+      // IR-carried structured `ParsedExpr` tree (#2018) instead of re-parsing
+      // `value.expr` with `ts.createSourceFile`; the lowering returns null for
+      // any non-object-literal shape, so the common non-object case falls
+      // straight through to the bare-expression path below.
+      if (value.parsed) {
+        const hashref = objectLiteralExprToPerlHashref(this.spreadCtx, value.parsed)
         if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
       }
       return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
@@ -1189,7 +1192,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // OMITS the key (`bf->spread_attrs` does NOT filter empty
       // strings, so we cannot always-include it). Mirrors the Go
       // adapter's IIFE-of-maps lowering (#textarea).
-      const ternaryHashref = conditionalSpreadToPerl(this.spreadCtx, trimmed)
+      // Read the spread's IR-carried `ParsedExpr` tree (#2018) instead of
+      // re-parsing `trimmed` with `ts.createSourceFile`.
+      const ternaryHashref = conditionalSpreadToPerl(this.spreadCtx, value.parsed)
       if (ternaryHashref !== null) {
         return `<%== bf->spread_attrs(${ternaryHashref}) %>`
       }
@@ -1206,7 +1211,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         if (localConst?.value !== undefined) {
           const initTrimmed = localConst.value.trim()
           if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
-            const resolved = conditionalSpreadToPerl(this.spreadCtx, initTrimmed)
+            // The local const's initializer text isn't carried as a structured
+            // tree on the spread attr, so parse it once via the shared
+            // `parseExpression` (the analyzer's own entry) — not
+            // `ts.createSourceFile` — mirroring go-template's same local-const
+            // resolution path.
+            const resolved = conditionalSpreadToPerl(
+              this.spreadCtx,
+              parseExpression(initTrimmed),
+            )
             if (resolved !== null) {
               return `<%== bf->spread_attrs(${resolved}) %>`
             }
