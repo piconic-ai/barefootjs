@@ -75,11 +75,10 @@ import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
 import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
-import { escapeKolonSingleQuoted, kolonHashKey } from './lib/kolon-naming.ts'
+import { kolonHashKey } from './lib/kolon-naming.ts'
 import {
   resolveJsxChildrenProp,
   collectRootScopeNodes,
-  referencedVarsAreAvailable,
 } from './lib/ir-scope.ts'
 import { renderSortMethod } from './expr/array-method.ts'
 import { XslateFilterEmitter, XslateTopLevelEmitter } from './expr/emitters.ts'

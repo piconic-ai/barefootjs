@@ -64,7 +64,6 @@ import { perlHashKey, perlIdentifierFromMarkerId } from './lib/perl-naming.ts'
 import {
   resolveJsxChildrenProp,
   collectRootScopeNodes,
-  referencedVarsAreAvailable,
 } from './lib/ir-scope.ts'
 import { renderSortMethod } from './expr/array-method.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
