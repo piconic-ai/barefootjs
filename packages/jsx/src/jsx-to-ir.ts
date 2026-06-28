@@ -555,6 +555,20 @@ function makeBindingEnv(ctx: TransformContext): BindingEnvironment {
 // =============================================================================
 
 /**
+ * Parse an attribute / prop / provider value expression. An inline object
+ * literal (`opts={{ align: 'start' }}`, `style={{ … }}`) parses as a block
+ * statement unless parenthesized, so a bare `{ … }` would land as `unsupported`
+ * instead of `object-literal` — the adapters that lower an inline object value
+ * (Go `objectLiteralToGoMap`, Perl `objectLiteralExprToPerlHashref`) then refuse
+ * it (BF101). Wrap a `{`-leading value in parens so it parses as the
+ * `object-literal` they expect; every other expression is unaffected (redundant
+ * parens are stripped on parse).
+ */
+function parseValueExpr(trimmed: string): ParsedExpr {
+  return parseExpression(trimmed.startsWith('{') ? `(${trimmed})` : trimmed)
+}
+
+/**
  * Attach `parsed` (`parseExpression(expr.trim())`) to every `expression` node
  * in the tree, so SSR adapters emit from the structured tree instead of each
  * re-parsing the string at emit time. Best-effort: a node this walk misses (or
@@ -578,7 +592,7 @@ function attachParsedExpressions(node: IRNode): void {
     for (const attr of node.attrs) {
       if (attr.value.kind === 'expression') {
         const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parseExpression(trimmed)
+        if (trimmed) attr.value.parsed = parseValueExpr(trimmed)
       } else if (attr.value.kind === 'spread') {
         const trimmed = attr.value.expr.trim()
         if (trimmed) attr.value.parsed = parseExpression(trimmed)
@@ -588,13 +602,13 @@ function attachParsedExpressions(node: IRNode): void {
     for (const prop of node.props) {
       if (prop.value.kind === 'expression') {
         const trimmed = prop.value.expr.trim()
-        if (trimmed) prop.value.parsed = parseExpression(trimmed)
+        if (trimmed) prop.value.parsed = parseValueExpr(trimmed)
       }
     }
   } else if (node.type === 'provider') {
     if (node.valueProp.value.kind === 'expression') {
       const trimmed = node.valueProp.value.expr.trim()
-      if (trimmed) node.valueProp.value.parsed = parseExpression(trimmed)
+      if (trimmed) node.valueProp.value.parsed = parseValueExpr(trimmed)
     }
   }
   switch (node.type) {
