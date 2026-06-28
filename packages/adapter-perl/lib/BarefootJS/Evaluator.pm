@@ -5,7 +5,6 @@ use warnings;
 use utf8;
 use feature 'signatures';
 no warnings 'experimental::signatures';
-use sort 'stable';
 
 use B ();
 use POSIX ();
@@ -410,7 +409,7 @@ sub fold ($items, $body, $acc_name, $item_name, $init, $direction = 'left', $bas
 # against `{$param_a => a, $param_b => b}` plus the captured free vars in
 # $base_env to a number (negative / zero / positive, like a JS comparator).
 # Generalizes bf_sort — any comparator body. $base_env is optional. Stable
-# (`use sort 'stable'`), non-mutating. Mirrors Go's SortEval.
+# and non-mutating. Mirrors Go's SortEval.
 sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     # Non-array receiver → empty arrayref, matching the nil-tolerant
     # BarefootJS->sort helper convention (and avoiding an undef-deref footgun
@@ -418,17 +417,23 @@ sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     # the Go SortEval, whose nil slice iterates as empty too.
     return [] unless ref $items eq 'ARRAY';
     my %env = $base_env ? %$base_env : ();
+    # Decorate each element with its original index and tie-break on it when
+    # the comparator returns 0, so stability is explicit and independent of
+    # the `sort` pragma / build (portable to the declared minimum Perl, and
+    # matching Go's sort.SliceStable).
+    my @decorated = map { [ $_, $items->[$_] ] } 0 .. $#$items;
     my @sorted = sort {
-        $env{$param_a} = $a;
-        $env{$param_b} = $b;
+        $env{$param_a} = $a->[1];
+        $env{$param_b} = $b->[1];
         my $c = _to_number(evaluate($cmp, \%env));
         # Explicit sign test rather than `<=> 0`: a NaN comparator result
         # warns / is undefined under `<=>`, whereas `< 0` / `> 0` are both
         # false for NaN, yielding 0 (no reordering) — matching JS (NaN
-        # comparator ⇒ keep order) and the Go SortEval sign test.
-        $c < 0 ? -1 : $c > 0 ? 1 : 0
-    } @$items;
-    return \@sorted;
+        # comparator ⇒ keep order) and the Go SortEval sign test. The
+        # original-index tie-break then preserves input order for equal keys.
+        ($c < 0 ? -1 : $c > 0 ? 1 : 0) || ($a->[0] <=> $b->[0])
+    } @decorated;
+    return [ map { $_->[1] } @sorted ];
 }
 
 1;

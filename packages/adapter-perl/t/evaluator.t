@@ -142,4 +142,21 @@ subtest 'sort_by non-array receiver returns []' => sub {
     is_deeply(BarefootJS::Evaluator::sort_by(42, $cmp, 'a', 'b'), [], 'scalar receiver → []');
 };
 
+# sort_by is stable: equal-comparing elements keep their input order. The
+# explicit index tie-break makes this independent of the `sort` pragma /
+# build, matching Go's sort.SliceStable.
+subtest 'sort_by is stable for equal keys' => sub {
+    my $cmp = nbin('-', nmem(nid('a'), 'k'), nmem(nid('b'), 'k'));
+    # All-equal keys → input order preserved.
+    my $eq = BarefootJS::Evaluator::sort_by(
+        [ { k => 1, id => 'a' }, { k => 1, id => 'b' }, { k => 1, id => 'c' } ],
+        $cmp, 'a', 'b');
+    is_deeply([ map { $_->{id} } @$eq ], [ 'a', 'b', 'c' ], 'equal keys keep input order');
+    # Mixed keys → sorted by key, ties stable (x before z).
+    my $mixed = BarefootJS::Evaluator::sort_by(
+        [ { k => 2, id => 'x' }, { k => 1, id => 'y' }, { k => 2, id => 'z' } ],
+        $cmp, 'a', 'b');
+    is_deeply([ map { $_->{id} } @$mixed ], [ 'y', 'x', 'z' ], 'tie (x,z) stays in input order');
+};
+
 done_testing;
