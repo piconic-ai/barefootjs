@@ -35,6 +35,7 @@ import {
   renderReduceMethod,
   renderSortEval,
   renderReduceEval,
+  renderPredicateEval,
   renderFlatMethod,
   renderFlatMapMethod,
 } from './array-method.ts'
@@ -349,6 +350,27 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // methods (like index_of / last_index_of). The `.filter(...).map(...)`
     // *loop* form is handled separately by renderLoop's inline predicate.
     const arrayExpr = emit(object)
+
+    // Evaluator path (#2018 P2): serialize the predicate body + emit the
+    // matching `$bf.*_eval` helper (isomorphic with the Go adapter). Falls
+    // back to the Kolon-lambda runtime call below for a predicate the
+    // evaluator can't model (e.g. a method-call predicate).
+    const evalFn: Record<string, [string, boolean?]> = {
+      filter: ['filter_eval'], every: ['every_eval'], some: ['some_eval'],
+      find: ['find_eval', true], findLast: ['find_eval', false],
+      findIndex: ['find_index_eval', true], findLastIndex: ['find_index_eval', false],
+    }
+    // `.filter(Boolean)` (identity predicate `_t => _t`) keeps the lambda
+    // form — it composes through the array-method chain and renders
+    // identically to a truthiness filter.
+    const isIdentity =
+      method === 'filter' && predicate.kind === 'identifier' && predicate.name === param
+    const spec = evalFn[method]
+    if (spec && !isIdentity) {
+      const evalForm = renderPredicateEval(spec[0], arrayExpr, predicate, param, emit, spec[1])
+      if (evalForm !== null) return evalForm
+    }
+
     const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param)
     const lambda = `-> $${param} { ${predBody} }`
     const fn: Record<string, string> = {

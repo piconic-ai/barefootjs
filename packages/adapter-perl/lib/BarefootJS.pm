@@ -1103,6 +1103,32 @@ sub reduce_eval ($self, $recv, $body_json, $acc_name, $item_name, $init, $direct
     return BarefootJS::Evaluator::fold_json($recv, $body_json, $acc_name, $item_name, $init, $direction, $base_env);
 }
 
+# Evaluator-driven higher-order predicates (#2018, P2): the predicate body
+# rides as a serialized-ParsedExpr JSON string evaluated per element, delegating
+# to the shared BarefootJS::Evaluator. The adapter emits `bf->filter_eval(...)`
+# etc. for any pure predicate; a body it can't model (e.g. a method-call
+# predicate) keeps the legacy `grep` / `bf->find` path. `find_eval` /
+# `find_index_eval` take a `$forward` flag (false → findLast / findLastIndex).
+sub filter_eval ($self, $recv, $pred_json, $param, $base_env = {}) {
+    return BarefootJS::Evaluator::filter_json($recv, $pred_json, $param, $base_env);
+}
+
+sub every_eval ($self, $recv, $pred_json, $param, $base_env = {}) {
+    return BarefootJS::Evaluator::every_json($recv, $pred_json, $param, $base_env);
+}
+
+sub some_eval ($self, $recv, $pred_json, $param, $base_env = {}) {
+    return BarefootJS::Evaluator::some_json($recv, $pred_json, $param, $base_env);
+}
+
+sub find_eval ($self, $recv, $pred_json, $param, $forward = 1, $base_env = {}) {
+    return BarefootJS::Evaluator::find_json($recv, $pred_json, $param, $forward, $base_env);
+}
+
+sub find_index_eval ($self, $recv, $pred_json, $param, $forward = 1, $base_env = {}) {
+    return BarefootJS::Evaluator::find_index_json($recv, $pred_json, $param, $forward, $base_env);
+}
+
 sub sort ($self, $recv, $opts = {}) {
     return [] unless ref($recv) eq 'ARRAY';
 

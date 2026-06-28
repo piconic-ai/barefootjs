@@ -760,7 +760,11 @@ export function C() {
 }`, 'C.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('grep { $_->{done} } @{$items}')
+    // #2018 P2: the `.filter().map()` loop hoists over the filtered array,
+    // now produced by the evaluator (`bf->filter_eval`). (Hoisting the call
+    // into a single `my` var is a P3 optimization.)
+    expect(template).toContain('bf->filter_eval($items,')
+    expect(template).toContain('"property":"done"')
   })
 
   test('lowers nested .filter(...).length > 0 in outer filter predicate (#1443 PR4)', () => {
@@ -798,7 +802,11 @@ export function C() {
 }`, 'C.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('grep { $_->{done} } @{$items}')
+    // #2018 P2: the `.filter().map()` loop hoists over the filtered array,
+    // now produced by the evaluator (`bf->filter_eval`). (Hoisting the call
+    // into a single `my` var is a P3 optimization.)
+    expect(template).toContain('bf->filter_eval($items,')
+    expect(template).toContain('"property":"done"')
   })
 
   test('lowers the registry Slot\'s [a, b].filter(Boolean).join(\' \') chain (#1443)', () => {
@@ -977,17 +985,18 @@ export { A }`, 'A.tsx', { adapter })
     expect(template).not.toContain('$bf->trim')
   })
 
-  test('lowers .find / .findIndex / .findLast / .findLastIndex via runtime helpers', () => {
-    // The runtime `bf->find` / `find_index` / `find_last` / `find_last_index`
-    // call the predicate as a per-element coderef; the camelCase JS names map
-    // to the snake_case helpers (matching Xslate's Kolon-lambda lowering).
-    const cases: Array<[string, string]> = [
-      ['find', 'find'],
-      ['findIndex', 'find_index'],
-      ['findLast', 'find_last'],
-      ['findLastIndex', 'find_last_index'],
+  test('lowers .find / .findIndex / .findLast / .findLastIndex via the evaluator', () => {
+    // #2018 P2: the pure predicate `x => x === 'b'` serializes and lowers
+    // through the evaluator. find / findIndex share `bf->find_eval` /
+    // `bf->find_index_eval` with findLast / findLastIndex, distinguished by
+    // the `forward` flag (1 = forward, 0 = backward).
+    const cases: Array<[string, string, number]> = [
+      ['find', 'find_eval', 1],
+      ['findIndex', 'find_index_eval', 1],
+      ['findLast', 'find_eval', 0],
+      ['findLastIndex', 'find_index_eval', 0],
     ]
-    for (const [js, helper] of cases) {
+    for (const [js, helper, fwd] of cases) {
       const adapter = new MojoAdapter()
       const result = compileJSX(`function A({ items }: { items: string[] }) {
   return <div>{items.${js}(x => x === 'b')}</div>
@@ -995,7 +1004,8 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
       expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
       const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-      expect(template).toContain(`bf->${helper}($items, sub { my $x = $_[0]; $x eq 'b' })`)
+      expect(template).toContain(`bf->${helper}($items,`)
+      expect(template).toContain(`'x', ${fwd}, {})`)
       expect(template).not.toContain(`$bf->${helper}`)
     }
   })

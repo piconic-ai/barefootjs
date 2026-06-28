@@ -37,6 +37,7 @@ import {
   renderReduceMethod,
   renderSortEval,
   renderReduceEval,
+  renderPredicateEval,
   renderFlatMethod,
   renderFlatMapMethod,
 } from './array-method.ts'
@@ -392,6 +393,28 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string {
     const arrayExpr = emit(object)
+
+    // Evaluator path (#2018 P2): serialize the predicate body + emit the
+    // matching `bf->*_eval` helper (isomorphic with the Go adapter). Falls
+    // back to the inline `grep` / `bf->find` lowering below for a predicate
+    // the evaluator can't model (e.g. a method-call predicate).
+    const evalFn: Record<string, [string, boolean?]> = {
+      filter: ['filter_eval'], every: ['every_eval'], some: ['some_eval'],
+      find: ['find_eval', true], findLast: ['find_eval', false],
+      findIndex: ['find_index_eval', true], findLastIndex: ['find_index_eval', false],
+    }
+    // `.filter(Boolean)` (identity predicate `_t => _t`) keeps the inline
+    // `grep { $_ }` form — it composes through the array-method chain
+    // (`.filter(Boolean).join(' ')` in the registry Slot) and renders
+    // identically to a truthiness filter.
+    const isIdentity =
+      method === 'filter' && predicate.kind === 'identifier' && predicate.name === param
+    const spec = evalFn[method]
+    if (spec && !isIdentity) {
+      const evalForm = renderPredicateEval(spec[0], arrayExpr, predicate, param, emit, spec[1])
+      if (evalForm !== null) return evalForm
+    }
+
     const predBody = this.ctx._renderPerlFilterExprPublic(predicate, param)
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
     if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
