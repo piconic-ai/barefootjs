@@ -1,0 +1,1831 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/helper-vectors/eval-generate.ts",
+  "spec": "spec/compiler.md#parsedexpr-evaluator-semantics",
+  "cases": [
+    {
+      "src": "42",
+      "expr": {
+        "kind": "literal",
+        "value": 42,
+        "literalType": "number",
+        "raw": "42"
+      },
+      "env": {},
+      "expect": 42,
+      "note": "numeric literal"
+    },
+    {
+      "src": "'hi'",
+      "expr": {
+        "kind": "literal",
+        "value": "hi",
+        "literalType": "string"
+      },
+      "env": {},
+      "expect": "hi",
+      "note": "string literal"
+    },
+    {
+      "src": "true",
+      "expr": {
+        "kind": "literal",
+        "value": true,
+        "literalType": "boolean"
+      },
+      "env": {},
+      "expect": true,
+      "note": "boolean literal"
+    },
+    {
+      "src": "null",
+      "expr": {
+        "kind": "literal",
+        "value": null,
+        "literalType": "null"
+      },
+      "env": {},
+      "expect": null,
+      "note": "null literal"
+    },
+    {
+      "src": "acc",
+      "expr": {
+        "kind": "identifier",
+        "name": "acc"
+      },
+      "env": {
+        "acc": 7
+      },
+      "expect": 7,
+      "note": "identifier reads from the environment"
+    },
+    {
+      "src": "item",
+      "expr": {
+        "kind": "identifier",
+        "name": "item"
+      },
+      "env": {
+        "item": {
+          "price": 5
+        }
+      },
+      "expect": {
+        "price": 5
+      },
+      "note": "identifier binds a structured value"
+    },
+    {
+      "src": "acc + item",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "item"
+        }
+      },
+      "env": {
+        "acc": 1,
+        "item": 2
+      },
+      "expect": 3,
+      "note": "numeric + adds"
+    },
+    {
+      "src": "acc + item.price",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "price",
+          "computed": false
+        }
+      },
+      "env": {
+        "acc": 10,
+        "item": {
+          "price": 5
+        }
+      },
+      "expect": 15,
+      "note": "reduce body: acc + field projection"
+    },
+    {
+      "src": "acc + item",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "item"
+        }
+      },
+      "env": {
+        "acc": "x",
+        "item": "y"
+      },
+      "expect": "xy",
+      "note": "+ concatenates once an operand is a string"
+    },
+    {
+      "src": "acc + item",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "item"
+        }
+      },
+      "env": {
+        "acc": "n=",
+        "item": 5
+      },
+      "expect": "n=5",
+      "note": "+ string/number coerces the number to string"
+    },
+    {
+      "src": "acc - item",
+      "expr": {
+        "kind": "binary",
+        "op": "-",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "item"
+        }
+      },
+      "env": {
+        "acc": 5,
+        "item": 3
+      },
+      "expect": 2,
+      "note": "numeric subtraction"
+    },
+    {
+      "src": "acc - item",
+      "expr": {
+        "kind": "binary",
+        "op": "-",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "item"
+        }
+      },
+      "env": {
+        "acc": "5",
+        "item": 2
+      },
+      "expect": 3,
+      "note": "- coerces a numeric string to number"
+    },
+    {
+      "src": "a * b",
+      "expr": {
+        "kind": "binary",
+        "op": "*",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": 3,
+        "b": 4
+      },
+      "expect": 12,
+      "note": "multiplication"
+    },
+    {
+      "src": "a / b",
+      "expr": {
+        "kind": "binary",
+        "op": "/",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": 7,
+        "b": 2
+      },
+      "expect": 3.5,
+      "note": "division yields a double"
+    },
+    {
+      "src": "a % b",
+      "expr": {
+        "kind": "binary",
+        "op": "%",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": 7,
+        "b": 3
+      },
+      "expect": 1,
+      "note": "modulo"
+    },
+    {
+      "src": "true + 1",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "literal",
+          "value": true,
+          "literalType": "boolean"
+        },
+        "right": {
+          "kind": "literal",
+          "value": 1,
+          "literalType": "number",
+          "raw": "1"
+        }
+      },
+      "env": {},
+      "expect": 2,
+      "note": "boolean true coerces to 1 under numeric +"
+    },
+    {
+      "src": "null + 1",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "literal",
+          "value": null,
+          "literalType": "null"
+        },
+        "right": {
+          "kind": "literal",
+          "value": 1,
+          "literalType": "number",
+          "raw": "1"
+        }
+      },
+      "env": {},
+      "expect": 1,
+      "note": "null coerces to 0 under numeric +"
+    },
+    {
+      "src": "-acc",
+      "expr": {
+        "kind": "unary",
+        "op": "-",
+        "argument": {
+          "kind": "identifier",
+          "name": "acc"
+        }
+      },
+      "env": {
+        "acc": 5
+      },
+      "expect": -5,
+      "note": "unary minus negates"
+    },
+    {
+      "src": "+item",
+      "expr": {
+        "kind": "unary",
+        "op": "+",
+        "argument": {
+          "kind": "identifier",
+          "name": "item"
+        }
+      },
+      "env": {
+        "item": "8"
+      },
+      "expect": 8,
+      "note": "unary plus coerces a numeric string"
+    },
+    {
+      "src": "!item.done",
+      "expr": {
+        "kind": "unary",
+        "op": "!",
+        "argument": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "done",
+          "computed": false
+        }
+      },
+      "env": {
+        "item": {
+          "done": false
+        }
+      },
+      "expect": true,
+      "note": "logical not of a falsy field is true"
+    },
+    {
+      "src": "!item.done",
+      "expr": {
+        "kind": "unary",
+        "op": "!",
+        "argument": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "done",
+          "computed": false
+        }
+      },
+      "env": {
+        "item": {
+          "done": true
+        }
+      },
+      "expect": false,
+      "note": "logical not of a truthy field is false"
+    },
+    {
+      "src": "a < b",
+      "expr": {
+        "kind": "binary",
+        "op": "<",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": 1,
+        "b": 2
+      },
+      "expect": true,
+      "note": "numeric less-than"
+    },
+    {
+      "src": "a >= b",
+      "expr": {
+        "kind": "binary",
+        "op": ">=",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": 2,
+        "b": 2
+      },
+      "expect": true,
+      "note": "numeric greater-or-equal at the boundary"
+    },
+    {
+      "src": "a < b",
+      "expr": {
+        "kind": "binary",
+        "op": "<",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": "apple",
+        "b": "banana"
+      },
+      "expect": true,
+      "note": "string relational compares by code unit"
+    },
+    {
+      "src": "a < b",
+      "expr": {
+        "kind": "binary",
+        "op": "<",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": "B",
+        "b": "a"
+      },
+      "expect": true,
+      "note": "code-unit order is case-sensitive (uppercase before lowercase)"
+    },
+    {
+      "src": "a < b",
+      "expr": {
+        "kind": "binary",
+        "op": "<",
+        "left": {
+          "kind": "identifier",
+          "name": "a"
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "b"
+        }
+      },
+      "env": {
+        "a": "10",
+        "b": "9"
+      },
+      "expect": true,
+      "note": "two numeric strings compare lexically, not numerically"
+    },
+    {
+      "src": "item.id === 2",
+      "expr": {
+        "kind": "binary",
+        "op": "===",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "id",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 2,
+          "literalType": "number",
+          "raw": "2"
+        }
+      },
+      "env": {
+        "item": {
+          "id": 2
+        }
+      },
+      "expect": true,
+      "note": "strict equality on equal numbers"
+    },
+    {
+      "src": "item.id === 2",
+      "expr": {
+        "kind": "binary",
+        "op": "===",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "id",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 2,
+          "literalType": "number",
+          "raw": "2"
+        }
+      },
+      "env": {
+        "item": {
+          "id": 3
+        }
+      },
+      "expect": false,
+      "note": "strict equality on unequal numbers"
+    },
+    {
+      "src": "item.id === 2",
+      "expr": {
+        "kind": "binary",
+        "op": "===",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "id",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 2,
+          "literalType": "number",
+          "raw": "2"
+        }
+      },
+      "env": {
+        "item": {
+          "id": "2"
+        }
+      },
+      "expect": false,
+      "note": "strict equality is false across number/string"
+    },
+    {
+      "src": "item.status !== 'done'",
+      "expr": {
+        "kind": "binary",
+        "op": "!==",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "status",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": "done",
+          "literalType": "string"
+        }
+      },
+      "env": {
+        "item": {
+          "status": "open"
+        }
+      },
+      "expect": true,
+      "note": "strict inequality on strings"
+    },
+    {
+      "src": "item.done && item.priority > 3",
+      "expr": {
+        "kind": "logical",
+        "op": "&&",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "done",
+          "computed": false
+        },
+        "right": {
+          "kind": "binary",
+          "op": ">",
+          "left": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "priority",
+            "computed": false
+          },
+          "right": {
+            "kind": "literal",
+            "value": 3,
+            "literalType": "number",
+            "raw": "3"
+          }
+        }
+      },
+      "env": {
+        "item": {
+          "done": true,
+          "priority": 5
+        }
+      },
+      "expect": true,
+      "note": "filter body: && both truthy"
+    },
+    {
+      "src": "item.done && item.priority > 3",
+      "expr": {
+        "kind": "logical",
+        "op": "&&",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "done",
+          "computed": false
+        },
+        "right": {
+          "kind": "binary",
+          "op": ">",
+          "left": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "priority",
+            "computed": false
+          },
+          "right": {
+            "kind": "literal",
+            "value": 3,
+            "literalType": "number",
+            "raw": "3"
+          }
+        }
+      },
+      "env": {
+        "item": {
+          "done": false,
+          "priority": 5
+        }
+      },
+      "expect": false,
+      "note": "&& short-circuits on a falsy left, returning it"
+    },
+    {
+      "src": "item.label || 'untitled'",
+      "expr": {
+        "kind": "logical",
+        "op": "||",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "label",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": "untitled",
+          "literalType": "string"
+        }
+      },
+      "env": {
+        "item": {
+          "label": ""
+        }
+      },
+      "expect": "untitled",
+      "note": "|| falls through an empty string to the default"
+    },
+    {
+      "src": "item.label || 'untitled'",
+      "expr": {
+        "kind": "logical",
+        "op": "||",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "label",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": "untitled",
+          "literalType": "string"
+        }
+      },
+      "env": {
+        "item": {
+          "label": "set"
+        }
+      },
+      "expect": "set",
+      "note": "|| returns the truthy left operand"
+    },
+    {
+      "src": "item.qty ?? 0",
+      "expr": {
+        "kind": "logical",
+        "op": "??",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "qty",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 0,
+          "literalType": "number",
+          "raw": "0"
+        }
+      },
+      "env": {
+        "item": {
+          "qty": 0
+        }
+      },
+      "expect": 0,
+      "note": "?? keeps a present zero (only null coalesces)"
+    },
+    {
+      "src": "item.qty ?? 0",
+      "expr": {
+        "kind": "logical",
+        "op": "??",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "qty",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 0,
+          "literalType": "number",
+          "raw": "0"
+        }
+      },
+      "env": {
+        "item": {
+          "qty": null
+        }
+      },
+      "expect": 0,
+      "note": "?? coalesces a null to the default"
+    },
+    {
+      "src": "item.missing ?? 9",
+      "expr": {
+        "kind": "logical",
+        "op": "??",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "missing",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 9,
+          "literalType": "number",
+          "raw": "9"
+        }
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": 9,
+      "note": "?? coalesces a missing field (reads as null)"
+    },
+    {
+      "src": "item.n ? 'y' : 'n'",
+      "expr": {
+        "kind": "conditional",
+        "test": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "n",
+          "computed": false
+        },
+        "consequent": {
+          "kind": "literal",
+          "value": "y",
+          "literalType": "string"
+        },
+        "alternate": {
+          "kind": "literal",
+          "value": "n",
+          "literalType": "string"
+        }
+      },
+      "env": {
+        "item": {
+          "n": 0
+        }
+      },
+      "expect": "n",
+      "note": "ternary test: 0 is falsy"
+    },
+    {
+      "src": "item.s ? 'y' : 'n'",
+      "expr": {
+        "kind": "conditional",
+        "test": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "s",
+          "computed": false
+        },
+        "consequent": {
+          "kind": "literal",
+          "value": "y",
+          "literalType": "string"
+        },
+        "alternate": {
+          "kind": "literal",
+          "value": "n",
+          "literalType": "string"
+        }
+      },
+      "env": {
+        "item": {
+          "s": "0"
+        }
+      },
+      "expect": "y",
+      "note": "ternary test: the string \"0\" is truthy"
+    },
+    {
+      "src": "a > b ? 1 : a < b ? -1 : 0",
+      "expr": {
+        "kind": "conditional",
+        "test": {
+          "kind": "binary",
+          "op": ">",
+          "left": {
+            "kind": "identifier",
+            "name": "a"
+          },
+          "right": {
+            "kind": "identifier",
+            "name": "b"
+          }
+        },
+        "consequent": {
+          "kind": "literal",
+          "value": 1,
+          "literalType": "number",
+          "raw": "1"
+        },
+        "alternate": {
+          "kind": "conditional",
+          "test": {
+            "kind": "binary",
+            "op": "<",
+            "left": {
+              "kind": "identifier",
+              "name": "a"
+            },
+            "right": {
+              "kind": "identifier",
+              "name": "b"
+            }
+          },
+          "consequent": {
+            "kind": "unary",
+            "op": "-",
+            "argument": {
+              "kind": "literal",
+              "value": 1,
+              "literalType": "number",
+              "raw": "1"
+            }
+          },
+          "alternate": {
+            "kind": "literal",
+            "value": 0,
+            "literalType": "number",
+            "raw": "0"
+          }
+        }
+      },
+      "env": {
+        "a": 5,
+        "b": 3
+      },
+      "expect": 1,
+      "note": "sort comparator: 3-way ternary, greater branch"
+    },
+    {
+      "src": "a > b ? 1 : a < b ? -1 : 0",
+      "expr": {
+        "kind": "conditional",
+        "test": {
+          "kind": "binary",
+          "op": ">",
+          "left": {
+            "kind": "identifier",
+            "name": "a"
+          },
+          "right": {
+            "kind": "identifier",
+            "name": "b"
+          }
+        },
+        "consequent": {
+          "kind": "literal",
+          "value": 1,
+          "literalType": "number",
+          "raw": "1"
+        },
+        "alternate": {
+          "kind": "conditional",
+          "test": {
+            "kind": "binary",
+            "op": "<",
+            "left": {
+              "kind": "identifier",
+              "name": "a"
+            },
+            "right": {
+              "kind": "identifier",
+              "name": "b"
+            }
+          },
+          "consequent": {
+            "kind": "unary",
+            "op": "-",
+            "argument": {
+              "kind": "literal",
+              "value": 1,
+              "literalType": "number",
+              "raw": "1"
+            }
+          },
+          "alternate": {
+            "kind": "literal",
+            "value": 0,
+            "literalType": "number",
+            "raw": "0"
+          }
+        }
+      },
+      "env": {
+        "a": 3,
+        "b": 3
+      },
+      "expect": 0,
+      "note": "sort comparator: 3-way ternary, equal branch"
+    },
+    {
+      "src": "item.a.b",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "a",
+          "computed": false
+        },
+        "property": "b",
+        "computed": false
+      },
+      "env": {
+        "item": {
+          "a": {
+            "b": 42
+          }
+        }
+      },
+      "expect": 42,
+      "note": "nested member access"
+    },
+    {
+      "src": "item.missing",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "identifier",
+          "name": "item"
+        },
+        "property": "missing",
+        "computed": false
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": null,
+      "note": "a missing field reads as null"
+    },
+    {
+      "src": "item.tags.length",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "property": "length",
+        "computed": false
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "x",
+            "y",
+            "z"
+          ]
+        }
+      },
+      "expect": 3,
+      "note": ".length on an array field"
+    },
+    {
+      "src": "item.name.length",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "name",
+          "computed": false
+        },
+        "property": "length",
+        "computed": false
+      },
+      "env": {
+        "item": {
+          "name": "abcd"
+        }
+      },
+      "expect": 4,
+      "note": ".length on a string field"
+    },
+    {
+      "src": "item[i]",
+      "expr": {
+        "kind": "index-access",
+        "object": {
+          "kind": "identifier",
+          "name": "item"
+        },
+        "index": {
+          "kind": "identifier",
+          "name": "i"
+        }
+      },
+      "env": {
+        "item": [
+          10,
+          20,
+          30
+        ],
+        "i": 1
+      },
+      "expect": 20,
+      "note": "index access by a numeric variable"
+    },
+    {
+      "src": "item[i]",
+      "expr": {
+        "kind": "index-access",
+        "object": {
+          "kind": "identifier",
+          "name": "item"
+        },
+        "index": {
+          "kind": "identifier",
+          "name": "i"
+        }
+      },
+      "env": {
+        "item": [
+          10,
+          20
+        ],
+        "i": 5
+      },
+      "expect": null,
+      "note": "out-of-range index reads as null"
+    },
+    {
+      "src": "row[k]",
+      "expr": {
+        "kind": "index-access",
+        "object": {
+          "kind": "identifier",
+          "name": "row"
+        },
+        "index": {
+          "kind": "identifier",
+          "name": "k"
+        }
+      },
+      "env": {
+        "row": {
+          "price": 9
+        },
+        "k": "price"
+      },
+      "expect": 9,
+      "note": "index access into an object by a string key"
+    },
+    {
+      "src": "`${item.id}: ${item.name}`",
+      "expr": {
+        "kind": "template-literal",
+        "parts": [
+          {
+            "type": "expression",
+            "expr": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "id",
+              "computed": false
+            }
+          },
+          {
+            "type": "string",
+            "value": ": "
+          },
+          {
+            "type": "expression",
+            "expr": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "name",
+              "computed": false
+            }
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "id": 7,
+          "name": "widget"
+        }
+      },
+      "expect": "7: widget",
+      "note": "template literal interpolates and stringifies parts"
+    },
+    {
+      "src": "`n=${acc + 1}`",
+      "expr": {
+        "kind": "template-literal",
+        "parts": [
+          {
+            "type": "string",
+            "value": "n="
+          },
+          {
+            "type": "expression",
+            "expr": {
+              "kind": "binary",
+              "op": "+",
+              "left": {
+                "kind": "identifier",
+                "name": "acc"
+              },
+              "right": {
+                "kind": "literal",
+                "value": 1,
+                "literalType": "number",
+                "raw": "1"
+              }
+            }
+          }
+        ]
+      },
+      "env": {
+        "acc": 4
+      },
+      "expect": "n=5",
+      "note": "template literal evaluates an embedded expression"
+    },
+    {
+      "src": "[item.a, item.b]",
+      "expr": {
+        "kind": "array-literal",
+        "elements": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "a",
+            "computed": false
+          },
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "b",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      "expect": [
+        1,
+        2
+      ],
+      "note": "array literal of field projections"
+    },
+    {
+      "src": "({ id: item.id, doubled: item.n * 2 })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "key": "id",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "id",
+              "computed": false
+            }
+          },
+          {
+            "key": "doubled",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "member",
+                "object": {
+                  "kind": "identifier",
+                  "name": "item"
+                },
+                "property": "n",
+                "computed": false
+              },
+              "right": {
+                "kind": "literal",
+                "value": 2,
+                "literalType": "number",
+                "raw": "2"
+              }
+            }
+          }
+        ],
+        "raw": "({ id: item.id, doubled: item.n * 2 })"
+      },
+      "env": {
+        "item": {
+          "id": 3,
+          "n": 4
+        }
+      },
+      "expect": {
+        "id": 3,
+        "doubled": 8
+      },
+      "note": "object literal: map body building a new record"
+    },
+    {
+      "src": "Math.max(a, b)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "max",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "identifier",
+            "name": "a"
+          },
+          {
+            "kind": "identifier",
+            "name": "b"
+          }
+        ]
+      },
+      "env": {
+        "a": 3,
+        "b": 7
+      },
+      "expect": 7,
+      "note": "Math.max of two numbers"
+    },
+    {
+      "src": "Math.min(a, b, c)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "min",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "identifier",
+            "name": "a"
+          },
+          {
+            "kind": "identifier",
+            "name": "b"
+          },
+          {
+            "kind": "identifier",
+            "name": "c"
+          }
+        ]
+      },
+      "env": {
+        "a": 3,
+        "b": 7,
+        "c": 1
+      },
+      "expect": 1,
+      "note": "Math.min is variadic"
+    },
+    {
+      "src": "Math.abs(acc)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "abs",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "identifier",
+            "name": "acc"
+          }
+        ]
+      },
+      "env": {
+        "acc": -5
+      },
+      "expect": 5,
+      "note": "Math.abs"
+    },
+    {
+      "src": "Math.floor(item.x)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "floor",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "x",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "x": 3.7
+        }
+      },
+      "expect": 3,
+      "note": "Math.floor truncates toward -Infinity"
+    },
+    {
+      "src": "Math.ceil(item.x)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "ceil",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "x",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "x": 3.2
+        }
+      },
+      "expect": 4,
+      "note": "Math.ceil rounds up"
+    },
+    {
+      "src": "Math.round(item.x)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "round",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "x",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "x": 2.5
+        }
+      },
+      "expect": 3,
+      "note": "Math.round: positive half rounds toward +Infinity"
+    },
+    {
+      "src": "Math.round(item.x)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "Math"
+          },
+          "property": "round",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "x",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "x": -2.5
+        }
+      },
+      "expect": -2,
+      "note": "Math.round: negative half rounds toward +Infinity (to -2)"
+    },
+    {
+      "src": "String(item.n)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "String"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "n",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "n": 42
+        }
+      },
+      "expect": "42",
+      "note": "String() coerces a number"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "3.14"
+        }
+      },
+      "expect": 3.14,
+      "note": "Number() parses a numeric string"
+    },
+    {
+      "src": "Boolean(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Boolean"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": ""
+        }
+      },
+      "expect": false,
+      "note": "Boolean() of an empty string is false"
+    },
+    {
+      "src": "acc + item.price * item.qty",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "identifier",
+          "name": "acc"
+        },
+        "right": {
+          "kind": "binary",
+          "op": "*",
+          "left": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "price",
+            "computed": false
+          },
+          "right": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "qty",
+            "computed": false
+          }
+        }
+      },
+      "env": {
+        "acc": 100,
+        "item": {
+          "price": 5,
+          "qty": 3
+        }
+      },
+      "expect": 115,
+      "note": "reduce body: running total with precedence"
+    },
+    {
+      "src": "a.price - b.price",
+      "expr": {
+        "kind": "binary",
+        "op": "-",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "a"
+          },
+          "property": "price",
+          "computed": false
+        },
+        "right": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "b"
+          },
+          "property": "price",
+          "computed": false
+        }
+      },
+      "env": {
+        "a": {
+          "price": 30
+        },
+        "b": {
+          "price": 10
+        }
+      },
+      "expect": 20,
+      "note": "sort comparator: numeric field difference"
+    },
+    {
+      "src": "item.qty * 2",
+      "expr": {
+        "kind": "binary",
+        "op": "*",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "qty",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 2,
+          "literalType": "number",
+          "raw": "2"
+        }
+      },
+      "env": {
+        "item": {
+          "qty": 21
+        }
+      },
+      "expect": 42,
+      "note": "map body: arithmetic projection"
+    },
+    {
+      "src": "item.tags.length > 0 && item.active",
+      "expr": {
+        "kind": "logical",
+        "op": "&&",
+        "left": {
+          "kind": "binary",
+          "op": ">",
+          "left": {
+            "kind": "member",
+            "object": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "tags",
+              "computed": false
+            },
+            "property": "length",
+            "computed": false
+          },
+          "right": {
+            "kind": "literal",
+            "value": 0,
+            "literalType": "number",
+            "raw": "0"
+          }
+        },
+        "right": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "active",
+          "computed": false
+        }
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "a"
+          ],
+          "active": true
+        }
+      },
+      "expect": true,
+      "note": "filter body: length guard plus boolean field"
+    }
+  ]
+}
