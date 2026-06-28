@@ -190,4 +190,35 @@ subtest 'fold_json / sort_by_json decode a JSON body and evaluate it' => sub {
         'sort_by_json orders by a field');
 };
 
+# The #2018 P2 higher-order predicate helpers evaluate an arbitrary pure
+# predicate body per element, generalizing bf_filter / bf_find / bf_every /
+# bf_some. Mirrors the Go TestPredicateEvalHelpers shapes (u => u.age >= 18).
+subtest 'filter / every / some / find / find_index over a predicate body' => sub {
+    my @rows = ({ age => 15 }, { age => 30 }, { age => 18 });
+    my $pred = nbin('>=', nmem(nid('u'), 'age'),
+        { kind => 'literal', value => 18, literalType => 'number' });
+
+    my $f = BarefootJS::Evaluator::filter(\@rows, $pred, 'u');
+    is_deeply([ map { $_->{age} } @$f ], [ 30, 18 ], 'filter keeps age >= 18');
+
+    is(BarefootJS::Evaluator::some(\@rows, $pred, 'u'), 1, 'some → true');
+    is(BarefootJS::Evaluator::every(\@rows, $pred, 'u'), 0, 'every → false (15 < 18)');
+
+    is(BarefootJS::Evaluator::find(\@rows, $pred, 'u', 1)->{age}, 30, 'find forward → 30');
+    is(BarefootJS::Evaluator::find(\@rows, $pred, 'u', 0)->{age}, 18, 'findLast → 18');
+    is(BarefootJS::Evaluator::find_index(\@rows, $pred, 'u', 1), 1, 'findIndex → 1');
+    is(BarefootJS::Evaluator::find_index(\@rows, $pred, 'u', 0), 2, 'findLastIndex → 2');
+
+    # Empty receiver: every vacuously true, some false, find undef / index -1.
+    is(BarefootJS::Evaluator::every([], $pred, 'u'), 1, 'every(empty) → true');
+    is(BarefootJS::Evaluator::some([], $pred, 'u'), 0, 'some(empty) → false');
+    ok(!defined BarefootJS::Evaluator::find([], $pred, 'u'), 'find(empty) → undef');
+    is(BarefootJS::Evaluator::find_index([], $pred, 'u'), -1, 'find_index(empty) → -1');
+
+    # JSON seam: the body arrives as the string the adapter emits.
+    my $json = JSON::PP->new->encode($pred);
+    my $fj = BarefootJS::Evaluator::filter_json(\@rows, $json, 'u');
+    is_deeply([ map { $_->{age} } @$fj ], [ 30, 18 ], 'filter_json decodes + filters');
+};
+
 done_testing;

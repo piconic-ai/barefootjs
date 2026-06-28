@@ -611,6 +611,135 @@ func SortEval(items any, cmpJSON, paramA, paramB string, baseEnv map[string]any)
 	return arr
 }
 
+// ---------------------------------------------------------------------------
+// Evaluator-driven higher-order predicates (#2018, P2) — the generalization
+// of bf_filter / bf_find / bf_find_index / bf_every / bf_some onto the
+// evaluator. The predicate BODY travels as a pure ParsedExpr (JSON) and is
+// evaluated per element against `{param: item}` plus the captured free vars in
+// `baseEnv`, lifting the field-equality / truthiness restriction of the
+// special-cased helpers to any pure predicate. `baseEnv` may be nil.
+// ---------------------------------------------------------------------------
+
+// decodeEvalBody unmarshals a serialized ParsedExpr body; ok is false on bad
+// JSON (only reachable by a corrupt emit — the adapter always emits valid JSON).
+func decodeEvalBody(bodyJSON string) (any, bool) {
+	var body any
+	if err := json.Unmarshal([]byte(bodyJSON), &body); err != nil {
+		return nil, false
+	}
+	return body, true
+}
+
+// seedPredEnv copies the captured free vars into a fresh env with room for the
+// single predicate param, which the callers overwrite per element.
+func seedPredEnv(baseEnv map[string]any) map[string]any {
+	env := make(map[string]any, len(baseEnv)+1)
+	for k, v := range baseEnv {
+		env[k] = v
+	}
+	return env
+}
+
+// FilterEval returns a new slice of the elements for which the predicate body
+// evaluates truthy — the evaluator generalization of bf_filter. Returns a
+// non-nil empty slice when nothing matches (so a downstream `range` / `bf_join`
+// sees a real slice); returns nil only on a bad body.
+func FilterEval(items any, predJSON, param string, baseEnv map[string]any) []any {
+	pred, ok := decodeEvalBody(predJSON)
+	if !ok {
+		return nil
+	}
+	env := seedPredEnv(baseEnv)
+	out := []any{}
+	for _, item := range toAnySlice(items) {
+		env[param] = item
+		if evalTruthy(EvalNode(pred, env)) {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+// EveryEval reports whether every element satisfies the predicate (vacuously
+// true for an empty receiver, like JS) — the generalization of bf_every.
+func EveryEval(items any, predJSON, param string, baseEnv map[string]any) bool {
+	pred, ok := decodeEvalBody(predJSON)
+	if !ok {
+		return false
+	}
+	env := seedPredEnv(baseEnv)
+	for _, item := range toAnySlice(items) {
+		env[param] = item
+		if !evalTruthy(EvalNode(pred, env)) {
+			return false
+		}
+	}
+	return true
+}
+
+// SomeEval reports whether any element satisfies the predicate (false for an
+// empty receiver, like JS) — the generalization of bf_some.
+func SomeEval(items any, predJSON, param string, baseEnv map[string]any) bool {
+	pred, ok := decodeEvalBody(predJSON)
+	if !ok {
+		return false
+	}
+	env := seedPredEnv(baseEnv)
+	for _, item := range toAnySlice(items) {
+		env[param] = item
+		if evalTruthy(EvalNode(pred, env)) {
+			return true
+		}
+	}
+	return false
+}
+
+// FindEval returns the first element satisfying the predicate, or nil when none
+// does — the generalization of bf_find. `forward` false searches from the end
+// (findLast).
+func FindEval(items any, predJSON, param string, forward bool, baseEnv map[string]any) any {
+	pred, ok := decodeEvalBody(predJSON)
+	if !ok {
+		return nil
+	}
+	env := seedPredEnv(baseEnv)
+	arr := toAnySlice(items)
+	for n := range arr {
+		i := n
+		if !forward {
+			i = len(arr) - 1 - n
+		}
+		env[param] = arr[i]
+		if evalTruthy(EvalNode(pred, env)) {
+			return arr[i]
+		}
+	}
+	return nil
+}
+
+// FindIndexEval returns the index of the first element satisfying the predicate,
+// or -1 when none does — the generalization of bf_find_index. `forward` false
+// searches from the end (findLastIndex).
+func FindIndexEval(items any, predJSON, param string, forward bool, baseEnv map[string]any) int {
+	pred, ok := decodeEvalBody(predJSON)
+	if !ok {
+		return -1
+	}
+	env := seedPredEnv(baseEnv)
+	arr := toAnySlice(items)
+	for n := range arr {
+		i := n
+		if !forward {
+			i = len(arr) - 1 - n
+		}
+		env[param] = arr[i]
+		if evalTruthy(EvalNode(pred, env)) {
+			return i
+		}
+	}
+	return -1
+}
+
 // Env builds the captured-free-var environment for FoldEval / SortEval from a
 // flat key, value, key, value, … argument list — the adapter emits
 // `bf_env "k1" v1 "k2" v2 …` for the free variables a callback body references

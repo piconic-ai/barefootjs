@@ -59,6 +59,66 @@ func ncallMath(fn string, arg map[string]any) map[string]any {
 	}
 }
 
+func nlit(v any, lt string) map[string]any {
+	return map[string]any{"kind": "literal", "value": v, "literalType": lt}
+}
+
+// The #2018 P2 higher-order predicate helpers evaluate an arbitrary pure
+// predicate body per element, generalizing bf_filter / bf_find / bf_every /
+// bf_some. The rows are PascalCase-keyed maps (the Go conformance harness
+// shape) with a raw-lowercase-prop predicate, exercising the case-variant
+// field read the same way the reduce fixtures do.
+func TestPredicateEvalHelpers(t *testing.T) {
+	rows := []any{
+		map[string]any{"Age": 15.0},
+		map[string]any{"Age": 30.0},
+		map[string]any{"Age": 18.0},
+	}
+	// u => u.age >= 18
+	pred := mustJSON(t, nbin(">=", nmem(nid("u"), "age"), nlit(18, "number")))
+
+	filtered := FilterEval(rows, pred, "u", nil)
+	if len(filtered) != 2 {
+		t.Fatalf("FilterEval kept %d, want 2", len(filtered))
+	}
+
+	if !SomeEval(rows, pred, "u", nil) {
+		t.Errorf("SomeEval = false, want true")
+	}
+	if EveryEval(rows, pred, "u", nil) {
+		t.Errorf("EveryEval = true, want false (15 < 18)")
+	}
+
+	// find forward → 30 (first >= 18); findLast → 18 (last >= 18)
+	if got := FindEval(rows, pred, "u", true, nil); got.(map[string]any)["Age"] != 30.0 {
+		t.Errorf("FindEval forward = %v, want Age 30", got)
+	}
+	if got := FindEval(rows, pred, "u", false, nil); got.(map[string]any)["Age"] != 18.0 {
+		t.Errorf("FindEval backward = %v, want Age 18", got)
+	}
+	if got := FindIndexEval(rows, pred, "u", true, nil); got != 1 {
+		t.Errorf("FindIndexEval forward = %d, want 1", got)
+	}
+	if got := FindIndexEval(rows, pred, "u", false, nil); got != 2 {
+		t.Errorf("FindIndexEval backward = %d, want 2", got)
+	}
+
+	// Empty receiver: every → true (vacuous), some → false, find → nil/-1.
+	empty := []any{}
+	if !EveryEval(empty, pred, "u", nil) {
+		t.Errorf("EveryEval(empty) = false, want true")
+	}
+	if SomeEval(empty, pred, "u", nil) {
+		t.Errorf("SomeEval(empty) = true, want false")
+	}
+	if got := FindEval(empty, pred, "u", true, nil); got != nil {
+		t.Errorf("FindEval(empty) = %v, want nil", got)
+	}
+	if got := FindIndexEval(empty, pred, "u", true, nil); got != -1 {
+		t.Errorf("FindIndexEval(empty) = %d, want -1", got)
+	}
+}
+
 // FoldEval lifts bf_reduce's op restriction and acc-canonical form: the
 // reducer body `acc + item.price * item.qty` mixes `acc` with a product of two
 // fields — impossible in the +/* self/field catalogue, trivial for the
