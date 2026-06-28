@@ -1737,7 +1737,9 @@ export function TodoStatus() {
   return <div>{todos().every(t => t.done)}</div>
 }
 `)
-      expect(result.template).toContain('bf_every .Todos "Done"')
+      // #2018 P2: `.every(t => t.done)` now lowers through the evaluator —
+      // the predicate body travels as serialized ParsedExpr JSON.
+      expect(result.template).toContain('bf_every_eval .Todos')
     })
 
     test('nested .filter(...).length in filter predicate lowers via len (bf_filter ...) (#1443 PR4)', () => {
@@ -1767,7 +1769,7 @@ export function TodoList() {
 }
 `, adapter)
       expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
-      expect(result.template).toContain('gt (len (bf_filter .Tags "Active" true)) 0')
+      expect(result.template).toContain('gt (len (bf_filter_eval .Tags')
       // No degenerate fallbacks
       expect(result.template).not.toContain('{{if false}}')
       expect(result.template).not.toContain('[UNSUPPORTED-FILTER-EXPR]')
@@ -1798,7 +1800,7 @@ export function TodoList() {
   )
 }
 `, adapter)
-      expect(result.template).toContain('gt (len (bf_filter .Tags "Active" true)) 0')
+      expect(result.template).toContain('gt (len (bf_filter_eval .Tags')
       expect(result.template).toContain('{{if not .Done}}')
     })
 
@@ -1859,7 +1861,10 @@ export function ItemChecker() {
   return <div>{items().find(t => t.done) ? 'Found' : 'Not found'}</div>
 }
 `)
-      expect(result.template).toContain('bf_find .Items "Done" true')
+      // #2018 P2: `.find(t => t.done)` lowers through the evaluator; the
+      // trailing `true` is the forward-search flag (find / findIndex).
+      expect(result.template).toContain('bf_find_eval .Items')
+      expect(result.template).toContain('true bf_env')
       expect(result.template).toContain('Found')
     })
   })
@@ -1877,7 +1882,10 @@ export function ItemChecker() {
   return <div>{items().findLast(t => t.done) ? 'Found' : 'Not found'}</div>
 }
 `)
-      expect(result.template).toContain('bf_find_last .Items "Done" true')
+      // #2018 P2: `.findLast(t => t.done)` shares `bf_find_eval` with `.find`,
+      // distinguished by the `false` (backward) forward-flag.
+      expect(result.template).toContain('bf_find_eval .Items')
+      expect(result.template).toContain('false bf_env')
       expect(result.template).toContain('Found')
     })
 
@@ -1911,10 +1919,20 @@ export function ItemChecker() {
   return <div>idx: {items().findLastIndex(t => t.done)}</div>
 }
 `)
-      expect(result.template).toContain('bf_find_last_index .Items "Done" true')
+      // #2018 P2: `.findLastIndex` lowers via `bf_find_index_eval` with the
+      // `false` (backward) forward-flag.
+      expect(result.template).toContain('bf_find_index_eval .Items')
+      expect(result.template).toContain('false bf_env')
     })
 
-    test('renders findLastIndex() with complex predicate via range', () => {
+    test('renders findLastIndex() with a pure complex predicate via the evaluator', () => {
+      // #2018 P2: a pure (call-free) complex predicate like
+      // `t.price > 50 && t.active` is no longer confined to the
+      // field-equality catalogue — it serializes to a ParsedExpr and lowers
+      // through `bf_find_index_eval` (backward `false` flag), replacing the
+      // old `{{range}}` $bf_r accumulator. The range fallback is now reserved
+      // for predicates the evaluator can't model (e.g. a signal-getter call,
+      // covered by the findLast test above).
       const result = compileAndGenerate(`
 "use client"
 import { createSignal } from "@barefootjs/client"
@@ -1926,10 +1944,9 @@ export function ItemFinder() {
   return <div>{items().findLastIndex(t => t.price > 50 && t.active)}</div>
 }
 `)
-      const varMatch = result.template.match(/(\$bf_r\d+) := -1/)
-      expect(varMatch).not.toBeNull()
-      expect(result.template).toContain(`${varMatch![1]} = $i`)
-      expect(result.template).not.toContain('{{break}}')
+      expect(result.template).toContain('bf_find_index_eval .Items')
+      expect(result.template).toContain('false bf_env')
+      expect(result.template).not.toContain('$bf_r')
     })
 
     test('findLast() complex predicate in IR-level ternary works via preamble splitting', () => {
@@ -2450,7 +2467,9 @@ export function C() {
   return <ul>{items().filter(({done}) => done).map(t => <li key={t.id}>{t.name}</li>)}</ul>
 }`)
       expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
-      expect(result.template).toContain('bf_filter .Items "Done" true')
+      // #2018 P2: the normalised `_t => _t.done` predicate lowers through the
+      // evaluator (`bf_filter_eval`).
+      expect(result.template).toContain('bf_filter_eval .Items')
     })
 
     test('.filter(function (x) { return x.done }).map(...) lowers cleanly', () => {
@@ -2463,7 +2482,9 @@ export function C() {
   return <ul>{items().filter(function (x) { return x.done }).map(t => <li key={t.id}>{t.name}</li>)}</ul>
 }`)
       expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
-      expect(result.template).toContain('bf_filter .Items "Done" true')
+      // #2018 P2: the normalised `_t => _t.done` predicate lowers through the
+      // evaluator (`bf_filter_eval`).
+      expect(result.template).toContain('bf_filter_eval .Items')
     })
   })
 
