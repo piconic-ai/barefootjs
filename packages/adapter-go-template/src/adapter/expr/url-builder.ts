@@ -1,11 +1,10 @@
 /**
- * Lowering of local `URLSearchParams` builder helpers to `bf_query` (#1897).
+ * Lowering of local `URLSearchParams` builder helpers to `bf_query`.
  *
- * Extracted from `go-template-adapter.ts` (Phase 4 decomposition). Recognises
- * the `(…) => { const u = new URLSearchParams(); if (G) u.set(K, V); …; return
- * <s> ? \`${base}?${u}\` : base }` idiom (and a pass-through delegate to another
- * such helper) and emits a `bf_query` template expression. Anything else
- * returns null so the caller falls back to the generic lowering.
+ * Recognises the `(…) => { const u = new URLSearchParams(); if (G) u.set(K, V);
+ * …; return <s> ? \`${base}?${u}\` : base }` idiom (and a pass-through delegate
+ * to another such helper) and emits a `bf_query` template expression. Anything
+ * else returns null so the caller falls back to the generic lowering.
  */
 
 import ts from 'typescript'
@@ -25,7 +24,9 @@ type UrlBuilderShape = {
  *     `bf_query <base> (<guard>) "key" <value> …`;
  *   - a pass-through delegate (`(k) => hrefFor(k, params().tag)`) — substitute
  *     and recurse on the delegated call.
- * Returns null for anything else (→ existing lowering / method-call fallback).
+ *
+ * @returns the `bf_query` expression, or null for anything else (→ generic
+ *   lowering / method-call fallback)
  */
 export function lowerUrlBuilderHelperCall(ctx: GoEmitContext, jsExpr: string): string | null {
   if (ctx.state.localHelperNames.size === 0) return null
@@ -114,8 +115,8 @@ function extractUrlBuilder(arrow: ts.ArrowFunction): UrlBuilderShape | null {
     }
     // `return <s> ? `${base}?…` : <base>` — the builder's return must be the
     // conditional that picks between the with-query and bare-base URL; its
-    // `whenFalse` (no-query) branch is the base. Any other return shape isn't
-    // this idiom (#1945 review) — bail to the method-call fallback.
+    // `whenFalse` (no-query) branch is the base. Any other return shape bails
+    // to the method-call fallback.
     if (ts.isReturnStatement(s) && s.expression) {
       let e: ts.Expression = s.expression
       while (ts.isParenthesizedExpression(e)) e = e.expression
@@ -195,7 +196,7 @@ function lowerUrlGuard(
   // lowering. `&&` / `||` do NOT qualify: Go's `and`/`or` return one of their
   // operands (a string for a truthiness guard like `tag && other`), not a
   // bool — so they take the truthiness-wrap path below, yielding
-  // `ne (and …) ""`, an actual bool (#1945 review).
+  // `ne (and …) ""`, an actual bool.
   const isBoolShape =
     (ts.isBinaryExpression(g) &&
       [
@@ -227,13 +228,7 @@ function lowerUrlGuard(
  * corrupt a printer keyed to `body`'s source). The walk skips non-value
  * identifier positions — the property NAME in `a.b` and a plain object-literal
  * key in `{ k: … }` — so a param sharing a name with a member or key is left
- * untouched.
- *
- * The URL-builder lowering keeps this text path (#2006): its block-bodied
- * `URLSearchParams` helpers aren't representable as a `ParsedExpr2` (only
- * expression-bodied arrows are), so there is no structured body tree to
- * substitute in — the spliced string is re-parsed by `convertExpressionToGo` /
- * `convertConditionToGo` / the delegate recursion.
+ * untouched. The spliced string is re-parsed by the caller.
  */
 function substituteHelperParams(
   body: ts.Expression,

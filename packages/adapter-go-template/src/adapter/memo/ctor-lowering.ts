@@ -1,13 +1,11 @@
 /**
- * Constructor-context expression lowering (#1897 PostList derived state).
+ * Constructor-context expression lowering for derived-state memos.
  *
  * Free functions over a {@link GoEmitContext} that lower the narrow surface of
  * JS expressions a derived-state memo needs into Go *code* (not template
  * syntax) evaluated in the `NewXxxProps` constructor — e.g. a search-param read
- * becomes `in.SearchParams.Get("k")`. Mutually recursive (`lowerCtorExpr` ↔
- * `lowerCtorCond`), they read the context's `state.localConstants` /
- * `state.propsObjectName` and each const's carried {@link ParsedExpr2}
- * (`ConstantInfo.parsed2`), and set `state.needsStringsImport` when they emit a
+ * becomes `in.SearchParams.Get("k")`. `lowerCtorExpr` and `lowerCtorCond` are
+ * mutually recursive and set `state.needsStringsImport` when they emit a
  * `strings.*` call. Anything outside the supported surface returns null so the
  * caller can fall back to nil safely.
  */
@@ -166,8 +164,7 @@ export function lowerCtorExpr(
     // The condition must be lowered as a *boolean* (`lowerCtorCond`), not a
     // value: a string-valued JS condition like `sp.get('tag') ? a : b` is
     // truthy in JS, but `if "<string>"` does not compile in Go — such shapes
-    // return null so the memo falls back to nil rather than emitting invalid
-    // code (#1941 review).
+    // return null so the memo falls back to nil rather than emitting invalid Go.
     const cond = lowerCtorCond(ctx, node.test, env)
     const t = lowerCtorExpr(ctx, node.consequent, env)
     const f = lowerCtorExpr(ctx, node.alternate, env)
@@ -182,10 +179,10 @@ export function lowerCtorExpr(
 
 /**
  * Lower a JS expression used as a *boolean* condition to a Go bool expression,
- * or null when it is not provably boolean. Distinct from `lowerCtorExpr`,
- * which lowers value expressions: a string-valued condition (`sp.get('tag')`)
- * is truthy in JS but `if "<string>"` does not compile in Go, so anything not
- * known to yield a Go bool must fall back to null (#1941 review).
+ * or null when it is not provably boolean. Distinct from `lowerCtorExpr`, which
+ * lowers value expressions: a string-valued condition (`sp.get('tag')`) is
+ * truthy in JS but `if "<string>"` does not compile in Go, so anything not
+ * known to yield a Go bool must fall back to null.
  */
 export function lowerCtorCond(
   ctx: GoEmitContext,

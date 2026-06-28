@@ -5,9 +5,8 @@
  * value of a template-literal memo (`() => `${a} ${props.x ?? ''} grid``) as a
  * Go `string` expression. Each quasi becomes a Go string literal; each
  * interpolation resolves to a module string const, a `Record`-index access, or
- * a `props.<name>` field read. They read the context's `state.localConstants` /
- * `state.propsObjectName` and `resolveModuleStringConst`, and set
- * `state.usesFmt` when a `Record`-index interpolation emits `fmt.Sprint`.
+ * a `props.<name>` field read. Sets `state.usesFmt` when a `Record`-index
+ * interpolation emits `fmt.Sprint`.
  */
 
 import ts from 'typescript'
@@ -19,45 +18,39 @@ import { escapeGoString } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 
 /**
- * (#checkbox) Compute the SSR initial value of a template-literal memo as a
- * Go `string` expression. The memo computation looks like
- * `() => `${a} ${b} ${props.className ?? ''} grid place-content-center``.
+ * Compute the SSR initial value of a template-literal memo as a Go `string`
+ * expression, e.g. `() => `${a} ${props.className ?? ''} grid``.
  *
- * Each quasi (literal text span) becomes a Go string literal; each
- * interpolation is resolved:
- *   - an identifier naming a module string const → its inlined literal
- *     (covers both pure-string and `[...].join(' ')` consts);
- *   - `props.<name> ?? '<fallback>'` or bare `props.<name>` → `in.<Field>`
- *     when `<name>` is a known prop param (typed `string`); the `?? ''`
- *     fallback maps to Go's zero value for an unset string field, matching
- *     the Hono reference's empty-string result.
+ * Each quasi becomes a Go string literal; each interpolation is resolved:
+ *   - an identifier naming a module string const → its inlined literal (covers
+ *     pure-string and `[...].join(' ')` consts);
+ *   - `props.<name> ?? '<fallback>'` or bare `props.<name>` → `in.<Field>` when
+ *     `<name>` is a known string-typed prop param (the `?? ''` fallback maps to
+ *     Go's zero value for an unset string field).
  *
- * Returns the `"a" + in.Field + " grid..."` concatenation, or null when the
- * computation isn't a single template literal or any interpolation isn't
- * representable (so the caller keeps its existing pattern matching).
+ * @returns the `"a" + in.Field + " grid..."` concatenation, or null when the
+ *   computation isn't a single template literal or any interpolation isn't
+ *   representable
  */
 export function computeTemplateLiteralMemoInitialValue(
   ctx: GoEmitContext,
   memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
 ): string | null {
-  // Resolve the template value (a `template-literal` ParsedExpr, or a plain
-  // string `literal` for a no-substitution `` `plain` `` which folds to one)
-  // plus any memo-local `const X = props.Y ?? 'lit'` key bindings, from the
-  // analyzer-carried tree instead of re-parsing `computation`.
+  // Resolve the template value (a `template-literal`, or a plain string
+  // `literal` for a no-substitution `` `plain` `` which folds to one) plus any
+  // memo-local `const X = props.Y ?? 'lit'` key bindings.
   const localKeyBindings = new Map<string, { propName: string; defaultLiteral?: string }>()
   let templateValue: ParsedExpr | undefined
   if (memo.parsedBlock) {
     // Block-bodied arrow (the Toggle `classes` memo): collect leading key
     // bindings, then resolve against the single returned template literal. Any
-    // statement that isn't a var-decl or the return (an `if`, a loop) is shape
-    // we don't model — bail to the existing patterns, matching the former walk.
+    // statement that isn't a var-decl or the return (an `if`, a loop) is a
+    // shape we don't model — bail.
     //
-    // `parsedBlock` is tolerant — it OMITS statements it can't represent (a
-    // `for`/`while`/`switch`), so an incomplete block could otherwise look like
-    // just `var-decl`s + `return` and be lowered when the former TS-AST walk
-    // would have bailed on the unrepresented statement. Bail when it isn't
-    // complete so behaviour matches that walk.
+    // `parsedBlock` is tolerant: it OMITS statements it can't represent
+    // (`for`/`while`/`switch`), so an incomplete block could look like just
+    // `var-decl`s + `return`. Bail when it isn't complete.
     if (!memo.parsedBlockComplete) return null
     for (const s of memo.parsedBlock) {
       if (s.kind === 'var-decl') {
@@ -100,10 +93,9 @@ export function computeTemplateLiteralMemoInitialValue(
 }
 
 /**
- * (#checkbox) Resolve one `${expr}` interpolation of a template-literal memo
- * to a Go string expression, or null when unsupported. Operates on the
- * carried `ParsedExpr`. See `computeTemplateLiteralMemoInitialValue` for the
- * supported shapes.
+ * Resolve one `${expr}` interpolation of a template-literal memo to a Go string
+ * expression, or null when unsupported. See
+ * `computeTemplateLiteralMemoInitialValue` for the supported shapes.
  */
 function resolveTemplateInterpolation(
   ctx: GoEmitContext,
@@ -167,14 +159,15 @@ function parseLocalKeyBinding(
 }
 
 /**
- * Lower a `recordConst[key]` interpolation to an inline indexed Go map,
- * emitting `map[string]string{…}[fmt.Sprint(in.Field)]` (or `map[string]any`
- * for mixed values). `recordConst` resolves via the carried
- * `ConstantInfo.parsed` object-literal (module-scope `Record<keys, scalar>`);
- * `key` is a bare prop or a memo-local const bound to `props.X ?? 'default'`
- * (via `localKeyBindings`), whose `'default'` fallback also maps `""` so an
- * unset prop renders the default. Returns null for any non-record /
- * non-resolvable key so the caller falls through.
+ * Lower a `recordConst[key]` interpolation to an inline indexed Go map:
+ * `map[string]string{…}[fmt.Sprint(in.Field)]` (or `map[string]any` for mixed
+ * values). `recordConst` is a module-scope `Record<keys, scalar>` object
+ * literal; `key` is a bare prop or a memo-local const bound to `props.X ??
+ * 'default'`, whose `'default'` fallback also maps `""` so an unset prop
+ * renders the default.
+ *
+ * @returns the indexed-map expression, or null for any non-record /
+ *   non-resolvable key
  */
 function recordIndexInterpolationToGo(
   ctx: GoEmitContext,

@@ -1,17 +1,11 @@
 /**
  * Inlining of component-scope arrow-const helpers at a call site.
  *
- * Extracted from `go-template-adapter.ts` (Phase 4 decomposition). When a JSX
- * expression calls a local `const f = (a) => …` helper, the Go adapter has no
- * function to emit — it inlines the helper body with the call args substituted
- * for the params, so the result lowers like any inline expression. The
- * substitution is scope-blind, so the guards here reject bodies where a param
- * replacement could be wrong.
- *
- * The whole path is structural (#2006): the call arrives already parsed (its
- * `ParsedExpr` tree, threaded from `convertExpressionToGo`'s `preParsed`), and
- * the helper body is the analyzer-attached `ConstantInfo.parsed2` tree — so no
- * `ts.createSourceFile` re-parse is needed.
+ * When a JSX expression calls a local `const f = (a) => …` helper, the Go
+ * adapter has no function to emit — it inlines the helper body with the call
+ * args substituted for the params, so the result lowers like any inline
+ * expression. The substitution is scope-blind, so the guards here reject bodies
+ * where a param replacement could be wrong.
  */
 
 import { type ParsedExpr, parsedExpr2ToParsedExpr } from '@barefootjs/jsx'
@@ -19,14 +13,13 @@ import { type ParsedExpr, parsedExpr2ToParsedExpr } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 
 /**
- * Inline a call to a local arrow-const helper, returning the substituted body
- * tree, or null when the expression isn't such a call or the body isn't
- * substitution-safe (nested functions, helper-calling helpers, spread args, …).
+ * Inline a call to a local arrow-const helper.
  *
- * `callParsed` is the call's already-built `ParsedExpr` (the `preParsed` tree
- * threaded from `convertExpressionToGo`). It must be a `call` node; without it
- * (a call site that didn't carry a tree) inlining is declined — every site that
- * legitimately inlines a helper threads its IR `parsed`.
+ * @param callParsed the call's already-built `ParsedExpr`. Must be a `call`
+ *   node; inlining is declined without it.
+ * @returns the substituted body tree, or null when the expression isn't such a
+ *   call or the body isn't substitution-safe (nested functions, helper-calling
+ *   helpers, spread args, …)
  */
 export function inlineLocalHelperCall(
   ctx: GoEmitContext,
@@ -34,9 +27,9 @@ export function inlineLocalHelperCall(
   callParsed?: ParsedExpr,
 ): ParsedExpr | null {
   if (ctx.state.localHelperNames.size === 0) return null
-  // Fast path: skip the work unless the expression begins with a known helper
-  // name applied as a call (`<helper>(`). The leading-identifier match is an
-  // unambiguous prefix — the real shape check is the tree inspection below.
+  // Fast path: skip unless the expression begins with a known helper name
+  // applied as a call (`<helper>(`); the real shape check is the tree
+  // inspection below.
   const head = /^\s*([A-Za-z_$][\w$]*)\s*\(/.exec(jsExpr)
   if (!head || !ctx.state.localHelperNames.has(head[1])) return null
 
@@ -53,10 +46,9 @@ export function inlineLocalHelperCall(
   if (!arrow || arrow.kind !== 'arrow') return null
   if (arrow.params.length !== callParsed.args.length) return null
 
-  // The body must lower to a `ParsedExpr` — a nested arrow / regex (the shapes
-  // `ParsedExpr` can't model) refuses here, which subsumes the
-  // nested-function-scope guard (a nested `(x) => …` in the body converts to
-  // null) the former text splicer enforced separately.
+  // The body must lower to a `ParsedExpr` — a nested arrow / regex (shapes
+  // `ParsedExpr` can't model) refuses here, which also covers the
+  // nested-function-scope guard (a nested `(x) => …` converts to null).
   const body = parsedExpr2ToParsedExpr(arrow.body)
   if (!body || body.kind === 'unsupported') return null
 
@@ -66,11 +58,9 @@ export function inlineLocalHelperCall(
   // Refuse a body containing a method call (`x.foo(…)`). The structural body
   // tree models it as a generic `call`, but `parseExpression` (which the rest
   // of the lowering is keyed to) folds the string / array method family
-  // (`.replace`, `.toLowerCase`, `.includes`, `.filter`, …) into specialised
-  // `array-method` / `higher-order` nodes — so lowering this tree directly
-  // would diverge. The current inliner fixtures (`sortClass` / `tagClass`) have
-  // no method-call bodies; one that did falls back to the generic path
-  // (#2006). (`x()` with an identifier callee — `params()` — is fine.)
+  // (`.replace`, `.includes`, `.filter`, …) into specialised `array-method` /
+  // `higher-order` nodes — so lowering this tree directly would diverge.
+  // (`x()` with an identifier callee — `params()` — is fine.)
   if (bodyHasMethodCall(body)) return null
 
   const subs = new Map<string, ParsedExpr>()
@@ -84,16 +74,12 @@ export function inlineLocalHelperCall(
 }
 
 /**
- * Guard for `substituteHelperParams`: the substitution replaces value-position
- * identifiers by name, but an `object-literal` lowers opaquely from its `raw`
- * source string downstream — `substituteHelperParams` leaves it untouched — so a
- * param referenced ANYWHERE inside an object literal survives un-substituted:
- * not just a shorthand key (`{ p }`, which also isn't a value position) but a
- * value position too (`{ x: p }`, `{ x: f(p) }`). Either would emit the param's
- * original name instead of the call arg, producing a wrong template. So a body
- * is substitute-safe only when no object literal it contains references any
- * param. (Nested function scopes are already rejected upstream — their
- * `ParsedExpr2` `arrow` doesn't convert to `ParsedExpr`.)
+ * Guard for `substituteHelperParams`: an `object-literal` lowers opaquely from
+ * its `raw` source string, so a param referenced ANYWHERE inside it survives
+ * un-substituted — a shorthand key (`{ p }`) or a value position (`{ x: p }`,
+ * `{ x: f(p) }`) — and would emit the param's original name instead of the call
+ * arg. A body is substitute-safe only when no object literal it contains
+ * references any param.
  */
 function isSubstituteSafeBody(body: ParsedExpr, paramNames: ReadonlySet<string>): boolean {
   // True when `n`'s subtree references any param (handling object-literal
@@ -116,8 +102,8 @@ function isSubstituteSafeBody(body: ParsedExpr, paramNames: ReadonlySet<string>)
   const visit = (n: ParsedExpr): void => {
     if (!safe) return
     if (n.kind === 'object-literal') {
-      // The whole object literal lowers from `raw`; if it mentions a param
-      // anywhere, that reference can't be substituted — decline the body.
+      // The whole object literal lowers from `raw`; a param mentioned anywhere
+      // inside can't be substituted — decline the body.
       if (referencesParam(n)) safe = false
       return
     }
@@ -151,10 +137,8 @@ function bodyCallsLocalHelper(ctx: GoEmitContext, body: ParsedExpr): boolean {
 
 /**
  * True when `body` contains a method call (`x.foo(…)` — a `call` whose callee
- * is a `member`). Such calls are folded by `parseExpression` into specialised
- * `array-method` / `higher-order` nodes that the structural body tree models as
- * a generic `call` instead, so a method-call body must not be lowered from this
- * tree (see the guard in `inlineLocalHelperCall`).
+ * is a `member`); such a body must not be lowered from this tree. See the guard
+ * in `inlineLocalHelperCall` for why.
  */
 function bodyHasMethodCall(body: ParsedExpr): boolean {
   let found = false
@@ -172,15 +156,11 @@ function bodyHasMethodCall(body: ParsedExpr): boolean {
 
 /**
  * Re-build `body` with each identifier named in `subs` replaced by the
- * substitution's `ParsedExpr` subtree. A structural rewrite (#2006): the
- * substitution is the arg subtree itself, so operator precedence survives
- * without parenthesisation (the tree *is* the precedence). Non-value identifier
- * positions — the property NAME in `a.b`, a plain `{ k: … }` key — are not
- * visited, so a param sharing a name with a member or key is left untouched.
- * (`isSubstituteSafeBody` has already rejected `{ k }` shorthand keys; nested
- * functions were rejected at conversion, so `arrow-fn` / `higher-order` /
- * `array-method` callbacks never reach here in practice — they pass through
- * unchanged.)
+ * substitution's `ParsedExpr` subtree. The substitution is the arg subtree
+ * itself, so operator precedence survives without parenthesisation (the tree
+ * *is* the precedence). Non-value identifier positions — the property NAME in
+ * `a.b`, a plain `{ k: … }` key — are not visited, so a param sharing a name
+ * with a member or key is left untouched.
  */
 export function substituteHelperParams(
   body: ParsedExpr,
@@ -193,9 +173,8 @@ export function substituteHelperParams(
         return sub !== undefined ? sub : n
       }
       // `object-literal` / `unsupported` lower from their `raw` string, so
-      // re-lowering structured children would have no effect — leave as-is
-      // (a param inside such a node is rejected by the shorthand guard or
-      // simply never observed).
+      // re-lowering structured children has no effect — leave as-is (a param
+      // inside such a node is rejected by the shorthand guard upstream).
       case 'literal':
       case 'object-literal':
       case 'unsupported':

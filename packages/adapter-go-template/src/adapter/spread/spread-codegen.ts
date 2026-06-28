@@ -5,13 +5,9 @@
  *   - `collectSpreadSlots` walks the IR (stopping at loop bodies) to gather the
  *     `SpreadSlotInfo` entries plumbed onto the Input/Props structs.
  *   - `buildSpreadInitializer` builds the Go expression for a spread bag's
- *     initial value placed inside `NewXxxProps` (#1407): signal-getter object
- *     literals, destructured / SolidJS-style / rest props, and conditional
- *     inline-object spreads.
- * They read `state.restPropsName` / `state.usesFmt`; the conditional inline-
- * object spread is lowered from the carried `SpreadAttr.parsed` tree (#2006)
- * rather than re-parsing the source with `ts.createSourceFile`. Everything else
- * comes from the per-call `ComponentIR`.
+ *     initial value placed inside `NewXxxProps`: signal-getter object literals,
+ *     destructured / SolidJS-style / rest props, and conditional inline-object
+ *     spreads.
  */
 
 import ts from 'typescript'
@@ -35,10 +31,9 @@ import type { SpreadSlotInfo } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 
 /**
- * Walks the IR tree, descending into elements, fragments,
- * conditionals, providers, async, and components, but stopping at
- * loop bodies. Each `IRElement.attrs[i].value` of kind `'spread'`
- * that has a `slotId` becomes one `SpreadSlotInfo` entry.
+ * Walk the IR (elements, fragments, conditionals, providers, async, components)
+ * but stop at loop bodies. Each `'spread'` attr value with a `slotId` becomes
+ * one `SpreadSlotInfo` entry.
  */
 export function collectSpreadSlots(ctx: GoEmitContext, node: IRNode): SpreadSlotInfo[] {
   const result: SpreadSlotInfo[] = []
@@ -47,18 +42,12 @@ export function collectSpreadSlots(ctx: GoEmitContext, node: IRNode): SpreadSlot
 }
 
 /**
- * Decide how a spread bag should be plumbed onto the Input/Props
- * structs (#1407 follow-up). A bare-identifier spread that
- * matches the component's `restPropsName` is open-ended (Go's
- * static typing can't enumerate the keys), so the caller must
- * supply the bag via an Input-side `map[string]any` field. Every
- * other shape — signal getter, `propsObjectName`, plain
- * propsParam, object literal — can be constructed inline in
- * `NewXxxProps` from compile-time-known data.
- *
- * Reads `state.restPropsName` (stashed at `generate()` entry)
- * rather than receiving the IR per-call — matches the existing
- * `state.propsObjectName` / `state.componentName` storage pattern.
+ * Decide how a spread bag is plumbed onto the Input/Props structs. A
+ * bare-identifier spread matching `restPropsName` is open-ended (Go can't
+ * enumerate the keys), so the caller supplies the bag via an Input-side
+ * `map[string]any` field (`input-bag`). Every other shape — signal getter,
+ * `propsObjectName`, plain propsParam, object literal — is built inline in
+ * `NewXxxProps` from compile-time-known data (`inline`).
  */
 function classifySpreadBagSource(ctx: GoEmitContext, spreadExpr: string): 'input-bag' | 'inline' {
   const trimmed = spreadExpr.trim()
@@ -109,16 +98,13 @@ function collectSpreadSlotsRecursive(ctx: GoEmitContext, node: IRNode, result: S
   }
   if (node.type === 'component') {
     const comp = node as IRComponent
-    // `IRComponent.children` are the JSX children passed to *this*
-    // component instance at the call site (`<Child>...</Child>`).
-    // They are part of the PARENT's IR and evaluate in the parent's
-    // render scope, so any spreads inside them belong on the parent's
-    // Props struct. The child component's own template body is a
-    // separate `ComponentIR` with its own `ir.root`, compiled in a
-    // separate `generate()` pass — it never appears in the parent's
-    // IR tree, so the recursion never crosses a component boundary
-    // and the per-component `spreadIdCounter` can't collide across
-    // unrelated components (#1411 review).
+    // `IRComponent.children` are the JSX children passed to *this* instance at
+    // the call site (`<Child>...</Child>`) — part of the PARENT's IR, evaluated
+    // in the parent's render scope, so spreads inside them belong on the
+    // parent's Props struct. The child's own template body is a separate
+    // `ComponentIR` compiled in a separate `generate()` pass, so the recursion
+    // never crosses a component boundary and per-component `spreadIdCounter`
+    // can't collide across unrelated components.
     for (const child of comp.children) {
       collectSpreadSlotsRecursive(ctx, child, result)
     }
@@ -139,31 +125,26 @@ function collectSpreadSlotsRecursive(ctx: GoEmitContext, node: IRNode, result: S
     }
     return
   }
-  // Loops are intentionally not descended — loop-internal spreads
-  // emit `{{bf_spread_attrs <go-expr>}}` inline from
-  // `elementAttrEmitter.emitSpread` instead of plumbing through a
-  // Props struct field.
+  // Loops are intentionally not descended — loop-internal spreads emit
+  // `{{bf_spread_attrs <go-expr>}}` inline from `elementAttrEmitter.emitSpread`
+  // instead of plumbing through a Props struct field.
 }
 
 /**
- * Lower a signal's carried object-literal initial value (`MemoInfo`-style
- * `SignalInfo.parsed`) into a Go `map[string]any{...}` literal source (#1407),
- * instead of re-parsing the `initialValue` string with `ts.createSourceFile`.
+ * Lower a signal's carried object-literal initial value into a Go
+ * `map[string]any{...}` literal. Conservative subset: string/number/boolean/null
+ * values (and a signed-number `{count: -1}`) keyed by identifier or
+ * string-literal keys.
  *
- * Supports a deliberately conservative subset so the Go output is a 1:1
- * translation of the source: string/number/boolean/null values (and a
- * signed-number `{count: -1}`) keyed by identifier or string-literal keys.
- * Returns null for any other shape — a non-object init (`parsed` absent or not
- * an `object-literal`), a shorthand / nested-object / computed / call value —
- * so callers fall back to BF101.
+ * @returns `null` (→ caller falls back to BF101) for any other shape — a
+ *   non-object init, or a shorthand / nested-object / computed / call value.
  */
 function parsedObjectLiteralToGoMap(parsed: ParsedExpr | undefined): string | null {
   if (!parsed || parsed.kind !== 'object-literal') return null
   const entries: string[] = []
   for (const prop of parsed.properties) {
-    // A numeric key (`{ 1: 'a' }`) was rejected by the former parser (only
-    // identifier / string keys were accepted), so keep refusing it — `key`
-    // alone can't distinguish it from a string `'1'` key, hence `keyKind`.
+    // Reject a numeric key (`{ 1: 'a' }`); `keyKind` distinguishes it from a
+    // string `'1'` key.
     if (prop.keyKind === 'numeric') return null
     const v = prop.value
     let goVal: string
@@ -173,8 +154,7 @@ function parsedObjectLiteralToGoMap(parsed: ParsedExpr | undefined): string | nu
       // `raw` is the exact numeric token; `value` is the fallback.
       goVal = v.raw ?? String(v.value)
     } else if (
-      // `-1` / `+1` parse as a unary expression over a numeric literal — accept
-      // both signs so a bag like `{count: -1}` doesn't collapse to BF101.
+      // `-1` / `+1` parse as a unary over a numeric literal — accept both signs.
       v.kind === 'unary'
       && (v.op === '-' || v.op === '+')
       && v.argument.kind === 'literal'
@@ -195,31 +175,22 @@ function parsedObjectLiteralToGoMap(parsed: ParsedExpr | undefined): string | nu
 }
 
 /**
- * Build a Go expression for a JSX spread bag's initial value, to
- * be placed inside `NewXxxProps`'s return literal (#1407).
+ * Build a Go expression for a JSX spread bag's initial value, placed inside
+ * `NewXxxProps`'s return literal.
  *
  * Supported shapes:
- *   - Signal-getter call (e.g. `attrs()`): look up the signal,
- *     parse its `initialValue` as a JS object literal, and emit a
- *     Go `map[string]any{...}` literal.
- *   - Bare identifier matching a destructured `propsParam` (e.g.
- *     `function({ extras }: P) { <el {...extras}/> }`): emit
- *     `in.<FieldName>` — works when the prop's Go type is a map
- *     type the bag is assignable to.
- *   - Bare identifier matching `propsObjectName` (SolidJS-style
- *     `function(props: P) { <el {...props}/> }`): enumerate the
- *     analyzer-extracted `propsParams` into an inline
- *     `map[string]any{...}` literal so each typed Input field
- *     surfaces as a bag key (#1407 follow-up).
- *   - Bare identifier matching `restPropsName` (the destructured-
- *     rest pattern `function({a, ...rest}: P) { <el {...rest}/> }`):
- *     emit `in.<slotId>` against the `map[string]any` Input field
- *     that `generateInputStruct` adds for `input-bag` slots. The
- *     caller (parent component or test harness) populates the
- *     bag with the open-ended rest values (#1407 follow-up).
+ *   - Signal-getter call (`attrs()`): emit the signal's object literal as a Go
+ *     `map[string]any{...}`.
+ *   - Bare identifier matching a destructured `propsParam`: emit `in.<Field>`.
+ *   - Bare identifier matching `propsObjectName` (SolidJS-style `props`):
+ *     enumerate `propsParams` into an inline `map[string]any{...}` (each Input
+ *     field becomes a bag key).
+ *   - Bare identifier matching `restPropsName` (destructured rest): emit
+ *     `in.<Field>` against the `map[string]any` Input field added for
+ *     `input-bag` slots; the caller populates the open-ended rest values.
  *
- * Returns null for unsupported shapes so the caller can raise a
- * narrowed BF101 with the offending expression.
+ * @returns `null` for unsupported shapes so the caller can raise a narrowed
+ *   BF101 with the offending expression.
  */
 export function buildSpreadInitializer(
   ctx: GoEmitContext,
@@ -228,22 +199,16 @@ export function buildSpreadInitializer(
   parsed?: ParsedExpr,
 ): string | null {
   const trimmed = spreadExpr.trim()
-  // Conditional inline-object spread:
-  //   `{...(COND ? { 'k': v } : {})}` (either branch possibly `{}`).
-  // Lower to an immediately-invoked func literal that conditionally
-  // builds the bag, so the falsy branch yields an empty map (the key
-  // is OMITTED rather than rendered as `k=""` — `SpreadAttrs` does
-  // NOT filter empty strings). Returns null for any shape it can't
-  // faithfully convert so the caller falls back to BF101 (#textarea).
-  // Consume the carried `SpreadAttr.parsed` tree (#2006); when absent
-  // (older/hand-built IR), parse `trimmed` once as a fallback so the
-  // shape is still recognised without re-introducing the per-attribute
-  // `ts.createSourceFile` parse on the build hot path.
+  // Conditional inline-object spread `{...(COND ? { 'k': v } : {})}` (either
+  // branch possibly `{}`). The falsy branch yields an empty map so the key is
+  // OMITTED rather than rendered as `k=""` (`SpreadAttrs` does NOT filter empty
+  // strings). Consume the carried `parsed` tree; when absent (older/hand-built
+  // IR), parse `trimmed` once as a fallback.
   const conditionalTree = parsed ?? parseExpression(trimmed)
   const conditional = buildConditionalSpreadInitializer(ctx, conditionalTree, ir)
   if (conditional !== undefined) return conditional
-  // Signal-getter call: `attrs()` — pluck the signal's initialValue
-  // and translate the JS object literal to a Go map literal.
+  // Signal-getter call `attrs()` — translate the signal's object literal to a
+  // Go map literal.
   const callMatch = /^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*\)$/.exec(trimmed)
   if (callMatch) {
     const getterName = callMatch[1]
@@ -256,56 +221,46 @@ export function buildSpreadInitializer(
   }
   // Bare-identifier paths.
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
-    // 1. Destructured-from-props parameter: `function({ extras }: P)`
-    //    → spread `{...extras}` resolves to `in.Extras`.
+    // 1. Destructured-from-props parameter `function({ extras }: P)` →
+    //    `{...extras}` resolves to `in.Extras`.
     const param = ir.metadata.propsParams.find(p => p.name === trimmed)
     if (param) {
       return `in.${capitalizeFieldName(param.name)}`
     }
     // 2. SolidJS-style props object: `function(props: P)` → spread
-    //    `{...props}` enumerates all analyzer-extracted propsParams
-    //    into a `map[string]any` literal. Every Input field becomes
-    //    a bag key. When `propsParams` is empty (analyzer couldn't
-    //    enumerate the type — e.g. an unresolved interface
-    //    `extends` chain), the literal is `map[string]any{}`. SSR
-    //    then renders no spread attrs; the CSR `applyRestAttrs`
-    //    hydrate path still applies them. Strictly worse than a
-    //    full enumeration, but strictly better than BF101 blocking
-    //    the build.
+    //    `{...props}` enumerates all propsParams into a `map[string]any`
+    //    literal; every Input field becomes a bag key. When `propsParams` is
+    //    empty (analyzer couldn't enumerate the type), the literal is
+    //    `map[string]any{}`: SSR renders no spread attrs, but the CSR
+    //    `applyRestAttrs` hydrate path still applies them — worse than full
+    //    enumeration, better than BF101 blocking the build.
     if (ir.metadata.propsObjectName === trimmed) {
       const entries = ir.metadata.propsParams.map(p =>
         `${JSON.stringify(p.name)}: in.${capitalizeFieldName(p.name)}`,
       )
       return `map[string]any{${entries.join(', ')}}`
     }
-    // 3. Destructured-rest identifier:
-    //    `function({a, ...rest}: P) { <el {...rest}/> }`. The
-    //    rest's key set is open-ended (Go can't enumerate it
-    //    statically when the analyzer's `restPropsExpandedKeys`
-    //    isn't populated), so `generateInputStruct` added an
-    //    Input field named after the rest binding itself
-    //    (`rest` → `Rest`) so callers can write
-    //    `XxxInput{Rest: ...}` using the same identifier they
-    //    saw in source. Forward it through.
+    // 3. Destructured-rest identifier `function({a, ...rest}: P)`. The rest's
+    //    key set is open-ended, so `generateInputStruct` added an Input field
+    //    named after the rest binding (`rest` → `Rest`); callers write
+    //    `XxxInput{Rest: ...}` with the same identifier they saw in source.
+    //    Forward it through.
     if (ir.metadata.restPropsName === trimmed) {
       return `in.${capitalizeFieldName(trimmed)}`
     }
-    // 4. Function-scope local const holding a conditional inline-object
-    //    spread: `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`
-    //    (#checkbox / icon). Resolve the identifier to its initializer
-    //    text and route through the conditional-spread lowering. Only
-    //    function-scope (`!isModule`) consts qualify — a module const is
-    //    a different shape, and the resolved initializer must itself be a
-    //    conditional-of-object-literals (else `buildConditionalSpreadInitializer`
-    //    returns undefined and we fall through to BF101). Guard against a
-    //    const that resolves to another bare identifier (loop / non-literal).
+    // 4. Function-scope local const holding a conditional inline-object spread:
+    //    `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`. Resolve to
+    //    its initializer text and route through the conditional-spread lowering.
+    //    Only function-scope (`!isModule`) consts qualify, and the initializer
+    //    must itself be a conditional-of-object-literals (else fall through to
+    //    BF101).
     const localConst = (ir.metadata.localConstants ?? []).find(
       c => c.name === trimmed && !c.isModule,
     )
     if (localConst?.value !== undefined) {
       const initTrimmed = localConst.value.trim()
-      // Reject a const resolving to a bare identifier to avoid an
-      // unbounded resolution loop / non-literal forwarding.
+      // Reject a const resolving to a bare identifier to avoid an unbounded
+      // resolution loop / non-literal forwarding.
       if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(initTrimmed)) {
         const resolved = buildConditionalSpreadInitializer(ctx, parseExpression(initTrimmed), ir)
         // `undefined` → not a conditional-spread shape; fall through to
@@ -319,12 +274,10 @@ export function buildSpreadInitializer(
 }
 
 /**
- * Lower a conditional inline-object spread bag value:
- *   `(COND ? { 'aria-describedby': describedBy } : {})`
- * into an immediately-invoked Go func literal that conditionally
- * builds the map (so the falsy branch OMITS the key rather than
- * rendering it as an empty string, which `SpreadAttrs` does not
- * filter):
+ * Lower a conditional inline-object spread `(COND ? { 'aria-describedby':
+ * describedBy } : {})` into a Go IIFE that conditionally builds the map (the
+ * falsy branch OMITS the key rather than rendering it as an empty string, which
+ * `SpreadAttrs` does not filter):
  *
  *   func() map[string]any {
  *     if bf.Truthy(in.DescribedBy) {
@@ -333,21 +286,17 @@ export function buildSpreadInitializer(
  *     return map[string]any{}
  *   }()
  *
- * Returns:
- *   - `undefined` when the expression is NOT a parenthesized ternary
- *     of object literals — the caller falls through to other shapes.
- *   - `null` when it IS that shape but a part can't be faithfully
- *     converted (non-static key, unsupported condition, …) — the
- *     caller raises BF101.
- *   - the Go IIFE string when fully convertible.
+ * @returns `undefined` when the expression is NOT a ternary of object literals
+ *   (caller tries other shapes); `null` when it IS that shape but a part can't
+ *   be converted (non-static key, unsupported condition) → caller raises BF101;
+ *   the Go IIFE string when fully convertible.
  */
 function buildConditionalSpreadInitializer(
   ctx: GoEmitContext,
   expr: ParsedExpr | undefined,
   ir: ComponentIR,
 ): string | null | undefined {
-  // `parseExpression` already unwraps redundant parentheses, so the
-  // conditional / object-literal shapes surface directly.
+  // `parseExpression` already unwraps redundant parentheses.
   if (!expr || expr.kind !== 'conditional') return undefined
   const whenTrue = expr.consequent
   const whenFalse = expr.alternate
@@ -371,24 +320,21 @@ function buildConditionalSpreadInitializer(
 }
 
 /**
- * Convert a conditional-spread condition expression to a Go bool in
- * the `in.` context. Supports a bare prop identifier (`describedBy`)
- * and its negation (`!describedBy`), type-aware on the prop:
+ * Convert a conditional-spread condition to a Go bool in the `in.` context.
+ * Supports a bare prop identifier (`describedBy`) and its negation, type-aware:
  *   string  → `in.X != ""`
  *   boolean → `in.X`
  *   number  → `in.X != 0`
  *   unknown / interface{} → `bf.Truthy(in.X)`
- *     (faithful JS truthiness for an interface holding a string /
- *     number / bool — textarea's `describedBy` resolves to interface{};
- *     a string-biased `!= ""` test would misread `0` / `false` as truthy,
- *     Copilot review #1752).
- * Returns null for any other shape (caller → BF101).
+ * For interface{}, `bf.Truthy` gives faithful JS truthiness; a string-biased
+ * `!= ""` test would misread an interface holding `0` / `false` as truthy.
+ *
+ * @returns `null` for any other shape (caller → BF101).
  */
 function conditionToGoBool(
   condition: ParsedExpr,
   ir: ComponentIR,
 ): string | null {
-  // Parens are already stripped by `parseExpression`.
   let node = condition
   let negate = false
   if (node.kind === 'unary' && node.op === '!') {
@@ -408,15 +354,13 @@ function conditionToGoBool(
   } else if (prim === 'string') {
     truthy = `${field} != ""`
   } else {
-    // unknown / interface{}: the runtime value may be a string, number,
-    // bool, etc., so a string-biased `!= ""` test would diverge from JS
-    // truthiness (e.g. an `interface{}` holding `0` or `false` is falsy in
-    // JS but `!= ""` reads true). Route through `bf.Truthy`, the exported
-    // `Boolean(x)` equivalent, for a faithful check (Copilot review #1752).
+    // unknown / interface{}: route through `bf.Truthy` (the `Boolean(x)`
+    // equivalent) for faithful JS truthiness; `!= ""` would misread an
+    // interface holding `0` / `false`.
     truthy = `bf.Truthy(${field})`
   }
   if (!negate) return truthy
-  // Negation: wrap so `!` applies to the whole truthiness test.
+  // Negation: `!` applies to the whole truthiness test.
   if (prim === 'boolean') return `!${field}`
   if (prim === 'number') return `${field} == 0`
   if (prim === 'string') return `${field} == ""`
@@ -424,12 +368,13 @@ function conditionToGoBool(
 }
 
 /**
- * Convert a static object literal (`{ 'aria-describedby': describedBy }`)
- * into a Go `map[string]any{...}` literal for a conditional spread.
- * Only static string/identifier keys are allowed; values resolve
- * prop-identifier references to `in.FieldName` and string literals to
- * Go string literals. Returns null for any computed/spread/dynamic
- * key or unsupported value (caller → BF101). Empty object → `map[string]any{}`.
+ * Convert a static object literal (`{ 'aria-describedby': describedBy }`) into a
+ * Go `map[string]any{...}` for a conditional spread. Only static
+ * string/identifier keys; values resolve prop identifiers to `in.Field` and
+ * string literals to Go string literals. Empty object → `map[string]any{}`.
+ *
+ * @returns `null` for any computed/spread/dynamic key or unsupported value
+ *   (caller → BF101).
  */
 function objectLiteralToGoSpreadMap(
   ctx: GoEmitContext,
@@ -438,12 +383,10 @@ function objectLiteralToGoSpreadMap(
 ): string | null {
   const entries: string[] = []
   for (const prop of obj.properties) {
-    // Shorthand (`{ describedBy }`) was a `ShorthandPropertyAssignment` — not a
-    // `PropertyAssignment` — so the former parser rejected it; keep refusing.
+    // Shorthand (`{ describedBy }`) is unsupported.
     if (prop.shorthand) return null
-    // Numeric keys (`{ 1: x }`) were rejected by the former parser (only
-    // identifier / string-literal names were accepted); `keyKind` distinguishes
-    // them from a string `'1'` key.
+    // Reject a numeric key (`{ 1: x }`); `keyKind` distinguishes it from a
+    // string `'1'` key.
     if (prop.keyKind === 'numeric') return null
     const key = prop.key
     const val = prop.value
@@ -466,30 +409,27 @@ function objectLiteralToGoSpreadMap(
 
 /**
  * Lower a spread-object VALUE of the form `IDENT[KEY]` where:
- *   - `IDENT` resolves via `localConstants` to a MODULE-scope object
- *     literal whose property values are all scalar (number/string)
- *     literals under static (string-literal or identifier) keys
- *     (a `Record<staticKeys, scalar>` map like `sizeMap`), AND
+ *   - `IDENT` resolves via `localConstants` to a MODULE-scope object literal
+ *     whose property values are all scalar literals under static keys (a
+ *     `Record<staticKeys, scalar>` map like `sizeMap`), AND
  *   - `KEY` is a bare identifier that is a prop.
  * Emits an inline indexed Go map:
  *   `map[string]any{"sm": 16, ...}[fmt.Sprint(in.Size)]`
- * (`fmt.Sprint` coerces the `interface{}`/typed prop to the map's
- * string key space — sets `usesFmt` so the `"fmt"` import is added).
+ * (`fmt.Sprint` coerces the prop to the map's string key space — sets `usesFmt`
+ * so the `"fmt"` import is added).
  *
- * Returns the Go string when convertible, else `null` (caller → BF101)
- * for any non-scalar value, non-static key, or non-prop index so
- * unrelated shapes don't regress. (#checkbox / icon `sizeMap[size]`.)
+ * @returns the Go string, else `null` (caller → BF101) for any non-scalar
+ *   value, non-static key, or non-prop index.
  */
 function recordIndexAccessToGoMap(
   ctx: GoEmitContext,
   val: ParsedExpr,
   ir: ComponentIR,
 ): string | null {
-  // `parseRecordIndexAccess` (the shared single-source-of-truth parser) takes a
-  // `ts.Expression`. The only shape it accepts is `IDENT[KEY]` with identifier
-  // object and index, so rebuild exactly that node from the carried tree via
-  // `ts.factory` — no source-text re-parse needed. Any other shape can't match
-  // and short-circuits to `null` here.
+  // `parseRecordIndexAccess` (shared parser) takes a `ts.Expression` and only
+  // accepts `IDENT[KEY]` with identifier object and index, so rebuild exactly
+  // that node from the carried tree via `ts.factory`. Any other shape
+  // short-circuits to `null` here.
   if (
     val.kind !== 'index-access'
     || val.object.kind !== 'identifier'
@@ -501,8 +441,7 @@ function recordIndexAccessToGoMap(
     ts.factory.createIdentifier(val.object.name),
     ts.factory.createIdentifier(val.index.name),
   )
-  // Shared structural parse (single source of truth in `@barefootjs/jsx`);
-  // this wrapper only does the Go-specific emit from the structured result.
+  // Shared structural parse; this wrapper only does the Go-specific emit.
   const parsed = parseRecordIndexAccess(
     tsVal,
     ir.metadata.localConstants ?? [],

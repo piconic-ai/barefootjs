@@ -2,9 +2,9 @@
  * IR component-tree analysis for the Go html/template adapter.
  *
  * Pure structural walks over the IR — no adapter instance state, no rendering.
- * Extracted from `go-template-adapter.ts` (Phase 4 decomposition). Only the two
- * entry points (`hasClientInteractivity`, `findNestedComponents`) are exported;
- * the recursive collectors stay module-internal.
+ * Only the two entry points (`hasClientInteractivity`,
+ * `findNestedComponents`) are exported; the recursive collectors stay
+ * module-internal.
  */
 
 import type {
@@ -121,7 +121,6 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): v
   if (node.type === 'loop') {
     const loop = node as IRLoop
     if (loop.childComponent) {
-      // Check for duplicates
       if (!result.some(c => c.name === loop.childComponent!.name)) {
         const hasBodyChildren = loop.childComponent.children.length > 0
         result.push({
@@ -164,11 +163,9 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[]): v
       collectNestedComponents(stmt.alternate, result)
     }
   } else if (node.type === 'component') {
-    // (#1896) JSX children passed to an imported component render via
-    // a companion define with the PARENT's data, so a keyed loop
-    // nested inside them (DataTablePreviewDemo's `sortedData().map(…)`
-    // inside `<TableBody>`) needs its `<Name>s` slice on THIS
-    // component's props like any other nested loop.
+    // JSX children passed to an imported component render via a companion
+    // define with the PARENT's data, so a keyed loop nested inside them needs
+    // its `<Name>s` slice on THIS component's props like any other nested loop.
     const comp = node as IRComponent
     for (const child of comp.children) {
       collectNestedComponents(child, result)

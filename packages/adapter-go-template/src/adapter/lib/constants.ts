@@ -1,18 +1,14 @@
 /**
  * Compile-time constant tables for the Go html/template adapter.
- *
- * Extracted from `go-template-adapter.ts` (Phase 2 refactor).
  */
 
 import type { PrimitiveSpec } from "./types.ts"
 import { wrapGoArg } from "./go-emit.ts"
 
 /**
- * Single source of truth for the Go adapter's template-primitive
- * surface (#1188). Each entry pairs the expected arity with the
- * emit function so adding / removing a primitive is a one-line
- * change and the two derived maps (`templatePrimitives` and
- * `templatePrimitiveArities`) can't drift out of sync.
+ * Single source of truth for the Go adapter's template-primitive surface. Each
+ * entry pairs the expected arity with the emit function so the two derived maps
+ * (`templatePrimitives` and `templatePrimitiveArities`) can't drift out of sync.
  */
 export const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'JSON.stringify': { arity: 1, emit: (args) => `bf_json ${wrapGoArg(args[0])}` },

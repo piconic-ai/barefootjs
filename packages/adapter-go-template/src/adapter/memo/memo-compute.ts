@@ -1,13 +1,11 @@
 /**
- * Memo initial-value computation — the core that lowers a memo's computation to
- * its SSR initial value as a Go expression.
+ * Memo initial-value computation — lower a memo's computation to its SSR initial
+ * value as a Go expression.
  *
  * Free functions over a {@link GoEmitContext}. `computeMemoInitialValue` is the
  * typed-field entry (zero-value defaulting); `computeMemoInitialValueOrNull` is
- * the pattern-matching core that dispatches over template-literal, parsed-body,
- * comparison-ternary, block-body and object memo shapes. They read
- * `state.currentMemos` / `state.moduleStringConsts`, `extractPropFallback`, and
- * delegate to the value / type / template / memo-value modules.
+ * the pattern-matching core dispatching over template-literal, parsed-body,
+ * comparison-ternary, block-body and object memo shapes.
  */
 
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
@@ -24,13 +22,14 @@ import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from '
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
 
 /**
- * Compute the initial value for a memo based on its computation and signal initial values.
- * Handles simple cases like `() => count() * 2` → `in.Initial * 2`
- * Also handles props.xxx patterns like `() => props.value * 10` → `in.Value * 10`
+ * Compute a memo's SSR initial value as a Go expression — e.g.
+ * `() => count() * 2` → `in.Initial * 2`, `() => props.value * 10` →
+ * `in.Value * 10`. Unresolved computations default to the memo's Go zero value.
  *
- * (#1423) When `propFallbackVars` carries a hoisted variable for the
- * referenced prop, substitute it for `in.FieldName` so the memo
- * inherits the signal-time `??` fallback.
+ * @param propFallbackVars when a hoisted fallback var exists for a referenced
+ *   prop, it is substituted for `in.FieldName` so the memo inherits the
+ *   signal-time `??` fallback
+ * @param goType Go type of the memo field, used to pick the zero-value fallback
  */
 export function computeMemoInitialValue(
   ctx: GoEmitContext,
@@ -38,22 +37,15 @@ export function computeMemoInitialValue(
   signals: { getter: string; initialValue: string }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
-  // (#checkbox) Go type of the memo field; used to pick the zero-value
-  // fallback for an unresolved computation (`false` for `bool`, `""` for
-  // `string`, else the historical `0`).
   goType?: string,
 ): string {
   const resolved = computeMemoInitialValueOrNull(
     ctx, memo, signals, propsParams, propFallbackVars,
   )
   if (resolved !== null) return resolved
-  // Default: zero value for the memo's Go type (#checkbox). A boolean memo
-  // (`isChecked`) renders `false`, a string memo `""`; reference types
-  // (map / slice / interface / pointer) take `nil` — `0` is not
-  // assignable to them and broke the struct literal for a
-  // block-bodied string-building memo whose type inferred to
-  // `map[string]any` (#1896, select-demo's `summary`). Other types
-  // keep the historical int `0`.
+  // Zero value for the memo's Go type: `false` for bool, `""` for string,
+  // `nil` for reference types (map / slice / interface / pointer — `0` is not
+  // assignable to them), else the int `0`.
   if (goType === 'bool') return 'false'
   if (goType === 'string') return '""'
   if (
@@ -71,14 +63,12 @@ export function computeMemoInitialValue(
 
 /**
  * Structural matcher for the common expression-bodied memo shapes, driven by
- * the analyzer-attached `MemoInfo.parsed` (the memo arrow's body `ParsedExpr`)
- * instead of regexes over `computation`. Mirrors the former `computation.match`
- * chain 1:1 — `getter() === 'lit'`, `props.X ?? false`, `cond() ? A : B`,
- * `<getter()|props.X|var> <*+-/> <int>`, and bare `getter()` / `props.X` /
- * `var` — returning the Go SSR value, or null when the body isn't one of these
- * (the caller then falls through to the comparison-ternary / block-body /
- * object-memo handling). Structural matching is tolerant of quote style,
- * parenthesisation, and whitespace that the regexes were sensitive to.
+ * the analyzer-attached `MemoInfo.parsed` (the memo arrow's body): `getter() ===
+ * 'lit'`, `props.X ?? false`, `cond() ? A : B`, `<getter()|props.X|var> <*+-/>
+ * <int>`, and bare `getter()` / `props.X` / `var`.
+ *
+ * @returns the Go SSR value, or null when the body is none of these (the caller
+ *   then falls through to comparison-ternary / block-body / object-memo handling)
  */
 export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
@@ -173,9 +163,8 @@ export function memoInitialFromParsedBody(
     }
   }
 
-  // () => <ref> <*|+|-|/> <non-negative int>. The operand stays an integer
-  // literal (the regexes only matched `\d+`), so float/negative bodies fall
-  // through unchanged.
+  // () => <ref> <*|+|-|/> <non-negative int>. The operand must be a
+  // non-negative integer literal; float/negative bodies fall through unchanged.
   if (
     body.kind === 'binary' &&
     ['*', '+', '-', '/'].includes(body.op) &&
@@ -215,8 +204,7 @@ export function memoInitialFromParsedBody(
       }
     }
 
-    // var * N — destructured prop (no hoisted-var lookup, mirroring the
-    // former `varArithmeticMatch`).
+    // var * N — destructured prop (no hoisted-var lookup).
     if (body.left.kind === 'identifier') {
       const varName = body.left.name
       const param = propsParams.find(p => p.name === varName)
@@ -257,13 +245,13 @@ export function memoInitialFromParsedBody(
 }
 
 /**
- * Pattern-matching core of `computeMemoInitialValue`: returns the
- * memo's SSR initial value as a Go expression, or `null` when no
- * pattern applies. Callers that have a typed field to fill use the
- * zero-value-defaulting wrapper above; callers that can simply OMIT
- * the field (a child-instance prop init — Go's zero values then apply
- * with the right type for free) use this directly (#1896,
- * data-table's `Checked: 0` into a bool field).
+ * Pattern-matching core of `computeMemoInitialValue`.
+ *
+ * @returns the memo's SSR initial value as a Go expression, or `null` when no
+ *   pattern applies. Callers with a typed field to fill use the
+ *   zero-value-defaulting wrapper above; callers that can OMIT the field (a
+ *   child-instance prop init, where Go's zero values then apply with the right
+ *   type) use this directly.
  */
 export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
@@ -274,20 +262,12 @@ export function computeMemoInitialValueOrNull(
 ): string | null {
   const computation = memo.computation
 
-  // (#checkbox) Pattern: () => `...${expr}...` — a template-literal memo
-  // (the classes memo: `${baseClasses} ${focusClasses} ... ${props.className
-  // ?? ''} grid place-content-center`). Build a Go string concatenation that
-  // inlines module string consts (incl. `[...].join(' ')` consts resolved by
-  // `resolveModuleStringConst`) and resolves `props.X ?? ''` / bare `props.X`
-  // to the corresponding `in.Field`. Returns null when any interpolation
-  // isn't representable, so the existing patterns below still apply.
+  // () => `...${expr}...` — template-literal memo (the classes memo). Builds a
+  // Go string concatenation; null when any interpolation isn't representable.
   const tmplMemo = computeTemplateLiteralMemoInitialValue(ctx, memo, propsParams)
   if (tmplMemo !== null) return tmplMemo
 
-  // Expression-bodied memo shapes (`getter() === 'lit'`, `props.X ?? false`,
-  // `cond() ? A : B`, `<ref> * N`, bare `getter()` / `props.X` / `var`) are
-  // matched structurally on the analyzer-attached `parsed` tree instead of
-  // re-parsing `computation` with regexes (IR-carries-semantics migration).
+  // Expression-bodied memo shapes, matched structurally on `parsed`.
   if (memo.parsed) {
     const fromParsed = memoInitialFromParsedBody(
       ctx,
@@ -299,13 +279,9 @@ export function computeMemoInitialValueOrNull(
     if (fromParsed !== null) return fromParsed
   }
 
-  // (#1971) Pattern: () => <operand> ===/!== 'lit' ? A : B, where each
-  // branch is a string literal/module-const and <operand> is a getter call
-  // (`orientation()`), an inline nullish-defaulted prop
-  // (`props.orientation ?? 'horizontal'`), or a bare `props.X` — carousel's
-  // `directionClasses` / `positionClasses` / `paddingClass`. Resolved via an
-  // AST walk (not regex) so quote style, parenthesization, and whitespace
-  // don't matter.
+  // () => <operand> ===/!== 'lit' ? A : B, where each branch is a string
+  // literal/module-const and <operand> is a getter call, an inline
+  // nullish-defaulted prop (`props.X ?? 'horizontal'`), or a bare `props.X`.
   const cmpTernary = computeComparisonTernaryGo(
     ctx,
     memo.parsed,
@@ -315,12 +291,10 @@ export function computeMemoInitialValueOrNull(
   )
   if (cmpTernary !== null) return cmpTernary
 
-  // (#1897) Pattern: block-body memo that early-returns a module-const array
-  // when a guard signal is falsy — `() => { const k = getter(); if (!k)
-  // return MODULE_ARRAY; return /* @client */ ... }`. When the signal starts
-  // null, the SSR value is the module-const array. The constant's literal
-  // value (not the identifier) is passed to the baker so `jsLiteralToGo`
-  // can reduce it to a Go slice.
+  // Block-body memo that early-returns a module-const array when a guard signal
+  // is falsy: `() => { const k = getter(); if (!k) return MODULE_ARRAY; … }`.
+  // When the signal starts null the SSR value is that array; its literal value
+  // (not the identifier) is passed to the baker so it reduces to a Go slice.
   const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo.parsedBlock, signals)
   if (blockReturn !== null && blockReturn.constValue && blockReturn.constType) {
     return convertInitialValue(ctx,
@@ -331,13 +305,10 @@ export function computeMemoInitialValueOrNull(
     )
   }
 
-  // (#1897 PostList) Pattern: an object-returning block-body memo derived from
-  // `searchParams()` — `() => { const sp = searchParams(); return { sort:
-  // asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' } }`. Compute a Go
-  // `map[string]interface{}` whose values are lowered from the request query,
-  // so `.Params.Sort` / `.Params.Tag` resolve at execute time instead of
-  // reading a nil map. Returns null for any unsupported shape (→ nil fallback,
-  // no regression).
+  // Object-returning block-body memo derived from `searchParams()`. Computes a
+  // Go `map[string]interface{}` whose values are lowered from the request
+  // query, so `.Params.Sort` etc. resolve at execute time instead of reading a
+  // nil map; null for any unsupported shape (→ nil fallback).
   const objMemo = computeObjectMemoInitialValue(ctx, memo)
   if (objMemo !== null) return objMemo
 
@@ -345,12 +316,12 @@ export function computeMemoInitialValueOrNull(
 }
 
 /**
- * (#1971) Resolve a signal/memo getter NAME to a Go value expression, for
- * use as the condition operand of another memo's ternary (carousel's
- * `directionClasses` reads the `orientation` memo). Handles a plain
- * signal, a prop-shadow memo `() => props.X ?? 'lit'` (→ a nil/empty-
- * tolerant field read mirroring the prop fold in `generateNewPropsFunction`),
- * else recurses. Returns null when the shape isn't representable.
+ * Resolve a signal/memo getter NAME to a Go value expression, for use as the
+ * condition operand of another memo's ternary. Handles a plain signal, a
+ * prop-shadow memo `() => props.X ?? 'lit'` (→ a nil/empty-tolerant field
+ * read), else recurses.
+ *
+ * @returns the Go expression, or null when the shape isn't representable
  */
 export function resolveGetterValueAsGo(
   ctx: GoEmitContext,
@@ -382,13 +353,12 @@ export function resolveGetterValueAsGo(
 }
 
 /**
- * (#1971) Resolve a string-ternary memo whose condition is a literal
- * comparison — `() => <operand> === 'lit' ? A : B` (or `!==`) — to a Go
- * runtime conditional, or null when the shape isn't supported. AST-based
- * (the repo idiom): tolerant of quote style, parenthesization, and
- * whitespace that a regex would miss. Branches must be string
- * literals/module-string-consts; the operand resolves via
- * `resolveComparisonOperandGo`.
+ * Resolve a string-ternary memo whose condition is a literal comparison —
+ * `() => <operand> === 'lit' ? A : B` (or `!==`) — to a Go runtime conditional.
+ * Branches must be string literals/module-string-consts; the operand resolves
+ * via `resolveComparisonOperandGo`.
+ *
+ * @returns the Go conditional, or null when the shape isn't supported
  */
 export function computeComparisonTernaryGo(
   ctx: GoEmitContext,
@@ -397,11 +367,8 @@ export function computeComparisonTernaryGo(
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
-  // Reads the analyzer-carried body tree (`MemoInfo.parsed`) instead of
-  // re-parsing `computation`. The former predicate only ever matched an
-  // expression-bodied conditional (a block arrow `body` is not a conditional,
-  // so it returned null) — a block-bodied memo has no `parsed`, so this returns
-  // null too, preserving that behaviour.
+  // Only an expression-bodied conditional matches; a block-bodied memo has no
+  // `parsed`, so it returns null.
   if (!parsed || parsed.kind !== 'conditional') return null
   const cond = parsed.test
   if (cond.kind !== 'binary' || !(cond.right.kind === 'literal' && cond.right.literalType === 'string')) {
@@ -441,11 +408,11 @@ export function computeComparisonTernaryGo(
 }
 
 /**
- * (#1971) Resolve the left operand of a string-ternary memo's comparison
- * condition to a Go expression: a zero-arg getter call (`orientation()` —
- * a signal/prop-shadow memo), an inline `props.X ?? 'def'` (folds the
- * default like `generateNewPropsFunction`), or a bare `props.X`. Returns
- * null for anything else.
+ * Resolve the left operand of a string-ternary memo's comparison condition to a
+ * Go expression: a zero-arg getter call (a signal/prop-shadow memo), an inline
+ * `props.X ?? 'def'` (folds the default), or a bare `props.X`.
+ *
+ * @returns the Go expression, or null for anything else
  */
 export function resolveComparisonOperandGo(
   ctx: GoEmitContext,

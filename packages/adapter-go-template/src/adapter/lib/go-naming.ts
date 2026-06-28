@@ -1,10 +1,7 @@
 /**
- * Go identifier / field-name conventions for the Go html/template adapter.
- *
- * Pure helpers extracted from `go-template-adapter.ts` (Phase 1 refactor):
- * none of these read adapter instance state, so they live at module scope
- * as the single source of truth for capitalisation, initialism handling,
- * and slot/loop-key → Go field-path lowering.
+ * Go identifier / field-name conventions: the single source of truth for
+ * capitalisation, initialism handling, and slot/loop-key → Go field-path
+ * lowering. Pure helpers — none read adapter instance state.
  */
 
 /** Matches a bare Go identifier (no dots, no brackets). */
@@ -18,9 +15,8 @@ export const GO_INITIALISMS = new Set([
 ])
 
 /**
- * (#1423) Go reserved keywords. When we hoist a local var named after
- * a JSX prop, the prop name could collide with one of these — append
- * `_` until the name is free.
+ * Go reserved keywords. When hoisting a local var named after a JSX prop, a
+ * collision with one of these is resolved by appending `_` until free.
  */
 export const GO_KEYWORDS = new Set([
   'break', 'case', 'chan', 'const', 'continue', 'default', 'defer',
@@ -46,7 +42,7 @@ export function capitalize(s: string): string {
 /** Capitalise a JSX prop / field name to its exported Go struct field name. */
 export function capitalizeFieldName(name: string): string {
   if (!name) return name
-  // Check if the entire name is a Go initialism (e.g., 'id' → 'ID')
+  // Whole-name initialism (e.g. 'id' → 'ID').
   if (GO_INITIALISMS.has(name.toLowerCase())) {
     return name.toUpperCase()
   }
@@ -58,22 +54,24 @@ export function capitalizeFieldName(name: string): string {
  * Keeps field names human-readable regardless of the internal slot ID format.
  */
 export function slotIdToFieldSuffix(slotId: string): string {
-  // Strip parent-owned prefix (^) for Go struct field names
+  // Strip the parent-owned prefix (^).
   const cleanId = slotId.startsWith('^') ? slotId.slice(1) : slotId
   const match = cleanId.match(/^s(\d+)$/)
   if (match) {
     return `Slot${match[1]}`
   }
-  // Fallback for legacy format or non-standard IDs
+  // Fallback for non-standard IDs.
   return cleanId.replace('slot_', 'Slot')
 }
 
 /**
  * Lower a keyed-loop `key` expression to the Go field path on the loop's range
  * variable (always `item` in the generated `for i, item := range …`), e.g.
- * `item.label` → `item.Label`. Returns null for a non-simple key (computed
- * expression, whole-element key, mismatched param) so the loop-child init just
- * skips `data-key` rather than emitting something that won't compile. (#1297)
+ * `item.label` → `item.Label`.
+ *
+ * @returns `null` for a non-simple key (computed expression, whole-element key,
+ *   mismatched param) — caller then skips `data-key` rather than emit
+ *   something that won't compile.
  */
 export function loopKeyToGoFieldPath(key: string | undefined, param: string | undefined): string | null {
   if (!key || !param) return null
