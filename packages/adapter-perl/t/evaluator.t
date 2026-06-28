@@ -134,4 +134,12 @@ subtest 'boolean-valued ops return JS booleans, not 1/0' => sub {
     ok(!defined $len, '(123).length is null, not 3');
 };
 
+# sort_by tolerates a non-array receiver by returning an empty arrayref (the
+# BarefootJS->sort convention), never undef — so callers can always deref it.
+subtest 'sort_by non-array receiver returns []' => sub {
+    my $cmp = nbin('-', nid('a'), nid('b'));
+    is_deeply(BarefootJS::Evaluator::sort_by(undef, $cmp, 'a', 'b'), [], 'undef receiver → []');
+    is_deeply(BarefootJS::Evaluator::sort_by(42, $cmp, 'a', 'b'), [], 'scalar receiver → []');
+};
+
 done_testing;

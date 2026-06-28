@@ -412,7 +412,11 @@ sub fold ($items, $body, $acc_name, $item_name, $init, $direction = 'left', $bas
 # Generalizes bf_sort — any comparator body. $base_env is optional. Stable
 # (`use sort 'stable'`), non-mutating. Mirrors Go's SortEval.
 sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
-    return undef unless ref $items eq 'ARRAY';
+    # Non-array receiver → empty arrayref, matching the nil-tolerant
+    # BarefootJS->sort helper convention (and avoiding an undef-deref footgun
+    # for callers that use the result as an arrayref). Value-compatible with
+    # the Go SortEval, whose nil slice iterates as empty too.
+    return [] unless ref $items eq 'ARRAY';
     my %env = $base_env ? %$base_env : ();
     my @sorted = sort {
         $env{$param_a} = $a;
