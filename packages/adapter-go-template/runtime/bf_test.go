@@ -897,6 +897,11 @@ func TestEnv(t *testing.T) {
 	if got := Env("k"); len(got) != 0 {
 		t.Fatalf("Env with a dangling key should drop it, got %v", got)
 	}
+	// A non-string key (only reachable by a malformed template call) is
+	// skipped, not collapsed into an `env[""]` slot.
+	if got := Env(42, "v", "real", 7); len(got) != 1 || got["real"] != 7 {
+		t.Fatalf("Env should skip a non-string key, got %v", got)
+	}
 }
 
 // End-to-end wiring of the #2018 evaluator-driven folds through the template

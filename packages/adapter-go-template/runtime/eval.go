@@ -615,11 +615,16 @@ func SortEval(items any, cmpJSON, paramA, paramB string, baseEnv map[string]any)
 // flat key, value, key, value, … argument list — the adapter emits
 // `bf_env "k1" v1 "k2" v2 …` for the free variables a callback body references
 // beyond its own params. An odd trailing key with no value is ignored; with no
-// pairs it returns an empty (non-nil) map, the no-capture case.
+// pairs it returns an empty (non-nil) map, the no-capture case. A non-string
+// key (only reachable by a malformed template call, never by the adapter's
+// quoted-literal emit) is skipped rather than collapsed into an `env[""]` slot.
 func Env(pairs ...any) map[string]any {
 	env := make(map[string]any, len(pairs)/2)
 	for i := 0; i+1 < len(pairs); i += 2 {
-		key, _ := pairs[i].(string)
+		key, ok := pairs[i].(string)
+		if !ok {
+			continue
+		}
 		env[key] = pairs[i+1]
 	}
 	return env

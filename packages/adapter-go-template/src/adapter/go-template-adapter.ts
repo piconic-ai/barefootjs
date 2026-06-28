@@ -50,8 +50,6 @@ import {
   type SupportResult,
   isBooleanAttr,
   parseExpression,
-  serializeParsedExpr,
-  freeVarsInBody,
   stringifyParsedExpr,
   parseStyleObjectEntries,
   isSupported,
