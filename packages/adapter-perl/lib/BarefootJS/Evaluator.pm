@@ -313,15 +313,21 @@ sub _math_round ($n) {
 
 sub _call_builtin ($name, $args) {
     if ($name eq 'Math.max') {
-        return 9**9**9 * -1 unless @$args;
-        my $m = _to_number($args->[0]);
-        for my $a (@$args[1 .. $#$args]) { my $n = _to_number($a); $m = $n if $n > $m }
+        my $m = -(9**9**9);    # JS Math.max() with no args is -Infinity
+        for my $a (@$args) {
+            my $n = _to_number($a);
+            return $n if $n != $n;    # any NaN argument ⇒ NaN (JS / Go)
+            $m = $n if $n > $m;
+        }
         return $m;
     }
     if ($name eq 'Math.min') {
-        return 9**9**9 unless @$args;
-        my $m = _to_number($args->[0]);
-        for my $a (@$args[1 .. $#$args]) { my $n = _to_number($a); $m = $n if $n < $m }
+        my $m = 9**9**9;       # JS Math.min() with no args is +Infinity
+        for my $a (@$args) {
+            my $n = _to_number($a);
+            return $n if $n != $n;    # any NaN argument ⇒ NaN (JS / Go)
+            $m = $n if $n < $m;
+        }
         return $m;
     }
     return abs(_to_number($args->[0]))          if $name eq 'Math.abs';
