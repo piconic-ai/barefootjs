@@ -66,7 +66,7 @@ import {
   resolveJsxChildrenProp,
   collectRootScopeNodes,
 } from './lib/ir-scope.ts'
-import { renderSortMethod } from './expr/array-method.ts'
+import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter } from './expr/emitters.ts'
 import type { MojoEmitContext, MojoSpreadContext, MojoMemoContext } from './emit-context.ts'
 import {
@@ -778,7 +778,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // each get their own reconciliation range (#1087).
     lines.push(`<%== bf->comment("loop:${loop.markerId}") %>`)
     if (sortedHoist && loop.sortComparator) {
-      lines.push(`% my $${sortedHoist} = ${renderSortMethod(rawArray, loop.sortComparator)};`)
+      // Evaluator-first (#2018 P3): serialize the comparator + emit
+      // `bf->sort_eval`; fall back to the structured `bf->sort` for a
+      // comparator the evaluator can't model (e.g. `localeCompare`).
+      const sortEmit = (e: ParsedExpr) => this.convertExpressionToPerl('', e)
+      const sorted =
+        renderSortEval(rawArray, loop.sortComparator, sortEmit) ??
+        renderSortMethod(rawArray, loop.sortComparator)
+      lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
     if (loop.iterationShape !== 'keys') {

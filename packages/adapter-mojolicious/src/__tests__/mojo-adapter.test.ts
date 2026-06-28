@@ -1398,15 +1398,15 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     // #1448 Tier B — string → string, padded to a target width.
     { fixture: stringPadStartFixture,   expect: `bf->pad_start($value, 5, '0')` },
     { fixture: stringPadEndFixture,     expect: `bf->pad_end($value, 5, '.')` },
-    // #1448 Tier B — sort / toSorted. EXPR2 migration (#2018): a
-    // STANDALONE `.sort(cmp)` value call serializes the comparator body
-    // and emits `bf->sort_eval(...)` (JSON body + param names + captured
-    // env). The loop-chained `.sort().map()` field cases still hoist into
-    // a `my $bf_iter_lN = bf->sort(...)` legacy local (loop-hoist de-fold
-    // is P3, not this phase). `localeCompare` comparators fall back to the
-    // structured `bf->sort` — `serializeParsedExpr` refuses them.
-    { fixture: arraySortFieldAscFixture,  expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }] })` },
-    { fixture: arraySortFieldDescFixture, expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'desc' }] })` },
+    // #1448 Tier B — sort / toSorted. EXPR2 migration (#2018): both a
+    // STANDALONE `.sort(cmp)` value call AND the `.sort().map()` loop-hoist
+    // (#2018 P3) serialize the comparator body and emit `bf->sort_eval(...)`
+    // (JSON body + param names + captured env). `localeCompare` comparators
+    // fall back to the structured `bf->sort` — `serializeParsedExpr` refuses
+    // them. (Loop-hoist field cases pin only the helper + receiver; their
+    // comparator JSON is verified by the render conformance.)
+    { fixture: arraySortFieldAscFixture,  expect: `bf->sort_eval($items,` },
+    { fixture: arraySortFieldDescFixture, expect: `bf->sort_eval($items,` },
     { fixture: arraySortPrimitiveFixture, expect: `bf->sort_eval($nums, '{"kind":"binary","op":"-","left":{"kind":"identifier","name":"a"},"right":{"kind":"identifier","name":"b"}}', 'a', 'b', {})` },
     // localeCompare → outside the evaluator surface → legacy `bf->sort`.
     { fixture: arraySortLocaleFixture,    expect: `bf->sort($names, { keys => [{ key_kind => 'self', compare_type => 'string', direction => 'asc' }] })` },
@@ -1414,9 +1414,9 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     // whole comparator falls back to the structured `bf->sort` (one hash
     // per comparison key, in order).
     { fixture: arraySortMultiKeyFixture,  expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'price', compare_type => 'numeric', direction => 'asc' }, { key_kind => 'field', key => 'name', compare_type => 'string', direction => 'asc' }] })` },
-    // Relational-ternary comparator — loop-hoisted (`.sort().map()`), so
-    // it stays on the legacy `auto`-key `bf->sort` until P3.
-    { fixture: arraySortTernaryFixture,   expect: `bf->sort($items, { keys => [{ key_kind => 'field', key => 'rank', compare_type => 'auto', direction => 'asc' }] })` },
+    // Relational-ternary comparator — a pure body, so the loop-hoist now
+    // serializes it through `bf->sort_eval` like the other field sorts.
+    { fixture: arraySortTernaryFixture,   expect: `bf->sort_eval($items,` },
     { fixture: arrayToSortedFixture,      expect: `bf->sort_eval($nums, '{"kind":"binary","op":"-","left":{"kind":"identifier","name":"a"},"right":{"kind":"identifier","name":"b"}}', 'a', 'b', {})` },
     // #1448 Tier B — iteration shapes. These are loop-level patterns.
     // .entries() → for loop with both $i index var and $v value var
