@@ -21,7 +21,6 @@ import type {
   CompilerError,
   SourceLocation,
   ParsedExpr,
-  ParsedExpr2,
   ObjectLiteralProperty,
   ParsedStatement,
   SortComparator,
@@ -1960,9 +1959,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * the struct-shape synthesiser, and the constructor-expression interpreters
    * (`lowerCtorExpr` and friends).
    *
-   * Do NOT add new callers: read a carried `ParsedExpr2` / `ParsedExpr` field
-   * instead. This is the last `ts.createSourceFile` in the adapter and is being
-   * removed incrementally via the Go-only `ParsedExpr2` bridge.
+   * Do NOT add new callers: read a carried `ParsedExpr` field (`parsed` /
+   * `parsedRaw`) instead. This is the last `ts.createSourceFile` in the adapter
+   * and is being removed incrementally as callers move to carried trees.
    */
   private parseLiteralExpression(value: string): ts.Expression | null {
     const sf = ts.createSourceFile(
@@ -2508,7 +2507,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (takenFieldNames.has(fieldName)) continue
       const c = this.state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
       if (!c?.value) continue
-      const expr = c.parsed2
+      const expr = c.parsedRaw
       if (!expr) continue
       // The field is typed `string`; only emit when the value is provably a Go
       // string, so a numeric/other const referenced in the template can't be
@@ -2533,10 +2532,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * string-valued, and a component-const reference to such a value. Anything
    * unproven (numbers, `props.X`, calls it doesn't know) returns false.
    */
-  private isStringExpr(node: ParsedExpr2, seen: Set<string>): boolean {
+  private isStringExpr(node: ParsedExpr, seen: Set<string>): boolean {
     // `+` and `||` / `??` are carried as `binary` / `logical`; the parser
     // resolves template literals with substitutions to `unsupported` (so
-    // `parsed2` is undefined upstream), and a substitution-free template to a
+    // `parsedRaw` is undefined upstream), and a substitution-free template to a
     // string `literal`.
     if (node.kind === 'literal' && node.literalType === 'string') {
       return true
@@ -2568,7 +2567,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (seen.has(node.name)) return false
       const c = this.state.localConstants.find(lc => lc.name === node.name && !lc.isModule && lc.value)
       if (c?.value) {
-        const inner = c.parsed2
+        const inner = c.parsedRaw
         if (inner) return this.isStringExpr(inner, new Set([...seen, node.name]))
       }
     }
@@ -2908,9 +2907,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return result
   }
 
-  arrowFn(param: string, _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
+  arrowFn(params: string[], _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
     // Arrow functions shouldn't appear standalone in rendering.
-    return `[ARROW-FN: ${param} => ...]`
+    return `[ARROW-FN: ${params.join(', ')} => ...]`
+  }
+
+  regex(raw: string): string {
+    // A regex literal only appears in the raw ctor tree, never the folded tree
+    // this emitter walks — unreachable, return a debug placeholder.
+    return `[REGEX: ${raw}]`
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -4340,6 +4345,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
       case 'arrow-fn':
         return plain('[ARROW-FN]')
+
+      // A regex literal only appears in the raw ctor tree, never a folded
+      // condition expression — unreachable, debug placeholder.
+      case 'regex':
+        return plain('[REGEX]')
 
       case 'higher-order': {
         const rendered = this.renderParsedExpr(expr)

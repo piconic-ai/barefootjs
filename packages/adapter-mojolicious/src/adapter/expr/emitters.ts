@@ -213,7 +213,14 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return '1'
   }
 
-  arrowFn(_param: string, _body: ParsedExpr): string {
+  arrowFn(_params: string[], _body: ParsedExpr): string {
+    return '1'
+  }
+
+  // A regex literal only appears in the raw ctor tree, never the folded tree
+  // this emitter walks — unreachable, return the truthy sentinel like the
+  // other non-boolean fallbacks here.
+  regex(_raw: string): string {
     return '1'
   }
 
@@ -485,12 +492,18 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return terms.join(' . ')
   }
 
-  arrowFn(_param: string, _body: ParsedExpr): string {
+  arrowFn(_params: string[], _body: ParsedExpr): string {
     // A bare arrow function never stands alone at a render position (it's
     // only meaningful as a higher-order predicate, handled above). Return
     // the safe Perl empty-string literal `''` — consistent with the BF101
     // / `unsupported` paths — so a stray emit can't produce a `<%= %>`
     // syntax error.
+    return "''"
+  }
+
+  // A regex literal only appears in the raw ctor tree, never the folded tree
+  // this emitter walks — unreachable, return the safe empty-string literal.
+  regex(_raw: string): string {
     return "''"
   }
 

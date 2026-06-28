@@ -4,7 +4,7 @@
  * JSX-independent intermediate representation for multi-backend support.
  */
 
-import type { ParsedExpr, ParsedExpr2, ParsedStatement, SortComparator } from './expression-parser.ts'
+import type { ParsedExpr, ParsedStatement, SortComparator } from './expression-parser.ts'
 
 // =============================================================================
 // Source Location (for Error Reporting)
@@ -1396,15 +1396,15 @@ export interface ConstantInfo {
    */
   parsed?: ParsedExpr
   /**
-   * `value` parsed into the Go-adapter constructor-lowering tree
-   * ({@link ParsedExpr2}, issue #2006). Attached best-effort for module AND
-   * component-scope consts (parsed from the parenthesised value, like
-   * `parsed`). Carries the multi-param-arrow and regex shapes `ParsedExpr`
-   * can't model, so the Go ctor lowerers (`lowerCtorExpr`) read it instead of
-   * re-parsing the value with `ts.createSourceFile`. Go-only — other adapters
-   * ignore it. Absent when there's no `value` or the shape isn't representable.
+   * `value` parsed via the raw (non-folding) parse — method calls stay generic
+   * `call` + `member`, and the multi-param-arrow / regex shapes are preserved
+   * (issue #2006). Attached best-effort for module AND component-scope consts
+   * (parsed from the parenthesised value, like `parsed`). The Go ctor lowerers
+   * (`lowerCtorExpr`) read it instead of re-parsing the value with
+   * `ts.createSourceFile`. Go-only — other adapters ignore it. Absent when
+   * there's no `value` or the shape isn't representable.
    */
-  parsed2?: ParsedExpr2
+  parsedRaw?: ParsedExpr
   /** Value with TypeScript type annotations preserved, for .tsx output */
   typedValue?: string
   valueBranches?: string[]

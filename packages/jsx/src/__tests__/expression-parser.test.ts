@@ -177,7 +177,7 @@ describe('expression-parser', () => {
       const result = parseExpression('x => x + 1')
       expect(result.kind).toBe('arrow-fn')
       if (result.kind === 'arrow-fn') {
-        expect(result.param).toBe('x')
+        expect(result.params).toEqual(['x'])
         expect(result.body.kind).toBe('binary')
       }
     })

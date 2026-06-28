@@ -39,7 +39,17 @@ export type ParsedExpr =
   | { kind: 'conditional'; test: ParsedExpr; consequent: ParsedExpr; alternate: ParsedExpr }
   | { kind: 'logical'; op: '&&' | '||' | '??'; left: ParsedExpr; right: ParsedExpr }
   | { kind: 'template-literal'; parts: TemplatePart[] }
-  | { kind: 'arrow-fn'; param: string; body: ParsedExpr }
+  // Expression-bodied arrow. `params` holds the parameter names in order:
+  // length 1 for the predicate / projection arrows the folding parser
+  // produces (`x => …`), length >= 1 for the helper definitions the raw
+  // parser produces for Go ctor inlining (`(a, b) => …`). Block-bodied
+  // arrows resolve to `unsupported`.
+  | { kind: 'arrow-fn'; params: string[]; body: ParsedExpr }
+  // A regex literal carried as its exact source text (`/\/+$/`). Only the
+  // raw (non-folding) parse produces it — for the Go ctor lowering's
+  // trailing-slash-strip `String.replace` pattern; the folding parser never
+  // emits it.
+  | { kind: 'regex'; raw: string }
   | { kind: 'higher-order'; method: 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'; object: ParsedExpr; param: string; predicate: ParsedExpr }
   | { kind: 'array-literal'; elements: ParsedExpr[] }
   // Object literal `{ a: 1, b: x }` / shorthand `{ a }`. Carried so an
@@ -713,70 +723,23 @@ export function parseExpression(expr: string): ParsedExpr {
 }
 
 // =============================================================================
-// ParsedExpr2 — Go-adapter constructor/helper lowering bridge (issue #2006)
+// Raw (non-folding) parse — Go-adapter constructor/helper lowering
 // =============================================================================
 
 /**
- * A focused, self-contained expression tree for the Go adapter's
- * *constructor-context* lowering (`lowerCtorExpr`, module/helper inlining,
- * conditional spread, string-array baking).
- *
- * Deliberately separate from {@link ParsedExpr}: it adds the two shapes the Go
- * ctor lowerers need that `ParsedExpr` cannot model — multi-parameter arrow
- * functions (helper inlining) and a regex literal (the `/\/+$/` trailing-slash
- * strip, `String.replace`) — WITHOUT touching the shared `ParsedExpr` /
- * `ParsedExprEmitter`, so the other adapters (mojolicious, xslate) are not
- * forced to handle new kinds before their own refactor. Method calls are
- * modelled uniformly as `call` + `member` (the ctor lowering dispatches on
- * `member.property` — `get` / `includes` / `replace`), so the `array-method` /
- * `higher-order` abstractions that exist for template lowering are
- * intentionally omitted from this narrow surface.
- *
- * This is a temporary bridge for the terminal sweep: it is the structured
- * replacement for the adapter's last `ts.createSourceFile`
- * (`parseLiteralExpression`). When the mojo/xslate refactor lands, the gap
- * kinds fold back into a unified `ParsedExpr`. Tracked in #2006.
+ * Parse a JS expression string into a {@link ParsedExpr} WITHOUT folding method
+ * calls into the `array-method` / `higher-order` shapes {@link parseExpression}
+ * produces. Method calls stay generic `call` + `member` (the Go ctor lowering
+ * dispatches on `member.property` — `get` / `includes` / `replace`), and the two
+ * shapes only this path emits — a `regex` literal (`/\/+$/`) and a multi-param
+ * `arrow-fn` (`(a, b) => …`) for helper inlining — are preserved. A shape the
+ * narrow surface can't model resolves to `unsupported`.
  */
-export type ParsedExpr2 =
-  | { kind: 'literal'; value: string | number | boolean | null; literalType: 'string' | 'number' | 'boolean' | 'null'; raw?: string }
-  | { kind: 'identifier'; name: string }
-  | { kind: 'member'; object: ParsedExpr2; property: string; computed: boolean }
-  | { kind: 'index-access'; object: ParsedExpr2; index: ParsedExpr2 }
-  | { kind: 'call'; callee: ParsedExpr2; args: ParsedExpr2[] }
-  // A regex literal carried as its exact source text (`/\/+$/`), so the ctor
-  // lowering matches the one trailing-slash-strip pattern it recognises.
-  | { kind: 'regex'; raw: string }
-  // Multi-parameter, expression-bodied arrow (`(a, b) => …`) for module/helper
-  // inlining. Block-bodied arrows resolve to `unsupported`.
-  | { kind: 'arrow'; params: string[]; body: ParsedExpr2 }
-  | { kind: 'logical'; op: '&&' | '||' | '??'; left: ParsedExpr2; right: ParsedExpr2 }
-  | { kind: 'binary'; op: string; left: ParsedExpr2; right: ParsedExpr2 }
-  | { kind: 'unary'; op: string; argument: ParsedExpr2 }
-  | { kind: 'conditional'; test: ParsedExpr2; consequent: ParsedExpr2; alternate: ParsedExpr2 }
-  | { kind: 'array-literal'; elements: ParsedExpr2[] }
-  | { kind: 'object-literal'; properties: ParsedExpr2Property[]; raw: string }
-  | { kind: 'unsupported'; raw: string; reason: string }
-
-/** A plain `key: value` / shorthand `{ key }` property of a {@link ParsedExpr2} object literal. */
-export interface ParsedExpr2Property {
-  key: string
-  keyKind: 'identifier' | 'string' | 'numeric'
-  shorthand: boolean
-  value: ParsedExpr2
-}
-
-/**
- * Parse a JS expression string into a {@link ParsedExpr2}, the Go adapter's
- * constructor-lowering tree. Mirrors {@link parseExpression} but targets the
- * narrow self-contained surface above; a shape outside it resolves to
- * `unsupported` (so the caller falls back exactly as the former
- * `parseLiteralExpression` + null path did).
- */
-export function parseExpression2(expr: string): ParsedExpr2 {
+export function parseExpressionRaw(expr: string): ParsedExpr {
   const trimmed = expr.trim()
   if (!trimmed) return { kind: 'unsupported', raw: expr, reason: 'Empty expression' }
   const sourceFile = ts.createSourceFile(
-    'expression2.ts',
+    'expression-raw.ts',
     trimmed,
     ts.ScriptTarget.Latest,
     true,
@@ -789,17 +752,17 @@ export function parseExpression2(expr: string): ParsedExpr2 {
   if (!ts.isExpressionStatement(firstStmt)) {
     return { kind: 'unsupported', raw: expr, reason: 'Not an expression statement' }
   }
-  return convertNode2(firstStmt.expression, expr)
+  return convertNodeRaw(firstStmt.expression, expr)
 }
 
 /**
- * Convert an already-parsed TypeScript node directly into a {@link ParsedExpr2}.
- * The caller-2 bridge for the Go ctor lowering: lets a consumer that already
- * holds a `ts.Node` (e.g. a return-object initializer) reuse the same structured
- * conversion without re-parsing source via `ts.createSourceFile`.
+ * Convert an already-parsed TypeScript node directly via the raw (non-folding)
+ * conversion: lets a consumer that already holds a `ts.Node` (e.g. a
+ * return-object initializer) reuse the same structured conversion without
+ * re-parsing source via `ts.createSourceFile`.
  */
-export function tsNodeToParsedExpr2(node: ts.Node): ParsedExpr2 {
-  // Preserve the node's source in `raw` (like `parseExpression2`), so an
+export function tsNodeToParsedExprRaw(node: ts.Node): ParsedExpr {
+  // Preserve the node's source in `raw` (like `parseExpressionRaw`), so an
   // `unsupported` result still carries the original text for debugging. A
   // synthetic node with no source file can't yield text — fall back to ''.
   let raw = ''
@@ -808,79 +771,16 @@ export function tsNodeToParsedExpr2(node: ts.Node): ParsedExpr2 {
   } catch {
     /* synthetic node without a source file */
   }
-  return convertNode2(node, raw)
+  return convertNodeRaw(node, raw)
 }
 
 /**
- * Structurally convert a {@link ParsedExpr} (the shared template-lowering tree)
- * into a {@link ParsedExpr2} (the Go ctor-lowering tree). A pure 1:1 recursive
- * mapping — no `ts`, no re-parsing — covering the object-memo value surface
- * (literals, identifiers, member / index access, calls, logical / binary /
- * unary / conditional operators, array and object literals). Any `ParsedExpr`
- * kind outside that surface (`higher-order`, `array-method`, `template-literal`,
- * `arrow-fn`, `unsupported`, …) maps to `unsupported`, carrying its `raw` when
- * present, so a caller falls back exactly as the former re-parse + null path
- * did. The structured replacement for the object-memo path's last
- * `ts.createSourceFile` (`parseLiteralExpression`). #2006.
+ * Convert a TypeScript AST node to {@link ParsedExpr} via the raw (non-folding)
+ * conversion (parentheses unwrapped). Unlike {@link convertNode} it does not
+ * fold method calls into `array-method` / `higher-order`, and it emits the
+ * `regex` / multi-param `arrow-fn` shapes the Go ctor lowering needs.
  */
-export function parsedExprToParsedExpr2(e: ParsedExpr): ParsedExpr2 {
-  const rec = parsedExprToParsedExpr2
-  switch (e.kind) {
-    case 'literal':
-      return { kind: 'literal', value: e.value, literalType: e.literalType, raw: e.raw }
-    case 'identifier':
-      return { kind: 'identifier', name: e.name }
-    case 'member':
-      return { kind: 'member', object: rec(e.object), property: e.property, computed: e.computed }
-    case 'index-access':
-      return { kind: 'index-access', object: rec(e.object), index: rec(e.index) }
-    case 'call':
-      return { kind: 'call', callee: rec(e.callee), args: e.args.map(rec) }
-    case 'logical':
-      return { kind: 'logical', op: e.op, left: rec(e.left), right: rec(e.right) }
-    case 'binary':
-      return { kind: 'binary', op: e.op, left: rec(e.left), right: rec(e.right) }
-    case 'unary':
-      return { kind: 'unary', op: e.op, argument: rec(e.argument) }
-    case 'conditional':
-      return {
-        kind: 'conditional',
-        test: rec(e.test),
-        consequent: rec(e.consequent),
-        alternate: rec(e.alternate),
-      }
-    case 'array-literal':
-      return { kind: 'array-literal', elements: e.elements.map(rec) }
-    case 'object-literal':
-      return {
-        kind: 'object-literal',
-        properties: e.properties.map(p => ({
-          key: p.key,
-          keyKind: p.keyKind ?? 'identifier',
-          shorthand: p.shorthand,
-          value: rec(p.value),
-        })),
-        raw: e.raw,
-      }
-    // An already-`unsupported` node carries its own diagnostic `reason` from
-    // the original parse — preserve it (and its `raw`) so downstream debugging
-    // stays consistent rather than collapsing to the generic message below.
-    case 'unsupported':
-      return { kind: 'unsupported', raw: e.raw, reason: e.reason }
-    default:
-      // The remaining out-of-surface kinds (`template-literal`, `arrow-fn`,
-      // `higher-order`, `array-method`) carry no `raw` field, so there is none
-      // to preserve here.
-      return {
-        kind: 'unsupported',
-        raw: '',
-        reason: 'unsupported in ParsedExpr2',
-      }
-  }
-}
-
-/** Convert a TypeScript AST node to {@link ParsedExpr2} (parentheses unwrapped). */
-function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
+function convertNodeRaw(node: ts.Node, raw: string): ParsedExpr {
   while (ts.isParenthesizedExpression(node)) node = node.expression
 
   if (ts.isIdentifier(node)) return { kind: 'identifier', name: node.text }
@@ -897,20 +797,20 @@ function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
   if (ts.isRegularExpressionLiteral(node)) return { kind: 'regex', raw: node.getText() }
 
   if (ts.isPropertyAccessExpression(node)) {
-    return { kind: 'member', object: convertNode2(node.expression, raw), property: node.name.text, computed: false }
+    return { kind: 'member', object: convertNodeRaw(node.expression, raw), property: node.name.text, computed: false }
   }
   if (ts.isElementAccessExpression(node)) {
     return {
       kind: 'index-access',
-      object: convertNode2(node.expression, raw),
-      index: convertNode2(node.argumentExpression, raw),
+      object: convertNodeRaw(node.expression, raw),
+      index: convertNodeRaw(node.argumentExpression, raw),
     }
   }
   if (ts.isCallExpression(node)) {
     return {
       kind: 'call',
-      callee: convertNode2(node.expression, raw),
-      args: node.arguments.map(a => convertNode2(a, raw)),
+      callee: convertNodeRaw(node.expression, raw),
+      args: node.arguments.map(a => convertNodeRaw(a, raw)),
     }
   }
   if (ts.isArrowFunction(node)) {
@@ -924,11 +824,11 @@ function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
       }
       params.push(p.name.text)
     }
-    return { kind: 'arrow', params, body: convertNode2(node.body, raw) }
+    return { kind: 'arrow-fn', params, body: convertNodeRaw(node.body, raw) }
   }
   if (ts.isBinaryExpression(node)) {
-    const left = convertNode2(node.left, raw)
-    const right = convertNode2(node.right, raw)
+    const left = convertNodeRaw(node.left, raw)
+    const right = convertNodeRaw(node.right, raw)
     const k = node.operatorToken.kind
     if (k === ts.SyntaxKind.AmpersandAmpersandToken) return { kind: 'logical', op: '&&', left, right }
     if (k === ts.SyntaxKind.BarBarToken) return { kind: 'logical', op: '||', left, right }
@@ -945,21 +845,21 @@ function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
     // rather than emitting a `unary` node with a meaningless operator.
     const op = getUnaryOperatorString(node.operator)
     if (op === 'unknown') return { kind: 'unsupported', raw, reason: `Unsupported unary operator ${ts.SyntaxKind[node.operator]}` }
-    return { kind: 'unary', op, argument: convertNode2(node.operand, raw) }
+    return { kind: 'unary', op, argument: convertNodeRaw(node.operand, raw) }
   }
   if (ts.isConditionalExpression(node)) {
     return {
       kind: 'conditional',
-      test: convertNode2(node.condition, raw),
-      consequent: convertNode2(node.whenTrue, raw),
-      alternate: convertNode2(node.whenFalse, raw),
+      test: convertNodeRaw(node.condition, raw),
+      consequent: convertNodeRaw(node.whenTrue, raw),
+      alternate: convertNodeRaw(node.whenFalse, raw),
     }
   }
   if (ts.isArrayLiteralExpression(node)) {
-    return { kind: 'array-literal', elements: node.elements.map(e => convertNode2(e, raw)) }
+    return { kind: 'array-literal', elements: node.elements.map(e => convertNodeRaw(e, raw)) }
   }
   if (ts.isObjectLiteralExpression(node)) {
-    const properties: ParsedExpr2Property[] = []
+    const properties: ObjectLiteralProperty[] = []
     for (const prop of node.properties) {
       if (ts.isPropertyAssignment(prop)) {
         const named = objectLiteralKeyName(prop.name)
@@ -968,7 +868,7 @@ function convertNode2(node: ts.Node, raw: string): ParsedExpr2 {
           key: named.key,
           keyKind: named.keyKind,
           shorthand: false,
-          value: convertNode2(prop.initializer, raw),
+          value: convertNodeRaw(prop.initializer, raw),
         })
       } else if (ts.isShorthandPropertyAssignment(prop)) {
         properties.push({
@@ -1044,12 +944,12 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // Detect higher-order methods: arr.filter(x => pred), arr.every(x => pred), arr.some(x => pred)
     if (callee.kind === 'member' && ['filter', 'every', 'some', 'find', 'findIndex', 'findLast', 'findLastIndex'].includes(callee.property)) {
       if (args.length === 1 && args[0].kind === 'arrow-fn') {
-        const arrowFn = args[0] as { kind: 'arrow-fn'; param: string; body: ParsedExpr }
+        const arrowFn = args[0] as { kind: 'arrow-fn'; params: string[]; body: ParsedExpr }
         return {
           kind: 'higher-order',
           method: callee.property as 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex',
           object: callee.object,
-          param: arrowFn.param,
+          param: arrowFn.params[0],
           predicate: arrowFn.body,
         }
       }
@@ -1701,13 +1601,13 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       }
       const syntheticParam = pickSyntheticParam(fieldMap, body)
       const rewritten = substituteDestructuredFields(body, fieldMap, syntheticParam, restName)
-      return { kind: 'arrow-fn', param: syntheticParam, body: rewritten }
+      return { kind: 'arrow-fn', params: [syntheticParam], body: rewritten }
     }
 
     if (!ts.isIdentifier(param.name)) {
       return { kind: 'unsupported', raw, reason: 'Destructuring parameters are not supported' }
     }
-    return { kind: 'arrow-fn', param: param.name.text, body }
+    return { kind: 'arrow-fn', params: [param.name.text], body }
   }
 
   // Function expression: `function (x) { return x.done }` (#1443).
@@ -1729,7 +1629,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     }
     return {
       kind: 'arrow-fn',
-      param: param.name.text,
+      params: [param.name.text],
       body: convertNode(stmts[0].expression, raw),
     }
   }
@@ -2485,6 +2385,7 @@ function findImpureDefaultNode(expr: ParsedExpr): string | null {
     case 'identifier':
     case 'unsupported':
     case 'object-literal':
+    case 'regex':
       return null
     case 'member':
       return findImpureDefaultNode(expr.object)
@@ -2621,10 +2522,10 @@ function validateRestUsage(
         }
         return
       case 'arrow-fn':
-        // Inner arrow that re-uses `restName` as its own parameter
+        // Inner arrow that re-uses `restName` as one of its parameters
         // shadows the outer rest binding — references inside its
         // body belong to the inner param, not us (#1532 review).
-        if (e.param === restName) return
+        if (e.params.includes(restName)) return
         walk(e.body)
         return
       case 'higher-order':
@@ -2643,6 +2544,7 @@ function validateRestUsage(
       case 'literal':
       case 'unsupported':
       case 'object-literal':
+      case 'regex':
         return
     }
   }
@@ -2884,6 +2786,8 @@ function substituteDestructuredFields(
       // Mirror `unsupported`: object literals were not substituted into
       // before this kind existed — return verbatim (byte-identical A-1).
       case 'object-literal':
+      // A `regex` leaf carries no destructure references — return verbatim.
+      case 'regex':
         return e
     }
   }
@@ -3394,8 +3298,14 @@ export function exprToString(expr: ParsedExpr): string {
       return '`' + expr.parts.map(p =>
         p.type === 'string' ? p.value : `\${${exprToString(p.expr)}}`
       ).join('') + '`'
-    case 'arrow-fn':
-      return `${expr.param} => ${exprToString(expr.body)}`
+    case 'arrow-fn': {
+      // A single param round-trips paren-free (`x => …`); only a multi-param
+      // arrow needs the `(a, b) => …` form.
+      const ps = expr.params.length === 1 ? expr.params[0] : `(${expr.params.join(', ')})`
+      return `${ps} => ${exprToString(expr.body)}`
+    }
+    case 'regex':
+      return expr.raw
     case 'higher-order':
       return `${exprToString(expr.object)}.${expr.method}(${expr.param} => ${exprToString(expr.predicate)})`
     case 'array-literal':
@@ -3480,8 +3390,14 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
       return '`' + expr.parts.map(p =>
         p.type === 'string' ? p.value : `\${${stringifyParsedExpr(p.expr)}}`
       ).join('') + '`'
-    case 'arrow-fn':
-      return `${expr.param} => ${stringifyParsedExpr(expr.body)}`
+    case 'arrow-fn': {
+      // A single param round-trips paren-free (`x => …`); only a multi-param
+      // arrow needs the `(a, b) => …` form.
+      const ps = expr.params.length === 1 ? expr.params[0] : `(${expr.params.join(', ')})`
+      return `${ps} => ${stringifyParsedExpr(expr.body)}`
+    }
+    case 'regex':
+      return expr.raw
     case 'higher-order':
       return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.param} => ${stringifyParsedExpr(expr.predicate)})`
     case 'array-literal':
@@ -3527,28 +3443,26 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
 }
 
 /**
- * Convert a {@link ParsedExpr2} into a structurally faithful {@link ParsedExpr}
- * mirror, or `null` when the tree contains a shape `ParsedExpr` can't model.
- * `ParsedExpr2` carries two extras with no `ParsedExpr` arm — `regex` (a `/…/`
- * literal) and `arrow` (a multi-param `(a, b) => …`); a tree containing either
- * (anywhere) returns `null`. `unsupported` maps to `unsupported` (the caller
- * already treats it as the fallback sentinel).
+ * Normalise a raw-parsed helper body ({@link parseExpressionRaw} /
+ * `ConstantInfo.parsedRaw`) into the shape the Go inline lowering is keyed to,
+ * or `null` when the tree contains a shape that can't be inlined.
  *
- * The Go helper-inliner uses this to recover a component-scope helper's body
- * (carried structurally as `ConstantInfo.parsed2`) as a tree it can substitute
- * the call args into, then re-stringifies the substituted result for the normal
- * string lowering (#2006) — eliminating the helper-inline `ts.createSourceFile`
- * re-parse. The mirror is NOT a full re-parse: it does not fold method calls
- * into the `array-method` / `higher-order` shapes `parseExpression` recognises —
- * that fold happens when the stringified body is re-parsed downstream. It DOES,
- * however, fold a literal element access (`obj['key']`, `arr[0]`) into a
- * computed `member`, mirroring `parseExpression` so the result matches the shape
- * the rest of the lowering is keyed to (a non-literal index like `rows[i]` stays
- * an `index-access`). Otherwise the mirror only needs to round-trip through
- * `stringifyParsedExpr` faithfully (any node it can't model already lives in
- * `ParsedExpr2` as `arrow` / `regex` and returns `null`).
+ * Two raw-only shapes can't be inlined and return `null` anywhere they appear:
+ * a `regex` literal (`/…/`) and an `arrow-fn` (a nested `(a, b) => …`). The
+ * method-folding shapes the raw parser never emits — `template-literal`,
+ * `higher-order`, `array-method` — likewise return `null` (defensive; they
+ * cannot occur in a raw body). `unsupported` maps through (the caller treats it
+ * as the fallback sentinel).
+ *
+ * The Go helper-inliner uses this to recover a component-scope helper's body as
+ * a tree it can substitute the call args into (#2006). It is NOT a re-parse: it
+ * does not fold method calls into `array-method` / `higher-order`. It DOES fold
+ * a literal element access (`obj['key']`, `arr[0]`) into a computed `member`,
+ * mirroring {@link parseExpression} so the result matches the shape the rest of
+ * the lowering is keyed to (a non-literal index like `rows[i]` stays an
+ * `index-access`).
  */
-export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
+export function foldInlineHelperBody(expr: ParsedExpr): ParsedExpr | null {
   switch (expr.kind) {
     case 'identifier':
       return { kind: 'identifier', name: expr.name }
@@ -3557,14 +3471,14 @@ export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
         ? { kind: 'literal', value: expr.value, literalType: expr.literalType, raw: expr.raw }
         : { kind: 'literal', value: expr.value, literalType: expr.literalType }
     case 'member': {
-      const object = parsedExpr2ToParsedExpr(expr.object)
+      const object = foldInlineHelperBody(expr.object)
       return object && { kind: 'member', object, property: expr.property, computed: expr.computed }
     }
     case 'index-access': {
-      const object = parsedExpr2ToParsedExpr(expr.object)
+      const object = foldInlineHelperBody(expr.object)
       if (!object) return null
       // `parseExpression` folds a literal string / numeric element access
-      // (`obj['key']`, `arr[0]`) into a computed `member`; `parseExpression2`
+      // (`obj['key']`, `arr[0]`) into a computed `member`; `parseExpressionRaw`
       // keeps it an `index-access`. Replicate the fold so the mirror matches
       // the shape the rest of the lowering is keyed to (a non-literal index —
       // `rows[i]` — stays an `index-access`, as in both parsers).
@@ -3575,38 +3489,38 @@ export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
         const property = expr.index.raw ?? String(expr.index.value)
         return { kind: 'member', object, property, computed: true }
       }
-      const index = parsedExpr2ToParsedExpr(expr.index)
+      const index = foldInlineHelperBody(expr.index)
       return index ? { kind: 'index-access', object, index } : null
     }
     case 'call': {
-      const callee = parsedExpr2ToParsedExpr(expr.callee)
+      const callee = foldInlineHelperBody(expr.callee)
       if (!callee) return null
       const args: ParsedExpr[] = []
       for (const a of expr.args) {
-        const c = parsedExpr2ToParsedExpr(a)
+        const c = foldInlineHelperBody(a)
         if (!c) return null
         args.push(c)
       }
       return { kind: 'call', callee, args }
     }
     case 'logical': {
-      const left = parsedExpr2ToParsedExpr(expr.left)
-      const right = parsedExpr2ToParsedExpr(expr.right)
+      const left = foldInlineHelperBody(expr.left)
+      const right = foldInlineHelperBody(expr.right)
       return left && right ? { kind: 'logical', op: expr.op, left, right } : null
     }
     case 'binary': {
-      const left = parsedExpr2ToParsedExpr(expr.left)
-      const right = parsedExpr2ToParsedExpr(expr.right)
+      const left = foldInlineHelperBody(expr.left)
+      const right = foldInlineHelperBody(expr.right)
       return left && right ? { kind: 'binary', op: expr.op, left, right } : null
     }
     case 'unary': {
-      const argument = parsedExpr2ToParsedExpr(expr.argument)
+      const argument = foldInlineHelperBody(expr.argument)
       return argument && { kind: 'unary', op: expr.op, argument }
     }
     case 'conditional': {
-      const test = parsedExpr2ToParsedExpr(expr.test)
-      const consequent = parsedExpr2ToParsedExpr(expr.consequent)
-      const alternate = parsedExpr2ToParsedExpr(expr.alternate)
+      const test = foldInlineHelperBody(expr.test)
+      const consequent = foldInlineHelperBody(expr.consequent)
+      const alternate = foldInlineHelperBody(expr.alternate)
       return test && consequent && alternate
         ? { kind: 'conditional', test, consequent, alternate }
         : null
@@ -3614,7 +3528,7 @@ export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
     case 'array-literal': {
       const elements: ParsedExpr[] = []
       for (const e of expr.elements) {
-        const c = parsedExpr2ToParsedExpr(e)
+        const c = foldInlineHelperBody(e)
         if (!c) return null
         elements.push(c)
       }
@@ -3623,7 +3537,7 @@ export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
     case 'object-literal': {
       const properties: ObjectLiteralProperty[] = []
       for (const p of expr.properties) {
-        const value = parsedExpr2ToParsedExpr(p.value)
+        const value = foldInlineHelperBody(p.value)
         if (!value) return null
         properties.push({ key: p.key, keyKind: p.keyKind, shorthand: p.shorthand, value })
       }
@@ -3631,10 +3545,14 @@ export function parsedExpr2ToParsedExpr(expr: ParsedExpr2): ParsedExpr | null {
     }
     case 'unsupported':
       return { kind: 'unsupported', raw: expr.raw, reason: expr.reason }
-    // `regex` and `arrow` have no `ParsedExpr` representation — refuse so the
-    // caller falls back to its string path.
+    // `regex` / `arrow-fn` can't be inlined; `template-literal` / `higher-order`
+    // / `array-method` are method-folding shapes the raw parser never emits.
+    // All refuse so the caller falls back to its string path.
     case 'regex':
-    case 'arrow':
+    case 'arrow-fn':
+    case 'template-literal':
+    case 'higher-order':
+    case 'array-method':
       return null
   }
 }

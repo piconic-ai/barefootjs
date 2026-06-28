@@ -8,7 +8,7 @@
  * where a param replacement could be wrong.
  */
 
-import { type ParsedExpr, parsedExpr2ToParsedExpr } from '@barefootjs/jsx'
+import { type ParsedExpr, foldInlineHelperBody } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 
@@ -40,16 +40,16 @@ export function inlineLocalHelperCall(
   if (!ctx.state.localHelperNames.has(calleeName)) return null
 
   const fnConst = ctx.state.localConstants.find(
-    c => c.name === calleeName && !c.isModule && c.parsed2,
+    c => c.name === calleeName && !c.isModule && c.parsedRaw,
   )
-  const arrow = fnConst?.parsed2
-  if (!arrow || arrow.kind !== 'arrow') return null
+  const arrow = fnConst?.parsedRaw
+  if (!arrow || arrow.kind !== 'arrow-fn') return null
   if (arrow.params.length !== callParsed.args.length) return null
 
-  // The body must lower to a `ParsedExpr` — a nested arrow / regex (shapes
-  // `ParsedExpr` can't model) refuses here, which also covers the
-  // nested-function-scope guard (a nested `(x) => …` converts to null).
-  const body = parsedExpr2ToParsedExpr(arrow.body)
+  // The body must normalise to an inlineable `ParsedExpr` — a nested arrow /
+  // regex refuses here, which also covers the nested-function-scope guard (a
+  // nested `(x) => …` normalises to null).
+  const body = foldInlineHelperBody(arrow.body)
   if (!body || body.kind === 'unsupported') return null
 
   // Don't half-inline a helper that calls another local helper.
@@ -178,6 +178,8 @@ export function substituteHelperParams(
       case 'literal':
       case 'object-literal':
       case 'unsupported':
+      // `regex` is a leaf with no substitutable children.
+      case 'regex':
         return n
       case 'member':
         return { ...n, object: go(n.object) }
@@ -227,6 +229,7 @@ function forEachValueChild(n: ParsedExpr, visit: (c: ParsedExpr) => void): void 
     case 'literal':
     case 'unsupported':
     case 'object-literal':
+    case 'regex':
       return
     case 'member':
       visit(n.object)

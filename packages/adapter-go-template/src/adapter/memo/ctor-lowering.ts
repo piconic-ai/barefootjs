@@ -10,7 +10,7 @@
  * caller can fall back to nil safely.
  */
 
-import type { ParsedExpr2 } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -27,7 +27,7 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
  */
 export function lowerCtorExpr(
   ctx: GoEmitContext,
-  node: ParsedExpr2,
+  node: ParsedExpr,
   env: CtorLowerEnv,
 ): string | null {
   if (node.kind === 'literal' && node.literalType === 'string') {
@@ -46,7 +46,7 @@ export function lowerCtorExpr(
     const c = ctx.state.localConstants.find(lc => lc.name === node.name)
     if (c?.value !== undefined) {
       if (c.isModule) {
-        const lit = c.parsed2
+        const lit = c.parsedRaw
         if (lit && lit.kind === 'literal' && lit.literalType === 'string') {
           return JSON.stringify(lit.value)
         }
@@ -54,7 +54,7 @@ export function lowerCtorExpr(
       }
       // Component-scope const: inline its computed value, guarding cycles.
       if (env.consts?.has(node.name)) return null
-      const inner = c.parsed2
+      const inner = c.parsedRaw
       if (!inner) return null
       return lowerCtorExpr(ctx, inner, {
         ...env,
@@ -122,8 +122,8 @@ export function lowerCtorExpr(
       lc => lc.name === calleeName && lc.isModule,
     )
     if (fnConst?.value) {
-      const fn = fnConst.parsed2
-      if (fn && fn.kind === 'arrow' && fn.params.length === node.args.length) {
+      const fn = fnConst.parsedRaw
+      if (fn && fn.kind === 'arrow-fn' && fn.params.length === node.args.length) {
         const params = new Map(env.params)
         for (let i = 0; i < fn.params.length; i++) {
           const argGo = lowerCtorExpr(ctx, node.args[i], env)
@@ -186,7 +186,7 @@ export function lowerCtorExpr(
  */
 export function lowerCtorCond(
   ctx: GoEmitContext,
-  node: ParsedExpr2,
+  node: ParsedExpr,
   env: CtorLowerEnv,
 ): string | null {
   if (node.kind === 'literal' && node.literalType === 'boolean') {
@@ -225,12 +225,12 @@ export function lowerCtorCond(
  * bound to one) to a Go `[]string{…}` literal, or null when it isn't a pure
  * string-array. Used by `lowerCtorExpr` for `<arr>.includes(<x>)`.
  */
-export function lowerCtorStringArray(ctx: GoEmitContext, node: ParsedExpr2): string | null {
-  let arr: ParsedExpr2 | null = node
+export function lowerCtorStringArray(ctx: GoEmitContext, node: ParsedExpr): string | null {
+  let arr: ParsedExpr | null = node
   if (node.kind === 'identifier') {
     const c = ctx.state.localConstants.find(lc => lc.name === node.name && lc.isModule)
     if (!c?.value) return null
-    arr = c.parsed2 ?? null
+    arr = c.parsedRaw ?? null
   }
   if (!arr || arr.kind !== 'array-literal') return null
   const elems: string[] = []

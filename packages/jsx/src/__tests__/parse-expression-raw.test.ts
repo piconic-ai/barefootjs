@@ -1,34 +1,35 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  type ParsedExpr2,
-  parseExpression2,
-  parsedExpr2ToParsedExpr,
+  type ParsedExpr,
+  parseExpressionRaw,
+  foldInlineHelperBody,
   stringifyParsedExpr,
 } from '../expression-parser'
 
 /**
- * `parseExpression2` is the Go-adapter constructor-lowering bridge tree
- * (#2006). These tests pin the two gap shapes it adds over `ParsedExpr`
- * (multi-parameter arrow, regex literal) plus the narrow surface the ctor /
- * helper / spread lowerers consume.
+ * `parseExpressionRaw` is the Go-adapter constructor-lowering parse (#2006): a
+ * `ParsedExpr` that does NOT fold method calls into `array-method` /
+ * `higher-order` (they stay generic `call` + `member`) and preserves the two
+ * raw-only shapes — a multi-parameter arrow and a regex literal. These tests
+ * pin that surface, which the ctor / helper / spread lowerers consume.
  */
-describe('parseExpression2', () => {
+describe('parseExpressionRaw', () => {
   test('identifier / string / number / boolean / null literals', () => {
-    expect(parseExpression2('count')).toEqual({ kind: 'identifier', name: 'count' })
-    expect(parseExpression2("'all'")).toEqual({ kind: 'literal', value: 'all', literalType: 'string' })
-    // `raw` is TS's normalised NumericLiteral.text (`1e3` → `1000`), same as ParsedExpr.
-    expect(parseExpression2('1e3')).toEqual({ kind: 'literal', value: 1000, literalType: 'number', raw: '1000' })
-    expect(parseExpression2('42')).toEqual({ kind: 'literal', value: 42, literalType: 'number', raw: '42' })
-    expect(parseExpression2('true')).toEqual({ kind: 'literal', value: true, literalType: 'boolean' })
-    expect(parseExpression2('null')).toEqual({ kind: 'literal', value: null, literalType: 'null' })
+    expect(parseExpressionRaw('count')).toEqual({ kind: 'identifier', name: 'count' })
+    expect(parseExpressionRaw("'all'")).toEqual({ kind: 'literal', value: 'all', literalType: 'string' })
+    // `raw` is TS's normalised NumericLiteral.text (`1e3` → `1000`), same as the folded parse.
+    expect(parseExpressionRaw('1e3')).toEqual({ kind: 'literal', value: 1000, literalType: 'number', raw: '1000' })
+    expect(parseExpressionRaw('42')).toEqual({ kind: 'literal', value: 42, literalType: 'number', raw: '42' })
+    expect(parseExpressionRaw('true')).toEqual({ kind: 'literal', value: true, literalType: 'boolean' })
+    expect(parseExpressionRaw('null')).toEqual({ kind: 'literal', value: null, literalType: 'null' })
   })
 
   test('no-substitution template folds to a string literal', () => {
-    expect(parseExpression2('`plain`')).toEqual({ kind: 'literal', value: 'plain', literalType: 'string' })
+    expect(parseExpressionRaw('`plain`')).toEqual({ kind: 'literal', value: 'plain', literalType: 'string' })
   })
 
   test('member access (props.X)', () => {
-    expect(parseExpression2('props.base')).toEqual({
+    expect(parseExpressionRaw('props.base')).toEqual({
       kind: 'member',
       object: { kind: 'identifier', name: 'props' },
       property: 'base',
@@ -36,8 +37,8 @@ describe('parseExpression2', () => {
     })
   })
 
-  test('method call modelled uniformly as call + member', () => {
-    expect(parseExpression2("sp.get('tag')")).toEqual({
+  test('method call modelled uniformly as call + member (not folded)', () => {
+    expect(parseExpressionRaw("sp.get('tag')")).toEqual({
       kind: 'call',
       callee: { kind: 'member', object: { kind: 'identifier', name: 'sp' }, property: 'get', computed: false },
       args: [{ kind: 'literal', value: 'tag', literalType: 'string' }],
@@ -45,12 +46,12 @@ describe('parseExpression2', () => {
   })
 
   test('regex literal carried as exact source text', () => {
-    const r = parseExpression2('/\\/+$/')
+    const r = parseExpressionRaw('/\\/+$/')
     expect(r).toEqual({ kind: 'regex', raw: '/\\/+$/' })
   })
 
   test('.replace(/\\/+$/, "") — the trailing-slash strip the ctor lowering recognises', () => {
-    const r = parseExpression2("base.replace(/\\/+$/, '')")
+    const r = parseExpressionRaw("base.replace(/\\/+$/, '')")
     expect(r.kind).toBe('call')
     if (r.kind !== 'call') return
     expect(r.callee).toEqual({
@@ -64,44 +65,44 @@ describe('parseExpression2', () => {
   })
 
   test('multi-parameter arrow (helper inlining)', () => {
-    const r = parseExpression2('(base, path) => base + path')
-    expect(r.kind).toBe('arrow')
-    if (r.kind !== 'arrow') return
+    const r = parseExpressionRaw('(base, path) => base + path')
+    expect(r.kind).toBe('arrow-fn')
+    if (r.kind !== 'arrow-fn') return
     expect(r.params).toEqual(['base', 'path'])
     expect(r.body.kind).toBe('binary')
   })
 
   test('single-parameter arrow normalises to params: [x]', () => {
-    const r = parseExpression2('x => x')
+    const r = parseExpressionRaw('x => x')
     expect(r).toEqual({
-      kind: 'arrow',
+      kind: 'arrow-fn',
       params: ['x'],
       body: { kind: 'identifier', name: 'x' },
     })
   })
 
   test('block-body arrow is unsupported', () => {
-    expect(parseExpression2('(x) => { return x }').kind).toBe('unsupported')
+    expect(parseExpressionRaw('(x) => { return x }').kind).toBe('unsupported')
   })
 
   test('logical ?? / || / && discriminated from binary', () => {
-    expect((parseExpression2("a ?? b") as ParsedExpr2 & { kind: 'logical' }).op).toBe('??')
-    expect((parseExpression2("a || b") as ParsedExpr2 & { kind: 'logical' }).op).toBe('||')
-    expect((parseExpression2("a && b") as ParsedExpr2 & { kind: 'logical' }).op).toBe('&&')
-    expect((parseExpression2("a === b") as ParsedExpr2 & { kind: 'binary' }).op).toBe('===')
+    expect((parseExpressionRaw("a ?? b") as ParsedExpr & { kind: 'logical' }).op).toBe('??')
+    expect((parseExpressionRaw("a || b") as ParsedExpr & { kind: 'logical' }).op).toBe('||')
+    expect((parseExpressionRaw("a && b") as ParsedExpr & { kind: 'logical' }).op).toBe('&&')
+    expect((parseExpressionRaw("a === b") as ParsedExpr & { kind: 'binary' }).op).toBe('===')
   })
 
   test('out-of-surface binary / unary operators resolve to unsupported (not op: "unknown")', () => {
     // Operators getOperatorString/getUnaryOperatorString don't recognise must
     // opt out, not emit a node with a meaningless `op` a consumer could mishandle.
-    expect(parseExpression2('a instanceof B').kind).toBe('unsupported')
-    expect(parseExpression2('a ** b').kind).toBe('unsupported')
-    expect(parseExpression2('++x').kind).toBe('unsupported')
-    expect(parseExpression2('--x').kind).toBe('unsupported')
+    expect(parseExpressionRaw('a instanceof B').kind).toBe('unsupported')
+    expect(parseExpressionRaw('a ** b').kind).toBe('unsupported')
+    expect(parseExpressionRaw('++x').kind).toBe('unsupported')
+    expect(parseExpressionRaw('--x').kind).toBe('unsupported')
   })
 
   test('nested: base.replace(/\\/+$/, "") || "/"', () => {
-    const r = parseExpression2("base.replace(/\\/+$/, '') || '/'")
+    const r = parseExpressionRaw("base.replace(/\\/+$/, '') || '/'")
     expect(r.kind).toBe('logical')
     if (r.kind !== 'logical') return
     expect(r.op).toBe('||')
@@ -110,17 +111,17 @@ describe('parseExpression2', () => {
   })
 
   test('unary ! and conditional', () => {
-    expect(parseExpression2('!open')).toEqual({
+    expect(parseExpressionRaw('!open')).toEqual({
       kind: 'unary',
       op: '!',
       argument: { kind: 'identifier', name: 'open' },
     })
-    const c = parseExpression2("cond ? 'a' : 'b'")
+    const c = parseExpressionRaw("cond ? 'a' : 'b'")
     expect(c.kind).toBe('conditional')
   })
 
   test('string array literal', () => {
-    expect(parseExpression2("['a', 'b']")).toEqual({
+    expect(parseExpressionRaw("['a', 'b']")).toEqual({
       kind: 'array-literal',
       elements: [
         { kind: 'literal', value: 'a', literalType: 'string' },
@@ -132,7 +133,7 @@ describe('parseExpression2', () => {
   test('object literal with identifier / string / numeric keys', () => {
     // Object literals are paren-wrapped by the analyzer (a bare `{…}` at
     // statement position parses as a block), mirroring `parseExpression`.
-    const r = parseExpression2("({ align: 'start', 'data-x': 1, 2: 'two' })")
+    const r = parseExpressionRaw("({ align: 'start', 'data-x': 1, 2: 'two' })")
     expect(r.kind).toBe('object-literal')
     if (r.kind !== 'object-literal') return
     expect(r.properties.map(p => [p.key, p.keyKind])).toEqual([
@@ -144,7 +145,7 @@ describe('parseExpression2', () => {
   })
 
   test('shorthand object property', () => {
-    const r = parseExpression2('({ a })')
+    const r = parseExpressionRaw('({ a })')
     expect(r.kind).toBe('object-literal')
     if (r.kind !== 'object-literal') return
     expect(r.properties[0]).toEqual({
@@ -156,25 +157,24 @@ describe('parseExpression2', () => {
   })
 
   test('spread / computed-key objects resolve to unsupported', () => {
-    expect(parseExpression2('({ ...rest })').kind).toBe('unsupported')
-    expect(parseExpression2('({ [k]: 1 })').kind).toBe('unsupported')
+    expect(parseExpressionRaw('({ ...rest })').kind).toBe('unsupported')
+    expect(parseExpressionRaw('({ [k]: 1 })').kind).toBe('unsupported')
   })
 
   test('empty / non-expression input is unsupported', () => {
-    expect(parseExpression2('').kind).toBe('unsupported')
-    expect(parseExpression2('   ').kind).toBe('unsupported')
+    expect(parseExpressionRaw('').kind).toBe('unsupported')
+    expect(parseExpressionRaw('   ').kind).toBe('unsupported')
   })
 })
 
 /**
- * `parsedExpr2ToParsedExpr` is the reverse bridge (#2006): it recovers a
- * component-scope helper body (carried as `parsed2`) as a `ParsedExpr` the Go
- * inliner can substitute the call args into, then re-stringifies the result for
- * the normal lowering. It is a faithful structural *mirror*, not a re-parse, so
- * the round-trip invariant is over `stringifyParsedExpr`: the mirror must
- * stringify back to a source string that means the same expression.
+ * `foldInlineHelperBody` normalises a raw-parsed helper body into the shape the
+ * Go inliner substitutes call args into, then re-stringifies the result for the
+ * normal lowering (#2006). It is a faithful structural normaliser, not a
+ * re-parse, so the round-trip invariant is over `stringifyParsedExpr`: the
+ * result must stringify back to a source string that means the same expression.
  */
-describe('parsedExpr2ToParsedExpr', () => {
+describe('foldInlineHelperBody', () => {
   test.each([
     "params().sort === k ? 'sort on' : 'sort'",
     'a || b',
@@ -186,16 +186,16 @@ describe('parsedExpr2ToParsedExpr', () => {
     "f(x, 'y', 1)",
     "base.replace('x', '')",
   ])('round-trips through stringifyParsedExpr for %p', src => {
-    const back = parsedExpr2ToParsedExpr(parseExpression2(`(${src})`))
+    const back = foldInlineHelperBody(parseExpressionRaw(`(${src})`))
     expect(back).not.toBeNull()
-    // Re-parsing the stringified mirror yields the same ParsedExpr2 — i.e. the
-    // mirror preserves the expression's meaning across the round-trip.
-    if (back) expect(parseExpression2(stringifyParsedExpr(back))).toEqual(parseExpression2(src))
+    // Re-parsing the stringified result yields the same raw tree — i.e. the
+    // normaliser preserves the expression's meaning across the round-trip.
+    if (back) expect(parseExpressionRaw(stringifyParsedExpr(back))).toEqual(parseExpressionRaw(src))
   })
 
-  test('conditional helper body mirrors structurally', () => {
-    const back = parsedExpr2ToParsedExpr(
-      parseExpression2("(params().sort === k ? 'sort on' : 'sort')"),
+  test('conditional helper body normalises structurally', () => {
+    const back = foldInlineHelperBody(
+      parseExpressionRaw("(params().sort === k ? 'sort on' : 'sort')"),
     )
     expect(back).toEqual({
       kind: 'conditional',
@@ -215,36 +215,36 @@ describe('parsedExpr2ToParsedExpr', () => {
     })
   })
 
-  test('arrow and regex have no ParsedExpr form → null', () => {
-    expect(parsedExpr2ToParsedExpr(parseExpression2('(a, b) => a + b'))).toBeNull()
-    expect(parsedExpr2ToParsedExpr(parseExpression2('/\\/+$/'))).toBeNull()
-    // A nested arrow/regex anywhere in the tree poisons the whole conversion.
-    expect(parsedExpr2ToParsedExpr(parseExpression2('xs.map(x => x)'))).toBeNull()
-    expect(parsedExpr2ToParsedExpr(parseExpression2("base.replace(/\\/+$/, '')"))).toBeNull()
+  test('arrow and regex can not be inlined → null', () => {
+    expect(foldInlineHelperBody(parseExpressionRaw('(a, b) => a + b'))).toBeNull()
+    expect(foldInlineHelperBody(parseExpressionRaw('/\\/+$/'))).toBeNull()
+    // A nested arrow/regex anywhere in the tree poisons the whole normalise.
+    expect(foldInlineHelperBody(parseExpressionRaw('xs.map(x => x)'))).toBeNull()
+    expect(foldInlineHelperBody(parseExpressionRaw("base.replace(/\\/+$/, '')"))).toBeNull()
   })
 
   test('literal element access folds to a computed member (matches parseExpression)', () => {
     // `parseExpression` folds `obj['key']` / `arr[0]` into a computed `member`;
-    // the mirror replicates that so the lowering (keyed to `parseExpression`'s
+    // the normaliser replicates that so the lowering (keyed to `parseExpression`'s
     // shapes) treats them identically. A variable index stays `index-access`.
-    expect(parsedExpr2ToParsedExpr(parseExpression2("(obj['key'])"))).toEqual({
+    expect(foldInlineHelperBody(parseExpressionRaw("(obj['key'])"))).toEqual({
       kind: 'member',
       object: { kind: 'identifier', name: 'obj' },
       property: 'key',
       computed: true,
     })
-    expect(parsedExpr2ToParsedExpr(parseExpression2('(arr[0])'))).toEqual({
+    expect(foldInlineHelperBody(parseExpressionRaw('(arr[0])'))).toEqual({
       kind: 'member',
       object: { kind: 'identifier', name: 'arr' },
       property: '0',
       computed: true,
     })
-    const idx = parsedExpr2ToParsedExpr(parseExpression2('(rows[i])'))
+    const idx = foldInlineHelperBody(parseExpressionRaw('(rows[i])'))
     expect(idx?.kind).toBe('index-access')
   })
 
   test('unsupported round-trips as unsupported (the fallback sentinel)', () => {
-    const u = parsedExpr2ToParsedExpr({ kind: 'unsupported', raw: 'a ** b', reason: 'x' })
+    const u = foldInlineHelperBody({ kind: 'unsupported', raw: 'a ** b', reason: 'x' })
     expect(u).toEqual({ kind: 'unsupported', raw: 'a ** b', reason: 'x' })
   })
 })

@@ -11,7 +11,6 @@
  */
 
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
-import { parsedExprToParsedExpr2 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -162,7 +161,11 @@ export function computeObjectMemoInitialValue(
     if (prop.keyKind !== undefined && prop.keyKind !== 'identifier' && prop.keyKind !== 'string') {
       return null
     }
-    const go = lowerCtorExpr(ctx, parsedExprToParsedExpr2(prop.value), env)
+    // `prop.value` is the analyzer's folded `ParsedExpr`. For the searchParams
+    // object-memo surface (`sp.get('k')`, `… ?? ''`, literals) the folded and
+    // raw trees coincide — `.get` isn't a folded method — so `lowerCtorExpr`
+    // reads it directly; a folded-only shape it can't lower returns null.
+    const go = lowerCtorExpr(ctx, prop.value, env)
     if (go === null) return null
     entries.push(`"${capitalizeFieldName(prop.key)}": ${go}`)
   }

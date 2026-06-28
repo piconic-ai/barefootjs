@@ -139,7 +139,12 @@ export interface ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string
-  arrowFn(param: string, body: ParsedExpr, emit: (e: ParsedExpr) => string): string
+  arrowFn(params: string[], body: ParsedExpr, emit: (e: ParsedExpr) => string): string
+  // A regex literal (`/…/`), carried as its exact source text. Only the raw
+  // (non-folding) parse produces it; the folded template tree never does, so
+  // this method is unreachable for the template adapters — they return a
+  // fallback. It exists for `ParsedExpr.kind` exhaustiveness.
+  regex(raw: string): string
   higherOrder(
     method: HigherOrderMethod,
     object: ParsedExpr,
@@ -226,7 +231,9 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
     case 'template-literal':
       return emitter.templateLiteral(expr.parts, emit)
     case 'arrow-fn':
-      return emitter.arrowFn(expr.param, expr.body, emit)
+      return emitter.arrowFn(expr.params, expr.body, emit)
+    case 'regex':
+      return emitter.regex(expr.raw)
     case 'higher-order':
       return emitter.higherOrder(expr.method, expr.object, expr.param, expr.predicate, emit)
     case 'array-literal':
