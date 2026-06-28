@@ -32,6 +32,17 @@ import (
 // (ToNumber / ToString / ToBoolean) — deliberately NOT the divergent
 // bf->string / bf_reduce helper conventions — so the contract is unambiguous
 // and the backends stay byte-isomorphic.
+//
+// String semantics operate on Unicode code points / UTF-8 bytes: `.length`
+// counts code points and relational `<`/`>` compares byte order. This equals
+// the JS reference (UTF-16 code units) across the BMP — the range template
+// data uses — and matches the Perl evaluator exactly (the primary "same input
+// → same output" contract is between the two SSR backends). Astral-plane
+// characters (where JS counts a surrogate pair as length 2 and orders by
+// surrogate code units) are a documented divergence region, alongside the
+// already-documented non-ASCII relational / localeCompare carve-outs
+// (spec/compiler.md). Both backends stay equal; only the JS reference differs,
+// and no corpus vector exercises the astral range.
 
 // EvalExpr evaluates a pure ParsedExpr (carried as its JSON encoding) against
 // env. The result is a value in the JSON domain (float64, string, bool, nil,
@@ -174,6 +185,14 @@ func evalToNumber(v any) float64 {
 		if t == "" {
 			return 0
 		}
+		// Decimal / exponent / "Infinity" numeric strings parse JS-faithfully
+		// (ParseFloat handles these, matching the Perl evaluator). The
+		// radix-prefixed forms JS Number() also accepts ("0x10" / "0o17" /
+		// "0b101") are a documented divergence region: they yield NaN here, as
+		// they do in the Perl evaluator (looks_like_number is false for them),
+		// so Go==Perl while differing from the JS reference. Template data
+		// carries JSON numbers, not radix-string literals, so this never
+		// arises in practice.
 		f, err := strconv.ParseFloat(t, 64)
 		if err != nil {
 			return math.NaN()
@@ -200,6 +219,23 @@ func evalIsNumeric(v any) bool {
 func evalToString(v any) string {
 	if v == nil {
 		return "null"
+	}
+	// JS spells the non-finite doubles "Infinity" / "-Infinity" / "NaN"; the
+	// runtime String() helper (fmt %v) would render "+Inf" / "-Inf" / "NaN",
+	// so the non-finite cases are pinned here to stay JS-faithful (and match
+	// the Perl evaluator's _to_string). Finite numbers, strings and bools fall
+	// through to String(), which is JS-faithful for those — and nil is already
+	// handled above as "null" (String() would give "").
+	if f, ok := v.(float64); ok {
+		if math.IsNaN(f) {
+			return "NaN"
+		}
+		if math.IsInf(f, 1) {
+			return "Infinity"
+		}
+		if math.IsInf(f, -1) {
+			return "-Infinity"
+		}
 	}
 	return String(v)
 }
@@ -451,7 +487,10 @@ func evalReadProperty(obj any, key string) any {
 // nil for a non-slice/array (matching the bf_sort / bf_reduce nil-tolerance).
 func toAnySlice(items any) []any {
 	v := reflect.ValueOf(items)
-	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+	// A nil interface yields an invalid Value (Kind() == Invalid, not a
+	// panic), so the Slice/Array guard below already tolerates nil; the
+	// explicit IsValid check just documents the nil-tolerance intent.
+	if !v.IsValid() || (v.Kind() != reflect.Slice && v.Kind() != reflect.Array) {
 		return nil
 	}
 	out := make([]any, v.Len())

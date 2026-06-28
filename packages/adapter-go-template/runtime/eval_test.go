@@ -2,6 +2,7 @@ package bf
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"testing"
 )
@@ -111,6 +112,40 @@ func TestSortEval_LiftsComparatorRestriction(t *testing.T) {
 		if evalToNumber(m["v"]) != w {
 			t.Errorf("SortEval[%d].v = %v, want %v", i, m["v"], w)
 		}
+	}
+}
+
+// evalToString pins JS's spelling of the non-finite doubles
+// ("Infinity"/"-Infinity"/"NaN"), not the runtime String() helper's
+// "+Inf"/"-Inf" — keeping the evaluator's ToString JS-faithful.
+func TestEvalToString_NonFinite(t *testing.T) {
+	cases := []struct {
+		in   any
+		want string
+	}{
+		{math.Inf(1), "Infinity"},
+		{math.Inf(-1), "-Infinity"},
+		{math.NaN(), "NaN"},
+		{nil, "null"},
+		{float64(5), "5"},
+		{"hi", "hi"},
+	}
+	for _, c := range cases {
+		if got := evalToString(c.in); got != c.want {
+			t.Errorf("evalToString(%v) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+// FoldEval / SortEval tolerate a nil receiver like bf_reduce / bf_sort:
+// FoldEval returns the init unchanged, SortEval returns nil (no panic).
+func TestFoldSortEval_NilReceiver(t *testing.T) {
+	body := mustJSON(t, nid("acc"))
+	if got := FoldEval(nil, body, "acc", "item", 42, "left"); evalToNumber(got) != 42 {
+		t.Errorf("FoldEval(nil) = %v, want the init 42", got)
+	}
+	if got := SortEval(nil, body, "a", "b"); got != nil {
+		t.Errorf("SortEval(nil) = %v, want nil", got)
 	}
 }
 
