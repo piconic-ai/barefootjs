@@ -51,6 +51,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  stringifyParsedExpr,
   exprToString,
   parseProviderObjectLiteral,
   parseStyleObjectEntries,
@@ -1334,30 +1335,42 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       errors: this.errors,
       localConstants: this.localConstants,
       propsParams: this.propsParams,
-      convertExpressionToKolon: (e) => this.convertExpressionToKolon(e),
+      convertExpressionToKolon: (e, preParsed) => this.convertExpressionToKolon(e, preParsed),
     }
   }
 
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): XslateMemoContext {
-    return { convertExpressionToKolon: (e) => this.convertExpressionToKolon(e) }
+    return { convertExpressionToKolon: (e, preParsed) => this.convertExpressionToKolon(e, preParsed) }
   }
 
-  private convertExpressionToKolon(expr: string): string {
+  private convertExpressionToKolon(expr: string, preParsed?: ParsedExpr): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
     // shared `isSupported`, and render every supported shape through the AST
     // emitter. Unsupported shapes surface as BF101.
-    const trimmed = expr.trim()
-    if (trimmed === '') return "''"
+    //
+    // `preParsed` is the IR-carried `ParsedExpr` tree (cf. go-template's
+    // `convertExpressionToGo(jsExpr, out?, preParsed?)`); when present it is
+    // used directly instead of re-parsing `expr`, so spread condition/value
+    // lowering threads the carried tree through without a stringify→re-parse
+    // round-trip. The diagnostic text is then derived from the tree
+    // (`stringifyParsedExpr`) so callers can pass `''` for `expr`.
+    let parsed: ParsedExpr
+    if (preParsed) {
+      parsed = preParsed
+    } else {
+      const trimmed = expr.trim()
+      if (trimmed === '') return "''"
+      parsed = parseExpression(trimmed)
+    }
 
-    const parsed = parseExpression(trimmed)
     const support = isSupported(parsed)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',
         severity: 'error',
-        message: `Expression not supported: ${trimmed}`,
+        message: `Expression not supported: ${preParsed ? stringifyParsedExpr(parsed) : expr.trim()}`,
         loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message: support.reason
