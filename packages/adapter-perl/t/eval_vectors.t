@@ -4,6 +4,7 @@ use Test::More;
 use FindBin;
 use File::Spec;
 use JSON::PP ();
+use B ();
 use Scalar::Util qw(looks_like_number);
 
 use lib "$FindBin::Bin/../lib";
@@ -49,6 +50,17 @@ for my $case (@{ $doc->{cases} }) {
 
 done_testing;
 
+# _is_real_number: true only when the scalar is an actual number (SV carries
+# IOK/NOK), NOT a numeric-looking string. JSON::PP decodes a JSON number to
+# IOK/NOK and a JSON string to a POK-only scalar, so this tells the JS *number*
+# 42 from the JS *string* "42" — the distinction the evaluator must preserve.
+# (looks_like_number can't: it is true for the string "42" too.)
+sub _is_real_number {
+    my ($v) = @_;
+    return 0 unless defined $v && !ref $v;
+    return (B::svref_2object(\$v)->FLAGS & (B::SVf_IOK | B::SVf_NOK)) ? 1 : 0;
+}
+
 # _match: boolean form of the spec's value-compat comparison against a
 # JSON-decoded expect — non-finite sentinel hashes, booleans by truthiness,
 # numbers numerically, arrays/hashes recursively, strings by eq.
@@ -79,7 +91,12 @@ sub _match {
         return 1;
     }
     return 0 if !defined $got || ref $got;
-    return ($got == $expect ? 1 : 0) if looks_like_number($expect) && looks_like_number($got);
+    # Numeric == only when BOTH are real numbers (not numeric-looking strings),
+    # so a string-vs-number mismatch fails: e.g. String(42) must return the
+    # string "42", and the evaluator returning the number 42 must NOT pass.
+    my $want_num = _is_real_number($expect);
+    return 0 if $want_num != _is_real_number($got);
+    return ($got == $expect ? 1 : 0) if $want_num;
     return ($got eq $expect) ? 1 : 0;
 }
 
