@@ -424,15 +424,15 @@ func evalBuiltinName(callee any) string {
 // evalMathRound rounds a half toward +Infinity (JS Math.round: 2.5→3,
 // -2.5→-2), matching the existing `round` helper rather than Go's math.Round.
 func evalMathRound(n float64) float64 {
-	r := math.Floor(n + 0.5)
-	// JS Math.round preserves the sign of zero: for x in [-0.5, -0] the
-	// result is -0 (so `1 / Math.round(-0.5)` is -Infinity). floor(n+0.5)
-	// yields +0 there, so restore the negative sign. (Through ToString both
-	// ±0 render as "0"; this only matters for a subsequent division.)
-	if r == 0 && math.Signbit(n) {
-		return math.Copysign(0, -1)
-	}
-	return r
+	// floor(n+0.5) yields +0 for x in [-0.5, -0], where JS Math.round returns
+	// -0. That sign is only observable through a subsequent division
+	// (`1 / Math.round(-0.5)` is -Infinity in JS, +Infinity here) — through
+	// ToString both ±0 render "0". It is left as +0 deliberately: the two SSR
+	// backends must stay equal, and Perl can't reproduce the -0 divisor sign
+	// without fragile, version-dependent zero handling (its native `/` even
+	// dies on a zero divisor). So Math.round's -0 is a JS-reference-only
+	// divergence region, like the astral-plane / radix-string carve-outs.
+	return math.Floor(n + 0.5)
 }
 
 func evalCallBuiltin(name string, args []any) any {
