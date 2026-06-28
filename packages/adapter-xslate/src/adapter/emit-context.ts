@@ -73,12 +73,14 @@ export interface XslateSpreadContext {
   /**
    * Lower a JS expression to its Kolon form (the core recursive entry).
    *
-   * String-in today. Once the IR-carries-semantics work (#2018) lands, this
-   * seam should also accept an already-parsed `ParsedExpr` — cf. go-template's
-   * `convertExpressionToGo(jsExpr, out?, preParsed?)` — so the future Perl
-   * evaluator can thread a structured tree instead of re-parsing source text.
+   * When the IR already carries a structured `ParsedExpr` tree, pass it as
+   * `preParsed` so the converter threads it straight through instead of
+   * re-parsing `expr` — mirrors go-template's
+   * `convertExpressionToGo(jsExpr, out?, preParsed?)`. With `preParsed` set,
+   * `expr` is unused for parsing (the converter derives any diagnostic text
+   * from the tree), so callers may pass `''`.
    */
-  convertExpressionToKolon(expr: string): string
+  convertExpressionToKolon(expr: string, preParsed?: ParsedExpr): string
 }
 
 /**
@@ -91,10 +93,12 @@ export interface XslateMemoContext {
   /**
    * Lower a JS expression to its Kolon form (the core recursive entry).
    *
-   * String-in today. Once the IR-carries-semantics work (#2018) lands, this
-   * seam should also accept an already-parsed `ParsedExpr` — cf. go-template's
-   * `convertExpressionToGo(jsExpr, out?, preParsed?)` — so the future Perl
-   * evaluator can thread a structured tree instead of re-parsing source text.
+   * When the IR already carries a structured `ParsedExpr` tree, pass it as
+   * `preParsed` so the converter threads it straight through instead of
+   * re-parsing `expr` — mirrors go-template's
+   * `convertExpressionToGo(jsExpr, out?, preParsed?)`. With `preParsed` set,
+   * `expr` is unused for parsing (the converter derives any diagnostic text
+   * from the tree), so callers may pass `''`.
    */
-  convertExpressionToKolon(expr: string): string
+  convertExpressionToKolon(expr: string, preParsed?: ParsedExpr): string
 }

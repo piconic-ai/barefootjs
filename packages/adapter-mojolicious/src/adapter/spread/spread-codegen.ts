@@ -11,11 +11,15 @@
  * The conditional-spread / object-literal entries read the IR-carried
  * structured `ParsedExpr` tree (#2018, mirroring go-template's U5/U6) instead
  * of re-parsing the source with `ts.createSourceFile`. The condition and scalar
- * values are re-stringified with `stringifyParsedExpr` and routed back through
- * `ctx.convertExpressionToPerl`, which re-parses — so the emitted Perl stays
- * byte-identical to the former AST-text path. The `ts.factory` rebuild in
- * `recordIndexAccessToPerl` only reconstructs the `IDENT[KEY]` node the shared
- * `parseRecordIndexAccess` parser accepts; no source-text re-parse.
+ * values are threaded straight into `ctx.convertExpressionToPerl` as its
+ * `preParsed` argument (cf. go-template's
+ * `convertExpressionToGo(jsExpr, out?, preParsed?)`), so no stringify→re-parse
+ * round-trip occurs — the emitted Perl is byte-identical to the former path
+ * because the carried tree is exactly what re-parsing the stringified text
+ * produced. The `ts.factory` rebuild in `recordIndexAccessToPerl` only
+ * reconstructs the `IDENT[KEY]` node the shared `parseRecordIndexAccess` parser
+ * accepts; no source-text re-parse. `stringifyParsedExpr` is retained solely for
+ * the BF101 diagnostic message (display purposes).
  */
 
 import ts from 'typescript'
@@ -40,12 +44,10 @@ export function conditionalSpreadToPerl(
   if (whenTrue.kind !== 'object-literal' || whenFalse.kind !== 'object-literal') {
     return null
   }
-  // TODO(#2018): round-trip — the condition's `ParsedExpr` is re-stringified
-  // here and re-parsed inside `convertExpressionToPerl`. Retire once
-  // `convertExpressionToPerl` takes a `preParsed?: ParsedExpr` (cf.
-  // go-template's `convertExpressionToGo(jsExpr, out?, preParsed?)`), so the
-  // carried tree threads straight through instead of stringify→re-parse.
-  const condPerl = ctx.convertExpressionToPerl(stringifyParsedExpr(expr.test))
+  // Thread the condition's carried `ParsedExpr` tree straight through as
+  // `preParsed` (#2018) — no stringify→re-parse round-trip; `convertExpressionToPerl`
+  // uses the tree directly and derives any diagnostic text from it.
+  const condPerl = ctx.convertExpressionToPerl('', expr.test)
   const truePerl = objectLiteralToPerlHashref(ctx, whenTrue)
   const falsePerl = objectLiteralToPerlHashref(ctx, whenFalse)
   if (truePerl === null || falsePerl === null) return null
@@ -118,10 +120,9 @@ export function objectLiteralToPerlHashref(
     const valPerl =
       indexed !== null
         ? indexed
-        // TODO(#2018): round-trip — re-stringify + re-parse via
-        // `convertExpressionToPerl`. Thread the carried `val` tree directly once
-        // `convertExpressionToPerl` gains a `preParsed?: ParsedExpr` param.
-        : ctx.convertExpressionToPerl(stringifyParsedExpr(val))
+        // Thread the carried `val` tree straight through as `preParsed` (#2018)
+        // — no stringify→re-parse round-trip.
+        : ctx.convertExpressionToPerl('', val)
     entries.push(`'${key.replace(/'/g, "\\'")}' => ${valPerl}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`

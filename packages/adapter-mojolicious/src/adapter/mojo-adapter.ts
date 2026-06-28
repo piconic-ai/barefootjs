@@ -37,6 +37,7 @@ import {
   type AttrValueEmitter,
   isBooleanAttr,
   parseExpression,
+  stringifyParsedExpr,
   parseStyleObjectEntries,
   isSupported,
   exprToString,
@@ -1586,16 +1587,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       errors: this.errors,
       localConstants: this.localConstants,
       propsParams: this.propsParams,
-      convertExpressionToPerl: (e) => this.convertExpressionToPerl(e),
+      convertExpressionToPerl: (e, preParsed) => this.convertExpressionToPerl(e, preParsed),
     }
   }
 
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): MojoMemoContext {
-    return { convertExpressionToPerl: (e) => this.convertExpressionToPerl(e) }
+    return { convertExpressionToPerl: (e, preParsed) => this.convertExpressionToPerl(e, preParsed) }
   }
 
-  private convertExpressionToPerl(expr: string): string {
+  private convertExpressionToPerl(expr: string, preParsed?: ParsedExpr): string {
     // Parse-first lowering — parity with the Go adapter's
     // `convertExpressionToGo`. Parse the JS expression once, gate it on
     // the shared `isSupported`, and render every supported shape through
@@ -1605,16 +1606,28 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // string-rewriting pipeline. Unsupported shapes (un-lowered methods,
     // unparseable hand-written JS, etc.) surface as BF101 with the
     // `/* @client */` escape hatch instead of being silently mangled.
-    const trimmed = expr.trim()
-    if (trimmed === '') return "''"
+    //
+    // `preParsed` is the IR-carried `ParsedExpr` tree (cf. go-template's
+    // `convertExpressionToGo(jsExpr, out?, preParsed?)`); when present it is
+    // used directly instead of re-parsing `expr`, so spread condition/value
+    // lowering threads the carried tree through without a stringify→re-parse
+    // round-trip. The diagnostic text is then derived from the tree
+    // (`stringifyParsedExpr`) so callers can pass `''` for `expr`.
+    let parsed: ParsedExpr
+    if (preParsed) {
+      parsed = preParsed
+    } else {
+      const trimmed = expr.trim()
+      if (trimmed === '') return "''"
+      parsed = parseExpression(trimmed)
+    }
 
-    const parsed = parseExpression(trimmed)
     const support = isSupported(parsed)
     if (!support.supported) {
       this.errors.push({
         code: 'BF101',
         severity: 'error',
-        message: `Expression not supported: ${trimmed}`,
+        message: `Expression not supported: ${preParsed ? stringifyParsedExpr(parsed) : expr.trim()}`,
         loc: { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message: support.reason

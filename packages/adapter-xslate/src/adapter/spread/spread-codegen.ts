@@ -11,11 +11,15 @@
  * The conditional-spread / object-literal entries read the IR-carried
  * structured `ParsedExpr` tree (#2018, mirroring go-template's U5/U6) instead
  * of re-parsing the source with `ts.createSourceFile`. The condition and scalar
- * values are re-stringified with `stringifyParsedExpr` and routed back through
- * `ctx.convertExpressionToKolon`, which re-parses — so the emitted Kolon stays
- * byte-identical to the former AST-text path. The `ts.factory` rebuild in
- * `recordIndexAccessToKolon` only reconstructs the `IDENT[KEY]` node the shared
- * `parseRecordIndexAccess` parser accepts; no source-text re-parse.
+ * values are threaded straight into `ctx.convertExpressionToKolon` as its
+ * `preParsed` argument (cf. go-template's
+ * `convertExpressionToGo(jsExpr, out?, preParsed?)`), so no stringify→re-parse
+ * round-trip occurs — the emitted Kolon is byte-identical to the former path
+ * because the carried tree is exactly what re-parsing the stringified text
+ * produced. The `ts.factory` rebuild in `recordIndexAccessToKolon` only
+ * reconstructs the `IDENT[KEY]` node the shared `parseRecordIndexAccess` parser
+ * accepts; no source-text re-parse. `stringifyParsedExpr` is retained solely for
+ * the BF101 diagnostic message (display purposes).
  */
 
 import ts from 'typescript'
@@ -47,12 +51,10 @@ export function conditionalSpreadToKolon(
   if (whenTrue.kind !== 'object-literal' || whenFalse.kind !== 'object-literal') {
     return null
   }
-  // TODO(#2018): round-trip — the condition's `ParsedExpr` is re-stringified
-  // here and re-parsed inside `convertExpressionToKolon`. Retire once
-  // `convertExpressionToKolon` takes a `preParsed?: ParsedExpr` (cf.
-  // go-template's `convertExpressionToGo(jsExpr, out?, preParsed?)`), so the
-  // carried tree threads straight through instead of stringify→re-parse.
-  const condKolon = ctx.convertExpressionToKolon(stringifyParsedExpr(expr.test))
+  // Thread the condition's carried `ParsedExpr` tree straight through as
+  // `preParsed` (#2018) — no stringify→re-parse round-trip; `convertExpressionToKolon`
+  // uses the tree directly and derives any diagnostic text from it.
+  const condKolon = ctx.convertExpressionToKolon('', expr.test)
   const trueKolon = objectLiteralToKolonHashref(ctx, whenTrue)
   const falseKolon = objectLiteralToKolonHashref(ctx, whenFalse)
   if (trueKolon === null || falseKolon === null) return null
@@ -122,10 +124,9 @@ export function objectLiteralToKolonHashref(
     const valKolon =
       indexed !== null
         ? indexed
-        // TODO(#2018): round-trip — re-stringify + re-parse via
-        // `convertExpressionToKolon`. Thread the carried `val` tree directly once
-        // `convertExpressionToKolon` gains a `preParsed?: ParsedExpr` param.
-        : ctx.convertExpressionToKolon(stringifyParsedExpr(val))
+        // Thread the carried `val` tree straight through as `preParsed` (#2018)
+        // — no stringify→re-parse round-trip.
+        : ctx.convertExpressionToKolon('', val)
     entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valKolon}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
