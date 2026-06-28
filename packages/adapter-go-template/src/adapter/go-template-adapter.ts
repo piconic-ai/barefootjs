@@ -1,8 +1,4 @@
-/**
- * BarefootJS Go html/template Adapter
- *
- * Generates Go html/template files from BarefootJS IR.
- */
+/** BarefootJS adapter: BarefootJS IR → Go `html/template` files. */
 
 import ts from 'typescript'
 
@@ -129,43 +125,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   name = 'go-template'
   extension = '.tmpl'
 
-  // Sentinel marking a parent-scope `bf-s` slot inside a hoisted-JSX
-  // children bake (see `extractScopedHtmlChildren`). The token can't appear
-  // in real HTML text, so splitting on it is unambiguous.
+  // Sentinel marking a parent-scope `bf-s` slot inside a hoisted-JSX children
+  // bake (see `extractScopedHtmlChildren`). Can't appear in real HTML text.
   private static readonly SCOPE_SENTINEL = '__BF_SCOPE_SENTINEL__'
-  // Template-string target with no component layer: `bf build` emits a static
-  // `barefoot-importmap.html` to `{{ template }}` into the page <head>.
   importMapInjection = 'html-snippet' as const
 
-  // Recursion-scoped state for `renderFilterExpr`. `filterExprDepth` tracks
-  // nesting so the outer call resets `filterExprUnsupported` before each
-  // independent filter expression; the flag is set in the `default` branch
-  // (BF101 emission) and propagated by parent branches so the template stays
-  // syntactically valid even when a child rendered to the fallback sentinel.
+  // `renderFilterExpr` recursion state. `filterExprDepth` lets the outer call
+  // reset `filterExprUnsupported` per independent filter expression; the flag,
+  // set in the `default` branch (BF101), is propagated up so the template stays
+  // syntactically valid when a child rendered the fallback sentinel.
   private filterExprDepth = 0
   private filterExprUnsupported = false
 
   /**
-   * Identifier-path callees the Go runtime can render in template scope. The
-   * relocate pass consults this map to mark matching calls as template-safe so
-   * the surrounding expression stays inlinable; the SSR template emitter
-   * (`renderParsedExpr`'s `call` branch) uses it to substitute the JS call with
-   * the registered Go template form.
+   * Identifier-path callees the Go runtime can render in template scope, keyed
+   * by the textual callee path as written in JSX. Each value emits the
+   * substituted Go body from already-Go-rendered args, WITHOUT the `{{ }}`
+   * delimiters so callers compose it (`{{if eq (bf_json .X) "..."}}`).
    *
-   * Keys are the textual callee path as written in the JSX expression. Values
-   * are emit functions that receive the already-Go-rendered argument
-   * expressions (e.g. `.Config`, `_p.Score`) and return the substituted Go
-   * template body — without the surrounding `{{ }}` action delimiters, so
-   * callers can wrap the result in `{{...}}` or compose into larger expressions
-   * like `{{if eq (bf_json .X) "..."}}`.
-   *
-   * Scope: identifier-path callees only. Method calls on values
-   * (`(arr).join(",")`) require an analyzer-resolved receiver type and are out
-   * of scope — users fall back to `/* @client *\/` for those.
-   *
-   * Public because the `TemplateAdapter` interface contract requires the
-   * relocate pass to read this for boolean acceptance; the arity map below is
-   * implementation detail (private).
+   * Identifier-path callees only; method calls on values (`(arr).join(",")`)
+   * need an analyzer-resolved receiver type and are out of scope. Public
+   * because the relocate pass reads it for boolean acceptance.
    */
   templatePrimitives: TemplatePrimitiveRegistry =
     Object.fromEntries(
@@ -173,12 +153,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
 
   /**
-   * Expected arg count per primitive. Consulted before invoking the registered
-   * emit fn so a 0-arg `JSON.stringify()` or 2-arg `JSON.stringify(x, replacer)`
-   * doesn't silently produce invalid Go template syntax (the emit fns blindly
-   * read `args[0]`). Derived from `GO_TEMPLATE_PRIMITIVES` so it can't drift
-   * from `templatePrimitives`; a wrong-arity call falls back to the standard
-   * BF101 unsupported-call diagnostic.
+   * Expected arg count per primitive, so a wrong-arity call (`JSON.stringify()`,
+   * `JSON.stringify(x, replacer)`) falls back to BF101 instead of emitting
+   * invalid Go from the emit fn's blind `args[0]` read. Derived from
+   * `GO_TEMPLATE_PRIMITIVES` so it can't drift from `templatePrimitives`.
    */
   private readonly templatePrimitiveArities: Record<string, number> =
     Object.fromEntries(
@@ -187,21 +165,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   private options: Required<GoTemplateAdapterOptions>
 
-  /**
-   * Per-compile mutable state (reset at the start of `generate()` /
-   * `generateTypes()`). Held as a single object so the per-component
-   * bookkeeping lives in one place rather than scattered across the
-   * adapter's fields. See `CompileState` for the field-by-field docs.
-   */
+  /** Per-compile mutable state, reset at `generate()` / `generateTypes()` entry. See `CompileState` for the field-by-field docs. */
   private readonly state = new CompileState()
 
   /**
-   * The `GoEmitContext` handed to extracted emit modules. Built once over the
-   * adapter's own (private) state and recursive entry points, so the modules
-   * get the seam without `state` / `convert*` / `parseLiteralExpression`
-   * leaking onto the exported adapter's public type. `state` is captured by
-   * reference (reset in place per compile, never reassigned), so a single
-   * `emitCtx` stays valid across `generate()` calls.
+   * The `GoEmitContext` handed to extracted emit modules — the seam that keeps
+   * `state` / `convert*` / `parseLiteralExpression` off the public adapter
+   * type. `state` is captured by reference (reset in place, never reassigned),
+   * so this single `emitCtx` stays valid across `generate()` calls.
    */
   private readonly emitCtx: GoEmitContext = {
     state: this.state,
@@ -214,12 +185,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
   }
 
-  /**
-   * Diagnostics collected during the current compile. `generate()` merges
-   * these into `ir.errors`; exposed as a read accessor so external callers
-   * (and tests) can still inspect `adapter.errors` after a compile, backed
-   * by the per-compile `CompileState`.
-   */
+  /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
   get errors(): CompilerError[] {
     return this.state.errors
   }
@@ -227,30 +193,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private inLoop: boolean = false
   private loopParamStack: string[] = []
   /**
-   * Per-loop flag: is the current loop a scalar-item inline-literal loop (the
-   * body renders the bare range value)? When true, the loop body's `bf_tmpl`
-   * companion is fed `.BfLoopItem` (the wrapper's synthetic scalar field)
-   * instead of `.` (the wrapper), so `{n}` → `{{.}}` renders the value.
-   * Innermost last; mirrors `loopParamStack` push/pop.
+   * Per-loop: true when the body renders the bare range value (scalar-item
+   * inline-literal loop), so the `bf_tmpl` companion is fed `.BfLoopItem` (the
+   * wrapper's synthetic scalar field) instead of `.`. Innermost last.
    */
   private loopScalarItemStack: boolean[] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
-   *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`). Innermost last.
-   *  Lets `.map(({ id, ...rest }) => …)` resolve `id` / `rest.flag` instead of
-   *  refusing with BF104. */
+   *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`). Innermost
+   *  last. Lets `.map(({ id, ...rest }) => …)` resolve instead of BF104. */
   private loopBindingStack: Array<Map<string, string>> = []
 
   /**
-   * Cross-component child shapes, keyed by child component name. Populated
-   * out-of-band via `registerChildComponentShape` before the parent's
-   * `generateTypes` runs, so the static-child-init codegen can route an
-   * attribute that is NOT a declared param of the child
-   * (`<CheckIcon data-slot=.../>`) into the child's rest bag
-   * (`Capitalize(restPropsName)` map field) instead of emitting an invalid
-   * hyphenated top-level field (`Data-slot:`). A child with no rest bag and an
-   * unknown attr is left as-is so the existing field path / Go compile error
-   * still surfaces.
+   * Cross-component child shapes, keyed by child component name. Populated via
+   * `registerChildComponentShape` before the parent's `generateTypes`, so the
+   * static-child-init codegen can route an attribute that is NOT a declared
+   * child param (`<CheckIcon data-slot=.../>`) into the child's rest bag instead
+   * of an invalid hyphenated field (`Data-slot:`). An unknown attr on a child
+   * with no rest bag is left as-is (existing field path / Go error surfaces).
    */
   private childComponentShapes: Map<string, ChildComponentShape> = new Map()
 
@@ -268,15 +228,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Prime the per-compile state that BOTH `generate()` and `generateTypes()`
-   * derive from the IR: the props-object / rest-binding names, the module-const
-   * and local-const tables (and the helper-name set), the current memos / type
-   * definitions, the context consumers, and the request-scoped `searchParams`
-   * locals — then enumerate inherited-attribute accesses. `generateTypes` runs
-   * on a separately round-tripped IR, so it must prime identically or the
-   * emitted Input/Props structs drift from `generate()`. `propsObjectName` is
-   * set before `augmentInheritedPropAccesses` because the inherited-attr scan
-   * keys off it.
+   * Prime the per-compile state both `generate()` and `generateTypes()` derive
+   * from the IR. Both must prime identically or the emitted Input/Props structs
+   * drift (`generateTypes` runs on a separately round-tripped IR).
+   * `propsObjectName` is set first because the inherited-attr scan keys off it.
    */
   private primeCompileState(ir: ComponentIR): void {
     this.state.propsObjectName = ir.metadata.propsObjectName
@@ -303,20 +258,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.primeCompileState(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
 
-    // Surface loop-body usages of components imported from sibling .tsx files.
-    // The adapter emits `{{template "X" .}}` for these, which Go resolves only
-    // if the user compiled the sibling file with the same adapter and
-    // registered the resulting `{{define "X"}}` block on the same Template
-    // instance. Otherwise the failure is silent at build time and surfaces as a
-    // `template: "X" is undefined` at request time. Scoped to loop bodies
-    // because that's the natural Hono-style pattern (factor a list item into a
-    // sibling file, .map() over data) and where users hit it unawares.
-    //
-    // The barefoot CLI passes `siblingTemplatesRegistered: true` because it
-    // compiles every source-dir file together onto the same
-    // `*template.Template` instance, so the lookup always resolves and the
-    // diagnostic would be noise. Stand-alone `compileJSX` callers (conformance
-    // runner, third-party tooling) leave the flag unset and get the loud error.
+    // Surface loop-body usages of sibling-imported components (see
+    // `checkImportedLoopChildComponents`). The barefoot CLI compiles a
+    // source dir together onto one `*template.Template`, so it sets
+    // `siblingTemplatesRegistered` and the check would be noise; stand-alone
+    // `compileJSX` callers leave it unset and get the loud build-time error.
     if (!options?.siblingTemplatesRegistered) {
       this.checkImportedLoopChildComponents(ir)
     }
@@ -326,10 +272,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const isIfStatement = ir.root.type === 'if-statement'
 
     this.state.rootScopeNodes = collectRootScopeNodes(ir.root)
-    // Map each array memo that backs a loop (`<memo>().map(...)`) to that loop's
-    // handler-filled slice field, so `<memo>().length` can lower to the slice's
-    // length. Built before rendering — the `.length` reference can appear before
-    // the loop in source order.
+    // Map each array memo backing a loop (`<memo>().map(...)`) to that loop's
+    // handler-filled slice field, so `<memo>().length` lowers to the slice's
+    // length. Built before rendering — `.length` can precede the loop in source.
     this.state.memoBackedLoopSlice = new Map()
     for (const nested of findNestedComponents(ir.root)) {
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
@@ -339,27 +284,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ? this.renderIfStatement(ir.root as IRIfStatement, { isRootOfClientComponent: hasInteractivity })
       : this.renderNode(ir.root, { isRootOfClientComponent: hasInteractivity && isRootComponent })
 
-    // Generate script registration code at template start (unless skipped)
     const scriptRegistrations = options?.skipScriptRegistration
       ? ''
       : this.generateScriptRegistrations(ir, options?.scriptBaseName)
 
     let template = `{{define "${this.state.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
-    // Flush the companion children defines — they execute with the parent's
-    // data via `bf_tmpl`, so they belong to this component's template output.
+    // Companion children defines execute with the parent's data via `bf_tmpl`.
     for (const d of this.state.pendingChildrenDefines) {
       template += `{{define "${d.name}"}}${d.content}{{end}}\n`
     }
     const types = this.generateTypes(ir)
 
-    // Merge collected errors into IR errors
     if (this.state.errors.length > 0) {
       ir.errors.push(...this.state.errors)
     }
 
-    // Go templates have no JS-style imports / types / default-export sections;
-    // the entire `{{define}}…{{end}}` block is the component body. The compiler
-    // assembles multi-component files by concatenating the `component` parts.
+    // Go templates have no JS-style import/type/default-export sections; the
+    // whole `{{define}}…{{end}}` block is the body, and the compiler assembles
+    // multi-component files by concatenating the `component` parts.
     const sections: TemplateSections = {
       imports: '',
       types: '',
@@ -376,22 +318,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Push a `BF103` diagnostic for every component reference inside a loop body
-   * whose name is imported from a relative-path module (a sibling .tsx file).
-   * The Go adapter renders these as `{{template "X" .}}` calls, which Go
-   * resolves only against templates registered on the same `*template.Template`
-   * — so a user who factored a list item into `./list-item.tsx` and mapped over
-   * it gets a working build and a `template: "X" is undefined` at request time.
-   * Surfacing this at build time matches the louder-over-silent contract.
-   *
-   * Scoped to loop bodies (the natural Hono-style pattern); static usage of
-   * imported components is left alone so existing layouts keep working.
+   * Push BF103 for every loop-body component reference whose name is imported
+   * from a relative-path (sibling) module. The Go adapter renders these as
+   * `{{template "X" .}}`, which resolves only against templates registered on
+   * the same `*template.Template` — otherwise a clean build fails at request
+   * time with `template: "X" is undefined`. Static (non-loop) usage is left
+   * alone so existing layouts keep working.
    */
   private checkImportedLoopChildComponents(ir: ComponentIR): void {
-    // Collect every name imported from a relative-path module (no case filter:
-    // `IRComponent` nodes only exist for PascalCase JSX usages, so a lowercase
-    // utility import can't match, and a heuristic on the import name would be
-    // strictly less robust than the structural IR check below).
+    // No case filter: `IRComponent` nodes exist only for PascalCase usages, so
+    // a lowercase utility import can't match and the structural IR check below
+    // beats any name heuristic.
     const relativeImports = new Set<string>()
     for (const imp of ir.metadata.templateImports ?? ir.metadata.imports ?? []) {
       if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
@@ -468,9 +405,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Generate script registration code, emitted at the start of the template.
-   * Uses `.Scripts` (present on all Props structs, shared across parent/child)
-   * and wraps the registrations in `{{if .Scripts}}` to handle a nil collector.
+   * Script registration code for the template start. Reads `.Scripts` (on every
+   * Props struct) and guards the registrations with `{{if .Scripts}}` for a nil
+   * collector.
    */
   private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string): string {
     const hasInteractivity = hasClientInteractivity(ir)
@@ -481,11 +418,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const registrations: string[] = []
 
-    // Register barefoot.js runtime first
+    // Runtime first, then this component's script. `scriptBaseName` is set for
+    // non-default exports that share the parent's `.client.js`.
     registrations.push(`{{.Scripts.Register "${this.options.barefootJsPath}"}}`)
-
-    // This component's script. `scriptBaseName` is set for non-default exports
-    // that share the parent's `.client.js`.
     const scriptName = scriptBaseName || ir.metadata.componentName
     registrations.push(`{{.Scripts.Register "${this.options.clientJsBasePath}${scriptName}.client.js"}}`)
 
@@ -493,11 +428,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Register a child component's shape so a parent's static-child-init codegen
-   * can route non-param attributes into the child's rest bag rather than
-   * emitting an invalid hyphenated top-level field. Call once per known child IR
-   * (siblings in the same source, auto-inferred `../<name>` imports) before
-   * generating the parent's types. Idempotent.
+   * Register a child component's shape (see `childComponentShapes`). Call once
+   * per known child IR before the parent's `generateTypes`. Idempotent.
    */
   registerChildComponentShape(ir: ComponentIR): void {
     const name = ir.metadata.componentName
@@ -519,8 +451,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .map(p => p.name),
     )
     this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames })
-    // Record the contexts this child consumes so a parent wrapping it in
-    // `<Ctx.Provider value>` can set the matching field on the child's slot input.
+    // Contexts this child consumes, so a parent `<Ctx.Provider value>` wrapping
+    // it can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
   }
 
@@ -544,11 +476,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return '""'
   }
 
-  /**
-   * Context-consumer fields that don't collide with an already-emitted prop /
-   * signal / memo field. The template reads them as `{{.Field}}` (the local
-   * `useContext` binding lowered to a root field); the struct must carry them.
-   */
+  /** Context-consumer fields not colliding with an already-emitted prop/signal/memo field (the struct must carry them; template reads `{{.Field}}`). */
   private nonCollidingContextConsumers(taken: ReadonlySet<string>): ContextConsumer[] {
     return this.state.contextConsumers.filter(c => !taken.has(this.contextFieldName(c)))
   }
@@ -556,11 +484,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   generateTypes(ir: ComponentIR): string | null {
     this.state.usesHtmlTemplate = false
     this.state.usesFmt = false
-    // Prime the per-compile state from this (separately round-tripped) IR — the
-    // same setup `generate()` does, so the standalone `generateTypes` entry
-    // resolves module string consts, context consumers, and inherited-attribute
-    // accesses identically; otherwise the structs would drift from `generate()`
-    // (e.g. a `{...props}` bag field present in one entry but not the other).
+    // Prime identically to `generate()` so the standalone `generateTypes` entry
+    // can't drift the structs (e.g. a `{...props}` bag field in one entry only).
     this.primeCompileState(ir)
     const lines: string[] = []
 
@@ -572,55 +497,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.emitSynthStructs(lines, ir, componentName)
 
-    // Find nested components (loops with childComponent)
     const nestedComponents = findNestedComponents(ir.root)
 
     this.resolveNestedLoopItemTypes(ir, nestedComponents)
 
-    // Generate wrapper structs for loop body components with JSX children. The
-    // wrapper embeds the child component's Props and adds datum fields from the
-    // loop's item type + static child instances from the body children.
     for (const nested of nestedComponents) {
       if (!nested.bodyChildren || nested.bodyChildren.length === 0) continue
       this.generateLoopBodyWrapperStruct(lines, componentName, nested)
     }
 
-    // Build prop type overrides from signal types
     const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
 
-    // Compute spread slot info once and thread it through all three generators
-    // — `collectSpreadSlots` walks the IR tree, so caching here saves repeated
-    // walks. `spreadSlots` also controls whether `generateInputStruct` adds a
-    // `Spread_<N> map[string]any` field for `input-bag` slots so the caller can
-    // populate the open-ended restPropsName spread bag.
+    // Computed once (the walk is shared by all three generators). Also gates the
+    // `Spread_<N> map[string]any` field `generateInputStruct` adds for
+    // `input-bag` slots (the open-ended restPropsName spread bag).
     const spreadSlots = collectSpreadSlots(this.emitCtx, ir.root)
 
-    // Generate Input struct for main component
     this.generateInputStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
-    // Generate Props struct for main component
     this.state.needsStringsImport = false
     this.generatePropsStruct(lines, ir, componentName, nestedComponents, propTypeOverrides, spreadSlots)
 
-    // Generate NewXxxProps function
     this.generateNewPropsFunction(lines, ir, componentName, nestedComponents, spreadSlots, propTypeOverrides)
 
     return this.composeFileHeader(lines)
   }
 
-  /**
-   * Convert a TypeScript type definition to a Go type: object types → Go
-   * structs, union string literals → a Go `string` alias.
-   */
+  /** Convert a TS type definition to Go: object types → structs, string-literal unions → a `string` alias. */
   private typeDefinitionToGo(td: TypeDefinition): string | null {
-    // String literal union (`type Filter = 'all' | 'active' | 'completed'`)
-    // carries no `properties`, so the analyzer leaves the field set empty;
-    // detect the alias from the definition and map it to a Go string.
+    // A string-literal union (`type Filter = 'all' | 'active'`) carries no
+    // `properties`, so detect the alias from the definition text.
     if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
       return `// ${td.name} is a string type.\ntype ${td.name} = string`
     }
 
-    // Object/interface type: type Todo = { id: number; text: string; ... }
     const fields = this.structFieldsFor(td)
     if (fields.length === 0) return null
 
@@ -631,17 +541,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Derive a struct's Go fields from the analyzer-provided structured
-   * properties — no string parsing of the definition. This is the single
-   * source of truth for which fields a generated struct has and each field's Go
-   * name/type; both the struct emitter ({@link typeDefinitionToGo}) and the
-   * object-literal baker ({@link parsedLiteralToGo}) consume it, so a baked literal
-   * can never name a field the struct doesn't declare.
-   *
-   * A property whose source key isn't a valid Go identifier (`"data-id"`, a
-   * numeric key, …) can't become a struct field, so it's dropped here — and is
-   * therefore absent from the baker's field map too, which bails to nil for any
-   * literal that uses such a key.
+   * Single source of truth for a generated struct's Go fields, derived from the
+   * analyzer's structured properties (no definition-string parsing). Both the
+   * struct emitter and the object-literal baker consume it, so a baked literal
+   * can't name a field the struct lacks. A non-Go-identifier source key
+   * (`"data-id"`, a numeric key) is dropped here, so the baker bails to nil for
+   * any literal using such a key.
    */
   private structFieldsFor(td: TypeDefinition): Array<{ tsName: string; goName: string; goType: string }> {
     const fields: Array<{ tsName: string; goName: string; goType: string }> = []
@@ -658,36 +563,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Synthesise a Go struct from an untyped object-array signal's inline initial
-   * value. Returns the struct name + fields, or `null` when synthesis isn't
-   * possible so the caller keeps the field `[]interface{}`/`nil`.
-   *
-   * Synthesis applies only when:
-   *   - the signal's type is an array with no usable element type (untyped),
-   *   - the initial value is a non-empty array literal of object literals,
-   *   - every element shares the same set of Go-identifier keys, and
-   *   - every value is a scalar literal whose Go type is consistent per key
-   *     (numeric keys widen int→float64 when mixed).
-   *
-   * Any deviation (heterogeneous shape, a nested object/array value, a
-   * non-literal value, a non-identifier key, or a name collision with an
-   * existing type) returns `null`.
+   * value, or `null` (caller keeps `[]interface{}`/`nil`). Requires: untyped
+   * array type; a non-empty array literal of object literals; every element
+   * sharing the same Go-identifier key set; every value a scalar literal with a
+   * per-key-consistent Go type (mixed int/float64 widens to float64). Any
+   * deviation, or a name collision with an existing type, returns `null`.
    */
   private synthesizeStructFromSignal(
     signal: { getter: string; type: TypeInfo; initialValue: string; parsed?: ParsedExpr },
     componentName: string,
   ): { name: string; fields: Array<{ tsName: string; goName: string; goType: string }> } | null {
-    // Only untyped arrays: a typed (`Item[]`) or scalar (`string[]`) element
-    // already bakes through the normal path.
+    // Only untyped arrays: typed (`Item[]`) / scalar (`string[]`) elements bake
+    // through the normal path.
     if (signal.type.kind !== 'array') return null
     const elem = signal.type.elementType
     if (elem && elem.kind !== 'unknown') return null
 
-    // Absent / non-array-literal initial values don't synthesise a struct.
     const node = signal.parsed
     if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
 
-    // Collect the field order + per-key Go types from the first element, then
-    // require every other element to match exactly.
+    // Field order + per-key Go types from the first element; every other element
+    // must match exactly.
     const order: string[] = []
     const goTypes = new Map<string, string>()
     for (let i = 0; i < node.elements.length; i++) {
@@ -695,7 +591,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (el.kind !== 'object-literal') return null
       const seen = new Set<string>()
       for (const prop of el.properties) {
-        // Shorthand `{ a }` is unsupported.
         if (prop.shorthand) return null
         const key = prop.key
         if (!GO_IDENTIFIER.test(key)) return null
@@ -713,12 +608,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           goTypes.set(key, merged)
         }
       }
-      // Every key from the first element must be present in this element too.
+      // A first-element key missing here → shape differs.
       if (seen.size !== order.length) return null
     }
 
     const name = `${componentName}${capitalizeFieldName(signal.getter)}Item`
-    // Don't shadow a user-defined or already-synthesised type.
+    // Don't shadow an existing (user-defined or already-synthesised) type.
     if (this.state.localTypeNames.has(name)) return null
 
     return {
@@ -732,16 +627,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * The Go type for a scalar literal `ParsedExpr` used as a synthesised struct
-   * field value, or `null` for anything non-scalar (objects, arrays,
-   * identifiers, calls, interpolated templates) so the caller bails out of
-   * synthesis. String / no-substitution template literal → `string`; numeric
-   * literal (optionally prefix-negated) → its int/float64 type via
-   * `numericLiteralGoType` over the carried `raw` token; boolean → `bool`.
+   * Go type for a scalar-literal `ParsedExpr` field value, else `null` (caller
+   * bails out of synthesis). string/no-substitution template → `string`;
+   * numeric (optionally negated) → int/float64; boolean → `bool`.
    */
   private scalarParsedGoType(value: ParsedExpr): string | null {
-    // `-5` parses to a unary minus over a numeric literal; classify by the
-    // inner literal.
+    // `-5` is a unary minus over a numeric literal; classify by the inner one.
     if (value.kind === 'unary' && value.op === '-' && value.argument.kind === 'literal') {
       const inner = value.argument
       if (inner.literalType === 'number') return this.numericLiteralGoType(inner.raw ?? String(inner.value))
@@ -754,15 +645,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return null
   }
 
-  /** `int` for an integer literal, `float64` when the literal has a fraction
-   *  or exponent. */
+  /** `float64` when the literal has a fraction or exponent, else `int`. */
   private numericLiteralGoType(text: string): string {
     return /[.eE]/.test(text) && !text.startsWith('0x') ? 'float64' : 'int'
   }
 
-  /** Reconcile two inferred Go types for the same key across elements: equal
-   *  types stay; mixed numeric (int/float64) widens to float64; otherwise null
-   *  (incompatible → bail). */
+  /** Reconcile two per-key Go types: equal stays; mixed numeric widens to float64; else null. */
   private mergeScalarGoType(a: string, b: string): string | null {
     if (a === b) return a
     const numeric = new Set(['int', 'float64'])
@@ -771,26 +659,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Whether the component reads the request-scoped `searchParams()`
-   * environment signal. Detected from `searchParamsLocals` — the binding names
-   * the shared `searchParamsLocalNames` helper found at `generate()` /
-   * `generateTypes()` entry, covering any local name (including an aliased
-   * `import { searchParams as sp }`). When non-empty the generated structs carry
-   * a `SearchParams bf.SearchParams` binding the route handler fills per request
-   * and the template reads via `.SearchParams.Get "key"`.
-   *
-   * Guarded against a name collision with a user prop / signal / memo also
-   * called `searchParams`: that author owns the `SearchParams` field, so the
-   * env-signal field is dropped (the reference would resolve to their value).
+   * Whether the component reads the request-scoped `searchParams()` env signal
+   * (from `searchParamsLocals`, covering any local incl. aliased imports). When
+   * true the structs carry a `SearchParams bf.SearchParams` binding the handler
+   * fills per request, read as `.SearchParams.Get "key"`. Returns false when a
+   * user prop/signal/memo named `searchParams` already owns the field (the
+   * binding would resolve to their value).
    */
   private usesSearchParams(ir: ComponentIR): boolean {
     if (this.state.searchParamsLocals.size === 0) return false
-    // Every other source that contributes a Props/Input struct field: a
-    // collision on `SearchParams` would redeclare the field and break the Go
-    // compile. Covers props, signals, memos, `useContext` consumers, and the
-    // `{...rest}` bag — the same field-producing sets the struct emitters draw
-    // from. When the author already owns `SearchParams`, drop the env-signal
-    // field (their binding lowers to the same `.SearchParams` reference).
+    // Every other field-producing source: a `SearchParams` collision would
+    // redeclare the field and break the Go compile.
     const taken = new Set<string>([
       ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
       ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
@@ -821,22 +700,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\tBfParent string // Optional: parent scope id')
     lines.push('\tBfMount string // Optional: slot id in parent')
 
-    // Request-scoped `searchParams()` binding. The route handler builds it from
-    // the request URL (`bf.NewSearchParams(r.URL.RawQuery)`); the zero value is
-    // an empty query, so an omitted field resolves every `.Get` to "" — the
-    // author's `?? default` then renders.
+    // Request-scoped `searchParams()` binding. Zero value is an empty query, so
+    // an omitted field resolves every `.Get` to "" and the author's `?? default`
+    // renders.
     if (this.usesSearchParams(ir)) {
       lines.push('\tSearchParams bf.SearchParams // Optional: request query for searchParams()')
     }
 
-    // Static + prop-derived nested components appear in Input;
-    // signal-backed dynamic ones are template-only
+    // Static + prop-derived nested components are in Input; signal-backed
+    // dynamic ones are template-only.
     const inputNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
 
-    // Collect nested component array field names to skip from propsParams
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
 
-    // Add props params (excluding nested array fields)
     for (const param of ir.metadata.propsParams) {
       const fieldName = capitalizeFieldName(param.name)
       if (nestedArrayFields.has(fieldName)) continue
@@ -844,26 +720,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} ${goType}`)
     }
 
-    // Add nested component input arrays
     for (const nested of inputNested) {
       lines.push(`\t${nested.name}s []${nested.name}Input`)
     }
 
-    // `useContext` consumer fields — settable by an enclosing provider on the
-    // parent's side; default applied in NewXxxProps.
+    // `useContext` consumer fields — settable by an enclosing provider; default
+    // applied in NewXxxProps.
     const takenInput = new Set(ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)))
     for (const c of this.nonCollidingContextConsumers(takenInput)) {
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)}`)
     }
 
-    // Input-side bag field for restPropsName spreads. The destructured-rest
-    // pattern (`function({a, ...rest}: P) { <el {...rest}/> }`) surfaces as a
-    // `bagSource: 'input-bag'` slot — Go's static typing can't enumerate the
-    // open-ended key set, so the caller passes the bag as a `map[string]any`
-    // field. Named after the JS-side rest binding (`rest` → `Rest`) so callers
-    // (`parent.NewXxxProps(XxxInput{Rest: ...})` sites, the bun-test harness)
-    // address it by the same identifier they used in source; the JSON tag uses
-    // the rest binding name too so JSON round-trips line up.
+    // Input-side bag for restPropsName spreads. The destructured-rest pattern
+    // (`function({a, ...rest}: P) { <el {...rest}/> }`) is a `bagSource:
+    // 'input-bag'` slot; Go can't enumerate the open-ended key set, so the
+    // caller passes a `map[string]any`. Field + JSON tag use the rest binding
+    // name (`rest` → `Rest`) so call sites and JSON round-trips line up.
     const restPropsName = ir.metadata.restPropsName
     if (restPropsName) {
       const seen = new Set<string>()
@@ -881,9 +753,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('')
   }
 
-  /**
-   * Generate Props struct for a component
-   */
   private generatePropsStruct(
     lines: string[],
     ir: ComponentIR,
@@ -904,11 +773,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Generate a wrapper struct for loop body components with JSX children. The
-   * wrapper embeds the child component's Props, adds datum fields from the
-   * loop's item type, and adds static child instance fields for sub-components
-   * within the loop body children (e.g. the `TableCell` instances inside
-   * `<TableRow>…</TableRow>`).
+   * Wrapper struct for a loop-body component with JSX children: embeds the
+   * child's Props, datum fields from the loop's item type, and slot fields for
+   * sub-components in the body (`TableCell` inside `<TableRow>…</TableRow>`).
    */
   private generateLoopBodyWrapperStruct(
     lines: string[],
@@ -916,11 +783,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     nested: NestedComponentInfo,
   ): void {
     const wrapperName = this.loopBodyWrapperName(parentComponentName, nested)
-
-    // Resolve datum fields from the loop's item type
     const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-
-    // Collect static child instances from the body children
     const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
 
     lines.push(`// ${wrapperName} wraps ${nested.name}Props with per-row loop datum`)
@@ -931,8 +794,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${f.goName} ${f.goType} \`json:"-"\``)
     }
     // Scalar-item loop (`[1,2,3,4,5].map(n => …{n}…)`) — no datum fields, so
-    // carry the whole range value here; the loop's body define is fed
-    // `.BfLoopItem` and renders the bare param.
+    // carry the whole range value; the body define is fed `.BfLoopItem`.
     const scalarLoopType = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
     if (scalarLoopType && datumFields.length === 0) {
       lines.push(`\tBfLoopItem ${scalarLoopType} \`json:"-"\``)
@@ -986,27 +848,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Go element type for a loop that iterates an inline array literal of
-   * primitives whose body renders the bare item (`[1,2,3,4,5].map(n => …{n}…)`).
-   * Such "scalar-item" loops have no datum FIELDS (the item is a whole value,
-   * not an object), so the body needs the value itself, carried on the wrapper
-   * as a synthetic `BfLoopItem`. Returns `'interface{}'` for a primitive-literal
-   * array, or null for object/field loops and non-literal sources (which keep
-   * the existing datum-field path).
+   * `'interface{}'` for a loop over an inline primitive-literal array whose body
+   * renders the bare item (`[1,2,3,4,5].map(n => …{n}…)`), else null. Such
+   * scalar-item loops have no datum fields, so the value is carried on the
+   * wrapper's synthetic `BfLoopItem`; object/field loops and non-literal sources
+   * keep the datum-field path.
    */
   private scalarLiteralLoopGoType(
     arrayParsed: ParsedExpr | undefined,
     itemType: TypeInfo | null | undefined,
   ): string | null {
     if (this.resolveLoopDatumFields(itemType).length > 0) return null
-    // Absent / non-array tree → null.
     if (!arrayParsed) return null
     if (arrayParsed.kind !== 'array-literal' || arrayParsed.elements.length === 0) {
       return null
     }
     for (const el of arrayParsed.elements) {
       const isStr = el.kind === 'literal' && el.literalType === 'string'
-      // A bare numeric literal, or a unary-minus wrapping one (`-1`).
+      // A numeric literal, or a unary-minus wrapping one (`-1`).
       const isNum =
         (el.kind === 'literal' && el.literalType === 'number') ||
         (el.kind === 'unary' &&
@@ -1039,14 +898,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const inputTypeName = `${componentName}Input`
     const propsTypeName = `${componentName}Props`
 
-    // Surface the "dynamic loop slices stay empty until the handler populates
-    // them" rule as a doc comment above the generator, with a concrete example
-    // per child component. Without it the contract is implicit: `TodoAppProps`
-    // carries a `TodoItems []TodoItemProps` field, the SSR template iterates
-    // over it, but `NewTodoAppProps(TodoAppInput{Initial: ...})` returns it
-    // empty and the page renders a blank list.
-    // Split dynamic nested: components with body children get auto-populated
-    // from baked memo data; components without stay handler-populated.
+    // Dynamic nested split: components with body children auto-populate from
+    // baked memo data; those without stay handler-populated. The "dynamic loop
+    // slices stay empty until the handler fills them" rule is documented per
+    // child via `emitNewPropsDocComment`.
     const dynamicWithBody = nestedComponents.filter(
       n => n.isDynamic && !n.isPropDerived && n.bodyChildren && n.bodyChildren.length > 0,
     )
@@ -1061,19 +916,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t}')
     lines.push('')
 
-    // Static + prop-derived nested components: auto-populate from input.
-    // Signal-backed dynamic arrays are set manually by the handler.
+    // Static + prop-derived nested components auto-populate from input.
     const staticNested = nestedComponents.filter(n => !n.isDynamic || n.isPropDerived)
 
-    // Track which wrapper vars have been emitted so the return struct can
-    // conditionally include them (both static-with-body and dynamic-with-body
-    // paths may emit wrappers).
+    // Wrapper vars emitted (by either the static-with-body or dynamic-with-body
+    // path), so the return struct only includes the ones that were built.
     const emittedWrapperVars = new Set<string>()
 
-    // Split static nested into those with and without body children. Static
-    // loops with body children backed by module consts bake the data directly
-    // (like the dynamic-with-body path) because Input items don't carry the
-    // datum fields the wrapper struct needs.
+    // Static loops WITH body children bake the data directly (like the
+    // dynamic-with-body path): Input items don't carry the wrapper's datum
+    // fields.
     const staticWithBody = staticNested.filter(
       n => n.bodyChildren && n.bodyChildren.length > 0,
     )
@@ -1081,7 +933,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       n => !n.bodyChildren || n.bodyChildren.length === 0,
     )
 
-    // Handle static nested components WITHOUT body children (original path)
+    // Static nested WITHOUT body children.
     for (const nested of staticWithoutBody) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       lines.push(`\t${varName} := make([]${nested.name}Props, len(in.${nested.name}s))`)
@@ -1100,12 +952,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.emitStaticBodyWrappers(lines, ir, componentName, staticWithBody, emittedWrapperVars)
 
-    // Collect signal-time prop fallbacks: when a signal is initialized via
-    // `createSignal(props.X ?? N)`, hoist `N` as a local variable so the signal,
-    // any memo derived from it, and the prop field itself all derive from the
-    // same fallback-applied value. Go's primitive zero values can't distinguish
-    // an explicit `Initial: 0` from an omitted field, so the substitution also
-    // fires when the caller passes the type's zero value.
+    // Signal-time prop fallbacks: `createSignal(props.X ?? N)` hoists `N` as a
+    // local so the signal, any derived memo, and the prop field share one
+    // fallback-applied value. Go zero values can't tell an explicit `Initial: 0`
+    // from an omitted field, so it also fires on the type's zero value.
     const propFallbackVars = this.collectPropFallbackVars(ir)
     for (const [, info] of propFallbackVars) {
       lines.push(`\t${info.varName} := in.${info.fieldName}`)
@@ -1119,39 +969,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     lines.push(`\treturn ${propsTypeName}{`)
     lines.push('\t\tScopeID: scopeID,')
-    // Forward host context for when *this* component is itself a slot-attached
-    // child of an outer page/component.
+    // Host context, for when *this* component is itself a slot-attached child.
     lines.push('\t\tBfParent: in.BfParent,')
     lines.push('\t\tBfMount: in.BfMount,')
-    // Forward the request-scoped searchParams() binding unchanged.
     if (this.usesSearchParams(ir)) {
       lines.push('\t\tSearchParams: in.SearchParams,')
     }
 
-    // Collect nested component array field names
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
 
-    // Add props params, tracking field names to skip duplicate signal
-    // assignments. When the JSX function declared a default (e.g.
-    // `variant = 'default'`), bake that fallback into the generated assignment
-    // so a Go zero value doesn't silently shadow the JSX-side default. Same for
-    // signal-side fallbacks (`createSignal(props.X ?? N)`) via the hoisted
-    // variable from `propFallbackVars`.
-    // A memo that shadows a prop of the same name
+    // Props params (field names tracked to skip duplicate signal assignments).
+    // A JSX-declared default (`variant = 'default'`) or signal-side fallback
+    // (`props.X ?? N`, via the hoisted var) is baked in so a Go zero value can't
+    // shadow it. A memo shadowing a same-named prop
     // (`const className = createMemo(() => props.className ?? '')`) shares the
-    // prop's struct field (see `generatePropsStruct`). Fold the memo's
-    // `?? fallback` into the prop's own initializer so the SSR value matches the
-    // memo semantics when the caller omits it.
+    // prop's field, so its `?? fallback` folds into the prop initializer.
     const memoFallbacks = new Map<string, { goFallback: string; goType: string }>()
     for (const memo of ir.metadata.memos) {
       const stripped = memo.computation.replace(/^\(\)\s*=>\s*/, '')
       const m = this.extractPropFallback(stripped)
       if (!m) continue
       if (capitalizeFieldName(m.propName) !== capitalizeFieldName(memo.name)) continue
-      // `applyGoFallback` emits a string-typed zero-value check; folding onto a
-      // prop whose Input field resolved to `interface{}` (e.g. a
-      // string-literal-union type the resolver can't narrow) would not compile.
-      // Such props keep the plain `in.<Field>` assignment.
+      // `applyGoFallback` emits a string-typed zero check; only `string` /
+      // `interface{}` fields take the fold (the latter via the nil-tolerant
+      // wrapper below), so restrict here.
       const param = ir.metadata.propsParams.find(
         p => capitalizeFieldName(p.name) === capitalizeFieldName(memo.name),
       )
@@ -1176,9 +1017,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         } else if (memoFold !== undefined && memoFold.goType === 'string') {
           lines.push(`\t\t${fieldName}: ${applyGoFallback(`in.${fieldName}`, memoFold.goFallback)},`)
         } else if (memoFold !== undefined) {
-          // interface{} field (`size ?? 'icon'`): applyGoFallback's string
-          // zero-check doesn't compile here, so emit a nil/empty-tolerant
-          // wrapper instead.
+          // interface{} field (`size ?? 'icon'`): the string zero-check doesn't
+          // compile, so wrap in a nil/empty-tolerant IIFE.
           lines.push(
             `\t\t${fieldName}: func() interface{} { v := interface{}(in.${fieldName}); if v == nil || v == "" { return ${memoFold.goFallback} }; return v }(),`,
           )
@@ -1189,28 +1029,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       propFieldNames.add(fieldName)
     }
 
-    // Add signal initial values (skip if a prop field of the same name was emitted)
+    // Signal initial values (skip a name already emitted as a prop field).
     for (const signal of ir.metadata.signals) {
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
-      // If this signal's initial value is `props.X ?? N` and we hoisted a
-      // fallback variable for `X`, reuse it so the signal and any memo
-      // computation share the same value.
+      // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
+      // one value.
       const fallbackMatch = this.extractPropFallback(signal.initialValue)
       const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
       if (hoisted) {
         lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
       } else {
-        // Bake against the synthesised struct type when one was inferred for
-        // this untyped object-array signal, else the signal's own type.
+        // Bake against the synthesised struct type if one was inferred for this
+        // untyped object-array signal, else the signal's own type.
         const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
         const initialValue = convertInitialValue(this.emitCtx, signal.initialValue, bakeType, ir.metadata.propsParams, signal.parsed)
         lines.push(`\t\t${fieldName}: ${initialValue},`)
       }
     }
 
-    // Add nested component arrays (static without body always emitted;
-    // static with body + dynamic with body use emittedWrapperVars guard)
+    // Nested component arrays. Static-without-body always emitted; the
+    // with-body paths only when their wrapper var was built.
     for (const nested of staticWithoutBody) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       lines.push(`\t\t${nested.name}s: ${varName},`)
@@ -1221,22 +1060,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${nested.name}s: ${varName},`)
     }
 
-    // Add memo initial values (computed from signal initial values).
-    // Prop-shadowing memos were folded into the prop field above.
+    // Memo initial values (from signal initials). Prop-shadowing memos were
+    // folded into the prop field above.
     const memoPropsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
     for (const memo of ir.metadata.memos) {
       const fieldName = capitalizeFieldName(memo.name)
       if (propFieldNames.has(fieldName)) continue
-      // Pass the memo's inferred Go type so an unresolved computation falls back
-      // to that type's zero value (`false` for a boolean memo like `isChecked`),
-      // not the int `0`.
+      // Pass the inferred Go type so an unresolved computation zeroes to that
+      // type (`false` for a boolean memo), not the int `0`.
       const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
       const memoValue = computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
       lines.push(`\t\t${fieldName}: ${memoValue},`)
     }
 
-    // Initialise computed derived-const fields (e.g. `Root: func() string { … }()`),
-    // matching `generatePropsStruct`.
+    // Computed derived-const fields (`Root: func() string { … }()`), matching
+    // `generatePropsStruct`.
     const takenDerivedInit = new Set<string>([
       ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
       ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
@@ -1246,8 +1084,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${f.name}: ${f.init},`)
     }
 
-    // `useContext` consumer fields: default to the `createContext` default
-    // when the caller (a provider) didn't set them.
+    // `useContext` consumer fields default to the `createContext` default when
+    // the provider didn't set them.
     const takenInit = new Set<string>([
       ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
       ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
@@ -1263,7 +1101,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t${field}: ${defaulted},`)
     }
 
-    // Add static child component instances
     this.emitStaticChildInstances(lines, ir)
 
     this.emitSpreadBagInits(lines, ir, spreadSlots)
@@ -1277,14 +1114,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const child of staticChildren) {
       lines.push(`\t\t${child.fieldName}: New${child.name}Props(${child.name}Input{`)
       lines.push(`\t\t\tScopeID: scopeID + "_${child.slotId}",`)
-      // Slot identity stamps onto the child's Props via its own NewProps
-      // (BfParent/BfMount fields).
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
-      // SSR context propagation: if this child is wrapped in a `<Ctx.Provider
-      // value>` it consumes, set its context-consumer field to the provider
-      // value (else the child's own NewProps applies the `createContext`
-      // default).
+      // SSR context propagation: a child wrapped in a `<Ctx.Provider value>` it
+      // consumes gets the provider value set on its consumer field (else its own
+      // NewProps applies the `createContext` default).
       if (child.contextBindings) {
         for (const consumer of this.childContextConsumers.get(child.name) ?? []) {
           const goVal = child.contextBindings.get(consumer.contextName)
@@ -1293,17 +1127,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
         }
       }
-      // Cross-component shape lookup: an attribute that is NOT a declared param
-      // of the child but where the child has a `...props` rest bag
-      // (`<CheckIcon data-slot=.../>`, CheckIcon's params being `size`/`className`
-      // and the rest binding `props`) must be routed into the child's rest-bag
-      // map field — emitting `Data-slot:` as a top-level Go field is a syntax
-      // error (hyphen). `restBagEntries` collects `"jsx-attr-name": goValue`
-      // pairs for that map.
+      // Non-param attrs route into the child's rest bag (see
+      // `childComponentShapes`); `restBagEntries` collects `"jsx-attr-name":
+      // goValue` pairs for that map.
       const childShape = this.childComponentShapes.get(child.name)
       const restBagEntries: string[] = []
-      // Emit a child input field, OR collect it as a rest-bag entry when the
-      // attr isn't a declared child param and a rest bag exists.
       const emitChildField = (jsxName: string, goValue: string): void => {
         if (
           childShape &&
@@ -1313,13 +1141,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
           return
         }
-        // A hyphenated attribute (`aria-label`) can't be a Go struct field, and
-        // with no rest bag on the child there is nowhere to route it (the child
-        // has no `{...props}` spread). Skip rather than emit invalid Go.
+        // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
+        // bag to route it into, has nowhere to go — skip over emitting invalid Go.
         if (jsxName.includes('-')) return
         lines.push(`\t\t\t${capitalizeFieldName(jsxName)}: ${goValue},`)
       }
-      // Add prop values
       for (const prop of child.props) {
         switch (prop.value.kind) {
           case 'literal':
@@ -1332,12 +1158,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case 'expression':
           case 'spread':
           case 'template': {
-            // Prefer the parsed template parts when present — `expression`
-            // carries them in `parts` after the IR producer's
-            // `template → expression` collapse for component props, and
-            // `template` exposes them directly. This handles the
-            // shadcn-style variant lookup (`record-index-lookup-via-child-prop`)
-            // which `resolveDynamicPropValue` can't represent.
+            // Prefer parsed template parts when present (carried on both
+            // `expression` and `template`): handles the shadcn variant lookup
+            // (`record-index-lookup-via-child-prop`) that
+            // `resolveDynamicPropValue` can't represent.
             const parts =
               prop.value.kind === 'template' || prop.value.kind === 'expression'
                 ? prop.value.parts
@@ -1345,25 +1169,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             if (parts) {
               const goExpr = this.templatePartsToGoCode(parts, ir.metadata.propsParams)
               if (goExpr !== null) {
-                // Parts path succeeded — emit and move on.
                 emitChildField(prop.name, goExpr)
                 break
               }
-              // Parts exist but templatePartsToGoCode opted out (unsupported
-              // part kind). Fall through to the bare-expression path below.
+              // Parts opted out (unsupported kind) → bare-expression path below.
             }
 
-            // Bare-expression fallback. `template` kind has no raw expr string
-            // (its JS was discarded in favour of the parts structure), so skip.
+            // `template` kind has no raw expr string (discarded for the parts).
             const exprText = prop.value.kind === 'template' ? '' : prop.value.expr
             if (!exprText) break
-            // An inline object literal passed to a child's optional object prop
-            // (`opts={{ align: 'start' }}`) bakes to a Go map literal — the child
-            // field is `map[string]interface{}` and `resolveDynamicPropValue`
-            // can't represent an object literal. The carried `ParsedExpr` lets
-            // the map lowering read the tree. Only an `expression` attr carries
-            // `.parsed`; a `spread` / `template` value can't be an inline object
-            // literal here.
+            // Inline object literal to a child's optional object prop
+            // (`opts={{ align: 'start' }}`) bakes to a Go map literal (the field
+            // is `map[string]interface{}`). Only an `expression` attr carries
+            // `.parsed`.
             const parsedValue =
               prop.value.kind === 'expression' ? prop.value.parsed : undefined
             if (
@@ -1388,28 +1206,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             break
           }
           case 'jsx-children':
-            // Handled separately via `child.childrenText` / `child.childrenHtml` below.
+            // Handled below via `child.childrenText` / `child.childrenHtml`.
             break
         }
       }
-      // Emit the collected rest-bag entries as the child's open-ended bag field
-      // (`Props: map[string]any{...}`), matching how the child's `NewXxxProps`
-      // maps `in.Props` onto its `Spread_<N>` field.
+      // Rest-bag entries → the child's open-ended bag field
+      // (`Props: map[string]any{...}`).
       if (childShape?.restBagField && restBagEntries.length > 0) {
         lines.push(
           `\t\t\t${childShape.restBagField}: map[string]any{${restBagEntries.join(', ')}},`,
         )
       }
-      // Pass through JSX children as the child slot's `Children` input.
-      // Two paths:
-      //   1. Plain text (`<Button>+1</Button>`) → quote with JSON.stringify
-      //      to dodge `goLiteral`'s number-detection branch (which would
-      //      silently emit `-1` as an int for `<Button>-1</Button>`).
-      //   2. Mixed/HTML (`<Card><span>x</span></Card>`) → wrap in
-      //      `template.HTML(...)` so html/template skips re-escaping the
-      //      angle brackets at render time. The fragment is rendered up
-      //      front via the adapter so any nested template directives are
-      //      already in their final Go-template form.
+      // JSX children → the child slot's `Children` input. Plain text uses
+      // JSON.stringify (dodges `goLiteral`'s number branch, which would emit
+      // `<Button>-1</Button>` as an int); mixed/HTML wraps in `template.HTML(...)`
+      // so html/template skips re-escaping the already-rendered markup.
       if (child.childrenText !== null) {
         lines.push(`\t\t\tChildren: ${JSON.stringify(child.childrenText)},`)
       } else if (child.childrenHtml !== null) {
@@ -1417,7 +1228,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t\t\tChildren: template.HTML(${JSON.stringify(child.childrenHtml)}),`)
       } else if (child.childrenScopedHtmlExpr !== null) {
         // Hoisted-JSX children with a needsScope root: the root `bf-s` is the
-        // runtime parent scopeID, spliced into the bake.
+        // runtime parent scopeID spliced into the bake.
         this.state.usesHtmlTemplate = true
         lines.push(`\t\t\tChildren: template.HTML(${child.childrenScopedHtmlExpr}),`)
       }
@@ -1452,12 +1263,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   private emitSpreadBagInits(lines: string[], ir: ComponentIR, spreadSlots: SpreadSlotInfo[]): void {
-    // Initialise spread bag fields. Unsupported shapes (e.g. signal getters
-    // whose initialValue isn't a plain object literal, identifiers that don't
-    // resolve to a propsParam) fall through to BF101 below — the field is still
-    // declared on the struct so the template compiles even when the initializer
-    // is missing. `spreadSlots` is computed once in `generateTypes` and threaded
-    // through to avoid a second IR walk.
+    // Spread bag field inits. Unsupported shapes fall through to BF101; the
+    // field stays declared on the struct so the template still compiles.
     for (const slot of spreadSlots) {
       const goExpr = buildSpreadInitializer(this.emitCtx, slot.expr, ir, slot.parsed)
       if (goExpr) {
@@ -1483,10 +1290,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     staticWithBody: NestedComponentInfo[],
     emittedWrapperVars: Set<string>,
   ): void {
-    // Static nested components WITH body children. Bake the module-const array
-    // into the constructor so wrapper structs get their datum fields directly
-    // from the data, not from Input items (which only carry child-component
-    // params, not loop datum fields).
+    // Bake the module-const array into the constructor so wrappers get their
+    // datum fields from the data (Input items carry only child-component params).
     for (const nested of staticWithBody) {
       const loopArray = nested.loopArray
       const moduleConst = loopArray
@@ -1498,9 +1303,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       let bakedValue = moduleConst?.type
         ? convertInitialValue(this.emitCtx, moduleConst.value!, moduleConst.type, ir.metadata.propsParams, moduleConst.parsed)
         : null
-      // Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no named module
-      // const to look up, so bake the literal slice directly so SSR renders the
-      // items instead of an empty loop.
+      // Inline primitive-literal array (`[1,2,3,4,5].map(...)`): no named const,
+      // so bake the literal slice directly (else SSR renders an empty loop).
       if (!bakedValue && scalarLoopType) {
         bakedValue = jsLiteralToGo(
           this.emitCtx,
@@ -1540,10 +1344,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t\t${nested.name}Props: New${nested.name}Props(${nested.name}Input{`)
       lines.push(`\t\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-      // Bake the loop-body component's own static props (e.g.
-      // `<CarouselItem orientation="vertical" className="basis-1/2">`) into its
-      // Input. `key` becomes BfDataKey below; children flow through
-      // `bf_with_children`; hyphenated names have no Go field.
+      // Loop-body component's own static props. `key` → BfDataKey below; children
+      // flow through `bf_with_children`; hyphenated names have no Go field.
       for (const prop of nested.props ?? []) {
         if (prop.name === 'key' || prop.name === 'children' || prop.name.includes('-')) continue
         if (prop.value.kind === 'literal') {
@@ -1556,10 +1358,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       for (const f of datumFields) {
         lines.push(`\t\t\t${f.goName}: item.${f.goName},`)
       }
-      // Scalar-item loop: carry the whole range value on the wrapper's synthetic
-      // `BfLoopItem` so the body template renders the bare param (`{n}` → `{{.}}`
-      // fed `.BfLoopItem`). Also consumes `item`, which would otherwise be an
-      // unused range var (compile error) for a datum-less loop.
+      // Scalar-item loop: carry the range value on `BfLoopItem` so the body
+      // renders the bare param. Also consumes `item`, otherwise an unused range
+      // var (Go compile error) in a datum-less loop.
       if (scalarLoopType && datumFields.length === 0) {
         lines.push(`\t\t\tBfLoopItem: item,`)
       }
@@ -1574,8 +1375,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(${keyField})`)
         this.state.usesFmt = true
       } else if (scalarLoopType && nested.loopKey && nested.loopKey === nested.loopParam) {
-        // `key={n}` where `n` is the scalar item itself — the key is the range
-        // value, not a field path.
+        // `key={n}` where `n` is the scalar item — the key is the range value.
         lines.push(`\t\t${varName}[i].BfDataKey = fmt.Sprint(item)`)
         this.state.usesFmt = true
       }
@@ -1593,9 +1393,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propFallbackVars: Map<string, PropFallbackVar>,
     emittedWrapperVars: Set<string>,
   ): void {
-    // Build wrapper items for dynamic loop body components whose array bakes to
-    // a module-const via a memo. Creates the wrapper slice with embedded child
-    // Props + datum fields + static sub-component instances.
+    // Wrapper items for dynamic loop-body components whose array bakes to a
+    // module-const via a memo (embedded child Props + datum + sub-instances).
     const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
     for (const nested of dynamicWithBody) {
       const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
@@ -1614,7 +1413,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
       const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
 
-      // Create child sub-component instances once (identical scope IDs across rows)
+      // Child sub-component instances created once (identical scope IDs per row).
       for (const child of bodyChildInstances) {
         const childVar = `child_${child.fieldName}`
         lines.push(`\t${childVar} := New${child.name}Props(${child.name}Input{`)
@@ -1664,17 +1463,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.localTypeAliases = new Map<string, string>()
     this.state.localStructFields = new Map<string, Map<string, string>>()
     for (const td of ir.metadata.typeDefinitions) {
-      // Skip the Props type itself (the component's own props, not reusable).
+      // Skip the Props type (not reusable) and child Props (emitted by the child).
       if (td.name === 'Props' || td.name === `${componentName}Props`) continue
-      // Child component Props are generated by the child's own generatePropsStruct().
       if (td.name.endsWith('Props')) continue
       this.state.localTypeNames.add(td.name)
-      // String literal union aliases (e.g. `type Filter = 'all' | 'active'`).
       if (td.definition.match(/^type \w+ = ('[^']*'(\s*\|\s*'[^']*')*)/)) {
         this.state.localTypeAliases.set(td.name, 'string')
       } else {
-        // Record the struct's source-key → Go-field-name map for the baker,
-        // from the same field derivation the struct emitter uses.
+        // Source-key → Go-field-name map for the baker, from the same field
+        // derivation the struct emitter uses.
         const fields = this.structFieldsFor(td)
         if (fields.length > 0) {
           this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
@@ -1684,7 +1481,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   private emitLocalTypeStructs(lines: string[], ir: ComponentIR, componentName: string): void {
-    // Go structs for local type definitions (e.g. Todo; Filter → string alias).
     for (const td of ir.metadata.typeDefinitions) {
       if (td.name === 'Props' || td.name === `${componentName}Props`) continue
       if (td.name.endsWith('Props')) continue
@@ -1796,7 +1592,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // and emitted as `data-key` on this component's scope root.
     lines.push('\tBfDataKey string `json:"-"`')
 
-    // Add Scripts field for dynamic script collection
     lines.push('\tScripts *bf.ScriptCollector `json:"-"`')
 
     // Request-scoped `searchParams()` SSR value. Read by the template as
@@ -1813,15 +1608,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     nestedComponents: NestedComponentInfo[],
     propTypeOverrides: Map<string, string>,
   ): void {
-    // Collect nested component array field names to skip from propsParams
+    // Nested-component array fields are emitted as typed arrays below, not as
+    // their raw prop; track them (and emitted names) to skip duplicates.
     const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
-
-    // Track emitted prop field names to avoid duplicate fields when signal name matches prop name
     const propFieldNames = new Set<string>()
 
     for (const param of ir.metadata.propsParams) {
       const fieldName = capitalizeFieldName(param.name)
-      // Skip if this field will be replaced by a typed array for nested components
       if (nestedArrayFields.has(fieldName)) continue
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
       // Children are already rendered in the DOM; serialising them into bf-p
@@ -1832,12 +1625,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       propFieldNames.add(fieldName)
     }
 
-    // Find signal types by looking at their initial values
     const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
 
     for (const signal of ir.metadata.signals) {
       const fieldName = capitalizeFieldName(signal.getter)
-      // Skip if a prop field with the same name was already emitted
       if (propFieldNames.has(fieldName)) continue
       const jsonTag = this.toJsonTag(signal.getter)
       // A synthesised struct type wins outright — the signal is an untyped
@@ -1847,7 +1638,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         lines.push(`\t${fieldName} ${typeInfoToGo(this.emitCtx, synthType)} \`json:"${jsonTag}"\``)
         continue
       }
-      // Infer type from initial value or referenced prop's type
       let goType: string
       let referencedProp = propsParamMap.get(signal.initialValue)
       if (!referencedProp) {
@@ -1883,18 +1673,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
 
-    // Add memos to Props (computed values needed for SSR). Skip a memo whose
-    // name collides with an already-emitted prop field
-    // (`const className = createMemo(() => props.className ?? '')`): both readers
-    // (the memo usage and the inherited `props.className` access) lower to the
-    // same `.Field`, so the prop field carries the value; the memo's
-    // `?? fallback` is folded into the prop's initializer in
-    // `generateNewPropsFunction`.
+    // Memos for SSR. A memo whose name collides with an emitted prop field
+    // (`const className = createMemo(() => props.className ?? '')`) is skipped:
+    // both readers lower to the same `.Field`, and the memo's `?? fallback` folds
+    // into the prop initializer in `generateNewPropsFunction`.
     for (const memo of ir.metadata.memos) {
       const fieldName = capitalizeFieldName(memo.name)
       if (propFieldNames.has(fieldName)) continue
       const jsonTag = this.toJsonTag(memo.name)
-      // Memos that depend on number signals are usually numbers.
       const goType = this.inferMemoType(memo, ir.metadata.signals, propsParamMap)
       lines.push(`\t${fieldName} ${goType} \`json:"${jsonTag}"\``)
     }
@@ -1931,35 +1717,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${this.contextFieldName(c)} ${this.contextConsumerGoType(c)} \`json:"${jsonTag}"\``)
     }
 
-    // Add array fields for nested components (for template rendering)
     for (const nested of nestedComponents) {
       // Loop body with JSX children → use the wrapper struct type.
       const elemType = nested.bodyChildren?.length
         ? this.loopBodyWrapperName(componentName, nested)
         : `${nested.name}Props`
       if (nested.isDynamic && !nested.isPropDerived) {
-        // Dynamic signal array loops: template-only, not in JSON
+        // Dynamic signal-array loops are template-only.
         lines.push(`\t${nested.name}s []${elemType} \`json:"-"\``)
       } else {
-        // Static arrays and prop-derived dynamic arrays: include in JSON
-        // so the client can hydrate via mapArray or forEach
+        // Static + prop-derived arrays go in JSON so the client can hydrate.
         const jsonTag = this.toJsonTag(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
         lines.push(`\t${nested.name}s []${elemType} \`json:"${jsonTag}"\``)
       }
     }
 
-    // Add fields for static child component instances
     const staticChildren = this.collectStaticChildInstances(ir.root)
     for (const child of staticChildren) {
       lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
     }
 
-    // Add fields for top-level JSX intrinsic-element spreads. Each non-loop
-    // spread gets a `Spread_<slotId> map[string]any` field, referenced by the
-    // template as `.Spread_<slotId>` via `{{bf_spread_attrs}}`. Loop-internal
-    // spreads emit inline and don't appear here. The slot list is computed once
-    // in `generateTypes` and threaded through both struct/init emitters so the
-    // IR walk runs exactly once per `generate()` call.
+    // Top-level intrinsic-element spreads: each gets a `Spread_<slotId>
+    // map[string]any` field the template reads via `{{bf_spread_attrs}}`.
+    // Loop-internal spreads emit inline and don't appear here.
     for (const slot of spreadSlots) {
       const jsonTag = this.toJsonTag(slot.slotId)
       lines.push(`\t${slot.slotId} map[string]any \`json:"${jsonTag}"\``)
@@ -2200,23 +1980,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Convert a template literal's parsed parts into a Go expression of type
-   * `string`, evaluated in `NewXxxProps` scope (where destructured prop refs
-   * resolve via `in.FieldName`). Returns null when any part is not representable
-   * in static Go code so the caller can fall back to `resolveDynamicPropValue`
-   * (which handles the simpler shapes).
-   *
-   * Supported parts:
-   *   - `string`: emit as a Go string literal.
-   *   - `lookup`: `${MAP[KEY]}` against a `Record<T, string>` literal —
-   *     emit an IIFE that switches on the key prop and returns the
-   *     matching case (empty when no case matches). The key must be a
-   *     bare prop identifier today; other key shapes opt out.
-   *
-   * `ternary` is intentionally left unsupported — the existing
-   * element-attribute path handles it via Go template `{{if}}` syntax,
-   * and component-prop-via-ternary cases are rarer and can be added
-   * incrementally.
+   * Convert a template literal's parsed parts into a `string`-typed Go
+   * expression in `NewXxxProps` scope (destructured prop refs → `in.FieldName`),
+   * or null so the caller falls back to `resolveDynamicPropValue`. A `string`
+   * part emits a Go literal; a `lookup` (`${MAP[KEY]}` over a `Record<T,string>`,
+   * key must be a bare prop ident) emits a switch-on-key IIFE. `ternary` opts out
+   * — the element-attribute path handles it via `{{if}}`.
    */
   private templatePartsToGoCode(
     parts: IRTemplatePart[],
@@ -2300,12 +2069,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // Match signal/memo getter calls like count(), doubled()
+    // Signal/memo getter calls (`count()`, `doubled()`).
     const getterMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\(\)$/)
     if (getterMatch) {
       const getterName = getterMatch[1]
 
-      // Check if it's a signal
       const signal = signals.find(s => s.getter === getterName)
       if (signal) {
         return convertInitialValue(this.emitCtx, signal.initialValue, signal.type, propsParams, signal.parsed)
@@ -2642,34 +2410,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Decide whether a lowered Go string is ALREADY a self-contained template
-   * fragment — i.e. it carries its own `{{...}}` actions and so must NOT be
-   * re-wrapped in another `{{...}}` (doing so yields `{{ {{...}} }}`, which
-   * `html/template` rejects at parse time). Single source of truth for the
-   * wrap-or-not decision across `renderExpression`, `templateLiteral`, and the
-   * static-string / attribute interpolation paths.
+   * Whether a lowered Go string already carries its own `{{...}}` actions and so
+   * must NOT be re-wrapped (`{{ {{...}} }}` is a parse error). Single source of
+   * the wrap-or-not decision across the expression / template-literal / attr
+   * paths.
    *
-   * The decision is STRUCTURAL, deliberately NOT a `{{` substring scan: literal
-   * text and Go string literals are ambiguous to scan — `5" ${x}` lowers to
-   * `5" {{.X}}` while JS `{"{{"}` lowers to the Go literal `"{{"`; both mix
-   * quotes and braces, so no scan can tell them apart. Two — and only two —
-   * structural shapes are fragments:
-   *
-   *   1. A pure action block (`{{if}}` / `{{with}}` / `{{range}}`). The emitter
-   *      prepends NO literal text to these, so they ALWAYS start with `{{`; a
-   *      leading `{{` is an unambiguous marker for this whole class.
-   *   2. A template literal — the ONLY source form that interleaves author
-   *      literal text with `{{...}}` actions (` · #${tag}` → ` · #{{.Tag}}`), so
-   *      it may begin with literal text and is detected by its parsed `kind`.
-   *
-   * Everything else is a bare pipeline (`.Foo`, `len .X`, `bf_arr …`) — even one
-   * whose value contains `{{` inside a Go string literal — and MUST be wrapped.
-   *
-   * Invariant (enforced by the `template-fragment invariant` tests): no
-   * non-template-literal fragment ever begins with literal text, so case 1's
-   * `startsWith('{{')` is complete. If a future emitter prepends literal text to
-   * an action block, give that shape a parsed kind this helper can key off, as
-   * template literals are handled here.
+   * Structural, deliberately NOT a `{{` substring scan (a Go string literal may
+   * contain `{{`). Exactly two shapes are fragments: an action block, which the
+   * emitter never prefixes with literal text so it always starts with `{{`; and
+   * a template literal, the only form interleaving author text with actions,
+   * keyed by its parsed `kind`. The "no non-template-literal fragment starts
+   * with literal text" invariant is enforced by the template-fragment tests.
    */
   private isTemplateFragment(go: string, kind?: ParsedExpr['kind']): boolean {
     return go.startsWith('{{') || kind === 'template-literal'
@@ -3512,10 +3263,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Render a higher-order expression (filter, every, some, find, findIndex) to
-   * Go template, or null when the shape isn't supported.
-   *
-   * @param renderArray renders the array expression; passed explicitly to allow
-   *   recursion through different lowering methods
+   * Go template, or null when the shape isn't supported. `renderArray` is passed
+   * in so the array can recurse through different lowering methods.
    */
   private renderHigherOrderExpr(
     expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
@@ -3605,15 +3354,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Render every()/some() with complex predicates as `{{range}}{{if}}` with
-   * variable reassignment. Falls back here from bf_every/bf_some when
-   * extractFieldPredicate returns null; reuses renderFilterExpr for the
-   * condition.
+   * Render every()/some() with complex predicates as a `{{range}}{{if}}` with
+   * variable reassignment — the fallback from bf_every/bf_some when
+   * extractFieldPredicate returns null.
    *
    *   every: start true, set false on first failure, break early
    *   some:  start false, set true on first match, break early
-   *
-   * @param renderArray renders the array expression
    */
   private renderEverySomeTemplateBlock(
     expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
@@ -3652,8 +3398,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * Render `.length` on a filter higher-order expression, e.g.
    * `todos().filter(t => !t.done).length` → `len (bf_filter .Todos "Done" false)`.
-   *
-   * @param renderArray renders the array expression
    */
   private renderFilterLengthExpr(
     filterExpr: Extract<ParsedExpr, { kind: 'higher-order' }>,
@@ -3882,10 +3626,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Unified rendering of filter predicate expressions, for both expression-body
-   * (`t => !t.done`) and block-body filters.
-   *
-   * @param param        the loop parameter name (e.g. `t` in `filter(t => ...)`)
-   * @param localVarMap  local variables → signal names (block body only)
+   * (`t => !t.done`) and block-body filters. `localVarMap` maps block-body
+   * locals to signal names.
    */
   private renderFilterExpr(
     expr: ParsedExpr,
@@ -4768,7 +4510,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       goArray = `(${emitBfSort(goArray, loop.sortComparator)})`
     }
 
-    // Handle filter().map() pattern by adding if-condition
+    // filter().map(): gate the body on an `{{if}}` condition.
     if (loop.filterPredicate) {
       let filterCond: string
 
@@ -4884,7 +4626,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean }): string {
-    // Handle Portal component specially - collect content for body end
+    // Portal collects its content for emission at </body>.
     if (comp.name === 'Portal') {
       return this.renderPortalComponent(comp)
     }
@@ -5179,19 +4921,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Replace `${EXPR}` JS-template-literal interpolations in a static string part
-   * with Go template actions (`{{<expr-as-go>}}`), and HTML-escape the
-   * surrounding literal text so embedded characters don't break the attribute
-   * quoting we render into.
-   *
-   * UnoCSS arbitrary-value classes like `[class*="size-"]:size-4` legitimately
-   * contain `"`, which would otherwise terminate the `class="..."` attribute
-   * early and produce invalid HTML.
-   *
-   * The interpolation parser is brace-depth aware: nested `{...}` inside an
-   * expression (object literals, nested template literals) are skipped so the
-   * outer `${...}`'s closing brace is found. An unterminated `${` falls back to
-   * literal text.
+   * Replace `${EXPR}` interpolations with Go actions (`{{<expr-as-go>}}`) and
+   * HTML-escape the surrounding literal text — UnoCSS arbitrary values
+   * (`[class*="size-"]:size-4`) contain `"` that would otherwise close the
+   * `class="..."` attribute. Brace-depth aware (nested `{...}` skipped to find
+   * the outer `}`); an unterminated `${` falls back to literal text.
    */
   private substituteJsInterpolations(s: string): string {
     let out = ''
