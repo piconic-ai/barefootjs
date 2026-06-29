@@ -62,7 +62,8 @@ import {
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
-  searchParamsLocalNames
+  searchParamsLocalNames,
+  queryHrefLocalNames
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION } from '@barefootjs/shared'
@@ -107,7 +108,7 @@ import { CompileState } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerUrlBuilderHelperCall } from "./expr/url-builder.ts"
+import { lowerUrlBuilderHelperCall, lowerQueryHrefCall } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -272,6 +273,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
+    this.state.queryHrefLocals = queryHrefLocalNames(ir.metadata)
     augmentInheritedPropAccesses(ir)
   }
 
@@ -4010,6 +4012,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (strLit) return JSON.stringify(strLit[1])
       }
     }
+
+    // `queryHref(base, { … })` (the pure URL builder, #2042) lowers to a
+    // `bf_query` action. Tried before the generic path because its object-literal
+    // arg is otherwise `unsupported` at the support gate.
+    const queryBuilt = lowerQueryHrefCall(this.emitCtx, trimmed, preParsed)
+    if (queryBuilt !== null) return queryBuilt
 
     // A local URL-builder helper (`hrefFor`, or `sortHref` / `tagHref`
     // delegating to it) lowers to a `bf_query` action — there is no Go method

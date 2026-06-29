@@ -46,6 +46,26 @@ export function importsSearchParams(metadata: IRMetadata): boolean {
 }
 
 /**
+ * The local binding name(s) that `queryHref` from `@barefootjs/client` is
+ * imported under in this component (#2042) — the pure URL-query builder an
+ * adapter lowers to its query helper (`bf_query` in go-template). Mirrors
+ * {@link searchParamsLocalNames}: matched by the exported name `queryHref` and
+ * bound to `alias ?? name`, so an aliased import (`import { queryHref as qh }`)
+ * is gated against the LOCAL name. Empty when not imported.
+ */
+export function queryHrefLocalNames(metadata: IRMetadata): Set<string> {
+  const names = new Set<string>()
+  for (const imp of metadata.imports) {
+    if (imp.source !== '@barefootjs/client' || imp.isTypeOnly) continue
+    for (const s of imp.specifiers) {
+      if (s.isTypeOnly || s.isNamespace || s.isDefault) continue
+      if (s.name === 'queryHref') names.add(s.alias ?? s.name)
+    }
+  }
+  return names
+}
+
+/**
  * Recognise a `<binding>().<method>(<args>)` env-signal method call from a
  * `call` node's callee + args, where `<binding>` is one of the local names
  * `searchParams` was imported under (`localNames`, from

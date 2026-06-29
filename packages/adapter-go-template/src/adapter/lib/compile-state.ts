@@ -90,6 +90,13 @@ export class CompileState {
   searchParamsLocals: Set<string> = new Set()
 
   /**
+   * Local binding names the pure `queryHref` URL builder is imported under
+   * (handles `import { queryHref as qh }`). A `queryHref(base, { … })` call is
+   * lowered to `bf_query` (#2042).
+   */
+  queryHrefLocals: Set<string> = new Set()
+
+  /**
    * Prop NAMES whose resolved Go struct-field type is exactly `interface{}`
    * — i.e. nillable. Used by the attribute emitter to omit a dynamic attribute
    * whose value is a bare reference to such a prop when it's nil.

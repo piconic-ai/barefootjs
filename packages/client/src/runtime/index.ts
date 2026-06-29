@@ -49,6 +49,7 @@ export { splitProps } from '../split-props.ts'
 export { __slot, type SlotMarker } from '../slot.ts'
 export { forwardProps } from '../forward-props.ts'
 export { unwrap } from '../unwrap.ts'
+export { queryHref, type QueryParams, type QueryParamValue } from '../query-href.ts'
 
 // Context API (real DOM-bound implementations; `createContext` is the
 // same pure function re-exported from `../context`).

@@ -1,0 +1,45 @@
+/**
+ * `queryHrefLocalNames` — recognises the `queryHref` import (incl. aliases) so
+ * adapters can gate the `queryHref(base, { … })` → query-helper lowering (#2042).
+ */
+import { describe, test, expect } from 'bun:test'
+import { compileJSX, queryHrefLocalNames, type ComponentIR } from '../index'
+import { TestAdapter } from '../adapters/test-adapter'
+
+function metadata(src: string): ComponentIR['metadata'] {
+  const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter(), outputIR: true })
+  const ir = JSON.parse(result.files.find(f => f.type === 'ir')!.content) as ComponentIR
+  return ir.metadata
+}
+
+describe('queryHrefLocalNames (#2042)', () => {
+  test('recognises a plain queryHref import', () => {
+    const md = metadata(`
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  return <a href={queryHref(props.base, {})}>x</a>
+}
+`)
+    expect([...queryHrefLocalNames(md)]).toEqual(['queryHref'])
+  })
+
+  test('binds to the local alias', () => {
+    const md = metadata(`
+'use client'
+import { queryHref as qh } from '@barefootjs/client'
+export function P(props: { base: string }) {
+  return <a href={qh(props.base, {})}>x</a>
+}
+`)
+    expect([...queryHrefLocalNames(md)]).toEqual(['qh'])
+  })
+
+  test('is empty when not imported', () => {
+    const md = metadata(`
+'use client'
+export function P() { return <a href="/x">x</a> }
+`)
+    expect(queryHrefLocalNames(md).size).toBe(0)
+  })
+})

@@ -1,17 +1,23 @@
 /**
- * Lowering of local `URLSearchParams` builder helpers to `bf_query`.
+ * Lowering of URL-query helpers to `bf_query`.
  *
- * The builder shape is recognised at analysis time and carried as pure IR on the
- * constant (`ConstantInfo.urlBuilder`, #2039) — the `URLSearchParams` idiom is a
- * block-bodied arrow that the structured parser collapses to `unsupported`, so
- * the recognition can't happen here. This module only *consumes* that IR: it
- * substitutes the call args for the helper's params and emits a `bf_query`
- * template expression, with no emit-time re-parse.
+ * Two entry points, sharing the `bf_query` emitter:
+ *   - {@link lowerUrlBuilderHelperCall} — the imperative `URLSearchParams`
+ *     builder idiom, recognised at analysis time and carried as pure IR on the
+ *     constant (`ConstantInfo.urlBuilder`, #2039). The block-bodied arrow is
+ *     `unsupported` to the structured parser, so recognition can't happen here;
+ *     this just consumes the IR (substituting the call args for the helper's
+ *     params) with no emit-time re-parse.
+ *   - {@link lowerQueryHrefCall} — the pure, functional `queryHref(base, { … })`
+ *     API (#2042). The call + object literal are already structured IR, so this
+ *     needs no recognizer at all — it maps each property to a `bf_query` include
+ *     triple directly.
  */
 
 import {
   type ParsedExpr,
   type UrlBuilderInfo,
+  type UrlBuilderSet,
   parseExpression,
   stringifyParsedExpr,
 } from '@barefootjs/jsx'
@@ -133,4 +139,65 @@ function lowerUrlGuard(
   }
   const valueGo = wrapIfMultiToken(ctx.convertExpressionToGo(stringifyParsedExpr(g), undefined, g))
   return `ne ${valueGo} ""`
+}
+
+const EMPTY_SUBS: ReadonlyMap<string, ParsedExpr> = new Map()
+
+/**
+ * Lower a `queryHref(<base>, { <key>: <value>, … })` call to a `bf_query`
+ * expression (#2042). `queryHref` is the pure, functional counterpart to the
+ * recognised `URLSearchParams` builder: because the call + object literal are
+ * already structured IR, there's no block-body recognition or re-parse — this
+ * just maps each property to a `bf_query` include triple and reuses the shared
+ * emitter. Returns null for anything that isn't a `queryHref(base, {object})`
+ * call (→ generic lowering).
+ *
+ * Inclusion is truthy-omit (the client `queryHref` semantics): an entry is
+ * included iff its value is truthy. A conditional include written as
+ * `key: cond ? v : undefined` lowers to `(cond) "key" v`; a plain `key: v`
+ * lowers to `(ne v "") "key" v` (value-truthiness).
+ */
+export function lowerQueryHrefCall(
+  ctx: GoEmitContext,
+  jsExpr: string,
+  preParsed?: ParsedExpr,
+): string | null {
+  const localNames = ctx.state.queryHrefLocals
+  if (localNames.size === 0) return null
+  const head = /^\s*([A-Za-z_$][\w$]*)\s*\(/.exec(jsExpr)
+  if (!head || !localNames.has(head[1])) return null
+
+  const call = preParsed?.kind === 'call' ? preParsed : parseExpression(jsExpr)
+  if (call.kind !== 'call' || call.callee.kind !== 'identifier') return null
+  if (!localNames.has(call.callee.name) || call.args.length !== 2) return null
+  const [base, obj] = call.args
+  // The params must be a plain object literal — a dynamic object can't be lowered
+  // to static include triples, so fall back to the generic lowering.
+  if (obj.kind !== 'object-literal') return null
+
+  const sets: UrlBuilderSet[] = []
+  for (const p of obj.properties) {
+    const v = p.value
+    if (v.kind === 'conditional' && isOmitSentinel(v.alternate)) {
+      // `key: cond ? value : undefined` — include iff `cond`, with `value`.
+      sets.push({ guard: v.test, key: p.key, value: v.consequent })
+    } else {
+      // `key: value` — include iff `value` is truthy (guard == value).
+      sets.push({ guard: v, key: p.key, value: v })
+    }
+  }
+  return emitUrlBuilder(ctx, { kind: 'builder', params: [], base, sets }, EMPTY_SUBS)
+}
+
+/**
+ * The falsy "omit" branch of a conditional include — `undefined` (an identifier),
+ * `null`, or `''`. These are the alternates that make `cond ? v : <omit>` mean
+ * "include `v` only when `cond`".
+ */
+function isOmitSentinel(node: ParsedExpr): boolean {
+  if (node.kind === 'identifier') return node.name === 'undefined'
+  if (node.kind === 'literal') {
+    return node.literalType === 'null' || (node.literalType === 'string' && node.value === '')
+  }
+  return false
 }
