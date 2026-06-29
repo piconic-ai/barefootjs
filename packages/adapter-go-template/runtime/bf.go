@@ -164,6 +164,12 @@ func FuncMap() template.FuncMap {
 // Included pairs follow URLSearchParams.set() semantics: repeating a key
 // overwrites the value at the key's first position rather than emitting a
 // duplicate `k=v&k=w`. Trailing args that don't complete a triple are ignored.
+//
+// Keys and values use formEscape (application/x-www-form-urlencoded), not
+// url.QueryEscape, so the rendered query is byte-for-byte identical to the
+// browser's URLSearchParams (and the Perl `query` helper) — the two diverge on
+// `~` (kept by QueryEscape, `%7E` here) and `*` (`%2A` by QueryEscape, kept
+// here).
 func Query(base string, triples ...any) string {
 	type kv struct{ key, val string }
 	pairs := make([]kv, 0, len(triples)/3)
@@ -189,11 +195,41 @@ func Query(base string, triples ...any) string {
 		} else {
 			b.WriteByte('&')
 		}
-		b.WriteString(url.QueryEscape(p.key))
+		b.WriteString(formEscape(p.key))
 		b.WriteByte('=')
-		b.WriteString(url.QueryEscape(p.val))
+		b.WriteString(formEscape(p.val))
 	}
 	return base + b.String()
+}
+
+const hexUpper = "0123456789ABCDEF"
+
+// formEscape percent-encodes s with the application/x-www-form-urlencoded byte
+// set, matching the browser's URLSearchParams serialization (and the Perl
+// `query` helper) so SSR query strings render byte-for-byte identically across
+// adapters. The unreserved set kept verbatim is A-Z a-z 0-9 and `* - . _`; a
+// space becomes `+`; every other byte is `%XX` with uppercase hex. Encoding is
+// byte-wise, so multi-byte UTF-8 is percent-encoded per byte (`é` → `%C3%A9`).
+//
+// This differs from url.QueryEscape only for `~` (kept by QueryEscape, encoded
+// to `%7E` here) and `*` (encoded to `%2A` by QueryEscape, kept here).
+func formEscape(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'A' && c <= 'Z', c >= 'a' && c <= 'z', c >= '0' && c <= '9',
+			c == '*', c == '-', c == '.', c == '_':
+			b.WriteByte(c)
+		case c == ' ':
+			b.WriteByte('+')
+		default:
+			b.WriteByte('%')
+			b.WriteByte(hexUpper[c>>4])
+			b.WriteByte(hexUpper[c&0x0F])
+		}
+	}
+	return b.String()
 }
 
 // ScopeAttr returns the bare bf-s scope id (#1249).
