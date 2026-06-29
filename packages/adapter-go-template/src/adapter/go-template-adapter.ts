@@ -138,6 +138,16 @@ type HigherOrderShape = {
   predicate: ParsedExpr
 }
 
+/**
+ * String-returning array/string methods. `.get(...)` stays a generic `call`;
+ * the rest fold into `array-method`. Module-level so `isStringExpr` (which
+ * recurses over expression trees) reuses one set instead of allocating per call.
+ */
+const STRING_METHODS: ReadonlySet<string> = new Set([
+  'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
+  'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
+])
+
 export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
   name = 'go-template'
   extension = '.tmpl'
@@ -2568,10 +2578,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // number).
       return this.isStringExpr(node.left, seen) && this.isStringExpr(node.right, seen)
     }
-    const STRING_METHODS = new Set([
-      'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
-      'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
-    ])
     // `.get(...)` stays a generic `call`; the string-returning array/string
     // methods (`.replace`, `.trim`, …) fold into `array-method`.
     if (node.kind === 'call' && node.callee.kind === 'member') {

@@ -66,6 +66,13 @@ type PredicateCall = {
  * the original switch's `default` arm returned — those shapes never
  * arose inside the predicates the adapter actually accepts.
  */
+// Predicate-shaped higher-order methods (filter/every/some land here through
+// nested `.filter(...)` chains). Module-level so `callbackMethod`, which runs
+// for many nodes during template generation, reuses one set per process.
+const PREDICATE_METHODS: ReadonlySet<string> = new Set([
+  'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
+])
+
 export class MojoFilterEmitter implements ParsedExprEmitter {
   constructor(
     private readonly param: string,
@@ -167,10 +174,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // (filter / every / some land here through nested `.filter(...)` chains).
     // Sort / reduce / flatMap never arise inside a predicate, so route them to
     // the truthy sentinel like the old `default` arm did.
-    const predicateMethods: ReadonlySet<string> = new Set([
-      'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
-    ])
-    if (!predicateMethods.has(method)) return '1'
+    if (!PREDICATE_METHODS.has(method)) return '1'
     // The predicate body is also a filter context, but with this
     // callback's own `param` (potentially shadowing the outer one),
     // so we spin up a nested emitter with the inner param.
