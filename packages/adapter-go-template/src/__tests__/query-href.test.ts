@@ -54,6 +54,24 @@ export function P(props: { base: string; sort: string; tag: string }) {
     )
   })
 
+  // A `&&` / `||` guard is NOT a comparison, so `lowerUrlGuard` can't emit it as
+  // a bare Go bool — `and`/`or` return one of their operands (a string), which
+  // `bf_query` type-asserts against. It must take the truthiness-wrap path,
+  // `ne (and …) ""`, yielding a real bool. (This branch lost its dedicated test
+  // when the URLSearchParams recognizer fixture was retired; queryHref reaches it
+  // via a `cond && other ? a : undefined` guard. #2042 review.)
+  test('a `&&` guard is wrapped to a bool — `ne (and …) ""`, not a bare `and`', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; a: string; b: string }) {
+  return <a href={queryHref(props.base, { both: props.a && props.b ? props.a : undefined })}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('bf_query .Base (and (ne (and .A .B) "") (ne .A "")) "both" .A')
+  })
+
   test('null / empty-string alternates are both treated as the omit branch', () => {
     const src = `
 'use client'
