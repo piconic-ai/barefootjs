@@ -101,6 +101,17 @@ func FuncMap() template.FuncMap {
 		"bf_reduce_eval": FoldEval,
 		"bf_env":         Env,
 
+		// Evaluator-driven higher-order predicates (#2018, P2): the predicate
+		// body travels as a serialized ParsedExpr (JSON) evaluated per element,
+		// generalizing bf_filter / bf_find / bf_find_index / bf_every / bf_some
+		// beyond their field-equality / truthiness catalogues. `bf_find_eval` /
+		// `bf_find_index_eval` take a `forward` bool (false → findLast variants).
+		"bf_filter_eval":     FilterEval,
+		"bf_every_eval":      EveryEval,
+		"bf_some_eval":       SomeEval,
+		"bf_find_eval":       FindEval,
+		"bf_find_index_eval": FindIndexEval,
+
 		// Comment marker (for hydration)
 		"bfComment":   Comment,
 		"bfTextStart": TextStart,

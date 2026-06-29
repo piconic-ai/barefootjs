@@ -190,4 +190,52 @@ subtest 'fold_json / sort_by_json decode a JSON body and evaluate it' => sub {
         'sort_by_json orders by a field');
 };
 
+# The #2018 P2 higher-order predicate helpers evaluate an arbitrary pure
+# predicate body per element, generalizing bf_filter / bf_find / bf_every /
+# bf_some. Mirrors the Go TestPredicateEvalHelpers shapes (u => u.age >= 18).
+subtest 'filter / every / some / find / find_index over a predicate body' => sub {
+    my @rows = ({ age => 15 }, { age => 30 }, { age => 18 });
+    my $pred = nbin('>=', nmem(nid('u'), 'age'),
+        { kind => 'literal', value => 18, literalType => 'number' });
+
+    my $f = BarefootJS::Evaluator::filter(\@rows, $pred, 'u');
+    is_deeply([ map { $_->{age} } @$f ], [ 30, 18 ], 'filter keeps age >= 18');
+
+    is(BarefootJS::Evaluator::some(\@rows, $pred, 'u'), 1, 'some → true');
+    is(BarefootJS::Evaluator::every(\@rows, $pred, 'u'), 0, 'every → false (15 < 18)');
+
+    is(BarefootJS::Evaluator::find(\@rows, $pred, 'u', 1)->{age}, 30, 'find forward → 30');
+    is(BarefootJS::Evaluator::find(\@rows, $pred, 'u', 0)->{age}, 18, 'findLast → 18');
+    is(BarefootJS::Evaluator::find_index(\@rows, $pred, 'u', 1), 1, 'findIndex → 1');
+    is(BarefootJS::Evaluator::find_index(\@rows, $pred, 'u', 0), 2, 'findLastIndex → 2');
+
+    # Empty receiver: every vacuously true, some false, find undef / index -1.
+    is(BarefootJS::Evaluator::every([], $pred, 'u'), 1, 'every(empty) → true');
+    is(BarefootJS::Evaluator::some([], $pred, 'u'), 0, 'some(empty) → false');
+    ok(!defined BarefootJS::Evaluator::find([], $pred, 'u'), 'find(empty) → undef');
+    is(BarefootJS::Evaluator::find_index([], $pred, 'u'), -1, 'find_index(empty) → -1');
+
+    # JSON seam: the body arrives as the string the adapter emits. Cover more
+    # than filter_json so each *_json entry point is pinned (Copilot review
+    # #2032).
+    my $json = JSON::PP->new->encode($pred);
+    my $fj = BarefootJS::Evaluator::filter_json(\@rows, $json, 'u');
+    is_deeply([ map { $_->{age} } @$fj ], [ 30, 18 ], 'filter_json decodes + filters');
+    is(BarefootJS::Evaluator::every_json(\@rows, $json, 'u'), 0, 'every_json → false');
+    is(BarefootJS::Evaluator::some_json(\@rows, $json, 'u'),  1, 'some_json → true');
+    is(BarefootJS::Evaluator::find_json(\@rows, $json, 'u', 1)->{age}, 30, 'find_json forward → 30');
+    is(BarefootJS::Evaluator::find_index_json(\@rows, $json, 'u', 0), 2, 'find_index_json backward → 2');
+
+    # Captured base_env: a predicate `u => u.age >= threshold` reads the outer
+    # `threshold`, and changing it changes the result — pins the capture
+    # plumbing (Copilot review #2032).
+    my $cap = nbin('>=', nmem(nid('u'), 'age'), nid('threshold'));
+    my $hi  = BarefootJS::Evaluator::filter(\@rows, $cap, 'u', { threshold => 18 });
+    my $lo  = BarefootJS::Evaluator::filter(\@rows, $cap, 'u', { threshold => 100 });
+    is(scalar(@$hi), 2, 'captured threshold 18 keeps 2');
+    is(scalar(@$lo), 0, 'captured threshold 100 keeps 0');
+    is(BarefootJS::Evaluator::find_index(\@rows, $cap, 'u', 1, { threshold => 100 }), -1,
+        'find_index with unmet captured threshold → -1');
+};
+
 done_testing;

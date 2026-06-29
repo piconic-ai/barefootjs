@@ -449,4 +449,107 @@ sub sort_by_json ($items, $cmp_json, $param_a, $param_b, $base_env = undef) {
     return sort_by($items, JSON::PP->new->decode($cmp_json), $param_a, $param_b, $base_env);
 }
 
+# ---------------------------------------------------------------------------
+# Higher-order predicates (#2018, P2) — the generalization of bf_filter /
+# bf_find / bf_find_index / bf_every / bf_some onto the evaluator. The
+# predicate $pred is a pure ParsedExpr evaluated against `{$param => item}`
+# plus the captured free vars in $base_env per element, lifting the
+# field-equality / truthiness restriction to any pure predicate body. Each
+# mirrors the corresponding Go helper (FilterEval / EveryEval / SomeEval /
+# FindEval / FindIndexEval). $base_env is optional.
+# ---------------------------------------------------------------------------
+
+# filter — new arrayref of the elements the predicate keeps. Non-array receiver
+# → empty arrayref (the BarefootJS->filter nil-tolerant convention).
+sub filter ($items, $pred, $param, $base_env = undef) {
+    return [] unless ref $items eq 'ARRAY';
+    my %env = $base_env ? %$base_env : ();
+    my @out;
+    for my $item (@$items) {
+        $env{$param} = $item;
+        push @out, $item if _truthy(evaluate($pred, \%env));
+    }
+    return \@out;
+}
+
+# every — 1 iff the predicate holds for every element (vacuously 1 for an empty
+# receiver, like JS).
+sub every ($items, $pred, $param, $base_env = undef) {
+    my @arr = ref $items eq 'ARRAY' ? @$items : ();
+    my %env = $base_env ? %$base_env : ();
+    for my $item (@arr) {
+        $env{$param} = $item;
+        return 0 unless _truthy(evaluate($pred, \%env));
+    }
+    return 1;
+}
+
+# some — 1 iff the predicate holds for any element (0 for an empty receiver).
+sub some ($items, $pred, $param, $base_env = undef) {
+    my @arr = ref $items eq 'ARRAY' ? @$items : ();
+    my %env = $base_env ? %$base_env : ();
+    for my $item (@arr) {
+        $env{$param} = $item;
+        return 1 if _truthy(evaluate($pred, \%env));
+    }
+    return 0;
+}
+
+# find — first matching element, or undef. $forward false searches from the end
+# (findLast).
+sub find ($items, $pred, $param, $forward = 1, $base_env = undef) {
+    my @arr = ref $items eq 'ARRAY' ? @$items : ();
+    @arr = reverse @arr unless $forward;
+    my %env = $base_env ? %$base_env : ();
+    for my $item (@arr) {
+        $env{$param} = $item;
+        return $item if _truthy(evaluate($pred, \%env));
+    }
+    return undef;
+}
+
+# find_index — index of the first matching element, or -1. $forward false →
+# findLastIndex (the index is into the original array either way).
+sub find_index ($items, $pred, $param, $forward = 1, $base_env = undef) {
+    my @arr = ref $items eq 'ARRAY' ? @$items : ();
+    my %env = $base_env ? %$base_env : ();
+    my @idx = $forward ? ( 0 .. $#arr ) : reverse( 0 .. $#arr );
+    for my $i (@idx) {
+        $env{$param} = $arr[$i];
+        return $i if _truthy(evaluate($pred, \%env));
+    }
+    return -1;
+}
+
+# ---------------------------------------------------------------------------
+# JSON-string seams — the adapters emit `bf->filter_eval($recv, '<json>', …)`;
+# the predicate body arrives as a JSON string here, decoded then handed to the
+# helper above (mirroring fold_json / sort_by_json).
+# ---------------------------------------------------------------------------
+
+sub filter_json ($items, $pred_json, $param, $base_env = undef) {
+    require JSON::PP;
+    return filter($items, JSON::PP->new->decode($pred_json), $param, $base_env);
+}
+
+sub every_json ($items, $pred_json, $param, $base_env = undef) {
+    require JSON::PP;
+    return every($items, JSON::PP->new->decode($pred_json), $param, $base_env);
+}
+
+sub some_json ($items, $pred_json, $param, $base_env = undef) {
+    require JSON::PP;
+    return some($items, JSON::PP->new->decode($pred_json), $param, $base_env);
+}
+
+sub find_json ($items, $pred_json, $param, $forward = 1, $base_env = undef) {
+    require JSON::PP;
+    return find($items, JSON::PP->new->decode($pred_json), $param, $forward, $base_env);
+}
+
+sub find_index_json ($items, $pred_json, $param, $forward = 1, $base_env = undef) {
+    require JSON::PP;
+    return find_index($items, JSON::PP->new->decode($pred_json), $param, $forward, $base_env);
+}
+
 1;
