@@ -229,6 +229,32 @@ export function renderReduceEval(
 }
 
 /**
+ * Emit a higher-order predicate call via the runtime evaluator (#2018, P2):
+ * `$bf.filter_eval` / `$bf.every_eval` / `$bf.some_eval` / `$bf.find_eval` /
+ * `$bf.find_index_eval`, carrying the serialized predicate body + captured env
+ * hashref. Generalizes the Kolon-lambda `$bf.filter` lowering to the same
+ * JS-faithful evaluator the Go adapter uses (cross-adapter isomorphism).
+ * Returns null when the predicate is outside the evaluator surface (e.g. a
+ * method-call predicate — `serializeParsedExpr` refuses it), so the caller
+ * falls back to the lambda form. `forward` (find / findIndex family only)
+ * selects the search direction — `false` = findLast / findLastIndex.
+ */
+export function renderPredicateEval(
+  funcName: string,
+  recv: string,
+  predicate: ParsedExpr,
+  param: string,
+  emit: (e: ParsedExpr) => string,
+  forward?: boolean,
+): string | null {
+  const json = serializeParsedExpr(predicate)
+  if (json === null) return null
+  const env = emitEvalEnvArg(predicate, [param], emit)
+  const fwd = forward === undefined ? '' : `, ${forward ? 1 : 0}`
+  return `$bf.${funcName}(${recv}, '${escapePerlSingleQuote(json)}', '${param}'${fwd}, ${env})`
+}
+
+/**
  * Shared Kolon emit for `.sort(cmp)` / `.toSorted(cmp)`. Used by both the
  * filter-context emitter and the top-level emitter, plus the loop-array
  * wrap in `renderLoop`. The runtime `$bf.sort` accepts a hashref opts bag and
