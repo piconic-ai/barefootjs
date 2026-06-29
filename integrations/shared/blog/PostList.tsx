@@ -1,6 +1,6 @@
 'use client'
 
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, searchParams, queryHref } from '@barefootjs/client'
 import { PostListItem } from './PostListItem'
 
 interface Item {
@@ -65,15 +65,6 @@ export function PostList(props: PostListProps) {
   // so query-only links stay absolute (`/?sort=...`) rather than relative.
   const base = (props.base ?? '').replace(/\/+$/, '')
   const root = base || '/'
-  const hrefFor = (sort: SortKey, tag: string): string => {
-    const u = new URLSearchParams()
-    if (sort !== 'date') u.set('sort', sort)
-    if (tag) u.set('tag', tag)
-    const s = u.toString()
-    return s ? `${root}?${s}` : root
-  }
-  const sortHref = (k: SortKey) => hrefFor(k, params().tag)
-  const tagHref = (t: string) => hrefFor(params().sort, t)
   const sortClass = (k: SortKey) => (params().sort === k ? 'sort on' : 'sort')
   const tagClass = (t: string) => (params().tag === t ? 'tag on' : 'tag')
 
@@ -86,15 +77,15 @@ export function PostList(props: PostListProps) {
       </p>
       <div className="controls">
         <span className="ctl-label">sort:</span>
-        <a className={sortClass('date')} href={sortHref('date')}>date</a>
-        <a className={sortClass('title')} href={sortHref('title')}>title</a>
-        <a className={sortClass('tag')} href={sortHref('tag')}>tag</a>
+        <a className={sortClass('date')} href={queryHref(root, { tag: params().tag })}>date</a>
+        <a className={sortClass('title')} href={queryHref(root, { sort: 'title', tag: params().tag })}>title</a>
+        <a className={sortClass('tag')} href={queryHref(root, { sort: 'tag', tag: params().tag })}>tag</a>
       </div>
       <div className="tags">
         <span className="ctl-label">tag:</span>
-        <a className={tagClass('')} href={tagHref('')}>all</a>
+        <a className={tagClass('')} href={queryHref(root, { sort: params().sort !== 'date' ? params().sort : undefined })}>all</a>
         {props.tags.map((t) => (
-          <a key={t} className={tagClass(t)} href={tagHref(t)}>#{t}</a>
+          <a key={t} className={tagClass(t)} href={queryHref(root, { sort: params().sort !== 'date' ? params().sort : undefined, tag: t })}>#{t}</a>
         ))}
       </div>
       <div className="status">

@@ -33,6 +33,10 @@ export {
   // it in `search-params-ssr.ts`), defaulting to an empty query — so the real
   // export is re-exported, not a throwing stub.
   searchParams,
+  // Pure URL-query builder (#2042) — like the other pure helpers above, it has
+  // no reactivity and runs unchanged during SSR, so the real export is
+  // re-exported (not a stub).
+  queryHref,
 } from '@barefootjs/client'
 
 export type {
@@ -47,6 +51,8 @@ export type {
   PortalChildren,
   PortalOptions,
   Renderable,
+  QueryParams,
+  QueryParamValue,
 } from '@barefootjs/client'
 
 // ---------------------------------------------------------------------------
