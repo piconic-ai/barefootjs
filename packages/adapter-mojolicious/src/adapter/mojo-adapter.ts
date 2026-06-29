@@ -54,6 +54,7 @@ import {
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
+  sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, ParsedStatement } from '@barefootjs/jsx'
@@ -722,11 +723,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
 
     const rawArray = this.convertExpressionToPerl(loop.array)
-    // Apply sort if present (#1448 Tier B): wrap the loop array in
-    // the shared `bf->sort` helper. The same `renderSortMethod`
-    // feeds both this loop-chain hoist and the standalone
-    // `sortMethod()` arm on the emitter, so a regression in either
-    // path surfaces with the identical emit shape.
+    // Apply sort if present (#1448 Tier B): wrap the loop array in the
+    // shared sort helper. The same `renderSortEval` / `renderSortMethod`
+    // pair feeds both this loop-chain hoist and the emitter's
+    // `callbackMethod` sort arm, so a regression in either path surfaces
+    // with the identical emit shape.
     //
     // Sort hoist: the loop bound (`0..$#{…}`) and the per-item
     // lookup (`…->[$_i]`) both reference the same array — if the
@@ -795,9 +796,28 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         else this.loopBoundNames.set(n, c)
       }
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPerl('', e)
-      const sorted =
-        renderSortEval(rawArray, loop.sortComparator, sortEmit) ??
-        renderSortMethod(rawArray, loop.sortComparator)
+      // `loop.sortComparator` is the generic `IRLoopSort` (#2018 P5): serialize
+      // the arrow body for the evaluator (eval-first), recover the structured
+      // comparator from the arrow for the `localeCompare` fallback.
+      const sortArrow = loop.sortComparator.arrow
+      let sorted: string | null = null
+      if (sortArrow.kind === 'arrow') {
+        sorted = renderSortEval(rawArray, sortArrow.body, sortArrow.params, sortEmit)
+      }
+      if (sorted === null) {
+        const structured = sortComparatorFromArrow(sortArrow)
+        if (structured !== null) sorted = renderSortMethod(rawArray, structured)
+      }
+      if (sorted === null) {
+        // Neither the evaluator nor the structured fallback can model this
+        // comparator — record BF101 and fall through with the unsorted array
+        // so the hoist line stays syntactically valid.
+        this._recordExprBF101(
+          `.sort(...) loop comparator is not lowerable to a template sort`,
+          `Pre-sort the array in the route handler, or mark the loop @client-only.`,
+        )
+        sorted = rawArray
+      }
       for (const n of loopBound) {
         this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
       }

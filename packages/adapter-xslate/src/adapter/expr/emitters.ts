@@ -18,13 +18,11 @@ import {
   type LiteralType,
   type ParsedExpr,
   type ObjectLiteralProperty,
-  type SortComparator,
-  type ReduceOp,
   type FlatDepth,
-  type FlatMapOp,
   type TemplatePart,
   identifierPath,
   matchSearchParamsMethodCall,
+  sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -32,14 +30,31 @@ import { XSLATE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
-  renderReduceMethod,
   renderSortEval,
   renderReduceEval,
   renderPredicateEval,
   renderFlatMethod,
-  renderFlatMapMethod,
   renderFlatMapEval,
 } from './array-method.ts'
+
+/**
+ * Local shape for the predicate-lowering helpers (`buildPredicateEval` and the
+ * Kolon-lambda fallback). Previously these read a `higher-order` ParsedExpr
+ * node directly; after the #2018 P5 collapse the callback arrives as a generic
+ * `call` and is destructured by `asCallbackMethodCall` / `callbackMethod`, so
+ * the helpers take this narrow record instead.
+ */
+type PredicateCall = {
+  method: HigherOrderMethod
+  object: ParsedExpr
+  param: string
+  predicate: ParsedExpr
+}
+
+// Methods whose callback is a boolean predicate (`<recv>.<m>(x => …)`).
+const PREDICATE_METHODS = new Set<HigherOrderMethod>([
+  'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
+])
 
 /**
  * Lowering for the predicate body of a filter / every / some / find, plus the
@@ -133,19 +148,19 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return `(${l} // ${r})`
   }
 
-  higherOrder(
-    method: HigherOrderMethod,
+  callbackMethod(
+    method: string,
     object: ParsedExpr,
-    param: string,
-    predicate: ParsedExpr,
+    _arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+    _restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
-    // Nested higher-order inside a filter predicate has no Kolon scalar form;
-    // defer to the receiver so the predicate at least references a real value
-    // (a richer chain would surface its own diagnostic at the top level).
+    // Nested callback method inside a filter predicate has no Kolon scalar
+    // form; defer to the receiver so the predicate at least references a real
+    // value (a richer chain would surface its own diagnostic at the top level).
+    // Matches the pre-#2018-P5 `higherOrder` arm, which returned `emit(object)`
+    // for every method.
     void method
-    void param
-    void predicate
     return emit(object)
   }
 
@@ -162,34 +177,8 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return renderArrayMethod(method, object, args, emit)
   }
 
-  sortMethod(
-    _method: 'sort' | 'toSorted',
-    object: ParsedExpr,
-    comparator: SortComparator,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const recv = emit(object)
-    // Evaluator path (#2018): serialize the comparator body + emit
-    // `$bf.sort_eval`; fall back to the structured `$bf.sort` when the
-    // body is outside the evaluator surface (e.g. `localeCompare`).
-    return renderSortEval(recv, comparator, emit) ?? renderSortMethod(recv, comparator)
-  }
-
-  reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    const direction = method === 'reduceRight' ? 'right' : 'left'
-    return renderReduceEval(recv, reduceOp, direction, emit) ?? renderReduceMethod(recv, reduceOp, direction)
-  }
-
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
     return renderFlatMethod(emit(object), depth)
-  }
-
-  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    // Evaluator-first (#2018 P3); fall back to the structured helper for a
-    // projection the evaluator can't model.
-    return renderFlatMapEval(recv, op, emit) ?? renderFlatMapMethod(recv, op)
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
@@ -200,7 +189,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return '1'
   }
 
-  arrowFn(_param: string, _body: ParsedExpr): string {
+  arrow(_params: string[], _body: ParsedExpr): string {
+    return '1'
+  }
+
+  regex(_raw: string): string {
     return '1'
   }
 
@@ -340,20 +333,92 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return `(${l} // ${r})`
   }
 
-  higherOrder(
-    method: HigherOrderMethod,
+  callbackMethod(
+    method: string,
     object: ParsedExpr,
-    param: string,
-    predicate: ParsedExpr,
+    arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+    restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
-    // Higher-order array methods all take a JS arrow predicate, lowered to a
-    // Kolon lambda `-> $param { PRED }` (callable from Perl as a code ref), and
-    // go through the runtime object — consistent with the other array helpers
-    // ($bf.includes / $bf.slice / ...). `.find*` map to snake_case runtime
-    // methods (like index_of / last_index_of). The `.filter(...).map(...)`
-    // *loop* form is handled separately by renderLoop's inline predicate.
-    const arrayExpr = emit(object)
+    const recv = emit(object)
+    const body = arrow.body
+    const params = arrow.params
+
+    // Predicate family (#2018 P2/P5): `filter` / `find*` / `every` / `some`.
+    if (PREDICATE_METHODS.has(method as HigherOrderMethod)) {
+      return this._emitPredicateCallback(
+        { method: method as HigherOrderMethod, object, param: params[0], predicate: body },
+        recv,
+        emit,
+      )
+    }
+
+    // `.sort(cmp)` / `.toSorted(cmp)` (#2018): serialize the comparator body +
+    // emit `$bf.sort_eval`; fall back to the structured `$bf.sort` when the
+    // body is outside the evaluator surface (e.g. `localeCompare`). A
+    // comparator that neither serializes nor classifies → BF101.
+    if (method === 'sort' || method === 'toSorted') {
+      const evalForm = renderSortEval(recv, body, params, emit)
+      if (evalForm !== null) return evalForm
+      const structured = sortComparatorFromArrow(arrow)
+      if (structured !== null) return renderSortMethod(recv, structured)
+      this.ctx._recordExprBF101(
+        `'.${method}(...)' comparator is outside the Xslate adapter's evaluable / structured surface`,
+        `Pre-compute the sorted array, or move this position to a '/* @client */' boundary.`,
+      )
+      return "''"
+    }
+
+    // `.reduce(fn, init)` / `.reduceRight(fn, init)` (#2018): serialize the
+    // reducer body + emit `$bf.reduce_eval`. The init is the trailing arg.
+    if (method === 'reduce' || method === 'reduceRight') {
+      const direction = method === 'reduceRight' ? 'right' : 'left'
+      const init = restArgs[0]
+      const evalForm =
+        init !== undefined
+          ? renderReduceEval(recv, body, params, init, direction, emit)
+          : null
+      if (evalForm !== null) return evalForm
+      this.ctx._recordExprBF101(
+        `'.${method}(...)' is outside the Xslate adapter's evaluable surface (needs a literal initial value and an evaluable reducer body)`,
+        `Pre-compute the reduced value, or move this position to a '/* @client */' boundary.`,
+      )
+      return "''"
+    }
+
+    // `.flatMap(proj)` (#2018 P3): serialize the projection body + emit
+    // `$bf.flat_map_eval`.
+    if (method === 'flatMap') {
+      const evalForm = renderFlatMapEval(recv, body, params[0], emit)
+      if (evalForm !== null) return evalForm
+      this.ctx._recordExprBF101(
+        `'.flatMap(...)' projection is outside the Xslate adapter's evaluable surface`,
+        `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
+      )
+      return "''"
+    }
+
+    // Unknown callback method (should not arrive — CALLBACK_METHODS is closed).
+    void object
+    return recv
+  }
+
+  /**
+   * Lower a boolean-predicate callback (`filter` / `find*` / `every` / `some`),
+   * extracted from the pre-#2018-P5 `higherOrder` arm. Higher-order array
+   * methods all take a JS arrow predicate, lowered to a Kolon lambda
+   * `-> $param { PRED }` (callable from Perl as a code ref), and go through the
+   * runtime object — consistent with the other array helpers ($bf.includes /
+   * $bf.slice / ...). `.find*` map to snake_case runtime methods. The
+   * `.filter(...).map(...)` *loop* form is handled separately by renderLoop's
+   * inline predicate.
+   */
+  private _emitPredicateCallback(
+    call: PredicateCall,
+    arrayExpr: string,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    const { method, object, param, predicate } = call
 
     // Evaluator path (#2018 P2): serialize the predicate body + emit the
     // matching `$bf.*_eval` helper (isomorphic with the Go adapter). Falls
@@ -387,8 +452,6 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       findLastIndex: 'find_last_index',
     }
     if (fn[method]) return `$bf.${fn[method]}(${arrayExpr}, ${lambda})`
-    void predicate
-    void param
     return emit(object)
   }
 
@@ -405,34 +468,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return renderArrayMethod(method, object, args, emit)
   }
 
-  sortMethod(
-    _method: 'sort' | 'toSorted',
-    object: ParsedExpr,
-    comparator: SortComparator,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const recv = emit(object)
-    // Evaluator path (#2018): serialize the comparator body + emit
-    // `$bf.sort_eval`; fall back to the structured `$bf.sort` when the
-    // body is outside the evaluator surface (e.g. `localeCompare`).
-    return renderSortEval(recv, comparator, emit) ?? renderSortMethod(recv, comparator)
-  }
-
-  reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    const direction = method === 'reduceRight' ? 'right' : 'left'
-    return renderReduceEval(recv, reduceOp, direction, emit) ?? renderReduceMethod(recv, reduceOp, direction)
-  }
-
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
     return renderFlatMethod(emit(object), depth)
-  }
-
-  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    // Evaluator-first (#2018 P3); fall back to the structured helper for a
-    // projection the evaluator can't model.
-    return renderFlatMapEval(recv, op, emit) ?? renderFlatMapMethod(recv, op)
   }
 
   conditional(
@@ -466,7 +503,15 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return terms.join(' ~ ')
   }
 
-  arrowFn(_param: string, _body: ParsedExpr): string {
+  arrow(_params: string[], _body: ParsedExpr): string {
+    // A bare arrow never stands alone at a render position (it's only
+    // meaningful as a callback, handled by `callbackMethod`). Emit the safe
+    // empty-string literal so a stray emit can't produce a Kolon syntax error.
+    return "''"
+  }
+
+  regex(_raw: string): string {
+    // A bare regex literal has no template-render form — mirror `unsupported`.
     return "''"
   }
 

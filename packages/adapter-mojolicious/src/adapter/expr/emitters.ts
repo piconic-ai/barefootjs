@@ -18,14 +18,13 @@ import {
   type LiteralType,
   type ParsedExpr,
   type ObjectLiteralProperty,
-  type SortComparator,
-  type ReduceOp,
   type FlatDepth,
-  type FlatMapOp,
   type TemplatePart,
   emitParsedExpr,
   identifierPath,
   matchSearchParamsMethodCall,
+  sortComparatorFromArrow,
+  asCallbackMethodCall,
 } from '@barefootjs/jsx'
 
 import type { MojoEmitContext } from '../emit-context.ts'
@@ -34,14 +33,25 @@ import { emitIndexAccessPerl, isStringTypedOperand } from './operand.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
-  renderReduceMethod,
   renderSortEval,
   renderReduceEval,
   renderPredicateEval,
   renderFlatMethod,
-  renderFlatMapMethod,
   renderFlatMapEval,
 } from './array-method.ts'
+
+/**
+ * Local shape for the predicate-method fallback chain (#2018 P5). The
+ * higher-order callback arrives as a generic `call`; `callbackMethod` recovers
+ * `{ method, object, param, predicate }` from it before threading it through
+ * the inline `grep` / `bf->find` lowering the old `higher-order` node fed.
+ */
+type PredicateCall = {
+  method: HigherOrderMethod
+  object: ParsedExpr
+  param: string
+  predicate: ParsedExpr
+}
 
 /**
  * Lowering for the predicate body of a filter / every / some / find,
@@ -88,7 +98,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // is undef at runtime, which is why the pre-#1443 `containsHigherOrder`
     // gate refused this shape outright. Lowering `.length` to
     // `scalar(@{...})` makes the result a real Perl integer.
-    if (property === 'length' && (object.kind === 'higher-order' || object.kind === 'array-literal')) {
+    if (property === 'length' && (asCallbackMethodCall(object) !== null || object.kind === 'array-literal')) {
       return `scalar(@{${emit(object)}})`
     }
     return `${emit(object)}->{${property}}`
@@ -146,16 +156,26 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return `(${l} // ${r})`
   }
 
-  higherOrder(
-    method: HigherOrderMethod,
+  callbackMethod(
+    method: string,
     object: ParsedExpr,
-    param: string,
-    predicate: ParsedExpr,
+    arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+    _restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
+    // Filter context only meaningfully handles the predicate methods
+    // (filter / every / some land here through nested `.filter(...)` chains).
+    // Sort / reduce / flatMap never arise inside a predicate, so route them to
+    // the truthy sentinel like the old `default` arm did.
+    const predicateMethods: ReadonlySet<string> = new Set([
+      'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
+    ])
+    if (!predicateMethods.has(method)) return '1'
     // The predicate body is also a filter context, but with this
-    // higher-order's own `param` (potentially shadowing the outer one),
+    // callback's own `param` (potentially shadowing the outer one),
     // so we spin up a nested emitter with the inner param.
+    const param = arrow.params[0]
+    const predicate = arrow.body
     const arrayExpr = emit(object)
     const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap, this.isStringName))
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
@@ -188,34 +208,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return renderArrayMethod(method, object, args, emit)
   }
 
-  sortMethod(
-    _method: 'sort' | 'toSorted',
-    object: ParsedExpr,
-    comparator: SortComparator,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const recv = emit(object)
-    // Evaluator path (#2018): serialize the comparator body + emit
-    // `bf->sort_eval`; fall back to the structured `bf->sort` when the
-    // body is outside the evaluator surface (e.g. `localeCompare`).
-    return renderSortEval(recv, comparator, emit) ?? renderSortMethod(recv, comparator)
-  }
-
-  reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    const direction = method === 'reduceRight' ? 'right' : 'left'
-    return renderReduceEval(recv, reduceOp, direction, emit) ?? renderReduceMethod(recv, reduceOp, direction)
-  }
-
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
     return renderFlatMethod(emit(object), depth)
-  }
-
-  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    // Evaluator-first (#2018 P3); fall back to the structured helper for a
-    // projection the evaluator can't model.
-    return renderFlatMapEval(recv, op, emit) ?? renderFlatMapMethod(recv, op)
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
@@ -226,7 +220,15 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return '1'
   }
 
-  arrowFn(_param: string, _body: ParsedExpr): string {
+  arrow(_params: string[], _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
+    // A standalone arrow only reaches here outside a callback position, which
+    // never arises in a predicate context — emit the truthy sentinel like the
+    // pre-#2018 `arrowFn` fallback.
+    return '1'
+  }
+
+  regex(_raw: string): string {
+    // A standalone regex has no filter-predicate meaning — truthy sentinel.
     return '1'
   }
 
@@ -389,15 +391,77 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return `(${l} // ${r})`
   }
 
-  higherOrder(
-    method: HigherOrderMethod,
+  callbackMethod(
+    method: string,
     object: ParsedExpr,
-    param: string,
-    predicate: ParsedExpr,
+    arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+    restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
-    const arrayExpr = emit(object)
+    const recv = emit(object)
+    const body = arrow.body
+    const params = arrow.params
 
+    // sort / toSorted: eval-first, then the structured `bf->sort` fallback
+    // (recovered from the arrow by `sortComparatorFromArrow`, e.g. a
+    // `localeCompare` comparator), then BF101.
+    if (method === 'sort' || method === 'toSorted') {
+      const evalForm = renderSortEval(recv, body, params, emit)
+      if (evalForm !== null) return evalForm
+      const c = sortComparatorFromArrow(arrow)
+      if (c !== null) return renderSortMethod(recv, c)
+      this.ctx._recordExprBF101(
+        `.${method}(...) comparator is not lowerable to a template sort`,
+        `Pre-sort the array in the route handler, or mark the loop @client-only.`,
+      )
+      return "''"
+    }
+
+    // reduce / reduceRight: eval-only (the arithmetic catalogue always
+    // serializes); BF101 when the body is outside the evaluator surface or the
+    // seed isn't a literal.
+    if (method === 'reduce' || method === 'reduceRight') {
+      const direction = method === 'reduceRight' ? 'right' : 'left'
+      const init = restArgs[0]
+      const evalForm =
+        init !== undefined ? renderReduceEval(recv, body, params, init, direction, emit) : null
+      if (evalForm !== null) return evalForm
+      this.ctx._recordExprBF101(
+        `.${method}(...) is not lowerable to a template fold`,
+        `Pre-compute the fold in the route handler, or mark the loop @client-only.`,
+      )
+      return "''"
+    }
+
+    // flatMap: eval-only; BF101 when the projection is outside the surface.
+    if (method === 'flatMap') {
+      const evalForm = renderFlatMapEval(recv, body, params[0], emit)
+      if (evalForm !== null) return evalForm
+      this.ctx._recordExprBF101(
+        `.flatMap(...) projection is not lowerable to a template flat-map`,
+        `Pre-compute the projection in the route handler, or mark the loop @client-only.`,
+      )
+      return "''"
+    }
+
+    // Predicate methods: filter / find / every / some / findIndex / findLast /
+    // findLastIndex. Eval-first (#2018 P2), then the inline `grep` / `bf->find`
+    // fallback for a predicate the evaluator can't model.
+    const cb: PredicateCall = {
+      method: method as HigherOrderMethod,
+      object,
+      param: params[0],
+      predicate: body,
+    }
+    return this.renderPredicate(cb, recv, emit)
+  }
+
+  private renderPredicate(
+    cb: PredicateCall,
+    arrayExpr: string,
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    const { method, param, predicate } = cb
     // Evaluator path (#2018 P2): serialize the predicate body + emit the
     // matching `bf->*_eval` helper (isomorphic with the Go adapter). Falls
     // back to the inline `grep` / `bf->find` lowering below for a predicate
@@ -459,34 +523,8 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return renderArrayMethod(method, object, args, emit)
   }
 
-  sortMethod(
-    _method: 'sort' | 'toSorted',
-    object: ParsedExpr,
-    comparator: SortComparator,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const recv = emit(object)
-    // Evaluator path (#2018): serialize the comparator body + emit
-    // `bf->sort_eval`; fall back to the structured `bf->sort` when the
-    // body is outside the evaluator surface (e.g. `localeCompare`).
-    return renderSortEval(recv, comparator, emit) ?? renderSortMethod(recv, comparator)
-  }
-
-  reduceMethod(method: 'reduce' | 'reduceRight', object: ParsedExpr, reduceOp: ReduceOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    const direction = method === 'reduceRight' ? 'right' : 'left'
-    return renderReduceEval(recv, reduceOp, direction, emit) ?? renderReduceMethod(recv, reduceOp, direction)
-  }
-
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
     return renderFlatMethod(emit(object), depth)
-  }
-
-  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    const recv = emit(object)
-    // Evaluator-first (#2018 P3); fall back to the structured helper for a
-    // projection the evaluator can't model.
-    return renderFlatMapEval(recv, op, emit) ?? renderFlatMapMethod(recv, op)
   }
 
   conditional(
@@ -529,12 +567,19 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return terms.join(' . ')
   }
 
-  arrowFn(_param: string, _body: ParsedExpr): string {
+  arrow(_params: string[], _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
     // A bare arrow function never stands alone at a render position (it's
-    // only meaningful as a higher-order predicate, handled above). Return
-    // the safe Perl empty-string literal `''` — consistent with the BF101
-    // / `unsupported` paths — so a stray emit can't produce a `<%= %>`
+    // only meaningful as a callback argument, handled by `callbackMethod`).
+    // Return the safe Perl empty-string literal `''` — consistent with the
+    // BF101 / `unsupported` paths — so a stray emit can't produce a `<%= %>`
     // syntax error.
+    return "''"
+  }
+
+  regex(_raw: string): string {
+    // A standalone regex literal has no template render form (it only appears
+    // as a `.replace(/re/, …)` argument the parser refuses upstream). Mirror
+    // `arrow` / `unsupported` with the safe Perl empty-string literal.
     return "''"
   }
 

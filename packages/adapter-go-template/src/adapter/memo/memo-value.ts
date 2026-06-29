@@ -11,7 +11,6 @@
  */
 
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
-import { parsedExprToParsedExpr2 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
@@ -162,7 +161,7 @@ export function computeObjectMemoInitialValue(
     if (prop.keyKind !== undefined && prop.keyKind !== 'identifier' && prop.keyKind !== 'string') {
       return null
     }
-    const go = lowerCtorExpr(ctx, parsedExprToParsedExpr2(prop.value), env)
+    const go = lowerCtorExpr(ctx, prop.value, env)
     if (go === null) return null
     entries.push(`"${capitalizeFieldName(prop.key)}": ${go}`)
   }

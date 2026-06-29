@@ -8,7 +8,6 @@
  */
 
 import {
-  parseExpression,
   serializeParsedExpr,
   freeVarsInBody,
 } from '@barefootjs/jsx'
@@ -16,9 +15,7 @@ import type {
   ParsedExpr,
   ArrayMethod,
   SortComparator,
-  ReduceOp,
   FlatDepth,
-  FlatMapOp,
 } from '@barefootjs/jsx'
 
 /**
@@ -280,14 +277,16 @@ function emitEvalEnvArg(
  */
 export function renderSortEval(
   recv: string,
-  c: SortComparator,
+  body: ParsedExpr,
+  params: string[],
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(c.raw)
+  if (params.length < 2) return null
+  const [paramA, paramB] = params
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [c.paramA, c.paramB], emit)
-  return `bf->sort_eval(${recv}, '${escapePerlSingleQuote(json)}', '${c.paramA}', '${c.paramB}', ${env})`
+  const env = emitEvalEnvArg(body, [paramA, paramB], emit)
+  return `bf->sort_eval(${recv}, '${escapePerlSingleQuote(json)}', '${paramA}', '${paramB}', ${env})`
 }
 
 /**
@@ -300,19 +299,30 @@ export function renderSortEval(
  */
 export function renderReduceEval(
   recv: string,
-  op: ReduceOp,
+  body: ParsedExpr,
+  params: string[],
+  init: ParsedExpr,
   direction: 'left' | 'right',
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(op.raw)
+  if (params.length < 2) return null
+  const [paramAcc, paramItem] = params
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [op.paramAcc, op.paramItem], emit)
-  const init =
-    op.type === 'string'
-      ? `'${escapePerlSingleQuote(op.init)}'`
-      : op.init
-  return `bf->reduce_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.paramAcc}', '${op.paramItem}', ${init}, '${direction}', ${env})`
+  // Only literal seeds round-trip to a Perl scalar here: a string literal as a
+  // single-quoted Perl string, a number literal as a bare numeric. Anything
+  // else (an expression seed, an omitted seed) can't be materialised → null,
+  // and the caller records BF101.
+  let initPerl: string
+  if (init.kind === 'literal' && init.literalType === 'string') {
+    initPerl = `'${escapePerlSingleQuote(String(init.value))}'`
+  } else if (init.kind === 'literal' && init.literalType === 'number') {
+    initPerl = String(init.value)
+  } else {
+    return null
+  }
+  const env = emitEvalEnvArg(body, [paramAcc, paramItem], emit)
+  return `bf->reduce_eval(${recv}, '${escapePerlSingleQuote(json)}', '${paramAcc}', '${paramItem}', ${initPerl}, '${direction}', ${env})`
 }
 
 /**
@@ -343,23 +353,23 @@ export function renderPredicateEval(
 }
 
 /**
- * Emit a `.flatMap(proj)` via the runtime evaluator (#2018, P3): the projection
- * body (`FlatMapOp.raw`) serializes to JSON and `bf->flat_map_eval` projects +
- * flattens one level. Generalizes the structured `bf->flat_map` /
- * `bf->flat_map_tuple` to any pure projection; returns null when the projection
- * is outside the evaluator surface (→ caller falls back to the structured
- * helper).
+ * Emit a `.flatMap(proj)` via the runtime evaluator (#2018, P3/P5): the
+ * projection `body` serializes to JSON and `bf->flat_map_eval` projects +
+ * flattens one level. The sole flatMap lowering now (the structured
+ * `bf->flat_map` / `bf->flat_map_tuple` fallback was retired with the
+ * `ParsedExpr` collapse); returns null when the projection is outside the
+ * evaluator surface, and the caller records BF101.
  */
 export function renderFlatMapEval(
   recv: string,
-  op: FlatMapOp,
+  body: ParsedExpr,
+  param: string,
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(op.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [op.param], emit)
-  return `bf->flat_map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.param}', ${env})`
+  const env = emitEvalEnvArg(body, [param], emit)
+  return `bf->flat_map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${param}', ${env})`
 }
 
 /**
@@ -389,60 +399,10 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
   return `bf->sort(${recv}, { keys => [${keyHashes.join(', ')}] })`
 }
 
-/**
- * Render a `.reduce(fn, init)` arithmetic fold (#1448 Tier C) as a
- * `bf->reduce(...)` call. The structured `ReduceOp` maps to the Perl
- * helper's options hash:
- *
- *   bf->reduce($recv, { op => '+', key_kind => 'field', key => 'duration',
- *                       type => 'numeric', init => 0 })
- *
- * A numeric init passes through as a bare Perl number (`0`, `-1`); a
- * string init (concat fold) is re-quoted from its literal contents.
- */
-export function renderReduceMethod(recv: string, op: ReduceOp, direction: 'left' | 'right'): string {
-  const keyEntry =
-    op.key.kind === 'self'
-      ? `key_kind => 'self'`
-      : `key_kind => 'field', key => '${op.key.field}'`
-  // `op.init` is the decoded seed value. A numeric seed is already a
-  // canonical decimal literal Perl reads directly; a concat seed is the
-  // string contents, embedded in a single-quoted Perl literal. The `'`
-  // escape is REQUIRED: a seed decoded from a double-quoted JS literal
-  // (e.g. `"a'b"`) is escape-free yet contains an apostrophe. A literal
-  // backslash can't occur (it would need a `\\` escape, which the parser
-  // refuses), but escaping it too keeps this self-contained.
-  const init =
-    op.type === 'string'
-      ? `'${op.init.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
-      : op.init
-  // `direction` is "left" (reduce) or "right" (reduceRight); the Perl
-  // helper reverses the list for "right". Only observable for concat.
-  return `bf->reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init}, direction => '${direction}' })`
-}
-
 // `.flat(depth?)` → `bf->flat($recv, $depth)`. The `Infinity` form lowers
 // to the `-1` sentinel (flatten fully); a finite depth flattens that many
 // levels (`0` = shallow copy). See `sub flat` in BarefootJS.pm. (#1448)
 export function renderFlatMethod(recv: string, depth: FlatDepth): string {
   const d = depth === 'infinity' ? -1 : depth
   return `bf->flat(${recv}, ${d})`
-}
-
-// `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf->flat_map($recv,
-// 'self'|'field', 'field')`, and the array-literal tuple form
-// `i => [i.a, i.b]` → `bf->flat_map_tuple($recv, ['field','a'], ...)`
-// (one arrayref per leaf). The field key is the raw JS prop name (Perl
-// hashes are keyed by it), mirroring `bf->reduce`. See `sub flat_map` /
-// `sub flat_map_tuple` in BarefootJS.pm.
-export function renderFlatMapMethod(recv: string, op: FlatMapOp): string {
-  const proj = op.projection
-  if (proj.kind === 'tuple') {
-    const specs = proj.elements
-      .map(l => (l.kind === 'self' ? `['self', '']` : `['field', '${l.field}']`))
-      .join(', ')
-    return `bf->flat_map_tuple(${recv}, ${specs})`
-  }
-  if (proj.kind === 'self') return `bf->flat_map(${recv}, 'self', '')`
-  return `bf->flat_map(${recv}, 'field', '${proj.field}')`
 }

@@ -68,6 +68,7 @@ import {
   type ContextConsumer,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
+  sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -592,13 +593,20 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // helper runs once.
     let array = rawArray
     if (loop.sortComparator) {
-      // Evaluator-first (#2018 P3): serialize the comparator + emit
+      // Evaluator-first (#2018 P3): serialize the comparator arrow body + emit
       // `$bf.sort_eval`; fall back to the structured `$bf.sort` for a
-      // comparator the evaluator can't model (e.g. `localeCompare`).
+      // comparator the evaluator can't model (e.g. `localeCompare`). The
+      // comparator now arrives as an `IRLoopSort` carrying the generic
+      // `arrow` + its params.
+      const sort = loop.sortComparator
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToKolon('', e)
+      const arrow = sort.arrow
+      const params =
+        arrow.kind === 'arrow' ? arrow.params : [sort.paramA, sort.paramB]
+      const structured = sortComparatorFromArrow(arrow)
       array =
-        renderSortEval(rawArray, loop.sortComparator, sortEmit) ??
-        renderSortMethod(rawArray, loop.sortComparator)
+        renderSortEval(rawArray, arrow.kind === 'arrow' ? arrow.body : arrow, params, sortEmit) ??
+        (structured !== null ? renderSortMethod(rawArray, structured) : rawArray)
     }
     const param = loop.param
     // Kolon binds the item directly via `for LIST -> $item`. The index, when

@@ -33,7 +33,8 @@ import {
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context.ts'
-import { parseExpression, isSupported, parseBlockBody, extractSortComparatorFromTS, cssKebabCase, type ParsedExpr, type ParsedStatement, type SortComparator } from './expression-parser.ts'
+import { parseExpression, isSupported, parseBlockBody, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, type ParsedExpr, type ParsedStatement } from './expression-parser.ts'
+import type { IRLoopSort } from './types.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
 import { containsReactiveExpression } from './reactivity-checker.ts'
@@ -2418,47 +2419,58 @@ function isIteratorShapeCall(
 }
 
 type SortExtractionResult = {
-  result: SortComparator | null
+  result: IRLoopSort | null
   unsupportedReason?: string
 }
 
 /**
  * Extract sort comparator info from a `.sort(cmp)` / `.toSorted(cmp)`
- * callback at the chained `.sort().map()` detection site. Delegates
- * to `extractSortComparatorFromTS` (#1448 Tier B) — the shared shape
- * also feeds the standalone `array-method` IR variant emitted by
- * `expression-parser.ts`. Accepted comparator catalogue: simple
- * subtraction (`a.f - b.f`, `a - b`, reverse for desc) and
- * `.localeCompare` (`a.localeCompare(b)`, `a.f.localeCompare(b.f)`,
- * reverse for desc).
+ * callback at the chained `.sort().map()` detection site (#2018 P5). Parses the
+ * callback into a generic `arrow` (params + body) and gates the loop-hoist on
+ * the same finite catalogue `sortComparatorFromArrow` recognises (so a
+ * comparator the localeCompare fallback can't model stays client-side, exactly
+ * as before). The carried {@link IRLoopSort} feeds the SSR adapter's evaluator
+ * (eval-first) and the client's JS round-trip. Accepted catalogue: subtraction
+ * (`a.f - b.f`, `a - b`, reverse for desc), `.localeCompare`, and the
+ * relational-ternary sign forms; any of them `||`-chained for multi-key.
  */
 function extractSortComparator(
   callback: ts.Expression,
-  method: 'sort' | 'toSorted',
+  _method: 'sort' | 'toSorted',
   ctx: TransformContext
 ): SortExtractionResult {
+  const unsupported = (): SortExtractionResult => {
+    // Surface the OUTER callback source — users see the string they wrote.
+    const raw = ctx.getJS(callback)
+    return {
+      result: null,
+      unsupportedReason:
+        `Sort comparator '${raw}' is not a supported shape. Accepted:\n` +
+        `  (a, b) => a - b\n` +
+        `  (a, b) => a.field - b.field\n` +
+        `  (a, b) => a.localeCompare(b)\n` +
+        `  (a, b) => a.field.localeCompare(b.field)\n` +
+        `(reverse the operands for descending order).`,
+    }
+  }
   if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) {
     return {
       result: null,
       unsupportedReason: 'Sort comparator must be an arrow function or function expression',
     }
   }
-  const result = extractSortComparatorFromTS(callback, method)
-  if (result) return { result }
-  // For the unsupported-reason message, the OUTER callback source is
-  // more useful to surface than the body — users see the same string
-  // they wrote. The extractor's own `raw` (body-only) is for the
-  // server-side / @client lowering paths, which only run on success.
-  const raw = ctx.getJS(callback)
+  const arrow = tsNodeToParsedExpr(callback)
+  if (arrow.kind !== 'arrow' || arrow.params.length !== 2) return unsupported()
+  // Gate on the same catalogue the localeCompare fallback recovers, so the
+  // hoist decision (and thus the SSR/client split) is byte-for-byte unchanged.
+  if (sortComparatorFromArrow(arrow) === null) return unsupported()
   return {
-    result: null,
-    unsupportedReason:
-      `Sort comparator '${raw}' is not a supported shape. Accepted:\n` +
-      `  (a, b) => a - b\n` +
-      `  (a, b) => a.field - b.field\n` +
-      `  (a, b) => a.localeCompare(b)\n` +
-      `  (a, b) => a.field.localeCompare(b.field)\n` +
-      `(reverse the operands for descending order).`,
+    result: {
+      arrow,
+      paramA: arrow.params[0],
+      paramB: arrow.params[1],
+      raw: stringifyParsedExpr(arrow.body),
+    },
   }
 }
 
@@ -2531,7 +2543,7 @@ function extractFilterPredicate(
     if (parsed.kind === 'unsupported') {
       return { result: null, unsupportedReason: parsed.reason }
     }
-    if (parsed.kind === 'arrow-fn') {
+    if (parsed.kind === 'arrow') {
       const support = isSupported(parsed.body)
       if (!support.supported) {
         return { result: null, unsupportedReason: support.reason }
@@ -3101,7 +3113,7 @@ function transformMapCall(
   // matches the fallback path at the bottom of this if/else chain.
   let arrayExpr: ts.Expression = mapSource
   let filterPredicate: FilterPredicateResult | undefined
-  let sortComparator: SortComparator | undefined
+  let sortComparator: IRLoopSort | undefined
   let chainOrder: 'filter-sort' | 'sort-filter' | undefined
   let mapPreamble: string | undefined
   let templateMapPreamble: string | undefined

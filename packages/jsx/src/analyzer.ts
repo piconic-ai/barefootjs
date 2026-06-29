@@ -8,7 +8,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
-import { parseExpression, parseExpression2, parseBlockBodyTolerant } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -2824,25 +2824,22 @@ function collectConstant(
   // PARENTHESISED value so a bare object literal (`{ … }`), which TS reads as
   // a block at statement position, resolves to an `object-literal` instead of
   // failing. Best-effort and inert for inlined JSX (no usable value tree).
+  //
+  // Carried for component-scope consts too (#2018 P5): the Go constructor
+  // lowerers (`lowerCtorExpr`, helper inlining) read this single generic tree —
+  // which now models the multi-param-arrow and regex shapes the former
+  // Go-only `parsed2` carried — to inline a derived component const's value
+  // (`base || '/'`) recursively. Best-effort; an unrepresentable shape leaves
+  // `parsed` undefined and consumers fall back to the string.
   const parsed =
-    isModule && value && !isJsx && !isJsxFunction
+    value && !isJsx && !isJsxFunction
       ? parseExpression(`(${value.trim()})`)
       : undefined
-
-  // Go-only constructor-lowering tree (#2006). Unlike `parsed` (module-only),
-  // this is carried for component-scope consts too — `lowerCtorExpr` inlines a
-  // derived component const's value (`base || '/'`) recursively. Best-effort;
-  // an unrepresentable shape leaves `parsed2` undefined and the adapter falls
-  // back. Other adapters ignore it.
-  const parsed2Raw =
-    value && !isJsx && !isJsxFunction ? parseExpression2(`(${value.trim()})`) : undefined
-  const parsed2 = parsed2Raw && parsed2Raw.kind !== 'unsupported' ? parsed2Raw : undefined
 
   ctx.localConstants.push({
     name,
     value,
     parsed,
-    parsed2,
     typedValue: typedValue !== value ? typedValue : undefined,
     valueBranches,
     declarationKind,

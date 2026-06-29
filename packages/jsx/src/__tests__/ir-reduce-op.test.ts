@@ -1,21 +1,21 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
-import { parseExpression } from '../expression-parser'
+import { parseExpression, asCallbackMethodCall } from '../expression-parser'
 
 /**
- * IR-level verification for `.reduce(fn, init)` (#1448 Tier C). The
- * parser intercepts the arithmetic-fold catalogue into a structured
- * `array-method` + `ReduceOp` node — this test pins the source-string
- * that survives through `jsxToIR` to an `IRExpression`, then re-parses
- * it to confirm the structured fold shape adapters consume.
+ * IR-level verification for `.reduce(fn, init)` (#2018 P5). The parser no
+ * longer folds the reducer into a structured `ReduceOp`; `.reduce` arrives as a
+ * generic `call` whose callee is `<recv>.reduce` and whose args are the
+ * comparator `arrow` + the init literal. The adapter serializes the arrow body
+ * to the runtime evaluator. This test pins that the generic callback shape
+ * survives the analyzer → IR boundary.
  *
- * Hydration and template-emit correctness are pinned at the adapter
- * conformance layer (`reduce-*` fixtures in `packages/adapter-tests/
- * fixtures/methods/`).
+ * Hydration / template-emit / Go==Perl==JS fold correctness are pinned at the
+ * adapter conformance + eval-vectors layers.
  */
 describe('reduce(fn, init) IR shape', () => {
-  test('sum over a struct field re-parses to a numeric ReduceOp', () => {
+  test('sum over a struct field parses to a generic reduce callback', () => {
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -35,17 +35,14 @@ describe('reduce(fn, init) IR shape', () => {
     expect(exprNode?.type).toBe('expression')
     if (exprNode?.type !== 'expression') return
 
-    // The IR carries the expression as a source string (the same shape
-    // adapters re-parse at emit time). Round-trip it to confirm the
-    // ReduceOp catalogue match survives the analyzer → IR boundary.
     const parsed = parseExpression(exprNode.expr)
-    expect(parsed.kind).toBe('array-method')
-    if (parsed.kind !== 'array-method') return
-    expect(parsed.method).toBe('reduce')
-    if (parsed.method !== 'reduce') return
-    expect(parsed.reduceOp.op).toBe('+')
-    expect(parsed.reduceOp.key).toEqual({ kind: 'field', field: 'duration' })
-    expect(parsed.reduceOp.type).toBe('numeric')
-    expect(parsed.reduceOp.init).toBe('0')
+    const cb = asCallbackMethodCall(parsed)
+    expect(cb).not.toBeNull()
+    expect(cb!.method).toBe('reduce')
+    expect(cb!.arrow.params).toEqual(['sum', 't'])
+    // Reducer body: `sum + t.duration`.
+    expect(cb!.arrow.body.kind).toBe('binary')
+    // The init literal travels as the trailing argument.
+    expect(cb!.args).toEqual([{ kind: 'literal', value: 0, literalType: 'number', raw: '0' }])
   })
 })
