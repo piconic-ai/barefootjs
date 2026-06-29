@@ -84,6 +84,7 @@ import {
   emitBfReduce,
   emitSortEval,
   emitReduceEval,
+  emitPredicateEval,
   stringTolerantEqOperands,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
@@ -3273,6 +3274,46 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Emit a higher-order method through the runtime evaluator (#2018 P2):
+   * `bf_filter_eval` / `bf_every_eval` / `bf_some_eval` / `bf_find_eval` /
+   * `bf_find_index_eval`, carrying the serialized predicate body + captured
+   * env. Returns null when the predicate is outside the evaluator surface
+   * (caller falls back to the structured helper / template block). The find /
+   * findLast (and findIndex / findLastIndex) pair share a helper, differing
+   * only by the `forward` bool argument.
+   */
+  private renderHigherOrderEval(
+    expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
+    arrayExpr: string,
+    emit: (e: ParsedExpr) => string,
+  ): string | null {
+    const { method, predicate, param } = expr
+    const pe = (fn: string, extra: string[] = []) =>
+      emitPredicateEval(fn, arrayExpr, predicate, param, emit, extra)
+    switch (method) {
+      case 'filter':
+        // `.filter(Boolean)` (identity predicate `_t => _t`) keeps its
+        // dedicated `bf_filter_truthy` lowering — identical render, and it
+        // composes through the array-method chain (`.filter(Boolean).join`).
+        if (predicate.kind === 'identifier' && predicate.name === param) return null
+        return pe('bf_filter_eval')
+      case 'every':
+        return pe('bf_every_eval')
+      case 'some':
+        return pe('bf_some_eval')
+      case 'find':
+        return pe('bf_find_eval', ['true'])
+      case 'findLast':
+        return pe('bf_find_eval', ['false'])
+      case 'findIndex':
+        return pe('bf_find_index_eval', ['true'])
+      case 'findLastIndex':
+        return pe('bf_find_index_eval', ['false'])
+    }
+    return null
+  }
+
+  /**
    * Render a higher-order expression (filter, every, some, find, findIndex) to
    * Go template, or null when the shape isn't supported. `renderArray` is passed
    * in so the array can recurse through different lowering methods.
@@ -3282,6 +3323,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderArray: (e: ParsedExpr) => string
   ): string | null {
     const arrayExpr = renderArray(expr.object)
+
+    // Evaluator path (#2018 P2): the predicate body is already a ParsedExpr on
+    // the IR node, so serialize it and emit the matching `bf_*_eval` helper.
+    // This generalizes the field-equality / truthiness predicate catalogue
+    // below to ANY pure predicate body; a method-call predicate (which
+    // `serializeParsedExpr` refuses) returns null here and falls through to the
+    // structured helpers / template-block fallback.
+    const evalForm = this.renderHigherOrderEval(expr, arrayExpr, renderArray)
+    if (evalForm !== null) return evalForm
 
     if (expr.method === 'every' || expr.method === 'some') {
       const { field } = this.extractFieldPredicate(expr.predicate, expr.param)
@@ -3418,12 +3468,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return null
     }
 
+    const arrayExpr = renderArray(filterExpr.object)
+
+    // Evaluator path (#2018 P2): `len (bf_filter_eval …)` for any pure
+    // predicate. Falls back to the structured `bf_filter` below for a
+    // method-call predicate the evaluator can't model.
+    const evalForm = emitPredicateEval(
+      'bf_filter_eval', arrayExpr, filterExpr.predicate, filterExpr.param, renderArray,
+    )
+    if (evalForm !== null) return `len (${evalForm})`
+
     const { field, negated } = this.extractFieldPredicate(filterExpr.predicate, filterExpr.param)
     if (!field) {
       return null
     }
 
-    const arrayExpr = renderArray(filterExpr.object)
     const value = negated ? 'false' : 'true'
     return `len (bf_filter ${arrayExpr} "${field}" ${value})`
   }

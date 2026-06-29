@@ -146,6 +146,37 @@ export function emitReduceEval(
 }
 
 /**
+ * Emit a higher-order predicate call via the evaluator (#2018, P2): the
+ * predicate body (already a `ParsedExpr` on the `higher-order` IR node) travels
+ * as serialized-ParsedExpr JSON, evaluated per element against `{param,
+ * …captured}`. Generalizes the field-equality / truthiness catalogues of
+ * `bf_filter` / `bf_find` / `bf_every` / `bf_some` to any pure predicate body.
+ * Returns null when the predicate is outside the evaluator surface (e.g. a
+ * method-call predicate — `serializeParsedExpr` refuses it), so the caller
+ * falls back to the structured helper / template-block path.
+ *
+ *   <func> <recv> "<json>" "<param>" [<extraArgs>…] <env>
+ *
+ * `extraArgs` are inserted between the param name and the env — used for the
+ * find / findIndex `forward` bool (`true` = find / findIndex, `false` =
+ * findLast / findLastIndex).
+ */
+export function emitPredicateEval(
+  funcName: string,
+  recv: string,
+  predicate: ParsedExpr,
+  param: string,
+  emit: (e: ParsedExpr) => string,
+  extraArgs: string[] = [],
+): string | null {
+  const json = serializeParsedExpr(predicate)
+  if (json === null) return null
+  const env = emitEvalEnvArg(predicate, [param], emit)
+  const extra = extraArgs.length > 0 ? ` ${extraArgs.join(' ')}` : ''
+  return `${funcName} ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}"${extra} ${env}`
+}
+
+/**
  * Make an equality comparison string-tolerant when exactly one side is a Go
  * string literal: JS `sorted === 'asc'` is loosely false for `sorted = false`,
  * but Go's template `eq` ERRORS on bool-vs-string (`incompatible types for
