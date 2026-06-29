@@ -1413,6 +1413,15 @@ export interface ConstantInfo {
    * couldn't structure it (best-effort — consumers fall back to the string).
    */
   parsed?: ParsedExpr
+  /**
+   * A recognised local URL-query helper, lowered to a pure tree at analysis
+   * time (#2039). The `URLSearchParams` builder idiom is a multi-statement
+   * block-bodied arrow, which `parsed` collapses to `unsupported`; this carries
+   * its shape structurally so the go-template adapter emits `bf_query` from IR
+   * instead of re-parsing the arrow source at emit time. Absent for any const
+   * that isn't such a helper. See {@link UrlBuilderInfo}.
+   */
+  urlBuilder?: UrlBuilderInfo
   /** Value with TypeScript type annotations preserved, for .tsx output */
   typedValue?: string
   valueBranches?: string[]
@@ -1442,6 +1451,36 @@ export interface ConstantInfo {
    */
   origin?: OriginInfo
 }
+
+/**
+ * One `u.set(key, value)` call in a recognised URL-query builder (#2039),
+ * carried as pure IR. `guard` is the `if (…)` condition wrapping the set (the
+ * `bf_query` `include` arg), or null for an unguarded set. `key` is the literal
+ * search-param name; `value` is the value expression (both may reference the
+ * builder arrow's params, substituted at the call site).
+ */
+export interface UrlBuilderSet {
+  guard: ParsedExpr | null
+  key: string
+  value: ParsedExpr
+}
+
+/**
+ * A recognised local URL-query helper (#2039), lowered to a pure tree at
+ * analysis time so adapters consume it as IR instead of re-parsing the arrow
+ * source at emit time. Two shapes:
+ *   - `builder` — the `URLSearchParams` idiom itself: `(params) => { const u =
+ *     new URLSearchParams(); [if (g)] u.set(k, v); …; return s ? `${base}?${s}`
+ *     : base }`. `base` is the no-query URL; `sets` are the guarded/unguarded
+ *     `u.set(…)` calls.
+ *   - `delegate` — a pass-through `(params) => target(args…)` to another such
+ *     helper. `target` is the delegated helper name; `args` are its call args
+ *     (in terms of this arrow's params, substituted when lowered).
+ * `params` is the arrow's parameter names, in order.
+ */
+export type UrlBuilderInfo =
+  | { kind: 'builder'; params: string[]; base: ParsedExpr; sets: UrlBuilderSet[] }
+  | { kind: 'delegate'; params: string[]; target: string; args: ParsedExpr[] }
 
 export interface TypeDefinition {
   kind: 'interface' | 'type'
