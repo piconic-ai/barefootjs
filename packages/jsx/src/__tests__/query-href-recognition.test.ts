@@ -35,6 +35,19 @@ export function P(props: { base: string }) {
     expect([...queryHrefLocalNames(md)]).toEqual(['qh'])
   })
 
+  test('recognises the @barefootjs/client/runtime re-export too', () => {
+    // `queryHref` is exported from both entries; importing from the runtime entry
+    // must still enable SSR lowering, else the call hits BF101.
+    const md = metadata(`
+'use client'
+import { queryHref } from '@barefootjs/client/runtime'
+export function P(props: { base: string }) {
+  return <a href={queryHref(props.base, {})}>x</a>
+}
+`)
+    expect([...queryHrefLocalNames(md)]).toEqual(['queryHref'])
+  })
+
   test('is empty when not imported', () => {
     const md = metadata(`
 'use client'
