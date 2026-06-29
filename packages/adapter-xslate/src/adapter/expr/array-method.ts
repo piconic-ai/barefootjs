@@ -197,6 +197,10 @@ export function renderSortEval(
 ): string | null {
   const json = serializeParsedExpr(body)
   if (json === null) return null
+  // A comparator needs both params; a wrong-arity arrow would emit an
+  // 'undefined' param name, so fail over to the structured fallback / BF101
+  // (mirrors the Go / Mojo guards).
+  if (params.length < 2) return null
   const [paramA, paramB] = params
   const env = emitEvalEnvArg(body, params, emit)
   return `$bf.sort_eval(${recv}, '${escapePerlSingleQuote(json)}', '${paramA}', '${paramB}', ${env})`
@@ -230,6 +234,10 @@ export function renderReduceEval(
         ? String(init.value)
         : null
   if (initOut === null) return null
+  // A reducer needs both the accumulator and element param; refuse a wrong-arity
+  // arrow cleanly (→ BF101) rather than emitting an 'undefined' param name
+  // (mirrors the Go / Mojo guards).
+  if (params.length < 2) return null
   const [paramAcc, paramItem] = params
   const env = emitEvalEnvArg(body, params, emit)
   return `$bf.reduce_eval(${recv}, '${escapePerlSingleQuote(json)}', '${paramAcc}', '${paramItem}', ${initOut}, '${direction}', ${env})`
