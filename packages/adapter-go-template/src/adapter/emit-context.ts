@@ -14,8 +14,6 @@
  * genuinely needs it, so the seam documents the real cross-module coupling.
  */
 
-import type ts from 'typescript'
-
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { CompileState } from './lib/compile-state.ts'
@@ -23,9 +21,6 @@ import type { CompileState } from './lib/compile-state.ts'
 export interface GoEmitContext {
   /** Per-compile mutable state (signals, consts, type tables, errors, …). */
   readonly state: CompileState
-
-  /** Parse a JS expression source string into a TS expression node, or null. */
-  parseLiteralExpression(value: string): ts.Expression | null
 
   /**
    * Lower a JS expression to its Go-template form (the core recursive entry).
@@ -37,8 +32,14 @@ export interface GoEmitContext {
     preParsed?: ParsedExpr,
   ): string
 
-  /** Lower a JS condition to a Go-template bool + any hoisted preamble. */
-  convertConditionToGo(jsCondition: string): { condition: string; preamble: string }
+  /**
+   * Lower a JS condition to a Go-template bool + any hoisted preamble.
+   * `preParsed` reuses an already-built tree instead of re-parsing `jsCondition`.
+   */
+  convertConditionToGo(
+    jsCondition: string,
+    preParsed?: ParsedExpr,
+  ): { condition: string; preamble: string }
 
   /** Extract the prop name from a `props.X ?? …` initial value, or null. */
   extractPropNameFromInitialValue(initialValue: string): string | null

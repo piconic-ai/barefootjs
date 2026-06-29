@@ -115,7 +115,7 @@ import {
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
 import { isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
-import { lowerCtorExpr, matchTrailingSlashReplace } from "./memo/ctor-lowering.ts"
+import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
@@ -197,16 +197,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * The `GoEmitContext` handed to extracted emit modules — the seam that keeps
-   * `state` / `convert*` / `parseLiteralExpression` off the public adapter
-   * type. `state` is captured by reference (reset in place, never reassigned),
-   * so this single `emitCtx` stays valid across `generate()` calls.
+   * `state` / `convert*` off the public adapter type. `state` is captured by
+   * reference (reset in place, never reassigned), so this single `emitCtx` stays
+   * valid across `generate()` calls.
    */
   private readonly emitCtx: GoEmitContext = {
     state: this.state,
-    parseLiteralExpression: (value) => this.parseLiteralExpression(value),
     convertExpressionToGo: (jsExpr, out, preParsed) =>
       this.convertExpressionToGo(jsExpr, out, preParsed),
-    convertConditionToGo: (jsCondition) => this.convertConditionToGo(jsCondition),
+    convertConditionToGo: (jsCondition, preParsed) =>
+      this.convertConditionToGo(jsCondition, preParsed),
     extractPropNameFromInitialValue: (initialValue) => this.extractPropNameFromInitialValue(initialValue),
     extractPropFallback: (initialValue) => this.extractPropFallback(initialValue),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
@@ -1982,31 +1982,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Parse a JS expression string into its TS AST node (parentheses unwrapped),
-   * or `null` when it isn't a single expression. Shared by the literal baker,
-   * the struct-shape synthesiser, and the constructor-expression interpreters
-   * (`lowerCtorExpr` and friends).
-   *
-   * Do NOT add new callers: read a carried `ParsedExpr` field instead. This is
-   * the last `ts.createSourceFile` in the adapter and is being removed
-   * incrementally.
-   */
-  private parseLiteralExpression(value: string): ts.Expression | null {
-    const sf = ts.createSourceFile(
-      '__lit.ts', `(${value})`, ts.ScriptTarget.Latest, /* setParentNodes */ true,
-    )
-    // Require exactly one expression statement. A value that error-recovers
-    // into multiple statements (e.g. `1; 2`) isn't a single literal — bail
-    // rather than silently baking only the first.
-    if (sf.statements.length !== 1) return null
-    const stmt = sf.statements[0]
-    if (!ts.isExpressionStatement(stmt)) return null
-    let expr: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-    return expr
-  }
-
-  /**
    * Convert a template literal's parsed parts into a `string`-typed Go
    * expression in `NewXxxProps` scope (destructured prop refs → `in.FieldName`),
    * or null so the caller falls back to `resolveDynamicPropValue`. A `string`
@@ -2584,13 +2559,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return STRING_METHODS.has(node.callee.property)
     }
     if (node.kind === 'array-method') {
+      // `.replace` (including the structurally-carried regex trailing-slash form,
+      // #2039) is in STRING_METHODS, so it's covered here — no special case.
       return STRING_METHODS.has(node.method)
-    }
-    // The deferred regex form of `String.replace` (`<s>.replace(/\/+$/, '')`)
-    // resolves to `unsupported`, but `lowerCtorExpr` recovers it as a
-    // `strings.TrimRight` (string), so treat the recognized pattern as a string.
-    if (node.kind === 'unsupported' && matchTrailingSlashReplace(node.raw) !== null) {
-      return true
     }
     if (node.kind === 'conditional') {
       return (
@@ -4044,7 +4015,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // delegating to it) lowers to a `bf_query` action — there is no Go method
     // backing a `.SortHref "date"` call. Tried before the generic inliner
     // because these helpers are block-bodied / delegate, which the inliner skips.
-    const urlBuilt = lowerUrlBuilderHelperCall(this.emitCtx, trimmed)
+    const urlBuilt = lowerUrlBuilderHelperCall(this.emitCtx, trimmed, preParsed)
     if (urlBuilt !== null) return urlBuilt
 
     // Inline a call to a local, expression-bodied helper arrow

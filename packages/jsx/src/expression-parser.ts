@@ -901,9 +901,12 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // replacing the FIRST occurrence (JS semantics for a string
       // pattern). Go uses `bf_replace` (`strings.Replace` with n=1);
       // Mojo uses `bf->replace` (index/substr splice, no regex). A
-      // regex-literal pattern parses as `unsupported` (convertNode has
-      // no regex arm), so it's refused explicitly here rather than
-      // emitting a broken `.Replace` — the Perl `s///` vs Go
+      // regex-literal pattern is the deferred form — its `regex` first
+      // arg is carried STRUCTURALLY (not collapsed to `unsupported`) so
+      // the Go ctor lowering can recover the one trailing-slash pattern
+      // it supports without re-parsing (#2039). Template use stays
+      // refused: `isSupported` maps a regex-pattern `.replace` to the
+      // deferred-form BF101 reason — the Perl `s///` vs Go
       // `regexp.ReplaceAllString` flavour gap is the open design
       // question in #1448. `replaceAll` stays refused entirely.
       //
@@ -921,19 +924,17 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           }
         }
         // A regex-literal pattern is the deferred form (the Perl `s///`
-        // vs Go `regexp.ReplaceAllString` flavour gap, #1448) — detect it
-        // on the TS node so the message is accurate. Any OTHER unsupported
-        // pattern/replacement (an object literal, an unsupported call, …)
-        // surfaces ITS OWN reason rather than being mislabelled as the
-        // regex form.
+        // vs Go `regexp.ReplaceAllString` flavour gap, #1448). Its shape
+        // is carried structurally — `args[0]` is a `regex` node (convertNode
+        // line ~1127) — so a consumer that recognises one fixed pattern (the
+        // Go ctor's `/\/+$/` trailing-slash strip → `strings.TrimRight`) reads
+        // it from the tree instead of re-parsing the raw (#2039). Returned
+        // before the object-literal `badArg` check below so the regex form
+        // keeps its dedicated diagnostic precedence; `isSupported` then refuses
+        // any template use with the deferred-form reason.
         const patternNode = node.arguments[0]
         if (patternNode && ts.isRegularExpressionLiteral(patternNode)) {
-          return {
-            kind: 'unsupported',
-            raw,
-            reason:
-              'String.prototype.replace supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */',
-          }
+          return { kind: 'array-method', method: 'replace', object: callee.object, args }
         }
         // Treat an object-literal argument like `unsupported` — a `.replace`
         // with an object pattern/replacement isn't lowerable, same as before
@@ -2155,6 +2156,17 @@ function checkSupport(expr: ParsedExpr): SupportResult {
     }
 
     case 'array-method': {
+      // A regex-pattern `.replace` is carried structurally (a `regex` first
+      // arg) but is the deferred form (#1448) — no template language lowers it.
+      // Refuse with the dedicated reason rather than the generic standalone-regex
+      // message, preserving the diagnostic the parser used to emit directly.
+      if (expr.method === 'replace' && expr.args[0]?.kind === 'regex') {
+        return {
+          supported: false,
+          reason:
+            'String.prototype.replace supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */',
+        }
+      }
       const objSupport = checkSupport(expr.object)
       if (!objSupport.supported) return objSupport
       for (const arg of expr.args) {

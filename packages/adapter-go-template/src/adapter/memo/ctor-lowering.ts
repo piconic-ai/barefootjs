@@ -10,37 +10,29 @@
  * caller can fall back to nil safely.
  */
 
-import ts from 'typescript'
-
-import { type ParsedExpr, tsNodeToParsedExpr } from '@barefootjs/jsx'
+import { type ParsedExpr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 
 /**
- * Recover the receiver of an `<recv>.replace(/\/+$/, '')` trailing-slash strip
- * from an `unsupported` node's raw source. The collapsed `parseExpression`
- * defers the regex form of `String.replace` to `unsupported`, so the only way to
- * reach the structured receiver is to re-parse — done with a TS AST walk (the
- * repo idiom; never string-matching), validating the exact regex pattern and the
- * empty-string replacement before returning the receiver's `ParsedExpr`. Any
- * other shape returns null.
+ * Whether `node` is the trailing-slash strip `<recv>.replace(/\/+$/, '')`. The
+ * structured parser carries the deferred regex form of `String.replace` as an
+ * `array-method` whose first arg is a `regex` node (#2039), so the one pattern
+ * the ctor lowering recognises is matched off the IR — no emit-time re-parse.
+ * Validates the exact regex pattern and the empty-string replacement.
  */
-export function matchTrailingSlashReplace(raw: string): ParsedExpr | null {
-  const sf = ts.createSourceFile('expr.ts', `(${raw})`, ts.ScriptTarget.Latest, true)
-  const stmt = sf.statements[0]
-  if (!stmt || !ts.isExpressionStatement(stmt)) return null
-  let expr: ts.Expression = stmt.expression
-  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-  if (!ts.isCallExpression(expr)) return null
-  const callee = expr.expression
-  if (!ts.isPropertyAccessExpression(callee) || callee.name.text !== 'replace') return null
-  if (expr.arguments.length !== 2) return null
-  const [pattern, replacement] = expr.arguments
-  if (!ts.isRegularExpressionLiteral(pattern) || pattern.text !== '/\\/+$/') return null
-  if (!ts.isStringLiteralLike(replacement) || replacement.text !== '') return null
-  return tsNodeToParsedExpr(callee.expression)
+function isTrailingSlashReplace(node: ParsedExpr): boolean {
+  if (node.kind !== 'array-method' || node.method !== 'replace') return false
+  const [pattern, replacement] = node.args
+  return (
+    pattern?.kind === 'regex' &&
+    pattern.raw === '/\\/+$/' &&
+    replacement?.kind === 'literal' &&
+    replacement.literalType === 'string' &&
+    replacement.value === ''
+  )
 }
 
 /**
@@ -129,19 +121,17 @@ export function lowerCtorExpr(
   }
 
   // `<s>.replace(/\/+$/, '')` — strip trailing slashes → strings.TrimRight. The
-  // collapsed `parseExpression` defers the regex form of `String.replace` to an
-  // `unsupported` node (it doesn't model regex replacement), so recover this one
-  // recognized pattern from the `unsupported` raw. Only this exact trailing-slash
-  // regex is supported (a general regex replace would need Go's regexp).
-  if (node.kind === 'unsupported') {
-    const trim = matchTrailingSlashReplace(node.raw)
-    if (trim !== null) {
-      const recvGo = lowerCtorExpr(ctx, trim, env)
-      if (recvGo === null) return null
-      ctx.state.needsStringsImport = true
-      return `strings.TrimRight(${recvGo}, "/")`
-    }
-    return null
+  // parser defers the regex form of `String.replace` but carries its shape
+  // structurally (an `array-method` replace with a `regex` first arg, #2039), so
+  // the one recognized pattern is matched off the IR — no re-parse. Only this
+  // exact trailing-slash regex is supported (a general regex replace would need
+  // Go's regexp).
+  if (node.kind === 'array-method' && node.method === 'replace') {
+    if (!isTrailingSlashReplace(node)) return null
+    const recvGo = lowerCtorExpr(ctx, node.object, env)
+    if (recvGo === null) return null
+    ctx.state.needsStringsImport = true
+    return `strings.TrimRight(${recvGo}, "/")`
   }
 
   // `helper(<args>)` where helper is a module arrow const → inline its body.

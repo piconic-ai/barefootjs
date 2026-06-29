@@ -542,11 +542,21 @@ describe('expression-parser', () => {
       }
     })
 
-    test('.replace(/re/, repl) refuses the regex form with the deferred reason (#1448 Tier B)', () => {
+    test('.replace(/re/, repl) carries the regex form structurally; isSupported refuses it with the deferred reason (#1448 Tier B, #2039)', () => {
+      // The regex form is deferred, but its shape is carried as an
+      // `array-method` whose first arg is a `regex` node — so the Go ctor
+      // lowering can recover the trailing-slash pattern without re-parsing
+      // (#2039). Template use is still refused, via `isSupported`.
       const result = parseExpression(`name().replace(/a/g, "b")`)
-      expect(result.kind).toBe('unsupported')
-      if (result.kind === 'unsupported') {
-        expect(result.reason).toContain('regex form is deferred')
+      expect(result.kind).toBe('array-method')
+      if (result.kind === 'array-method') {
+        expect(result.method).toBe('replace')
+        expect(result.args[0].kind).toBe('regex')
+      }
+      const support = isSupported(result)
+      expect(support.supported).toBe(false)
+      if (!support.supported) {
+        expect(support.reason).toContain('regex form is deferred')
       }
     })
 
