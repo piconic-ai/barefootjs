@@ -108,7 +108,7 @@ import { CompileState } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerUrlBuilderHelperCall, lowerQueryHrefCall } from "./expr/url-builder.ts"
+import { lowerQueryHrefCall } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -4018,13 +4018,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // arg is otherwise `unsupported` at the support gate.
     const queryBuilt = lowerQueryHrefCall(this.emitCtx, trimmed, preParsed)
     if (queryBuilt !== null) return queryBuilt
-
-    // A local URL-builder helper (`hrefFor`, or `sortHref` / `tagHref`
-    // delegating to it) lowers to a `bf_query` action — there is no Go method
-    // backing a `.SortHref "date"` call. Tried before the generic inliner
-    // because these helpers are block-bodied / delegate, which the inliner skips.
-    const urlBuilt = lowerUrlBuilderHelperCall(this.emitCtx, trimmed, preParsed)
-    if (urlBuilt !== null) return urlBuilt
 
     // Inline a call to a local, expression-bodied helper arrow
     // (`sortClass(k)` / `tagClass(t)`) by substituting its params with the call

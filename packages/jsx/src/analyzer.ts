@@ -7,9 +7,8 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, UrlBuilderInfo } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant } from './expression-parser.ts'
-import { recognizeUrlBuilder } from './url-builder-shape.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -2661,7 +2660,6 @@ function collectConstant(
   // Detect JSX initializers and store AST nodes for IR-level inlining (#547)
   let isJsx = false
   let isJsxFunction = false
-  let urlBuilder: UrlBuilderInfo | undefined
   if (node.initializer) {
     let init: ts.Expression = node.initializer
     while (ts.isParenthesizedExpression(init)) init = init.expression
@@ -2729,19 +2727,6 @@ function collectConstant(
           })
         }
       }
-    }
-
-    // Recognise a local URL-query helper (the `URLSearchParams` builder idiom,
-    // or a pass-through delegate to one) and carry its shape as pure IR (#2039)
-    // — the block-bodied builder arrow is `unsupported` to the structured parser,
-    // so this lets the go-template adapter emit `bf_query` from IR instead of
-    // re-parsing the arrow source at emit time. A delegate resolves its target
-    // against builders recognised earlier in declaration order.
-    if (ts.isArrowFunction(init) && !isJsxFunction) {
-      urlBuilder =
-        recognizeUrlBuilder(init, n =>
-          ctx.localConstants.some(c => c.name === n && c.urlBuilder !== undefined),
-        ) ?? undefined
     }
   }
 
@@ -2859,7 +2844,6 @@ function collectConstant(
     name,
     value,
     parsed,
-    urlBuilder,
     typedValue: typedValue !== value ? typedValue : undefined,
     valueBranches,
     declarationKind,

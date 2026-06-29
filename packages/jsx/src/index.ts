@@ -46,8 +46,6 @@ export type {
   TypeDefinition,
   SourceLocation,
   CompilerError,
-  UrlBuilderInfo,
-  UrlBuilderSet,
 } from './types.ts'
 
 // Analyzer
