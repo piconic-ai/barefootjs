@@ -781,10 +781,26 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // Evaluator-first (#2018 P3): serialize the comparator + emit
       // `bf->sort_eval`; fall back to the structured `bf->sort` for a
       // comparator the evaluator can't model (e.g. `localeCompare`).
+      //
+      // The hoisted sort runs OUTSIDE this loop, so this loop's bound names
+      // must not shadow the comparator's captured free vars while emitting the
+      // env — otherwise a captured var that happens to share a loop-param name
+      // is blocked from inlining its module const and renders as an undefined
+      // `$name` (strict-mode fault, Copilot review #2035). Drop this loop's
+      // bound names for the sort emit, then restore (a nested loop's outer
+      // bindings, ref-counted, stay in effect).
+      for (const n of loopBound) {
+        const c = (this.loopBoundNames.get(n) ?? 1) - 1
+        if (c <= 0) this.loopBoundNames.delete(n)
+        else this.loopBoundNames.set(n, c)
+      }
       const sortEmit = (e: ParsedExpr) => this.convertExpressionToPerl('', e)
       const sorted =
         renderSortEval(rawArray, loop.sortComparator, sortEmit) ??
         renderSortMethod(rawArray, loop.sortComparator)
+      for (const n of loopBound) {
+        this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
+      }
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
