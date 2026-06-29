@@ -757,7 +757,12 @@ func FlatMapEval(items any, projJSON, param string, baseEnv map[string]any) []an
 	for _, item := range toAnySlice(items) {
 		env[param] = item
 		v := EvalNode(proj, env)
-		if sub, isSlice := v.([]any); isSlice {
+		// Flatten any slice/array kind one level, not just []any: real Go
+		// template data projects a field like `i.tags` to a typed slice
+		// (`[]string` / `[]int`), which `toAnySlice` normalizes to []any. A
+		// non-slice value (string / number / struct / nil) contributes itself,
+		// matching JS `.flatMap` (a non-array return is kept as one element).
+		if sub := toAnySlice(v); sub != nil {
 			out = append(out, sub...)
 		} else {
 			out = append(out, v)

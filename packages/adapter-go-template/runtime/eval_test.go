@@ -136,14 +136,17 @@ func TestPredicateEvalHelpers(t *testing.T) {
 // slice contributes its elements; a tuple (array-literal) projection
 // contributes its leaves; a scalar projection is kept as a single element.
 func TestFlatMapEval(t *testing.T) {
+	// Typed `[]string` fields (the real Go-template data shape, not []any) must
+	// flatten too — `toAnySlice` normalizes any slice/array kind (Copilot
+	// review #2036).
 	rows := []any{
-		map[string]any{"tags": []any{"a", "b"}},
-		map[string]any{"tags": []any{"c"}},
+		map[string]any{"tags": []string{"a", "b"}},
+		map[string]any{"tags": []string{"c"}},
 	}
 	// field: i => i.tags  → ["a","b","c"]
 	field := mustJSON(t, nmem(nid("i"), "tags"))
 	if got := FlatMapEval(rows, field, "i", nil); len(got) != 3 || got[0] != "a" || got[2] != "c" {
-		t.Fatalf("FlatMapEval field = %v, want [a b c]", got)
+		t.Fatalf("FlatMapEval typed-slice field = %v, want [a b c]", got)
 	}
 
 	// tuple: p => [p.x, p.y]  → [1,2,3,4]
