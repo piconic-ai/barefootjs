@@ -81,7 +81,7 @@ import {
   resolveJsxChildrenProp,
   collectRootScopeNodes,
 } from './lib/ir-scope.ts'
-import { renderSortMethod } from './expr/array-method.ts'
+import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
 import { XslateFilterEmitter, XslateTopLevelEmitter } from './expr/emitters.ts'
 import type { XslateEmitContext, XslateSpreadContext, XslateMemoContext } from './emit-context.ts'
 import {
@@ -592,7 +592,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // helper runs once.
     let array = rawArray
     if (loop.sortComparator) {
-      array = renderSortMethod(rawArray, loop.sortComparator)
+      // Evaluator-first (#2018 P3): serialize the comparator + emit
+      // `$bf.sort_eval`; fall back to the structured `$bf.sort` for a
+      // comparator the evaluator can't model (e.g. `localeCompare`).
+      const sortEmit = (e: ParsedExpr) => this.convertExpressionToKolon('', e)
+      array =
+        renderSortEval(rawArray, loop.sortComparator, sortEmit) ??
+        renderSortMethod(rawArray, loop.sortComparator)
     }
     const param = loop.param
     // Kolon binds the item directly via `for LIST -> $item`. The index, when

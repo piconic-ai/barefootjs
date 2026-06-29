@@ -2880,21 +2880,22 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     // #1448 Tier B — string → string, padded to a target width.
     { fixture: stringPadStartFixture,   expect: 'bf_pad_start .Value 5 "0"' },
     { fixture: stringPadEndFixture,     expect: 'bf_pad_end .Value 5 "."' },
-    // #1448 Tier B — sort / toSorted. Loop-chained shapes wrap the
-    // iterable in `bf_sort .Items <kind> <key> <type> <dir>`;
-    // standalone shapes inline the helper at the call site.
-    { fixture: arraySortFieldAscFixture,  expect: 'bf_sort .Items "field" "Price" "numeric" "asc"' },
-    { fixture: arraySortFieldDescFixture, expect: 'bf_sort .Items "field" "Price" "numeric" "desc"' },
-    // Standalone numeric sorts now lower through the evaluator (#2018): the
-    // comparator body travels as serialized ParsedExpr to `bf_sort_eval`.
+    // #1448 Tier B — sort / toSorted. Both the standalone shapes and the
+    // `.sort().map()` loop-hoist now lower through the evaluator (#2018 P1/P3):
+    // the comparator body travels as serialized ParsedExpr to `bf_sort_eval`.
+    { fixture: arraySortFieldAscFixture,  expect: 'bf_sort_eval .Items' },
+    { fixture: arraySortFieldDescFixture, expect: 'bf_sort_eval .Items' },
     { fixture: arraySortPrimitiveFixture, expect: 'bf_sort_eval .Nums' },
-    // localeCompare can't be evaluated, so it keeps the legacy `bf_sort` path.
+    // localeCompare can't be evaluated, so it keeps the legacy `bf_sort` path
+    // (both standalone and loop-hoist fall back).
     { fixture: arraySortLocaleFixture,    expect: 'bf_sort .Names "self" "" "string" "asc"' },
-    // Multi-key (`||`-chain): one 4-string group per comparison key,
-    // applied in priority order as tie-breakers.
+    // Multi-key (`||`-chain) here ends in a `localeCompare`, so the whole
+    // comparator falls back to the structured `bf_sort` (one 4-string group
+    // per comparison key, applied in priority order as tie-breakers).
     { fixture: arraySortMultiKeyFixture,  expect: 'bf_sort .Items "field" "Price" "numeric" "asc" "field" "Name" "string" "asc"' },
-    // Relational-ternary comparator lowers to a single `auto` key.
-    { fixture: arraySortTernaryFixture,   expect: 'bf_sort .Items "field" "Rank" "auto" "asc"' },
+    // Relational-ternary comparator — a pure body, so it lowers via the
+    // evaluator like the other field sorts.
+    { fixture: arraySortTernaryFixture,   expect: 'bf_sort_eval .Items' },
     { fixture: arrayToSortedFixture,      expect: 'bf_sort_eval .Nums' },
     // #1448 Tier B — iteration shapes. These are loop-level
     // patterns (range binding order), not helper function calls.

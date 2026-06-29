@@ -4573,11 +4573,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (pushedBindingMap) this.loopBindingStack.pop()
     this.inLoop = false
 
-    // Apply sort if present: wrap the array in a bf_sort pipeline. The same
-    // `emitBfSort` helper feeds both this loop-chained call site and the
-    // standalone `sortMethod()` arm above.
+    // Apply sort if present: wrap the array in a sort pipeline before `range`.
+    // Evaluator-first (#2018 P3): serialize the comparator body + emit
+    // `bf_sort_eval`, the same path the standalone `sortMethod()` arm uses;
+    // fall back to the structured `bf_sort` for a comparator the evaluator
+    // can't model (e.g. `localeCompare`). The sort runs after the loop-scope
+    // cleanup above, so the captured-free-var env renders in the outer scope.
     if (loop.sortComparator) {
-      goArray = `(${emitBfSort(goArray, loop.sortComparator)})`
+      const sortEmit = (e: ParsedExpr) => this.renderParsedExpr(e)
+      const sorted =
+        emitSortEval(goArray, loop.sortComparator, sortEmit) ??
+        emitBfSort(goArray, loop.sortComparator)
+      goArray = `(${sorted})`
     }
 
     // filter().map(): gate the body on an `{{if}}` condition.
