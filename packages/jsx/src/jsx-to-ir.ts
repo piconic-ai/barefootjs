@@ -2450,6 +2450,8 @@ function extractSortComparator(
         `  (a, b) => a.field - b.field\n` +
         `  (a, b) => a.localeCompare(b)\n` +
         `  (a, b) => a.field.localeCompare(b.field)\n` +
+        `  (a, b) => a.field > b.field ? 1 : a.field < b.field ? -1 : 0\n` +
+        `  any of the above '||'-chained for multi-key tie-breaks\n` +
         `(reverse the operands for descending order).`,
     }
   }

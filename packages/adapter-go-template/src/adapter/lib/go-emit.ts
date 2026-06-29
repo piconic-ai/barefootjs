@@ -95,8 +95,12 @@ export function emitSortEval(
 ): string | null {
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const paramA = params[0] ?? 'a'
-  const paramB = params[1] ?? 'b'
+  // A comparator needs both params; a wrong-arity arrow would bind the wrong
+  // env (or treat a real param as a free var), so fail over to the structured
+  // fallback / BF101 instead of inventing default names.
+  if (params.length < 2) return null
+  const paramA = params[0]
+  const paramB = params[1]
   const env = emitEvalEnvArg(body, [paramA, paramB], emit)
   return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${paramA}" "${paramB}" ${env}`
 }
@@ -119,8 +123,12 @@ export function emitReduceEval(
 ): string | null {
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const paramAcc = params[0] ?? 'acc'
-  const paramItem = params[1] ?? 'item'
+  // A reducer needs both the accumulator and the element param; a wrong-arity
+  // arrow would bind the wrong env, so refuse cleanly (→ BF101) rather than
+  // defaulting the names.
+  if (params.length < 2) return null
+  const paramAcc = params[0]
+  const paramItem = params[1]
   // Only a literal seed has a template-time value; anything else (an identifier
   // / call) can't be folded here, so bail to the structured-less fallback (BF101).
   let initGo: string

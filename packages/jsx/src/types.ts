@@ -16,7 +16,9 @@ import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
  * (`(paramA, paramB) => raw`), so the client is untouched.
  */
 export type IRLoopSort = {
-  arrow: ParsedExpr
+  // Always the comparator arrow itself — narrowed so consumers read
+  // `.params` / `.body` without a defensive `kind` check or non-null assertion.
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>
   paramA: string
   paramB: string
   raw: string
