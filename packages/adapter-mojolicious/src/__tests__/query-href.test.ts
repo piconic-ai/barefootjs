@@ -40,6 +40,21 @@ export function P(props: { base: string; sort: string; tag: string }) {
     expect(t).toContain("bf->query($base, ($sort ne 'date'), 'sort', $sort, 1, 'tag', $tag)")
   })
 
+  // A bare-value guard (`flag ? v : undefined`) is JS *string* truthiness — `'0'`
+  // is a truthy string in JS but false under Perl's `unless`. The lowering must
+  // normalise it to a non-empty-string test so SSR matches the client / go (where
+  // `lowerUrlGuard` emits `ne <value> ""`), not pass the bare value as the guard.
+  test('a bare-value guard is normalised to a non-empty-string test', () => {
+    const t = template(`
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; flag: string; val: string }) {
+  return <a href={queryHref(props.base, { q: props.flag ? props.val : undefined })}>x</a>
+}
+`)
+    expect(t).toContain("bf->query($base, ($flag ne ''), 'q', $val)")
+  })
+
   test('an aliased import is recognised', () => {
     const t = template(`
 'use client'
