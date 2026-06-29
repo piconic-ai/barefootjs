@@ -77,6 +77,10 @@ function extractUrlBuilder(
 ): { base: ParsedExpr; sets: UrlBuilderSet[] } | null {
   if (!ts.isBlock(arrow.body)) return null
   let builderVar: string | null = null
+  // Locals bound to `<builderVar>.toString()` — the query-string truthiness the
+  // builder's `return <s> ? … : <base>` switches on. Tracked (not ignored) so
+  // the return shape can be validated, not assumed.
+  const toStringVars = new Set<string>()
   let base: ParsedExpr | null = null
   const sets: UrlBuilderSet[] = []
 
@@ -92,8 +96,16 @@ function extractUrlBuilder(
           (d.initializer.arguments?.length ?? 0) === 0
         ) {
           builderVar = d.name.text
+        } else if (
+          ts.isIdentifier(d.name) &&
+          d.initializer &&
+          builderVar &&
+          isBuilderToString(d.initializer, builderVar)
+        ) {
+          // `const s = u.toString()` — the query-string value.
+          toStringVars.add(d.name.text)
         }
-        // Other locals (`const s = u.toString()`) are inert — ignored.
+        // Any other local is inert — ignored.
       }
       continue
     }
@@ -113,14 +125,18 @@ function extractUrlBuilder(
       }
       return null
     }
-    // `return <s> ? `${base}?…` : <base>` — the builder's return must be the
-    // conditional that picks between the with-query and bare-base URL; its
-    // `whenFalse` (no-query) branch is the base. Any other return shape bails
-    // to the adapter's method-call fallback.
-    if (ts.isReturnStatement(s) && s.expression) {
+    // `return <q> ? `${base}?…` : <base>` — the builder's return must be the
+    // conditional that switches on the *query-string truthiness* (`u.toString()`,
+    // or a local bound to it) and falls back to the bare base. Validating the
+    // condition is what makes "`whenFalse` is the base" sound — a conditional
+    // return over some unrelated predicate is NOT a query builder and must bail
+    // to the adapter's method-call fallback rather than be mis-lowered (#2041
+    // review). Other return shapes bail too.
+    if (ts.isReturnStatement(s) && s.expression && builderVar) {
       let e: ts.Expression = s.expression
       while (ts.isParenthesizedExpression(e)) e = e.expression
       if (!ts.isConditionalExpression(e)) return null
+      if (!isQueryTruthiness(e.condition, builderVar, toStringVars)) return null
       base = tsNodeToParsedExpr(e.whenFalse)
       continue
     }
@@ -128,6 +144,36 @@ function extractUrlBuilder(
   }
   if (!builderVar || !base || sets.length === 0) return null
   return { base, sets }
+}
+
+/** `<builderVar>.toString()` — the query-string materialisation. */
+function isBuilderToString(node: ts.Expression, builderVar: string): boolean {
+  let e: ts.Expression = node
+  while (ts.isParenthesizedExpression(e)) e = e.expression
+  return (
+    ts.isCallExpression(e) &&
+    e.arguments.length === 0 &&
+    ts.isPropertyAccessExpression(e.expression) &&
+    ts.isIdentifier(e.expression.expression) &&
+    e.expression.expression.text === builderVar &&
+    e.expression.name.text === 'toString'
+  )
+}
+
+/**
+ * The builder return's condition is the query-string truthiness: a direct
+ * `<builderVar>.toString()` call, or an identifier bound to one earlier
+ * (`const s = u.toString()`). Anything else is not a query builder.
+ */
+function isQueryTruthiness(
+  cond: ts.Expression,
+  builderVar: string,
+  toStringVars: ReadonlySet<string>,
+): boolean {
+  let e: ts.Expression = cond
+  while (ts.isParenthesizedExpression(e)) e = e.expression
+  if (ts.isIdentifier(e)) return toStringVars.has(e.text)
+  return isBuilderToString(e, builderVar)
 }
 
 /**

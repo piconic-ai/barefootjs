@@ -75,4 +75,44 @@ describe('URL-builder shape recognition → ConstantInfo.urlBuilder (#2039)', ()
     expect(consts.find(c => c.name === 'root')?.urlBuilder).toBeUndefined()
     expect(consts.find(c => c.name === 'params')?.urlBuilder).toBeUndefined()
   })
+
+  // #2041 review: a helper that builds a `URLSearchParams` and returns a
+  // conditional whose condition is NOT the query-string truthiness is not a
+  // query builder — it must be refused (fall back to the method-call lowering),
+  // not mis-recognised and silently mis-lowered to `bf_query`.
+  test('a conditional return over an unrelated predicate is refused', () => {
+    const src = `
+'use client'
+export function P(props: { flag: boolean; base: string }) {
+  const weird = (k: string) => {
+    const u = new URLSearchParams()
+    u.set('k', k)
+    return props.flag ? 'yes' : props.base
+  }
+  return <a href={weird('x')}>x</a>
+}
+`
+    const consts = localConstants(src)
+    expect(consts.find(c => c.name === 'weird')?.urlBuilder).toBeUndefined()
+  })
+
+  // The direct `return u.toString() ? ... : base` form (no `const s`) is the
+  // other accepted query-truthiness shape — keep it recognised.
+  test('the inline `u.toString()` return condition is accepted', () => {
+    const src = `
+'use client'
+import { searchParams } from '@barefootjs/client'
+export function P() {
+  const root = '/'
+  const hrefFor = (tag: string) => {
+    const u = new URLSearchParams()
+    if (tag) u.set('tag', tag)
+    return u.toString() ? \`\${root}?\${u}\` : root
+  }
+  return <a href={hrefFor('go')}>x</a>
+}
+`
+    const consts = localConstants(src)
+    expect(consts.find(c => c.name === 'hrefFor')?.urlBuilder?.kind).toBe('builder')
+  })
 })

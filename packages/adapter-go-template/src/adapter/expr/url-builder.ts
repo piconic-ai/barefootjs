@@ -104,6 +104,14 @@ const BOOL_COMPARISON_OPS: ReadonlySet<string> = new Set([
  * (`convertConditionToGo`); a bare value (`if (tag)`) is JS string-truthiness,
  * lowered to `ne <value> ""`. The arg must be a real bool — `bf_query` type-
  * asserts it, so Go-template truthiness (`{{if x}}`) is not enough.
+ *
+ * The `ne <value> ""` path models *string* truthiness, which is the query-
+ * builder domain: `URLSearchParams.set(k, v)` stringifies `v`, and these guards
+ * gate string values (`if (tag)`). A guard on a non-string value (a raw number,
+ * `null`, a bool-typed identifier) is outside the recognised idiom; the type-
+ * assert on `bf_query`'s include arg surfaces it as a build error rather than
+ * silently mis-including. (Pre-existing behaviour, carried verbatim from the
+ * former re-parse path; #2041 review.)
  */
 function lowerUrlGuard(
   ctx: GoEmitContext,
