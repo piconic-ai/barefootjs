@@ -3,8 +3,10 @@
  *
  * The pure functional URL builder is a structured `call` + `object-literal` in
  * the IR, so the adapter lowers it directly — no block-body recognizer, no
- * re-parse. Inclusion is truthy-omit: `key: cond ? v : undefined` → `(cond)
- * "key" v`; plain `key: v` → `(ne v "") "key" v`.
+ * re-parse. Values are strings; inclusion mirrors the client `if (value)` over
+ * strings: plain `key: v` → `(ne v "") "key" v`; conditional `key: cond ? a :
+ * undefined` ≡ client `if (cond ? a : undefined)` → `(and (cond) (ne a "")) "key"
+ * a` (include iff `cond` AND `a` is non-empty — not just `cond`).
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
@@ -33,7 +35,7 @@ export function P(props: { base: string; tag: string }) {
     expect(template).not.toContain('.QueryHref')
   })
 
-  test('a conditional include folds the guard into the bool; plain stays value-truthiness', () => {
+  test('a conditional include is `and (cond) (ne consequent "")` — matching client value-truthiness', () => {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
@@ -48,7 +50,7 @@ export function P(props: { base: string; sort: string; tag: string }) {
 `
     const { template } = generate(src)
     expect(template).toContain(
-      'bf_query .Base (ne (bf_string .Sort) "date") "sort" .Sort (ne .Tag "") "tag" .Tag',
+      'bf_query .Base (and (ne (bf_string .Sort) "date") (ne .Sort "")) "sort" .Sort (ne .Tag "") "tag" .Tag',
     )
   })
 
@@ -56,14 +58,17 @@ export function P(props: { base: string; sort: string; tag: string }) {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
-export function P(props: { base: string; a: string; b: string }) {
-  return <a href={queryHref(props.base, { a: props.a ? props.a : '', b: props.b ? props.b : null })}>x</a>
+export function P(props: { base: string; mode: string; a: string; b: string }) {
+  return <a href={queryHref(props.base, {
+    a: props.mode !== 'off' ? props.a : '',
+    b: props.mode !== 'off' ? props.b : null,
+  })}>x</a>
 }
 `
     const { template } = generate(src)
-    // Both fold to (cond) "key" value — the empty / null alternate is the omit.
-    expect(template).toContain('(ne .A "") "a" .A')
-    expect(template).toContain('(ne .B "") "b" .B')
+    // Both '' and null alternates fold to the same conditional-include form.
+    expect(template).toContain('(and (ne (bf_string .Mode) "off") (ne .A "")) "a" .A')
+    expect(template).toContain('(and (ne (bf_string .Mode) "off") (ne .B "")) "b" .B')
   })
 
   test('an aliased import is still recognised', () => {

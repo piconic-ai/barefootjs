@@ -17,7 +17,6 @@
 import {
   type ParsedExpr,
   type UrlBuilderInfo,
-  type UrlBuilderSet,
   parseExpression,
   stringifyParsedExpr,
 } from '@barefootjs/jsx'
@@ -148,14 +147,22 @@ const EMPTY_SUBS: ReadonlyMap<string, ParsedExpr> = new Map()
  * expression (#2042). `queryHref` is the pure, functional counterpart to the
  * recognised `URLSearchParams` builder: because the call + object literal are
  * already structured IR, there's no block-body recognition or re-parse — this
- * just maps each property to a `bf_query` include triple and reuses the shared
- * emitter. Returns null for anything that isn't a `queryHref(base, {object})`
- * call (→ generic lowering).
+ * maps each property to a `bf_query` include triple directly. Returns null for
+ * anything that isn't a `queryHref(base, {object})` call (→ generic lowering).
  *
- * Inclusion is truthy-omit (the client `queryHref` semantics): an entry is
- * included iff its value is truthy. A conditional include written as
- * `key: cond ? v : undefined` lowers to `(cond) "key" v`; a plain `key: v`
- * lowers to `(ne v "") "key" v` (value-truthiness).
+ * Inclusion mirrors the client `queryHref` exactly, where every param value is a
+ * STRING (`QueryParamValue`): an entry is included iff its value is a non-empty
+ * string (the client's `if (value)` over strings).
+ *   - plain `key: v`            → `(ne v "") "key" v`
+ *   - conditional `key: cond ? a : <undefined|null|''>` → the client evaluates
+ *     `if (cond ? a : undefined)`, i.e. include iff `cond` AND `a` is non-empty,
+ *     so this emits `(and (<cond>) (ne a "")) "key" a` — NOT just `(cond)`, which
+ *     would wrongly include `?key=` when `cond` holds but `a` is empty.
+ *
+ * Number / boolean values are intentionally outside `QueryParamValue`: JS
+ * truthiness omits `0` / `false`, which a string `ne … ""` guard can't model
+ * without per-value type info (a possible follow-up). Keeping values string-only
+ * guarantees SSR ≡ client.
  */
 export function lowerQueryHrefCall(
   ctx: GoEmitContext,
@@ -175,24 +182,36 @@ export function lowerQueryHrefCall(
   // to static include triples, so fall back to the generic lowering.
   if (obj.kind !== 'object-literal') return null
 
-  const sets: UrlBuilderSet[] = []
+  const lowerExpr = (n: ParsedExpr): string =>
+    ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
+  const parts: string[] = [wrapIfMultiToken(lowerExpr(base))]
   for (const p of obj.properties) {
     const v = p.value
+    let includeGo: string
+    let valueNode: ParsedExpr
     if (v.kind === 'conditional' && isOmitSentinel(v.alternate)) {
-      // `key: cond ? value : undefined` — include iff `cond`, with `value`.
-      sets.push({ guard: v.test, key: p.key, value: v.consequent })
+      // `key: cond ? a : <omit>` ≡ client `if (cond ? a : undefined)` ≡
+      // `cond` truthy AND `a` non-empty.
+      const testBool = lowerUrlGuard(ctx, v.test, EMPTY_SUBS)
+      const consGo = wrapIfMultiToken(lowerExpr(v.consequent))
+      includeGo = `and (${testBool}) (ne ${consGo} "")`
+      valueNode = v.consequent
     } else {
-      // `key: value` — include iff `value` is truthy (guard == value).
-      sets.push({ guard: v, key: p.key, value: v })
+      // `key: v` — include iff the (string) value is non-empty.
+      includeGo = lowerUrlGuard(ctx, v, EMPTY_SUBS)
+      valueNode = v
     }
+    parts.push(`(${includeGo})`)
+    parts.push(JSON.stringify(p.key))
+    parts.push(wrapIfMultiToken(lowerExpr(valueNode)))
   }
-  return emitUrlBuilder(ctx, { kind: 'builder', params: [], base, sets }, EMPTY_SUBS)
+  return `bf_query ${parts.join(' ')}`
 }
 
 /**
  * The falsy "omit" branch of a conditional include — `undefined` (an identifier),
- * `null`, or `''`. These are the alternates that make `cond ? v : <omit>` mean
- * "include `v` only when `cond`".
+ * `null`, or `''`. These are the alternates that make `cond ? v : <omit>` a
+ * conditional include.
  */
 function isOmitSentinel(node: ParsedExpr): boolean {
   if (node.kind === 'identifier') return node.name === 'undefined'

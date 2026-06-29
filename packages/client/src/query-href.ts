@@ -10,24 +10,30 @@
  * })
  * ```
  *
- * Each entry is included iff its value is **truthy** — `undefined` / `null` /
- * `''` / `0` / `false` are omitted — so a conditional include folds into the
+ * Each entry is included iff its value is a **non-empty string** — `''` /
+ * `undefined` / `null` are omitted — so a conditional include folds into the
  * value as `cond ? value : undefined`. Returns the bare `base` when no params
  * survive. Values are encoded with `URLSearchParams` (form-encoding, spaces →
  * `+`).
  *
+ * Values are **strings** (`QueryParamValue`). Number / boolean aren't accepted:
+ * JS truthiness would omit `0` / `false`, which the SSR adapters' string guard
+ * can't model without per-value type info — so keeping values string-only
+ * guarantees the server-rendered URL matches this client output byte-for-byte.
+ * Stringify other types at the call site (`String(n)`), choosing the omit rule
+ * explicitly (`n > 0 ? String(n) : undefined`).
+ *
  * This is a pure function with no reactivity. The SSR adapters lower a
  * `queryHref(base, { … })` call to their query helper (go-template: `bf_query`),
- * so the server-rendered URL matches this client output byte-for-byte — which is
- * why the params object must be a plain object literal at the call site.
+ * which is why the params object must be a plain object literal at the call site.
  */
-export type QueryParamValue = string | number | boolean | null | undefined
+export type QueryParamValue = string | null | undefined
 export type QueryParams = Record<string, QueryParamValue>
 
 export function queryHref(base: string, params: QueryParams): string {
   const u = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
-    if (value) u.set(key, String(value))
+    if (value) u.set(key, value)
   }
   const qs = u.toString()
   return qs ? `${base}?${qs}` : base

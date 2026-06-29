@@ -16,9 +16,9 @@ describe('queryHref', () => {
     expect(queryHref('/list', { sort: 'name', tag: 'go' })).toBe('/list?sort=name&tag=go')
   })
 
-  test('omits falsy values (undefined / null / empty / 0 / false)', () => {
+  test('omits empty / undefined / null values', () => {
     expect(
-      queryHref('/list', { a: 'x', b: undefined, c: null, d: '', e: 0, f: false, g: 'y' }),
+      queryHref('/list', { a: 'x', b: undefined, c: null, d: '', g: 'y' }),
     ).toBe('/list?a=x&g=y')
   })
 
@@ -30,8 +30,11 @@ describe('queryHref', () => {
     expect(build('date', '')).toBe('/list') // both omitted → bare base
   })
 
-  test('stringifies number / boolean values', () => {
-    expect(queryHref('/p', { page: 2, active: true })).toBe('/p?page=2&active=true')
+  test('a conditional whose consequent is empty is still omitted (matches the SSR guard)', () => {
+    // `cond ? '' : undefined` → `if ('')` → omitted, even though `cond` holds.
+    // The SSR lowering must mirror this with `and (cond) (ne v "")`, not `(cond)`.
+    const build = (sort: string) => queryHref('/list', { sort: sort !== 'date' ? sort : undefined })
+    expect(build('')).toBe('/list') // sort='' is !== 'date' (cond true) but value empty → omit
   })
 
   test('form-encodes keys and values like URLSearchParams (space → +)', () => {
