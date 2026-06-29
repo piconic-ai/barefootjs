@@ -1129,6 +1129,10 @@ sub find_index_eval ($self, $recv, $pred_json, $param, $forward = 1, $base_env =
     return BarefootJS::Evaluator::find_index_json($recv, $pred_json, $param, $forward, $base_env);
 }
 
+sub flat_map_eval ($self, $recv, $proj_json, $param, $base_env = {}) {
+    return BarefootJS::Evaluator::flat_map_json($recv, $proj_json, $param, $base_env);
+}
+
 sub sort ($self, $recv, $opts = {}) {
     return [] unless ref($recv) eq 'ARRAY';
 

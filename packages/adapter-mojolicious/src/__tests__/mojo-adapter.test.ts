@@ -1496,20 +1496,26 @@ export { C }
     return a.generate(ir).template ?? ''
   }
 
-  test('.flatMap(i => i.field) emits bf->flat_map with the raw field key', () => {
-    expect(emitFlatMap('rows.flatMap(i => i.tags).join(" ")')).toContain(`bf->flat_map($rows, 'field', 'tags')`)
+  // #2018 P3: `.flatMap(proj)` lowers through the evaluator — the projection
+  // body serializes to ParsedExpr JSON and `bf->flat_map_eval` flattens the
+  // results one level. (In Mojo the JSON rides in a single-quoted Perl string,
+  // so its double quotes are literal and assertable.)
+  test('.flatMap(i => i.field) emits bf->flat_map_eval with the field projection', () => {
+    const t = emitFlatMap('rows.flatMap(i => i.tags).join(" ")')
+    expect(t).toContain(`bf->flat_map_eval($rows,`)
+    expect(t).toContain(`"property":"tags"`)
   })
 
-  test('.flatMap(i => i) emits the self projection', () => {
-    expect(emitFlatMap('rows.flatMap(i => i).join(" ")')).toContain(`bf->flat_map($rows, 'self', '')`)
+  test('.flatMap(i => i) emits bf->flat_map_eval (self/identifier projection)', () => {
+    const t = emitFlatMap('rows.flatMap(i => i).join(" ")')
+    expect(t).toContain(`bf->flat_map_eval($rows,`)
+    expect(t).toContain(`"kind":"identifier","name":"i"`)
   })
 
-  test('.flatMap(i => [i.a, i.b]) emits bf->flat_map_tuple with leaf specs', () => {
-    expect(emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')).toContain(`bf->flat_map_tuple($rows, ['field', 'a'], ['field', 'b'])`)
-  })
-
-  test('tuple self + field leaves', () => {
-    expect(emitFlatMap('rows.flatMap(i => [i, i.a]).join(" ")')).toContain(`bf->flat_map_tuple($rows, ['self', ''], ['field', 'a'])`)
+  test('.flatMap(i => [i.a, i.b]) emits bf->flat_map_eval over an array-literal projection', () => {
+    const t = emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')
+    expect(t).toContain(`bf->flat_map_eval($rows,`)
+    expect(t).toContain(`"kind":"array-literal"`)
   })
 
   test('field-projection flatMap as a loop base lowers (no BF101)', () => {
@@ -1522,7 +1528,7 @@ export function C() {
 }`, a)
     const template = a.generate(ir).template ?? ''
     expect((a.errors ?? []).filter(e => e.code === 'BF101')).toEqual([])
-    expect(template).toContain(`bf->flat_map($items, 'field', 'tags')`)
+    expect(template).toContain(`bf->flat_map_eval($items,`)
   })
 })
 

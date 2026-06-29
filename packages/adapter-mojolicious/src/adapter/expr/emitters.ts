@@ -40,6 +40,7 @@ import {
   renderPredicateEval,
   renderFlatMethod,
   renderFlatMapMethod,
+  renderFlatMapEval,
 } from './array-method.ts'
 
 /**
@@ -211,7 +212,10 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    return renderFlatMapMethod(emit(object), op)
+    const recv = emit(object)
+    // Evaluator-first (#2018 P3); fall back to the structured helper for a
+    // projection the evaluator can't model.
+    return renderFlatMapEval(recv, op, emit) ?? renderFlatMapMethod(recv, op)
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
@@ -479,7 +483,10 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    return renderFlatMapMethod(emit(object), op)
+    const recv = emit(object)
+    // Evaluator-first (#2018 P3); fall back to the structured helper for a
+    // projection the evaluator can't model.
+    return renderFlatMapEval(recv, op, emit) ?? renderFlatMapMethod(recv, op)
   }
 
   conditional(

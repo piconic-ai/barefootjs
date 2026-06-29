@@ -85,6 +85,7 @@ import {
   emitSortEval,
   emitReduceEval,
   emitPredicateEval,
+  emitFlatMapEval,
   stringTolerantEqOperands,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
@@ -3191,6 +3192,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
     const recv = wrapIfMultiToken(emit(object))
+
+    // Evaluator-first (#2018 P3): serialize the projection body + emit
+    // `bf_flat_map_eval`. Generalizes the structured self/field/tuple
+    // projections to any pure projection; falls back to the structured
+    // `bf_flat_map` / `bf_flat_map_tuple` for a projection the evaluator can't
+    // model.
+    const evalForm = emitFlatMapEval(recv, op, emit)
+    if (evalForm !== null) return evalForm
+
     const proj = op.projection
     // Tuple projection `i => [i.a, i.b]` → `bf_flat_map_tuple <recv> "<kind>"
     // "<name>" ...` (one quoted pair per leaf). flat(1) removes only the

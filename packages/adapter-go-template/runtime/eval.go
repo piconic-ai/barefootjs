@@ -740,6 +740,37 @@ func FindIndexEval(items any, predJSON, param string, forward bool, baseEnv map[
 	return -1
 }
 
+// FlatMapEval projects each element through the projection body (a pure
+// ParsedExpr JSON evaluated against `{param: item}` + baseEnv) and flattens the
+// results one level — the evaluator generalization of bf_flat_map /
+// bf_flat_map_tuple. A projection that yields a slice contributes its elements;
+// any other value contributes itself (matching JS `.flatMap`, where a non-array
+// return is kept as a single element). Returns a non-nil empty slice on a bad
+// body so a downstream `range` / `bf_join` sees a real slice.
+func FlatMapEval(items any, projJSON, param string, baseEnv map[string]any) []any {
+	proj, ok := decodeEvalBody(projJSON)
+	if !ok {
+		return []any{}
+	}
+	env := seedPredEnv(baseEnv)
+	out := []any{}
+	for _, item := range toAnySlice(items) {
+		env[param] = item
+		v := EvalNode(proj, env)
+		// Flatten any slice/array kind one level, not just []any: real Go
+		// template data projects a field like `i.tags` to a typed slice
+		// (`[]string` / `[]int`), which `toAnySlice` normalizes to []any. A
+		// non-slice value (string / number / struct / nil) contributes itself,
+		// matching JS `.flatMap` (a non-array return is kept as one element).
+		if sub := toAnySlice(v); sub != nil {
+			out = append(out, sub...)
+		} else {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
 // Env builds the captured-free-var environment for FoldEval / SortEval from a
 // flat key, value, key, value, … argument list — the adapter emits
 // `bf_env "k1" v1 "k2" v2 …` for the free variables a callback body references

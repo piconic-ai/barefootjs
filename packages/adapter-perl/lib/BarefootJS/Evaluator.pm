@@ -521,6 +521,24 @@ sub find_index ($items, $pred, $param, $forward = 1, $base_env = undef) {
     return -1;
 }
 
+# flat_map — project each element through $proj (a pure ParsedExpr) and flatten
+# the results one level. A projection yielding an arrayref contributes its
+# elements; any other value contributes itself (JS `.flatMap` keeps a non-array
+# return as a single element). Generalizes bf->flat_map / flat_map_tuple to any
+# pure projection. Mirrors Go's FlatMapEval. $base_env is optional.
+sub flat_map ($items, $proj, $param, $base_env = undef) {
+    my @arr = ref $items eq 'ARRAY' ? @$items : ();
+    my %env = $base_env ? %$base_env : ();
+    my @out;
+    for my $item (@arr) {
+        $env{$param} = $item;
+        my $v = evaluate($proj, \%env);
+        if (ref $v eq 'ARRAY') { push @out, @$v }
+        else                   { push @out, $v }
+    }
+    return \@out;
+}
+
 # ---------------------------------------------------------------------------
 # JSON-string seams — the adapters emit `bf->filter_eval($recv, '<json>', …)`;
 # the predicate body arrives as a JSON string here, decoded then handed to the
@@ -550,6 +568,11 @@ sub find_json ($items, $pred_json, $param, $forward = 1, $base_env = undef) {
 sub find_index_json ($items, $pred_json, $param, $forward = 1, $base_env = undef) {
     require JSON::PP;
     return find_index($items, JSON::PP->new->decode($pred_json), $param, $forward, $base_env);
+}
+
+sub flat_map_json ($items, $proj_json, $param, $base_env = undef) {
+    require JSON::PP;
+    return flat_map($items, JSON::PP->new->decode($proj_json), $param, $base_env);
 }
 
 1;
