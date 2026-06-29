@@ -3019,6 +3019,14 @@ export { C }
   test('.flatMap(i => [i.a, i.b]) emits bf_flat_map_eval (array-literal projection)', () => {
     expect(emitFlatMap('rows.flatMap(i => [i.a, i.b]).join(" ")')).toContain('bf_flat_map_eval .Rows')
   })
+
+  // (#2018 P5) A tuple with a string-literal element lowers the same way: the
+  // whole array-literal body serializes and `bf_flat_map_eval` evaluates it per
+  // item, so a non-member element no longer refuses (it did under the structured
+  // `bf_flat_map_tuple` catalogue).
+  test('.flatMap(i => [i.name, "x"]) emits bf_flat_map_eval (literal element)', () => {
+    expect(emitFlatMap('rows.flatMap(i => [i.name, "x"]).join(" ")')).toContain('bf_flat_map_eval .Rows')
+  })
 })
 
 describe('GoTemplateAdapter - #1448 @client escape hatch (unsupported methods)', () => {
@@ -3071,9 +3079,10 @@ export function C() {
     // the no-initial-value form stays refused — JS throws on an empty
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '.Reduce' },
-    // Self / field / field-tuple `.flatMap` now lowers (#1448 Tier C); a
-    // tuple with a non-leaf element (here a string literal) stays refused.
-    { name: 'flatMap (literal element)', expr: `items().flatMap(i => [i.name, "x"])`, badEmit: '.FlatMap' },
+    // (#2018 P5) The literal-element tuple `.flatMap(i => [i.name, "x"])` now
+    // lowers through the evaluator (`bf_flat_map_eval` serializes the array-
+    // literal body and flattens), so it is no longer refused — pinned positively
+    // in the `.flatMap` describe block alongside the `[i.a, i.b]` form.
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently

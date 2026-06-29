@@ -12,7 +12,6 @@
  */
 
 import {
-  parseExpression,
   serializeParsedExpr,
   freeVarsInBody,
 } from '@barefootjs/jsx'
@@ -20,9 +19,7 @@ import type {
   ParsedExpr,
   ArrayMethod,
   SortComparator,
-  ReduceOp,
   FlatDepth,
-  FlatMapOp,
 } from '@barefootjs/jsx'
 
 export function renderArrayMethod(
@@ -189,43 +186,61 @@ function emitEvalEnvArg(
  * comparison against `{paramA, paramB, …captured}`. Returns null when the
  * body is outside the evaluator surface (e.g. a `localeCompare` comparator —
  * `serializeParsedExpr` refuses it), so the caller falls back to the
- * structured `$bf.sort`.
+ * structured `$bf.sort`. `params` are the comparator arrow's two params
+ * (`[paramA, paramB]`).
  */
 export function renderSortEval(
   recv: string,
-  c: SortComparator,
+  body: ParsedExpr,
+  params: string[],
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(c.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [c.paramA, c.paramB], emit)
-  return `$bf.sort_eval(${recv}, '${escapePerlSingleQuote(json)}', '${c.paramA}', '${c.paramB}', ${env})`
+  // A comparator needs both params; a wrong-arity arrow would emit an
+  // 'undefined' param name, so fail over to the structured fallback / BF101
+  // (mirrors the Go / Mojo guards).
+  if (params.length < 2) return null
+  const [paramA, paramB] = params
+  const env = emitEvalEnvArg(body, params, emit)
+  return `$bf.sort_eval(${recv}, '${escapePerlSingleQuote(json)}', '${paramA}', '${paramB}', ${env})`
 }
 
 /**
  * Emit a `.reduce(fn, init)` / `.reduceRight(fn, init)` via the runtime
  * evaluator (#2018): the reducer body travels as serialized-ParsedExpr JSON,
- * folded over the receiver from `init` in `direction` order. Returns null when
- * the body is outside the evaluator surface (→ caller falls back to
- * `$bf.reduce`). A numeric seed passes through as a bare Perl number; a concat
- * seed as a single-quoted string.
+ * folded over the receiver from `init` in `direction` order. `params` are the
+ * reducer arrow's params (`[paramAcc, paramItem]`); `init` is the initial-value
+ * `ParsedExpr` from the call's trailing argument. Returns null when the body is
+ * outside the evaluator surface, or when `init` is not a literal string/number
+ * (→ caller refuses with BF101). A numeric seed passes through as a bare Perl
+ * number; a string seed as a single-quoted literal.
  */
 export function renderReduceEval(
   recv: string,
-  op: ReduceOp,
+  body: ParsedExpr,
+  params: string[],
+  init: ParsedExpr,
   direction: 'left' | 'right',
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(op.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [op.paramAcc, op.paramItem], emit)
-  const init =
-    op.type === 'string'
-      ? `'${escapePerlSingleQuote(op.init)}'`
-      : op.init
-  return `$bf.reduce_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.paramAcc}', '${op.paramItem}', ${init}, '${direction}', ${env})`
+  if (init.kind !== 'literal') return null
+  const initOut =
+    init.literalType === 'string'
+      ? `'${escapePerlSingleQuote(String(init.value))}'`
+      : init.literalType === 'number'
+        ? String(init.value)
+        : null
+  if (initOut === null) return null
+  // A reducer needs both the accumulator and element param; refuse a wrong-arity
+  // arrow cleanly (→ BF101) rather than emitting an 'undefined' param name
+  // (mirrors the Go / Mojo guards).
+  if (params.length < 2) return null
+  const [paramAcc, paramItem] = params
+  const env = emitEvalEnvArg(body, params, emit)
+  return `$bf.reduce_eval(${recv}, '${escapePerlSingleQuote(json)}', '${paramAcc}', '${paramItem}', ${initOut}, '${direction}', ${env})`
 }
 
 /**
@@ -256,20 +271,20 @@ export function renderPredicateEval(
 
 /**
  * Emit a `.flatMap(proj)` via the runtime evaluator (#2018, P3): the projection
- * body (`FlatMapOp.raw`) serializes to JSON and `$bf.flat_map_eval` projects +
- * flattens one level. Returns null when the projection is outside the evaluator
- * surface (→ caller falls back to the structured `$bf.flat_map`).
+ * body serializes to JSON and `$bf.flat_map_eval` projects + flattens one
+ * level. `param` is the projection arrow's single param. Returns null when the
+ * projection is outside the evaluator surface (→ caller refuses with BF101).
  */
 export function renderFlatMapEval(
   recv: string,
-  op: FlatMapOp,
+  body: ParsedExpr,
+  param: string,
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(op.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [op.param], emit)
-  return `$bf.flat_map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${op.param}', ${env})`
+  const env = emitEvalEnvArg(body, [param], emit)
+  return `$bf.flat_map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${param}', ${env})`
 }
 
 /**
@@ -289,36 +304,8 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
   return `$bf.sort(${recv}, { keys => [${keyHashes.join(', ')}] })`
 }
 
-/**
- * Render a `.reduce(fn, init)` arithmetic fold as a `$bf.reduce(...)` call.
- */
-export function renderReduceMethod(recv: string, op: ReduceOp, direction: 'left' | 'right'): string {
-  const keyEntry =
-    op.key.kind === 'self'
-      ? `key_kind => 'self'`
-      : `key_kind => 'field', key => '${op.key.field}'`
-  const init =
-    op.type === 'string'
-      ? `'${op.init.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
-      : op.init
-  return `$bf.reduce(${recv}, { op => '${op.op}', ${keyEntry}, type => '${op.type}', init => ${init}, direction => '${direction}' })`
-}
-
 // `.flat(depth?)` → `$bf.flat($recv, $depth)`.
 export function renderFlatMethod(recv: string, depth: FlatDepth): string {
   const d = depth === 'infinity' ? -1 : depth
   return `$bf.flat(${recv}, ${d})`
-}
-
-// `.flatMap(...)` → `$bf.flat_map(...)` / `$bf.flat_map_tuple(...)`.
-export function renderFlatMapMethod(recv: string, op: FlatMapOp): string {
-  const proj = op.projection
-  if (proj.kind === 'tuple') {
-    const specs = proj.elements
-      .map(l => (l.kind === 'self' ? `['self', '']` : `['field', '${l.field}']`))
-      .join(', ')
-    return `$bf.flat_map_tuple(${recv}, ${specs})`
-  }
-  if (proj.kind === 'self') return `$bf.flat_map(${recv}, 'self', '')`
-  return `$bf.flat_map(${recv}, 'field', '${proj.field}')`
 }

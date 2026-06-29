@@ -33,7 +33,8 @@
  *     be added in one place.
  */
 
-import type { ParsedExpr, SortComparator, ReduceOp, FlatDepth, FlatMapOp, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
+import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
+import { asCallbackMethodCall } from '../expression-parser.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -139,14 +140,24 @@ export interface ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
   ): string
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string
-  arrowFn(param: string, body: ParsedExpr, emit: (e: ParsedExpr) => string): string
-  higherOrder(
-    method: HigherOrderMethod,
+  // A higher-order callback method call (`<object>.<method>(<arrow>, …rest)`,
+  // method ∈ `CALLBACK_METHODS`): `.filter`/`.find`/`.every`/`.some`/`.sort`/
+  // `.reduce`/`.flatMap`/… (#2018 P5). The adapter serializes the `arrow` body
+  // to the runtime evaluator (eval-first) and falls back to a structured
+  // lowering when the body is outside the evaluator surface. `restArgs` carries
+  // any trailing arguments (e.g. the `.reduce` init).
+  callbackMethod(
+    method: string,
     object: ParsedExpr,
-    param: string,
-    predicate: ParsedExpr,
+    arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+    restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string
+  // A standalone arrow / regex literal. These normally reach an adapter only as
+  // a callback argument (handled by `callbackMethod`); emitted standalone they
+  // have no template form, so adapters route them to their `unsupported` path.
+  arrow(params: string[], body: ParsedExpr, emit: (e: ParsedExpr) => string): string
+  regex(raw: string): string
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string
   // Emit an object literal `{ a: 1, b: x }`. `raw` is the original
   // expression string so an adapter that doesn't lower object values yet
@@ -162,32 +173,13 @@ export interface ParsedExprEmitter {
     args: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string
-  sortMethod(
-    method: SortMethod,
-    object: ParsedExpr,
-    comparator: SortComparator,
-    emit: (e: ParsedExpr) => string,
-  ): string
-  reduceMethod(
-    method: ReduceMethod,
-    object: ParsedExpr,
-    reduceOp: ReduceOp,
-    emit: (e: ParsedExpr) => string,
-  ): string
   // `.flat(depth?)` gets its own dispatcher arm (#1448 Tier C): it carries
   // a structured `FlatDepth` (the validated literal / `'infinity'`) rather
-  // than a `ParsedExpr[]` args list, same rationale as sort / reduce.
+  // than a `ParsedExpr[]` args list. Non-callback, so it is NOT routed
+  // through `callbackMethod`.
   flatMethod(
     object: ParsedExpr,
     depth: FlatDepth,
-    emit: (e: ParsedExpr) => string,
-  ): string
-  // `.flatMap(fn)` value-returning field projection gets its own arm
-  // (#1448 Tier C): it carries a structured `FlatMapOp` rather than a
-  // `ParsedExpr[]` args list, same rationale as sort / reduce / flat.
-  flatMapMethod(
-    object: ParsedExpr,
-    op: FlatMapOp,
     emit: (e: ParsedExpr) => string,
   ): string
   unsupported(raw: string, reason: string): string
@@ -209,8 +201,13 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.identifier(expr.name)
     case 'literal':
       return emitter.literal(expr.value, expr.literalType)
-    case 'call':
+    case 'call': {
+      // A higher-order callback call (`arr.filter(p)` / `arr.sort(cmp)` / …)
+      // routes to the dedicated `callbackMethod` arm; any other call is generic.
+      const cb = asCallbackMethodCall(expr)
+      if (cb) return emitter.callbackMethod(cb.method, cb.object, cb.arrow, cb.args, emit)
       return emitter.call(expr.callee, expr.args, emit)
+    }
     case 'member':
       return emitter.member(expr.object, expr.property, expr.computed, emit)
     case 'index-access':
@@ -225,26 +222,17 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.conditional(expr.test, expr.consequent, expr.alternate, emit)
     case 'template-literal':
       return emitter.templateLiteral(expr.parts, emit)
-    case 'arrow-fn':
-      return emitter.arrowFn(expr.param, expr.body, emit)
-    case 'higher-order':
-      return emitter.higherOrder(expr.method, expr.object, expr.param, expr.predicate, emit)
+    case 'arrow':
+      return emitter.arrow(expr.params, expr.body, emit)
+    case 'regex':
+      return emitter.regex(expr.raw)
     case 'array-literal':
       return emitter.arrayLiteral(expr.elements, emit)
     case 'object-literal':
       return emitter.objectLiteral(expr.properties, expr.raw, emit)
     case 'array-method':
-      if (expr.method === 'sort' || expr.method === 'toSorted') {
-        return emitter.sortMethod(expr.method, expr.object, expr.comparator, emit)
-      }
-      if (expr.method === 'reduce' || expr.method === 'reduceRight') {
-        return emitter.reduceMethod(expr.method, expr.object, expr.reduceOp, emit)
-      }
       if (expr.method === 'flat') {
         return emitter.flatMethod(expr.object, expr.flatDepth, emit)
-      }
-      if (expr.method === 'flatMap') {
-        return emitter.flatMapMethod(expr.object, expr.flatMapOp, emit)
       }
       return emitter.arrayMethod(expr.method, expr.object, expr.args, emit)
     case 'unsupported':

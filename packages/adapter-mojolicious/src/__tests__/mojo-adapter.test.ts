@@ -122,8 +122,8 @@ runAdapterConformanceTests({
     // (Go) and new `bf->trim` helper (Mojo) handle the strip
     // (#1448 Tier A ninth PR, closing out Tier A).
     // `.find` / `.findIndex` / `.findLast` / `.findLastIndex` are no longer
-    // pinned — the Mojo `higherOrder` emitter now lowers them to the runtime
-    // `bf->find` / `find_index` / `find_last` / `find_last_index` helpers
+    // pinned — the Mojo `callbackMethod` predicate arm now lowers them to the
+    // runtime `bf->find` / `find_index` / `find_last` / `find_last_index` helpers
     // (per-element coderef predicate), matching Xslate. `.join` was never
     // pinned (handled by `renderArrayMethod`'s `case 'join'`).
   },
@@ -720,10 +720,12 @@ export function C() {
       // empty array there, which a template can't mirror.
       { name: 'reduce (no init)',  body: `<div>{items().reduce((s, x) => s + x)}</div>`,                                                             needle: '.reduce(' },
       { name: 'forEach',           body: `<ul>{items().forEach(x => x)}</ul>`,                                                                       needle: '.forEach(' },
-      // Self / field / field-tuple `.flatMap` now lowers (#1448 Tier C) —
-      // even as a loop base — so those moved to positive tests below. A
-      // tuple with a non-leaf element (a string literal) stays refused.
-      { name: 'flatMap (literal element)', body: `<div>{items().flatMap(x => [x.tag, "x"])}</div>`,                                                needle: '.flatMap(' },
+      // #2018 P5: an array-literal projection with a literal element
+      // (`x => [x.tag, "x"]`) now lowers through the runtime evaluator
+      // (`bf->flat_map_eval`) — the structured-tuple restriction that
+      // refused a non-`self`/`field` leaf is gone. See the positive
+      // flat_map_eval pins below. The remaining BF101 flatMap surface
+      // (a projection the evaluator can't serialize) has no example here.
     ]
 
     for (const { name, body, needle } of cases) {
@@ -1595,9 +1597,11 @@ export function C() {
     // the no-initial-value form stays refused — JS throws on an empty
     // array there, which a template can't mirror.
     { name: 'reduce (no init)', expr: `items().reduce((a, b) => a + b.n)`, badEmit: '->{reduce}' },
-    // Self / field / field-tuple `.flatMap` now lowers (#1448 Tier C); a
-    // tuple with a non-leaf element (here a string literal) stays refused.
-    { name: 'flatMap (literal element)', expr: `items().flatMap(i => [i.name, "x"])`, badEmit: '->{flatMap}' },
+    // #2018 P5: an array-literal projection with a literal element
+    // (`i => [i.name, "x"]`) now lowers through the runtime evaluator
+    // (`bf->flat_map_eval`) rather than refusing — the structured-tuple
+    // leaf restriction is gone. (Cross-adapter isomorphic with the Go
+    // adapter's `bf_flat_map_eval`.) Pinned positively below.
     // Lowered methods whose MEANINGFUL extra argument isn't lowered yet
     // (#1448): the `fromIndex` of `.includes`/`.indexOf`/`.lastIndexOf`
     // and the variadic `.concat`. The parser refuses these (silently

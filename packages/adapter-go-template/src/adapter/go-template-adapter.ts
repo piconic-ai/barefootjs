@@ -21,13 +21,10 @@ import type {
   CompilerError,
   SourceLocation,
   ParsedExpr,
-  ParsedExpr2,
   ObjectLiteralProperty,
   ParsedStatement,
   SortComparator,
-  ReduceOp,
   FlatDepth,
-  FlatMapOp,
   TemplatePart,
   IRIfStatement,
   IRProvider,
@@ -55,6 +52,8 @@ import {
   isSupported,
   exprToString,
   identifierPath,
+  asCallbackMethodCall,
+  sortComparatorFromArrow,
   emitParsedExpr,
   emitIRNode,
   emitAttrValue,
@@ -81,7 +80,6 @@ import {
   wrapIfMultiToken,
   wrapGoArg,
   emitBfSort,
-  emitBfReduce,
   emitSortEval,
   emitReduceEval,
   emitPredicateEval,
@@ -117,13 +115,38 @@ import {
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
 import { isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
-import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
+import { lowerCtorExpr, matchTrailingSlashReplace } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames } from "./props/prop-types.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
+
+/**
+ * Local re-materialisation of the (removed) `higher-order` ParsedExpr variant
+ * (#2018 P5). Predicate callback methods (`.filter`/`.find`/`.every`/…) now
+ * arrive as a generic `call` routed through `callbackMethod`; the structured
+ * template-block / `bf_*` fallbacks still want the old destructured shape, so
+ * `callbackMethod` rebuilds this from the arrow and threads it through the
+ * `renderHigherOrder*` helpers unchanged.
+ */
+type HigherOrderShape = {
+  method: HigherOrderMethod
+  object: ParsedExpr
+  param: string
+  predicate: ParsedExpr
+}
+
+/**
+ * String-returning array/string methods. `.get(...)` stays a generic `call`;
+ * the rest fold into `array-method`. Module-level so `isStringExpr` (which
+ * recurses over expression trees) reuses one set instead of allocating per call.
+ */
+const STRING_METHODS: ReadonlySet<string> = new Set([
+  'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
+  'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
+])
 
 export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter, IRNodeEmitter<GoRenderCtx> {
   name = 'go-template'
@@ -1964,9 +1987,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * the struct-shape synthesiser, and the constructor-expression interpreters
    * (`lowerCtorExpr` and friends).
    *
-   * Do NOT add new callers: read a carried `ParsedExpr2` / `ParsedExpr` field
-   * instead. This is the last `ts.createSourceFile` in the adapter and is being
-   * removed incrementally via the Go-only `ParsedExpr2` bridge.
+   * Do NOT add new callers: read a carried `ParsedExpr` field instead. This is
+   * the last `ts.createSourceFile` in the adapter and is being removed
+   * incrementally.
    */
   private parseLiteralExpression(value: string): ts.Expression | null {
     const sf = ts.createSourceFile(
@@ -2512,7 +2535,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (takenFieldNames.has(fieldName)) continue
       const c = this.state.localConstants.find(lc => lc.name === name && !lc.isModule && lc.value)
       if (!c?.value) continue
-      const expr = c.parsed2
+      const expr = c.parsed
       if (!expr) continue
       // The field is typed `string`; only emit when the value is provably a Go
       // string, so a numeric/other const referenced in the template can't be
@@ -2537,10 +2560,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * string-valued, and a component-const reference to such a value. Anything
    * unproven (numbers, `props.X`, calls it doesn't know) returns false.
    */
-  private isStringExpr(node: ParsedExpr2, seen: Set<string>): boolean {
+  private isStringExpr(node: ParsedExpr, seen: Set<string>): boolean {
     // `+` and `||` / `??` are carried as `binary` / `logical`; the parser
     // resolves template literals with substitutions to `unsupported` (so
-    // `parsed2` is undefined upstream), and a substitution-free template to a
+    // `parsed` is undefined upstream), and a substitution-free template to a
     // string `literal`.
     if (node.kind === 'literal' && node.literalType === 'string') {
       return true
@@ -2555,13 +2578,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // number).
       return this.isStringExpr(node.left, seen) && this.isStringExpr(node.right, seen)
     }
+    // `.get(...)` stays a generic `call`; the string-returning array/string
+    // methods (`.replace`, `.trim`, …) fold into `array-method`.
     if (node.kind === 'call' && node.callee.kind === 'member') {
-      const m = node.callee.property
-      const STRING_METHODS = new Set([
-        'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
-        'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
-      ])
-      return STRING_METHODS.has(m)
+      return STRING_METHODS.has(node.callee.property)
+    }
+    if (node.kind === 'array-method') {
+      return STRING_METHODS.has(node.method)
+    }
+    // The deferred regex form of `String.replace` (`<s>.replace(/\/+$/, '')`)
+    // resolves to `unsupported`, but `lowerCtorExpr` recovers it as a
+    // `strings.TrimRight` (string), so treat the recognized pattern as a string.
+    if (node.kind === 'unsupported' && matchTrailingSlashReplace(node.raw) !== null) {
+      return true
     }
     if (node.kind === 'conditional') {
       return (
@@ -2572,7 +2601,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (seen.has(node.name)) return false
       const c = this.state.localConstants.find(lc => lc.name === node.name && !lc.isModule && lc.value)
       if (c?.value) {
-        const inner = c.parsed2
+        const inner = c.parsed
         if (inner) return this.isStringExpr(inner, new Set([...seen, node.name]))
       }
     }
@@ -2733,9 +2762,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     _computed: boolean,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // .length on higher-order filter → len (bf_filter ...)
-    if (property === 'length' && object.kind === 'higher-order') {
-      const result = this.renderFilterLengthExpr(object, emit)
+    // .length on a `.filter(...)` callback call → len (bf_filter ...)
+    const objHO = this.higherOrderShapeOf(object)
+    if (property === 'length' && objHO) {
+      const result = this.renderFilterLengthExpr(objHO, emit)
       if (result) return result
     }
 
@@ -2758,13 +2788,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // find().property / findLast().property → {{with bf_find ...}}{{.Property}}{{end}}
-    if (object.kind === 'higher-order' && (object.method === 'find' || object.method === 'findLast')) {
-      const findResult = this.renderHigherOrderExpr(object, emit)
+    if (objHO && (objHO.method === 'find' || objHO.method === 'findLast')) {
+      const findResult = this.renderHigherOrderExpr(objHO, emit)
       if (findResult) {
         return `{{with ${findResult}}}{{.${capitalizeFieldName(property)}}}{{end}}`
       }
       const templateBlock = this.renderFindTemplateBlock(
-        object, emit, capitalizeFieldName(property),
+        objHO, emit, capitalizeFieldName(property),
       )
       if (templateBlock) return templateBlock
     }
@@ -2912,9 +2942,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return result
   }
 
-  arrowFn(param: string, _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
-    // Arrow functions shouldn't appear standalone in rendering.
-    return `[ARROW-FN: ${param} => ...]`
+  arrow(params: string[], _body: ParsedExpr, _emit: (e: ParsedExpr) => string): string {
+    // A standalone arrow has no Go template form — it only ever reaches an
+    // adapter as a callback argument (handled by `callbackMethod`). Route to the
+    // `unsupported` path so it surfaces instead of leaking placeholder markup.
+    return this.unsupported(`(${params.join(', ')}) => ...`, 'standalone arrow')
+  }
+
+  regex(raw: string): string {
+    // A regex literal has no Go template form (the one trailing-slash-strip
+    // pattern is recognised only in the ctor lowering, not template scope).
+    return this.unsupported(raw, 'regex literal')
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -2942,37 +2980,120 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.unsupported(raw, 'object literal')
   }
 
-  higherOrder(
-    method: HigherOrderMethod,
-    object: ParsedExpr,
-    param: string,
-    predicate: ParsedExpr,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    const reconstructed = { kind: 'higher-order' as const, method, object, param, predicate }
-    const result = this.renderHigherOrderExpr(reconstructed, emit)
-    if (result) return result
-    if (method === 'find' || method === 'findIndex' || method === 'findLast' || method === 'findLastIndex') {
-      const templateBlock = this.renderFindTemplateBlock(reconstructed, emit)
-      if (templateBlock) return templateBlock
+  /** Set of predicate (boolean-callback) higher-order methods. */
+  private static readonly PREDICATE_METHODS: ReadonlySet<string> = new Set([
+    'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
+  ])
+
+  /**
+   * Recover the (removed) `higher-order` destructured shape from a generic
+   * `call` that is a recognised callback method whose method is a *predicate*
+   * one. Returns null for sort/reduce/flatMap or any non-callback call. Used by
+   * the `member`-arm short-circuits (`obj.filter(...).length`,
+   * `obj.find(...).prop`) that need the structured fallbacks.
+   */
+  private higherOrderShapeOf(node: ParsedExpr): HigherOrderShape | null {
+    const cb = asCallbackMethodCall(node)
+    if (!cb) return null
+    if (!GoTemplateAdapter.PREDICATE_METHODS.has(cb.method)) return null
+    return {
+      method: cb.method as HigherOrderMethod,
+      object: cb.object,
+      param: cb.arrow.params[0] ?? '_',
+      predicate: cb.arrow.body,
     }
-    if (method === 'every' || method === 'some') {
-      const templateBlock = this.renderEverySomeTemplateBlock(reconstructed, emit)
-      if (templateBlock) return templateBlock
-    }
-    // No Go template form for this higher-order shape. Record BF101 explicitly
-    // so the diagnostic surfaces at build time instead of leaking
-    // `[UNSUPPORTED: filter]` into the template.
+  }
+
+  /**
+   * Push BF101 for a callback method whose shape has no Go template form.
+   *
+   * `selfContained` callbacks (`reduce` / `flatMap` off the eval-lowerable
+   * catalogue — a `.reduce` with no init, a tuple `.flatMap` with a non-leaf
+   * element) carry the self-contained "no SSR" remedy and must NOT get the
+   * generic Options block appended (mirrors `isSupported`'s `selfContained`
+   * flag for `UNSUPPORTED_METHODS`). Predicate callbacks that exhaust their
+   * template-block fallbacks keep the generic Options remediation.
+   */
+  private pushCallbackBF101(method: string, selfContained = false): string {
     this.state.errors.push({
       code: 'BF101',
       severity: 'error',
       message: `Higher-order method '.${method}' shape cannot be lowered to a Go template action`,
       loc: this.makeLoc(),
       suggestion: {
-        message: GO_REMEDIATION_OPTIONS,
+        message: selfContained
+          ? `'${method}()' can't render on the server. Pre-compute the value, or add /* @client */ for client-only (no SSR).`
+          : GO_REMEDIATION_OPTIONS,
       },
     })
     return `""`
+  }
+
+  callbackMethod(
+    method: string,
+    object: ParsedExpr,
+    arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+    restArgs: ParsedExpr[],
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    const recv = emit(object)
+    const body = arrow.body
+    const params = arrow.params
+
+    if (GoTemplateAdapter.PREDICATE_METHODS.has(method)) {
+      const shape: HigherOrderShape = {
+        method: method as HigherOrderMethod,
+        object,
+        param: params[0] ?? '_',
+        predicate: body,
+      }
+      const result = this.renderHigherOrderExpr(shape, emit)
+      if (result) return result
+      if (
+        method === 'find' || method === 'findIndex' ||
+        method === 'findLast' || method === 'findLastIndex'
+      ) {
+        const templateBlock = this.renderFindTemplateBlock(shape, emit)
+        if (templateBlock) return templateBlock
+      }
+      if (method === 'every' || method === 'some') {
+        const templateBlock = this.renderEverySomeTemplateBlock(shape, emit)
+        if (templateBlock) return templateBlock
+      }
+      return this.pushCallbackBF101(method)
+    }
+
+    if (method === 'sort' || method === 'toSorted') {
+      // Evaluator-first (#2018): the comparator body is serialized and evaluated
+      // per comparison. Falls back to the structured `bf_sort` for a comparator
+      // the evaluator can't model (e.g. localeCompare).
+      const evalForm = emitSortEval(recv, body, params, emit)
+      if (evalForm !== null) return evalForm
+      const cmp = sortComparatorFromArrow(arrow)
+      if (cmp !== null) return emitBfSort(recv, cmp)
+      return this.pushCallbackBF101(method)
+    }
+
+    if (method === 'reduce' || method === 'reduceRight') {
+      // `.reduce(fn, init)` / `.reduceRight(fn, init)` fold via the evaluator.
+      // The arithmetic-fold catalogue always serializes, so there's no
+      // structured fallback — a body / init the evaluator can't model is BF101.
+      const direction = method === 'reduceRight' ? 'right' : 'left'
+      const init = restArgs[0]
+      if (init) {
+        const evalForm = emitReduceEval(recv, body, params, init, direction, emit)
+        if (evalForm !== null) return evalForm
+      }
+      return this.pushCallbackBF101(method, true)
+    }
+
+    if (method === 'flatMap') {
+      const evalForm = emitFlatMapEval(recv, body, params[0] ?? '_', emit)
+      if (evalForm !== null) return evalForm
+      return this.pushCallbackBF101(method, true)
+    }
+
+    return this.pushCallbackBF101(method, true)
   }
 
   arrayMethod(
@@ -3144,80 +3265,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
-  sortMethod(
-    method: 'sort' | 'toSorted',
-    object: ParsedExpr,
-    comparator: SortComparator,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    // `.sort(cmp)` / `.toSorted(cmp)` both share the helper — SSR renders a
-    // snapshot, so the JS mutate vs return-new distinction has no template-level
-    // meaning. The same emit serves this standalone call site and the chained
-    // `.sort().map()` loop hoist in `renderLoop` (both feed `bf_sort` the same 4
-    // string operands). `method` is preserved for future divergence but unused.
-    void method
-    const recv = emit(object)
-    // Prefer the evaluator (#2018): the comparator body is serialized and
-    // evaluated per comparison. Falls back to the structured `bf_sort` for a
-    // comparator the evaluator can't model (e.g. localeCompare).
-    return emitSortEval(recv, comparator, emit) ?? emitBfSort(recv, comparator)
-  }
-
-  reduceMethod(
-    method: 'reduce' | 'reduceRight',
-    object: ParsedExpr,
-    reduceOp: ReduceOp,
-    emit: (e: ParsedExpr) => string,
-  ): string {
-    // `.reduce(fn, init)` / `.reduceRight(fn, init)` arithmetic fold. The
-    // structured `ReduceOp` (op / key / type / init) plus the fold direction
-    // feed the `bf_reduce` runtime helper, which folds the receiver into a
-    // scalar.
-    const direction = method === 'reduceRight' ? 'right' : 'left'
-    const recv = emit(object)
-    // Prefer the evaluator (#2018): the reducer body is serialized and folded
-    // per element. Falls back to the structured `bf_reduce` if it can't model
-    // the body (the arithmetic-fold catalogue always serializes, so this is
-    // defensive).
-    return emitReduceEval(recv, reduceOp, direction, emit) ?? emitBfReduce(recv, reduceOp, direction)
-  }
-
   flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
     // `.flat(depth?)` → `bf_flat <recv> <depth>`. `Infinity` lowers to the `-1`
     // sentinel (flatten fully); a finite depth flattens that many levels
     // (`0` = shallow copy).
     const d = depth === 'infinity' ? -1 : depth
     return `bf_flat ${wrapIfMultiToken(emit(object))} ${d}`
-  }
-
-  flatMapMethod(object: ParsedExpr, op: FlatMapOp, emit: (e: ParsedExpr) => string): string {
-    const recv = wrapIfMultiToken(emit(object))
-
-    // Evaluator-first (#2018 P3): serialize the projection body + emit
-    // `bf_flat_map_eval`. Generalizes the structured self/field/tuple
-    // projections to any pure projection; falls back to the structured
-    // `bf_flat_map` / `bf_flat_map_tuple` for a projection the evaluator can't
-    // model.
-    const evalForm = emitFlatMapEval(recv, op, emit)
-    if (evalForm !== null) return evalForm
-
-    const proj = op.projection
-    // Tuple projection `i => [i.a, i.b]` → `bf_flat_map_tuple <recv> "<kind>"
-    // "<name>" ...` (one quoted pair per leaf). flat(1) removes only the
-    // literal's wrapper, so the runtime appends each leaf verbatim.
-    if (proj.kind === 'tuple') {
-      const pairs = proj.elements
-        .map(l => (l.kind === 'self' ? `"self" ""` : `"field" "${capitalize(l.field)}"`))
-        .join(' ')
-      return `bf_flat_map_tuple ${recv} ${pairs}`
-    }
-    // Scalar `.flatMap(i => i)` / `.flatMap(i => i.field)` → `bf_flat_map <recv>
-    // "<kind>" "<name>"`. The runtime projects each item then flattens one
-    // level. The field name uses Go struct-field capitalisation.
-    if (proj.kind === 'self') {
-      return `bf_flat_map ${recv} "self" ""`
-    }
-    return `bf_flat_map ${recv} "field" "${capitalize(proj.field)}"`
   }
 
   unsupported(raw: string, _reason: string): string {
@@ -3293,7 +3346,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * only by the `forward` bool argument.
    */
   private renderHigherOrderEval(
-    expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
+    expr: HigherOrderShape,
     arrayExpr: string,
     emit: (e: ParsedExpr) => string,
   ): string | null {
@@ -3329,7 +3382,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * in so the array can recurse through different lowering methods.
    */
   private renderHigherOrderExpr(
-    expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
+    expr: HigherOrderShape,
     renderArray: (e: ParsedExpr) => string
   ): string | null {
     const arrayExpr = renderArray(expr.object)
@@ -3393,7 +3446,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * variable; the final value is the last match.
    */
   private renderFindTemplateBlock(
-    expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
+    expr: HigherOrderShape,
     renderArray: (e: ParsedExpr) => string,
     propertyAccess?: string
   ): string | null {
@@ -3433,7 +3486,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *   some:  start false, set true on first match, break early
    */
   private renderEverySomeTemplateBlock(
-    expr: Extract<ParsedExpr, { kind: 'higher-order' }>,
+    expr: HigherOrderShape,
     renderArray: (e: ParsedExpr) => string
   ): string | null {
     const arrayExpr = renderArray(expr.object)
@@ -3471,7 +3524,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `todos().filter(t => !t.done).length` → `len (bf_filter .Todos "Done" false)`.
    */
   private renderFilterLengthExpr(
-    filterExpr: Extract<ParsedExpr, { kind: 'higher-order' }>,
+    filterExpr: HigherOrderShape,
     renderArray: (e: ParsedExpr) => string
   ): string | null {
     if (filterExpr.method !== 'filter') {
@@ -3767,15 +3820,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // `len (...)`. Wrap in parens because the filter-context `binary` /
         // `unary` arms emit prefix function calls (`gt <l> <r>`) and Go template
         // would otherwise parse `gt len (bf_filter ...) 0` as four siblings.
-        if (
-          expr.property === 'length' &&
-          expr.object.kind === 'higher-order' &&
-          expr.object.method === 'filter'
-        ) {
-          const lenExpr = this.renderFilterLengthExpr(expr.object, e =>
-            this.renderFilterExpr(e, param, localVarMap),
-          )
-          if (lenExpr) return `(${lenExpr})`
+        if (expr.property === 'length') {
+          const innerHO = this.higherOrderShapeOf(expr.object)
+          if (innerHO && innerHO.method === 'filter') {
+            const lenExpr = this.renderFilterLengthExpr(innerHO, e =>
+              this.renderFilterExpr(e, param, localVarMap),
+            )
+            if (lenExpr) return `(${lenExpr})`
+          }
         }
         // Nested member access or local var.prop.
         const obj = this.renderFilterExpr(expr.object, param, localVarMap)
@@ -4303,17 +4355,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           // partial still parses while the build fails on the BF102 error.
           return plain('false')
         }
+        // A higher-order callback call (`arr.find(...)`, `arr.some(...)`) lowers
+        // via `renderParsedExpr` → `callbackMethod`, which may emit a
+        // template-block form (`{{$bf_r0 := …}}…{{$bf_r0}}`) whose leading
+        // assignment block must move to the `preamble`. Split it out — mirrors
+        // the (removed) `higher-order` case.
+        if (asCallbackMethodCall(expr)) {
+          const rendered = this.renderParsedExpr(expr)
+          const split = this.splitPreamble(rendered)
+          if (split) return split
+          return plain(rendered)
+        }
         return plain(this.renderParsedExpr(expr))
       }
 
       case 'member': {
-        if (expr.property === 'length' && expr.object.kind === 'higher-order') {
-          // renderFilterLengthExpr uses bf_filter runtime helpers (not template
-          // blocks), so `.preamble` is always empty here. A future higher-order
-          // method producing preambles through this path would need the callback
-          // to propagate them.
-          const result = this.renderFilterLengthExpr(expr.object, e => this.renderConditionExpr(e).expr)
-          if (result) return plain(result)
+        if (expr.property === 'length') {
+          const innerHO = this.higherOrderShapeOf(expr.object)
+          if (innerHO) {
+            // renderFilterLengthExpr uses bf_filter runtime helpers (not template
+            // blocks), so `.preamble` is always empty here. A future higher-order
+            // method producing preambles through this path would need the callback
+            // to propagate them.
+            const result = this.renderFilterLengthExpr(innerHO, e => this.renderConditionExpr(e).expr)
+            if (result) return plain(result)
+          }
         }
 
         if (expr.object.kind === 'identifier' && this.state.propsObjectName && expr.object.name === this.state.propsObjectName) {
@@ -4418,15 +4484,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case 'template-literal':
         return plain(this.renderParsedExpr(expr))
 
-      case 'arrow-fn':
+      case 'arrow':
+        // A standalone arrow has no Go condition form (callbacks reach the
+        // `call` arm via `asCallbackMethodCall`).
         return plain('[ARROW-FN]')
 
-      case 'higher-order': {
-        const rendered = this.renderParsedExpr(expr)
-        const split = this.splitPreamble(rendered)
-        if (split) return split
-        return plain(rendered)
-      }
+      case 'regex':
+        return plain(this.renderParsedExpr(expr))
 
       case 'array-literal':
         return plain(this.renderParsedExpr(expr))
@@ -4585,15 +4649,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Apply sort if present: wrap the array in a sort pipeline before `range`.
     // Evaluator-first (#2018 P3): serialize the comparator body + emit
-    // `bf_sort_eval`, the same path the standalone `sortMethod()` arm uses;
+    // `bf_sort_eval`, the same path the standalone `callbackMethod` sort arm uses;
     // fall back to the structured `bf_sort` for a comparator the evaluator
     // can't model (e.g. `localeCompare`). The sort runs after the loop-scope
     // cleanup above, so the captured-free-var env renders in the outer scope.
     if (loop.sortComparator) {
       const sortEmit = (e: ParsedExpr) => this.renderParsedExpr(e)
+      const cmpArrow = loop.sortComparator.arrow
+      const body = cmpArrow.kind === 'arrow' ? cmpArrow.body : cmpArrow
+      const params = cmpArrow.kind === 'arrow' ? cmpArrow.params : []
       const sorted =
-        emitSortEval(goArray, loop.sortComparator, sortEmit) ??
-        emitBfSort(goArray, loop.sortComparator)
+        emitSortEval(goArray, body, params, sortEmit) ??
+        emitBfSort(goArray, sortComparatorFromArrow(cmpArrow)!)
       goArray = `(${sorted})`
     }
 

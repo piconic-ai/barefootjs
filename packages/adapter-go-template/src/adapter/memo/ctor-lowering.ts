@@ -10,11 +10,38 @@
  * caller can fall back to nil safely.
  */
 
-import type { ParsedExpr2 } from '@barefootjs/jsx'
+import ts from 'typescript'
+
+import { type ParsedExpr, tsNodeToParsedExpr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { CtorLowerEnv } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+
+/**
+ * Recover the receiver of an `<recv>.replace(/\/+$/, '')` trailing-slash strip
+ * from an `unsupported` node's raw source. The collapsed `parseExpression`
+ * defers the regex form of `String.replace` to `unsupported`, so the only way to
+ * reach the structured receiver is to re-parse — done with a TS AST walk (the
+ * repo idiom; never string-matching), validating the exact regex pattern and the
+ * empty-string replacement before returning the receiver's `ParsedExpr`. Any
+ * other shape returns null.
+ */
+export function matchTrailingSlashReplace(raw: string): ParsedExpr | null {
+  const sf = ts.createSourceFile('expr.ts', `(${raw})`, ts.ScriptTarget.Latest, true)
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return null
+  let expr: ts.Expression = stmt.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isCallExpression(expr)) return null
+  const callee = expr.expression
+  if (!ts.isPropertyAccessExpression(callee) || callee.name.text !== 'replace') return null
+  if (expr.arguments.length !== 2) return null
+  const [pattern, replacement] = expr.arguments
+  if (!ts.isRegularExpressionLiteral(pattern) || pattern.text !== '/\\/+$/') return null
+  if (!ts.isStringLiteralLike(replacement) || replacement.text !== '') return null
+  return tsNodeToParsedExpr(callee.expression)
+}
 
 /**
  * Lower a JS expression to a Go expression in the `NewXxxProps` constructor
@@ -27,7 +54,7 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
  */
 export function lowerCtorExpr(
   ctx: GoEmitContext,
-  node: ParsedExpr2,
+  node: ParsedExpr,
   env: CtorLowerEnv,
 ): string | null {
   if (node.kind === 'literal' && node.literalType === 'string') {
@@ -46,7 +73,7 @@ export function lowerCtorExpr(
     const c = ctx.state.localConstants.find(lc => lc.name === node.name)
     if (c?.value !== undefined) {
       if (c.isModule) {
-        const lit = c.parsed2
+        const lit = c.parsed
         if (lit && lit.kind === 'literal' && lit.literalType === 'string') {
           return JSON.stringify(lit.value)
         }
@@ -54,7 +81,7 @@ export function lowerCtorExpr(
       }
       // Component-scope const: inline its computed value, guarding cycles.
       if (env.consts?.has(node.name)) return null
-      const inner = c.parsed2
+      const inner = c.parsed
       if (!inner) return null
       return lowerCtorExpr(ctx, inner, {
         ...env,
@@ -88,26 +115,28 @@ export function lowerCtorExpr(
     ) {
       return `in.SearchParams.Get(${JSON.stringify(node.args[0].value)})`
     }
-    // `<arr>.includes(<x>)` → bf.Includes(<[]string{…}>, <x>) (bool).
-    if (method === 'includes' && node.args.length === 1) {
-      const arr = lowerCtorStringArray(ctx, recv)
-      const elem = lowerCtorExpr(ctx, node.args[0], env)
-      if (arr !== null && elem !== null) return `bf.Includes(${arr}, ${elem})`
-      return null
-    }
-    // `<s>.replace(/\/+$/, '')` — strip trailing slashes → strings.TrimRight.
-    // Only this exact trailing-slash regex is recognized (a general regex
-    // replace would need Go's regexp; out of scope).
-    if (
-      method === 'replace' &&
-      node.args.length === 2 &&
-      node.args[0].kind === 'regex' &&
-      node.args[0].raw === '/\\/+$/' &&
-      node.args[1].kind === 'literal' &&
-      node.args[1].literalType === 'string' &&
-      node.args[1].value === ''
-    ) {
-      const recvGo = lowerCtorExpr(ctx, recv, env)
+    return null
+  }
+
+  // `<arr>.includes(<x>)` → bf.Includes(<[]string{…}>, <x>) (bool). The
+  // collapsed `parseExpression` folds `.includes` into a generic `array-method`
+  // node (not a `call` with a member callee), so it's matched here.
+  if (node.kind === 'array-method' && node.method === 'includes' && node.args.length === 1) {
+    const arr = lowerCtorStringArray(ctx, node.object)
+    const elem = lowerCtorExpr(ctx, node.args[0], env)
+    if (arr !== null && elem !== null) return `bf.Includes(${arr}, ${elem})`
+    return null
+  }
+
+  // `<s>.replace(/\/+$/, '')` — strip trailing slashes → strings.TrimRight. The
+  // collapsed `parseExpression` defers the regex form of `String.replace` to an
+  // `unsupported` node (it doesn't model regex replacement), so recover this one
+  // recognized pattern from the `unsupported` raw. Only this exact trailing-slash
+  // regex is supported (a general regex replace would need Go's regexp).
+  if (node.kind === 'unsupported') {
+    const trim = matchTrailingSlashReplace(node.raw)
+    if (trim !== null) {
+      const recvGo = lowerCtorExpr(ctx, trim, env)
       if (recvGo === null) return null
       ctx.state.needsStringsImport = true
       return `strings.TrimRight(${recvGo}, "/")`
@@ -122,7 +151,7 @@ export function lowerCtorExpr(
       lc => lc.name === calleeName && lc.isModule,
     )
     if (fnConst?.value) {
-      const fn = fnConst.parsed2
+      const fn = fnConst.parsed
       if (fn && fn.kind === 'arrow' && fn.params.length === node.args.length) {
         const params = new Map(env.params)
         for (let i = 0; i < fn.params.length; i++) {
@@ -186,7 +215,7 @@ export function lowerCtorExpr(
  */
 export function lowerCtorCond(
   ctx: GoEmitContext,
-  node: ParsedExpr2,
+  node: ParsedExpr,
   env: CtorLowerEnv,
 ): string | null {
   if (node.kind === 'literal' && node.literalType === 'boolean') {
@@ -208,12 +237,9 @@ export function lowerCtorCond(
   }
 
   // `<arr>.includes(<x>)` is the one value-shape `lowerCtorExpr` lowers to a
-  // Go bool (`bf.Includes(...)`); reuse it for that case only.
-  if (
-    node.kind === 'call' &&
-    node.callee.kind === 'member' &&
-    node.callee.property === 'includes'
-  ) {
+  // Go bool (`bf.Includes(...)`); reuse it for that case only. The collapsed
+  // `parseExpression` folds `.includes` into an `array-method` node.
+  if (node.kind === 'array-method' && node.method === 'includes') {
     return lowerCtorExpr(ctx, node, env)
   }
 
@@ -225,12 +251,12 @@ export function lowerCtorCond(
  * bound to one) to a Go `[]string{…}` literal, or null when it isn't a pure
  * string-array. Used by `lowerCtorExpr` for `<arr>.includes(<x>)`.
  */
-export function lowerCtorStringArray(ctx: GoEmitContext, node: ParsedExpr2): string | null {
-  let arr: ParsedExpr2 | null = node
+export function lowerCtorStringArray(ctx: GoEmitContext, node: ParsedExpr): string | null {
+  let arr: ParsedExpr | null = node
   if (node.kind === 'identifier') {
     const c = ctx.state.localConstants.find(lc => lc.name === node.name && lc.isModule)
     if (!c?.value) return null
-    arr = c.parsed2 ?? null
+    arr = c.parsed ?? null
   }
   if (!arr || arr.kind !== 'array-literal') return null
   const elems: string[] = []

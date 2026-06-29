@@ -4,8 +4,8 @@
  * Pure free functions — none read adapter instance state.
  */
 
-import type { SortComparator, ReduceOp, FlatMapOp, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { parseExpression, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
+import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
+import { serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -65,29 +65,6 @@ export function emitBfSort(recv: string, c: SortComparator): string {
 }
 
 /**
- * Emit the `bf_reduce` call for a `.reduce(fn, init)` arithmetic fold:
- *
- *   bf_reduce <recv> "<op>" "<keyKind>" "<keyName>" "<type>" "<init>" "<direction>"
- *
- *   op:        "+" | "*"
- *   keyKind:   "self" | "field"
- *   keyName:   "" when keyKind=self; capitalised field name otherwise
- *   type:      "numeric" | "string"
- *   init:      the fold's start value (numeric literal text, or concat string)
- *   direction: "left" (reduce) | "right" (reduceRight)
- *
- * The runtime folds `init <op> key(item)` in `direction` order, returning the
- * accumulated value (float64 for numeric, string for concat). Order is only
- * observable for string concat — numeric sum / product commute.
- */
-export function emitBfReduce(recv: string, op: ReduceOp, direction: 'left' | 'right'): string {
-  const keyName = op.key.kind === 'field' ? capitalize(op.key.field) : ''
-  // `op.init` is the decoded seed value (canonical decimal / escape-free
-  // contents); passed as a quoted operand the runtime interprets by `type`.
-  return `bf_reduce ${wrapIfMultiToken(recv)} "${op.op}" "${op.key.kind}" "${keyName}" "${op.type}" "${escapeGoString(op.init)}" "${direction}"`
-}
-
-/**
  * Build the `bf_env` base_env argument for a callback body: one `"name" <value>`
  * pair per captured free variable (a body identifier that isn't a callback
  * param), each lowered to its Go template value via `emit`. No captures →
@@ -112,37 +89,58 @@ function emitEvalEnvArg(body: ParsedExpr, params: string[], emit: (e: ParsedExpr
  */
 export function emitSortEval(
   recv: string,
-  c: SortComparator,
+  body: ParsedExpr,
+  params: string[],
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(c.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [c.paramA, c.paramB], emit)
-  return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${c.paramA}" "${c.paramB}" ${env}`
+  // A comparator needs both params; a wrong-arity arrow would bind the wrong
+  // env (or treat a real param as a free var), so fail over to the structured
+  // fallback / BF101 instead of inventing default names.
+  if (params.length < 2) return null
+  const paramA = params[0]
+  const paramB = params[1]
+  const env = emitEvalEnvArg(body, [paramA, paramB], emit)
+  return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${paramA}" "${paramB}" ${env}`
 }
 
 /**
  * Emit a `.reduce(fn, init)` via the evaluator (#2018): the reducer body travels
  * as serialized-ParsedExpr JSON, folded over the receiver from `init`. Returns
- * null when the body can't be evaluated (→ caller falls back to `bf_reduce`). A
- * numeric seed is passed through `bf_number` (handles any decimal incl. negative
- * / float); a concat seed as a quoted string.
+ * null when the body can't be evaluated, or when `init` isn't a string/number
+ * literal (a non-literal seed has no template-time value). A numeric seed is
+ * passed through `bf_number` (handles any decimal incl. negative / float); a
+ * string seed as a quoted string.
  */
 export function emitReduceEval(
   recv: string,
-  op: ReduceOp,
+  body: ParsedExpr,
+  params: string[],
+  init: ParsedExpr,
   direction: 'left' | 'right',
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(op.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [op.paramAcc, op.paramItem], emit)
-  const init = op.type === 'string'
-    ? `"${escapeGoString(op.init)}"`
-    : `(bf_number "${escapeGoString(op.init)}")`
-  return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${op.paramAcc}" "${op.paramItem}" ${init} "${direction}" ${env}`
+  // A reducer needs both the accumulator and the element param; a wrong-arity
+  // arrow would bind the wrong env, so refuse cleanly (→ BF101) rather than
+  // defaulting the names.
+  if (params.length < 2) return null
+  const paramAcc = params[0]
+  const paramItem = params[1]
+  // Only a literal seed has a template-time value; anything else (an identifier
+  // / call) can't be folded here, so bail to the structured-less fallback (BF101).
+  let initGo: string
+  if (init.kind === 'literal' && init.literalType === 'string') {
+    initGo = `"${escapeGoString(String(init.value))}"`
+  } else if (init.kind === 'literal' && init.literalType === 'number') {
+    initGo = `(bf_number "${escapeGoString(init.raw ?? String(init.value))}")`
+  } else {
+    return null
+  }
+  const env = emitEvalEnvArg(body, [paramAcc, paramItem], emit)
+  return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${paramAcc}" "${paramItem}" ${initGo} "${direction}" ${env}`
 }
 
 /**
@@ -178,22 +176,20 @@ export function emitPredicateEval(
 
 /**
  * Emit a `.flatMap(proj)` via the evaluator (#2018, P3): the projection body
- * (`FlatMapOp.raw`, e.g. `i.tags` / `[i.a, i.b]`) is serialized and evaluated
- * per element by `bf_flat_map_eval`, which flattens the results one level.
- * Generalizes the structured `bf_flat_map` / `bf_flat_map_tuple` (self / field /
- * tuple) to any pure projection. Returns null when the projection is outside
- * the evaluator surface (→ caller falls back to the structured helper).
+ * (e.g. `i.tags` / `[i.a, i.b]`) is serialized and evaluated per element by
+ * `bf_flat_map_eval`, which flattens the results one level. Returns null when
+ * the projection is outside the evaluator surface (→ caller pushes BF101).
  */
 export function emitFlatMapEval(
   recv: string,
-  op: FlatMapOp,
+  body: ParsedExpr,
+  param: string,
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const body = parseExpression(op.raw)
   const json = serializeParsedExpr(body)
   if (json === null) return null
-  const env = emitEvalEnvArg(body, [op.param], emit)
-  return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${op.param}" ${env}`
+  const env = emitEvalEnvArg(body, [param], emit)
+  return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}" ${env}`
 }
 
 /**

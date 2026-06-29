@@ -4,7 +4,25 @@
  * JSX-independent intermediate representation for multi-backend support.
  */
 
-import type { ParsedExpr, ParsedExpr2, ParsedStatement, SortComparator } from './expression-parser.ts'
+import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
+
+/**
+ * Loop-hoisted sort comparator for the `.sort().map()` / `.toSorted().map()`
+ * pattern (#2018 P5). Carries the generic comparator `arrow` (params + body)
+ * that the SSR adapter serializes to the runtime evaluator (eval-first) or, for
+ * a `localeCompare` comparator the evaluator can't model, recovers a structured
+ * comparator from via `sortComparatorFromArrow`. The `paramA` / `paramB` / `raw`
+ * fields round-trip the comparator to native JS for the client / CSR path
+ * (`(paramA, paramB) => raw`), so the client is untouched.
+ */
+export type IRLoopSort = {
+  // Always the comparator arrow itself — narrowed so consumers read
+  // `.params` / `.body` without a defensive `kind` check or non-null assertion.
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>
+  paramA: string
+  paramB: string
+  raw: string
+}
 
 // =============================================================================
 // Source Location (for Error Reporting)
@@ -516,14 +534,14 @@ export interface IRLoop {
    * When present, the loop array is sorted before iteration.
    * Example: todos.sort((a, b) => a.priority - b.priority).map(...)
    *
-   * The structured shape carries enough info for both adapters to
-   * emit the same `bf_sort` / `bf->sort` call (`SortComparator` is
-   * defined in `expression-parser.ts` because the standalone
-   * `array-method` IR variant uses the same type). The loop-hoist
-   * path lifts a comparator off a sibling `array-method` node
-   * during `jsx-to-ir.ts` chain detection — see `extractSortComparator`.
+   * The {@link IRLoopSort} struct carries the generic comparator `arrow`
+   * (params + body) the SSR adapter serializes to the runtime evaluator
+   * (eval-first; `sortComparatorFromArrow` fallback for `localeCompare`), plus
+   * the param names + raw body for the client JS round-trip. Lifted off the
+   * `.sort()` callback during `jsx-to-ir.ts` chain detection — see
+   * `extractSortComparator`. (#2018 P5)
    */
-  sortComparator?: SortComparator
+  sortComparator?: IRLoopSort
 
   /**
    * When both filter and sort are chained, indicates the order of operations.
@@ -1395,16 +1413,6 @@ export interface ConstantInfo {
    * couldn't structure it (best-effort — consumers fall back to the string).
    */
   parsed?: ParsedExpr
-  /**
-   * `value` parsed into the Go-adapter constructor-lowering tree
-   * ({@link ParsedExpr2}, issue #2006). Attached best-effort for module AND
-   * component-scope consts (parsed from the parenthesised value, like
-   * `parsed`). Carries the multi-param-arrow and regex shapes `ParsedExpr`
-   * can't model, so the Go ctor lowerers (`lowerCtorExpr`) read it instead of
-   * re-parsing the value with `ts.createSourceFile`. Go-only — other adapters
-   * ignore it. Absent when there's no `value` or the shape isn't representable.
-   */
-  parsed2?: ParsedExpr2
   /** Value with TypeScript type annotations preserved, for .tsx output */
   typedValue?: string
   valueBranches?: string[]

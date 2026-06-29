@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
+import { sortComparatorFromArrow } from '../expression-parser'
 
 describe('sort().map() / toSorted().map()', () => {
   test('sort((a, b) => a.price - b.price).map() produces sortComparator (asc)', () => {
@@ -31,11 +32,10 @@ describe('sort().map() / toSorted().map()', () => {
       expect(loop).toBeDefined()
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toHaveLength(1)
-        expect(loop.sortComparator!.keys[0].key).toEqual({ kind: 'field', field: 'price' })
-        expect(loop.sortComparator!.keys[0].type).toBe('numeric')
-        expect(loop.sortComparator!.keys[0].direction).toBe('asc')
-        expect(loop.sortComparator!.method).toBe('sort')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toHaveLength(1)
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].key).toEqual({ kind: 'field', field: 'price' })
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].type).toBe('numeric')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].direction).toBe('asc')
         expect(loop.sortComparator!.paramA).toBe('a')
         expect(loop.sortComparator!.paramB).toBe('b')
         expect(loop.array).toBe('products()')
@@ -70,11 +70,10 @@ describe('sort().map() / toSorted().map()', () => {
       expect(loop).toBeDefined()
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toHaveLength(1)
-        expect(loop.sortComparator!.keys[0].key).toEqual({ kind: 'field', field: 'price' })
-        expect(loop.sortComparator!.keys[0].type).toBe('numeric')
-        expect(loop.sortComparator!.keys[0].direction).toBe('desc')
-        expect(loop.sortComparator!.method).toBe('toSorted')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toHaveLength(1)
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].key).toEqual({ kind: 'field', field: 'price' })
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].type).toBe('numeric')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].direction).toBe('desc')
       }
     }
   })
@@ -107,10 +106,10 @@ describe('sort().map() / toSorted().map()', () => {
         expect(loop.filterPredicate).toBeDefined()
         expect(loop.filterPredicate!.param).toBe('t')
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toHaveLength(1)
-        expect(loop.sortComparator!.keys[0].key).toEqual({ kind: 'field', field: 'priority' })
-        expect(loop.sortComparator!.keys[0].type).toBe('numeric')
-        expect(loop.sortComparator!.keys[0].direction).toBe('asc')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toHaveLength(1)
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].key).toEqual({ kind: 'field', field: 'priority' })
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].type).toBe('numeric')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys[0].direction).toBe('asc')
         expect(loop.chainOrder).toBe('filter-sort')
         expect(loop.array).toBe('todos()')
       }
@@ -176,7 +175,7 @@ describe('sort().map() / toSorted().map()', () => {
       expect(loop?.type).toBe('loop')
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toEqual([
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
           { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'desc' },
           { key: { kind: 'field', field: 'name' }, type: 'string', direction: 'asc' },
         ])
@@ -209,7 +208,7 @@ describe('sort().map() / toSorted().map()', () => {
       const loop = ir!.children.find(c => c.type === 'loop')
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toEqual([
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
           { key: { kind: 'field', field: 'rank' }, type: 'auto', direction: 'asc' },
         ])
       }
@@ -241,7 +240,7 @@ describe('sort().map() / toSorted().map()', () => {
       const loop = ir!.children.find(c => c.type === 'loop')
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toEqual([
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
           { key: { kind: 'self' }, type: 'auto', direction: 'asc' },
         ])
       }
@@ -273,7 +272,7 @@ describe('sort().map() / toSorted().map()', () => {
       const loop = ir!.children.find(c => c.type === 'loop')
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toEqual([
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
           { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'asc' },
         ])
         // block body unwraps to the returned expression, keeping the
@@ -310,7 +309,7 @@ describe('sort().map() / toSorted().map()', () => {
         expect(loop.sortComparator).toBeDefined()
         // The `=== ? 0` arm is a tie; direction comes from the inner
         // relational ternary (a.rank > b.rank ? 1 : -1 → ascending).
-        expect(loop.sortComparator!.keys).toEqual([
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
           { key: { kind: 'field', field: 'rank' }, type: 'auto', direction: 'asc' },
         ])
       }
@@ -342,7 +341,7 @@ describe('sort().map() / toSorted().map()', () => {
       const loop = ir!.children.find(c => c.type === 'loop')
       if (loop?.type === 'loop') {
         expect(loop.sortComparator).toBeDefined()
-        expect(loop.sortComparator!.keys).toEqual([
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
           { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'asc' },
           { key: { kind: 'field', field: 'rank' }, type: 'auto', direction: 'asc' },
         ])

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral } from '../expression-parser'
+import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, asCallbackMethodCall, containsHigherOrder } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -175,58 +175,53 @@ describe('expression-parser', () => {
 
     test('parses arrow function with single param and expression body', () => {
       const result = parseExpression('x => x + 1')
-      expect(result.kind).toBe('arrow-fn')
-      if (result.kind === 'arrow-fn') {
-        expect(result.param).toBe('x')
+      expect(result.kind).toBe('arrow')
+      if (result.kind === 'arrow') {
+        expect(result.params).toEqual(['x'])
         expect(result.body.kind).toBe('binary')
       }
     })
 
     test('parses filter() call into higher-order kind', () => {
       const result = parseExpression('todos().filter(t => !t.done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        expect(result.param).toBe('t')
-        expect(result.predicate.kind).toBe('unary')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('filter')
+      expect(cb!.arrow.params[0]).toBe('t')
+      expect(cb!.arrow.body.kind).toBe('unary')
     })
 
     test('parses every() call into higher-order kind', () => {
       const result = parseExpression('todos().every(t => t.done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('every')
-        expect(result.param).toBe('t')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('every')
+      expect(cb!.arrow.params[0]).toBe('t')
     })
 
     test('parses some() call into higher-order kind', () => {
       const result = parseExpression('todos().some(t => t.important)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('some')
-        expect(result.param).toBe('t')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('some')
+      expect(cb!.arrow.params[0]).toBe('t')
     })
 
     test('parses find() call into higher-order kind', () => {
       const result = parseExpression('users().find(u => u.id === selectedId())')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('find')
-        expect(result.param).toBe('u')
-        expect(result.predicate.kind).toBe('binary')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('find')
+      expect(cb!.arrow.params[0]).toBe('u')
+      expect(cb!.arrow.body.kind).toBe('binary')
     })
 
     test('parses findIndex() call into higher-order kind', () => {
       const result = parseExpression('items().findIndex(t => t.done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('findIndex')
-        expect(result.param).toBe('t')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('findIndex')
+      expect(cb!.arrow.params[0]).toBe('t')
     })
 
     test('parses find().property into member kind with higher-order object', () => {
@@ -234,10 +229,9 @@ describe('expression-parser', () => {
       expect(result.kind).toBe('member')
       if (result.kind === 'member') {
         expect(result.property).toBe('name')
-        expect(result.object.kind).toBe('higher-order')
-        if (result.object.kind === 'higher-order') {
-          expect(result.object.method).toBe('find')
-        }
+        const cb = asCallbackMethodCall(result.object)
+        expect(cb).not.toBeNull()
+        expect(cb!.method).toBe('find')
       }
     })
 
@@ -246,11 +240,10 @@ describe('expression-parser', () => {
       expect(result.kind).toBe('member')
       if (result.kind === 'member') {
         expect(result.property).toBe('length')
-        expect(result.object.kind).toBe('higher-order')
-        if (result.object.kind === 'higher-order') {
-          expect(result.object.method).toBe('filter')
-          expect(result.object.param).toBe('t')
-        }
+        const cb = asCallbackMethodCall(result.object)
+        expect(cb).not.toBeNull()
+        expect(cb!.method).toBe('filter')
+        expect(cb!.arrow.params[0]).toBe('t')
       }
     })
 
@@ -261,28 +254,28 @@ describe('expression-parser', () => {
     // existing higher-order paths.
     test('parses .filter(Boolean) into higher-order kind with synthetic identity predicate (#1443)', () => {
       const result = parseExpression('arr.filter(Boolean)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        // The synthetic param is just an identifier-matching marker;
-        // adapters substitute it into their loop variable. Whichever
-        // name we pick must equal `predicate.name` so the substitution
-        // round-trips into a truthy check.
-        expect(result.predicate.kind).toBe('identifier')
-        if (result.predicate.kind === 'identifier') {
-          expect(result.predicate.name).toBe(result.param)
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('filter')
+      // The synthetic param is just an identifier-matching marker;
+      // adapters substitute it into their loop variable. Whichever
+      // name we pick must equal the body identifier so the substitution
+      // round-trips into a truthy check.
+      expect(cb!.arrow.body.kind).toBe('identifier')
+      if (cb!.arrow.body.kind === 'identifier') {
+        expect(cb!.arrow.body.name).toBe(cb!.arrow.params[0])
       }
     })
 
     // The Boolean-callable shortcut is filter-specific because the
     // truthy-identity rewrite only matches `filter`'s semantics. For
     // `.every(Boolean)` / `.some(Boolean)` etc. the rewrite would
-    // produce different JS semantics — leave them on the unsupported
-    // path until each gets its own deliberate lowering.
+    // produce different JS semantics — leave them un-synthesised
+    // (the bare `Boolean` callable does not become a callback arrow)
+    // until each gets its own deliberate lowering.
     test('does NOT lower .every(Boolean) or .some(Boolean) — filter-specific shortcut (#1443)', () => {
-      expect(parseExpression('arr.every(Boolean)').kind).not.toBe('higher-order')
-      expect(parseExpression('arr.some(Boolean)').kind).not.toBe('higher-order')
+      expect(asCallbackMethodCall(parseExpression('arr.every(Boolean)'))).toBeNull()
+      expect(asCallbackMethodCall(parseExpression('arr.some(Boolean)'))).toBeNull()
     })
 
     // Array literals show up in the registry Slot's
@@ -387,20 +380,21 @@ describe('expression-parser', () => {
     // residual-object-accessor pipeline (#1384 territory).
     test('lowers .filter(({done}) => done) to higher-order with synthetic param (#1443)', () => {
       const result = parseExpression('todos().filter(({done}) => done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        // Synthetic param won't collide with `done` (the destructured
-        // local) or any name in the body.
-        expect(result.param).not.toBe('done')
-        // Predicate is rewritten to `<synthetic>.done`
-        expect(result.predicate.kind).toBe('member')
-        if (result.predicate.kind === 'member') {
-          expect(result.predicate.property).toBe('done')
-          expect(result.predicate.object.kind).toBe('identifier')
-          if (result.predicate.object.kind === 'identifier') {
-            expect(result.predicate.object.name).toBe(result.param)
-          }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('filter')
+      const param = cb!.arrow.params[0]
+      const predicate = cb!.arrow.body
+      // Synthetic param won't collide with `done` (the destructured
+      // local) or any name in the body.
+      expect(param).not.toBe('done')
+      // Predicate is rewritten to `<synthetic>.done`
+      expect(predicate.kind).toBe('member')
+      if (predicate.kind === 'member') {
+        expect(predicate.property).toBe('done')
+        expect(predicate.object.kind).toBe('identifier')
+        if (predicate.object.kind === 'identifier') {
+          expect(predicate.object.name).toBe(param)
         }
       }
     })
@@ -411,12 +405,12 @@ describe('expression-parser', () => {
     // original field name).
     test('lowers .filter(({done: isDone}) => isDone) to higher-order with renamed destructure (#1443)', () => {
       const result = parseExpression('todos().filter(({done: isDone}) => isDone)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.predicate.kind).toBe('member')
-        if (result.predicate.kind === 'member') {
-          expect(result.predicate.property).toBe('done') // original field, not the local rename
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(predicate.kind).toBe('member')
+      if (predicate.kind === 'member') {
+        expect(predicate.property).toBe('done') // original field, not the local rename
       }
     })
 
@@ -428,47 +422,48 @@ describe('expression-parser', () => {
     // (covered separately).
     test('lowers .filter(({done = false}) => done) to higher-order with `??` default (#1531)', () => {
       const result = parseExpression('todos().filter(({done = false}) => done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        expect(result.param).not.toBe('done')
-        // Predicate is `<synthetic>.done ?? false`.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('??')
-          expect(result.predicate.left.kind).toBe('member')
-          if (result.predicate.left.kind === 'member') {
-            expect(result.predicate.left.property).toBe('done')
-            expect(result.predicate.left.object.kind).toBe('identifier')
-            if (result.predicate.left.object.kind === 'identifier') {
-              expect(result.predicate.left.object.name).toBe(result.param)
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const param = cb!.arrow.params[0]
+      const predicate = cb!.arrow.body
+      expect(cb!.method).toBe('filter')
+      expect(param).not.toBe('done')
+      // Predicate is `<synthetic>.done ?? false`.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('??')
+        expect(predicate.left.kind).toBe('member')
+        if (predicate.left.kind === 'member') {
+          expect(predicate.left.property).toBe('done')
+          expect(predicate.left.object.kind).toBe('identifier')
+          if (predicate.left.object.kind === 'identifier') {
+            expect(predicate.left.object.name).toBe(param)
           }
-          expect(result.predicate.right.kind).toBe('literal')
-          if (result.predicate.right.kind === 'literal') {
-            expect(result.predicate.right.value).toBe(false)
-            expect(result.predicate.right.literalType).toBe('boolean')
-          }
+        }
+        expect(predicate.right.kind).toBe('literal')
+        if (predicate.right.kind === 'literal') {
+          expect(predicate.right.value).toBe(false)
+          expect(predicate.right.literalType).toBe('boolean')
         }
       }
     })
 
     test('lowers .filter(({count = 0}) => count > 5) — numeric default (#1531)', () => {
       const result = parseExpression('items().filter(({count = 0}) => count > 5)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `(_t.count ?? 0) > 5`.
-        expect(result.predicate.kind).toBe('binary')
-        if (result.predicate.kind === 'binary') {
-          expect(result.predicate.op).toBe('>')
-          expect(result.predicate.left.kind).toBe('logical')
-          if (result.predicate.left.kind === 'logical') {
-            expect(result.predicate.left.op).toBe('??')
-            expect(result.predicate.left.left.kind).toBe('member')
-            expect(result.predicate.left.right.kind).toBe('literal')
-            if (result.predicate.left.right.kind === 'literal') {
-              expect(result.predicate.left.right.value).toBe(0)
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      // Predicate: `(_t.count ?? 0) > 5`.
+      expect(predicate.kind).toBe('binary')
+      if (predicate.kind === 'binary') {
+        expect(predicate.op).toBe('>')
+        expect(predicate.left.kind).toBe('logical')
+        if (predicate.left.kind === 'logical') {
+          expect(predicate.left.op).toBe('??')
+          expect(predicate.left.left.kind).toBe('member')
+          expect(predicate.left.right.kind).toBe('literal')
+          if (predicate.left.right.kind === 'literal') {
+            expect(predicate.left.right.value).toBe(0)
           }
         }
       }
@@ -476,21 +471,21 @@ describe('expression-parser', () => {
 
     test("lowers .filter(({name = 'anon'}) => name.startsWith('a')) — string default (#1531)", () => {
       const result = parseExpression("items().filter(({name = 'anon'}) => name.startsWith('a'))")
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `(_t.name ?? 'anon').startsWith('a')`. Since #1448
-        // Tier B, `.startsWith` lowers to an `array-method` node (it was
-        // a generic `call` before), so the receiver is on `.object`.
-        expect(result.predicate.kind).toBe('array-method')
-        if (result.predicate.kind === 'array-method') {
-          expect(result.predicate.method).toBe('startsWith')
-          expect(result.predicate.object.kind).toBe('logical')
-          if (result.predicate.object.kind === 'logical') {
-            expect(result.predicate.object.op).toBe('??')
-            expect(result.predicate.object.right.kind).toBe('literal')
-            if (result.predicate.object.right.kind === 'literal') {
-              expect(result.predicate.object.right.value).toBe('anon')
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      // Predicate: `(_t.name ?? 'anon').startsWith('a')`. Since #1448
+      // Tier B, `.startsWith` lowers to an `array-method` node (it was
+      // a generic `call` before), so the receiver is on `.object`.
+      expect(predicate.kind).toBe('array-method')
+      if (predicate.kind === 'array-method') {
+        expect(predicate.method).toBe('startsWith')
+        expect(predicate.object.kind).toBe('logical')
+        if (predicate.object.kind === 'logical') {
+          expect(predicate.object.op).toBe('??')
+          expect(predicate.object.right.kind).toBe('literal')
+          if (predicate.object.right.kind === 'literal') {
+            expect(predicate.object.right.value).toBe('anon')
           }
         }
       }
@@ -578,33 +573,31 @@ describe('expression-parser', () => {
 
     test('lowers .filter(({label = `untitled-${suffix}`}) => label) — template-literal default (#1531)', () => {
       const result = parseExpression('items().filter(({label = `untitled-${suffix}`}) => label)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `_t.label ?? \`untitled-${suffix}\``.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('??')
-          expect(result.predicate.right.kind).toBe('template-literal')
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      // Predicate: `_t.label ?? \`untitled-${suffix}\``.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('??')
+        expect(predicate.right.kind).toBe('template-literal')
       }
     })
 
     test('lowers .every(({done = true}) => done) — defaults work on .every (#1531)', () => {
       const result = parseExpression('items().every(({done = true}) => done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('every')
-        expect(result.predicate.kind).toBe('logical')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('every')
+      expect(cb!.arrow.body.kind).toBe('logical')
     })
 
     test('lowers .find(({active = false}) => active) — defaults work on .find (#1531)', () => {
       const result = parseExpression('items().find(({active = false}) => active)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('find')
-        expect(result.predicate.kind).toBe('logical')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('find')
+      expect(cb!.arrow.body.kind).toBe('logical')
     })
 
     // Semantic note (#1531): JS destructure defaults trigger only on
@@ -617,16 +610,16 @@ describe('expression-parser', () => {
     // than a silent semantic shift.
     test('uses `??` (not sentinel undefined check) — pins the null-triggers-default gap (#1531)', () => {
       const result = parseExpression('items().filter(({done = false}) => done)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // `??` => `null` ALSO triggers the default; this is the
-        // documented gap from JS destructure-default semantics, which
-        // only trigger on `undefined`. If this assertion fails, the
-        // rewrite shape changed — re-document the semantic difference.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('??')
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      // `??` => `null` ALSO triggers the default; this is the
+      // documented gap from JS destructure-default semantics, which
+      // only trigger on `undefined`. If this assertion fails, the
+      // rewrite shape changed — re-document the semantic difference.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('??')
       }
     })
 
@@ -636,15 +629,15 @@ describe('expression-parser', () => {
     // `(_t.done ?? false)`.
     test('lowers .filter(({done: isDone = false}) => isDone) — renamed + default (#1531)', () => {
       const result = parseExpression('todos().filter(({done: isDone = false}) => isDone)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('??')
-          expect(result.predicate.left.kind).toBe('member')
-          if (result.predicate.left.kind === 'member') {
-            expect(result.predicate.left.property).toBe('done') // field, not the rename
-          }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('??')
+        expect(predicate.left.kind).toBe('member')
+        if (predicate.left.kind === 'member') {
+          expect(predicate.left.property).toBe('done') // field, not the rename
         }
       }
     })
@@ -655,12 +648,12 @@ describe('expression-parser', () => {
     // to validate).
     test('lowers .filter(({a, ...rest}) => a) — unused rest is harmless (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => a)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.predicate.kind).toBe('member')
-        if (result.predicate.kind === 'member') {
-          expect(result.predicate.property).toBe('a')
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(predicate.kind).toBe('member')
+      if (predicate.kind === 'member') {
+        expect(predicate.property).toBe('a')
       }
     })
 
@@ -670,31 +663,32 @@ describe('expression-parser', () => {
     // would whenever `priority !== 'done'`.
     test('lowers .filter(({done, ...rest}) => done && rest.priority > 0) — rest member access (#1532)', () => {
       const result = parseExpression('items().filter(({done, ...rest}) => done && rest.priority > 0)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        // Predicate: `_t.done && _t.priority > 0`.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('&&')
-          const left = result.predicate.left
-          expect(left.kind).toBe('member')
-          if (left.kind === 'member') {
-            expect(left.property).toBe('done')
-            if (left.object.kind === 'identifier') {
-              expect(left.object.name).toBe(result.param)
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const param = cb!.arrow.params[0]
+      const predicate = cb!.arrow.body
+      expect(cb!.method).toBe('filter')
+      // Predicate: `_t.done && _t.priority > 0`.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('&&')
+        const left = predicate.left
+        expect(left.kind).toBe('member')
+        if (left.kind === 'member') {
+          expect(left.property).toBe('done')
+          if (left.object.kind === 'identifier') {
+            expect(left.object.name).toBe(param)
           }
-          const right = result.predicate.right
-          expect(right.kind).toBe('binary')
-          if (right.kind === 'binary') {
-            const lhs = right.left
-            expect(lhs.kind).toBe('member')
-            if (lhs.kind === 'member') {
-              expect(lhs.property).toBe('priority')
-              if (lhs.object.kind === 'identifier') {
-                expect(lhs.object.name).toBe(result.param)
-              }
+        }
+        const right = predicate.right
+        expect(right.kind).toBe('binary')
+        if (right.kind === 'binary') {
+          const lhs = right.left
+          expect(lhs.kind).toBe('member')
+          if (lhs.kind === 'member') {
+            expect(lhs.property).toBe('priority')
+            if (lhs.object.kind === 'identifier') {
+              expect(lhs.object.name).toBe(param)
             }
           }
         }
@@ -703,26 +697,27 @@ describe('expression-parser', () => {
 
     test('lowers .filter(({a, ...r}) => r.x && r.y) — multiple rest accesses share the synthetic param (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...r}) => r.x && r.y)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `_t.x && _t.y`.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          const left = result.predicate.left
-          expect(left.kind).toBe('member')
-          if (left.kind === 'member') {
-            expect(left.property).toBe('x')
-            if (left.object.kind === 'identifier') {
-              expect(left.object.name).toBe(result.param)
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const param = cb!.arrow.params[0]
+      const predicate = cb!.arrow.body
+      // Predicate: `_t.x && _t.y`.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        const left = predicate.left
+        expect(left.kind).toBe('member')
+        if (left.kind === 'member') {
+          expect(left.property).toBe('x')
+          if (left.object.kind === 'identifier') {
+            expect(left.object.name).toBe(param)
           }
-          const right = result.predicate.right
-          expect(right.kind).toBe('member')
-          if (right.kind === 'member') {
-            expect(right.property).toBe('y')
-            if (right.object.kind === 'identifier') {
-              expect(right.object.name).toBe(result.param)
-            }
+        }
+        const right = predicate.right
+        expect(right.kind).toBe('member')
+        if (right.kind === 'member') {
+          expect(right.property).toBe('y')
+          if (right.object.kind === 'identifier') {
+            expect(right.object.name).toBe(param)
           }
         }
       }
@@ -730,13 +725,13 @@ describe('expression-parser', () => {
 
     test('lowers .every(({a, ...rest}) => rest.x) — rest rewrite applies across higher-order methods (#1532)', () => {
       const result = parseExpression('items().every(({a, ...rest}) => rest.x)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('every')
-        expect(result.predicate.kind).toBe('member')
-        if (result.predicate.kind === 'member') {
-          expect(result.predicate.property).toBe('x')
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(cb!.method).toBe('every')
+      expect(predicate.kind).toBe('member')
+      if (predicate.kind === 'member') {
+        expect(predicate.property).toBe('x')
       }
     })
 
@@ -747,8 +742,11 @@ describe('expression-parser', () => {
     // `_t.done` (which would return the value, masking the mistake).
     test('rejects .filter(({done, ...rest}) => rest.done) — rest key collides with declared field (#1532)', () => {
       const result = parseExpression('items().filter(({done, ...rest}) => rest.done)')
-      // Falls back to plain `call` — adapter surfaces BF021.
+      // Falls back to plain `call` — adapter surfaces BF021. The
+      // destructure rewrite was refused, so it is NOT a lowerable
+      // callback call.
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Mode A typed error via RENAMED key (#1532 review). The rest
@@ -759,6 +757,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({done: d, ...rest}) => rest.done) — renamed key collision (#1532 review)', () => {
       const result = parseExpression('items().filter(({done: d, ...rest}) => rest.done)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Mode A typed error via NESTED-PATTERN slot (#1532 review).
@@ -770,6 +769,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({user: {name}, ...rest}) => rest.user) — nested-pattern outer key collision (#1532 review)', () => {
       const result = parseExpression('items().filter(({user: {name}, ...rest}) => rest.user)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Inner-arrow parameter shadowing (#1532 review). The outer
@@ -783,13 +783,12 @@ describe('expression-parser', () => {
     // reference is `rest.x` (Mode A member access).
     test('lowers .filter(({a, ...rest}) => rest.x.map((rest) => rest.y).length > 0) — inner-arrow param shadows outer rest (#1532 review)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest.x.map((rest) => rest.y).length > 0)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        // Predicate is the outer body rewritten — confirms validation
-        // didn't refuse on the inner-scope `rest` reference.
-        expect(result.predicate.kind).toBe('binary')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('filter')
+      // Predicate is the outer body rewritten — confirms validation
+      // didn't refuse on the inner-scope `rest` reference.
+      expect(cb!.arrow.body.kind).toBe('binary')
     })
 
     // Mode B (#1532): rest used as a call argument can't be lowered
@@ -798,11 +797,13 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, ...rest}) => Object.keys(rest).length > 0) — rest passed to call (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => Object.keys(rest).length > 0)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     test('rejects .filter(({a, ...rest}) => fn(rest)) — rest passed as bare arg (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => fn(rest))')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Mode B (#1532): bare `rest` as the arrow's return value. No
@@ -811,6 +812,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, ...rest}) => rest) — rest as bare return value (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Function-expression form with a destructured param (#1532).
@@ -822,6 +824,7 @@ describe('expression-parser', () => {
     test('rejects .filter(function ({a, ...rest}) { return rest }) — function-expression form refused upstream (#1532)', () => {
       const result = parseExpression('items().filter(function ({a, ...rest}) { return rest })')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Method call on rest (#1532 review). `rest.foo()` would lower
@@ -833,6 +836,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, ...rest}) => rest.foo()) — method call on rest (#1532 review)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest.foo())')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Same for method-call-with-args — confirms the dedicated branch
@@ -840,6 +844,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, ...rest}) => rest.hasOwnProperty("k")) — method call on rest with args (#1532 review)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest.hasOwnProperty("k"))')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Computed rest access with a literal key still refuses (#1532):
@@ -849,6 +854,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, ...rest}) => rest[0]) — computed rest access with literal key (#1532)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest[0])')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Rest at a nested destructure level (#1532 out-of-scope) — we
@@ -857,6 +863,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({user: {name, ...rest}}) => rest.email) — nested rest (#1532)', () => {
       const result = parseExpression('items().filter(({user: {name, ...rest}}) => rest.email)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Default value + rest composition (#1532 review). #1531's leaf
@@ -865,27 +872,27 @@ describe('expression-parser', () => {
     // refactor of either feature can't silently break the cross.
     test('lowers .filter(({done = false, ...rest}) => done && rest.priority > 0) — default + rest compose (#1532 review)', () => {
       const result = parseExpression('items().filter(({done = false, ...rest}) => done && rest.priority > 0)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `(_t.done ?? false) && _t.priority > 0`.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          // Left: `_t.done ?? false`.
-          expect(result.predicate.left.kind).toBe('logical')
-          if (result.predicate.left.kind === 'logical') {
-            expect(result.predicate.left.op).toBe('??')
-            expect(result.predicate.left.left.kind).toBe('member')
-            if (result.predicate.left.left.kind === 'member') {
-              expect(result.predicate.left.left.property).toBe('done')
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      // Predicate: `(_t.done ?? false) && _t.priority > 0`.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        // Left: `_t.done ?? false`.
+        expect(predicate.left.kind).toBe('logical')
+        if (predicate.left.kind === 'logical') {
+          expect(predicate.left.op).toBe('??')
+          expect(predicate.left.left.kind).toBe('member')
+          if (predicate.left.left.kind === 'member') {
+            expect(predicate.left.left.property).toBe('done')
           }
-          // Right: `_t.priority > 0` — confirms the rest rewrite ran.
-          expect(result.predicate.right.kind).toBe('binary')
-          if (result.predicate.right.kind === 'binary') {
-            expect(result.predicate.right.left.kind).toBe('member')
-            if (result.predicate.right.left.kind === 'member') {
-              expect(result.predicate.right.left.property).toBe('priority')
-            }
+        }
+        // Right: `_t.priority > 0` — confirms the rest rewrite ran.
+        expect(predicate.right.kind).toBe('binary')
+        if (predicate.right.kind === 'binary') {
+          expect(predicate.right.left.kind).toBe('member')
+          if (predicate.right.left.kind === 'member') {
+            expect(predicate.right.left.property).toBe('priority')
           }
         }
       }
@@ -898,22 +905,23 @@ describe('expression-parser', () => {
     // source key (`priority`). Lowers cleanly.
     test('lowers .filter(({done: d, ...rest}) => d && rest.priority > 0) — renamed leaf + Mode A (#1532 review)', () => {
       const result = parseExpression('items().filter(({done: d, ...rest}) => d && rest.priority > 0)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          // Left: `_t.done` (rename rewrites to the SOURCE key).
-          const left = result.predicate.left
-          expect(left.kind).toBe('member')
-          if (left.kind === 'member') {
-            expect(left.property).toBe('done')
-            if (left.object.kind === 'identifier') {
-              expect(left.object.name).toBe(result.param)
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const param = cb!.arrow.params[0]
+      const predicate = cb!.arrow.body
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        // Left: `_t.done` (rename rewrites to the SOURCE key).
+        const left = predicate.left
+        expect(left.kind).toBe('member')
+        if (left.kind === 'member') {
+          expect(left.property).toBe('done')
+          if (left.object.kind === 'identifier') {
+            expect(left.object.name).toBe(param)
           }
-          // Right: `_t.priority > 0` — rest member access.
-          expect(result.predicate.right.kind).toBe('binary')
         }
+        // Right: `_t.priority > 0` — rest member access.
+        expect(predicate.right.kind).toBe('binary')
       }
     })
 
@@ -926,6 +934,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, ...rest}) => rest.x === fn(rest)) — Mode A + Mode B mixed (#1532 review)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest.x === fn(rest))')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Synthetic param collision with closure-captured `_t` (#1532
@@ -935,11 +944,10 @@ describe('expression-parser', () => {
     // silently shadow the closure capture.
     test('picks a non-colliding synthetic param when rest body references `_t` (#1532 review)', () => {
       const result = parseExpression('items().filter(({a, ...rest}) => rest.x === _t)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.param).not.toBe('_t')
-        expect(result.param).toMatch(/^_t_+$/)
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.arrow.params[0]).not.toBe('_t')
+      expect(cb!.arrow.params[0]).toMatch(/^_t_+$/)
     })
 
     // Cross-method coverage for the rest rewrite (#1532). The arrow
@@ -949,20 +957,23 @@ describe('expression-parser', () => {
     // remaining three.
     test('lowers .some(({a, ...rest}) => rest.x) — cross-method (#1532 review)', () => {
       const result = parseExpression('items().some(({a, ...rest}) => rest.x)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') expect(result.method).toBe('some')
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('some')
     })
 
     test('lowers .find(({a, ...rest}) => rest.x) — cross-method (#1532 review)', () => {
       const result = parseExpression('items().find(({a, ...rest}) => rest.x)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') expect(result.method).toBe('find')
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('find')
     })
 
     test('lowers .findIndex(({a, ...rest}) => rest.x) — cross-method (#1532 review)', () => {
       const result = parseExpression('items().findIndex(({a, ...rest}) => rest.x)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') expect(result.method).toBe('findIndex')
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('findIndex')
     })
 
     // Nested destructure with a default on an INNER LEAF composes
@@ -974,25 +985,25 @@ describe('expression-parser', () => {
     // mechanics produce a correct lowering for free.
     test('lowers .filter(({user: {name = "anon"}}) => name) — inner-leaf default composes (#1531)', () => {
       const result = parseExpression('items().filter(({user: {name = "anon"}}) => name)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `_t.user.name ?? "anon"`.
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('??')
-          // Walk: `_t.user.name`.
-          const lhs = result.predicate.left
-          expect(lhs.kind).toBe('member')
-          if (lhs.kind === 'member') {
-            expect(lhs.property).toBe('name')
-            expect(lhs.object.kind).toBe('member')
-            if (lhs.object.kind === 'member') {
-              expect(lhs.object.property).toBe('user')
-            }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      // Predicate: `_t.user.name ?? "anon"`.
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('??')
+        // Walk: `_t.user.name`.
+        const lhs = predicate.left
+        expect(lhs.kind).toBe('member')
+        if (lhs.kind === 'member') {
+          expect(lhs.property).toBe('name')
+          expect(lhs.object.kind).toBe('member')
+          if (lhs.object.kind === 'member') {
+            expect(lhs.object.property).toBe('user')
           }
-          if (result.predicate.right.kind === 'literal') {
-            expect(result.predicate.right.value).toBe('anon')
-          }
+        }
+        if (predicate.right.kind === 'literal') {
+          expect(predicate.right.value).toBe('anon')
         }
       }
     })
@@ -1005,6 +1016,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({user: {name} = {}}) => name) — default on nested-pattern slot (#1531)', () => {
       const result = parseExpression('items().filter(({user: {name} = {}}) => name)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Cross-binding default reference (`{ a, b = a }`) — JS resolves
@@ -1015,6 +1027,7 @@ describe('expression-parser', () => {
     test('rejects .filter(({a, b = a}) => b) — default refs another destructured binding (#1536)', () => {
       const result = parseExpression('items().filter(({a, b = a}) => b)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Side-effecting default (`{ x = getX() }`) — the rewrite duplicates
@@ -1025,11 +1038,13 @@ describe('expression-parser', () => {
     test('rejects .filter(({x = getX()}) => x + x) — default contains a call (#1536)', () => {
       const result = parseExpression('items().filter(({x = getX()}) => x + x)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     test('rejects .filter(({xs = arr.slice()}) => xs) — default contains array-method (#1536)', () => {
       const result = parseExpression('items().filter(({xs = arr.slice()}) => xs)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Pure shapes that DO compose with the inline rewrite — these
@@ -1038,13 +1053,13 @@ describe('expression-parser', () => {
       // `fallback` resolves to outer scope; that's fine — duplicating
       // a bare identifier read has no semantic cost.
       const result = parseExpression('items().filter(({x = fallback}) => x)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.op).toBe('??')
-          expect(result.predicate.right.kind).toBe('identifier')
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.op).toBe('??')
+        expect(predicate.right.kind).toBe('identifier')
       }
     })
 
@@ -1053,12 +1068,12 @@ describe('expression-parser', () => {
       // side effects); duplicating across reference sites is harmless
       // for the common case.
       const result = parseExpression('items().filter(({x = config.fallback}) => x)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.predicate.kind).toBe('logical')
-        if (result.predicate.kind === 'logical') {
-          expect(result.predicate.right.kind).toBe('member')
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(predicate.kind).toBe('logical')
+      if (predicate.kind === 'logical') {
+        expect(predicate.right.kind).toBe('member')
       }
     })
 
@@ -1070,26 +1085,27 @@ describe('expression-parser', () => {
     // what the user could have written by hand.
     test('lowers .filter(({user: {name}}) => …) with nested destructure (#1530)', () => {
       const result = parseExpression("items().filter(({user: {name}}) => name === 'alice')")
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.method).toBe('filter')
-        expect(result.param).not.toBe('name')
-        // Predicate: <_t>.user.name === 'alice'
-        expect(result.predicate.kind).toBe('binary')
-        if (result.predicate.kind === 'binary') {
-          expect(result.predicate.op).toBe('===')
-          // Walk the left-leaning chain: `_t.user.name`.
-          const lhs = result.predicate.left
-          expect(lhs.kind).toBe('member')
-          if (lhs.kind === 'member') {
-            expect(lhs.property).toBe('name')
-            expect(lhs.object.kind).toBe('member')
-            if (lhs.object.kind === 'member') {
-              expect(lhs.object.property).toBe('user')
-              expect(lhs.object.object.kind).toBe('identifier')
-              if (lhs.object.object.kind === 'identifier') {
-                expect(lhs.object.object.name).toBe(result.param)
-              }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const param = cb!.arrow.params[0]
+      const predicate = cb!.arrow.body
+      expect(cb!.method).toBe('filter')
+      expect(param).not.toBe('name')
+      // Predicate: <_t>.user.name === 'alice'
+      expect(predicate.kind).toBe('binary')
+      if (predicate.kind === 'binary') {
+        expect(predicate.op).toBe('===')
+        // Walk the left-leaning chain: `_t.user.name`.
+        const lhs = predicate.left
+        expect(lhs.kind).toBe('member')
+        if (lhs.kind === 'member') {
+          expect(lhs.property).toBe('name')
+          expect(lhs.object.kind).toBe('member')
+          if (lhs.object.kind === 'member') {
+            expect(lhs.object.property).toBe('user')
+            expect(lhs.object.object.kind).toBe('identifier')
+            if (lhs.object.object.kind === 'identifier') {
+              expect(lhs.object.object.name).toBe(param)
             }
           }
         }
@@ -1098,21 +1114,20 @@ describe('expression-parser', () => {
 
     test('lowers .filter(({a: {b: {c}}}) => c) with doubly-nested destructure (#1530)', () => {
       const result = parseExpression('items().filter(({a: {b: {c}}}) => c)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        // Predicate: `_t.a.b.c`.
-        let node = result.predicate
-        const expected = ['c', 'b', 'a']
-        for (const property of expected) {
-          expect(node.kind).toBe('member')
-          if (node.kind !== 'member') return
-          expect(node.property).toBe(property)
-          node = node.object
-        }
-        expect(node.kind).toBe('identifier')
-        if (node.kind === 'identifier') {
-          expect(node.name).toBe(result.param)
-        }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      // Predicate: `_t.a.b.c`.
+      let node = cb!.arrow.body
+      const expected = ['c', 'b', 'a']
+      for (const property of expected) {
+        expect(node.kind).toBe('member')
+        if (node.kind !== 'member') return
+        expect(node.property).toBe(property)
+        node = node.object
+      }
+      expect(node.kind).toBe('identifier')
+      if (node.kind === 'identifier') {
+        expect(node.name).toBe(cb!.arrow.params[0])
       }
     })
 
@@ -1121,16 +1136,16 @@ describe('expression-parser', () => {
       // substitutes `n` (body reference) with `_t.user.name` (original
       // field path).
       const result = parseExpression('items().filter(({user: {name: n}}) => n)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.param).not.toBe('n')
-        expect(result.predicate.kind).toBe('member')
-        if (result.predicate.kind === 'member') {
-          expect(result.predicate.property).toBe('name') // field, not the rename
-          expect(result.predicate.object.kind).toBe('member')
-          if (result.predicate.object.kind === 'member') {
-            expect(result.predicate.object.property).toBe('user')
-          }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      const predicate = cb!.arrow.body
+      expect(cb!.arrow.params[0]).not.toBe('n')
+      expect(predicate.kind).toBe('member')
+      if (predicate.kind === 'member') {
+        expect(predicate.property).toBe('name') // field, not the rename
+        expect(predicate.object.kind).toBe('member')
+        if (predicate.object.kind === 'member') {
+          expect(predicate.object.property).toBe('user')
         }
       }
     })
@@ -1141,8 +1156,10 @@ describe('expression-parser', () => {
     // lowering it via the object-destructure path (#1530).
     test('rejects .filter(({a: [x]}) => x) — array binding inside object destructure (#1530)', () => {
       const result = parseExpression('items().filter(({a: [x]}) => x)')
-      // Falls through to plain `call` — adapter surfaces BF101.
+      // Falls through to plain `call` — adapter surfaces BF101. The
+      // rewrite was refused, so it is NOT a lowerable callback call.
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Non-identifier property names (`{ 'x': y }`, `{ 0: y }`) used to
@@ -1153,11 +1170,13 @@ describe('expression-parser', () => {
     test('rejects .filter(({ "x": y }) => y) — string-literal key in destructure (#1530)', () => {
       const result = parseExpression("items().filter(({ 'x': y }) => y)")
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     test('rejects .filter(({ 0: y }) => y) — numeric-literal key in destructure (#1530)', () => {
       const result = parseExpression('items().filter(({ 0: y }) => y)')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
 
     // Synthetic param collision — body references a free `_t` AND the
@@ -1168,11 +1187,10 @@ describe('expression-parser', () => {
       // the synthetic param must NOT be `_t`, otherwise the rewrite
       // would silently shadow it.
       const result = parseExpression('items().filter(({user: {name}}) => name === _t)')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.param).not.toBe('_t')
-        expect(result.param).toMatch(/^_t_+$/)
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.arrow.params[0]).not.toBe('_t')
+      expect(cb!.arrow.params[0]).toMatch(/^_t_+$/)
     })
 
     // Function-keyword filter callback (#1443): `function (x) { return
@@ -1181,16 +1199,16 @@ describe('expression-parser', () => {
     // `(x) => x.done`.
     test('lowers .filter(function(x) { return x.done }) to higher-order (#1443)', () => {
       const result = parseExpression('todos().filter(function (x) { return x.done })')
-      expect(result.kind).toBe('higher-order')
-      if (result.kind === 'higher-order') {
-        expect(result.param).toBe('x')
-        expect(result.predicate.kind).toBe('member')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.arrow.params[0]).toBe('x')
+      expect(cb!.arrow.body.kind).toBe('member')
     })
 
     test('rejects function-keyword filter with multiple statements (#1443)', () => {
       const result = parseExpression('todos().filter(function (x) { const y = x; return y.done })')
       expect(result.kind).toBe('call')
+      expect(asCallbackMethodCall(result)).toBeNull()
     })
   })
 
@@ -1350,13 +1368,19 @@ describe('expression-parser', () => {
       expect(result.reason).toContain('Standalone arrow functions')
     })
 
-    test('nested higher-order methods are NOT supported', () => {
-      // This would be: items().filter(x => x.items.filter(y => y.done).length > 0)
-      // For now, test a simpler case that triggers nested detection
+    test('nested higher-order methods parse generically (lowerability deferred to the adapter)', () => {
+      // items().filter(x => x.items().filter(y => y.done).length > 0)
+      // The parser no longer gates nested higher-order callbacks (#2018
+      // P5): the outer call is recognised as a generic callback method
+      // call, and the inner callback survives inside the predicate body.
+      // The "is it lowerable" decision now lives in the adapter, not the
+      // parser/`isSupported` layer.
       const expr = parseExpression('items().filter(x => x.items().filter(y => y.done).length > 0)')
-      const result = isSupported(expr)
-      expect(result.supported).toBe(false)
-      expect(result.level).toBe('L5_UNSUPPORTED')
+      const cb = asCallbackMethodCall(expr)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('filter')
+      // The nested higher-order call is still present in the predicate body.
+      expect(containsHigherOrder(cb!.arrow.body)).toBe(true)
     })
   })
 
@@ -1658,9 +1682,29 @@ describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
 })
 
 describe('expression-parser — .flatMap(fn) projection (#1448 Tier C)', () => {
-  // Accepted catalogue: self, single field, and array-literal tuples of
-  // self / field leaves.
-  type Proj = { kind: 'self' } | { kind: 'field'; field: string } | { kind: 'tuple'; elements: unknown[] }
+  // The structured `flatMapOp` projection catalogue is gone (#2018 P5):
+  // `.flatMap` now parses to a generic callback `call`, and the projection
+  // shape lives in the callback arrow body. These helpers assert the
+  // SAME projection intent against the generic arrow body so the catalogue
+  // coverage is preserved.
+  type Proj = { kind: 'self' } | { kind: 'field'; field: string } | { kind: 'tuple'; elements: Proj[] }
+  function leafMatches(body: ReturnType<typeof parseExpression>, param: string, leaf: Proj): boolean {
+    if (leaf.kind === 'self') return body.kind === 'identifier' && body.name === param
+    if (leaf.kind === 'field') {
+      return (
+        body.kind === 'member' &&
+        !body.computed &&
+        body.property === leaf.field &&
+        body.object.kind === 'identifier' &&
+        body.object.name === param
+      )
+    }
+    // tuple
+    if (body.kind !== 'array-literal') return false
+    if (body.elements.length !== leaf.elements.length) return false
+    return leaf.elements.every((el, i) => leafMatches(body.elements[i], param, el))
+  }
+
   const accepted: Array<[string, string, Proj]> = [
     ['self (i => i)', 'arr.flatMap(i => i)', { kind: 'self' }],
     ['field (i => i.tags)', 'arr.flatMap(i => i.tags)', { kind: 'field', field: 'tags' }],
@@ -1669,40 +1713,35 @@ describe('expression-parser — .flatMap(fn) projection (#1448 Tier C)', () => {
     ['tuple self + field', 'arr.flatMap(i => [i, i.tags])', { kind: 'tuple', elements: [{ kind: 'self' }, { kind: 'field', field: 'tags' }] }],
   ]
   for (const [label, expr, projection] of accepted) {
-    test(`${label} — lowers to a flatMap array-method`, () => {
+    test(`${label} — lowers to a generic flatMap callback call`, () => {
       const result = parseExpression(expr)
-      expect(result.kind).toBe('array-method')
-      if (result.kind === 'array-method' && result.method === 'flatMap') {
-        expect(result.flatMapOp.projection).toEqual(projection)
-      } else {
-        throw new Error(`expected a flatMap array-method, got ${result.kind}`)
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('flatMap')
+      expect(leafMatches(cb!.arrow.body, cb!.arrow.params[0], projection)).toBe(true)
     })
   }
 
-  // Out of catalogue → refused (BF101 + @client hint).
-  const refused = [
+  // Out of the old structured catalogue: previously refused as
+  // `unsupported`. The "is it lowerable" decision moved to the adapter
+  // (#2018 P5), so the PARSER now accepts these generically — they parse
+  // to a `flatMap` callback `call`. (The 2-arg form keeps its extra arg.)
+  const nowGeneric: Array<[string, string]> = [
     ['deep field access', 'arr.flatMap(i => i.a.b)'],
     ['index/array callback params', 'arr.flatMap((i, idx) => i.tags)'],
-    // Tuple with a non-leaf element (arithmetic / literal / deep access).
     ['tuple with arithmetic element', 'arr.flatMap(i => [i.a, i.b + 1])'],
     ['tuple with literal element', 'arr.flatMap(i => [i.a, "x"])'],
     ['tuple with deep access', 'arr.flatMap(i => [i.a, i.b.c])'],
     ['tuple with spread', 'arr.flatMap(i => [...i.a])'],
-    // Empty tuple is a degenerate no-op — refused so emitters never
-    // produce a zero-arg `flat_map_tuple` call.
     ['empty tuple', 'arr.flatMap(i => [])'],
-    // Wrong-arity forms are intercepted by the same arm (not the generic
-    // "flatMap has no template lowering" gate) so the reason stays tailored.
     ['2-arg flatMap(fn, thisArg)', 'arr.flatMap(i => i.tags, ctx)'],
   ]
-  for (const [label, expr] of refused) {
-    test(`${label} — refuses`, () => {
+  for (const [label, expr] of nowGeneric) {
+    test(`${label} — parses as a generic flatMap callback call`, () => {
       const result = parseExpression(expr)
-      expect(result.kind).toBe('unsupported')
-      if (result.kind === 'unsupported') {
-        expect(result.reason).toContain('flatMap shape not supported')
-      }
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.method).toBe('flatMap')
     })
   }
 

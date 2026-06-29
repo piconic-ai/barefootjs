@@ -8,7 +8,7 @@
  * where a param replacement could be wrong.
  */
 
-import { type ParsedExpr, parsedExpr2ToParsedExpr } from '@barefootjs/jsx'
+import { type ParsedExpr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 
@@ -40,16 +40,15 @@ export function inlineLocalHelperCall(
   if (!ctx.state.localHelperNames.has(calleeName)) return null
 
   const fnConst = ctx.state.localConstants.find(
-    c => c.name === calleeName && !c.isModule && c.parsed2,
+    c => c.name === calleeName && !c.isModule && c.parsed,
   )
-  const arrow = fnConst?.parsed2
+  const arrow = fnConst?.parsed
   if (!arrow || arrow.kind !== 'arrow') return null
   if (arrow.params.length !== callParsed.args.length) return null
 
-  // The body must lower to a `ParsedExpr` — a nested arrow / regex (shapes
-  // `ParsedExpr` can't model) refuses here, which also covers the
-  // nested-function-scope guard (a nested `(x) => …` converts to null).
-  const body = parsedExpr2ToParsedExpr(arrow.body)
+  // The body must be a lowerable `ParsedExpr` — an `unsupported` body (e.g. a
+  // nested function / regex outside the narrow surface) refuses here.
+  const body = arrow.body
   if (!body || body.kind === 'unsupported') return null
 
   // Don't half-inline a helper that calls another local helper.
@@ -172,12 +171,14 @@ export function substituteHelperParams(
         const sub = subs.get(n.name)
         return sub !== undefined ? sub : n
       }
-      // `object-literal` / `unsupported` lower from their `raw` string, so
-      // re-lowering structured children has no effect — leave as-is (a param
-      // inside such a node is rejected by the shorthand guard upstream).
+      // `object-literal` / `unsupported` lower from their `raw` string, and a
+      // `regex` carries its exact source text — re-lowering structured children
+      // has no effect, so leave as-is (a param inside an object literal is
+      // rejected by the shorthand guard upstream).
       case 'literal':
       case 'object-literal':
       case 'unsupported':
+      case 'regex':
         return n
       case 'member':
         return { ...n, object: go(n.object) }
@@ -202,14 +203,17 @@ export function substituteHelperParams(
         }
       case 'array-literal':
         return { ...n, elements: n.elements.map(go) }
-      case 'arrow-fn':
+      case 'arrow':
+        // A nested arrow's params shadow any same-named outer helper param, but
+        // the inline body-method guard (`bodyHasMethodCall`) already declined
+        // bodies whose substitution could be wrong; re-lower the body verbatim.
         return { ...n, body: go(n.body) }
-      case 'higher-order':
-        return { ...n, object: go(n.object), predicate: go(n.predicate) }
       case 'array-method':
-        // `object` is the only re-lowered child; the structured op
-        // (comparator / reduceOp / …) is opaque to substitution.
-        return { ...n, object: go(n.object) } as ParsedExpr
+        // `.flat` carries no `args`; the generic variant does. Re-lower both
+        // `object` and any `args`.
+        return n.method === 'flat'
+          ? { ...n, object: go(n.object) }
+          : { ...n, object: go(n.object), args: n.args.map(go) }
     }
   }
   return go(body)
@@ -227,6 +231,7 @@ function forEachValueChild(n: ParsedExpr, visit: (c: ParsedExpr) => void): void 
     case 'literal':
     case 'unsupported':
     case 'object-literal':
+    case 'regex':
       return
     case 'member':
       visit(n.object)
@@ -258,15 +263,12 @@ function forEachValueChild(n: ParsedExpr, visit: (c: ParsedExpr) => void): void 
     case 'array-literal':
       n.elements.forEach(visit)
       return
-    case 'arrow-fn':
+    case 'arrow':
       visit(n.body)
-      return
-    case 'higher-order':
-      visit(n.object)
-      visit(n.predicate)
       return
     case 'array-method':
       visit(n.object)
+      if (n.method !== 'flat') n.args.forEach(visit)
       return
   }
 }
