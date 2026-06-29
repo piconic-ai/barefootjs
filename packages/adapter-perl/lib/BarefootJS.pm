@@ -1011,6 +1011,37 @@ sub replace ($self, $recv, $pattern, $replacement) {
     return substr($s, 0, $i) . $n . substr($s, $i + CORE::length($o));
 }
 
+# `queryHref(base, { … })` (#2042) — build `"$base?k=v&…"` from a flat list of
+# (guard, key, value) triples. A pair is included iff its guard is truthy AND
+# its value is a non-empty string, mirroring the client `queryHref`'s `if
+# (value)` over string values: the adapter passes the guard `1` for a plain
+# `key: v`, or the lowered condition for `key: cond ? v : undefined`. Repeating a
+# key overwrites the value at its first position (`URLSearchParams.set`
+# semantics). Keys/values are form-encoded to equal the browser render
+# byte-for-byte; no surviving pair yields the bare base.
+sub query ($self, $base, @triples) {
+    my $b = defined $base && !ref($base) ? "$base" : '';
+    my (@pairs, %pos);
+    my $i = 0;
+    while ($i + 2 < @triples) {
+        my ($guard, $key, $val) = @triples[$i, $i + 1, $i + 2];
+        $i += 3;
+        next unless $guard;
+        $key = defined $key && !ref($key) ? "$key" : '';
+        $val = defined $val && !ref($val) ? "$val" : '';
+        next if $val eq '';
+        if (exists $pos{$key}) {
+            $pairs[$pos{$key}][1] = $val;
+        }
+        else {
+            $pos{$key} = scalar @pairs;
+            push @pairs, [$key, $val];
+        }
+    }
+    return $b unless @pairs;
+    return "$b?" . CORE::join('&', map { _form_escape($_->[0]) . '=' . _form_escape($_->[1]) } @pairs);
+}
+
 # `String.prototype.repeat(n)` — the receiver concatenated n times
 # (#1448 Tier B), via Perl's `x` operator. JS throws RangeError for a
 # negative count, but SSR templates degrade to the empty string rather
@@ -1308,6 +1339,18 @@ sub _to_attr_name ($key) {
     my $out = $key;
     $out =~ s/([A-Z])/-\L$1/g;
     return $out;
+}
+
+sub _form_escape ($s) {
+    # application/x-www-form-urlencoded serialisation, matching the browser's
+    # `URLSearchParams` (which the SSR query render must equal): keep ASCII
+    # alphanumerics and `* - . _`; encode every other byte as `%XX` (UPPER hex);
+    # space → `+`. Non-ASCII is encoded byte-wise over its UTF-8 bytes.
+    my $bytes = defined $s ? "$s" : '';
+    utf8::encode($bytes) if utf8::is_utf8($bytes);
+    $bytes =~ s/([^A-Za-z0-9*\-._ ])/sprintf('%%%02X', ord($1))/ge;
+    $bytes =~ tr/ /+/;
+    return $bytes;
 }
 
 sub _html_escape ($value) {
