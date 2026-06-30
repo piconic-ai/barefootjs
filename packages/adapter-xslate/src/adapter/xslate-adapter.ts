@@ -75,7 +75,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
-import type { ParsedExpr, ParsedStatement } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
@@ -681,12 +681,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Handle filter().map() pattern by wrapping children in if-condition
     if (loop.filterPredicate) {
       let filterCond: string
-      if (loop.filterPredicate.blockBody) {
-        filterCond = this.renderBlockBodyCondition(
-          loop.filterPredicate.blockBody,
-          loop.filterPredicate.param
-        )
-      } else if (loop.filterPredicate.predicate) {
+      if (loop.filterPredicate.predicate) {
         filterCond = this.renderKolonFilterExpr(
           loop.filterPredicate.predicate,
           loop.filterPredicate.param
@@ -1153,99 +1148,6 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     localVarMap: Map<string, string> = new Map(),
   ): string {
     return emitParsedExpr(expr, new XslateFilterEmitter(param, localVarMap, n => this._isStringValueName(n)))
-  }
-
-  /**
-   * Render a complex block body filter into a Kolon condition.
-   * Handles patterns like: filter(t => { const f = filter(); if (...) return ...; })
-   */
-  private renderBlockBodyCondition(
-    statements: ParsedStatement[],
-    param: string
-  ): string {
-    const localVarMap = new Map<string, string>()
-    const paths = this.collectReturnPaths(statements, [], localVarMap, param)
-
-    if (paths.length === 0) return '1'
-    if (paths.length === 1) return this.buildSinglePathCondition(paths[0], param, localVarMap)
-
-    // Multiple paths: build OR condition
-    const parts: string[] = []
-    for (const path of paths) {
-      if (path.result.kind === 'literal' && path.result.literalType === 'boolean' && path.result.value === false) continue
-      const cond = this.buildSinglePathCondition(path, param, localVarMap)
-      if (cond !== '0') parts.push(cond)
-    }
-
-    if (parts.length === 0) return '0'
-    if (parts.length === 1) return parts[0]
-    return `(${parts.join(' || ')})`
-  }
-
-  private collectReturnPaths(
-    statements: ParsedStatement[],
-    currentConditions: ParsedExpr[],
-    localVarMap: Map<string, string>,
-    param: string
-  ): Array<{ conditions: ParsedExpr[]; result: ParsedExpr }> {
-    const paths: Array<{ conditions: ParsedExpr[]; result: ParsedExpr }> = []
-
-    for (const stmt of statements) {
-      if (stmt.kind === 'var-decl') {
-        if (stmt.init.kind === 'call' && stmt.init.callee.kind === 'identifier') {
-          localVarMap.set(stmt.name, stmt.init.callee.name)
-        }
-      } else if (stmt.kind === 'return') {
-        paths.push({ conditions: [...currentConditions], result: stmt.value })
-        break
-      } else if (stmt.kind === 'if') {
-        const thenPaths = this.collectReturnPaths(stmt.consequent, [...currentConditions, stmt.condition], localVarMap, param)
-        paths.push(...thenPaths)
-
-        if (stmt.alternate) {
-          const negated: ParsedExpr = { kind: 'unary', op: '!', argument: stmt.condition }
-          const elsePaths = this.collectReturnPaths(stmt.alternate, [...currentConditions, negated], localVarMap, param)
-          paths.push(...elsePaths)
-        } else {
-          currentConditions.push({ kind: 'unary', op: '!', argument: stmt.condition })
-        }
-      }
-    }
-
-    return paths
-  }
-
-  private buildSinglePathCondition(
-    path: { conditions: ParsedExpr[]; result: ParsedExpr },
-    param: string,
-    localVarMap: Map<string, string>
-  ): string {
-    if (path.result.kind === 'literal' && path.result.literalType === 'boolean') {
-      if (path.result.value === true) {
-        if (path.conditions.length === 0) return '1'
-        return this.renderConditionsAnd(path.conditions, param, localVarMap)
-      }
-      return '0'
-    }
-
-    if (path.conditions.length === 0) {
-      return this.renderKolonFilterExpr(path.result, param, localVarMap)
-    }
-
-    const condPart = this.renderConditionsAnd(path.conditions, param, localVarMap)
-    const resultPart = this.renderKolonFilterExpr(path.result, param, localVarMap)
-    return `(${condPart} && ${resultPart})`
-  }
-
-  private renderConditionsAnd(
-    conditions: ParsedExpr[],
-    param: string,
-    localVarMap: Map<string, string>
-  ): string {
-    if (conditions.length === 0) return '1'
-    if (conditions.length === 1) return this.renderKolonFilterExpr(conditions[0], param, localVarMap)
-    const parts = conditions.map(c => this.renderKolonFilterExpr(c, param, localVarMap))
-    return `(${parts.join(' && ')})`
   }
 
   // ===========================================================================

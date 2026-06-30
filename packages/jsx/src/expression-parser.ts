@@ -2614,38 +2614,66 @@ export const IMPURE_INLINE_BLOCK_REASON =
   'or move the body to a `/* @client */` value so it runs natively on the client.'
 
 /**
- * Whether an expression is provably free of side effects by syntax alone, so it
- * is safe to inline at any number of use sites. Conservative: any function or
- * method call (or a value the parser couldn't represent) is treated as possibly
- * impure. Member access is treated as pure, matching `substituteDestructuredFields`
- * and the rest of the compiler's expression handling.
+ * Options for {@link foldBlockToExpr}.
  */
-function isPureInit(e: ParsedExpr): boolean {
+export interface FoldBlockOptions {
+  /**
+   * Names of zero-argument calls that are idempotent reads with no observable
+   * side effect — chiefly reactive getters (signal / memo accessors), which
+   * return the same value each time within a render. Inlining such a read at
+   * multiple sites is evaluation-count-neutral, so the fold may treat
+   * `getter()` as pure. The caller (e.g. `jsx-to-ir`) supplies the set from its
+   * analyzer-collected signal/memo names; callers without that context (the
+   * plain `convertNode` callback path) omit it and every call stays "possibly
+   * impure". A non-empty arg list or a member-call (`a.b()`) is never treated as
+   * pure by this set.
+   */
+  pureCallNames?: ReadonlySet<string>
+}
+
+/**
+ * Whether an expression is provably free of side effects, so it is safe to
+ * inline at any number of use sites. Conservative: a function / method call is
+ * possibly impure, EXCEPT a zero-arg call to a name in `pureCallNames` (an
+ * idempotent reactive getter read). Member access is treated as pure, matching
+ * `substituteDestructuredFields` and the rest of the compiler's expression
+ * handling.
+ */
+function isPureInit(e: ParsedExpr, pureCallNames?: ReadonlySet<string>): boolean {
+  const pure = (x: ParsedExpr) => isPureInit(x, pureCallNames)
   switch (e.kind) {
     case 'identifier':
     case 'literal':
     case 'regex':
       return true
     case 'member':
-      return isPureInit(e.object)
+      return pure(e.object)
     case 'index-access':
-      return isPureInit(e.object) && isPureInit(e.index)
+      return pure(e.object) && pure(e.index)
     case 'binary':
     case 'logical':
-      return isPureInit(e.left) && isPureInit(e.right)
+      return pure(e.left) && pure(e.right)
     case 'unary':
-      return isPureInit(e.argument)
+      return pure(e.argument)
     case 'conditional':
-      return isPureInit(e.test) && isPureInit(e.consequent) && isPureInit(e.alternate)
+      return pure(e.test) && pure(e.consequent) && pure(e.alternate)
     case 'template-literal':
-      return e.parts.every(p => p.type !== 'expression' || isPureInit(p.expr))
+      return e.parts.every(p => p.type !== 'expression' || pure(p.expr))
     case 'array-literal':
-      return e.elements.every(isPureInit)
+      return e.elements.every(pure)
     case 'object-literal':
-      return e.properties.every(p => isPureInit(p.value))
-    // A call / method call may be effectful or non-deterministic; an arrow value
-    // can capture impurity; `unsupported` is opaque. Treat all as possibly impure.
+      return e.properties.every(p => pure(p.value))
     case 'call':
+      // A zero-arg reactive getter read (`filter()`, `count()`) is idempotent;
+      // any other call may be effectful or non-deterministic.
+      return (
+        e.callee.kind === 'identifier' &&
+        e.args.length === 0 &&
+        pureCallNames !== undefined &&
+        pureCallNames.has(e.callee.name)
+      )
+    // A method call may be effectful; an arrow value can capture impurity;
+    // `unsupported` is opaque. Treat all as possibly impure.
     case 'array-method':
     case 'arrow':
     case 'unsupported':
@@ -2843,6 +2871,7 @@ function inlineBinding(
  */
 export function foldBlockToExpr(
   stmts: ParsedStatement[],
+  opts?: FoldBlockOptions,
 ): { ok: true; expr: ParsedExpr } | { ok: false; reason: string } {
   if (stmts.length === 0) {
     return { ok: false, reason: IMPERATIVE_BLOCK_REASON }
@@ -2854,7 +2883,7 @@ export function foldBlockToExpr(
       // count can drive the soundness check. Any earlier-binding references in
       // the rest are inlined by the enclosing `var-decl` frames; references to
       // `head.name` inside `head.init` cannot occur (a `const` can't read itself).
-      const restFold = foldBlockToExpr(rest)
+      const restFold = foldBlockToExpr(rest, opts)
       if (!restFold.ok) return restFold
       const uses = usesPerPath(head.name, restFold.expr)
       // A possibly-impure init is only safe to inline when it is evaluated
@@ -2862,8 +2891,9 @@ export function foldBlockToExpr(
       // `const` initializer unconditionally once. `min !== 1` catches an effect
       // dropped on some path (unused, or used in only one ternary arm / a
       // short-circuited operand / a callback); `max !== 1` catches duplication.
-      // A pure init is safe at any count (drop / duplicate is unobservable).
-      if (!isPureInit(head.init) && !(uses.min === 1 && uses.max === 1)) {
+      // A pure init is safe at any count (drop / duplicate is unobservable);
+      // idempotent reactive getter reads in `pureCallNames` count as pure.
+      if (!isPureInit(head.init, opts?.pureCallNames) && !(uses.min === 1 && uses.max === 1)) {
         return { ok: false, reason: IMPURE_INLINE_BLOCK_REASON }
       }
       const inlined = inlineBinding(restFold.expr, head.name, head.init)
@@ -2888,9 +2918,9 @@ export function foldBlockToExpr(
       const elsePath = statementsTerminate(elseBase)
         ? elseBase
         : [...elseBase, ...rest]
-      const consequent = foldBlockToExpr(thenPath)
+      const consequent = foldBlockToExpr(thenPath, opts)
       if (!consequent.ok) return consequent
-      const alternate = foldBlockToExpr(elsePath)
+      const alternate = foldBlockToExpr(elsePath, opts)
       if (!alternate.ok) return alternate
       return {
         ok: true,
@@ -2903,6 +2933,42 @@ export function foldBlockToExpr(
       }
     }
   }
+}
+
+/**
+ * Rewrite a ternary whose arms are used in BOOLEAN context — e.g. the result of
+ * folding a block-bodied filter predicate (`if (c) return A; return B` →
+ * `c ? A : B`) — into an equivalent `&&` / `||` expression, so it flows through
+ * the ordinary boolean-expression lowering instead of needing a dedicated
+ * block-condition renderer per adapter (#2040). Boolean-literal arms collapse:
+ *
+ *   c ? true  : false  →  c
+ *   c ? true  : f      →  c || f
+ *   c ? t     : false  →  c && t
+ *   c ? false : f      →  !c && f
+ *   c ? t     : true   →  !c || t
+ *   c ? t     : f      →  (c && t) || (!c && f)
+ *
+ * Arms are flattened recursively (an `else if` chain is a nested ternary); the
+ * test is left as-is. Only valid where the consumer interprets the value as a
+ * boolean (a filter predicate). Non-conditional input is returned unchanged.
+ */
+export function predicateTernaryToLogical(expr: ParsedExpr): ParsedExpr {
+  if (expr.kind !== 'conditional') return expr
+  const cond = expr.test
+  const t = predicateTernaryToLogical(expr.consequent)
+  const f = predicateTernaryToLogical(expr.alternate)
+  const isTrue = (x: ParsedExpr) => x.kind === 'literal' && x.literalType === 'boolean' && x.value === true
+  const isFalse = (x: ParsedExpr) => x.kind === 'literal' && x.literalType === 'boolean' && x.value === false
+  const not = (x: ParsedExpr): ParsedExpr => ({ kind: 'unary', op: '!', argument: x })
+  const and = (a: ParsedExpr, b: ParsedExpr): ParsedExpr => ({ kind: 'logical', op: '&&', left: a, right: b })
+  const or = (a: ParsedExpr, b: ParsedExpr): ParsedExpr => ({ kind: 'logical', op: '||', left: a, right: b })
+  if (isTrue(t) && isFalse(f)) return cond
+  if (isTrue(t)) return or(cond, f)
+  if (isFalse(f)) return and(cond, t)
+  if (isFalse(t)) return and(not(cond), f)
+  if (isTrue(f)) return or(not(cond), t)
+  return or(and(cond, t), and(not(cond), f))
 }
 
 /**

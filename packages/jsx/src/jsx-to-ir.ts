@@ -33,7 +33,7 @@ import {
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context.ts'
-import { parseExpression, isSupported, parseBlockBody, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, type ParsedExpr, type ParsedStatement } from './expression-parser.ts'
+import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, type ParsedExpr } from './expression-parser.ts'
 import type { IRLoopSort } from './types.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -188,17 +188,26 @@ function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFil
 }
 
 /**
- * Walk an expression AST to check if it calls any known signal getter or memo.
- * Uses a pre-built Set for O(1) lookup per call expression.
+ * The set of known reactive getter names (signal accessors + memo names) for the
+ * component, built once and cached on `ctx`. These reads are idempotent within a
+ * render, so consumers can treat `getter()` as a pure value (e.g. the block-fold
+ * purity oracle in {@link extractFilterPredicate}).
  */
-function exprCallsReactiveGetters(expr: ts.Expression, ctx: TransformContext): boolean {
-  // Build reactive name set once per component (cached on ctx)
+function getReactiveGetterNames(ctx: TransformContext): Set<string> {
   if (!ctx._reactiveGetterNames) {
     ctx._reactiveGetterNames = new Set<string>()
     for (const s of ctx.analyzer.signals) ctx._reactiveGetterNames.add(s.getter)
     for (const m of ctx.analyzer.memos) ctx._reactiveGetterNames.add(m.name)
   }
-  const names = ctx._reactiveGetterNames
+  return ctx._reactiveGetterNames
+}
+
+/**
+ * Walk an expression AST to check if it calls any known signal getter or memo.
+ * Uses a pre-built Set for O(1) lookup per call expression.
+ */
+function exprCallsReactiveGetters(expr: ts.Expression, ctx: TransformContext): boolean {
+  const names = getReactiveGetterNames(ctx)
 
   let found = false
   function visit(n: ts.Node) {
@@ -2477,13 +2486,13 @@ function extractSortComparator(
 }
 
 /**
- * Result type for extractFilterPredicate.
- * Either has an expression body (predicate) or block body (blockBody).
+ * Result type for extractFilterPredicate. The predicate is always an expression:
+ * a block body is normalized to one via `foldBlockToExpr` +
+ * `predicateTernaryToLogical` (#2040).
  */
 type FilterPredicateResult = {
   param: string
-  predicate?: ParsedExpr        // Expression body
-  blockBody?: ParsedStatement[] // Block body
+  predicate?: ParsedExpr
   raw: string
 }
 
@@ -2556,16 +2565,29 @@ function extractFilterPredicate(
 
   const param = firstParam.name.getText(ctx.sourceFile)
 
-  // Block body arrow functions: filter(t => { const f = filter(); ... })
+  // Block body arrow functions: filter(t => { const f = filter(); ... }).
+  // Normalize the value-producing block into a single boolean predicate
+  // expression (#2040): let-inline + early-return/`if` → ternary, then the
+  // boolean-context ternary → `&&`/`||` so it flows through the same expression
+  // predicate path as `filter(t => !t.done)` — no per-adapter block-condition
+  // renderer. Idempotent reactive getter reads (`const f = filter()`) are
+  // treated as pure so a signal read on several branches still folds.
   if (ts.isBlock(callback.body)) {
     const raw = ctx.getJS(callback.body)
     const statements = parseBlockBody(callback.body, ctx.sourceFile, (n) => ctx.getJS(n))
     if (!statements) {
       return { result: null, unsupportedReason: 'Block body filter predicate cannot be parsed for server-side rendering' }
     }
-    // TODO: Check if all statements are supported for SSR
-    // For now, if parseBlockBody succeeds, we assume it's supported
-    return { result: { param, blockBody: statements, raw } }
+    const folded = foldBlockToExpr(statements, { pureCallNames: getReactiveGetterNames(ctx) })
+    if (!folded.ok) {
+      return { result: null, unsupportedReason: folded.reason }
+    }
+    const predicate = predicateTernaryToLogical(folded.expr)
+    const support = isSupported(predicate)
+    if (!support.supported) {
+      return { result: null, unsupportedReason: support.reason }
+    }
+    return { result: { param, predicate, raw } }
   }
 
   // Expression body: filter(t => !t.done)

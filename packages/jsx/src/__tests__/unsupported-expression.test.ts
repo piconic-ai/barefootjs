@@ -610,3 +610,70 @@ describe('Rest Pattern in Filter Predicate (BF021, #1532)', () => {
     expect(bf021).toHaveLength(0)
   })
 })
+
+// Block-bodied filter predicates are normalized to a single boolean expression
+// (#2040). A value-producing block lowers like an expression predicate; an
+// imperative block refuses.
+describe('Block-body filter predicate normalization (#2040)', () => {
+  function loopFilterIR(predicate: string) {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        const [filter, setFilter] = createSignal('all')
+        return (
+          <ul>
+            {items().filter(${predicate}).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+    const { ir, errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    // Find the loop node carrying the filterPredicate.
+    let found: any = null
+    const walk = (n: any) => {
+      if (!n || found) return
+      if (n.filterPredicate) found = n
+      for (const c of n.children ?? []) walk(c)
+    }
+    walk(ir)
+    return { bf021, filterPredicate: found?.filterPredicate }
+  }
+
+  test('value-producing block (let-inline + early return) folds to a predicate', () => {
+    const { bf021, filterPredicate } = loopFilterIR(`t => {
+      const f = filter()
+      if (f === 'active') return !t.done
+      if (f === 'completed') return t.done
+      return true
+    }`)
+    expect(bf021).toHaveLength(0)
+    // No leftover block shape — a single boolean predicate expression.
+    expect(filterPredicate?.predicate).toBeDefined()
+    expect((filterPredicate as any)?.blockBody).toBeUndefined()
+  })
+
+  test('signal read on multiple branches still folds (idempotent getter is pure)', () => {
+    const { bf021, filterPredicate } = loopFilterIR(`t => {
+      const f = filter()
+      if (f === 'active') return !t.done
+      return f === 'completed' ? t.done : true
+    }`)
+    expect(bf021).toHaveLength(0)
+    expect(filterPredicate?.predicate).toBeDefined()
+  })
+
+  test('imperative block (local re-assignment) refuses with BF021', () => {
+    const { bf021 } = loopFilterIR(`t => {
+      let keep = false
+      keep = !t.done
+      return keep
+    }`)
+    expect(bf021.length).toBeGreaterThan(0)
+  })
+})
