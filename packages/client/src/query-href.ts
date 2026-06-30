@@ -16,6 +16,12 @@
  * survive. Values are encoded with `URLSearchParams` (form-encoding, spaces →
  * `+`).
  *
+ * A value may also be a **`string[]`**, which appends one entry per non-empty
+ * member (`{ tag: ['a', 'b'] }` → `?tag=a&tag=b`), i.e. `URLSearchParams.append`
+ * rather than `set`. Empty / falsy members are skipped (same truthy-omit as a
+ * scalar), so an empty array — or one whose members are all empty — contributes
+ * nothing.
+ *
  * Values are **strings** (`QueryParamValue`). Number / boolean aren't accepted:
  * JS truthiness would omit `0` / `false`, which the SSR adapters' string guard
  * can't model without per-value type info — so keeping values string-only
@@ -27,13 +33,17 @@
  * `queryHref(base, { … })` call to their query helper (go-template: `bf_query`),
  * which is why the params object must be a plain object literal at the call site.
  */
-export type QueryParamValue = string | null | undefined
+export type QueryParamValue = string | string[] | null | undefined
 export type QueryParams = Record<string, QueryParamValue>
 
 export function queryHref(base: string, params: QueryParams): string {
   const u = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
-    if (value) u.set(key, value)
+    if (Array.isArray(value)) {
+      for (const member of value) if (member) u.append(key, member)
+    } else if (value) {
+      u.set(key, value)
+    }
   }
   const qs = u.toString()
   return qs ? `${base}?${qs}` : base

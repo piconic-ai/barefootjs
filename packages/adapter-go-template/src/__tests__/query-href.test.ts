@@ -3,10 +3,12 @@
  *
  * The pure functional URL builder is a structured `call` + `object-literal` in
  * the IR, so the adapter lowers it directly — no block-body recognizer, no
- * re-parse. Values are strings; inclusion mirrors the client `if (value)` over
- * strings: plain `key: v` → `(ne v "") "key" v`; conditional `key: cond ? a :
- * undefined` ≡ client `if (cond ? a : undefined)` → `(and (cond) (ne a "")) "key"
- * a` (include iff `cond` AND `a` is non-empty — not just `cond`).
+ * re-parse. The lowering emits `(include) "key" value` triples and lets the
+ * `bf_query` runtime helper own the non-empty check (so it can also append array
+ * values member-by-member, #2048): a plain `key: v` → `(true) "key" v`; a
+ * conditional `key: cond ? a : undefined` → `(cond) "key" a` (the helper drops an
+ * empty `a`). The full value semantics are conformance-tested against
+ * URLSearchParams in the shared golden vectors (TestHelperVectors, fn "query").
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
@@ -22,7 +24,7 @@ function generate(src: string) {
 }
 
 describe('queryHref → bf_query (#2042)', () => {
-  test('a plain value becomes a value-truthiness include triple', () => {
+  test('a plain value passes a `true` include — bf_query drops it if empty', () => {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
@@ -31,11 +33,11 @@ export function P(props: { base: string; tag: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('bf_query .Base (ne .Tag "") "tag" .Tag')
+    expect(template).toContain('bf_query .Base (true) "tag" .Tag')
     expect(template).not.toContain('.QueryHref')
   })
 
-  test('a conditional include is `and (cond) (ne consequent "")` — matching client value-truthiness', () => {
+  test('a conditional include lowers to `(cond)` — the helper applies the non-empty check', () => {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
@@ -50,16 +52,17 @@ export function P(props: { base: string; sort: string; tag: string }) {
 `
     const { template } = generate(src)
     expect(template).toContain(
-      'bf_query .Base (and (ne (bf_string .Sort) "date") (ne .Sort "")) "sort" .Sort (ne .Tag "") "tag" .Tag',
+      'bf_query .Base (ne (bf_string .Sort) "date") "sort" .Sort (true) "tag" .Tag',
     )
+    // The `ne consequent ""` non-empty check is no longer folded into the
+    // include — bf_query owns it (so it can also append array values).
+    expect(template).not.toContain('(ne .Sort "")')
   })
 
   // A `&&` / `||` guard is NOT a comparison, so `lowerUrlGuard` can't emit it as
   // a bare Go bool — `and`/`or` return one of their operands (a string), which
   // `bf_query` type-asserts against. It must take the truthiness-wrap path,
-  // `ne (and …) ""`, yielding a real bool. (This branch lost its dedicated test
-  // when the URLSearchParams recognizer fixture was retired; queryHref reaches it
-  // via a `cond && other ? a : undefined` guard. #2042 review.)
+  // `ne (and …) ""`, yielding a real bool.
   test('a `&&` guard is wrapped to a bool — `ne (and …) ""`, not a bare `and`', () => {
     const src = `
 'use client'
@@ -69,7 +72,7 @@ export function P(props: { base: string; a: string; b: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('bf_query .Base (and (ne (and .A .B) "") (ne .A "")) "both" .A')
+    expect(template).toContain('bf_query .Base (ne (and .A .B) "") "both" .A')
   })
 
   test('null / empty-string alternates are both treated as the omit branch', () => {
@@ -85,8 +88,35 @@ export function P(props: { base: string; mode: string; a: string; b: string }) {
 `
     const { template } = generate(src)
     // Both '' and null alternates fold to the same conditional-include form.
-    expect(template).toContain('(and (ne (bf_string .Mode) "off") (ne .A "")) "a" .A')
-    expect(template).toContain('(and (ne (bf_string .Mode) "off") (ne .B "")) "b" .B')
+    expect(template).toContain('(ne (bf_string .Mode) "off") "a" .A')
+    expect(template).toContain('(ne (bf_string .Mode) "off") "b" .B')
+  })
+
+  test('an array value lowers the slice expression; bf_query appends its members', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tags: string[] }) {
+  return <a href={queryHref(props.base, { tag: props.tags })}>x</a>
+}
+`
+    const { template } = generate(src)
+    // The value is the raw slice field; member-append + non-empty omit happen in
+    // the helper at render time (verified against URLSearchParams in the golden
+    // vectors). The old `ne value ""` fold would have been invalid Go here.
+    expect(template).toContain('bf_query .Base (true) "tag" .Tags')
+  })
+
+  test('a conditional array value keeps the guard and passes the slice', () => {
+    const src = `
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; on: string; tags: string[] }) {
+  return <a href={queryHref(props.base, { tag: props.on !== '' ? props.tags : undefined })}>x</a>
+}
+`
+    const { template } = generate(src)
+    expect(template).toContain('bf_query .Base (ne (bf_string .On) "") "tag" .Tags')
   })
 
   test('an aliased import is still recognised', () => {
@@ -112,7 +142,7 @@ export function P(props: { base: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('bf_query .Base (ne "home" "") "view" "home"')
+    expect(template).toContain('bf_query .Base (true) "view" "home"')
     expect(template).not.toContain('.HomeHref')
   })
 

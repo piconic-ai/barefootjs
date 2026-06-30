@@ -95,15 +95,15 @@ export function lowerQueryHrefCall(
     let includeGo: string
     let valueNode: ParsedExpr
     if (v.kind === 'conditional' && isOmitSentinel(v.alternate)) {
-      // `key: cond ? a : <omit>` ≡ client `if (cond ? a : undefined)` ≡
-      // `cond` truthy AND `a` non-empty.
-      const testBool = lowerUrlGuard(ctx, v.test)
-      const consGo = wrapIfMultiToken(lowerExpr(v.consequent))
-      includeGo = `and (${testBool}) (ne ${consGo} "")`
+      // `key: cond ? a : <omit>` → include on `cond`. The non-empty check is no
+      // longer folded in here: bf_query drops an included-but-empty value (and
+      // appends an array value member-by-member), matching the client / Perl.
+      includeGo = lowerUrlGuard(ctx, v.test)
       valueNode = v.consequent
     } else {
-      // `key: v` — include iff the (string) value is non-empty.
-      includeGo = lowerUrlGuard(ctx, v)
+      // `key: v` → always hand the value to bf_query, which omits it when empty
+      // (or array-empty) and appends array members.
+      includeGo = 'true'
       valueNode = v
     }
     parts.push(`(${includeGo})`)

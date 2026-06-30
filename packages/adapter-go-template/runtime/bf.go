@@ -153,23 +153,25 @@ func FuncMap() template.FuncMap {
 }
 
 // Query builds a URL from a base path plus a query string assembled from
-// (include, key, value) triples, in order. A pair is appended only when its
+// (include, key, value) triples, in order. A pair is considered only when its
 // `include` flag is true — mirroring a JS URLSearchParams builder whose
-// `.set(key, value)` calls are each guarded by an `if`. The compiler lowers
-// each guard to the `include` bool (so empty-but-included values, and
-// non-empty-but-excluded values, both match the source semantics). Keys and
-// values are query-escaped (spaces → "+", like URLSearchParams). An empty
-// query yields the bare base.
+// `.set(key, value)` calls are each guarded by an `if`. The compiler lowers a
+// conditional `cond ? v : undefined` to the `include` bool and a plain `key: v`
+// to a `true` include; the emptiness check is applied HERE (an included but
+// empty value is dropped), matching the client `queryHref` and the Perl `query`
+// helper. Keys and values use formEscape (application/x-www-form-urlencoded),
+// so the rendered query is byte-for-byte identical to the browser's
+// URLSearchParams. An empty query yields the bare base.
 //
-// Included pairs follow URLSearchParams.set() semantics: repeating a key
-// overwrites the value at the key's first position rather than emitting a
-// duplicate `k=v&k=w`. Trailing args that don't complete a triple are ignored.
+// A value may be a string slice ([]string or []any), which APPENDS one pair per
+// non-empty member (URLSearchParams.append) — `{tag: [a, b]}` → `tag=a&tag=b`.
+// A scalar value follows URLSearchParams.set() semantics: repeating a key
+// overwrites the value at the key's first position rather than duplicating it
+// (object literals have unique keys, so this is defensive). Trailing args that
+// don't complete a triple are ignored.
 //
-// Keys and values use formEscape (application/x-www-form-urlencoded), not
-// url.QueryEscape, so the rendered query is byte-for-byte identical to the
-// browser's URLSearchParams (and the Perl `query` helper) — the two diverge on
-// `~` (kept by QueryEscape, `%7E` here) and `*` (`%2A` by QueryEscape, kept
-// here).
+// formEscape differs from url.QueryEscape only on `~` (kept by QueryEscape,
+// `%7E` here) and `*` (`%2A` by QueryEscape, kept here).
 func Query(base string, triples ...any) string {
 	type kv struct{ key, val string }
 	pairs := make([]kv, 0, len(triples)/3)
@@ -180,7 +182,21 @@ func Query(base string, triples ...any) string {
 			continue
 		}
 		k := String(triples[i+1])
+		if members, ok := asStringSlice(triples[i+2]); ok {
+			// Array value → append each non-empty member; appended pairs never
+			// overwrite, so they don't participate in the set()-position map.
+			for _, m := range members {
+				if m == "" {
+					continue
+				}
+				pairs = append(pairs, kv{k, m})
+			}
+			continue
+		}
 		v := String(triples[i+2])
+		if v == "" {
+			continue // omit an included-but-empty value (client / Perl parity)
+		}
 		if at, ok := pos[k]; ok {
 			pairs[at].val = v // set(): overwrite the first occurrence's value
 		} else {
@@ -200,6 +216,25 @@ func Query(base string, triples ...any) string {
 		b.WriteString(formEscape(p.val))
 	}
 	return base + b.String()
+}
+
+// asStringSlice reports whether v is a query *array* value and, if so, returns
+// its members stringified. A compiled template passes a `[]string` field; the
+// golden conformance vectors decode JSON arrays to `[]any`. Anything else is a
+// scalar (false), handled by the set() path.
+func asStringSlice(v any) ([]string, bool) {
+	switch s := v.(type) {
+	case []string:
+		return s, true
+	case []any:
+		out := make([]string, len(s))
+		for i, m := range s {
+			out[i] = String(m)
+		}
+		return out, true
+	default:
+		return nil, false
+	}
 }
 
 const hexUpper = "0123456789ABCDEF"

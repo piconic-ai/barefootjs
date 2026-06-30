@@ -205,10 +205,6 @@ var vectorDivergences = map[string]vectorDivergence{
 		expect: "",
 		reason: "url.Values.Get returns \"\" for an absent key where JS URLSearchParams.get returns null; the ?? → or lowering folds both to the author default, so SSR output still matches",
 	},
-	"query/included-but-empty value is omitted": {
-		expect: "/?tag=",
-		reason: "Go's Query has no value-emptiness check: lowerQueryHrefCall folds `ne value \"\"` INTO the include flag (`and (cond) (ne value \"\")`), so the compiler never emits an included-empty triple. The Perl helper instead omits empties itself, so the two helpers split that responsibility; real SSR output matches the client on both.",
-	},
 }
 
 // vectorUnsupported marks helper ids this backend has not implemented

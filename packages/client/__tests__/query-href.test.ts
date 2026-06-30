@@ -32,9 +32,29 @@ describe('queryHref', () => {
 
   test('a conditional whose consequent is empty is still omitted (matches the SSR guard)', () => {
     // `cond ? '' : undefined` → `if ('')` → omitted, even though `cond` holds.
-    // The SSR lowering must mirror this with `and (cond) (ne v "")`, not `(cond)`.
+    // The SSR lowering mirrors this by passing `(cond)` as the include flag and
+    // letting the query helper omit the empty value (the same non-empty check it
+    // applies to a plain `key: v`).
     const build = (sort: string) => queryHref('/list', { sort: sort !== 'date' ? sort : undefined })
     expect(build('')).toBe('/list') // sort='' is !== 'date' (cond true) but value empty → omit
+  })
+
+  test('an array value appends one entry per non-empty member (URLSearchParams.append)', () => {
+    expect(queryHref('/list', { tag: ['a', 'b'] })).toBe('/list?tag=a&tag=b')
+    // Interleaves with scalar params in insertion order.
+    expect(queryHref('/list', { sort: 'name', tag: ['a', 'b'] })).toBe('/list?sort=name&tag=a&tag=b')
+  })
+
+  test('empty array members are skipped (truthy-omit); an all-empty array contributes nothing', () => {
+    expect(queryHref('/list', { tag: ['a', '', 'b'] })).toBe('/list?tag=a&tag=b')
+    expect(queryHref('/list', { tag: [] })).toBe('/list')
+    expect(queryHref('/list', { tag: ['', ''] })).toBe('/list')
+    // An array reduced to nothing leaves only the surviving scalar.
+    expect(queryHref('/list', { sort: 'name', tag: [] })).toBe('/list?sort=name')
+  })
+
+  test('array members are form-encoded like scalars', () => {
+    expect(queryHref('/s', { tag: ['a b', 'c~d*'] })).toBe('/s?tag=a+b&tag=c%7Ed*')
   })
 
   test('form-encodes keys and values like URLSearchParams (space → +)', () => {

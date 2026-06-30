@@ -1017,8 +1017,14 @@ sub replace ($self, $recv, $pattern, $replacement) {
 # (value)` over string values: the adapter passes the guard `1` for a plain
 # `key: v`, or the lowered condition for `key: cond ? v : undefined`. Repeating a
 # key overwrites the value at its first position (`URLSearchParams.set`
-# semantics). Keys/values are form-encoded to equal the browser render
-# byte-for-byte; no surviving pair yields the bare base.
+# semantics).
+#
+# A value may instead be an array ref, which APPENDS one pair per non-empty
+# member (`{ tag => ['a','b'] }` → `tag=a&tag=b`, i.e. `URLSearchParams.append`);
+# empty members are skipped, so an empty/all-empty array contributes nothing.
+#
+# Keys/values are form-encoded to equal the browser render byte-for-byte; no
+# surviving pair yields the bare base.
 sub query ($self, $base, @triples) {
     my $b = defined $base && !ref($base) ? "$base" : '';
     my (@pairs, %pos);
@@ -1028,6 +1034,16 @@ sub query ($self, $base, @triples) {
         $i += 3;
         next unless $guard;
         $key = defined $key && !ref($key) ? "$key" : '';
+        if (ref($val) eq 'ARRAY') {
+            # Append each non-empty member; appended pairs never overwrite, so
+            # they don't participate in the set()-position map.
+            for my $m (@$val) {
+                my $s = defined $m && !ref($m) ? "$m" : '';
+                next if $s eq '';
+                push @pairs, [$key, $s];
+            }
+            next;
+        }
         $val = defined $val && !ref($val) ? "$val" : '';
         next if $val eq '';
         if (exists $pos{$key}) {

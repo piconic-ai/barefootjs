@@ -71,18 +71,27 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
 
   // queryHref()'s URL builder (#2042) as the SSR `query` / `bf_query` helper
   // receives it: a base plus a flat list of (include, key, value) triples. A
-  // pair is included iff its `include` flag is truthy AND its value is a
-  // non-empty string; a repeated key overwrites at its first position
-  // (URLSearchParams.set). The reference encodes through URLSearchParams, so the
-  // Go (bf.Query) and Perl (BarefootJS::query) backends are held to byte-
-  // identical form-encoding — space → '+', '~' → %7E, '*' kept, UTF-8 byte-wise
-  // — the parity #2048 aligns the Go backend's encoder to.
+  // pair is kept iff its `include` flag is truthy AND its value is non-empty; a
+  // repeated key overwrites at its first position (URLSearchParams.set). A value
+  // may instead be an array, appending one pair per non-empty member
+  // (URLSearchParams.append, #2048). The reference encodes through
+  // URLSearchParams, so the Go (bf.Query) and Perl (BarefootJS::query) backends
+  // are held to byte-identical form-encoding — space → '+', '~' → %7E, '*' kept,
+  // UTF-8 byte-wise.
   query: (base: string, ...triples: unknown[]) => {
     const params = new URLSearchParams()
     for (let i = 0; i + 2 < triples.length; i += 3) {
       if (!triples[i]) continue
       const key = String(triples[i + 1])
-      const val = String(triples[i + 2])
+      const value = triples[i + 2]
+      if (Array.isArray(value)) {
+        for (const member of value) {
+          const m = String(member)
+          if (m !== '') params.append(key, m)
+        }
+        continue
+      }
+      const val = String(value)
       if (val === '') continue
       params.set(key, val)
     }
@@ -542,4 +551,12 @@ export const cases: HelperCase[] = [
   { fn: 'query', args: ['/s', true, 'q', 'a b', true, 'x y', 'c&d'], note: 'form-encode: space to + in key and value, & to %26' },
   { fn: 'query', args: ['/s', true, 'q', 'café'], note: 'form-encode: UTF-8 byte-wise' },
   { fn: 'query', args: ['/s', true, 't', '100%~free*'], note: 'form-encode: % ~ * together' },
+  // Array values append one pair per non-empty member (URLSearchParams.append, #2048).
+  { fn: 'query', args: ['/list', true, 'tag', ['a', 'b']], note: 'array value appends one pair per member' },
+  { fn: 'query', args: ['/list', true, 'sort', 'name', true, 'tag', ['a', 'b']], note: 'array interleaves with a scalar pair in order' },
+  { fn: 'query', args: ['/list', true, 'tag', ['a', '', 'b']], note: 'empty array members are skipped' },
+  { fn: 'query', args: ['/list', true, 'tag', []], note: 'empty array contributes nothing' },
+  { fn: 'query', args: ['/list', true, 'sort', 'name', true, 'tag', []], note: 'array reduced to nothing leaves the scalar' },
+  { fn: 'query', args: ['/s', true, 'tag', ['a b', 'c~d*']], note: 'array members are form-encoded like scalars' },
+  { fn: 'query', args: ['/list', false, 'tag', ['a', 'b']], note: 'excluded array contributes nothing' },
 ]
