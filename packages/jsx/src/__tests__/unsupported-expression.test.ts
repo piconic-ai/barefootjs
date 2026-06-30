@@ -216,10 +216,11 @@ describe('Unsupported Sort Comparator (BF021)', () => {
     expect(bf021[0].message).toContain('not a supported shape')
   })
 
-  test('emits BF021 error for multi-statement block-body sort comparator', () => {
-    // Single-`return` block bodies now lower (#1448 Tier B follow-up),
-    // but multi-statement / local-var bodies stay refused — generalising
-    // over arbitrary statement sequences isn't tractable in a template.
+  test('no BF021 for let-inline block-body sort comparator (#2040)', () => {
+    // #2040: a value-producing block body (pure `const` bindings + a terminal
+    // `return`) normalises to a single expression via let-inline, so a
+    // `{ const x = a.price; return x - b.price }` comparator now lowers exactly
+    // like the expression-bodied `(a, b) => a.price - b.price`.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -229,6 +230,32 @@ describe('Unsupported Sort Comparator (BF021)', () => {
         return (
           <ul>
             {items().sort((a, b) => { const x = a.price; return x - b.price }).map(t => (
+              <li>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(0)
+  })
+
+  test('emits BF021 error for imperative block-body sort comparator (#2040)', () => {
+    // An imperative comparator (local re-assignment / mutation) has no
+    // value-position lowering — `foldBlockToExpr` refuses it, so the arrow stays
+    // `unsupported` and the sort extraction surfaces BF021.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().sort((a, b) => { let r = 0; r = a.price - b.price; return r }).map(t => (
               <li>{t.name}</li>
             ))}
           </ul>

@@ -1142,18 +1142,42 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // directly; a block body (arrow `=> { … }` or a function expression)
     // must reduce to exactly one `return <expr>;`. Multi-statement /
     // local-var bodies stay refused.
-    let bodyNode: ts.Expression
+    let body: ParsedExpr
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
-      bodyNode = node.body
+      body = convertNode(node.body, raw)
     } else {
       const block = node.body as ts.Block
       const stmts = block.statements
-      if (stmts.length !== 1 || !ts.isReturnStatement(stmts[0]) || !stmts[0].expression) {
-        return { kind: 'unsupported', raw, reason: 'Only single-`return` block-body functions are supported' }
+      // Fast path: a single `return <expr>` keeps the pre-#2040 conversion
+      // (convertNode on the returned node), byte-identical for the existing
+      // corpus.
+      if (stmts.length === 1 && ts.isReturnStatement(stmts[0]) && stmts[0].expression) {
+        body = convertNode(stmts[0].expression, raw)
+      } else {
+        // General value-producing block: normalize `let`-inline + value `if` /
+        // early `return` into a single expression (#2040). Imperative shapes
+        // (raw `for` / `while`, `break`, mutation, side effects) don't parse
+        // into ParsedStatement, or fall through without a value — either way we
+        // refuse with an actionable reason and adapters surface BF101.
+        let sf: ts.SourceFile | undefined
+        try {
+          sf = block.getSourceFile()
+        } catch {
+          sf = undefined
+        }
+        const parsed = sf
+          ? parseBlockBody(block, sf, n => n.getText(sf))
+          : null
+        if (!parsed) {
+          return { kind: 'unsupported', raw, reason: IMPERATIVE_BLOCK_REASON }
+        }
+        const folded = foldBlockToExpr(parsed)
+        if (!folded.ok) {
+          return { kind: 'unsupported', raw, reason: folded.reason }
+        }
+        body = folded.expr
       }
-      bodyNode = stmts[0].expression
     }
-    const body = convertNode(bodyNode, raw)
 
     // Single object-binding-pattern param: `({done}) => done` (#1443),
     // `({user: {name}}) => name` (#1530), `({done = false}) => done`
@@ -2516,6 +2540,194 @@ function parseStatement(
 
   // Unsupported statement (for, while, switch, etc.)
   return null
+}
+
+// =============================================================================
+// Block → Expression Normalization (#2040)
+// =============================================================================
+
+/**
+ * The actionable refusal reason for a block body that is not purely-functionally
+ * expressible. Carried on the `unsupported` ParsedExpr so adapters surface it as
+ * the BF101 message. A loop that mutates a local to accumulate a value is a fold
+ * (already expressible via `.reduce`); a loop that does anything else, a `break`,
+ * a re-assignment, or a side-effecting/I-O call is genuinely imperative and has
+ * no value-position lowering.
+ */
+export const IMPERATIVE_BLOCK_REASON =
+  'Block body cannot be normalized to a value expression. Only pure ' +
+  '`const` bindings, value-producing `if` / early `return`, and a final ' +
+  '`return` are supported. Imperative shapes (raw `for` / `while` loops, ' +
+  '`break`, local re-assignment, side-effecting or I/O calls) are not. ' +
+  'Rewrite an accumulation loop as `.reduce(...)`, or move the imperative ' +
+  'body to a `/* @client */` value so it runs natively on the client.'
+
+/**
+ * Whether a statement sequence always reaches a `return` on every control-flow
+ * path (so anything textually after it is dead). A bare `return` terminates; an
+ * `if` terminates only when it has an `else` and both branches terminate. Used
+ * by {@link foldBlockToExpr} to decide whether the statements following an `if`
+ * belong to the fall-through (else) path.
+ */
+function statementsTerminate(stmts: ParsedStatement[]): boolean {
+  for (const s of stmts) {
+    if (s.kind === 'return') return true
+    if (
+      s.kind === 'if' &&
+      s.alternate !== undefined &&
+      statementsTerminate(s.consequent) &&
+      statementsTerminate(s.alternate)
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Substitute free identifiers in `expr` with their bound expression from `env`
+ * (the let-inline half of {@link foldBlockToExpr}). A nested `arrow`'s own
+ * params shadow the environment for its body, so a bound name that collides with
+ * a param is left untouched inside that body. Mirrors the structural walk used
+ * by `substituteDestructuredFields`; every `ParsedExpr` kind is handled so a new
+ * kind surfaces as a compile error here rather than silently skipping
+ * substitution.
+ */
+function substituteIdents(
+  expr: ParsedExpr,
+  env: ReadonlyMap<string, ParsedExpr>,
+): ParsedExpr {
+  if (env.size === 0) return expr
+  const walk = (e: ParsedExpr): ParsedExpr => {
+    switch (e.kind) {
+      case 'identifier': {
+        const bound = env.get(e.name)
+        return bound !== undefined ? bound : e
+      }
+      case 'call':
+        return { kind: 'call', callee: walk(e.callee), args: e.args.map(walk) }
+      case 'member':
+        return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed }
+      case 'index-access':
+        return { kind: 'index-access', object: walk(e.object), index: walk(e.index) }
+      case 'binary':
+        return { kind: 'binary', op: e.op, left: walk(e.left), right: walk(e.right) }
+      case 'logical':
+        return { kind: 'logical', op: e.op, left: walk(e.left), right: walk(e.right) }
+      case 'unary':
+        return { kind: 'unary', op: e.op, argument: walk(e.argument) }
+      case 'conditional':
+        return { kind: 'conditional', test: walk(e.test), consequent: walk(e.consequent), alternate: walk(e.alternate) }
+      case 'template-literal':
+        return {
+          kind: 'template-literal',
+          parts: e.parts.map(p =>
+            p.type === 'expression' ? { type: 'expression', expr: walk(p.expr) } : p,
+          ),
+        }
+      case 'arrow': {
+        // Params shadow the outer let-bindings inside the body.
+        const inner = new Map(env)
+        for (const p of e.params) inner.delete(p)
+        return { kind: 'arrow', params: e.params, body: substituteIdents(e.body, inner) }
+      }
+      case 'array-literal':
+        return { kind: 'array-literal', elements: e.elements.map(walk) }
+      case 'array-method':
+        if (e.method === 'flat') {
+          return { kind: 'array-method', method: 'flat', object: walk(e.object), args: [], flatDepth: e.flatDepth }
+        }
+        return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
+      case 'object-literal':
+        return {
+          kind: 'object-literal',
+          properties: e.properties.map(p => ({ ...p, value: walk(p.value) })),
+          raw: e.raw,
+        }
+      case 'literal':
+      case 'regex':
+      case 'unsupported':
+        return e
+    }
+  }
+  return walk(expr)
+}
+
+/**
+ * Fold a value-producing block body — a {@link ParsedStatement} sequence of pure
+ * `const` bindings, value-producing `if` / early `return`, and a terminal
+ * `return` — into a single {@link ParsedExpr}, so block-bodied memos / derived /
+ * callbacks flow through the same expression surface as expression-bodied ones
+ * (#2040, carved from #2018 stage 5). This generalizes the per-idiom block-memo
+ * recognizers (#1897 / #1945 / #2015) the same way the evaluator replaced the
+ * `bf_sort` / `bf_reduce` catalogue: one normalization, no growing pattern list.
+ *
+ * Transformations:
+ *   - `const x = <init>; …` → inline `x`'s (already-folded) init into the rest
+ *     (let-inline). The binding is pure by construction — a `ParsedStatement`
+ *     `var-decl` only ever carries an expression init.
+ *   - `if (c) <then> [else <else>] …` → `c ? fold(then-path) : fold(else-path)`,
+ *     where a branch that does not itself terminate continues into the
+ *     statements following the `if` (the early-return idiom).
+ *   - `return <v>` → `<v>` (with the accumulated bindings substituted in).
+ *
+ * Returns `{ ok: false }` for a sequence that cannot produce a value on some
+ * path (falls through with no `return`) — the genuinely-imperative residue that
+ * {@link IMPERATIVE_BLOCK_REASON} describes. The input is assumed to be the
+ * STRICT parse ({@link parseBlockBody}, not the tolerant variant): every source
+ * statement is represented, so a `false` here reflects the real shape rather
+ * than a silently-dropped statement.
+ */
+export function foldBlockToExpr(
+  stmts: ParsedStatement[],
+): { ok: true; expr: ParsedExpr } | { ok: false; reason: string } {
+  return foldStatements(stmts, new Map())
+}
+
+function foldStatements(
+  stmts: ParsedStatement[],
+  env: ReadonlyMap<string, ParsedExpr>,
+): { ok: true; expr: ParsedExpr } | { ok: false; reason: string } {
+  if (stmts.length === 0) {
+    return { ok: false, reason: IMPERATIVE_BLOCK_REASON }
+  }
+  const [head, ...rest] = stmts
+  switch (head.kind) {
+    case 'var-decl': {
+      const next = new Map(env)
+      next.set(head.name, substituteIdents(head.init, env))
+      return foldStatements(rest, next)
+    }
+    case 'return':
+      return { ok: true, expr: substituteIdents(head.value, env) }
+    case 'if': {
+      // A branch that doesn't return falls through to the statements after the
+      // `if` (early-return idiom). A branch that returns makes `rest` dead for
+      // that path, so it is not appended. `rest` is intentionally duplicated
+      // into both fall-through paths: value computation is side-effect-free, so
+      // the duplication is semantics-preserving.
+      const thenPath = statementsTerminate(head.consequent)
+        ? head.consequent
+        : [...head.consequent, ...rest]
+      const elseBase = head.alternate ?? []
+      const elsePath = statementsTerminate(elseBase)
+        ? elseBase
+        : [...elseBase, ...rest]
+      const consequent = foldStatements(thenPath, env)
+      if (!consequent.ok) return consequent
+      const alternate = foldStatements(elsePath, env)
+      if (!alternate.ok) return alternate
+      return {
+        ok: true,
+        expr: {
+          kind: 'conditional',
+          test: substituteIdents(head.condition, env),
+          consequent: consequent.expr,
+          alternate: alternate.expr,
+        },
+      }
+    }
+  }
 }
 
 /**
