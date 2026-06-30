@@ -169,6 +169,58 @@ const doubled = createMemo(() => count() * 2)
 doubled()  // Returns computed value
 ```
 
+### SSR value embedding (block → expression normalization)
+
+A value-producing body — a memo / derived value, a higher-order callback body,
+an attribute or interpolation expression — is normalized to a **single value
+expression** before lowering. A block body (`() => { … }`) is folded to that
+expression: pure `const` bindings inline (let-inline), and value-producing `if`
+/ early `return` become a ternary (`if (c) return A; return B` → `c ? A : B`).
+Genuinely imperative shapes — raw `for` / `while` accumulation that isn't a
+fold, `break`, local re-assignment, side-effecting / I/O calls — are *not* value
+expressions and do not normalize. This is the single support criterion
+("purely-functional expressibility", #2018 / #2040): the question is always
+*can this be written as a pure value computation?*, not *which named pattern
+does it match?*
+
+**SSR reproduction is best-effort, with a single hard boundary.** How the
+normalized value reaches the server-rendered HTML follows one rule:
+
+1. Flicker prevention is **best-effort** — the compiler tries to embed the
+   correct initial value into the SSR output so the first paint matches the
+   hydrated state.
+2. **If the value can be embedded, use it** (the expression lowers to the
+   target template, or evaluates against the initial signal / request state).
+3. **If it can't, fall back to the zero value** — silently. The client
+   recomputes the real value at hydrate from the verbatim runtime code, so the
+   output is faithful after hydration (a first-paint flash is the accepted cost).
+
+How *hard* the compiler tries to embed (whole-body fold, evaluating a guard
+against a falsy-initial signal, lowering a `searchParams()`-derived object, …)
+is a best-effort implementation detail, **not** a correctness boundary: failing
+to embed degrades to the zero value, never to wrong output. Recognizer-style
+special cases for particular block shapes are therefore just extra embedding
+*effort* — kept or dropped on a flicker-reduction-vs-maintenance basis, not a
+policy question.
+
+**The hard boundary — loud only when there is no safe fallback.** The
+zero-value degradation above is valid only where a zero value is a *safe*
+fallback (chiefly memo / derived / attribute initial values: rendering an empty
+/ zero value briefly, then hydrating, is acceptable). Where there is **no safe
+fallback** — a position that would otherwise emit invalid or wrong output, e.g.
+a template-position filter predicate or attribute expression the adapter cannot
+lower to a valid template fragment — the compiler is **loud** (BF021 / BF101)
+and the author escapes with `/* @client */`, which defers that position to the
+client.
+
+The asymmetry is deliberate: `/* @client */` removes a *miscompile* by deferring
+the position to the client, but it does **not** remove a value's first-paint
+flicker (the client fills that in later too). So loudness is only meaningful
+where `@client` actually changes the outcome — the no-safe-fallback / miscompile
+case — and is pointless (pure noise) for best-effort value embedding. A memo
+whose initial value cannot be embedded is therefore **never** an error: it
+degrades to the zero value and recovers at hydrate.
+
 ### Effects
 
 Side effects use `createEffect`:
@@ -374,11 +426,19 @@ When `.filter().map()` chains are detected, the compiler extracts the filter int
 ```typescript
 interface FilterPredicate {
   param: string              // Filter callback parameter (e.g., 't')
-  predicate?: ParsedExpr     // Simple expression body
-  blockBody?: ParsedStatement[] // Complex block body with if/return
+  predicate?: ParsedExpr     // Boolean predicate expression
   raw: string                // Original JS source
 }
 ```
+
+`predicate` is always a single boolean expression. A block-bodied predicate
+(`t => { const f = filter(); if (f === 'active') return !t.done; return true }`)
+is normalized to one via the block → expression fold (#2040): the early-return /
+`if` becomes a ternary, then the boolean-context ternary collapses to `&&` / `||`
+(`predicateTernaryToLogical`). So adapters lower a block predicate through the
+same expression path as `t => !t.done` — there is no separate block-statement
+shape to render. A predicate the fold can't normalize (imperative residue) is
+refused, and `/* @client */` defers the whole loop to the client.
 
 Adapters should render the filter as a conditional wrapper inside the loop (e.g., `if (condition) { children }`), not by pre-filtering the array. The filter param may differ from the loop param (e.g., filter uses `t`, loop uses `todo`) — adapters must map between them.
 
@@ -626,7 +686,7 @@ for each item in array:
     render children
 ```
 
-For complex block body filters (with `if/return` statements), collect all return paths and combine with OR logic. See `GoTemplateAdapter.renderBlockBodyCondition()` as reference.
+A block-bodied filter is normalized to a single boolean `predicate` expression upstream (#2040; see *IRLoop.filterPredicate*), so adapters render it through the same `ParsedExpr` path as an expression-bodied predicate — there is no separate per-adapter block-condition renderer (the former `renderBlockBodyCondition` / return-path collection was retired).
 
 The filter predicate uses a `ParsedExpr` AST (not raw string). Adapters must implement recursive `ParsedExpr` → target language conversion for:
 
