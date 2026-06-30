@@ -2629,6 +2629,18 @@ export interface FoldBlockOptions {
    * pure by this set.
    */
   pureCallNames?: ReadonlySet<string>
+  /**
+   * Fold for VALUE only, ignoring dropped side effects. When the folded result
+   * is consumed purely for its value — the SSR initial value of a memo, whose
+   * effects run separately on the client via the verbatim runtime code — a
+   * possibly-impure `const` that ends up used on SOME paths but not others is
+   * still safe to inline: the value on every path is unchanged; only an effect
+   * on a path that doesn't use the value is dropped, and that effect isn't part
+   * of the value. DUPLICATION of a possibly-impure call (used more than once on
+   * a path) stays refused — a non-deterministic call evaluated twice would
+   * change the value. Off by default (the callback path needs effect fidelity).
+   */
+  valueOnly?: boolean
 }
 
 /**
@@ -2893,7 +2905,13 @@ export function foldBlockToExpr(
       // short-circuited operand / a callback); `max !== 1` catches duplication.
       // A pure init is safe at any count (drop / duplicate is unobservable);
       // idempotent reactive getter reads in `pureCallNames` count as pure.
-      if (!isPureInit(head.init, opts?.pureCallNames) && !(uses.min === 1 && uses.max === 1)) {
+      //
+      // In `valueOnly` mode (memo SSR baking) a dropped effect doesn't matter —
+      // the value on every path is unchanged and effects run on the client — so
+      // only DUPLICATION (`max > 1`, a non-deterministic call evaluated twice)
+      // is refused; `min` may be 0.
+      const safeUse = opts?.valueOnly ? uses.max <= 1 : uses.min === 1 && uses.max === 1
+      if (!isPureInit(head.init, opts?.pureCallNames) && !safeUse) {
         return { ok: false, reason: IMPURE_INLINE_BLOCK_REASON }
       }
       const inlined = inlineBinding(restFold.expr, head.name, head.init)

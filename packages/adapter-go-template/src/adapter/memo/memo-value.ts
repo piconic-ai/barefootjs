@@ -10,7 +10,6 @@
  *     delegating value lowering to `lowerCtorExpr`.
  */
 
-import { foldBlockToExpr } from '@barefootjs/jsx'
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -153,26 +152,17 @@ function fromStatementPrefix(
  */
 export function computeObjectMemoInitialValue(
   ctx: GoEmitContext,
-  memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
+  memo: { parsed?: ParsedExpr },
 ): string | null {
-  // Normalize the block to a single object-literal expression (#2040). The
-  // analyzer's fold treats only signal/memo reads as pure, so a
-  // `const sp = searchParams()` (read twice) isn't folded there; redo the fold
-  // here with `searchParams` added to the purity oracle — it is an idempotent
-  // request-query read, so inlining `sp` at each `sp.get('k')` site is sound.
-  // The folded object's values become `searchParams().get('k')` (sp inlined),
-  // lowered by `lowerCtorExpr`. A block that doesn't fold to an object literal
-  // (extra control flow, an impure non-searchParams binding) yields null → the
-  // caller's nil fallback, exactly as the previous statement walk did.
-  let retObj = memo.parsed?.kind === 'object-literal' ? memo.parsed : null
-  if (!retObj) {
-    if (!memo.parsedBlock || !memo.parsedBlockComplete) return null
-    const folded = foldBlockToExpr(memo.parsedBlock, {
-      pureCallNames: ctx.state.searchParamsLocals,
-    })
-    if (!folded.ok || folded.expr.kind !== 'object-literal') return null
-    retObj = folded.expr
-  }
+  // The block is normalized to a single object-literal `parsed` upstream (#2040,
+  // `foldBlockToExpr` in the analyzer, which treats `searchParams()` — an
+  // idempotent request-query read — as pure so `const sp = searchParams()` is
+  // inlined at each `sp.get('k')` site). The folded object's values are
+  // `searchParams().get('k')` (sp inlined), lowered by `lowerCtorExpr`. A block
+  // that doesn't fold to an object literal leaves `parsed` non-object → null →
+  // the caller's nil fallback, exactly as the previous statement walk did.
+  if (memo.parsed?.kind !== 'object-literal') return null
+  const retObj = memo.parsed
   if (retObj.properties.length === 0) return null
 
   // `sp` is inlined to `searchParams()` in the folded values, so no

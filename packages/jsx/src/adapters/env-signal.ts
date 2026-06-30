@@ -7,7 +7,7 @@
 // adapters special-case it to a real per-request reader method call. See #1922.
 
 import type { ParsedExpr } from '../expression-parser.ts'
-import type { IRMetadata } from '../types.ts'
+import type { ImportInfo, IRMetadata } from '../types.ts'
 
 /**
  * The local binding name(s) that `searchParams` from `@barefootjs/client` is
@@ -23,7 +23,7 @@ import type { IRMetadata } from '../types.ts'
  * 'searchParams'` and the local binding is `alias ?? name`. Namespace / default
  * specifiers bind a different identifier and are excluded.
  */
-export function searchParamsLocalNames(metadata: IRMetadata): Set<string> {
+export function searchParamsLocalNames(metadata: { imports: readonly ImportInfo[] }): Set<string> {
   const names = new Set<string>()
   for (const imp of metadata.imports) {
     if (imp.source !== '@barefootjs/client' || imp.isTypeOnly) continue

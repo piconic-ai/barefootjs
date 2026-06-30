@@ -9,6 +9,7 @@
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
+import { searchParamsLocalNames } from './adapters/env-signal.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -281,16 +282,22 @@ export function analyzeComponent(
   // #2040: fold a complete, value-producing block-bodied memo into a single
   // expression so it flows through the same `parsed` path as an expression-bodied
   // memo, instead of relying on per-idiom block recognizers (#1897 / #1945 /
-  // #2015). Runs after all signals/memos are collected so the reactive-getter
-  // set (used as the purity oracle — an idempotent signal/memo read may be
-  // inlined on several branches) is complete. An incomplete block (the tolerant
-  // parser dropped a statement it couldn't represent) or one that doesn't fold
-  // (imperative residue) leaves `parsed` undefined and consumers keep their
-  // existing `parsedBlock` fallback.
+  // #2015). Runs after all signals/memos are collected so the purity oracle is
+  // complete. The oracle is the reactive getters (signal/memo reads) plus the
+  // `searchParams()` env signal — all idempotent within a render, so safe to
+  // inline at several sites (e.g. `sp.get('sort')` + `sp.get('tag')`). `valueOnly`
+  // because a memo's `parsed` is consumed for SSR value baking only (its effects
+  // run on the client via the verbatim runtime code), so an impure binding
+  // dropped on a path that doesn't use its value is fine — only duplication of a
+  // non-deterministic call is refused. An incomplete block (the tolerant parser
+  // dropped a statement) leaves `parsed` undefined.
+  const spLocals = searchParamsLocalNames({ imports: ctx.imports })
   const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
+  const pureCallNames =
+    spLocals.size === 0 ? reactiveGetterNames : new Set([...reactiveGetterNames, ...spLocals])
   for (const memo of ctx.memos) {
     if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete) continue
-    const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })
+    const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames, valueOnly: true })
     if (folded.ok) memo.parsed = folded.expr
   }
 
