@@ -2023,10 +2023,9 @@ func TestRender_AutoAssignsChildScopeIDs(t *testing.T) {
 // parity with the browser's URLSearchParams — lives in the shared golden helper
 // vectors (TestHelperVectors, fn "query"), the same vectors the Perl backend
 // runs. This direct test keeps a few representative cases for always-on coverage
-// (the golden file is monorepo-only) and pins the one Go-SPECIFIC behaviour: an
-// included-but-empty value is kept as `k=`, because lowerQueryHrefCall folds the
-// `ne value ""` check INTO the include flag, so the Go helper itself never
-// re-checks (the client / Perl omit empties in the helper instead).
+// (the golden file is monorepo-only), including the slice-typed value path the
+// JSON golden args can only exercise as []any (a compiled template passes a
+// []string field).
 func TestQuery(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -2038,9 +2037,14 @@ func TestQuery(t *testing.T) {
 		{"order + overwrite at first position", "/blog", []any{true, "sort", "title", true, "tag", "go", true, "sort", "date"}, "/blog?sort=date&tag=go"},
 		// formEscape (not url.QueryEscape): `~` → %7E, `*` kept, space → `+`.
 		{"form-encode ~ * space", "/s", []any{true, "t", "a~b *c"}, "/s?t=a%7Eb+*c"},
-		// Go-specific: an explicitly-included empty value is kept (no helper-side
-		// emptiness check); pinned as a divergence in the golden harness.
-		{"included-but-empty value is kept as k=", "/", []any{true, "tag", ""}, "/?tag="},
+		// An included-but-empty value is dropped (helper-side non-empty check,
+		// matching the client / Perl).
+		{"included-but-empty value is omitted", "/", []any{true, "tag", ""}, "/"},
+		// Array value ([]string, the compiled-template type) appends each
+		// non-empty member; an all-empty/empty array contributes nothing.
+		{"[]string value appends members", "/l", []any{true, "tag", []string{"a", "b"}}, "/l?tag=a&tag=b"},
+		{"empty members in a slice are skipped", "/l", []any{true, "tag", []string{"a", "", "b"}}, "/l?tag=a&tag=b"},
+		{"empty slice contributes nothing", "/l", []any{true, "sort", "name", true, "tag", []string{}}, "/l?sort=name"},
 	}
 	for _, tt := range tests {
 		if got := Query(tt.base, tt.triples...); got != tt.want {

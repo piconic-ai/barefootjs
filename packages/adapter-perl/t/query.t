@@ -35,6 +35,11 @@ is $bf->query('/blog', 1, 'sort', 'title', 1, 'tag', 'go', 1, 'sort', 'date'),
 # not Go's url.QueryEscape).
 is $bf->query('/s', 1, 't', 'a~b *c'), '/s?t=a%7Eb+*c', 'form-encode: ~ → %7E, * kept, space → +';
 
+# Representative array value: an array ref appends one pair per non-empty member
+# (#2048), skipping empties.
+is $bf->query('/list', 1, 'tag', ['a', '', 'b']), '/list?tag=a&tag=b',
+    'array value appends a pair per non-empty member';
+
 # Perl-specific: an `undef` value is coerced to '' and then omitted, without
 # disturbing the surrounding pairs.
 is $bf->query('/list', 1, 'tag', undef), '/list', 'undef value coerced to empty → omitted';

@@ -55,6 +55,21 @@ export function P(props: { base: string; flag: string; val: string }) {
     expect(t).toContain("bf->query($base, ($flag ne ''), 'q', $val)")
   })
 
+  // An array value (`{ tag: props.tags }`) lowers to the bare slice expression;
+  // the shared Perl `query` helper detects the arrayref at runtime and appends
+  // one pair per non-empty member (#2048). No adapter-side change beyond passing
+  // the value through.
+  test('an array value passes the slice expression for the helper to append', () => {
+    const t = template(`
+'use client'
+import { queryHref } from '@barefootjs/client'
+export function P(props: { base: string; tags: string[] }) {
+  return <a href={queryHref(props.base, { tag: props.tags })}>x</a>
+}
+`)
+    expect(t).toContain("bf->query($base, 1, 'tag', $tags)")
+  })
+
   test('an aliased import is recognised', () => {
     const t = template(`
 'use client'

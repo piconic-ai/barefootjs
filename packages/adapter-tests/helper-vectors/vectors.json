@@ -2860,6 +2860,105 @@
       ],
       "expect": "/s?t=100%25%7Efree*",
       "note": "form-encode: % ~ * together"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/list",
+        true,
+        "tag",
+        [
+          "a",
+          "b"
+        ]
+      ],
+      "expect": "/list?tag=a&tag=b",
+      "note": "array value appends one pair per member"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/list",
+        true,
+        "sort",
+        "name",
+        true,
+        "tag",
+        [
+          "a",
+          "b"
+        ]
+      ],
+      "expect": "/list?sort=name&tag=a&tag=b",
+      "note": "array interleaves with a scalar pair in order"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/list",
+        true,
+        "tag",
+        [
+          "a",
+          "",
+          "b"
+        ]
+      ],
+      "expect": "/list?tag=a&tag=b",
+      "note": "empty array members are skipped"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/list",
+        true,
+        "tag",
+        []
+      ],
+      "expect": "/list",
+      "note": "empty array contributes nothing"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/list",
+        true,
+        "sort",
+        "name",
+        true,
+        "tag",
+        []
+      ],
+      "expect": "/list?sort=name",
+      "note": "array reduced to nothing leaves the scalar"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/s",
+        true,
+        "tag",
+        [
+          "a b",
+          "c~d*"
+        ]
+      ],
+      "expect": "/s?tag=a+b&tag=c%7Ed*",
+      "note": "array members are form-encoded like scalars"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/list",
+        false,
+        "tag",
+        [
+          "a",
+          "b"
+        ]
+      ],
+      "expect": "/list",
+      "note": "excluded array contributes nothing"
     }
   ]
 }
