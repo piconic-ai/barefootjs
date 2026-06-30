@@ -33,12 +33,12 @@ type vectorFile struct {
 // vector whose fn has no binding here FAILS the test — the Go backend
 // is not allowed to silently fall behind the catalogue.
 var vectorBindings = map[string]func(args []any) any{
-	"add": func(args []any) any { return Add(args[0], args[1]) },
-	"sub": func(args []any) any { return Sub(args[0], args[1]) },
-	"mul": func(args []any) any { return Mul(args[0], args[1]) },
-	"div": func(args []any) any { return Div(args[0], args[1]) },
-	"mod": func(args []any) any { return Mod(args[0], args[1]) },
-	"neg": func(args []any) any { return Neg(args[0]) },
+	"add":    func(args []any) any { return Add(args[0], args[1]) },
+	"sub":    func(args []any) any { return Sub(args[0], args[1]) },
+	"mul":    func(args []any) any { return Mul(args[0], args[1]) },
+	"div":    func(args []any) any { return Div(args[0], args[1]) },
+	"mod":    func(args []any) any { return Mod(args[0], args[1]) },
+	"neg":    func(args []any) any { return Neg(args[0]) },
 	"string": func(args []any) any { return String(args[0]) },
 	"json": func(args []any) any {
 		s, err := JSON(args[0])
@@ -59,9 +59,9 @@ var vectorBindings = map[string]func(args []any) any{
 		}
 		return ToFixed(args[0], 0)
 	},
-	"lower":  func(args []any) any { return Lower(args[0].(string)) },
-	"upper":  func(args []any) any { return Upper(args[0].(string)) },
-	"trim":   func(args []any) any { return Trim(args[0].(string)) },
+	"lower": func(args []any) any { return Lower(args[0].(string)) },
+	"upper": func(args []any) any { return Upper(args[0].(string)) },
+	"trim":  func(args []any) any { return Trim(args[0].(string)) },
 	"starts_with": func(args []any) any {
 		if len(args) > 2 {
 			return StartsWith(args[0].(string), args[1].(string), args[2].(int))
@@ -114,12 +114,13 @@ var vectorBindings = map[string]func(args []any) any{
 	"search_params_get": func(args []any) any {
 		return NewSearchParams(args[0].(string)).Get(args[1].(string))
 	},
-	"every":         func(args []any) any { return Every(args[0], args[1].(string)) },
-	"some":          func(args []any) any { return Some(args[0], args[1].(string)) },
-	"filter":        func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },
-	"find":          func(args []any) any { return Find(args[0], args[1].(string), args[2]) },
-	"find_index":    func(args []any) any { return FindIndex(args[0], args[1].(string), args[2]) },
-	"find_last":     func(args []any) any { return FindLast(args[0], args[1].(string), args[2]) },
+	"query":      func(args []any) any { return Query(args[0].(string), args[1:]...) },
+	"every":      func(args []any) any { return Every(args[0], args[1].(string)) },
+	"some":       func(args []any) any { return Some(args[0], args[1].(string)) },
+	"filter":     func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },
+	"find":       func(args []any) any { return Find(args[0], args[1].(string), args[2]) },
+	"find_index": func(args []any) any { return FindIndex(args[0], args[1].(string), args[2]) },
+	"find_last":  func(args []any) any { return FindLast(args[0], args[1].(string), args[2]) },
 	"find_last_index": func(args []any) any {
 		return FindLastIndex(args[0], args[1].(string), args[2])
 	},
@@ -203,6 +204,10 @@ var vectorDivergences = map[string]vectorDivergence{
 	"search_params_get/absent key is null": {
 		expect: "",
 		reason: "url.Values.Get returns \"\" for an absent key where JS URLSearchParams.get returns null; the ?? → or lowering folds both to the author default, so SSR output still matches",
+	},
+	"query/included-but-empty value is omitted": {
+		expect: "/?tag=",
+		reason: "Go's Query has no value-emptiness check: lowerQueryHrefCall folds `ne value \"\"` INTO the include flag (`and (cond) (ne value \"\")`), so the compiler never emits an included-empty triple. The Perl helper instead omits empties itself, so the two helpers split that responsibility; real SSR output matches the client on both.",
 	},
 }
 

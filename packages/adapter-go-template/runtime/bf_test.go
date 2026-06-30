@@ -2019,6 +2019,14 @@ func TestRender_AutoAssignsChildScopeIDs(t *testing.T) {
 	}
 }
 
+// Query (`bf_query`)'s cross-backend behaviour — control flow plus form-encoding
+// parity with the browser's URLSearchParams — lives in the shared golden helper
+// vectors (TestHelperVectors, fn "query"), the same vectors the Perl backend
+// runs. This direct test keeps a few representative cases for always-on coverage
+// (the golden file is monorepo-only) and pins the one Go-SPECIFIC behaviour: an
+// included-but-empty value is kept as `k=`, because lowerQueryHrefCall folds the
+// `ne value ""` check INTO the include flag, so the Go helper itself never
+// re-checks (the client / Perl omit empties in the helper instead).
 func TestQuery(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -2026,19 +2034,13 @@ func TestQuery(t *testing.T) {
 		triples []any
 		want    string
 	}{
-		{"no triples", "/", nil, "/"},
-		{"all excluded", "/", []any{false, "sort", "title", false, "tag", "go"}, "/"},
-		{"one included", "/", []any{true, "sort", "title"}, "/?sort=title"},
-		{"order preserved", "/blog", []any{true, "sort", "title", true, "tag", "go"}, "/blog?sort=title&tag=go"},
-		{"mixed include", "/blog", []any{false, "sort", "date", true, "tag", "go"}, "/blog?tag=go"},
-		{"escapes value", "/", []any{true, "tag", "a b&c"}, "/?tag=a+b%26c"},
-		{"empty-but-included value", "/", []any{true, "tag", ""}, "/?tag="},
-		{"trailing partial triple ignored", "/", []any{true, "sort", "title", true, "tag"}, "/?sort=title"},
-		// URLSearchParams.set(): repeating a key overwrites the value at the
-		// key's first position, never duplicating `k=v&k=w`.
-		{"repeated key overwrites first position", "/", []any{true, "sort", "title", true, "sort", "date"}, "/?sort=date"},
-		{"overwrite keeps first position among others", "/blog", []any{true, "sort", "title", true, "tag", "go", true, "sort", "date"}, "/blog?sort=date&tag=go"},
-		{"excluded repeat does not overwrite", "/", []any{true, "sort", "title", false, "sort", "date"}, "/?sort=title"},
+		{"one included pair", "/", []any{true, "sort", "title"}, "/?sort=title"},
+		{"order + overwrite at first position", "/blog", []any{true, "sort", "title", true, "tag", "go", true, "sort", "date"}, "/blog?sort=date&tag=go"},
+		// formEscape (not url.QueryEscape): `~` → %7E, `*` kept, space → `+`.
+		{"form-encode ~ * space", "/s", []any{true, "t", "a~b *c"}, "/s?t=a%7Eb+*c"},
+		// Go-specific: an explicitly-included empty value is kept (no helper-side
+		// emptiness check); pinned as a divergence in the golden harness.
+		{"included-but-empty value is kept as k=", "/", []any{true, "tag", ""}, "/?tag="},
 	}
 	for _, tt := range tests {
 		if got := Query(tt.base, tt.triples...); got != tt.want {

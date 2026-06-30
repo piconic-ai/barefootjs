@@ -69,6 +69,27 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   // returns "" for an absent key where JS returns null).
   search_params_get: (query: string, key: string) => new URLSearchParams(query).get(key),
 
+  // queryHref()'s URL builder (#2042) as the SSR `query` / `bf_query` helper
+  // receives it: a base plus a flat list of (include, key, value) triples. A
+  // pair is included iff its `include` flag is truthy AND its value is a
+  // non-empty string; a repeated key overwrites at its first position
+  // (URLSearchParams.set). The reference encodes through URLSearchParams, so the
+  // Go (bf.Query) and Perl (BarefootJS::query) backends are held to byte-
+  // identical form-encoding — space → '+', '~' → %7E, '*' kept, UTF-8 byte-wise
+  // — the parity #2048 aligns the Go backend's encoder to.
+  query: (base: string, ...triples: unknown[]) => {
+    const params = new URLSearchParams()
+    for (let i = 0; i + 2 < triples.length; i += 3) {
+      if (!triples[i]) continue
+      const key = String(triples[i + 1])
+      const val = String(triples[i + 2])
+      if (val === '') continue
+      params.set(key, val)
+    }
+    const s = params.toString()
+    return s ? `${base}?${s}` : base
+  },
+
   // Higher-order entries use the compiled projection catalogue as the
   // canonical argument form (spec: "canonical projection form") — the
   // references run the REAL JS array methods over predicates built
@@ -502,4 +523,23 @@ export const cases: HelperCase[] = [
   { fn: 'search_params_get', args: ['q=a%20b', 'q'], note: 'percent-encoded space decodes' },
   { fn: 'search_params_get', args: ['q=a%26b', 'q'], note: 'encoded & in a value is data, not a separator' },
   { fn: 'search_params_get', args: ['token=a=b=c', 'token'], note: 'only the first = splits; the rest is value' },
+
+  // query() — the queryHref SSR builder. Control-flow rules (include flag,
+  // empty-value omit, order, URLSearchParams.set overwrite) plus form-encoding
+  // parity. The `~` / `*` vectors are exactly where Go's old url.QueryEscape
+  // diverged from URLSearchParams (#2048).
+  { fn: 'query', args: ['/'], note: 'no triples yields the bare base' },
+  { fn: 'query', args: ['/', false, 'sort', 'title', false, 'tag', 'go'], note: 'all-excluded yields the bare base' },
+  { fn: 'query', args: ['/', true, 'sort', 'title'], note: 'one included pair' },
+  { fn: 'query', args: ['/blog', true, 'sort', 'title', true, 'tag', 'go'], note: 'order preserved' },
+  { fn: 'query', args: ['/blog', false, 'sort', 'date', true, 'tag', 'go'], note: 'excluded pair dropped, included kept' },
+  { fn: 'query', args: ['/', true, 'tag', ''], note: 'included-but-empty value is omitted' },
+  { fn: 'query', args: ['/', true, 'sort', 'title', true, 'tag'], note: 'trailing partial triple ignored' },
+  { fn: 'query', args: ['/', true, 'sort', 'title', true, 'sort', 'date'], note: 'repeated key overwrites at first position (set)' },
+  { fn: 'query', args: ['/blog', true, 'sort', 'title', true, 'tag', 'go', true, 'sort', 'date'], note: 'overwrite keeps first position among others' },
+  { fn: 'query', args: ['/', true, 'sort', 'title', false, 'sort', 'date'], note: 'excluded repeat does not overwrite' },
+  { fn: 'query', args: ['/s', true, 't', 'a~b*c'], note: 'form-encode: ~ to %7E, * kept (URLSearchParams, not QueryEscape)' },
+  { fn: 'query', args: ['/s', true, 'q', 'a b', true, 'x y', 'c&d'], note: 'form-encode: space to + in key and value, & to %26' },
+  { fn: 'query', args: ['/s', true, 'q', 'café'], note: 'form-encode: UTF-8 byte-wise' },
+  { fn: 'query', args: ['/s', true, 't', '100%~free*'], note: 'form-encode: % ~ * together' },
 ]
