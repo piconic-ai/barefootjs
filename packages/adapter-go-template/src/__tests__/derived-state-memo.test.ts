@@ -393,3 +393,42 @@ export function Box() {
     expect(types).toContain('"flex"')
   })
 })
+
+// #2040 PR-C: the object-returning searchParams memo lowers via the general
+// fold (`foldBlockToExpr` with `searchParams` treated as a pure idempotent
+// read), not a bespoke statement walk.
+describe('Capability D: searchParams object memo via fold (#2040 PR-C)', () => {
+  test('object memo using searchParams() directly (no const binding) lowers', () => {
+    // The old statement walk required a `const sp = searchParams()` binding to
+    // populate its env; the fold inlines any binding, so a direct
+    // `searchParams().get('k')` in the returned object now lowers too.
+    const { types } = generate(`
+"use client"
+import { createMemo, searchParams } from "@barefootjs/client"
+export function PostList() {
+  const params = createMemo(() => {
+    return { tag: searchParams().get('tag') ?? '' }
+  })
+  return <div>{params().tag}</div>
+}
+`)
+    expect(types).toContain('map[string]interface{}{')
+    expect(types).toContain('"Tag":')
+    expect(types).toContain('in.SearchParams.Get("tag")')
+  })
+
+  test('aliased searchParams import still lowers (local-name oracle)', () => {
+    const { types } = generate(`
+"use client"
+import { createMemo, searchParams as sp } from "@barefootjs/client"
+export function PostList() {
+  const params = createMemo(() => {
+    const q = sp()
+    return { tag: q.get('tag') ?? '' }
+  })
+  return <div>{params().tag}</div>
+}
+`)
+    expect(types).toContain('in.SearchParams.Get("tag")')
+  })
+})
