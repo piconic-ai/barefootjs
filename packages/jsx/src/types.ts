@@ -518,14 +518,16 @@ export interface IRLoop {
    * When present, the loop renders with an if-condition wrapping each iteration.
    * Example: todos.filter(t => !t.done).map(...) stores { param: 't', predicate: ParsedExpr, raw: '!t.done' }
    *
-   * For block-body filters like:
+   * Block-body filters like
    *   filter(t => { const f = filter(); if (f === 'active') return !t.done; return true })
-   * The blockBody field contains the parsed statements.
+   * are normalized to a single boolean `predicate` expression at IR-build time
+   * (#2040, `foldBlockToExpr` + `predicateTernaryToLogical` in `jsx-to-ir`), so
+   * adapters only ever see the unified expression form — there is no separate
+   * block-statement shape to lower.
    */
   filterPredicate?: {
     param: string
-    predicate?: ParsedExpr        // Expression body
-    blockBody?: ParsedStatement[] // Block body (mutually exclusive with predicate)
+    predicate?: ParsedExpr        // Boolean predicate expression (folded from any block body)
     raw: string  // Original string for error messages
   }
 
