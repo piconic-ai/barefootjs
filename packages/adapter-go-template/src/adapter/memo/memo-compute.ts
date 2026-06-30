@@ -295,7 +295,7 @@ export function computeMemoInitialValueOrNull(
   // is falsy: `() => { const k = getter(); if (!k) return MODULE_ARRAY; … }`.
   // When the signal starts null the SSR value is that array; its literal value
   // (not the identifier) is passed to the baker so it reduces to a Go slice.
-  const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo.parsed, signals)
+  const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo, signals)
   if (blockReturn !== null && blockReturn.constValue && blockReturn.constType) {
     return convertInitialValue(ctx,
       blockReturn.constValue,
@@ -367,8 +367,8 @@ export function computeComparisonTernaryGo(
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
 ): string | null {
-  // Only an expression-bodied conditional matches; a block-bodied memo has no
-  // `parsed`, so it returns null.
+  // Matches any `conditional` `parsed` — an expression-bodied ternary or, since
+  // #2040, a block-bodied memo whose value `if` / early-return folded to one.
   if (!parsed || parsed.kind !== 'conditional') return null
   const cond = parsed.test
   if (cond.kind !== 'binary' || !(cond.right.kind === 'literal' && cond.right.literalType === 'string')) {

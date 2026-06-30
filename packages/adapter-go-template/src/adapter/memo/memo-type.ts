@@ -55,10 +55,12 @@ export function isBooleanMemo(
 }
 
 /**
- * Does this memo's arrow body resolve to a ternary whose BOTH branches are
+ * Does this memo's body resolve to a ternary whose BOTH branches are
  * string-valued — e.g. `() => orientation() === 'vertical' ? 'flex-col' :
  * 'flex'`? Such a memo is a string, not a bool, even though its condition
- * contains `===`. A block-bodied memo has no `parsed`, so it returns false.
+ * contains `===`. Since #2040 a block-bodied memo can also carry `parsed` (a
+ * value `if` / early-return folds to a ternary), so this now applies to those
+ * too — the inferred field type follows the folded shape, not the syntax.
  */
 export function isStringTernaryMemo(ctx: GoEmitContext, parsed: ParsedExpr | undefined): boolean {
   if (!parsed || parsed.kind !== 'conditional') return false

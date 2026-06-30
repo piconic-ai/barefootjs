@@ -1165,13 +1165,19 @@ export interface MemoInfo {
   /** Computation with TypeScript type annotations preserved, for .tsx output */
   typedComputation?: string
   /**
-   * Structured parse of the memo's arrow BODY expression (`() => <body>` →
-   * `parseExpression('<body>')`), computed once at analysis time. Lets
-   * adapters pattern-match the memo's shape on the structured tree instead of
-   * re-parsing `computation` with their own AST walks / regexes. Present only
-   * for expression-bodied arrows whose body `parseExpression` supports; absent
-   * for block-bodied memos (`() => { … }`) and shapes it can't represent, so
-   * consumers must fall back to `computation` when it's missing.
+   * Structured parse of the memo's BODY as a single value expression, computed
+   * once at analysis time. Lets adapters pattern-match the memo's shape on the
+   * structured tree instead of re-parsing `computation` with their own AST walks
+   * / regexes.
+   *
+   * Set for an expression-bodied arrow (`() => <body>`) whose body
+   * `parseExpression` supports, AND — since #2040 — for a block-bodied memo
+   * (`() => { … }`) whose statements `foldBlockToExpr` can normalize to one
+   * expression (`let`-inline + value `if` / early `return` → ternary). A block
+   * the fold refuses (imperative residue) or a shape `parseExpression` can't
+   * represent leaves `parsed` undefined, so consumers must still fall back to
+   * `parsedBlock` / `computation` when it's missing. NOTE: a present `parsed`
+   * therefore no longer implies an expression-bodied arrow.
    */
   parsed?: ParsedExpr
   /**

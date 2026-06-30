@@ -32,7 +32,7 @@ import {
   isReactiveOrigin,
   AttrValueOf,
 } from './types.ts'
-import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation } from './analyzer-context.ts'
+import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, type ParsedExpr } from './expression-parser.ts'
 import type { IRLoopSort } from './types.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
@@ -195,9 +195,7 @@ function hasLeadingClientDirective(expr: ts.Expression, sourceFile: ts.SourceFil
  */
 function getReactiveGetterNames(ctx: TransformContext): Set<string> {
   if (!ctx._reactiveGetterNames) {
-    ctx._reactiveGetterNames = new Set<string>()
-    for (const s of ctx.analyzer.signals) ctx._reactiveGetterNames.add(s.getter)
-    for (const m of ctx.analyzer.memos) ctx._reactiveGetterNames.add(m.name)
+    ctx._reactiveGetterNames = collectReactiveGetterNames(ctx.analyzer.signals, ctx.analyzer.memos)
   }
   return ctx._reactiveGetterNames
 }

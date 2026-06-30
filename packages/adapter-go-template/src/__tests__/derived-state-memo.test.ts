@@ -324,3 +324,72 @@ export function T() {
     expect(typed.types).toBe(untyped.types)
   })
 })
+
+// #2040 PR-B: guard-and-return-const block memos lower via the analyzer fold
+// (`MemoInfo.parsed`), with a tolerant `parsedBlock` fallback for blocks the
+// fold refuses (so the SSR const bake never regresses vs. the old statement
+// walker).
+describe('Capability C: guard-const block memo via fold (#2040 PR-B)', () => {
+  test('folded guard memo bakes the module-const array (not nil)', () => {
+    const { types } = generate(`
+"use client"
+import { createSignal, createMemo } from "@barefootjs/client"
+const ALL = ['a', 'b', 'c']
+export function Tags() {
+  const [sel, setSel] = createSignal<string | null>(null)
+  const visible = createMemo(() => {
+    const k = sel()
+    if (!k) return ALL
+    return ALL.filter(t => t === k)
+  })
+  return <ul>{visible().map(t => (<li key={t}>{t}</li>))}</ul>
+}
+`)
+    expect(types).toContain(`[]interface{}{"a", "b", "c"}`)
+  })
+
+  test('guard memo with an impure tail binding still bakes the const (fallback path)', () => {
+    // `const n = ext()` is impure (not a reactive getter) and used more than
+    // once in the tail, so `foldBlockToExpr` refuses → `parsed` is unset. The
+    // tolerant `parsedBlock` fallback must still bake `ALL`; otherwise the first
+    // server render is an empty list (regression vs. main). (PR #2053 review #1)
+    const { types } = generate(`
+"use client"
+import { createSignal, createMemo } from "@barefootjs/client"
+const ALL = ['a', 'b', 'c']
+function ext() { return 1 }
+export function Tags() {
+  const [sel, setSel] = createSignal<string | null>(null)
+  const visible = createMemo(() => {
+    const k = sel()
+    const n = ext()
+    if (!k) return ALL
+    return ALL.filter(t => t.length === n).concat(ALL.slice(n))
+  })
+  return <ul>{visible().map(t => (<li key={t}>{t}</li>))}</ul>
+}
+`)
+    expect(types).toContain(`[]interface{}{"a", "b", "c"}`)
+  })
+
+  test('early-return string-const block memo bakes the initial branch (#2040 scope)', () => {
+    // `() => { if (vert()) return A; return B }` folds to `vert() ? A : B`; with
+    // `vert` starting false the SSR value is B. Now lowered via the general
+    // `memoInitialFromParsedBody` conditional path. (PR #2053 review #2)
+    const { types } = generate(`
+"use client"
+import { createSignal, createMemo } from "@barefootjs/client"
+const A = 'flex-col'
+const B = 'flex'
+export function Box() {
+  const [vert, setVert] = createSignal(false)
+  const cls = createMemo(() => {
+    if (vert()) return A
+    return B
+  })
+  return <div className={cls()}>x</div>
+}
+`)
+    expect(types).toContain('"flex"')
+  })
+})

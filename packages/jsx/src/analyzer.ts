@@ -21,6 +21,7 @@ import {
   membersToProperties,
   isComponentFunction,
   isArrowComponentFunction,
+  collectReactiveGetterNames,
 } from './analyzer-context.ts'
 import { createError, createWarning, ErrorCodes } from './errors.ts'
 import path from 'node:path'
@@ -286,9 +287,7 @@ export function analyzeComponent(
   // parser dropped a statement it couldn't represent) or one that doesn't fold
   // (imperative residue) leaves `parsed` undefined and consumers keep their
   // existing `parsedBlock` fallback.
-  const reactiveGetterNames = new Set<string>()
-  for (const s of ctx.signals) reactiveGetterNames.add(s.getter)
-  for (const m of ctx.memos) reactiveGetterNames.add(m.name)
+  const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
   for (const memo of ctx.memos) {
     if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete) continue
     const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })

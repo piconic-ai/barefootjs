@@ -501,3 +501,21 @@ export function isArrowComponentFunction(
   if (!node.initializer || !ts.isArrowFunction(node.initializer)) return false
   return true
 }
+
+/**
+ * The set of reactive getter names for a component — signal accessors plus memo
+ * names. Single source of truth for "what counts as a reactive getter", shared
+ * by the analyzer's block-memo fold purity oracle (#2040) and `jsx-to-ir`'s
+ * `getReactiveGetterNames`. A reactive read is idempotent within a render, so
+ * callers treat `getter()` as pure. If a third reactive kind is added, update
+ * this one function.
+ */
+export function collectReactiveGetterNames(
+  signals: ReadonlyArray<{ getter: string }>,
+  memos: ReadonlyArray<{ name: string }>,
+): Set<string> {
+  const names = new Set<string>()
+  for (const s of signals) names.add(s.getter)
+  for (const m of memos) names.add(m.name)
+  return names
+}
