@@ -1561,7 +1561,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const memo = ir.metadata.memos.find(m => m.name === memoName)
         if (memo) {
           const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx,
-            memo.parsedBlock, ir.metadata.signals,
+            memo, ir.metadata.signals,
           )
           if (blockReturn) {
             const constant = (ir.metadata.localConstants ?? []).find(
@@ -2150,7 +2150,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Block-body memo returning a module-const array: use the constant's array
     // type instead of the memo's generic `object`.
-    const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx, memo.parsedBlock, signals)
+    const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx, memo, signals)
     if (blockReturn?.constType?.kind === 'array') {
       return typeInfoToGo(this.emitCtx, blockReturn.constType)
     }

@@ -8,7 +8,7 @@
 
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
-import { parseExpression, parseBlockBodyTolerant } from './expression-parser.ts'
+import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -21,6 +21,7 @@ import {
   membersToProperties,
   isComponentFunction,
   isArrowComponentFunction,
+  collectReactiveGetterNames,
 } from './analyzer-context.ts'
 import { createError, createWarning, ErrorCodes } from './errors.ts'
 import path from 'node:path'
@@ -275,6 +276,22 @@ export function analyzeComponent(
     if (!signal.initialValue) continue
     const parsed = parseExpression(`(${signal.initialValue})`)
     if (parsed.kind !== 'unsupported') signal.parsed = parsed
+  }
+
+  // #2040: fold a complete, value-producing block-bodied memo into a single
+  // expression so it flows through the same `parsed` path as an expression-bodied
+  // memo, instead of relying on per-idiom block recognizers (#1897 / #1945 /
+  // #2015). Runs after all signals/memos are collected so the reactive-getter
+  // set (used as the purity oracle — an idempotent signal/memo read may be
+  // inlined on several branches) is complete. An incomplete block (the tolerant
+  // parser dropped a statement it couldn't represent) or one that doesn't fold
+  // (imperative residue) leaves `parsed` undefined and consumers keep their
+  // existing `parsedBlock` fallback.
+  const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
+  for (const memo of ctx.memos) {
+    if (memo.parsed || !memo.parsedBlock || !memo.parsedBlockComplete) continue
+    const folded = foldBlockToExpr(memo.parsedBlock, { pureCallNames: reactiveGetterNames })
+    if (folded.ok) memo.parsed = folded.expr
   }
 
   return ctx

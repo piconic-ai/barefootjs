@@ -495,3 +495,56 @@ describe('analyzeComponent', () => {
     })
   })
 })
+
+// #2040: complete, value-producing block-bodied memos are folded to a single
+// `parsed` expression so adapters lower them through the expression path
+// (retiring the per-idiom block recognizers). Idempotent reactive getter reads
+// count as pure, so a guard read on several branches still folds.
+describe('block-bodied memo → parsed fold (#2040)', () => {
+  test('guard-and-return-const memo folds to a conditional `parsed`', () => {
+    const source = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      const ALL = ['a', 'b']
+      export function Tags() {
+        const [sel, setSel] = createSignal<string | null>(null)
+        const visible = createMemo(() => {
+          const k = sel()
+          if (!k) return ALL
+          return ALL.filter(t => t === k)
+        })
+        return <ul>{visible().map(t => (<li key={t}>{t}</li>))}</ul>
+      }
+    `
+    const ctx = analyzeComponent(source, 'Tags.tsx')
+    const memo = ctx.memos.find(m => m.name === 'visible')
+    expect(memo?.parsedBlockComplete).toBe(true)
+    // `const k = sel(); if (!k) return ALL; return ALL.filter(...)` →
+    // `!sel() ? ALL : ALL.filter(...)`. `sel()` (a signal read) inlined twice.
+    expect(memo?.parsed?.kind).toBe('conditional')
+    const cond = memo?.parsed as { kind: 'conditional'; test: any; consequent: any }
+    expect(cond.test).toEqual({ kind: 'unary', op: '!', argument: { kind: 'call', callee: { kind: 'identifier', name: 'sel' }, args: [] } })
+    expect(cond.consequent).toEqual({ kind: 'identifier', name: 'ALL' })
+  })
+
+  test('imperative block-bodied memo leaves `parsed` unset', () => {
+    const source = `
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      export function C() {
+        const [n, setN] = createSignal(0)
+        const total = createMemo(() => {
+          let s = 0
+          for (const x of [1, 2, 3]) s += x
+          return s + n()
+        })
+        return <div>{total()}</div>
+      }
+    `
+    const ctx = analyzeComponent(source, 'C.tsx')
+    const memo = ctx.memos.find(m => m.name === 'total')
+    // The `for` loop can't be represented → tolerant parser drops it →
+    // parsedBlockComplete is false → no fold → parsed stays undefined.
+    expect(memo?.parsed).toBeUndefined()
+  })
+})
