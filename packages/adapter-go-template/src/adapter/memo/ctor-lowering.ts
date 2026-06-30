@@ -96,11 +96,19 @@ export function lowerCtorExpr(
   if (node.kind === 'call' && node.callee.kind === 'member') {
     const method = node.callee.property
     const recv = node.callee.object
-    // `<sp>.get('k')` where <sp> is bound to searchParams().
+    // `<sp>.get('k')` where the receiver is `searchParams()`: either a local
+    // bound to it (`const sp = searchParams()` → `sp.get(...)`, the env path) or
+    // — once the block memo is folded (#2040) — the inlined `searchParams()`
+    // call directly.
+    const isSearchParamsRecv =
+      (recv.kind === 'identifier' && env.searchParamsVars.has(recv.name)) ||
+      (recv.kind === 'call' &&
+        recv.callee.kind === 'identifier' &&
+        recv.args.length === 0 &&
+        ctx.state.searchParamsLocals.has(recv.callee.name))
     if (
       method === 'get' &&
-      recv.kind === 'identifier' &&
-      env.searchParamsVars.has(recv.name) &&
+      isSearchParamsRecv &&
       node.args.length === 1 &&
       node.args[0].kind === 'literal' &&
       node.args[0].literalType === 'string'

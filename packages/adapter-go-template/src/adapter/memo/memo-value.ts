@@ -10,6 +10,7 @@
  *     delegating value lowering to `lowerCtorExpr`.
  */
 
+import { foldBlockToExpr } from '@barefootjs/jsx'
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -152,50 +153,32 @@ function fromStatementPrefix(
  */
 export function computeObjectMemoInitialValue(
   ctx: GoEmitContext,
-  memo: { parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
+  memo: { parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
 ): string | null {
-  // An incomplete block (`parsedBlockComplete === false`) means a statement was
-  // omitted from the tolerant parse — it could hide control flow this resolver
-  // can't model, so bail to the nil fallback.
-  if (!memo.parsedBlock || !memo.parsedBlockComplete) return null
-
-  // Accept only a strict shape: zero or more `const`/`let` declarations
-  // followed by exactly one `return { … }` as the LAST statement. Any other
-  // statement kind — `if`, an early/extra `return` — means the block has
-  // control flow this resolver can't reason about, so bail to the nil fallback
-  // rather than silently lowering one of several returns. Along the way,
-  // collect `const <v> = searchParams()` bindings (the env for `<v>.get('k')`).
-  const searchParamsVars = new Set<string>()
-  let retObj: Extract<ParsedExpr, { kind: 'object-literal' }> | null = null
-  const statements = memo.parsedBlock
-  for (let i = 0; i < statements.length; i++) {
-    const s = statements[i]
-    if (s.kind === 'var-decl') {
-      // `const <v> = searchParams()` — a zero-arg call to a searchParams
-      // local. Any other var-decl is accepted and ignored.
-      if (
-        s.init.kind === 'call' &&
-        s.init.callee.kind === 'identifier' &&
-        s.init.args.length === 0 &&
-        ctx.state.searchParamsLocals.has(s.init.callee.name)
-      ) {
-        searchParamsVars.add(s.name)
-      }
-      continue
-    }
-    if (s.kind === 'return') {
-      // The return must be the last statement (so it's the only one) and
-      // return an object literal.
-      if (i !== statements.length - 1 || s.value.kind !== 'object-literal') return null
-      retObj = s.value
-      continue
-    }
-    // Any other statement kind (`if`) → control flow we don't model → bail.
-    return null
+  // Normalize the block to a single object-literal expression (#2040). The
+  // analyzer's fold treats only signal/memo reads as pure, so a
+  // `const sp = searchParams()` (read twice) isn't folded there; redo the fold
+  // here with `searchParams` added to the purity oracle — it is an idempotent
+  // request-query read, so inlining `sp` at each `sp.get('k')` site is sound.
+  // The folded object's values become `searchParams().get('k')` (sp inlined),
+  // lowered by `lowerCtorExpr`. A block that doesn't fold to an object literal
+  // (extra control flow, an impure non-searchParams binding) yields null → the
+  // caller's nil fallback, exactly as the previous statement walk did.
+  let retObj = memo.parsed?.kind === 'object-literal' ? memo.parsed : null
+  if (!retObj) {
+    if (!memo.parsedBlock || !memo.parsedBlockComplete) return null
+    const folded = foldBlockToExpr(memo.parsedBlock, {
+      pureCallNames: ctx.state.searchParamsLocals,
+    })
+    if (!folded.ok || folded.expr.kind !== 'object-literal') return null
+    retObj = folded.expr
   }
-  if (!retObj || retObj.properties.length === 0) return null
+  if (retObj.properties.length === 0) return null
 
-  const env: CtorLowerEnv = { searchParamsVars, params: new Map() }
+  // `sp` is inlined to `searchParams()` in the folded values, so no
+  // local→searchParams var env is needed; `lowerCtorExpr` recognises the
+  // `searchParams().get('k')` receiver shape directly.
+  const env: CtorLowerEnv = { searchParamsVars: new Set(), params: new Map() }
   const entries: string[] = []
   for (const prop of retObj.properties) {
     // Bail on a shorthand property (`return { tag }`): its value is a bare
