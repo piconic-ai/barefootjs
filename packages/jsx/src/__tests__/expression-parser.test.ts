@@ -2028,4 +2028,44 @@ describe('foldBlockToExpr', () => {
     const stmts = parseBlock('{ let y = 1; y = y + 1; return y }')
     expect(stmts).toBeNull()
   })
+
+  // Soundness: let-inline must not be hygienic-blind or duplicate/drop effects
+  // (PR #2051 review).
+  test('refuses substitution that would capture a var under a nested callback param', () => {
+    // `x` is bound to the outer `a`; inlining into `list.map(a => a + x)` would
+    // capture the outer `a` under the inner `map` param `a`. Refuse rather than
+    // silently miscompile to `a + a`.
+    const stmts = parseBlock('{ const x = a; return list.map(a => a + x) }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init used more than once (double-eval)', () => {
+    const stmts = parseBlock('{ const d = next(); return d + d }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init that is never used (dropped effect)', () => {
+    const stmts = parseBlock('{ const _ = log(); return a - b }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init referenced inside a callback (per-element eval)', () => {
+    const stmts = parseBlock('{ const d = next(); return arr.map(x => x + d) }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('allows a possibly-impure init used exactly once (eval-count preserved)', () => {
+    const stmts = parseBlock('{ const d = next(); return d }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && folded.expr).toEqual({ kind: 'call', callee: { kind: 'identifier', name: 'next' }, args: [] })
+  })
+
+  test('allows a pure init used many times (signal-getter / member access)', () => {
+    // A pure init is safe to inline at any number of sites — `filter()` read
+    // once in the condition is the canonical case; a member access twice is fine.
+    const stmts = parseBlock('{ const n = item.n; return n > 0 ? n : 0 }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+  })
 })

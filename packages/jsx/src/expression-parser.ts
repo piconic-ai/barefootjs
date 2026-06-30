@@ -2585,63 +2585,194 @@ function statementsTerminate(stmts: ParsedStatement[]): boolean {
 }
 
 /**
- * Substitute free identifiers in `expr` with their bound expression from `env`
- * (the let-inline half of {@link foldBlockToExpr}). A nested `arrow`'s own
- * params shadow the environment for its body, so a bound name that collides with
- * a param is left untouched inside that body. Mirrors the structural walk used
- * by `substituteDestructuredFields`; every `ParsedExpr` kind is handled so a new
- * kind surfaces as a compile error here rather than silently skipping
- * substitution.
+ * Refusal reason when inlining a `const` binding would capture a free variable
+ * of its initializer under a nested callback parameter of the same name. The
+ * let-inline substitution is not a hygienic (alpha-renaming) substitution, so
+ * rather than silently miscompile the callback we refuse and adapters surface
+ * BF101.
  */
-function substituteIdents(
+export const CAPTURE_BLOCK_REASON =
+  'Block body cannot be normalized: inlining a `const` binding would capture ' +
+  'one of its free variables under a nested callback parameter of the same ' +
+  'name (e.g. `const x = a; … list.map(a => a + x)`). Rename the inner ' +
+  'parameter, or move the body to a `/* @client */` value so it runs natively ' +
+  'on the client.'
+
+/**
+ * Refusal reason when a `const` initializer may have side effects (it contains
+ * a function/method call) and the binding is NOT used exactly once on a single
+ * runtime path. Let-inline substitutes the initializer at each use site, which
+ * would drop the effect (zero uses) or duplicate it (multiple uses / a use
+ * inside a callback that runs per element) — exactly the side-effecting shape
+ * the fold must refuse rather than miscompile.
+ */
+export const IMPURE_INLINE_BLOCK_REASON =
+  'Block body cannot be normalized: a `const` whose initializer may have side ' +
+  'effects (a function or method call) is used zero or more than once, so ' +
+  'inlining it would drop or duplicate the effect. Bind a pure value, use the ' +
+  'binding exactly once, or move the body to a `/* @client */` value so it ' +
+  'runs natively on the client.'
+
+/**
+ * Whether an expression is provably free of side effects by syntax alone, so it
+ * is safe to inline at any number of use sites. Conservative: any function or
+ * method call (or a value the parser couldn't represent) is treated as possibly
+ * impure. Member access is treated as pure, matching `substituteDestructuredFields`
+ * and the rest of the compiler's expression handling.
+ */
+function isPureInit(e: ParsedExpr): boolean {
+  switch (e.kind) {
+    case 'identifier':
+    case 'literal':
+    case 'regex':
+      return true
+    case 'member':
+      return isPureInit(e.object)
+    case 'index-access':
+      return isPureInit(e.object) && isPureInit(e.index)
+    case 'binary':
+    case 'logical':
+      return isPureInit(e.left) && isPureInit(e.right)
+    case 'unary':
+      return isPureInit(e.argument)
+    case 'conditional':
+      return isPureInit(e.test) && isPureInit(e.consequent) && isPureInit(e.alternate)
+    case 'template-literal':
+      return e.parts.every(p => p.type !== 'expression' || isPureInit(p.expr))
+    case 'array-literal':
+      return e.elements.every(isPureInit)
+    case 'object-literal':
+      return e.properties.every(p => isPureInit(p.value))
+    // A call / method call may be effectful or non-deterministic; an arrow value
+    // can capture impurity; `unsupported` is opaque. Treat all as possibly impure.
+    case 'call':
+    case 'array-method':
+    case 'arrow':
+    case 'unsupported':
+      return false
+  }
+}
+
+/**
+ * Maximum number of times `name` is evaluated on a single runtime path through
+ * `expr`. A `conditional` only ever evaluates one branch, so its branch cost is
+ * the max (not the sum) of the two arms plus the always-evaluated test. A use
+ * inside a nested `arrow` body may run any number of times (the callback is
+ * invoked per element / comparison), so it counts as "more than once" — modelled
+ * as `Infinity` — which forces an impure binding referenced from a callback to
+ * be refused. Used to decide whether inlining a possibly-impure init is
+ * evaluation-count-preserving.
+ */
+function maxUsesPerPath(name: string, expr: ParsedExpr): number {
+  const walk = (e: ParsedExpr): number => {
+    switch (e.kind) {
+      case 'identifier':
+        return e.name === name ? 1 : 0
+      case 'literal':
+      case 'regex':
+      case 'unsupported':
+        return 0
+      case 'member':
+        return walk(e.object)
+      case 'index-access':
+        return walk(e.object) + walk(e.index)
+      case 'binary':
+      case 'logical':
+        return walk(e.left) + walk(e.right)
+      case 'unary':
+        return walk(e.argument)
+      case 'conditional':
+        return walk(e.test) + Math.max(walk(e.consequent), walk(e.alternate))
+      case 'template-literal':
+        return e.parts.reduce((n, p) => n + (p.type === 'expression' ? walk(p.expr) : 0), 0)
+      case 'call':
+        return walk(e.callee) + e.args.reduce((n, a) => n + walk(a), 0)
+      case 'array-literal':
+        return e.elements.reduce((n, el) => n + walk(el), 0)
+      case 'array-method':
+        return walk(e.object) + (e.method === 'flat' ? 0 : e.args.reduce((n, a) => n + walk(a), 0))
+      case 'object-literal':
+        return e.properties.reduce((n, p) => n + walk(p.value), 0)
+      case 'arrow':
+        // A callback body may run per element; any use inside counts as unbounded.
+        return walk(e.body) > 0 ? Number.POSITIVE_INFINITY : 0
+    }
+  }
+  return walk(expr)
+}
+
+/**
+ * Inline `name → value` everywhere it appears free in `expr` (the let-inline
+ * step). Returns `null` if the substitution would capture a free variable of
+ * `value` under a nested callback parameter of the same name — that shape is
+ * unsound to inline non-hygienically, so the caller refuses with
+ * {@link CAPTURE_BLOCK_REASON}. A nested arrow parameter that shadows `name`
+ * leaves that inner reference untouched (it is the parameter, not the binding).
+ * Mirrors the structural walk of `substituteDestructuredFields`; every
+ * `ParsedExpr` kind is handled so a new kind surfaces as a compile error here.
+ */
+function inlineBinding(
   expr: ParsedExpr,
-  env: ReadonlyMap<string, ParsedExpr>,
-): ParsedExpr {
-  if (env.size === 0) return expr
-  const walk = (e: ParsedExpr): ParsedExpr => {
+  name: string,
+  value: ParsedExpr,
+): ParsedExpr | null {
+  // Free variables of `value` that an enclosing callback parameter could capture.
+  const valueFree = new Set<string>()
+  collectIdentifiers(value, valueFree)
+  let captured = false
+
+  const walk = (e: ParsedExpr, enclosing: ReadonlySet<string>): ParsedExpr => {
     switch (e.kind) {
       case 'identifier': {
-        const bound = env.get(e.name)
-        return bound !== undefined ? bound : e
+        if (e.name !== name) return e
+        // Shadowed by an enclosing callback param → this is the parameter, not
+        // the binding; leave it.
+        if (enclosing.has(e.name)) return e
+        // Inlining here: does any enclosing param capture a free var of `value`?
+        for (const p of enclosing) {
+          if (valueFree.has(p)) {
+            captured = true
+            return e
+          }
+        }
+        return value
       }
       case 'call':
-        return { kind: 'call', callee: walk(e.callee), args: e.args.map(walk) }
+        return { kind: 'call', callee: walk(e.callee, enclosing), args: e.args.map(a => walk(a, enclosing)) }
       case 'member':
-        return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed }
+        return { kind: 'member', object: walk(e.object, enclosing), property: e.property, computed: e.computed }
       case 'index-access':
-        return { kind: 'index-access', object: walk(e.object), index: walk(e.index) }
+        return { kind: 'index-access', object: walk(e.object, enclosing), index: walk(e.index, enclosing) }
       case 'binary':
-        return { kind: 'binary', op: e.op, left: walk(e.left), right: walk(e.right) }
+        return { kind: 'binary', op: e.op, left: walk(e.left, enclosing), right: walk(e.right, enclosing) }
       case 'logical':
-        return { kind: 'logical', op: e.op, left: walk(e.left), right: walk(e.right) }
+        return { kind: 'logical', op: e.op, left: walk(e.left, enclosing), right: walk(e.right, enclosing) }
       case 'unary':
-        return { kind: 'unary', op: e.op, argument: walk(e.argument) }
+        return { kind: 'unary', op: e.op, argument: walk(e.argument, enclosing) }
       case 'conditional':
-        return { kind: 'conditional', test: walk(e.test), consequent: walk(e.consequent), alternate: walk(e.alternate) }
+        return { kind: 'conditional', test: walk(e.test, enclosing), consequent: walk(e.consequent, enclosing), alternate: walk(e.alternate, enclosing) }
       case 'template-literal':
         return {
           kind: 'template-literal',
           parts: e.parts.map(p =>
-            p.type === 'expression' ? { type: 'expression', expr: walk(p.expr) } : p,
+            p.type === 'expression' ? { type: 'expression', expr: walk(p.expr, enclosing) } : p,
           ),
         }
       case 'arrow': {
-        // Params shadow the outer let-bindings inside the body.
-        const inner = new Map(env)
-        for (const p of e.params) inner.delete(p)
-        return { kind: 'arrow', params: e.params, body: substituteIdents(e.body, inner) }
+        const innerEnclosing = e.params.length === 0 ? enclosing : new Set([...enclosing, ...e.params])
+        return { kind: 'arrow', params: e.params, body: walk(e.body, innerEnclosing) }
       }
       case 'array-literal':
-        return { kind: 'array-literal', elements: e.elements.map(walk) }
+        return { kind: 'array-literal', elements: e.elements.map(el => walk(el, enclosing)) }
       case 'array-method':
         if (e.method === 'flat') {
-          return { kind: 'array-method', method: 'flat', object: walk(e.object), args: [], flatDepth: e.flatDepth }
+          return { kind: 'array-method', method: 'flat', object: walk(e.object, enclosing), args: [], flatDepth: e.flatDepth }
         }
-        return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
+        return { kind: 'array-method', method: e.method, object: walk(e.object, enclosing), args: e.args.map(a => walk(a, enclosing)) }
       case 'object-literal':
         return {
           kind: 'object-literal',
-          properties: e.properties.map(p => ({ ...p, value: walk(p.value) })),
+          properties: e.properties.map(p => ({ ...p, value: walk(p.value, enclosing) })),
           raw: e.raw,
         }
       case 'literal':
@@ -2650,11 +2781,13 @@ function substituteIdents(
         return e
     }
   }
-  return walk(expr)
+
+  const result = walk(expr, new Set())
+  return captured ? null : result
 }
 
 /**
- * Fold a value-producing block body — a {@link ParsedStatement} sequence of pure
+ * Fold a value-producing block body — a {@link ParsedStatement} sequence of
  * `const` bindings, value-producing `if` / early `return`, and a terminal
  * `return` — into a single {@link ParsedExpr}, so block-bodied memos / derived /
  * callbacks flow through the same expression surface as expression-bodied ones
@@ -2663,13 +2796,20 @@ function substituteIdents(
  * `bf_sort` / `bf_reduce` catalogue: one normalization, no growing pattern list.
  *
  * Transformations:
- *   - `const x = <init>; …` → inline `x`'s (already-folded) init into the rest
- *     (let-inline). The binding is pure by construction — a `ParsedStatement`
- *     `var-decl` only ever carries an expression init.
+ *   - `const x = <init>; …` → inline `x`'s init into the rest (let-inline).
  *   - `if (c) <then> [else <else>] …` → `c ? fold(then-path) : fold(else-path)`,
  *     where a branch that does not itself terminate continues into the
  *     statements following the `if` (the early-return idiom).
- *   - `return <v>` → `<v>` (with the accumulated bindings substituted in).
+ *   - `return <v>` → `<v>`.
+ *
+ * The rest is folded first, leaving each binding as a free identifier, so its
+ * use count can be measured before inlining. Inlining is refused (→ `ok: false`)
+ * when it would be unsound:
+ *   - a possibly-impure init (one containing a call) used zero or more than once
+ *     on a path would drop or duplicate the side effect (a pure init is always
+ *     safe to inline any number of times);
+ *   - a substitution would capture a free variable of the init under a nested
+ *     callback parameter of the same name (substitution is not hygienic).
  *
  * Returns `{ ok: false }` for a sequence that cannot produce a value on some
  * path (falls through with no `return`) — the genuinely-imperative residue that
@@ -2681,31 +2821,41 @@ function substituteIdents(
 export function foldBlockToExpr(
   stmts: ParsedStatement[],
 ): { ok: true; expr: ParsedExpr } | { ok: false; reason: string } {
-  return foldStatements(stmts, new Map())
-}
-
-function foldStatements(
-  stmts: ParsedStatement[],
-  env: ReadonlyMap<string, ParsedExpr>,
-): { ok: true; expr: ParsedExpr } | { ok: false; reason: string } {
   if (stmts.length === 0) {
     return { ok: false, reason: IMPERATIVE_BLOCK_REASON }
   }
   const [head, ...rest] = stmts
   switch (head.kind) {
     case 'var-decl': {
-      const next = new Map(env)
-      next.set(head.name, substituteIdents(head.init, env))
-      return foldStatements(rest, next)
+      // Fold the remaining statements first, leaving `head.name` free so its use
+      // count can drive the soundness check. Any earlier-binding references in
+      // the rest are inlined by the enclosing `var-decl` frames; references to
+      // `head.name` inside `head.init` cannot occur (a `const` can't read itself).
+      const restFold = foldBlockToExpr(rest)
+      if (!restFold.ok) return restFold
+      const uses = maxUsesPerPath(head.name, restFold.expr)
+      // A possibly-impure init is only safe to inline when it is evaluated
+      // exactly once on a single path — same as the original block. A pure init
+      // is safe at any count (including zero: dropping a pure unused binding is
+      // observationally identical).
+      if (!isPureInit(head.init) && uses !== 1) {
+        return { ok: false, reason: IMPURE_INLINE_BLOCK_REASON }
+      }
+      const inlined = inlineBinding(restFold.expr, head.name, head.init)
+      if (inlined === null) {
+        return { ok: false, reason: CAPTURE_BLOCK_REASON }
+      }
+      return { ok: true, expr: inlined }
     }
     case 'return':
-      return { ok: true, expr: substituteIdents(head.value, env) }
+      return { ok: true, expr: head.value }
     case 'if': {
       // A branch that doesn't return falls through to the statements after the
       // `if` (early-return idiom). A branch that returns makes `rest` dead for
       // that path, so it is not appended. `rest` is intentionally duplicated
-      // into both fall-through paths: value computation is side-effect-free, so
-      // the duplication is semantics-preserving.
+      // into both fall-through paths; because each path is a separate ternary
+      // arm, a binding used once per arm is still evaluated at most once per
+      // runtime path.
       const thenPath = statementsTerminate(head.consequent)
         ? head.consequent
         : [...head.consequent, ...rest]
@@ -2713,15 +2863,15 @@ function foldStatements(
       const elsePath = statementsTerminate(elseBase)
         ? elseBase
         : [...elseBase, ...rest]
-      const consequent = foldStatements(thenPath, env)
+      const consequent = foldBlockToExpr(thenPath)
       if (!consequent.ok) return consequent
-      const alternate = foldStatements(elsePath, env)
+      const alternate = foldBlockToExpr(elsePath)
       if (!alternate.ok) return alternate
       return {
         ok: true,
         expr: {
           kind: 'conditional',
-          test: substituteIdents(head.condition, env),
+          test: head.condition,
           consequent: consequent.expr,
           alternate: alternate.expr,
         },
