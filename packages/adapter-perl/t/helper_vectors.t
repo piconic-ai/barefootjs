@@ -9,6 +9,12 @@ use Scalar::Util qw(looks_like_number);
 use lib "$FindBin::Bin/../lib";
 use BarefootJS;
 
+# vectors.json is UTF-8 (string args like "café"; `≡` in some notes). Decode it
+# as UTF-8 (below) and route TAP through a UTF-8 layer so wide test names don't
+# trigger "Wide character in print".
+binmode Test::More->builder->$_, ':encoding(UTF-8)'
+    for qw(output failure_output todo_output);
+
 # Pure-Perl backend (core JSON::PP only) so this test runs with zero
 # Mojo present — same pattern as t/template_primitives.t.
 {
@@ -37,7 +43,10 @@ plan skip_all => 'golden vectors not available outside the monorepo checkout'
 my $doc = do {
     open my $fh, '<:raw', $vectors_path or die "open $vectors_path: $!";
     local $/;
-    JSON::PP->new->decode(<$fh>);
+    # ->utf8 decodes the file's UTF-8 bytes into Perl characters, so a value
+    # like "café" round-trips to a single é (U+00E9) instead of its two raw
+    # bytes — otherwise _form_escape would re-encode them and double-escape.
+    JSON::PP->new->utf8->decode(scalar <$fh>);
 };
 
 # One binding per canonical helper id in the spec catalogue, bound to
@@ -98,6 +107,11 @@ my %bindings = (
     # No divergence entry: get() returns undef for an absent key (~ JS null)
     # and '' for present-but-empty, so the Perl backend matches JS exactly.
     search_params_get => sub { BarefootJS->search_params($_[0])->get($_[1]) },
+
+    # queryHref SSR builder (#2042): (base, include, key, value, …) → URL. The
+    # include flags arrive as JSON booleans (JSON::PP::Boolean, truthy/falsy
+    # under `next unless`); the helper form-encodes to match URLSearchParams.
+    query => sub { $bf->query(@_) },
 
     # Higher-order entries arrive in the canonical projection form
     # (spec: items + field [+ value]); the closures below rebuild the

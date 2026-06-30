@@ -2,10 +2,20 @@ use Test2::V0;
 use utf8;
 
 # BarefootJS->query — the `queryHref(base, { … })` URL-query builder helper
-# (#2042). The cross-language VALUE semantics (truthy-omit over strings,
-# `URLSearchParams.set` overwrite, form-encoding) must equal the browser /
-# Hono render the SSR is compared against, so the expected strings below are the
-# `URLSearchParams`-serialised forms.
+# (#2042).
+#
+# The full CROSS-BACKEND behaviour (control flow + form-encoding parity with the
+# browser's URLSearchParams) is defined ONCE in the shared golden helper vectors
+# — packages/adapter-tests/helper-vectors/vectors.json, fn "query" — and run
+# here by t/helper_vectors.t and by the Go runtime's TestHelperVectors, so the
+# Perl and Go expectations can't drift apart.
+#
+# This file keeps a few representative cases for always-on coverage (the golden
+# file is monorepo-only, absent from the CPAN dist) plus the Perl-runtime-
+# SPECIFIC defensive behaviour the golden vectors can't express: an `undef`
+# value. JSON has no `undefined`, and a JSON `null` stringifies to "null" under
+# JS `String()`, so it can't be a shared vector; Perl coerces `undef` to '' and
+# omits the empty pair.
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
@@ -13,38 +23,22 @@ use lib "$Bin/../lib";
 use BarefootJS;
 
 # `query` is a pure helper (no backend / controller), so a bare blessed stub is
-# enough — mirroring t/helper_vectors.t.
+# enough — mirroring t/helper_vectors.t. Triples are (include, key, value).
 my $bf = bless {}, 'BarefootJS';
 
-# Triples are (guard, key, value); the adapter passes guard `1` for a plain
-# `key: v` and the lowered condition for `key: cond ? v : undefined`.
+# Representative control flow: a repeated key overwrites at its first position
+# (URLSearchParams.set), surrounding order preserved.
+is $bf->query('/blog', 1, 'sort', 'title', 1, 'tag', 'go', 1, 'sort', 'date'),
+    '/blog?sort=date&tag=go', 'order preserved, repeated key overwrites at first position';
 
-is $bf->query('/list'), '/list', 'no params → bare base';
-is $bf->query('/list', 1, 'tag', 'go'), '/list?tag=go', 'single pair';
-is $bf->query('/list', 1, 'tag', ''), '/list', 'empty value omitted (truthy-omit)';
-is $bf->query('/list', 1, 'sort', 'name', 1, 'tag', 'go'),
-    '/list?sort=name&tag=go', 'two pairs, in order';
+# Representative form-encoding: space → '+', '~' → %7E, '*' kept (URLSearchParams,
+# not Go's url.QueryEscape).
+is $bf->query('/s', 1, 't', 'a~b *c'), '/s?t=a%7Eb+*c', 'form-encode: ~ → %7E, * kept, space → +';
 
-# guard false (a `cond ? v : undefined` whose cond is false) drops the pair.
-is $bf->query('/list', 0, 'sort', 'x', 1, 'tag', 'go'),
-    '/list?tag=go', 'falsy guard drops the pair';
-# guard true but value empty → still omitted (matches `if (cond ? '' : undefined)`).
-is $bf->query('/list', 1, 'sort', ''), '/list', 'truthy guard, empty value → omitted';
-
-# `URLSearchParams.set` overwrite: a repeated key keeps its first position,
-# last value.
-is $bf->query('/p', 1, 'k', 'v', 1, 'k', 'w'), '/p?k=w', 'repeated key overwrites at first position';
-
-# Form-encoding parity with URLSearchParams: space → '+', '&' → %26, '~' → %7E,
-# '*' kept.
-is $bf->query('/s', 1, 'q', 'a b', 1, 'x y', 'c&d'),
-    '/s?q=a+b&x+y=c%26d', 'space → + and & → %26';
-is $bf->query('/s', 1, 't', 'a~b*c'), '/s?t=a%7Eb*c', '~ → %7E, * kept (URLSearchParams set)';
-
-# UTF-8 is encoded byte-wise.
-is $bf->query('/s', 1, 'q', 'café'), '/s?q=caf%C3%A9', 'UTF-8 byte-encoded';
-
-# undef value / undef key are coerced to '' (and an empty value is omitted).
-is $bf->query('/list', 1, 'tag', undef), '/list', 'undef value omitted';
+# Perl-specific: an `undef` value is coerced to '' and then omitted, without
+# disturbing the surrounding pairs.
+is $bf->query('/list', 1, 'tag', undef), '/list', 'undef value coerced to empty → omitted';
+is $bf->query('/list', 1, 'tag', undef, 1, 'keep', 'me'), '/list?keep=me',
+    'undef value dropped, surrounding pairs intact';
 
 done_testing;

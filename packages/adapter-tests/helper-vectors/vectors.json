@@ -2683,6 +2683,183 @@
       ],
       "expect": "a=b=c",
       "note": "only the first = splits; the rest is value"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/"
+      ],
+      "expect": "/",
+      "note": "no triples yields the bare base"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/",
+        false,
+        "sort",
+        "title",
+        false,
+        "tag",
+        "go"
+      ],
+      "expect": "/",
+      "note": "all-excluded yields the bare base"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/",
+        true,
+        "sort",
+        "title"
+      ],
+      "expect": "/?sort=title",
+      "note": "one included pair"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/blog",
+        true,
+        "sort",
+        "title",
+        true,
+        "tag",
+        "go"
+      ],
+      "expect": "/blog?sort=title&tag=go",
+      "note": "order preserved"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/blog",
+        false,
+        "sort",
+        "date",
+        true,
+        "tag",
+        "go"
+      ],
+      "expect": "/blog?tag=go",
+      "note": "excluded pair dropped, included kept"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/",
+        true,
+        "tag",
+        ""
+      ],
+      "expect": "/",
+      "note": "included-but-empty value is omitted"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/",
+        true,
+        "sort",
+        "title",
+        true,
+        "tag"
+      ],
+      "expect": "/?sort=title",
+      "note": "trailing partial triple ignored"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/",
+        true,
+        "sort",
+        "title",
+        true,
+        "sort",
+        "date"
+      ],
+      "expect": "/?sort=date",
+      "note": "repeated key overwrites at first position (set)"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/blog",
+        true,
+        "sort",
+        "title",
+        true,
+        "tag",
+        "go",
+        true,
+        "sort",
+        "date"
+      ],
+      "expect": "/blog?sort=date&tag=go",
+      "note": "overwrite keeps first position among others"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/",
+        true,
+        "sort",
+        "title",
+        false,
+        "sort",
+        "date"
+      ],
+      "expect": "/?sort=title",
+      "note": "excluded repeat does not overwrite"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/s",
+        true,
+        "t",
+        "a~b*c"
+      ],
+      "expect": "/s?t=a%7Eb*c",
+      "note": "form-encode: ~ to %7E, * kept (URLSearchParams, not QueryEscape)"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/s",
+        true,
+        "q",
+        "a b",
+        true,
+        "x y",
+        "c&d"
+      ],
+      "expect": "/s?q=a+b&x+y=c%26d",
+      "note": "form-encode: space to + in key and value, & to %26"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/s",
+        true,
+        "q",
+        "café"
+      ],
+      "expect": "/s?q=caf%C3%A9",
+      "note": "form-encode: UTF-8 byte-wise"
+    },
+    {
+      "fn": "query",
+      "args": [
+        "/s",
+        true,
+        "t",
+        "100%~free*"
+      ],
+      "expect": "/s?t=100%25%7Efree*",
+      "note": "form-encode: % ~ * together"
     }
   ]
 }
