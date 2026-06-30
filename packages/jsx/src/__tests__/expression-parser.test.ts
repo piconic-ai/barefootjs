@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, asCallbackMethodCall, containsHigherOrder } from '../expression-parser'
+import { parseExpression, isSupported, exprToString, stringifyParsedExpr, parseBlockBody, foldBlockToExpr, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, asCallbackMethodCall, containsHigherOrder } from '../expression-parser'
 import { collectAllTypeRanges, reconstructWithoutTypes } from '../strip-types'
 
 describe('expression-parser', () => {
@@ -1215,8 +1215,28 @@ describe('expression-parser', () => {
       expect(cb!.arrow.body.kind).toBe('member')
     })
 
-    test('rejects function-keyword filter with multiple statements (#1443)', () => {
+    // #2040: a value-producing multi-statement block body (pure `const`
+    // bindings + a terminal `return`) is normalised to a single expression via
+    // let-inline, so the higher-order detector recognises it. Previously the
+    // "only single-`return`" restriction refused it.
+    test('folds function-keyword filter with let-inline block body (#2040)', () => {
       const result = parseExpression('todos().filter(function (x) { const y = x; return y.done })')
+      const cb = asCallbackMethodCall(result)
+      expect(cb).not.toBeNull()
+      expect(cb!.arrow.params[0]).toBe('x')
+      // `const y = x; return y.done` inlines to `x.done`.
+      expect(cb!.arrow.body).toEqual({
+        kind: 'member',
+        object: { kind: 'identifier', name: 'x' },
+        property: 'done',
+        computed: false,
+      })
+    })
+
+    // #2040: an imperative block body (local re-assignment / mutation) has no
+    // value-position lowering and stays `unsupported`.
+    test('rejects function-keyword filter with imperative block body (#2040)', () => {
+      const result = parseExpression('todos().filter(function (x) { let y = 0; y = x.n; return y })')
       expect(result.kind).toBe('call')
       expect(asCallbackMethodCall(result)).toBeNull()
     })
@@ -1910,5 +1930,168 @@ describe('parseStyleObjectEntries', () => {
 
   test('returns null for a non-object source', () => {
     expect(parseStyleObjectEntries('color')).toBeNull()
+  })
+})
+
+// =============================================================================
+// Block → Expression Normalization (#2040)
+// =============================================================================
+
+describe('foldBlockToExpr', () => {
+  // Parse `{ … }` block source into ParsedStatement[] for the fold under test.
+  function parseBlock(blockSrc: string) {
+    const sf = ts.createSourceFile('b.ts', `(() => ${blockSrc})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+    const stmt = sf.statements[0]
+    if (!ts.isExpressionStatement(stmt)) throw new Error('expected expression statement')
+    let expr = stmt.expression
+    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+    if (!ts.isArrowFunction(expr) || !ts.isBlock(expr.body)) throw new Error('expected block-body arrow')
+    return parseBlockBody(expr.body, sf, n => n.getText(sf))
+  }
+
+  test('let-inline: a const binding inlines into the returned expression', () => {
+    const stmts = parseBlock('{ const x = a + 1; return x * 2 }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    // `x` is replaced by `a + 1` in `x * 2`, giving the `*`-over-`+` tree.
+    expect(folded.ok && folded.expr).toEqual({
+      kind: 'binary',
+      op: '*',
+      left: { kind: 'binary', op: '+', left: { kind: 'identifier', name: 'a' }, right: { kind: 'literal', value: 1, literalType: 'number', raw: '1' } },
+      right: { kind: 'literal', value: 2, literalType: 'number', raw: '2' },
+    })
+  })
+
+  test('chained let-inline: later bindings see earlier ones', () => {
+    const stmts = parseBlock('{ const a = x + 1; const b = a * 2; return b }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && folded.expr).toEqual({
+      kind: 'binary',
+      op: '*',
+      left: { kind: 'binary', op: '+', left: { kind: 'identifier', name: 'x' }, right: { kind: 'literal', value: 1, literalType: 'number', raw: '1' } },
+      right: { kind: 'literal', value: 2, literalType: 'number', raw: '2' },
+    })
+  })
+
+  test('early return: `if (c) return A; return B` → ternary', () => {
+    const stmts = parseBlock("{ if (f() === 'active') return !t.done; return true }")!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && folded.expr.kind).toBe('conditional')
+    // `stringifyParsedExpr` normalises string literals to double quotes.
+    expect(folded.ok && stringifyParsedExpr(folded.expr)).toBe('f() === "active" ? !t.done : true')
+  })
+
+  test('if/else: both branches return → ternary', () => {
+    const stmts = parseBlock('{ if (c) { return 1 } else { return 2 } }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && stringifyParsedExpr(folded.expr)).toBe('c ? 1 : 2')
+  })
+
+  test('else-if chain → right-nested ternary', () => {
+    const stmts = parseBlock('{ if (a()) return 1; else if (b()) return 2; return 3 }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && stringifyParsedExpr(folded.expr)).toBe('a() ? 1 : b() ? 2 : 3')
+  })
+
+  test('let-inline before an early return is visible in both ternary arms', () => {
+    const stmts = parseBlock("{ const f = filter(); if (f === 'active') return !t.done; return true }")!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && stringifyParsedExpr(folded.expr)).toBe('filter() === "active" ? !t.done : true')
+  })
+
+  test('refuses a block that falls through without returning a value', () => {
+    const stmts = parseBlock('{ const x = 1 }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(false)
+  })
+
+  test('refuses an `if` whose branch does not produce a value (side-effect only)', () => {
+    const stmts = parseBlock('{ if (c) { const z = 1 } return 0 }')
+    // `{ const z = 1 }` is a value-less then-branch that falls through to the
+    // trailing `return 0`; the fold still produces `c ? 0 : 0` since the
+    // then-branch continues into the rest. A genuinely imperative shape is the
+    // reassignment case below, which `parseBlockBody` cannot even represent.
+    expect(stmts).not.toBeNull()
+  })
+
+  test('parseBlockBody returns null for an imperative statement (for loop)', () => {
+    const stmts = parseBlock('{ let s = 0; for (const x of arr) s += x; return s }')
+    expect(stmts).toBeNull()
+  })
+
+  test('parseBlockBody returns null for a local re-assignment', () => {
+    const stmts = parseBlock('{ let y = 1; y = y + 1; return y }')
+    expect(stmts).toBeNull()
+  })
+
+  // Soundness: let-inline must not be hygienic-blind or duplicate/drop effects
+  // (PR #2051 review).
+  test('refuses substitution that would capture a var under a nested callback param', () => {
+    // `x` is bound to the outer `a`; inlining into `list.map(a => a + x)` would
+    // capture the outer `a` under the inner `map` param `a`. Refuse rather than
+    // silently miscompile to `a + a`.
+    const stmts = parseBlock('{ const x = a; return list.map(a => a + x) }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init used more than once (double-eval)', () => {
+    const stmts = parseBlock('{ const d = next(); return d + d }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init that is never used (dropped effect)', () => {
+    const stmts = parseBlock('{ const _ = log(); return a - b }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init referenced inside a callback (per-element eval)', () => {
+    const stmts = parseBlock('{ const d = next(); return arr.map(x => x + d) }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('allows a possibly-impure init used exactly once (eval-count preserved)', () => {
+    const stmts = parseBlock('{ const d = next(); return d }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+    expect(folded.ok && folded.expr).toEqual({ kind: 'call', callee: { kind: 'identifier', name: 'next' }, args: [] })
+  })
+
+  test('allows a pure init used many times (signal-getter / member access)', () => {
+    // A pure init is safe to inline at any number of sites — `filter()` read
+    // once in the condition is the canonical case; a member access twice is fine.
+    const stmts = parseBlock('{ const n = item.n; return n > 0 ? n : 0 }')!
+    const folded = foldBlockToExpr(stmts)
+    expect(folded.ok).toBe(true)
+  })
+
+  // Soundness: an impure init must be evaluated once on EVERY path, not just
+  // "at most once on some path" (PR #2051 re-review). A binding used in only one
+  // ternary arm is dropped on the other arm even though `max` uses is 1.
+  test('refuses a possibly-impure init used on only one branch (then)', () => {
+    const stmts = parseBlock('{ const d = next(); if (c) return d; return 0 }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init used on only one branch (else)', () => {
+    const stmts = parseBlock('{ const d = next(); if (c) return 0; return d }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init behind a short-circuiting operand', () => {
+    // `c && next()` skips the call when `c` is falsy; the original always calls
+    // it once.
+    const stmts = parseBlock('{ const d = next(); return c && d }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('allows a possibly-impure init evaluated unconditionally before a short-circuit', () => {
+    // `next() && c` always evaluates the call exactly once (left operand).
+    const stmts = parseBlock('{ const d = next(); return d && c }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(true)
   })
 })

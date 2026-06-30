@@ -156,16 +156,30 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 
 ### Patterns that error on all adapters
 
-**Unsupported sort comparators** (multi-statement block bodies, function references):
+**Unsupported sort comparators** (imperative block bodies, function references):
+
+A value-producing block body normalizes to an expression — pure `const`
+bindings inline (let-inline) and a value-producing `if` / early `return`
+becomes a ternary — so it lowers on all adapters just like the expression form:
+
+```tsx
+// ✅ Value-producing block bodies normalize (let-inline) and lower everywhere
+{items().sort((a, b) => { const an = a.name; return an > b.name ? 1 : -1 }).map(item => (
+  <Item key={item.id} item={item} />
+))}
+```
+
+Only a genuinely imperative comparator — one that re-assigns a local, loops, or
+`break`s — has no value-position lowering and errors:
 
 ```tsx
 // ❌ BF021 (all adapters)
-{items().sort((a, b) => { const an = a.name; return an > b.name ? 1 : -1 }).map(item => (
+{items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map(item => (
   <Item key={item.id} item={item} />
 ))}
 
 // ✅ Use /* @client */
-{/* @client */ items().sort((a, b) => { const an = a.name; return an > b.name ? 1 : -1 }).map(item => (
+{/* @client */ items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map(item => (
   <Item key={item.id} item={item} />
 ))}
 ```

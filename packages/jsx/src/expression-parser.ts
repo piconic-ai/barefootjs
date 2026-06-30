@@ -1142,18 +1142,42 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // directly; a block body (arrow `=> { … }` or a function expression)
     // must reduce to exactly one `return <expr>;`. Multi-statement /
     // local-var bodies stay refused.
-    let bodyNode: ts.Expression
+    let body: ParsedExpr
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
-      bodyNode = node.body
+      body = convertNode(node.body, raw)
     } else {
       const block = node.body as ts.Block
       const stmts = block.statements
-      if (stmts.length !== 1 || !ts.isReturnStatement(stmts[0]) || !stmts[0].expression) {
-        return { kind: 'unsupported', raw, reason: 'Only single-`return` block-body functions are supported' }
+      // Fast path: a single `return <expr>` keeps the pre-#2040 conversion
+      // (convertNode on the returned node), byte-identical for the existing
+      // corpus.
+      if (stmts.length === 1 && ts.isReturnStatement(stmts[0]) && stmts[0].expression) {
+        body = convertNode(stmts[0].expression, raw)
+      } else {
+        // General value-producing block: normalize `let`-inline + value `if` /
+        // early `return` into a single expression (#2040). Imperative shapes
+        // (raw `for` / `while`, `break`, mutation, side effects) don't parse
+        // into ParsedStatement, or fall through without a value — either way we
+        // refuse with an actionable reason and adapters surface BF101.
+        let sf: ts.SourceFile | undefined
+        try {
+          sf = block.getSourceFile()
+        } catch {
+          sf = undefined
+        }
+        const parsed = sf
+          ? parseBlockBody(block, sf, n => n.getText(sf))
+          : null
+        if (!parsed) {
+          return { kind: 'unsupported', raw, reason: IMPERATIVE_BLOCK_REASON }
+        }
+        const folded = foldBlockToExpr(parsed)
+        if (!folded.ok) {
+          return { kind: 'unsupported', raw, reason: folded.reason }
+        }
+        body = folded.expr
       }
-      bodyNode = stmts[0].expression
     }
-    const body = convertNode(bodyNode, raw)
 
     // Single object-binding-pattern param: `({done}) => done` (#1443),
     // `({user: {name}}) => name` (#1530), `({done = false}) => done`
@@ -2516,6 +2540,369 @@ function parseStatement(
 
   // Unsupported statement (for, while, switch, etc.)
   return null
+}
+
+// =============================================================================
+// Block → Expression Normalization (#2040)
+// =============================================================================
+
+/**
+ * The actionable refusal reason for a block body that is not purely-functionally
+ * expressible. Carried on the `unsupported` ParsedExpr so adapters surface it as
+ * the BF101 message. A loop that mutates a local to accumulate a value is a fold
+ * (already expressible via `.reduce`); a loop that does anything else, a `break`,
+ * a re-assignment, or a side-effecting/I-O call is genuinely imperative and has
+ * no value-position lowering.
+ */
+export const IMPERATIVE_BLOCK_REASON =
+  'Block body cannot be normalized to a value expression. Only pure ' +
+  '`const` bindings, value-producing `if` / early `return`, and a final ' +
+  '`return` are supported. Imperative shapes (raw `for` / `while` loops, ' +
+  '`break`, local re-assignment, side-effecting or I/O calls) are not. ' +
+  'Rewrite an accumulation loop as `.reduce(...)`, or move the imperative ' +
+  'body to a `/* @client */` value so it runs natively on the client.'
+
+/**
+ * Whether a statement sequence always reaches a `return` on every control-flow
+ * path (so anything textually after it is dead). A bare `return` terminates; an
+ * `if` terminates only when it has an `else` and both branches terminate. Used
+ * by {@link foldBlockToExpr} to decide whether the statements following an `if`
+ * belong to the fall-through (else) path.
+ */
+function statementsTerminate(stmts: ParsedStatement[]): boolean {
+  for (const s of stmts) {
+    if (s.kind === 'return') return true
+    if (
+      s.kind === 'if' &&
+      s.alternate !== undefined &&
+      statementsTerminate(s.consequent) &&
+      statementsTerminate(s.alternate)
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Refusal reason when inlining a `const` binding would capture a free variable
+ * of its initializer under a nested callback parameter of the same name. The
+ * let-inline substitution is not a hygienic (alpha-renaming) substitution, so
+ * rather than silently miscompile the callback we refuse and adapters surface
+ * BF101.
+ */
+export const CAPTURE_BLOCK_REASON =
+  'Block body cannot be normalized: inlining a `const` binding would capture ' +
+  'one of its free variables under a nested callback parameter of the same ' +
+  'name (e.g. `const x = a; … list.map(a => a + x)`). Rename the inner ' +
+  'parameter, or move the body to a `/* @client */` value so it runs natively ' +
+  'on the client.'
+
+/**
+ * Refusal reason when a `const` initializer may have side effects (it contains
+ * a function/method call) and the binding is NOT used exactly once on a single
+ * runtime path. Let-inline substitutes the initializer at each use site, which
+ * would drop the effect (zero uses) or duplicate it (multiple uses / a use
+ * inside a callback that runs per element) — exactly the side-effecting shape
+ * the fold must refuse rather than miscompile.
+ */
+export const IMPURE_INLINE_BLOCK_REASON =
+  'Block body cannot be normalized: a `const` whose initializer may have side ' +
+  'effects (a function or method call) is not used exactly once on every path, ' +
+  'so inlining it would drop the effect on some path or duplicate it on ' +
+  'another. Bind a pure value, use the binding exactly once unconditionally, ' +
+  'or move the body to a `/* @client */` value so it runs natively on the client.'
+
+/**
+ * Whether an expression is provably free of side effects by syntax alone, so it
+ * is safe to inline at any number of use sites. Conservative: any function or
+ * method call (or a value the parser couldn't represent) is treated as possibly
+ * impure. Member access is treated as pure, matching `substituteDestructuredFields`
+ * and the rest of the compiler's expression handling.
+ */
+function isPureInit(e: ParsedExpr): boolean {
+  switch (e.kind) {
+    case 'identifier':
+    case 'literal':
+    case 'regex':
+      return true
+    case 'member':
+      return isPureInit(e.object)
+    case 'index-access':
+      return isPureInit(e.object) && isPureInit(e.index)
+    case 'binary':
+    case 'logical':
+      return isPureInit(e.left) && isPureInit(e.right)
+    case 'unary':
+      return isPureInit(e.argument)
+    case 'conditional':
+      return isPureInit(e.test) && isPureInit(e.consequent) && isPureInit(e.alternate)
+    case 'template-literal':
+      return e.parts.every(p => p.type !== 'expression' || isPureInit(p.expr))
+    case 'array-literal':
+      return e.elements.every(isPureInit)
+    case 'object-literal':
+      return e.properties.every(p => isPureInit(p.value))
+    // A call / method call may be effectful or non-deterministic; an arrow value
+    // can capture impurity; `unsupported` is opaque. Treat all as possibly impure.
+    case 'call':
+    case 'array-method':
+    case 'arrow':
+    case 'unsupported':
+      return false
+  }
+}
+
+/**
+ * The `{ min, max }` number of times `name` is evaluated on a single runtime
+ * path through `expr` — the minimum-cost path and the maximum-cost path. Used to
+ * decide whether inlining a possibly-impure init is evaluation-count-preserving:
+ * sound only when it is evaluated **exactly once on every path** (`min === 1 &&
+ * max === 1`), so the substituted call neither drops nor duplicates its effect.
+ *
+ * Path semantics:
+ *   - `conditional` evaluates the test then exactly one arm → test + the min/max
+ *     of the two arms (a binding used in only one arm has `min` 0: it is skipped
+ *     on the other path).
+ *   - `logical` (`&&` / `||` / `??`) evaluates the left, then the right only on
+ *     some paths (short-circuit) → the right contributes to `max` but not `min`.
+ *   - a nested `arrow` body may run any number of times (a callback invoked per
+ *     element / comparison, or never) → a use inside has `min` 0 and `max`
+ *     `Infinity`, forcing an impure binding referenced from a callback to be
+ *     refused.
+ */
+function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number } {
+  const add = (a: { min: number; max: number }, b: { min: number; max: number }) => ({
+    min: a.min + b.min,
+    max: a.max + b.max,
+  })
+  const sum = (xs: ParsedExpr[]) => xs.reduce((acc, x) => add(acc, walk(x)), { min: 0, max: 0 })
+  const walk = (e: ParsedExpr): { min: number; max: number } => {
+    switch (e.kind) {
+      case 'identifier':
+        return e.name === name ? { min: 1, max: 1 } : { min: 0, max: 0 }
+      case 'literal':
+      case 'regex':
+      case 'unsupported':
+        return { min: 0, max: 0 }
+      case 'member':
+        return walk(e.object)
+      case 'index-access':
+        return add(walk(e.object), walk(e.index))
+      case 'binary':
+        return add(walk(e.left), walk(e.right))
+      case 'logical': {
+        // The right operand is only evaluated on some paths (short-circuit), so
+        // it contributes to the max but never to the guaranteed min.
+        const l = walk(e.left)
+        const r = walk(e.right)
+        return { min: l.min, max: l.max + r.max }
+      }
+      case 'unary':
+        return walk(e.argument)
+      case 'conditional': {
+        const t = walk(e.test)
+        const c = walk(e.consequent)
+        const a = walk(e.alternate)
+        return { min: t.min + Math.min(c.min, a.min), max: t.max + Math.max(c.max, a.max) }
+      }
+      case 'template-literal':
+        return sum(e.parts.flatMap(p => (p.type === 'expression' ? [p.expr] : [])))
+      case 'call':
+        return add(walk(e.callee), sum(e.args))
+      case 'array-literal':
+        return sum(e.elements)
+      case 'array-method':
+        return add(walk(e.object), e.method === 'flat' ? { min: 0, max: 0 } : sum(e.args))
+      case 'object-literal':
+        return sum(e.properties.map(p => p.value))
+      case 'arrow':
+        // A callback body may run any number of times (per element, or never).
+        return walk(e.body).max > 0 ? { min: 0, max: Number.POSITIVE_INFINITY } : { min: 0, max: 0 }
+    }
+  }
+  return walk(expr)
+}
+
+/**
+ * Inline `name → value` everywhere it appears free in `expr` (the let-inline
+ * step). Returns `null` if the substitution would capture a free variable of
+ * `value` under a nested callback parameter of the same name — that shape is
+ * unsound to inline non-hygienically, so the caller refuses with
+ * {@link CAPTURE_BLOCK_REASON}. A nested arrow parameter that shadows `name`
+ * leaves that inner reference untouched (it is the parameter, not the binding).
+ * Mirrors the structural walk of `substituteDestructuredFields`; every
+ * `ParsedExpr` kind is handled so a new kind surfaces as a compile error here.
+ */
+function inlineBinding(
+  expr: ParsedExpr,
+  name: string,
+  value: ParsedExpr,
+): ParsedExpr | null {
+  // Free variables of `value` that an enclosing callback parameter could capture.
+  const valueFree = new Set<string>()
+  collectIdentifiers(value, valueFree)
+  let captured = false
+
+  const walk = (e: ParsedExpr, enclosing: ReadonlySet<string>): ParsedExpr => {
+    switch (e.kind) {
+      case 'identifier': {
+        if (e.name !== name) return e
+        // Shadowed by an enclosing callback param → this is the parameter, not
+        // the binding; leave it.
+        if (enclosing.has(e.name)) return e
+        // Inlining here: does any enclosing param capture a free var of `value`?
+        for (const p of enclosing) {
+          if (valueFree.has(p)) {
+            captured = true
+            return e
+          }
+        }
+        return value
+      }
+      case 'call':
+        return { kind: 'call', callee: walk(e.callee, enclosing), args: e.args.map(a => walk(a, enclosing)) }
+      case 'member':
+        return { kind: 'member', object: walk(e.object, enclosing), property: e.property, computed: e.computed }
+      case 'index-access':
+        return { kind: 'index-access', object: walk(e.object, enclosing), index: walk(e.index, enclosing) }
+      case 'binary':
+        return { kind: 'binary', op: e.op, left: walk(e.left, enclosing), right: walk(e.right, enclosing) }
+      case 'logical':
+        return { kind: 'logical', op: e.op, left: walk(e.left, enclosing), right: walk(e.right, enclosing) }
+      case 'unary':
+        return { kind: 'unary', op: e.op, argument: walk(e.argument, enclosing) }
+      case 'conditional':
+        return { kind: 'conditional', test: walk(e.test, enclosing), consequent: walk(e.consequent, enclosing), alternate: walk(e.alternate, enclosing) }
+      case 'template-literal':
+        return {
+          kind: 'template-literal',
+          parts: e.parts.map(p =>
+            p.type === 'expression' ? { type: 'expression', expr: walk(p.expr, enclosing) } : p,
+          ),
+        }
+      case 'arrow': {
+        const innerEnclosing = e.params.length === 0 ? enclosing : new Set([...enclosing, ...e.params])
+        return { kind: 'arrow', params: e.params, body: walk(e.body, innerEnclosing) }
+      }
+      case 'array-literal':
+        return { kind: 'array-literal', elements: e.elements.map(el => walk(el, enclosing)) }
+      case 'array-method':
+        if (e.method === 'flat') {
+          return { kind: 'array-method', method: 'flat', object: walk(e.object, enclosing), args: [], flatDepth: e.flatDepth }
+        }
+        return { kind: 'array-method', method: e.method, object: walk(e.object, enclosing), args: e.args.map(a => walk(a, enclosing)) }
+      case 'object-literal':
+        return {
+          kind: 'object-literal',
+          properties: e.properties.map(p => ({ ...p, value: walk(p.value, enclosing) })),
+          raw: e.raw,
+        }
+      case 'literal':
+      case 'regex':
+      case 'unsupported':
+        return e
+    }
+  }
+
+  const result = walk(expr, new Set())
+  return captured ? null : result
+}
+
+/**
+ * Fold a value-producing block body — a {@link ParsedStatement} sequence of
+ * `const` bindings, value-producing `if` / early `return`, and a terminal
+ * `return` — into a single {@link ParsedExpr}, so block-bodied memos / derived /
+ * callbacks flow through the same expression surface as expression-bodied ones
+ * (#2040, carved from #2018 stage 5). This generalizes the per-idiom block-memo
+ * recognizers (#1897 / #1945 / #2015) the same way the evaluator replaced the
+ * `bf_sort` / `bf_reduce` catalogue: one normalization, no growing pattern list.
+ *
+ * Transformations:
+ *   - `const x = <init>; …` → inline `x`'s init into the rest (let-inline).
+ *   - `if (c) <then> [else <else>] …` → `c ? fold(then-path) : fold(else-path)`,
+ *     where a branch that does not itself terminate continues into the
+ *     statements following the `if` (the early-return idiom).
+ *   - `return <v>` → `<v>`.
+ *
+ * The rest is folded first, leaving each binding as a free identifier, so its
+ * use count can be measured before inlining. Inlining is refused (→ `ok: false`)
+ * when it would be unsound:
+ *   - a possibly-impure init (one containing a call) used zero or more than once
+ *     on a path would drop or duplicate the side effect (a pure init is always
+ *     safe to inline any number of times);
+ *   - a substitution would capture a free variable of the init under a nested
+ *     callback parameter of the same name (substitution is not hygienic).
+ *
+ * Returns `{ ok: false }` for a sequence that cannot produce a value on some
+ * path (falls through with no `return`) — the genuinely-imperative residue that
+ * {@link IMPERATIVE_BLOCK_REASON} describes. The input is assumed to be the
+ * STRICT parse ({@link parseBlockBody}, not the tolerant variant): every source
+ * statement is represented, so a `false` here reflects the real shape rather
+ * than a silently-dropped statement.
+ */
+export function foldBlockToExpr(
+  stmts: ParsedStatement[],
+): { ok: true; expr: ParsedExpr } | { ok: false; reason: string } {
+  if (stmts.length === 0) {
+    return { ok: false, reason: IMPERATIVE_BLOCK_REASON }
+  }
+  const [head, ...rest] = stmts
+  switch (head.kind) {
+    case 'var-decl': {
+      // Fold the remaining statements first, leaving `head.name` free so its use
+      // count can drive the soundness check. Any earlier-binding references in
+      // the rest are inlined by the enclosing `var-decl` frames; references to
+      // `head.name` inside `head.init` cannot occur (a `const` can't read itself).
+      const restFold = foldBlockToExpr(rest)
+      if (!restFold.ok) return restFold
+      const uses = usesPerPath(head.name, restFold.expr)
+      // A possibly-impure init is only safe to inline when it is evaluated
+      // exactly once on EVERY path — same as the original block, which runs the
+      // `const` initializer unconditionally once. `min !== 1` catches an effect
+      // dropped on some path (unused, or used in only one ternary arm / a
+      // short-circuited operand / a callback); `max !== 1` catches duplication.
+      // A pure init is safe at any count (drop / duplicate is unobservable).
+      if (!isPureInit(head.init) && !(uses.min === 1 && uses.max === 1)) {
+        return { ok: false, reason: IMPURE_INLINE_BLOCK_REASON }
+      }
+      const inlined = inlineBinding(restFold.expr, head.name, head.init)
+      if (inlined === null) {
+        return { ok: false, reason: CAPTURE_BLOCK_REASON }
+      }
+      return { ok: true, expr: inlined }
+    }
+    case 'return':
+      return { ok: true, expr: head.value }
+    case 'if': {
+      // A branch that doesn't return falls through to the statements after the
+      // `if` (early-return idiom). A branch that returns makes `rest` dead for
+      // that path, so it is not appended. `rest` is intentionally duplicated
+      // into both fall-through paths; because each path is a separate ternary
+      // arm, a binding used once per arm is still evaluated at most once per
+      // runtime path.
+      const thenPath = statementsTerminate(head.consequent)
+        ? head.consequent
+        : [...head.consequent, ...rest]
+      const elseBase = head.alternate ?? []
+      const elsePath = statementsTerminate(elseBase)
+        ? elseBase
+        : [...elseBase, ...rest]
+      const consequent = foldBlockToExpr(thenPath)
+      if (!consequent.ok) return consequent
+      const alternate = foldBlockToExpr(elsePath)
+      if (!alternate.ok) return alternate
+      return {
+        ok: true,
+        expr: {
+          kind: 'conditional',
+          test: head.condition,
+          consequent: consequent.expr,
+          alternate: alternate.expr,
+        },
+      }
+    }
+  }
 }
 
 /**
