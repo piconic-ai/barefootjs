@@ -2608,10 +2608,10 @@ export const CAPTURE_BLOCK_REASON =
  */
 export const IMPURE_INLINE_BLOCK_REASON =
   'Block body cannot be normalized: a `const` whose initializer may have side ' +
-  'effects (a function or method call) is used zero or more than once, so ' +
-  'inlining it would drop or duplicate the effect. Bind a pure value, use the ' +
-  'binding exactly once, or move the body to a `/* @client */` value so it ' +
-  'runs natively on the client.'
+  'effects (a function or method call) is not used exactly once on every path, ' +
+  'so inlining it would drop the effect on some path or duplicate it on ' +
+  'another. Bind a pure value, use the binding exactly once unconditionally, ' +
+  'or move the body to a `/* @client */` value so it runs natively on the client.'
 
 /**
  * Whether an expression is provably free of side effects by syntax alone, so it
@@ -2654,48 +2654,71 @@ function isPureInit(e: ParsedExpr): boolean {
 }
 
 /**
- * Maximum number of times `name` is evaluated on a single runtime path through
- * `expr`. A `conditional` only ever evaluates one branch, so its branch cost is
- * the max (not the sum) of the two arms plus the always-evaluated test. A use
- * inside a nested `arrow` body may run any number of times (the callback is
- * invoked per element / comparison), so it counts as "more than once" — modelled
- * as `Infinity` — which forces an impure binding referenced from a callback to
- * be refused. Used to decide whether inlining a possibly-impure init is
- * evaluation-count-preserving.
+ * The `{ min, max }` number of times `name` is evaluated on a single runtime
+ * path through `expr` — the minimum-cost path and the maximum-cost path. Used to
+ * decide whether inlining a possibly-impure init is evaluation-count-preserving:
+ * sound only when it is evaluated **exactly once on every path** (`min === 1 &&
+ * max === 1`), so the substituted call neither drops nor duplicates its effect.
+ *
+ * Path semantics:
+ *   - `conditional` evaluates the test then exactly one arm → test + the min/max
+ *     of the two arms (a binding used in only one arm has `min` 0: it is skipped
+ *     on the other path).
+ *   - `logical` (`&&` / `||` / `??`) evaluates the left, then the right only on
+ *     some paths (short-circuit) → the right contributes to `max` but not `min`.
+ *   - a nested `arrow` body may run any number of times (a callback invoked per
+ *     element / comparison, or never) → a use inside has `min` 0 and `max`
+ *     `Infinity`, forcing an impure binding referenced from a callback to be
+ *     refused.
  */
-function maxUsesPerPath(name: string, expr: ParsedExpr): number {
-  const walk = (e: ParsedExpr): number => {
+function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number } {
+  const add = (a: { min: number; max: number }, b: { min: number; max: number }) => ({
+    min: a.min + b.min,
+    max: a.max + b.max,
+  })
+  const sum = (xs: ParsedExpr[]) => xs.reduce((acc, x) => add(acc, walk(x)), { min: 0, max: 0 })
+  const walk = (e: ParsedExpr): { min: number; max: number } => {
     switch (e.kind) {
       case 'identifier':
-        return e.name === name ? 1 : 0
+        return e.name === name ? { min: 1, max: 1 } : { min: 0, max: 0 }
       case 'literal':
       case 'regex':
       case 'unsupported':
-        return 0
+        return { min: 0, max: 0 }
       case 'member':
         return walk(e.object)
       case 'index-access':
-        return walk(e.object) + walk(e.index)
+        return add(walk(e.object), walk(e.index))
       case 'binary':
-      case 'logical':
-        return walk(e.left) + walk(e.right)
+        return add(walk(e.left), walk(e.right))
+      case 'logical': {
+        // The right operand is only evaluated on some paths (short-circuit), so
+        // it contributes to the max but never to the guaranteed min.
+        const l = walk(e.left)
+        const r = walk(e.right)
+        return { min: l.min, max: l.max + r.max }
+      }
       case 'unary':
         return walk(e.argument)
-      case 'conditional':
-        return walk(e.test) + Math.max(walk(e.consequent), walk(e.alternate))
+      case 'conditional': {
+        const t = walk(e.test)
+        const c = walk(e.consequent)
+        const a = walk(e.alternate)
+        return { min: t.min + Math.min(c.min, a.min), max: t.max + Math.max(c.max, a.max) }
+      }
       case 'template-literal':
-        return e.parts.reduce((n, p) => n + (p.type === 'expression' ? walk(p.expr) : 0), 0)
+        return sum(e.parts.flatMap(p => (p.type === 'expression' ? [p.expr] : [])))
       case 'call':
-        return walk(e.callee) + e.args.reduce((n, a) => n + walk(a), 0)
+        return add(walk(e.callee), sum(e.args))
       case 'array-literal':
-        return e.elements.reduce((n, el) => n + walk(el), 0)
+        return sum(e.elements)
       case 'array-method':
-        return walk(e.object) + (e.method === 'flat' ? 0 : e.args.reduce((n, a) => n + walk(a), 0))
+        return add(walk(e.object), e.method === 'flat' ? { min: 0, max: 0 } : sum(e.args))
       case 'object-literal':
-        return e.properties.reduce((n, p) => n + walk(p.value), 0)
+        return sum(e.properties.map(p => p.value))
       case 'arrow':
-        // A callback body may run per element; any use inside counts as unbounded.
-        return walk(e.body) > 0 ? Number.POSITIVE_INFINITY : 0
+        // A callback body may run any number of times (per element, or never).
+        return walk(e.body).max > 0 ? { min: 0, max: Number.POSITIVE_INFINITY } : { min: 0, max: 0 }
     }
   }
   return walk(expr)
@@ -2833,12 +2856,14 @@ export function foldBlockToExpr(
       // `head.name` inside `head.init` cannot occur (a `const` can't read itself).
       const restFold = foldBlockToExpr(rest)
       if (!restFold.ok) return restFold
-      const uses = maxUsesPerPath(head.name, restFold.expr)
+      const uses = usesPerPath(head.name, restFold.expr)
       // A possibly-impure init is only safe to inline when it is evaluated
-      // exactly once on a single path — same as the original block. A pure init
-      // is safe at any count (including zero: dropping a pure unused binding is
-      // observationally identical).
-      if (!isPureInit(head.init) && uses !== 1) {
+      // exactly once on EVERY path — same as the original block, which runs the
+      // `const` initializer unconditionally once. `min !== 1` catches an effect
+      // dropped on some path (unused, or used in only one ternary arm / a
+      // short-circuited operand / a callback); `max !== 1` catches duplication.
+      // A pure init is safe at any count (drop / duplicate is unobservable).
+      if (!isPureInit(head.init) && !(uses.min === 1 && uses.max === 1)) {
         return { ok: false, reason: IMPURE_INLINE_BLOCK_REASON }
       }
       const inlined = inlineBinding(restFold.expr, head.name, head.init)

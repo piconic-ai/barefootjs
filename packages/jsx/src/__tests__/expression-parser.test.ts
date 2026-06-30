@@ -2068,4 +2068,30 @@ describe('foldBlockToExpr', () => {
     const folded = foldBlockToExpr(stmts)
     expect(folded.ok).toBe(true)
   })
+
+  // Soundness: an impure init must be evaluated once on EVERY path, not just
+  // "at most once on some path" (PR #2051 re-review). A binding used in only one
+  // ternary arm is dropped on the other arm even though `max` uses is 1.
+  test('refuses a possibly-impure init used on only one branch (then)', () => {
+    const stmts = parseBlock('{ const d = next(); if (c) return d; return 0 }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init used on only one branch (else)', () => {
+    const stmts = parseBlock('{ const d = next(); if (c) return 0; return d }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('refuses a possibly-impure init behind a short-circuiting operand', () => {
+    // `c && next()` skips the call when `c` is falsy; the original always calls
+    // it once.
+    const stmts = parseBlock('{ const d = next(); return c && d }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(false)
+  })
+
+  test('allows a possibly-impure init evaluated unconditionally before a short-circuit', () => {
+    // `next() && c` always evaluates the call exactly once (left operand).
+    const stmts = parseBlock('{ const d = next(); return d && c }')!
+    expect(foldBlockToExpr(stmts).ok).toBe(true)
+  })
 })
