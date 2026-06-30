@@ -295,7 +295,7 @@ export function computeMemoInitialValueOrNull(
   // is falsy: `() => { const k = getter(); if (!k) return MODULE_ARRAY; … }`.
   // When the signal starts null the SSR value is that array; its literal value
   // (not the identifier) is passed to the baker so it reduces to a Go slice.
-  const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo.parsedBlock, signals)
+  const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo.parsed, signals)
   if (blockReturn !== null && blockReturn.constValue && blockReturn.constType) {
     return convertInitialValue(ctx,
       blockReturn.constValue,

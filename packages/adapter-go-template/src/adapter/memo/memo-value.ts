@@ -22,11 +22,17 @@ import { lowerCtorExpr } from './ctor-lowering.ts'
  * the guard signal starts falsy:
  *   `() => { const k = getter(); if (!k) return MODULE_CONST; … }`
  *
+ * The block is normalized to a single expression upstream (#2040,
+ * `foldBlockToExpr` in the analyzer), so this reads the folded `MemoInfo.parsed`
+ * conditional — `!getter() ? MODULE_CONST : <derived>` — instead of walking the
+ * raw statements. When the guard signal's initial value is falsy, `!guard` is
+ * `true`, so the `consequent` is the const rendered at SSR.
+ *
  * @returns the constant's name, value, inferred type and parsed tree, or null
  */
 export function resolveBlockBodyMemoModuleConst(
   ctx: GoEmitContext,
-  parsedBlock: ParsedStatement[] | undefined,
+  parsed: ParsedExpr | undefined,
   signals: { getter: string; initialValue: string }[],
 ): {
   constName: string
@@ -34,54 +40,33 @@ export function resolveBlockBodyMemoModuleConst(
   constType: TypeInfo | undefined
   constParsed: ParsedExpr | undefined
 } | null {
-  if (!parsedBlock) return null
-
-  // Walk the analyzer-carried statements collecting:
-  //   const <varName> = <signalGetter>()   →  varToSignal map
-  //   if (!<varName>) return <moduleConst>  →  match varName back to signal
-  const varToSignal = new Map<string, string>()
-  let guardSignalGetter: string | null = null
-  let returnedConst: string | null = null
-
-  for (const s of parsedBlock) {
-    if (s.kind === 'var-decl' && s.init.kind === 'call' && s.init.callee.kind === 'identifier') {
-      const callee = s.init.callee.name
-      if (signals.some(sg => sg.getter === callee)) {
-        varToSignal.set(s.name, callee)
-      }
-    }
-    if (
-      s.kind === 'if' &&
-      s.condition.kind === 'unary' &&
-      s.condition.op === '!' &&
-      s.condition.argument.kind === 'identifier'
-    ) {
-      const guardVar = s.condition.argument.name
-      const signalGetter = varToSignal.get(guardVar)
-      if (!signalGetter) continue
-      for (const rs of s.consequent) {
-        if (rs.kind === 'return' && rs.value.kind === 'identifier') {
-          guardSignalGetter = signalGetter
-          returnedConst = rs.value.name
-        }
-      }
-    }
-    if (guardSignalGetter && returnedConst) break
+  // `!<signalGetter>() ? <const> : <derived>`
+  if (!parsed || parsed.kind !== 'conditional') return null
+  const test = parsed.test
+  if (test.kind !== 'unary' || test.op !== '!') return null
+  const guardCall = test.argument
+  if (
+    guardCall.kind !== 'call' ||
+    guardCall.callee.kind !== 'identifier' ||
+    guardCall.args.length !== 0
+  ) {
+    return null
   }
 
-  if (!guardSignalGetter || !returnedConst) return null
-
-  // The guard signal must start falsy (null, '', 0, false)
-  const guardSignal = signals.find(sg => sg.getter === guardSignalGetter)
+  // The guard signal must start falsy (null, '', 0, false), so `!guard` is true
+  // and the consequent is the SSR value.
+  const guardSignal = signals.find(sg => sg.getter === (guardCall.callee as { name: string }).name)
   if (!guardSignal) return null
   const iv = guardSignal.initialValue.trim()
   if (iv !== 'null' && iv !== "''" && iv !== '""' && iv !== '0' && iv !== 'false') {
     return null
   }
 
-  // The returned identifier must be a module-scope constant
+  // The consequent must be a bare reference to a module-scope constant.
+  const ret = parsed.consequent
+  if (ret.kind !== 'identifier') return null
   const constant = ctx.state.localConstants.find(
-    c => c.name === returnedConst && c.origin?.scope === 'module',
+    c => c.name === ret.name && c.origin?.scope === 'module',
   )
   if (!constant) return null
 
