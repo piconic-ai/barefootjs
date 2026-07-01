@@ -1,10 +1,10 @@
 /**
- * Lowering-plugin registry (#2057) — the extension seam for lowerings the
- * compiler core doesn't know. These tests guarantee the mechanism works: a
- * registered plugin's matcher is bound per-component and produces a
- * backend-neutral node, and the registry gates on the plugin's own import
- * recognition. (queryHref itself is NOT a plugin — it's a built-in core API
- * lowered directly by the adapters — so this uses a standalone SAMPLE plugin.)
+ * Lowering-plugin registry (#2057) — the one seam every lowering flows through.
+ * These tests guarantee the mechanism works: a registered plugin's matcher is
+ * bound per-component and produces a backend-neutral node, and the registry gates
+ * on the plugin's own import recognition. They use a standalone SAMPLE plugin so
+ * they exercise the mechanism itself, independent of the built-in plugins (like
+ * `queryHref`) the compiler registers by default — see `builtin-lowering-plugins`.
  */
 
 import { describe, test, expect, afterEach } from 'bun:test'
@@ -90,7 +90,52 @@ describe('lowering-plugin registry', () => {
       helper: 'demo',
       args: [arg],
     })
-    // No matching import → null (core carries no built-in plugins).
+    // No plugin recognises this metadata → null (the built-in queryHref plugin
+    // is inactive here — a `react` import isn't `@barefootjs/client`).
     expect(matchLoweringCall(demoCall, [arg], metadataImporting('react'))).toBeNull()
+  })
+})
+
+describe('built-in plugins are applied by default', () => {
+  // `queryHref` is a built-in plugin the compiler registers on load — no
+  // `registerLoweringPlugin` call in the test. Importing `@barefootjs/jsx`
+  // (the import above) is what registers it, so it's present here for free.
+  const queryHrefCall = { kind: 'identifier', name: 'queryHref' } as ParsedExpr
+  const base = { kind: 'literal', value: '/x', literalType: 'string' } as ParsedExpr
+  const tagValue = { kind: 'literal', value: 'a', literalType: 'string' } as ParsedExpr
+  const paramsObj = {
+    kind: 'object-literal',
+    raw: '{ tag: "a" }',
+    properties: [{ key: 'tag', shorthand: false, value: tagValue }],
+  } as ParsedExpr
+
+  function importingQueryHref(): IRMetadata {
+    return {
+      imports: [
+        {
+          source: '@barefootjs/client',
+          isTypeOnly: false,
+          specifiers: [{ name: 'queryHref', alias: null, isDefault: false, isNamespace: false }],
+        },
+      ],
+    } as unknown as IRMetadata
+  }
+
+  test('queryHref is registered without any explicit registerLoweringPlugin call', () => {
+    expect(getLoweringPlugins().some(p => p.name === 'queryHref')).toBe(true)
+  })
+
+  test('a queryHref(base, { … }) call lowers to a neutral guard-list on the `query` helper', () => {
+    const node = matchLoweringCall(queryHrefCall, [base, paramsObj], importingQueryHref())
+    expect(node).toEqual({
+      kind: 'guard-list',
+      helper: 'query',
+      base,
+      triples: [{ guard: null, key: 'tag', value: tagValue }],
+    })
+  })
+
+  test('the built-in stays inert when the component does not import queryHref', () => {
+    expect(matchLoweringCall(queryHrefCall, [base, paramsObj], metadataImporting('react'))).toBeNull()
   })
 })

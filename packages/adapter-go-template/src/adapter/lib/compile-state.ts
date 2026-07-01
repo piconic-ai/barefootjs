@@ -91,19 +91,11 @@ export class CompileState {
   searchParamsLocals: Set<string> = new Set()
 
   /**
-   * Local binding names the built-in `queryHref` URL builder is imported under
-   * (handles `import { queryHref as qh }`). A `queryHref(base, { … })` call is
-   * lowered directly to `bf_query` (#2042) — a first-party core API, not routed
-   * through the plugin registry.
-   */
-  queryHrefLocals: Set<string> = new Set()
-
-  /**
-   * Registered call-lowering matchers active for this component (#2057), bound to
-   * its metadata at init via `prepareLoweringMatchers`. Each maps a recognised
-   * call to a backend-neutral `LoweringNode` the adapter renders. This is the
-   * extension seam for lowerings core doesn't know (external / first-party
-   * packages declared in `barefoot.config.ts`'s `plugins`).
+   * Call-lowering matchers active for this component (#2057), bound to its
+   * metadata at init via `prepareLoweringMatchers`. Each maps a recognised call
+   * to a backend-neutral `LoweringNode` the adapter renders. Covers both userland
+   * plugins and the compiler's built-in plugins (e.g. `queryHref` → `bf_query`,
+   * #2042), so there is no separate per-API recognition path.
    */
   loweringMatchers: LoweringMatcher[] = []
 

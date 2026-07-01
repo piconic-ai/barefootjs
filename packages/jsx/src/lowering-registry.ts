@@ -1,24 +1,24 @@
 /**
  * Call-lowering plugin registry (#2057).
  *
- * The compiler core carries no specific runtime-API names. Instead, a lowering
- * plugin *recognises* a call — by the import it comes from and its argument
- * shape — and returns a **backend-neutral `LoweringNode`**. Each adapter renders
- * that node in its own template syntax. This is a deliberate two-layer split:
+ * The compiler core carries no bespoke per-API recognition branches. Instead, a
+ * lowering plugin *recognises* a call — by the import it comes from and its
+ * argument shape — and returns a **backend-neutral `LoweringNode`**. Each adapter
+ * renders that node in its own template syntax. This is a deliberate two-layer
+ * split:
  *
  *   - **Layer 1 (this module + plugins):** adapter-agnostic. A plugin matches a
  *     call to a neutral node and never mentions Go/Perl/… syntax.
  *   - **Layer 2 (adapters):** plugin-agnostic. Each adapter has ONE renderer per
  *     node kind, so SSR/CSR parity is enforced once, not per plugin.
  *
- * The registry is the **extension seam** for lowerings that don't belong in the
- * compiler core: a first-party or userland package registers its plugin via
- * {@link registerLoweringPlugin} (e.g. from a side-effect import its consumer
- * pulls in), and the adapters render the neutral node it returns. Core registers
- * none of its own: a built-in runtime API like `queryHref` is recognised
- * directly by the adapters, since routing a first-party API through the registry
- * would be pointless indirection. The registry exists for the things core does
- * NOT know.
+ * Everything flows through this one seam — including first-party APIs. A
+ * userland package registers its plugin via {@link registerLoweringPlugin}, and
+ * a built-in like `queryHref` is registered by the compiler *as a default
+ * plugin* (see `builtin-lowering-plugins.ts`), not as an adapter branch. So an
+ * adapter can't tell a shipped API from a third-party one: both are just entries
+ * in this registry. That uniformity is the point — there is no "special" path to
+ * keep in sync.
  *
  * This is NOT the "output-rewriting hook" CLAUDE.md forbids: a plugin returns a
  * structured IR node, never a rewritten output string, so the compiler's output
@@ -152,10 +152,9 @@ export function __resetLoweringPluginsForTest(next: readonly LoweringPlugin[] = 
   plugins.push(...next)
 }
 
-// Core registers NO plugins of its own. Built-in runtime APIs (`queryHref`) are
-// recognised directly by the adapters — routing a first-party API through this
-// registry would be pointless indirection. The registry is the *extension seam*
-// for lowerings that don't belong in core: a first-party or userland package
-// registers its plugin via `registerLoweringPlugin`, and the adapters render the
-// neutral node it returns. See the sample plugin + tests in
-// `__tests__/lowering-registry.test.ts` for the guaranteed contract.
+// The compiler ships built-in plugins (e.g. `queryHref`) and registers them here
+// by default — see `builtin-lowering-plugins.ts`, wired up on load in `index.ts`.
+// Both first-party built-ins and userland plugins go through this one registry,
+// so adapters have a single uniform path with no special-cased API branch. See
+// the sample plugin + tests in `__tests__/lowering-registry.test.ts` for the
+// guaranteed contract.
