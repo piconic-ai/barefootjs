@@ -1,16 +1,16 @@
 /**
- * Registry → adapter end-to-end (#2057). `queryHref` is a built-in core API the
- * adapter recognises directly, but the lowering-plugin *registry* is the seam for
- * calls core doesn't know. This test guarantees that seam works all the way
+ * Registry → adapter end-to-end (#2057). Every lowering — first-party built-ins
+ * (like `queryHref`) and userland plugins alike — flows through the one
+ * lowering-plugin *registry*. This test guarantees that seam works all the way
  * through: a SAMPLE plugin (registered via the public `registerLoweringPlugin`)
  * recognises a call from an arbitrary package and returns a backend-neutral
  * `guard-list` node, and the Go adapter renders it via its own `bf_query`
  * mapping — no adapter code knows the sample plugin exists.
  *
  * The plugin reuses the `'query'` helper id so it exercises the exact same
- * renderer path as the built-in queryHref, proving that a registered plugin and
- * a core API are indistinguishable to the adapter (which is the whole point of
- * the neutral-node layer).
+ * renderer path as the built-in `queryHref` plugin, proving that a userland
+ * plugin and a default-registered built-in are indistinguishable to the adapter
+ * (which is the whole point of the neutral-node layer).
  */
 import { describe, test, expect, afterEach } from 'bun:test'
 import {
