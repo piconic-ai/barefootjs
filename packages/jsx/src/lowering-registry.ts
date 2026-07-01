@@ -24,9 +24,22 @@
 
 import type { ParsedExpr } from './expression-parser.ts'
 import type { IRMetadata } from './types.ts'
-import type { QueryHrefTriple } from './query-href-lowering.ts'
 import { matchQueryHrefCall } from './query-href-lowering.ts'
 import { queryHrefLocalNames } from './adapters/env-signal.ts'
+
+/**
+ * A backend-neutral include triple for a {@link LoweringNode} `guard-list`.
+ * `guard` is the conditional test of a `key: cond ? v : <omit>` include, or null
+ * for a plain `key: v` (included purely on value-truthiness). An adapter renders
+ * the guard to decide inclusion; the *runtime helper* then applies the emptiness
+ * / array-append rules to the value. (Structurally identical to the query-href
+ * lowering's own triple, which the `queryHref` plugin passes through unchanged.)
+ */
+export interface LoweringTriple {
+  guard: ParsedExpr | null
+  key: string
+  value: ParsedExpr
+}
 
 /**
  * A backend-neutral lowering result. Adapters render each variant in their own
@@ -38,11 +51,13 @@ export type LoweringNode =
    * A guard/key/value include list lowered to a query helper — the shape of
    * `queryHref(base, { … })`. `helper` is the logical helper id (`'query'`),
    * which each adapter maps to its own runtime helper (`bf_query` in go,
-   * `bf->query` in mojo, `$bf.query` in xslate) and renders per its own
-   * inclusion rule (go folds the non-empty check into the guard; the
-   * template-string adapters pass raw triples to a helper that checks).
+   * `bf->query` in mojo, `$bf.query` in xslate). Each triple's `guard` controls
+   * inclusion; the runtime helper then applies the non-empty / array-append
+   * rules to the value (so an included-but-empty value is dropped and array
+   * members are appended), matching the client `queryHref` exactly. Adapters
+   * MUST switch on `helper` — a `guard-list` is not implicitly `query`.
    */
-  | { kind: 'guard-list'; helper: string; base: ParsedExpr; triples: QueryHrefTriple[] }
+  | { kind: 'guard-list'; helper: string; base: ParsedExpr; triples: LoweringTriple[] }
   /**
    * A plain helper call `helper(...args)` — the general escape hatch for a pure
    * builder that lowers to a single runtime-helper invocation. Unused today;
@@ -86,9 +101,10 @@ export function registerLoweringPlugin(plugin: LoweringPlugin): void {
   else plugins.push(plugin)
 }
 
-/** The registered plugins, in registration order. */
+/** The registered plugins, in registration order (a copy — mutating the result
+ *  can't reorder or corrupt the registry). */
 export function getLoweringPlugins(): readonly LoweringPlugin[] {
-  return plugins
+  return [...plugins]
 }
 
 /**

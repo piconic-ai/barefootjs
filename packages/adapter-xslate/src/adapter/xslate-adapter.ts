@@ -1301,7 +1301,9 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     if (this._loweringMatchers.length > 0 && parsed.kind === 'call') {
       for (const matcher of this._loweringMatchers) {
         const node = matcher(parsed.callee, parsed.args)
-        if (node?.kind === 'guard-list') {
+        // Only the `query` helper renders to `$bf.query`; a future guard-list
+        // helper must not be silently mis-rendered as a query.
+        if (node?.kind === 'guard-list' && node.helper === 'query') {
           const qArgs = queryHrefArgs(node, n => this.renderParsedExprToKolon(n))
           return `$bf.query(${qArgs.join(', ')})`
         }

@@ -1587,7 +1587,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     if (this._loweringMatchers.length > 0 && parsed.kind === 'call') {
       for (const matcher of this._loweringMatchers) {
         const node = matcher(parsed.callee, parsed.args)
-        if (node?.kind === 'guard-list') {
+        // Only the `query` helper renders to `bf->query`; a future guard-list
+        // helper must not be silently mis-rendered as a query.
+        if (node?.kind === 'guard-list' && node.helper === 'query') {
           const argsGo = queryHrefArgs(node, n => this.renderParsedExprToPerl(n))
           return `bf->query(${argsGo.join(', ')})`
         }

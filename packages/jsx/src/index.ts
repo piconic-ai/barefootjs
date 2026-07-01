@@ -86,6 +86,7 @@ export {
   matchLoweringCall,
   type LoweringPlugin,
   type LoweringNode,
+  type LoweringTriple,
   type LoweringMatcher,
 } from './lowering-registry.ts'
 export { emitIRNode } from './adapters/ir-node-emitter.ts'
