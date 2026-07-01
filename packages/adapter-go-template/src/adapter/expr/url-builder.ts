@@ -82,16 +82,25 @@ export function lowerRegisteredCall(
 
   for (const matcher of matchers) {
     const node = matcher(call.callee, call.args)
-    if (node) return renderLoweringNode(ctx, node)
+    if (!node) continue
+    const rendered = renderLoweringNode(ctx, node)
+    if (rendered !== null) return rendered
   }
   return null
 }
 
-/** Render a backend-neutral lowering node to a Go template expression. */
-function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string {
+/**
+ * Render a backend-neutral lowering node to a Go template expression, or null
+ * when the node's `helper` has no Go mapping — the caller then declines
+ * (generic lowering → BF101), rather than emitting the raw helper id, which
+ * would be invalid Go. Adapters must switch on `helper`; an unknown one is not
+ * rendered.
+ */
+function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | null {
+  const helper = GO_HELPER_NAMES[node.helper]
+  if (!helper) return null
   const lowerExpr = (n: ParsedExpr): string =>
     ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
-  const helper = GO_HELPER_NAMES[node.helper] ?? node.helper
   if (node.kind === 'helper-call') {
     const args = node.args.map(a => wrapIfMultiToken(lowerExpr(a)))
     return [helper, ...args].join(' ')
