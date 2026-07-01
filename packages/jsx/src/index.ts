@@ -84,6 +84,7 @@ export {
   getLoweringPlugins,
   prepareLoweringMatchers,
   matchLoweringCall,
+  __resetLoweringPluginsForTest,
   type LoweringPlugin,
   type LoweringNode,
   type LoweringTriple,

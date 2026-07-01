@@ -54,6 +54,8 @@ import {
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
+  queryHrefLocalNames,
+  matchQueryHrefCall,
   prepareLoweringMatchers,
   queryHrefArgs,
   sortComparatorFromArrow,
@@ -162,10 +164,16 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private _searchParamsLocals: Set<string> = new Set()
 
   /**
-   * Call-lowering matchers active for this component (#2057), bound to its
-   * metadata at `generate()` entry via `prepareLoweringMatchers`. Read by the
-   * top-level emitter to lower a recognised call (e.g. `queryHref(base, { … })`)
-   * to a `bf->query(...)` helper call.
+   * Local binding names the built-in `queryHref` URL builder is imported under
+   * (#2042). Lowered directly to `bf->query(...)` — a core client API, not routed
+   * through the plugin registry.
+   */
+  private _queryHrefLocals: Set<string> = new Set()
+
+  /**
+   * Registered call-lowering matchers active for this component (#2057) — the
+   * extension seam for calls core doesn't know. Bound at `generate()` entry via
+   * `prepareLoweringMatchers`; read by the top-level emitter.
    */
   private _loweringMatchers: LoweringMatcher[] = []
   /**
@@ -241,6 +249,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
+    this._queryHrefLocals = queryHrefLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
     this.loopBoundNames.clear()
@@ -1584,11 +1593,20 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // helper includes a pair iff its guard is truthy AND its value is a non-empty
     // string (the client's `if (value)`): a plain `key: v` passes guard `1`, a
     // conditional `key: cond ? v : undefined` passes the lowered cond.
-    if (this._loweringMatchers.length > 0 && parsed.kind === 'call') {
+    if (parsed.kind === 'call') {
+      // 1. Built-in queryHref (#2042) — a core client API, recognised directly.
+      if (this._queryHrefLocals.size > 0) {
+        const q = matchQueryHrefCall(parsed.callee, parsed.args, this._queryHrefLocals)
+        if (q) {
+          const argsGo = queryHrefArgs(q, n => this.renderParsedExprToPerl(n))
+          return `bf->query(${argsGo.join(', ')})`
+        }
+      }
+      // 2. Registered lowering plugins (#2057) — the extension seam. Only the
+      // `query` helper renders to `bf->query`; a future guard-list helper must
+      // not be silently mis-rendered as a query.
       for (const matcher of this._loweringMatchers) {
         const node = matcher(parsed.callee, parsed.args)
-        // Only the `query` helper renders to `bf->query`; a future guard-list
-        // helper must not be silently mis-rendered as a query.
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const argsGo = queryHrefArgs(node, n => this.renderParsedExprToPerl(n))
           return `bf->query(${argsGo.join(', ')})`

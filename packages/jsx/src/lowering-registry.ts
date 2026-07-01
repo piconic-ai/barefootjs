@@ -11,11 +11,14 @@
  *   - **Layer 2 (adapters):** plugin-agnostic. Each adapter has ONE renderer per
  *     node kind, so SSR/CSR parity is enforced once, not per plugin.
  *
- * A first-party package registers its plugin via {@link registerLoweringPlugin}
- * (a side-effect import at build time). Today the only plugin is `queryHref`,
- * still registered by core below; #2057 PR-3 moves that registration into the
- * `@barefootjs/router` layer and removes it from core, at which point core holds
- * zero runtime-API names. The registry itself is the durable *mechanism*.
+ * The registry is the **extension seam** for lowerings that don't belong in the
+ * compiler core: a first-party or userland package registers its plugin via
+ * {@link registerLoweringPlugin} (e.g. from a side-effect import its consumer
+ * pulls in), and the adapters render the neutral node it returns. Core registers
+ * none of its own: a built-in runtime API like `queryHref` is recognised
+ * directly by the adapters, since routing a first-party API through the registry
+ * would be pointless indirection. The registry exists for the things core does
+ * NOT know.
  *
  * This is NOT the "output-rewriting hook" CLAUDE.md forbids: a plugin returns a
  * structured IR node, never a rewritten output string, so the compiler's output
@@ -24,8 +27,6 @@
 
 import type { ParsedExpr } from './expression-parser.ts'
 import type { IRMetadata } from './types.ts'
-import { matchQueryHrefCall } from './query-href-lowering.ts'
-import { queryHrefLocalNames } from './adapters/env-signal.ts'
 
 /**
  * A backend-neutral include triple for a {@link LoweringNode} `guard-list`.
@@ -83,7 +84,7 @@ export type LoweringMatcher = (
  * plugin never emits adapter syntax — only neutral nodes.
  */
 export interface LoweringPlugin {
-  /** Stable id, for dedup/diagnostics (`'queryHref'`). */
+  /** Stable id, for dedup/diagnostics (e.g. `'my-pkg-url'`). */
   name: string
   prepare(metadata: IRMetadata): LoweringMatcher | null
 }
@@ -140,22 +141,21 @@ export function matchLoweringCall(
   return null
 }
 
-// ---------------------------------------------------------------------------
-// First-party default plugins
-// ---------------------------------------------------------------------------
-//
-// `queryHref` (#2042) is registered here by core for now. #2057 PR-3 relocates
-// this registration into `@barefootjs/router` (a side-effect import wired by the
-// build) and deletes it from core — leaving core with no runtime-API names.
+/**
+ * Test-only: replace the registry contents wholesale. The double-underscore
+ * prefix marks it as an internal seam — tests use it to restore global state in
+ * `afterEach` so a sample plugin can't leak into other suites. Never call from
+ * production code.
+ */
+export function __resetLoweringPluginsForTest(next: readonly LoweringPlugin[] = []): void {
+  plugins.length = 0
+  plugins.push(...next)
+}
 
-registerLoweringPlugin({
-  name: 'queryHref',
-  prepare(metadata) {
-    const localNames = queryHrefLocalNames(metadata)
-    if (localNames.size === 0) return null
-    return (callee, args) => {
-      const q = matchQueryHrefCall(callee, args, localNames)
-      return q ? { kind: 'guard-list', helper: 'query', base: q.base, triples: q.triples } : null
-    }
-  },
-})
+// Core registers NO plugins of its own. Built-in runtime APIs (`queryHref`) are
+// recognised directly by the adapters — routing a first-party API through this
+// registry would be pointless indirection. The registry is the *extension seam*
+// for lowerings that don't belong in core: a first-party or userland package
+// registers its plugin via `registerLoweringPlugin`, and the adapters render the
+// neutral node it returns. See the sample plugin + tests in
+// `__tests__/lowering-registry.test.ts` for the guaranteed contract.

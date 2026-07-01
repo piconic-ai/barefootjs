@@ -1,14 +1,15 @@
 /**
- * Go rendering of a backend-neutral `guard-list` lowering node (#2057) — today
- * the `queryHref(base, { … })` URL-query API lowered to a `bf_query` template
- * expression (#2042). Recognition (which import, what call shape) lives in the
- * lowering-plugin registry; this module is the Go *renderer* for the neutral
- * node it produces: each triple maps to a `bf_query` include triple directly.
+ * Go lowering of helper calls to template expressions. Handles the built-in
+ * `queryHref(base, { … })` URL-query API directly (#2042 → `bf_query`), and
+ * renders backend-neutral `LoweringNode`s produced by registered lowering
+ * plugins (#2057) — the extension seam for calls core doesn't know. Both funnel
+ * through `renderLoweringNode`, which maps a logical helper id to its Go helper.
  */
 
 import {
   type LoweringNode,
   type ParsedExpr,
+  matchQueryHrefCall,
   parseExpression,
   stringifyParsedExpr,
 } from '@barefootjs/jsx'
@@ -54,13 +55,17 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
 }
 
 /**
- * Try every active lowering matcher against an expression, returning the Go
- * rendering of the first neutral node produced, or null when none match (→ the
- * generic lowering). Matchers are bound to the component metadata at init
- * (`ctx.state.loweringMatchers`), so recognition of *which* API this is lives in
- * the plugin registry, not here.
+ * Lower a helper call to a Go template expression, or null when nothing
+ * recognises it (→ the generic lowering). Two sources, in order:
  *
- * Cheap-out order mirrors the old inline recognizer: no matchers → null; else
+ *   1. **Built-in `queryHref`** (#2042) — a first-party core client API,
+ *      recognised directly (not via the plugin registry): routing a core API
+ *      through the extension seam would be pointless indirection.
+ *   2. **Registered lowering plugins** (#2057) — the extension seam for calls
+ *      core doesn't know; matchers are bound to the component metadata at init
+ *      (`ctx.state.loweringMatchers`).
+ *
+ * Cheap-out: nothing to try (no queryHref import AND no plugins) → null; else
  * reuse `preParsed` when it's already a call, otherwise a regex pre-filter gates
  * the parse so non-call expressions never pay for `parseExpression`.
  */
@@ -70,7 +75,8 @@ export function lowerRegisteredCall(
   preParsed?: ParsedExpr,
 ): string | null {
   const matchers = ctx.state.loweringMatchers
-  if (matchers.length === 0) return null
+  const hasQueryHref = ctx.state.queryHrefLocals.size > 0
+  if (!hasQueryHref && matchers.length === 0) return null
 
   let call: ParsedExpr | undefined = preParsed?.kind === 'call' ? preParsed : undefined
   if (!call) {
@@ -80,6 +86,20 @@ export function lowerRegisteredCall(
     call = parsed
   }
 
+  // 1. Built-in queryHref.
+  if (hasQueryHref) {
+    const q = matchQueryHrefCall(call.callee, call.args, ctx.state.queryHrefLocals)
+    if (q) {
+      return renderLoweringNode(ctx, {
+        kind: 'guard-list',
+        helper: 'query',
+        base: q.base,
+        triples: q.triples,
+      })
+    }
+  }
+
+  // 2. Registered plugins.
   for (const matcher of matchers) {
     const node = matcher(call.callee, call.args)
     if (!node) continue

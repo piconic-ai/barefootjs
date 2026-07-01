@@ -63,6 +63,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   searchParamsLocalNames,
+  queryHrefLocalNames,
   prepareLoweringMatchers
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
@@ -273,6 +274,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
+    this.state.queryHrefLocals = queryHrefLocalNames(ir.metadata)
     this.state.loweringMatchers = prepareLoweringMatchers(ir.metadata)
     augmentInheritedPropAccesses(ir)
   }
