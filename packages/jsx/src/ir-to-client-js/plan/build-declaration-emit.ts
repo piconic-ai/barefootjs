@@ -86,15 +86,19 @@ function buildSignalPlan(
   ctx: ClientJsContext,
   lookups: DeclarationEmitLookups,
 ): SignalEmitPlan {
-  const envFactory = signal.envReader ? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader] : undefined
-  if (envFactory) {
-    return {
-      kind: 'signal',
-      getter: signal.getter,
-      setter: signal.setter,
-      initialValueExpr: '',
-      controlledEffect: null,
-      initializerOverride: `${envFactory}()`,
+  if (signal.envReader) {
+    // Emit the factory as written (alias / namespace aware, #2057), falling back
+    // to the canonical name if the callee text wasn't captured.
+    const factory = signal.envFactory ?? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader]
+    if (factory) {
+      return {
+        kind: 'signal',
+        getter: signal.getter,
+        setter: signal.setter,
+        initialValueExpr: '',
+        controlledEffect: null,
+        initializerOverride: `${factory}()`,
+      }
     }
   }
   const controlledEffect = buildControlledSignalEffect(signal, lookups)

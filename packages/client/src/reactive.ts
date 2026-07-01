@@ -793,9 +793,15 @@ const [searchParamsGetter, setSearchParamsRaw] = createEnvSignal(
  * Every call returns the same request-scoped getter/setter — there is one query
  * per document, so the tuple is a stable view, not per-call state.
  */
+const setSearchParams = (next: SearchParamsInit): void => setSearchParamsRaw(toSearchString(next))
+const searchParamsTuple: readonly [
+  Reactive<() => URLSearchParams>,
+  (next: SearchParamsInit) => void,
+] = [searchParamsGetter, setSearchParams]
+
 export function createSearchParams(): readonly [
   Reactive<() => URLSearchParams>,
   (next: SearchParamsInit) => void,
 ] {
-  return [searchParamsGetter, (next: SearchParamsInit) => setSearchParamsRaw(toSearchString(next))]
+  return searchParamsTuple
 }

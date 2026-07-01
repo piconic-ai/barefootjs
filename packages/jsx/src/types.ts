@@ -1168,6 +1168,15 @@ export interface SignalInfo {
    * env signal from structure instead of matching the import name.
    */
   envReader?: string
+  /**
+   * For an env signal (`envReader` set), the exact callee text of its factory
+   * call as written — `'createSearchParams'`, an alias (`'csp'` for
+   * `import { createSearchParams as csp }`), or a namespace access
+   * (`'bf.createSearchParams'`). Backends that re-emit the declaration (client
+   * JS, JSX/Hono SSR) emit `<envFactory>()` so the call resolves to the binding
+   * actually in scope, not a hardcoded canonical name (#2057).
+   */
+  envFactory?: string
 }
 
 export interface MemoInfo {

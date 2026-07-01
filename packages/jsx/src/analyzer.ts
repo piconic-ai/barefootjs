@@ -1217,6 +1217,9 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   }
 
   const envReader = resolveEnvSignalKey(callExpr, ctx) ?? undefined
+  // The factory as written (identifier, alias, or `ns.factory`), so emit re-emits
+  // the binding actually in scope rather than a hardcoded canonical name (#2057).
+  const envFactory = envReader ? callExpr.expression.getText(ctx.sourceFile) : undefined
 
   ctx.signals.push({
     getter,
@@ -1229,6 +1232,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
       ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
       : new Set(),
     envReader,
+    envFactory,
   })
 }
 
@@ -4035,8 +4039,11 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
       const callee = decl.initializer.expression.text
       if (callee === 'createSignal' || callee === 'createMemo') continue
       // Env-signal factories (`createSearchParams`, #2057) are `createSignal`-
-      // shaped and recognised structurally — a valid tuple destructure.
-      if (callee in ENV_SIGNAL_FACTORIES) continue
+      // shaped and recognised structurally — a valid tuple destructure. Resolve
+      // via the same path as recognition (`resolveEnvSignalKey`) so an aliased
+      // import (`import { createSearchParams as csp }`) is accepted here too,
+      // rather than falling through to a spurious BF110.
+      if (resolveEnvSignalKey(decl.initializer, ctx)) continue
       // Inlined factories were rewritten away before this analysis, so
       // anything still matching the shape is a destructure of an
       // unrecognised callee (imported helper, ad-hoc tuple fn, factory

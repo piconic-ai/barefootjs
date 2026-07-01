@@ -100,6 +100,29 @@ describe('reactive primitive resolver — alias fidelity (checker path)', () => 
     expect(ctx.signals[0].initialValue).toBe('0')
   })
 
+  test('import { createSearchParams as csp }: csp() is recognized as an env signal', () => {
+    // #2057: the env-signal factory resolves through the same alias path as
+    // createSignal. The signal must be tagged `envReader` and carry the
+    // as-written callee (`csp`) so client/SSR emit `csp()`, not the canonical
+    // name — and validateReactiveFactoryCalls must NOT raise BF110 for it.
+    const filePath = path.resolve(CLIENT_DIR, '../.bench-env-alias-test.tsx')
+    const source = `
+      import { createSearchParams as csp } from '@barefootjs/client'
+      export function SortLabel() {
+        const [sp] = csp()
+        return <p>{sp().get('sort') ?? 'none'}</p>
+      }
+    `
+    const program = programFor(filePath, source)
+    const ctx = analyzeComponent(source, filePath, undefined, program)
+    expect(ctx.signals).toHaveLength(1)
+    expect(ctx.signals[0].getter).toBe('sp')
+    expect(ctx.signals[0].envReader).toBe('search')
+    expect(ctx.signals[0].envFactory).toBe('csp')
+    // No spurious BF110 (unrecognized reactive factory) for the aliased call.
+    expect(ctx.errors.some(e => e.code === 'BF110')).toBe(false)
+  })
+
   test('user-defined function named createSignal is NOT misclassified without checker', () => {
     // Without a checker, the fast path still matches by name. This
     // documents the limitation — the fast path is optimistic. A shared

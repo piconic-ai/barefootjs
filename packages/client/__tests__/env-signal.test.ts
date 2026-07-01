@@ -22,6 +22,16 @@ const { createSearchParams, __bfSetServerEnvReader, createEffect, createRoot } =
 )
 const [searchParams, setSearchParams] = createSearchParams()
 
+describe('createSearchParams', () => {
+  test('returns a referentially-stable tuple (same getter + setter every call)', () => {
+    const a = createSearchParams()
+    const b = createSearchParams()
+    expect(a).toBe(b)
+    expect(a[0]).toBe(b[0])
+    expect(a[1]).toBe(b[1])
+  })
+})
+
 describe('searchParams (client)', () => {
   test('reads the live URL query on first access and installs the push seam', () => {
     expect(searchParams().get('sort')).toBe('price')

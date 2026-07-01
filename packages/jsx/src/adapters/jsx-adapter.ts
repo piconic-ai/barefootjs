@@ -114,8 +114,10 @@ export abstract class JsxAdapter extends BaseAdapter {
       if (signal.envReader) {
         // Env signal (#2057): call the real runtime factory so SSR resolves the
         // request query through the installed server env reader, not a static
-        // initial value. The `createSearchParams` import is preserved for SSR.
-        const factory = ENV_SIGNAL_CLIENT_FACTORY[signal.envReader]
+        // initial value. Emit the factory as written (alias / namespace aware),
+        // matching the import re-emitted into the SSR module; fall back to the
+        // canonical name if the callee text wasn't captured.
+        const factory = signal.envFactory ?? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader]
         if (factory) {
           lines.push(
             signal.setter
