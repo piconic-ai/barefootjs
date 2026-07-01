@@ -1,6 +1,7 @@
 // Go template build config factory for barefoot.config.ts
 
 import type { BuildOptions, PostBuildContext } from '@barefootjs/jsx'
+import { registerLoweringPlugin } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/index.ts'
 import type { GoTemplateAdapterOptions } from './adapter/index.ts'
 
@@ -215,6 +216,12 @@ export function combineGoTypes(options: {
  * circular dependency between @barefootjs/go-template and @barefootjs/cli.
  */
 export function createConfig(options: GoTemplateBuildOptions = {}) {
+  // Register config-declared call-lowering plugins (#2057) here, in the config's
+  // module instance — the same `@barefootjs/jsx` the adapter created below reads
+  // its registry from. (Registering in the CLI's separate instance wouldn't
+  // reach the adapter.) Idempotent by name, so re-invocation is safe.
+  for (const plugin of options.plugins ?? []) registerLoweringPlugin(plugin)
+
   const packageName = options.adapterOptions?.packageName ?? 'main'
   const typesOutputFile = options.typesOutputFile ?? 'components.go'
 
@@ -265,6 +272,7 @@ export function createConfig(options: GoTemplateBuildOptions = {}) {
     externalsBasePath: options.externalsBasePath,
     bundleEntries: options.bundleEntries,
     localImportPrefixes: options.localImportPrefixes,
+    plugins: options.plugins,
     outputLayout: options.outputLayout ?? {
       templates: 'templates',
       clientJs: 'client',

@@ -1,9 +1,11 @@
+import { queryHrefPlugin } from '@barefootjs/router/plugins'
 import { createConfig } from '@barefootjs/hono/build'
 
 const basePath = process.env.BASE_PATH ?? '/integrations/hono'
 const staticBase = `${basePath}/static/components/`
 
 export default createConfig({
+  plugins: [queryHrefPlugin],
   components: ['components', '../shared/components', '../shared/blog'],
   outDir: 'dist',
   minify: true,

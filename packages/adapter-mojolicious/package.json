@@ -79,6 +79,7 @@
   },
   "devDependencies": {
     "@barefootjs/adapter-tests": "workspace:*",
-    "@barefootjs/jsx": "workspace:*"
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/router": "workspace:*"
   }
 }

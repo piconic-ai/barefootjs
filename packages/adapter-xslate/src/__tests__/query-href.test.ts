@@ -7,8 +7,13 @@
  * `key: cond ? v : undefined` passes the lowered condition.
  */
 import { describe, test, expect } from 'bun:test'
-import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, registerLoweringPlugin, type ComponentIR } from '@barefootjs/jsx'
+// Register the `queryHref` lowering plugin (#2057) — now owned by the router
+// layer; tests register it explicitly (a build declares it via config.plugins).
+import { queryHrefPlugin } from '@barefootjs/router/plugins'
 import { XslateAdapter } from '../adapter/xslate-adapter'
+
+registerLoweringPlugin(queryHrefPlugin)
 
 function template(src: string): string {
   const a = new XslateAdapter()
@@ -21,7 +26,7 @@ describe('queryHref → $bf.query (Xslate, #2042)', () => {
   test('a plain value passes guard 1', () => {
     const t = template(`
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; tag: string }) {
   return <a href={queryHref(props.base, { tag: props.tag })}>x</a>
 }
@@ -32,7 +37,7 @@ export function P(props: { base: string; tag: string }) {
   test('a conditional include passes the lowered condition as the guard', () => {
     const t = template(`
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; sort: string; tag: string }) {
   return <a href={queryHref(props.base, { sort: props.sort !== 'date' ? props.sort : undefined, tag: props.tag })}>x</a>
 }
@@ -49,7 +54,7 @@ export function P(props: { base: string; sort: string; tag: string }) {
   test('a bare-value guard is normalised to a non-empty-string test', () => {
     const t = template(`
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; flag: string; val: string }) {
   return <a href={queryHref(props.base, { q: props.flag ? props.val : undefined })}>x</a>
 }
@@ -64,7 +69,7 @@ export function P(props: { base: string; flag: string; val: string }) {
   test('an array value passes the slice expression for the helper to append', () => {
     const t = template(`
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; tags: string[] }) {
   return <a href={queryHref(props.base, { tag: props.tags })}>x</a>
 }
@@ -75,7 +80,7 @@ export function P(props: { base: string; tags: string[] }) {
   test('an aliased import is recognised', () => {
     const t = template(`
 'use client'
-import { queryHref as qh } from '@barefootjs/client'
+import { queryHref as qh } from '@barefootjs/router'
 export function P(props: { base: string; tag: string }) {
   return <a href={qh(props.base, { tag: props.tag })}>x</a>
 }
@@ -86,7 +91,7 @@ export function P(props: { base: string; tag: string }) {
   test('a dynamic (non-literal) params object falls back (no $bf.query)', () => {
     const t = template(`
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; q: Record<string, string> }) {
   return <a href={queryHref(props.base, props.q)}>x</a>
 }

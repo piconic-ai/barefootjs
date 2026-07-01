@@ -466,6 +466,28 @@ export async function build(
     console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js copy.')
   }
 
+  // 1a. Router runtime (#2057) — when `@barefootjs/router` is installed, copy its
+  //     standalone bundle to `router.js` so an island's
+  //     `import { queryHref } from '@barefootjs/router'` resolves in the browser.
+  //     The standalone keeps `@barefootjs/client` external (→ barefoot.js via the
+  //     importmap) and inlines `@barefootjs/shared`, so it's self-contained. The
+  //     matching importmap entry is added in `processExternals`.
+  const routerDistFile = await resolveRouterStandalone(config.projectDir)
+  if (routerDistFile) {
+    const routerOutPath = resolve(runtimeOutDir, 'router.js')
+    // The standalone keeps `@barefootjs/client` external — rewrite it to the
+    // sibling `./barefoot.js` so router.js resolves the shared runtime in the
+    // browser (both files live in runtimeOutDir), mirroring the island rewrite.
+    let routerText = rewriteBarefootClientSpecifiers(await readText(routerDistFile), './barefoot.js')
+    const routerContent: string | Uint8Array = config.minify
+      ? transpile(routerText, { loader: 'js', minify: true })
+      : routerText
+    if (await writeIfChanged(routerOutPath, routerContent)) {
+      anyOutputChanged = true
+      console.log(`Generated: ${runtimeSubdir}/router.js`)
+    }
+  }
+
   // 1b. Externals — copy vendor chunks, emit importmap + barefoot-externals.json
   const { changed: externalsChanged, allExternals } = await processExternals(config, runtimeSubdir, runtimeOutDir)
   if (externalsChanged) anyOutputChanged = true
@@ -568,6 +590,11 @@ export async function build(
     }
     return sharedProgram
   }
+
+  // Call-lowering plugins (#2057) are registered by `createConfig` in the
+  // adapter's own `@barefootjs/jsx` instance (the one the adapter reads at emit
+  // time), so nothing to register here — the CLI's jsx instance isn't the one
+  // the adapter consults.
 
   // 4. Compile each component (or reuse from cache)
   for (const entryPath of allFiles) {
@@ -885,6 +912,11 @@ export async function build(
   //     `SyntaxError: Identifier 'X' has already been declared` at hydration.
   {
     const runtimeAbs = resolve(config.outDir, runtimeSubdir, 'barefoot.js')
+    // When `@barefootjs/router` is served (#2057), island `queryHref` imports are
+    // rewritten to the sibling `router.js` the same way client imports go to
+    // `barefoot.js`. Only when served — otherwise leave the specifier bare.
+    const routerServed = (await resolveRouterStandalone(config.projectDir)) !== null
+    const routerAbs = resolve(config.outDir, runtimeSubdir, 'router.js')
     for (const [name, entry] of Object.entries(manifest)) {
       if (!entry.clientJs || name === '__barefoot__') continue
       const filePath = resolve(config.outDir, entry.clientJs)
@@ -898,6 +930,11 @@ export async function build(
         let content = await readText(filePath)
         const before = content
         content = rewriteBarefootClientSpecifiers(content, rel)
+        if (routerServed) {
+          let routerRel = relative(dirname(filePath), routerAbs)
+          if (!routerRel.startsWith('.')) routerRel = './' + routerRel
+          content = rewriteRouterSpecifier(content, routerRel)
+        }
         content = mergeDuplicateNamedImports(content)
         if (content !== before && await writeIfChanged(filePath, content)) {
           anyOutputChanged = true
@@ -1275,6 +1312,53 @@ export function rewriteBarefootClientSpecifiers(content: string, rel: string): s
 }
 
 /**
+ * Rewrite `@barefootjs/router` module specifiers to the relative served
+ * `router.js` path `rel` (#2057), so an island's `import { queryHref } from
+ * '@barefootjs/router'` resolves in the browser the same way `@barefootjs/client`
+ * → `barefoot.js` does. AST-scoped (real import/export/dynamic-import specifiers
+ * only), like {@link rewriteBarefootClientSpecifiers}. Only invoked when the CLI
+ * actually serves `router.js`.
+ */
+export function rewriteRouterSpecifier(content: string, rel: string): string {
+  if (!content.includes('@barefootjs/router')) return content
+
+  const sourceFile = ts.createSourceFile(
+    'client.js',
+    content,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ true,
+    ts.ScriptKind.JS,
+  )
+  const spans: Array<[number, number]> = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      const ms = node.moduleSpecifier
+      if (ms && ts.isStringLiteral(ms) && ms.text === '@barefootjs/router') {
+        spans.push([ms.getStart(sourceFile), ms.getEnd()])
+      }
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    ) {
+      const arg = node.arguments[0]
+      if (arg && ts.isStringLiteral(arg) && arg.text === '@barefootjs/router') {
+        spans.push([arg.getStart(sourceFile), arg.getEnd()])
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+
+  if (spans.length === 0) return content
+  spans.sort((a, b) => b[0] - a[0])
+  let out = content
+  for (const [start, end] of spans) {
+    out = out.slice(0, start) + `'${rel}'` + out.slice(end)
+  }
+  return out
+}
+
+/**
  * Collapse multiple `import { ... } from 'X'` lines that share the same source
  * into a single line with the union of their names. No-op if every source
  * appears at most once. Only handles the `import { a, b } from 'X'` form —
@@ -1399,6 +1483,29 @@ async function resolvePkgBrowserEntry(pkgDir: string): Promise<PkgBrowserEntry |
 export type { ExternalsManifest } from '@barefootjs/jsx'
 
 /**
+ * Locate `@barefootjs/router`'s browser-ready standalone bundle (#2057), or null
+ * when the router isn't installed. Checked both from the monorepo (`../../packages`)
+ * and from the project's `node_modules`, mirroring the barefoot.js resolution.
+ * Shared by the router.js copy step and the importmap entry so they agree on
+ * whether the router is served.
+ */
+async function resolveRouterStandalone(projectDir: string): Promise<string | null> {
+  const candidates = [
+    resolve(projectDir, '../../packages/router/dist/standalone.js'),
+    resolve(projectDir, 'node_modules/@barefootjs/router/dist/standalone.js'),
+  ]
+  for (const candidate of candidates) {
+    try {
+      await stat(candidate)
+      return candidate
+    } catch {
+      // continue
+    }
+  }
+  return null
+}
+
+/**
  * Process the `externals` config: copy vendor chunks to outDir, build the
  * importmap JSON, and write `barefoot-externals.json`.
  * Returns whether any output file changed and the full list of external package names.
@@ -1494,6 +1601,13 @@ export async function processExternals(
   const barefootUrl = `${base}barefoot.js`
   for (const key of BF_CLIENT_DEDUP_KEYS) {
     imports[key] = barefootUrl
+  }
+
+  // Map `@barefootjs/router` → the served router.js (copied in the main build
+  // step) when it's installed, so island `import { queryHref } from
+  // '@barefootjs/router'` resolves in the browser (#2057).
+  if (await resolveRouterStandalone(config.projectDir)) {
+    imports['@barefootjs/router'] = `${base}router.js`
   }
 
   // All packages that go into --external for the user's bun build

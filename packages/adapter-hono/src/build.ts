@@ -1,6 +1,7 @@
 // Hono build config factory for barefoot.config.ts
 
 import type { BuildOptions } from '@barefootjs/jsx'
+import { registerLoweringPlugin } from '@barefootjs/jsx'
 import { HonoAdapter } from './adapter/index.ts'
 import type { HonoAdapterOptions } from './adapter/index.ts'
 
@@ -20,6 +21,10 @@ export interface HonoBuildOptions extends BuildOptions {
  * circular dependency between @barefootjs/hono and @barefootjs/cli.
  */
 export function createConfig(options: HonoBuildOptions = {}) {
+  // Register config-declared call-lowering plugins (#2057) in this module's
+  // `@barefootjs/jsx` instance — the one the adapter reads its registry from.
+  for (const plugin of options.plugins ?? []) registerLoweringPlugin(plugin)
+
   const useScriptCollection = options.scriptCollection ?? true
 
   return {
@@ -33,6 +38,7 @@ export function createConfig(options: HonoBuildOptions = {}) {
     externalsBasePath: options.externalsBasePath,
     bundleEntries: options.bundleEntries,
     localImportPrefixes: options.localImportPrefixes,
+    plugins: options.plugins,
     transformMarkedTemplate: useScriptCollection
       ? (content: string, componentId: string, clientJsPath: string) =>
           addScriptCollection(content, componentId, clientJsPath, options.scriptBasePath)

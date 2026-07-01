@@ -49,6 +49,7 @@ jobs:
         run: |
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/router' build
           bun run --filter '@barefootjs/mojolicious' build
 
       - name: Run BarefootJS core Perl tests (engine-agnostic, no Mojo)

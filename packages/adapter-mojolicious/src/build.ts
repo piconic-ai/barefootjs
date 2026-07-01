@@ -1,6 +1,7 @@
 // Mojolicious build config factory for barefoot.config.ts
 
 import type { BuildOptions } from '@barefootjs/jsx'
+import { registerLoweringPlugin } from '@barefootjs/jsx'
 import { MojoAdapter } from './adapter/index.ts'
 import type { MojoAdapterOptions } from './adapter/index.ts'
 
@@ -16,6 +17,10 @@ export interface MojoBuildOptions extends BuildOptions {
  * circular dependency between @barefootjs/mojolicious and @barefootjs/cli.
  */
 export function createConfig(options: MojoBuildOptions = {}) {
+  // Register config-declared call-lowering plugins (#2057) in this module's
+  // `@barefootjs/jsx` instance — the one the adapter reads its registry from.
+  for (const plugin of options.plugins ?? []) registerLoweringPlugin(plugin)
+
   return {
     adapter: new MojoAdapter(options.adapterOptions),
     paths: options.paths,
@@ -27,6 +32,7 @@ export function createConfig(options: MojoBuildOptions = {}) {
     externalsBasePath: options.externalsBasePath,
     bundleEntries: options.bundleEntries,
     localImportPrefixes: options.localImportPrefixes,
+    plugins: options.plugins,
     outputLayout: options.outputLayout ?? {
       templates: 'templates',
       clientJs: 'client',

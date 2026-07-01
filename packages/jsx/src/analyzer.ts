@@ -1837,10 +1837,6 @@ const CLIENT_EXPORTS = new Set([
   // getter; the compiler lowers the reader value per adapter via the signal's
   // `envReader` key, with no `searchParams`-name allow-list.
   'createSearchParams',
-  // Pure URL-query builder (#2042) — the functional counterpart to
-  // `searchParams`. Runs natively on the client; SSR adapters lower a
-  // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
-  'queryHref',
   // Compile-away JSX built-ins (#1915) — importing them is what scopes the
   // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
   'Async', 'Region',

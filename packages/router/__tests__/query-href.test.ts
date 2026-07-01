@@ -1,6 +1,7 @@
 /**
- * `queryHref` — the pure URL-query builder (#2042). Pins the truthy-omit
- * inclusion rule and the `URLSearchParams` encoding the SSR adapters must match.
+ * `queryHref` — the pure URL-query builder (#2042, relocated to
+ * `@barefootjs/router` in #2057). Pins the truthy-omit inclusion rule and the
+ * `URLSearchParams` encoding the SSR adapters must match.
  */
 
 import { describe, test, expect } from 'bun:test'

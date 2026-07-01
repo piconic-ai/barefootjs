@@ -24,8 +24,6 @@
 
 import type { ParsedExpr } from './expression-parser.ts'
 import type { IRMetadata } from './types.ts'
-import { matchQueryHrefCall } from './query-href-lowering.ts'
-import { queryHrefLocalNames } from './adapters/env-signal.ts'
 
 /**
  * A backend-neutral include triple for a {@link LoweringNode} `guard-list`.
@@ -140,22 +138,6 @@ export function matchLoweringCall(
   return null
 }
 
-// ---------------------------------------------------------------------------
-// First-party default plugins
-// ---------------------------------------------------------------------------
-//
-// `queryHref` (#2042) is registered here by core for now. #2057 PR-3 relocates
-// this registration into `@barefootjs/router` (a side-effect import wired by the
-// build) and deletes it from core — leaving core with no runtime-API names.
-
-registerLoweringPlugin({
-  name: 'queryHref',
-  prepare(metadata) {
-    const localNames = queryHrefLocalNames(metadata)
-    if (localNames.size === 0) return null
-    return (callee, args) => {
-      const q = matchQueryHrefCall(callee, args, localNames)
-      return q ? { kind: 'guard-list', helper: 'query', base: q.base, triples: q.triples } : null
-    }
-  },
-})
+// The compiler core registers NO plugins of its own (#2057): it holds no
+// runtime-API names. First-party packages register their own lowering at build
+// time — e.g. `@barefootjs/router/register` registers `queryHref`.

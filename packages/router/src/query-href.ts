@@ -1,9 +1,12 @@
 /**
  * `queryHref` — build a URL from a base path plus query params, omitting falsy
- * values. The functional counterpart to `searchParams()` (the reactive *reader*):
+ * values. A routing concern (it constructs `<a href>` query URLs), so it lives
+ * in `@barefootjs/router` rather than the compiler-core client package (#2057).
+ * The functional counterpart to `createSearchParams()`'s reactive *reader*:
  * instead of imperatively mutating a `URLSearchParams`, pass a params object.
  *
  * ```tsx
+ * import { queryHref } from '@barefootjs/router'
  * const href = queryHref(base, {
  *   sort: sort !== 'date' ? sort : undefined, // conditional include via the value
  *   tag,                                        // included only when truthy
@@ -29,9 +32,11 @@
  * Stringify other types at the call site (`String(n)`), choosing the omit rule
  * explicitly (`n > 0 ? String(n) : undefined`).
  *
- * This is a pure function with no reactivity. The SSR adapters lower a
- * `queryHref(base, { … })` call to their query helper (go-template: `bf_query`),
- * which is why the params object must be a plain object literal at the call site.
+ * This is a pure function with no reactivity — it runs unchanged during SSR. The
+ * SSR adapters lower a `queryHref(base, { … })` call to their query helper
+ * (go-template: `bf_query`) via the compiler's lowering-plugin registry, which
+ * `@barefootjs/router/register` wires up — which is why the params object must
+ * be a plain object literal at the call site.
  */
 export type QueryParamValue = string | string[] | null | undefined
 export type QueryParams = Record<string, QueryParamValue>

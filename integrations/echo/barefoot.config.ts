@@ -1,9 +1,11 @@
+import { queryHrefPlugin } from '@barefootjs/router/plugins'
 import { createConfig } from '@barefootjs/go-template/build'
 
 const basePath = process.env.BASE_PATH ?? '/integrations/echo'
 const staticBase = `${basePath}/static/client/`
 
 export default createConfig({
+  plugins: [queryHrefPlugin],
   components: ['../shared/components', '../shared/blog'],
   outDir: 'dist',
   minify: true,

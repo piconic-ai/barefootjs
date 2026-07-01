@@ -33,11 +33,10 @@ export {
   // (the Hono adapter wires it in `search-params-ssr.ts`), defaulting to an empty
   // query — so the real export is re-exported, not a throwing stub.
   createSearchParams,
-  // Pure URL-query builder (#2042) — like the other pure helpers above, it has
-  // no reactivity and runs unchanged during SSR, so the real export is
-  // re-exported (not a stub).
-  queryHref,
 } from '@barefootjs/client'
+// `queryHref` moved to `@barefootjs/router` (#2057); components import it from
+// there. It's a pure function that runs unchanged during SSR, so no shim entry
+// is needed here.
 
 export type {
   Context,
@@ -51,8 +50,6 @@ export type {
   PortalChildren,
   PortalOptions,
   Renderable,
-  QueryParams,
-  QueryParamValue,
 } from '@barefootjs/client'
 
 // ---------------------------------------------------------------------------

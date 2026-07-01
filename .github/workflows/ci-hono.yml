@@ -41,6 +41,7 @@ jobs:
         run: |
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/router' build
           bun run --filter '@barefootjs/hono' build
 
       - name: Run unit tests
@@ -71,6 +72,7 @@ jobs:
         run: |
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/router' build
           bun run --filter '@barefootjs/hono' build
 
       - name: Build integrations/hono

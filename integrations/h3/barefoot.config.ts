@@ -1,3 +1,4 @@
+import { queryHrefPlugin } from '@barefootjs/router/plugins'
 import { createConfig } from '@barefootjs/hono/build'
 
 // All compiled client bundles (barefoot.js + *.client.js) and the SSR
@@ -6,6 +7,7 @@ import { createConfig } from '@barefootjs/hono/build'
 const staticBase = '/static/components/'
 
 export default createConfig({
+  plugins: [queryHrefPlugin],
   components: ['../shared/components', '../shared/blog'],
   outDir: 'dist',
   minify: true,

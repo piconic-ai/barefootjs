@@ -49,6 +49,7 @@ jobs:
         run: |
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/router' build
           bun run --filter '@barefootjs/xslate' build
 
       # The render test compiles the Counter, then renders the emitted Kolon

@@ -11,8 +11,13 @@
  * URLSearchParams in the shared golden vectors (TestHelperVectors, fn "query").
  */
 import { describe, test, expect } from 'bun:test'
-import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, registerLoweringPlugin, type ComponentIR } from '@barefootjs/jsx'
+// Register the `queryHref` lowering plugin (#2057) — now owned by the router
+// layer; tests register it explicitly (a build declares it via config.plugins).
+import { queryHrefPlugin } from '@barefootjs/router/plugins'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
+
+registerLoweringPlugin(queryHrefPlugin)
 
 function generate(src: string) {
   const adapter = new GoTemplateAdapter()
@@ -27,7 +32,7 @@ describe('queryHref → bf_query (#2042)', () => {
   test('a plain value passes a `true` include — bf_query drops it if empty', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; tag: string }) {
   return <a href={queryHref(props.base, { tag: props.tag })}>x</a>
 }
@@ -40,7 +45,7 @@ export function P(props: { base: string; tag: string }) {
   test('a conditional include lowers to `(cond)` — the helper applies the non-empty check', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; sort: string; tag: string }) {
   return (
     <a href={queryHref(props.base, {
@@ -66,7 +71,7 @@ export function P(props: { base: string; sort: string; tag: string }) {
   test('a `&&` guard is wrapped to a bool — `ne (and …) ""`, not a bare `and`', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; a: string; b: string }) {
   return <a href={queryHref(props.base, { both: props.a && props.b ? props.a : undefined })}>x</a>
 }
@@ -78,7 +83,7 @@ export function P(props: { base: string; a: string; b: string }) {
   test('null / empty-string alternates are both treated as the omit branch', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; mode: string; a: string; b: string }) {
   return <a href={queryHref(props.base, {
     a: props.mode !== 'off' ? props.a : '',
@@ -95,7 +100,7 @@ export function P(props: { base: string; mode: string; a: string; b: string }) {
   test('an array value lowers the slice expression; bf_query appends its members', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; tags: string[] }) {
   return <a href={queryHref(props.base, { tag: props.tags })}>x</a>
 }
@@ -110,7 +115,7 @@ export function P(props: { base: string; tags: string[] }) {
   test('a conditional array value keeps the guard and passes the slice', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; on: string; tags: string[] }) {
   return <a href={queryHref(props.base, { tag: props.on !== '' ? props.tags : undefined })}>x</a>
 }
@@ -122,7 +127,7 @@ export function P(props: { base: string; on: string; tags: string[] }) {
   test('an aliased import is still recognised', () => {
     const src = `
 'use client'
-import { queryHref as qh } from '@barefootjs/client'
+import { queryHref as qh } from '@barefootjs/router'
 export function P(props: { base: string; tag: string }) {
   return <a href={qh(props.base, { tag: props.tag })}>x</a>
 }
@@ -135,7 +140,7 @@ export function P(props: { base: string; tag: string }) {
   test('a param-free expression-bodied helper wrapping queryHref inlines + lowers', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string }) {
   const homeHref = () => queryHref(props.base, { view: 'home' })
   return <a href={homeHref()}>x</a>
@@ -154,7 +159,7 @@ export function P(props: { base: string }) {
   test('a helper whose params-object references a param is not yet inlined (falls back)', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string }) {
   const hrefFor = (s: string) => queryHref(props.base, { sort: s })
   return <a href={hrefFor('title')}>x</a>
@@ -168,7 +173,7 @@ export function P(props: { base: string }) {
   test('a dynamic (non-literal) params object falls back to the generic lowering', () => {
     const src = `
 'use client'
-import { queryHref } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 export function P(props: { base: string; q: Record<string, string> }) {
   return <a href={queryHref(props.base, props.q)}>x</a>
 }

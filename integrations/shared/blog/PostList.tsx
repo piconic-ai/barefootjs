@@ -1,6 +1,7 @@
 'use client'
 
-import { createMemo, createSearchParams, queryHref } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+import { queryHref } from '@barefootjs/router'
 import { PostListItem } from './PostListItem'
 
 interface Item {
@@ -34,7 +35,8 @@ interface PostListProps {
 
 /**
  * The index list. It reads `searchParams()` — a reactive view of the URL
- * query, imported straight from `@barefootjs/client` — so `?sort=` / `?tag=`
+ * query from `@barefootjs/client` — and builds its links with `queryHref` from
+ * `@barefootjs/router` — so `?sort=` / `?tag=`
  * links re-order / filter the list in place, fine-grained, WITH NO region
  * swap and no re-hydration. The sort/tag bars' active highlight and hrefs are
  * reactive off the same source, so they stay in sync as the query changes.

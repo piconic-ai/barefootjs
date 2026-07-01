@@ -4,6 +4,8 @@
  * Multi-backend JSX compiler that generates Marked Templates and Client JS.
  */
 
+import type { LoweringPlugin } from './lowering-registry.ts'
+
 // Main compiler API
 export { compileJSX, buildMetadata } from './compiler.ts'
 export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler.ts'
@@ -77,7 +79,7 @@ export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
 export { rewriteImportsForTemplate } from './adapters/template-imports.ts'
 export { emitParsedExpr } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
-export { importsSearchParams, searchParamsLocalNames, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
+export { importsSearchParams, searchParamsLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export { matchQueryHrefCall, queryHrefArgs, type QueryHrefCall, type QueryHrefTriple } from './query-href-lowering.ts'
 export {
   registerLoweringPlugin,
@@ -244,6 +246,15 @@ export interface BuildOptions {
    * Forwarded to `compileJSX` as `CompileOptions.localImportPrefixes`.
    */
   localImportPrefixes?: string[]
+  /**
+   * Call-lowering plugins to register before compilation (#2057) — e.g.
+   * `queryHrefPlugin` from `@barefootjs/router/plugins`. Each teaches the
+   * compiler to recognize a runtime-API call and lower it to a backend-neutral
+   * node the adapters render. The CLI registers these via `registerLoweringPlugin`
+   * once, before compiling any component. This is the sanctioned structural
+   * extension point (not an output-rewriting hook — see CLAUDE.md).
+   */
+  plugins?: LoweringPlugin[]
 }
 
 // AttrValue constructors

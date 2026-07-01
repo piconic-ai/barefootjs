@@ -41,8 +41,8 @@ export interface QueryHrefCall {
  * Match a `queryHref(base, { … })` call from its callee + args, returning the
  * base and include triples, or null when it isn't a `queryHref` call with a
  * plain object-literal second argument (→ the adapter falls back to its generic
- * lowering). `localNames` are the bindings `queryHref` is imported under (from
- * `queryHrefLocalNames`).
+ * lowering). `localNames` are the bindings `queryHref` is imported under — the
+ * caller resolves them (the `@barefootjs/router/register` lowering plugin, #2057).
  */
 export function matchQueryHrefCall(
   callee: ParsedExpr,

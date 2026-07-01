@@ -6,7 +6,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./plugins": "./src/plugins.ts"
   },
   "publishConfig": {
     "main": "./dist/index.js",
@@ -15,6 +16,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./plugins": {
+        "types": "./dist/plugins.d.ts",
+        "import": "./dist/plugins.js"
       }
     }
   },
@@ -23,8 +28,9 @@
     "src"
   ],
   "scripts": {
-    "build": "bun run clean && bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts --outdir ./dist --format esm --external @barefootjs/shared --external @barefootjs/client",
+    "build": "bun run clean && bun run build:js && bun run build:standalone && bun run build:types",
+    "build:js": "bun build ./src/index.ts ./src/plugins.ts --outdir ./dist --format esm --external @barefootjs/shared --external @barefootjs/client --external @barefootjs/jsx",
+    "build:standalone": "bun build ./src/index.ts --outfile ./dist/standalone.js --format esm --external @barefootjs/client",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",
@@ -50,15 +56,20 @@
     "@barefootjs/shared": "workspace:*"
   },
   "peerDependencies": {
-    "@barefootjs/client": ">=0.14.0"
+    "@barefootjs/client": ">=0.14.0",
+    "@barefootjs/jsx": ">=0.16.0"
   },
   "peerDependenciesMeta": {
     "@barefootjs/client": {
+      "optional": true
+    },
+    "@barefootjs/jsx": {
       "optional": true
     }
   },
   "devDependencies": {
     "@barefootjs/client": "^0.16.0",
+    "@barefootjs/jsx": "workspace:*",
     "@happy-dom/global-registrator": "^20.0.11",
     "typescript": "^5.0.0"
   }
