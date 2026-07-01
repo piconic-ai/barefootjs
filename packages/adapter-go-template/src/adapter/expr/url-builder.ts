@@ -1,11 +1,13 @@
 /**
- * Lowering of the pure, functional `queryHref(base, { … })` URL-query API to a
- * `bf_query` template expression (#2042). The call + object literal are already
- * structured IR, so there is no recognizer and no emit-time re-parse — each
- * property maps to a `bf_query` include triple directly.
+ * Go rendering of a backend-neutral `guard-list` lowering node (#2057) — today
+ * the `queryHref(base, { … })` URL-query API lowered to a `bf_query` template
+ * expression (#2042). Recognition (which import, what call shape) lives in the
+ * lowering-plugin registry; this module is the Go *renderer* for the neutral
+ * node it produces: each triple maps to a `bf_query` include triple directly.
  */
 
 import {
+  type LoweringNode,
   type ParsedExpr,
   parseExpression,
   stringifyParsedExpr,
@@ -13,6 +15,9 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { wrapIfMultiToken } from '../lib/go-emit.ts'
+
+/** Logical helper id → Go template helper name. */
+const GO_HELPER_NAMES: Record<string, string> = { query: 'bf_query' }
 
 const BOOL_COMPARISON_OPS: ReadonlySet<string> = new Set([
   '==', '===', '!=', '!==', '<', '>', '<=', '>=',
@@ -49,79 +54,69 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
 }
 
 /**
- * Lower a `queryHref(<base>, { <key>: <value>, … })` call to a `bf_query`
- * expression (#2042). Because the call + object literal are already structured
- * IR, there's no recognition or re-parse — this maps each property to a
- * `bf_query` include triple directly. Returns null for
- * anything that isn't a `queryHref(base, {object})` call (→ generic lowering).
+ * Try every active lowering matcher against an expression, returning the Go
+ * rendering of the first neutral node produced, or null when none match (→ the
+ * generic lowering). Matchers are bound to the component metadata at init
+ * (`ctx.state.loweringMatchers`), so recognition of *which* API this is lives in
+ * the plugin registry, not here.
  *
- * Inclusion mirrors the client `queryHref` exactly, where every param value is a
- * STRING (`QueryParamValue`): an entry is included iff its value is a non-empty
- * string (the client's `if (value)` over strings).
- *   - plain `key: v`            → `(ne v "") "key" v`
- *   - conditional `key: cond ? a : <undefined|null|''>` → the client evaluates
- *     `if (cond ? a : undefined)`, i.e. include iff `cond` AND `a` is non-empty,
- *     so this emits `(and (<cond>) (ne a "")) "key" a` — NOT just `(cond)`, which
- *     would wrongly include `?key=` when `cond` holds but `a` is empty.
- *
- * Number / boolean values are intentionally outside `QueryParamValue`: JS
- * truthiness omits `0` / `false`, which a string `ne … ""` guard can't model
- * without per-value type info (a possible follow-up). Keeping values string-only
- * guarantees SSR ≡ client.
+ * Cheap-out order mirrors the old inline recognizer: no matchers → null; else
+ * reuse `preParsed` when it's already a call, otherwise a regex pre-filter gates
+ * the parse so non-call expressions never pay for `parseExpression`.
  */
-export function lowerQueryHrefCall(
+export function lowerRegisteredCall(
   ctx: GoEmitContext,
   jsExpr: string,
   preParsed?: ParsedExpr,
 ): string | null {
-  const localNames = ctx.state.queryHrefLocals
-  if (localNames.size === 0) return null
-  const head = /^\s*([A-Za-z_$][\w$]*)\s*\(/.exec(jsExpr)
-  if (!head || !localNames.has(head[1])) return null
+  const matchers = ctx.state.loweringMatchers
+  if (matchers.length === 0) return null
 
-  const call = preParsed?.kind === 'call' ? preParsed : parseExpression(jsExpr)
-  if (call.kind !== 'call' || call.callee.kind !== 'identifier') return null
-  if (!localNames.has(call.callee.name) || call.args.length !== 2) return null
-  const [base, obj] = call.args
-  // The params must be a plain object literal — a dynamic object can't be lowered
-  // to static include triples, so fall back to the generic lowering.
-  if (obj.kind !== 'object-literal') return null
-
-  const lowerExpr = (n: ParsedExpr): string =>
-    ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
-  const parts: string[] = [wrapIfMultiToken(lowerExpr(base))]
-  for (const p of obj.properties) {
-    const v = p.value
-    let includeGo: string
-    let valueNode: ParsedExpr
-    if (v.kind === 'conditional' && isOmitSentinel(v.alternate)) {
-      // `key: cond ? a : <omit>` → include on `cond`. The non-empty check is no
-      // longer folded in here: bf_query drops an included-but-empty value (and
-      // appends an array value member-by-member), matching the client / Perl.
-      includeGo = lowerUrlGuard(ctx, v.test)
-      valueNode = v.consequent
-    } else {
-      // `key: v` → always hand the value to bf_query, which omits it when empty
-      // (or array-empty) and appends array members.
-      includeGo = 'true'
-      valueNode = v
-    }
-    parts.push(`(${includeGo})`)
-    parts.push(JSON.stringify(p.key))
-    parts.push(wrapIfMultiToken(lowerExpr(valueNode)))
+  let call: ParsedExpr | undefined = preParsed?.kind === 'call' ? preParsed : undefined
+  if (!call) {
+    if (!/^\s*[A-Za-z_$][\w$]*\s*\(/.test(jsExpr)) return null
+    const parsed = parseExpression(jsExpr)
+    if (parsed.kind !== 'call') return null
+    call = parsed
   }
-  return `bf_query ${parts.join(' ')}`
+
+  for (const matcher of matchers) {
+    const node = matcher(call.callee, call.args)
+    if (!node) continue
+    const rendered = renderLoweringNode(ctx, node)
+    if (rendered !== null) return rendered
+  }
+  return null
 }
 
 /**
- * The falsy "omit" branch of a conditional include — `undefined` (an identifier),
- * `null`, or `''`. These are the alternates that make `cond ? v : <omit>` a
- * conditional include.
+ * Render a backend-neutral lowering node to a Go template expression, or null
+ * when the node's `helper` has no Go mapping — the caller then declines
+ * (generic lowering → BF101), rather than emitting the raw helper id, which
+ * would be invalid Go. Adapters must switch on `helper`; an unknown one is not
+ * rendered.
  */
-function isOmitSentinel(node: ParsedExpr): boolean {
-  if (node.kind === 'identifier') return node.name === 'undefined'
-  if (node.kind === 'literal') {
-    return node.literalType === 'null' || (node.literalType === 'string' && node.value === '')
+function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | null {
+  const helper = GO_HELPER_NAMES[node.helper]
+  if (!helper) return null
+  const lowerExpr = (n: ParsedExpr): string =>
+    ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
+  if (node.kind === 'helper-call') {
+    const args = node.args.map(a => wrapIfMultiToken(lowerExpr(a)))
+    return [helper, ...args].join(' ')
   }
-  return false
+  // guard-list — `queryHref`-shaped. Inclusion mirrors the client exactly, where
+  // every param value is a STRING (`QueryParamValue`): bf_query drops an
+  // included-but-empty value and appends array members.
+  //   - plain `key: v` (guard null)        → `(true) "key" v`
+  //   - conditional `key: cond ? a : <omit>` → `(<cond>) "key" a`, where the
+  //     non-empty check is done by bf_query, not folded into the guard.
+  const parts: string[] = [wrapIfMultiToken(lowerExpr(node.base))]
+  for (const t of node.triples) {
+    const includeGo = t.guard === null ? 'true' : lowerUrlGuard(ctx, t.guard)
+    parts.push(`(${includeGo})`)
+    parts.push(JSON.stringify(t.key))
+    parts.push(wrapIfMultiToken(lowerExpr(t.value)))
+  }
+  return `${helper} ${parts.join(' ')}`
 }

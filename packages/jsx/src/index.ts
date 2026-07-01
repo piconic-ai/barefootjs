@@ -79,6 +79,16 @@ export { emitParsedExpr } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { importsSearchParams, searchParamsLocalNames, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export { matchQueryHrefCall, queryHrefArgs, type QueryHrefCall, type QueryHrefTriple } from './query-href-lowering.ts'
+export {
+  registerLoweringPlugin,
+  getLoweringPlugins,
+  prepareLoweringMatchers,
+  matchLoweringCall,
+  type LoweringPlugin,
+  type LoweringNode,
+  type LoweringTriple,
+  type LoweringMatcher,
+} from './lowering-registry.ts'
 export { emitIRNode } from './adapters/ir-node-emitter.ts'
 export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter.ts'
 export { emitAttrValue } from './adapters/attr-value-emitter.ts'
