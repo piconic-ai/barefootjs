@@ -239,8 +239,9 @@ describe('MojoAdapter - searchParams() env-signal lowering (#1922)', () => {
   // generic hash deref `$searchParams->{get}` (which drops the arg).
   test('lowers searchParams().get(k) to a method call on $searchParams', () => {
     const { template } = compileAndGenerate(`
-import { searchParams } from '@barefootjs/client'
+import { createSearchParams } from '@barefootjs/client'
 function SortLabel() {
+  const [searchParams] = createSearchParams()
   return <p>{searchParams().get('sort') ?? 'none'}</p>
 }
 `)
@@ -248,13 +249,14 @@ function SortLabel() {
     expect(template).not.toContain('$searchParams->{get}')
   })
 
-  // An aliased import binds the env signal to a different local name; the
-  // expression reads `sp()`, but it still lowers to the canonical
+  // An aliased destructured getter binds the env signal to a different local
+  // name; the expression reads `sp()`, but it still lowers to the canonical
   // `$searchParams` reader (the harness/plugin seed that fixed var).
-  test('matches an aliased import (`searchParams as sp`) and emits canonical $searchParams', () => {
+  test('matches an aliased env-signal getter (`const [sp] = createSearchParams()`) and emits canonical $searchParams', () => {
     const { template } = compileAndGenerate(`
-import { searchParams as sp } from '@barefootjs/client'
+import { createSearchParams } from '@barefootjs/client'
 function SortLabel() {
+  const [sp] = createSearchParams()
   return <p>{sp().get('sort') ?? 'none'}</p>
 }
 `)

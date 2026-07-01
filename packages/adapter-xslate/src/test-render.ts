@@ -516,6 +516,9 @@ function buildPerlProps(
 
   // Signal values evaluated from props (after user props).
   for (const signal of ir.metadata.signals) {
+    // Env signals (#2057) are bound below via `search_params('')`, not from a
+    // static initial value.
+    if (signal.envReader) continue
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
     if (value !== null) {
       entries.push(`${signal.getter} => ${toPerlLiteral(value)}`)

@@ -29,6 +29,7 @@ export {
   BF_SEAM_HYDRATE_WITHIN,
   BF_SEAM_DISPOSE_WITHIN,
   BF_SEAM_PUSH_SEARCH,
+  BF_SEAM_NAV_SEARCH,
 } from './markers.ts'
 
 export {

@@ -65,6 +65,17 @@ function bfIdArg(bfId: string | undefined): string {
 }
 
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {
+  // Env signal (#2057): emit its own factory call verbatim (`createSearchParams()`)
+  // — a stable request-scoped view, so no baked initial value, profile id,
+  // controlled effect, or branch condition applies.
+  if (plan.initializerOverride) {
+    if (plan.setter) {
+      lines.push(`  const [${plan.getter}, ${plan.setter}] = ${plan.initializerOverride}`)
+    } else {
+      lines.push(`  const [${plan.getter}] = ${plan.initializerOverride}`)
+    }
+    return
+  }
   const id = bfIdArg(plan.bfId)
   if (plan.branchCondition) {
     // #1414 cell #8: signal declared inside an early-return `if`-block.

@@ -17,9 +17,10 @@ beforeAll(() => {
   }
 })
 
-const { searchParams, __bfSetServerEnvReader, createEffect, createRoot } = await import(
+const { createSearchParams, __bfSetServerEnvReader, createEffect, createRoot } = await import(
   '../src/reactive.ts'
 )
+const [searchParams, setSearchParams] = createSearchParams()
 
 describe('searchParams (client)', () => {
   test('reads the live URL query on first access and installs the push seam', () => {

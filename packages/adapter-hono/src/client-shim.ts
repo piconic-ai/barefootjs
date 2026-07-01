@@ -27,12 +27,12 @@ export {
   forwardProps,
   unwrap,
   __slot,
-  // Request-scoped env signal (router v0.5). Unlike the reactive primitives
-  // below, `searchParams()` is meant to resolve during SSR — on the server it
-  // reads the per-request query via the injected reader (the Hono adapter wires
-  // it in `search-params-ssr.ts`), defaulting to an empty query — so the real
-  // export is re-exported, not a throwing stub.
-  searchParams,
+  // Request-scoped env signal factory (router v0.5). Unlike the reactive
+  // primitives below, `createSearchParams()`'s getter is meant to resolve during
+  // SSR — on the server it reads the per-request query via the injected reader
+  // (the Hono adapter wires it in `search-params-ssr.ts`), defaulting to an empty
+  // query — so the real export is re-exported, not a throwing stub.
+  createSearchParams,
   // Pure URL-query builder (#2042) — like the other pure helpers above, it has
   // no reactivity and runs unchanged during SSR, so the real export is
   // re-exported (not a stub).

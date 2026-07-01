@@ -143,6 +143,10 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   }
   for (const sig of metadata.signals) {
     if (!sig.getter || sig.isModule) continue
+    // Env signals (#2057) have no static SSR default — their value is the
+    // request-scoped reader, seeded by the adapter's env-signal binding, not a
+    // baked initial value.
+    if (sig.envReader) continue
     const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
     out[sig.getter] = { value: resultToJsonable(value) }
     bindings[sig.getter] = value
@@ -169,7 +173,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   if (metadata.propsObjectName !== null) {
     const referenced = new Set<string>()
     for (const sig of metadata.signals) {
-      if (!sig.getter || sig.isModule) continue
+      if (!sig.getter || sig.isModule || sig.envReader) continue
       collectPropRefs(sig.initialValue, metadata.propsObjectName, referenced)
     }
     for (const memo of metadata.memos) {

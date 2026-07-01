@@ -227,3 +227,14 @@ export const BF_SEAM_HYDRATE_WITHIN = '__bf_hydrate_within'
 export const BF_SEAM_DISPOSE_WITHIN = '__bf_dispose_within'
 /** Push a new query string into the `searchParams()` env signal. `window[BF_SEAM_PUSH_SEARCH](search)`. */
 export const BF_SEAM_PUSH_SEARCH = '__bf_pushSearch'
+/**
+ * Imperative query-only navigation for `setSearchParams(...)`
+ * (`createSearchParams()`, router v0.5). `window[BF_SEAM_NAV_SEARCH](search)`.
+ *
+ * The client's `setSearchParams` writes the new query through this seam so the
+ * router can perform a soft, same-route navigation (history push + region
+ * re-render) without `@barefootjs/client` importing the router. When no router
+ * has installed the seam, `setSearchParams` falls back to a hard navigation —
+ * "never worse than an MPA" — so the imperative write is correct standalone.
+ */
+export const BF_SEAM_NAV_SEARCH = '__bf_navSearch'

@@ -13,6 +13,7 @@ import type { Declaration } from '../declaration-sort.ts'
 import type { ClientJsContext } from '../types.ts'
 import type { ParamInfo, SignalInfo } from '../../types.ts'
 import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
+import { ENV_SIGNAL_CLIENT_FACTORY } from '../../adapters/env-signal.ts'
 import type {
   ControlledSignalEffectPlan,
   DeclarationEmitPlan,
@@ -85,6 +86,17 @@ function buildSignalPlan(
   ctx: ClientJsContext,
   lookups: DeclarationEmitLookups,
 ): SignalEmitPlan {
+  const envFactory = signal.envReader ? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader] : undefined
+  if (envFactory) {
+    return {
+      kind: 'signal',
+      getter: signal.getter,
+      setter: signal.setter,
+      initialValueExpr: '',
+      controlledEffect: null,
+      initializerOverride: `${envFactory}()`,
+    }
+  }
   const controlledEffect = buildControlledSignalEffect(signal, lookups)
   if (controlledEffect && ctx.profile) {
     controlledEffect.bfId = `${ctx.componentName}#effect:controlled:${signal.setter}`

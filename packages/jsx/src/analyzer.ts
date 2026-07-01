@@ -994,6 +994,24 @@ const PRIMITIVE_CANONICAL_NAMES: Record<string, 'signal' | 'memo' | 'effect' | '
   createEffect: 'effect',
   onMount: 'onMount',
   onCleanup: 'onCleanup',
+  // Request-scoped env-signal factories (#2057) are `createSignal`-shaped, so
+  // they resolve to the `signal` kind and flow through the normal signal
+  // collection + fold purity oracle. Their env key (see ENV_SIGNAL_FACTORIES)
+  // is recorded separately on the collected signal so adapters can lower the
+  // reader value; the reactivity kind itself is just `signal`.
+  createSearchParams: 'signal',
+}
+
+/**
+ * Env-signal factories → the request-env key their getter reads
+ * (`createSearchParams` → `'search'`, matching the runtime's
+ * `createEnvSignal('search', …)`). Recognising the *factory* is a general
+ * mechanism (like the reactive-primitive names above); the resulting signal is
+ * tagged with the key so adapters lower its reader value from structure, with
+ * no `searchParams`-name allow-list (#2057, superseding #2055).
+ */
+const ENV_SIGNAL_FACTORIES: Record<string, string> = {
+  createSearchParams: 'search',
 }
 
 type PrimitiveKind = (typeof PRIMITIVE_CANONICAL_NAMES)[keyof typeof PRIMITIVE_CANONICAL_NAMES]
@@ -1054,6 +1072,22 @@ function resolveCalleeViaChecker(
   ident: ts.Identifier,
   ctx: AnalyzerContext
 ): PrimitiveKind | null {
+  const name = resolveCanonicalClientExportName(ident, ctx)
+  return name ? (PRIMITIVE_CANONICAL_NAMES[name] ?? null) : null
+}
+
+/**
+ * Resolve an identifier back to the canonical export name it was imported under
+ * from `@barefootjs/client`, following alias chains
+ * (`import { createSignal as sig }`). Returns null when the checker is
+ * unavailable, the symbol doesn't resolve, or its declaration doesn't live in
+ * `@barefootjs/client` — so a user-defined function that happens to share a
+ * name never matches. Shared by the primitive-kind and env-signal resolvers.
+ */
+function resolveCanonicalClientExportName(
+  ident: ts.Identifier,
+  ctx: AnalyzerContext
+): string | null {
   if (!ctx.checker) return null
   let symbol: ts.Symbol | undefined
   try {
@@ -1073,16 +1107,37 @@ function resolveCalleeViaChecker(
       return null
     }
   }
-  const originalName = target.getName()
-  const hit = PRIMITIVE_CANONICAL_NAMES[originalName]
-  if (!hit) return null
   // Confirm the declaration actually lives in @barefootjs/client so we
   // don't match a user-defined function that happens to share the name.
   for (const decl of target.declarations ?? []) {
     const sourceName = decl.getSourceFile().fileName
     if (sourceName.includes('@barefootjs/client') || sourceName.includes('packages/client/')) {
-      return hit
+      return target.getName()
     }
+  }
+  return null
+}
+
+/**
+ * Resolve a call expression to the request-env key of the env-signal factory it
+ * calls (`createSearchParams()` → `'search'`), or null if it isn't one. Mirrors
+ * {@link resolvePrimitiveKind}'s fast/slow paths (direct name, alias via
+ * checker, `bf.createSearchParams` namespace access) against
+ * {@link ENV_SIGNAL_FACTORIES}.
+ */
+function resolveEnvSignalKey(
+  callExpr: ts.CallExpression,
+  ctx: AnalyzerContext
+): string | null {
+  if (ts.isIdentifier(callExpr.expression)) {
+    const key = ENV_SIGNAL_FACTORIES[callExpr.expression.text]
+    if (key) return key
+    const canonical = resolveCanonicalClientExportName(callExpr.expression, ctx)
+    return canonical ? (ENV_SIGNAL_FACTORIES[canonical] ?? null) : null
+  }
+  if (ts.isPropertyAccessExpression(callExpr.expression)) {
+    const key = ENV_SIGNAL_FACTORIES[callExpr.expression.name.text]
+    if (key && isBarefootClientNamespace(callExpr.expression.expression, ctx)) return key
   }
   return null
 }
@@ -1161,6 +1216,8 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     type = inferTypeFromValue(initialValue)
   }
 
+  const envReader = resolveEnvSignalKey(callExpr, ctx) ?? undefined
+
   ctx.signals.push({
     getter,
     setter,
@@ -1171,6 +1228,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     initialFreeIdentifiers: callExpr.arguments[0]
       ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
       : new Set(),
+    envReader,
   })
 }
 
@@ -1770,10 +1828,11 @@ const CLIENT_EXPORTS = new Set([
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
   'createPortal', 'isSSRPortal', 'findSiblingSlot', 'cleanupPortalPlaceholder',
-  // Request-scoped environment signal (router v0.5) — a real user-facing
-  // reactive export the compiler lowers like any other `@barefootjs/client`
-  // signal read (SSR: a template binding; client: a `createEffect`).
-  'searchParams',
+  // Request-scoped environment signal factory (router v0.5) — `createSignal`-
+  // shaped, recognised structurally (#2057) so its getter is just a signal
+  // getter; the compiler lowers the reader value per adapter via the signal's
+  // `envReader` key, with no `searchParams`-name allow-list.
+  'createSearchParams',
   // Pure URL-query builder (#2042) — the functional counterpart to
   // `searchParams`. Runs natively on the client; SSR adapters lower a
   // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
@@ -3242,8 +3301,11 @@ function validateContext(ctx: AnalyzerContext): void {
   // their implementations live in `@barefootjs/client/runtime` and require
   // compiler emission to run correctly.
   if (!ctx.hasUseClientDirective) {
+    // Env signals (`createSearchParams()`, #2057) are exempt: reading the
+    // request query is SSR-safe and hydrates without `use client`, exactly as
+    // the pre-#2057 bare `searchParams()` import did (it was not a signal).
     const usesBrowserOnlyApi =
-      ctx.signals.length > 0 || importsBrowserOnlyClientApi(ctx)
+      ctx.signals.some(s => !s.envReader) || importsBrowserOnlyClientApi(ctx)
     if (usesBrowserOnlyApi) {
       ctx.errors.push(
         createError(ErrorCodes.MISSING_USE_CLIENT, {
@@ -3972,6 +4034,9 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
       if (!ts.isIdentifier(decl.initializer.expression)) continue
       const callee = decl.initializer.expression.text
       if (callee === 'createSignal' || callee === 'createMemo') continue
+      // Env-signal factories (`createSearchParams`, #2057) are `createSignal`-
+      // shaped and recognised structurally — a valid tuple destructure.
+      if (callee in ENV_SIGNAL_FACTORIES) continue
       // Inlined factories were rewritten away before this analysis, so
       // anything still matching the shape is a destructure of an
       // unrecognised callee (imported helper, ad-hoc tuple fn, factory

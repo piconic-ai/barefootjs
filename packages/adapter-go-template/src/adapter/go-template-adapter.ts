@@ -701,7 +701,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // redeclare the field and break the Go compile.
     const taken = new Set<string>([
       ...ir.metadata.propsParams.map(p => capitalizeFieldName(p.name)),
-      ...ir.metadata.signals.map(s => capitalizeFieldName(s.getter)),
+      // Env signals (`createSearchParams()`) don't produce a normal value field —
+      // they ARE the `SearchParams` binding — so they must not poison this
+      // collision set (a getter named `searchParams` would otherwise capitalise
+      // to `SearchParams` and suppress the real reader field).
+      ...ir.metadata.signals.filter(s => !s.envReader).map(s => capitalizeFieldName(s.getter)),
       ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
       ...this.state.contextConsumers.map(c => this.contextFieldName(c)),
     ])
@@ -1060,6 +1064,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Signal initial values (skip a name already emitted as a prop field).
     for (const signal of ir.metadata.signals) {
+      // Env signals are the request-scoped `SearchParams` reader field, not a
+      // stored value — no baked initial value to emit here (#2057).
+      if (signal.envReader) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
@@ -1528,6 +1535,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // localTypeNames/localStructFields so the baker resolves the element type.
     this.state.synthStructTypes = new Map<string, TypeInfo>()
     for (const signal of ir.metadata.signals) {
+      if (signal.envReader) continue // env signal has no bakeable initial shape (#2057)
       const synth = this.synthesizeStructFromSignal(signal, componentName)
       if (!synth) continue
       this.state.localTypeNames.add(synth.name)
@@ -1657,6 +1665,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
 
     for (const signal of ir.metadata.signals) {
+      // Env signals are bound as the `SearchParams bf.SearchParams` reader field
+      // (see generateInputStruct), not as a generic value field (#2057).
+      if (signal.envReader) continue
       const fieldName = capitalizeFieldName(signal.getter)
       if (propFieldNames.has(fieldName)) continue
       const jsonTag = this.toJsonTag(signal.getter)
