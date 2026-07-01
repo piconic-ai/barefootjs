@@ -171,9 +171,10 @@ doubled()  // Returns computed value
 
 ### SSR value embedding (block → expression normalization)
 
-A value-producing body — a memo / derived value, a higher-order callback body,
-an attribute or interpolation expression — is normalized to a **single value
-expression** before lowering. A block body (`() => { … }`) is folded to that
+A value-producing body — a memo / derived value or a higher-order callback body
+— is normalized to a **single value expression** before lowering. (Attribute
+and interpolation positions are already expressions and never carry a block, so
+there is nothing to fold there.) A block body (`() => { … }`) is folded to that
 expression: pure `const` bindings inline (let-inline), and value-producing `if`
 / early `return` become a ternary (`if (c) return A; return B` → `c ? A : B`).
 Genuinely imperative shapes — raw `for` / `while` accumulation that isn't a
