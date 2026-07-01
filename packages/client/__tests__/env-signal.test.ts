@@ -32,6 +32,59 @@ describe('createSearchParams', () => {
   })
 })
 
+describe('setSearchParams', () => {
+  // Capture the imperative-nav seam the router would install, so we can assert
+  // both the seam wiring and the `SearchParamsInit` normalization without a
+  // real navigation.
+  const NAV_SEAM = '__bf_navSearch'
+  function withNavSeam(fn: (calls: string[]) => void): void {
+    const w = window as unknown as Record<string, ((s: string) => void) | undefined>
+    const prev = w[NAV_SEAM]
+    const calls: string[] = []
+    w[NAV_SEAM] = (s: string) => calls.push(s)
+    try {
+      fn(calls)
+    } finally {
+      w[NAV_SEAM] = prev
+    }
+  }
+
+  test('writes through the nav seam when a router has installed it', () => {
+    withNavSeam((calls) => {
+      setSearchParams('?sort=price')
+      expect(calls).toEqual(['?sort=price'])
+    })
+  })
+
+  test('normalizes a bare string (adds leading ?)', () => {
+    withNavSeam((calls) => {
+      setSearchParams('sort=price')
+      expect(calls).toEqual(['?sort=price'])
+    })
+  })
+
+  test('normalizes a record, appending array values as multi-value', () => {
+    withNavSeam((calls) => {
+      setSearchParams({ sort: 'price', tag: ['a', 'b'] })
+      expect(calls).toEqual(['?sort=price&tag=a&tag=b'])
+    })
+  })
+
+  test('normalizes a URLSearchParams', () => {
+    withNavSeam((calls) => {
+      setSearchParams(new URLSearchParams({ q: 'hi there' }))
+      expect(calls).toEqual(['?q=hi+there'])
+    })
+  })
+
+  test('an empty query normalizes to the empty string', () => {
+    withNavSeam((calls) => {
+      setSearchParams({})
+      expect(calls).toEqual([''])
+    })
+  })
+})
+
 describe('searchParams (client)', () => {
   test('reads the live URL query on first access and installs the push seam', () => {
     expect(searchParams().get('sort')).toBe('price')
