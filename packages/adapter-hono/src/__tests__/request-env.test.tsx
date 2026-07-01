@@ -12,13 +12,14 @@
  */
 
 import { describe, test, expect, beforeAll } from 'bun:test'
-import { searchParams } from '@barefootjs/client'
+import { createSearchParams } from '@barefootjs/client'
 import { renderToHtml } from '../render'
 import { runWithRequestEnv, withRequestEnv } from '../request-env'
 
 // A plain hono/jsx component that reads the env signal at SSR — exactly what a
 // compiled BarefootJS component lowers `{searchParams().get('sort') ?? 'none'}`
 // to on the Hono adapter.
+const [searchParams] = createSearchParams()
 const SortLabel = () => <p>{searchParams().get('sort') ?? 'none'}</p>
 
 // Install a prior keyed reader on the seam BEFORE the first `runWithRequestEnv`

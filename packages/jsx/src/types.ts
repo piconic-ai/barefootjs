@@ -1157,6 +1157,26 @@ export interface SignalInfo {
   isModule?: boolean
   /** When true, the declaration carries an `export` keyword. */
   isExported?: boolean
+  /**
+   * Request-scoped environment-signal key when this signal was produced by an
+   * env-signal factory (`createSearchParams()` → `'search'`), rather than by
+   * `createSignal`. Set structurally by the analyzer (#2057) — the getter is a
+   * normal reactive getter (so it lands in the fold purity oracle for free, no
+   * name allow-list), but its *value* is a request-scoped reader with methods
+   * (`.get(key)`), which adapters lower to their per-request reader object
+   * instead of a plain template field. This flag is how adapters recognise an
+   * env signal from structure instead of matching the import name.
+   */
+  envReader?: string
+  /**
+   * For an env signal (`envReader` set), the exact callee text of its factory
+   * call as written — `'createSearchParams'`, an alias (`'csp'` for
+   * `import { createSearchParams as csp }`), or a namespace access
+   * (`'bf.createSearchParams'`). Backends that re-emit the declaration (client
+   * JS, JSX/Hono SSR) emit `<envFactory>()` so the call resolves to the binding
+   * actually in scope, not a hardcoded canonical name (#2057).
+   */
+  envFactory?: string
 }
 
 export interface MemoInfo {

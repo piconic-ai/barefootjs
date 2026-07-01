@@ -453,6 +453,7 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
     }
   }
   for (const signal of ir.metadata.signals) {
+    if (signal.envReader) continue // env signal is the request reader, not a stashed value (#2057)
     const value = evaluateSignalInit(signal.initialValue.trim(), undefined)
     entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
   }
@@ -599,6 +600,7 @@ function buildPerlProps(
   // vars with `Global symbol "$x" requires explicit package name`. Same
   // rule `buildChildDefaultsPerl` applies to child signals (#1897).
   for (const signal of ir.metadata.signals) {
+    if (signal.envReader) continue // env signal bound below via search_params('') (#2057)
     const value = evaluateSignalInit(signal.initialValue.trim(), props)
     entries.push(`${signal.getter} => ${value !== null ? toPerlLiteral(value) : 'undef'}`)
   }

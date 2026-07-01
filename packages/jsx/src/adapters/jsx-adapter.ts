@@ -12,6 +12,7 @@ import type {
 } from '../types.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface.ts'
+import { ENV_SIGNAL_CLIENT_FACTORY } from './env-signal.ts'
 import { formatParamWithType, findReachableNames } from '../module-exports.ts'
 
 export interface JsxAdapterConfig {
@@ -110,6 +111,22 @@ export abstract class JsxAdapter extends BaseAdapter {
 
     for (const signal of ir.metadata.signals) {
       if (signal.isModule) continue
+      if (signal.envReader) {
+        // Env signal (#2057): call the real runtime factory so SSR resolves the
+        // request query through the installed server env reader, not a static
+        // initial value. Emit the factory as written (alias / namespace aware),
+        // matching the import re-emitted into the SSR module; fall back to the
+        // canonical name if the callee text wasn't captured.
+        const factory = signal.envFactory ?? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader]
+        if (factory) {
+          lines.push(
+            signal.setter
+              ? `  const [${signal.getter}, ${signal.setter}] = ${factory}()`
+              : `  const [${signal.getter}] = ${factory}()`,
+          )
+        }
+        continue
+      }
       // Create a getter that returns the initial value for SSR
       const rawInitialValue = preserveTypes
         ? (signal.typedInitialValue ?? signal.initialValue)

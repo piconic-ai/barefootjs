@@ -13,6 +13,7 @@ import type { Declaration } from '../declaration-sort.ts'
 import type { ClientJsContext } from '../types.ts'
 import type { ParamInfo, SignalInfo } from '../../types.ts'
 import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
+import { ENV_SIGNAL_CLIENT_FACTORY } from '../../adapters/env-signal.ts'
 import type {
   ControlledSignalEffectPlan,
   DeclarationEmitPlan,
@@ -85,6 +86,21 @@ function buildSignalPlan(
   ctx: ClientJsContext,
   lookups: DeclarationEmitLookups,
 ): SignalEmitPlan {
+  if (signal.envReader) {
+    // Emit the factory as written (alias / namespace aware, #2057), falling back
+    // to the canonical name if the callee text wasn't captured.
+    const factory = signal.envFactory ?? ENV_SIGNAL_CLIENT_FACTORY[signal.envReader]
+    if (factory) {
+      return {
+        kind: 'signal',
+        getter: signal.getter,
+        setter: signal.setter,
+        initialValueExpr: '',
+        controlledEffect: null,
+        initializerOverride: `${factory}()`,
+      }
+    }
+  }
   const controlledEffect = buildControlledSignalEffect(signal, lookups)
   if (controlledEffect && ctx.profile) {
     controlledEffect.bfId = `${ctx.componentName}#effect:controlled:${signal.setter}`

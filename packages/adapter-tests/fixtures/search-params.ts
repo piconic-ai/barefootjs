@@ -1,8 +1,9 @@
 import { createFixture } from '../src/types'
 
-// `searchParams()` (router v0.5) is a request-scoped reactive environment
-// signal. Reading it in a component compiles to a normal dynamic-text binding;
-// on the server it resolves the current request's query (empty here, since the
+// `createSearchParams()` (router v0.5) is a request-scoped reactive environment
+// signal — a `createSignal`-shaped `[getter, setter]` recognised structurally
+// (#2057). Reading the getter compiles to a normal dynamic-text binding; on the
+// server it resolves the current request's query (empty here, since the
 // conformance harness issues no query string), so `.get('sort') ?? 'none'`
 // renders the default `none`.
 //
@@ -13,14 +14,15 @@ import { createFixture } from '../src/types'
 // https://github.com/piconic-ai/barefootjs/issues/1922.
 export const fixture = createFixture({
   id: 'search-params',
-  description: 'searchParams() env signal renders its empty-query default at SSR',
+  description: 'createSearchParams() env signal renders its empty-query default at SSR',
   source: `
-import { searchParams } from '@barefootjs/client'
+import { createSearchParams } from '@barefootjs/client'
 export function SortLabel() {
+  const [searchParams] = createSearchParams()
   return <p>{searchParams().get('sort') ?? 'none'}</p>
 }
 `,
   expectedHtml: `
-    <p bf-s="test"><!--bf:s0-->none<!--/--></p>
+    <p bf-s="test" bf="s1"><!--bf:s0-->none<!--/--></p>
   `,
 })

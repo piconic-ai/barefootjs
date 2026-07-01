@@ -376,8 +376,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const propsTypeName = this.getPropsTypeName(ir)
 
     // Validate: only reactive primitives (signals, memos, effects, onMounts) require "use client"
+    // Env signals (`createSearchParams()`, #2057) are exempt — reading the
+    // request query is SSR-safe and needs no hydration, so a component that only
+    // reads an env signal stays a plain SSR component (as `searchParams()` did
+    // before it became a structural signal).
     const hasReactivePrimitives =
-      ir.metadata.signals.length > 0 ||
+      ir.metadata.signals.some(s => !s.envReader) ||
       ir.metadata.memos.length > 0 ||
       ir.metadata.effects.length > 0 ||
       ir.metadata.onMounts.length > 0

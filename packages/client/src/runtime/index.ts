@@ -23,11 +23,13 @@ export {
   endTurn,
   __bfReportOutput,
   // Request-scoped env signal (router v0.5). The compiler emits island client JS
-  // that imports `searchParams` from `@barefootjs/client/runtime`; re-exporting
-  // it from the shared reactive module (same as the signal primitives above)
-  // means this entry and the main `@barefootjs/client` entry resolve to ONE
-  // signal instance — no second copy to disconnect from router pushes.
-  searchParams,
+  // that imports `createSearchParams` from `@barefootjs/client/runtime`;
+  // re-exporting it from the shared reactive module (same as the signal
+  // primitives above) means this entry and the main `@barefootjs/client` entry
+  // resolve to ONE signal instance — no second copy to disconnect from router
+  // pushes.
+  createSearchParams,
+  type SearchParamsInit,
   __bfSetServerEnvReader,
   type Reactive,
   type Signal,

@@ -22,10 +22,11 @@ function generate(src: string) {
 describe('Capability A: object-returning searchParams memo → computed map field', () => {
   const SRC = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 const SORT_KEYS = ['date', 'title', 'tag']
 const asSortKey = (raw) => (SORT_KEYS.includes(raw) ? raw : 'date')
 export function P() {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     return { sort: asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' }
@@ -74,8 +75,9 @@ export function P() {
   test('string-valued ternary condition falls back to nil, never invalid Go', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 export function P() {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     return { label: sp.get('tag') ? 'has' : 'none' }
@@ -95,8 +97,9 @@ export function P() {
   test('block-body memo with control flow falls back to nil', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 export function P() {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     if (sp.get('x')) return { sort: 'early' }
@@ -115,10 +118,11 @@ describe('Capability B: inline local pure helper calls at attribute call sites',
   test('sortClass(k) inlines to a conditional, not a .SortClass method call', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 const SORT_KEYS = ['date', 'title', 'tag']
 const asSortKey = (raw) => (SORT_KEYS.includes(raw) ? raw : 'date')
 export function P() {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     return { sort: asSortKey(sp.get('sort')), tag: sp.get('tag') ?? '' }
@@ -139,8 +143,9 @@ export function P() {
   test('tagClass(t) inlines inside a loop, resolving the loop var and root memo', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 export function P(props: { tags: string[] }) {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     return { tag: sp.get('tag') ?? '' }
@@ -270,9 +275,10 @@ describe('Capability D: array-memo .length → handler-filled loop slice count',
   test('visible().length lowers to len .<Slice>, not the nil memo field', () => {
     const src = `
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 import { Row } from './Row'
 export function P(props: { items: { id: string }[] }) {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     return { tag: sp.get('tag') ?? '' }
@@ -404,8 +410,9 @@ describe('Capability D: searchParams object memo via fold (#2040 PR-C)', () => {
     // `searchParams().get('k')` in the returned object now lowers too.
     const { types } = generate(`
 "use client"
-import { createMemo, searchParams } from "@barefootjs/client"
+import { createMemo, createSearchParams } from "@barefootjs/client"
 export function PostList() {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     return { tag: searchParams().get('tag') ?? '' }
   })
@@ -417,11 +424,12 @@ export function PostList() {
     expect(types).toContain('in.SearchParams.Get("tag")')
   })
 
-  test('aliased searchParams import still lowers (local-name oracle)', () => {
+  test('aliased env-signal getter still lowers (local-name oracle)', () => {
     const { types } = generate(`
 "use client"
-import { createMemo, searchParams as sp } from "@barefootjs/client"
+import { createMemo, createSearchParams } from "@barefootjs/client"
 export function PostList() {
+  const [sp] = createSearchParams()
   const params = createMemo(() => {
     const q = sp()
     return { tag: q.get('tag') ?? '' }

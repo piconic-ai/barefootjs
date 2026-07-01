@@ -10,36 +10,45 @@ import type { ParsedExpr } from '../expression-parser.ts'
 import type { IRMetadata } from '../types.ts'
 
 /**
- * The local binding name(s) that `searchParams` from `@barefootjs/client` is
- * imported under in this component — the same import the analyzer allow-lists
- * (`CLIENT_EXPORTS`). Usually the single name `searchParams`, but an aliased
- * import (`import { searchParams as sp }`) binds it to `sp`, and the template
- * expression then reads `sp()` — so adapters must gate + match against the
- * LOCAL name(s), not the literal `searchParams`. Empty when the env signal is
- * not imported (the component keeps the generic signal lowering).
+ * Env-signal key → the runtime factory that produces it (`'search'` →
+ * `createSearchParams`). Single source of truth for the reverse of the
+ * analyzer's `ENV_SIGNAL_FACTORIES` (#2057): an env signal is `createSignal`-
+ * shaped for analysis, but every backend that re-emits its declaration (client
+ * JS, JSX/Hono SSR) must call this factory, not `createSignal`, so the value is
+ * the request-scoped reader rather than stored state.
+ */
+export const ENV_SIGNAL_CLIENT_FACTORY: Record<string, string> = {
+  search: 'createSearchParams',
+}
+
+/**
+ * The getter name(s) of the `searchParams` env signal in this component.
  *
- * `ImportSpecifier.name` is the exported name and `alias` the local rebinding
- * (see `collectImport` in analyzer.ts), so the import is detected by `name ===
- * 'searchParams'` and the local binding is `alias ?? name`. Namespace / default
- * specifiers bind a different identifier and are excluded.
+ * Recognised **structurally** (#2057): the env signal is now declared as a
+ * `createSignal`-shaped `const [searchParams, setSearchParams] =
+ * createSearchParams()`, so the analyzer collects it into `metadata.signals`
+ * with `envReader: 'search'` — exactly like any other signal, but tagged. This
+ * function returns those getters (whatever the destructured name is —
+ * `searchParams`, or an alias), so adapters match the reader `.get()` call
+ * against the binding actually used, with **no `searchParams`-name allow-list**
+ * (this supersedes the import-name matching, and the closed #2055).
+ *
+ * Empty when the component declares no env signal (the component keeps the
+ * generic signal lowering).
  */
 export function searchParamsLocalNames(metadata: IRMetadata): Set<string> {
   const names = new Set<string>()
-  for (const imp of metadata.imports) {
-    if (imp.source !== '@barefootjs/client' || imp.isTypeOnly) continue
-    for (const s of imp.specifiers) {
-      if (s.isTypeOnly || s.isNamespace || s.isDefault) continue
-      if (s.name === 'searchParams') names.add(s.alias ?? s.name)
-    }
+  for (const s of metadata.signals) {
+    if (s.envReader === 'search') names.add(s.getter)
   }
   return names
 }
 
 /**
- * True when the component imports the `searchParams` env signal under any local
- * name. Convenience for adapters/harnesses that only need to gate on presence
- * (the lowering itself needs the {@link searchParamsLocalNames} set to match the
- * actual binding in the expression).
+ * True when the component declares the `searchParams` env signal. Convenience
+ * for adapters/harnesses that only need to gate on presence (the lowering
+ * itself needs the {@link searchParamsLocalNames} set to match the actual
+ * binding in the expression).
  */
 export function importsSearchParams(metadata: IRMetadata): boolean {
   return searchParamsLocalNames(metadata).size > 0

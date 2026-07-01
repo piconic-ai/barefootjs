@@ -54,6 +54,15 @@ export interface SignalEmitPlan {
   branchCondition?: string
   /** Profile-mode IR-aligned id, appended as the `createSignal` 2nd arg (#1690). */
   bfId?: string
+  /**
+   * When set, the full initializer expression to emit verbatim instead of
+   * `createSignal(<initialValueExpr>)`. Env signals (#2057) emit their own
+   * factory call — e.g. `createSearchParams()` — with no baked initial value,
+   * profile id, controlled effect, or branch condition (the tuple is a stable
+   * request-scoped view, not stored state). When present the stringifier emits
+   * `const [<getter>, <setter>] = <initializerOverride>` and nothing else.
+   */
+  initializerOverride?: string
 }
 
 export interface ControlledSignalEffectPlan {

@@ -5,7 +5,7 @@
  * Inspired by SolidJS signals.
  */
 
-import { BF_SEAM_PUSH_SEARCH } from '@barefootjs/shared'
+import { BF_SEAM_NAV_SEARCH, BF_SEAM_PUSH_SEARCH } from '@barefootjs/shared'
 
 /**
  * Phantom brand for compile-time reactivity detection.
@@ -665,15 +665,22 @@ function resolveServerEnv(key: string): string | undefined {
 
 /**
  * Build a request-scoped reactive environment signal, keyed by `key` — the env
- * id the SSR reader resolves (`'search'`, …). Internal: only concrete instances
- * (`searchParams`, …) are exported.
+ * id the SSR reader resolves (`'search'`, …) — as a `createSignal`-shaped
+ * `[getter, setter]` tuple. Internal: only concrete factories
+ * (`createSearchParams`, …) are exported.
+ *
+ * The tuple shape is deliberate (#2057): the compiler recognises the getter
+ * *structurally* — the same path as `createSignal` — so it needs no env-signal
+ * name allow-list, and the getter is pure-within-render for the block fold. The
+ * setter is the single imperative navigation path.
  */
 function createEnvSignal<T>(
   key: string,
   readClient: () => string,
   parse: (raw: string) => T,
   pushSeam: string,
-): Reactive<() => T> {
+  navSeam: string,
+): readonly [Reactive<() => T>, (nextRaw: string) => void] {
   let getRaw: (() => string) | null = null
 
   function ensureClientSignal(): string {
@@ -693,7 +700,7 @@ function createEnvSignal<T>(
     return getRaw()
   }
 
-  return (() => {
+  const getter = (() => {
     if (typeof window === 'undefined') {
       // SSR: resolve per-call inside the host's request context. Never cache a
       // module-level signal — it would be a process-wide global that races.
@@ -701,29 +708,100 @@ function createEnvSignal<T>(
     }
     return parse(ensureClientSignal())
   }) as Reactive<() => T>
+
+  // Imperative navigation. The setter writes the new raw value through the
+  // router's nav seam (soft, same-route query navigation) when a router has
+  // installed it; otherwise it hard-navigates — "never worse than an MPA" — so
+  // the write is correct standalone. The getter is then updated by the router
+  // through `pushSeam`, keeping read reactivity in one place. On the server a
+  // setter call is a no-op (there is nothing to navigate).
+  const setter = (nextRaw: string) => {
+    if (typeof window === 'undefined') return
+    const w = window as unknown as Record<string, ((next: string) => void) | undefined>
+    const nav = w[navSeam]
+    if (typeof nav === 'function') {
+      nav(nextRaw)
+      return
+    }
+    window.location.search = nextRaw
+  }
+
+  return [getter, setter] as const
 }
 
-/**
- * Reactive read of the current query string as `URLSearchParams`.
- *
- * ```tsx
- * const sort = createMemo(() => searchParams().get('sort') ?? 'recent')
- * ```
- *
- * A same-route, query-only navigation (`/list?sort=price`) driven by
- * `@barefootjs/router` updates this signal and the URL **without a swap or
- * re-hydration**. On the server it reflects the current request's query.
- *
- * Reactivity is **router-driven**: the signal is seeded once on first read and
- * thereafter updated only through the `window.__bf_pushSearch` seam, which
- * `startRouter()` drives (including on `popstate`). Without the router running
- * — or after a non-router `history` change — the value is read-once; the seam
- * name is shared with `@barefootjs/router` via `BF_SEAM_PUSH_SEARCH`, so the
- * installer (here) and the pusher agree by construction.
- */
-export const searchParams = createEnvSignal(
+/** Accepted inputs for `setSearchParams` — a raw query string (with or without
+ *  a leading `?`), a `URLSearchParams`, or a plain record (array = multi-value,
+ *  form-encoded like the client `queryHref`, cf. #2048). */
+export type SearchParamsInit =
+  | string
+  | URLSearchParams
+  | Record<string, string | readonly string[]>
+
+function toSearchString(next: SearchParamsInit): string {
+  let usp: URLSearchParams
+  if (next instanceof URLSearchParams) {
+    usp = next
+  } else if (typeof next === 'string') {
+    usp = new URLSearchParams(next.startsWith('?') ? next.slice(1) : next)
+  } else {
+    usp = new URLSearchParams()
+    for (const [k, v] of Object.entries(next)) {
+      if (Array.isArray(v)) {
+        for (const item of v) usp.append(k, item)
+      } else {
+        usp.append(k, v as string)
+      }
+    }
+  }
+  const s = usp.toString()
+  return s ? `?${s}` : ''
+}
+
+const [searchParamsGetter, setSearchParamsRaw] = createEnvSignal(
   'search',
   () => window.location.search,
   (raw) => new URLSearchParams(raw),
   BF_SEAM_PUSH_SEARCH,
+  BF_SEAM_NAV_SEARCH,
 )
+
+/**
+ * `createSearchParams()` — the request-scoped query-string env signal, returned
+ * as a `createSignal`-shaped `[getter, setter]` tuple (#2057):
+ *
+ * ```tsx
+ * const [searchParams, setSearchParams] = createSearchParams()
+ * const sort = createMemo(() => searchParams().get('sort') ?? 'recent')
+ * // …
+ * setSearchParams({ sort: 'price' })   // imperative, same-route navigation
+ * ```
+ *
+ * **Read** (`searchParams()`): the current query as `URLSearchParams`. A
+ * same-route, query-only navigation (`/list?sort=price`) driven by
+ * `@barefootjs/router` updates this signal and the URL **without a swap or
+ * re-hydration**. On the server it reflects the current request's query.
+ * Reactivity is **router-driven**: the signal is seeded once on first read and
+ * thereafter updated only through the `window.__bf_pushSearch` seam, which
+ * `startRouter()` drives (including on `popstate`).
+ *
+ * **Write** (`setSearchParams(next)`): the single imperative navigation path —
+ * a soft same-route navigation when a router is running, a hard navigation
+ * otherwise. This replaces mutating a live `URLSearchParams` reader (which only
+ * ever changed a throwaway copy), so there is exactly one way to change the
+ * query.
+ *
+ * Every call returns the same request-scoped getter/setter — there is one query
+ * per document, so the tuple is a stable view, not per-call state.
+ */
+const setSearchParams = (next: SearchParamsInit): void => setSearchParamsRaw(toSearchString(next))
+const searchParamsTuple: readonly [
+  Reactive<() => URLSearchParams>,
+  (next: SearchParamsInit) => void,
+] = [searchParamsGetter, setSearchParams]
+
+export function createSearchParams(): readonly [
+  Reactive<() => URLSearchParams>,
+  (next: SearchParamsInit) => void,
+] {
+  return searchParamsTuple
+}

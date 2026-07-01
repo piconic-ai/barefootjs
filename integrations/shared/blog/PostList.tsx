@@ -1,6 +1,6 @@
 'use client'
 
-import { createMemo, searchParams, queryHref } from '@barefootjs/client'
+import { createMemo, createSearchParams, queryHref } from '@barefootjs/client'
 import { PostListItem } from './PostListItem'
 
 interface Item {
@@ -40,6 +40,7 @@ interface PostListProps {
  * reactive off the same source, so they stay in sync as the query changes.
  */
 export function PostList(props: PostListProps) {
+  const [searchParams] = createSearchParams()
   const params = createMemo(() => {
     const sp = searchParams()
     // Validate the query value against the known keys so an invalid `?sort=foo`

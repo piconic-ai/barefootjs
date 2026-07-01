@@ -226,8 +226,9 @@ describe('GoTemplateAdapter - searchParams() env-signal lowering (#1922)', () =>
   test('lowers searchParams().get(k) to .SearchParams.Get and emits the struct binding', () => {
     const adapter = new GoTemplateAdapter()
     const ir = compileToIR(`
-import { searchParams } from '@barefootjs/client'
+import { createSearchParams } from '@barefootjs/client'
 export function SortLabel() {
+  const [searchParams] = createSearchParams()
   return <p>{searchParams().get('sort') ?? 'none'}</p>
 }
 `, adapter)
@@ -237,14 +238,15 @@ export function SortLabel() {
     expect(types).toContain('SearchParams: in.SearchParams')
   })
 
-  // An aliased import binds the env signal to a different local name; the
-  // call `sp()` still resolves to the canonical `.SearchParams` field (the
-  // generated struct field name is fixed, not derived from the JS alias).
-  test('aliased import (`searchParams as sp`) resolves sp() to canonical .SearchParams', () => {
+  // An aliased destructured getter binds the env signal to a different local
+  // name; the call `sp()` still resolves to the canonical `.SearchParams` field
+  // (the generated struct field name is fixed, not derived from the JS name).
+  test('aliased env-signal getter (`const [sp] = createSearchParams()`) resolves sp() to canonical .SearchParams', () => {
     const adapter = new GoTemplateAdapter()
     const ir = compileToIR(`
-import { searchParams as sp } from '@barefootjs/client'
+import { createSearchParams } from '@barefootjs/client'
 export function SortLabel() {
+  const [sp] = createSearchParams()
   return <p>{sp().get('sort') ?? 'none'}</p>
 }
 `, adapter)
@@ -267,8 +269,9 @@ describe('GoTemplateAdapter - template-literal text lowering (#1933)', () => {
     const adapter = new GoTemplateAdapter()
     const ir = compileToIR(`
 'use client'
-import { createMemo, searchParams } from '@barefootjs/client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
 export function StatusLine() {
+  const [searchParams] = createSearchParams()
   const tag = createMemo(() => searchParams().get('tag') ?? '')
   return (
     <div className="status">

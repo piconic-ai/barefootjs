@@ -213,7 +213,7 @@ export const BF_PARENT_SCOPE_PLACEHOLDER = '__BF_PARENT_SCOPE__'
 // The optional client router (`@barefootjs/router`) reaches the client runtime
 // through a few `window.__bf_*` function properties. The runtime *installs*
 // them (`@barefootjs/client/runtime/streaming.ts`, `@barefootjs/client`'s
-// `searchParams`) and the router *reads* them (`@barefootjs/router/seams.ts`),
+// `createSearchParams`) and the router *reads* them (`@barefootjs/router/seams.ts`),
 // in different packages — so the names live here as the single source of truth.
 // A rename is then a compile error on both sides instead of a silently-broken
 // seam (the router would otherwise fall back to a dynamic import and mask the
@@ -225,5 +225,17 @@ export const BF_SEAM_HYDRATE = '__bf_hydrate'
 export const BF_SEAM_HYDRATE_WITHIN = '__bf_hydrate_within'
 /** Dispose the islands in a subtree. `window[BF_SEAM_DISPOSE_WITHIN](root)`. */
 export const BF_SEAM_DISPOSE_WITHIN = '__bf_dispose_within'
-/** Push a new query string into the `searchParams()` env signal. `window[BF_SEAM_PUSH_SEARCH](search)`. */
+/** Push a new query string into the env-signal getter returned by
+ *  `createSearchParams()`. `window[BF_SEAM_PUSH_SEARCH](search)`. */
 export const BF_SEAM_PUSH_SEARCH = '__bf_pushSearch'
+/**
+ * Imperative query-only navigation for `setSearchParams(...)`
+ * (`createSearchParams()`, router v0.5). `window[BF_SEAM_NAV_SEARCH](search)`.
+ *
+ * The client's `setSearchParams` writes the new query through this seam so the
+ * router can perform a soft, same-route navigation (history push + region
+ * re-render) without `@barefootjs/client` importing the router. When no router
+ * has installed the seam, `setSearchParams` falls back to a hard navigation —
+ * "never worse than an MPA" — so the imperative write is correct standalone.
+ */
+export const BF_SEAM_NAV_SEARCH = '__bf_navSearch'
