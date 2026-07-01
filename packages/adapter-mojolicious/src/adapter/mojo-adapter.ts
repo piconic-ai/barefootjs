@@ -54,13 +54,12 @@ import {
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
-  queryHrefLocalNames,
-  matchQueryHrefCall,
+  prepareLoweringMatchers,
   queryHrefArgs,
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
@@ -163,11 +162,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private _searchParamsLocals: Set<string> = new Set()
 
   /**
-   * Local binding names `queryHref` is imported under (#2042). Set at
-   * `generate()` entry; read by the top-level emitter to lower a
-   * `queryHref(base, { … })` call to a `bf->query(...)` helper call.
+   * Call-lowering matchers active for this component (#2057), bound to its
+   * metadata at `generate()` entry via `prepareLoweringMatchers`. Read by the
+   * top-level emitter to lower a recognised call (e.g. `queryHref(base, { … })`)
+   * to a `bf->query(...)` helper call.
    */
-  private _queryHrefLocals: Set<string> = new Set()
+  private _loweringMatchers: LoweringMatcher[] = []
   /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at
    * file top-level), keyed by name → resolved literal value. Populated at
@@ -241,7 +241,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
-    this._queryHrefLocals = queryHrefLocalNames(ir.metadata)
+    this._loweringMatchers = prepareLoweringMatchers(ir.metadata)
     this.localConstants = ir.metadata.localConstants ?? []
     this.loopBoundNames.clear()
     this.errors = []
@@ -1578,17 +1578,19 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       parsed = parseExpression(trimmed)
     }
 
-    // `queryHref(base, { … })` (#2042) → `bf->query(base, <triples>)`. Recognised
-    // before the support gate because the object-literal arg is otherwise
-    // `unsupported` (BF101) — mirroring the go adapter's `lowerQueryHrefCall`. The
-    // `bf->query` helper includes a pair iff its guard is truthy AND its value is
-    // a non-empty string (the client's `if (value)`): a plain `key: v` passes
-    // guard `1`, a conditional `key: cond ? v : undefined` passes the lowered cond.
-    if (this._queryHrefLocals.size > 0 && parsed.kind === 'call') {
-      const q = matchQueryHrefCall(parsed.callee, parsed.args, this._queryHrefLocals)
-      if (q) {
-        const argsGo = queryHrefArgs(q, n => this.renderParsedExprToPerl(n))
-        return `bf->query(${argsGo.join(', ')})`
+    // Registered call lowerings (#2057) — e.g. `queryHref(base, { … })` (#2042)
+    // → `bf->query(base, <triples>)`. Recognised before the support gate because
+    // the object-literal arg is otherwise `unsupported` (BF101). The `bf->query`
+    // helper includes a pair iff its guard is truthy AND its value is a non-empty
+    // string (the client's `if (value)`): a plain `key: v` passes guard `1`, a
+    // conditional `key: cond ? v : undefined` passes the lowered cond.
+    if (this._loweringMatchers.length > 0 && parsed.kind === 'call') {
+      for (const matcher of this._loweringMatchers) {
+        const node = matcher(parsed.callee, parsed.args)
+        if (node?.kind === 'guard-list') {
+          const argsGo = queryHrefArgs(node, n => this.renderParsedExprToPerl(n))
+          return `bf->query(${argsGo.join(', ')})`
+        }
       }
     }
 

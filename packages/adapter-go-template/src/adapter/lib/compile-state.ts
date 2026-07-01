@@ -15,6 +15,7 @@ import type {
   ContextConsumer,
   IRMetadata,
   IRNode,
+  LoweringMatcher,
   MemoInfo,
   TypeDefinition,
   TypeInfo,
@@ -90,11 +91,13 @@ export class CompileState {
   searchParamsLocals: Set<string> = new Set()
 
   /**
-   * Local binding names the pure `queryHref` URL builder is imported under
-   * (handles `import { queryHref as qh }`). A `queryHref(base, { … })` call is
-   * lowered to `bf_query` (#2042).
+   * Call-lowering matchers active for this component, bound to its metadata at
+   * init via `prepareLoweringMatchers` (#2057). Each maps a recognised call
+   * (e.g. `queryHref(base, { … })`) to a backend-neutral `LoweringNode` the
+   * adapter renders (go: `bf_query`). Replaces the hardcoded `queryHref`
+   * name-recognition.
    */
-  queryHrefLocals: Set<string> = new Set()
+  loweringMatchers: LoweringMatcher[] = []
 
   /**
    * Prop NAMES whose resolved Go struct-field type is exactly `interface{}`

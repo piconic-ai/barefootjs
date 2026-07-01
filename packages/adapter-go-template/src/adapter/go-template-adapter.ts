@@ -63,7 +63,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   searchParamsLocalNames,
-  queryHrefLocalNames
+  prepareLoweringMatchers
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION } from '@barefootjs/shared'
@@ -108,7 +108,7 @@ import { CompileState } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerQueryHrefCall } from "./expr/url-builder.ts"
+import { lowerRegisteredCall } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -273,7 +273,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
     this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
-    this.state.queryHrefLocals = queryHrefLocalNames(ir.metadata)
+    this.state.loweringMatchers = prepareLoweringMatchers(ir.metadata)
     augmentInheritedPropAccesses(ir)
   }
 
@@ -3853,11 +3853,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    // `queryHref(base, { … })` (the pure URL builder, #2042) lowers to a
-    // `bf_query` action. Tried before the generic path because its object-literal
-    // arg is otherwise `unsupported` at the support gate.
-    const queryBuilt = lowerQueryHrefCall(this.emitCtx, trimmed, preParsed)
-    if (queryBuilt !== null) return queryBuilt
+    // Registered call lowerings (#2057) — e.g. `queryHref(base, { … })` (#2042)
+    // → a `bf_query` action. Tried before the generic path because such calls'
+    // object-literal args are otherwise `unsupported` at the support gate.
+    const loweredCall = lowerRegisteredCall(this.emitCtx, trimmed, preParsed)
+    if (loweredCall !== null) return loweredCall
 
     // Inline a call to a local, expression-bodied helper arrow
     // (`sortClass(k)` / `tagClass(t)`) by substituting its params with the call
