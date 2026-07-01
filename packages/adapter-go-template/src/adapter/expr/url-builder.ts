@@ -1,9 +1,10 @@
 /**
- * Go rendering of a backend-neutral `guard-list` lowering node (#2057) — today
- * the `queryHref(base, { … })` URL-query API lowered to a `bf_query` template
- * expression (#2042). Recognition (which import, what call shape) lives in the
- * lowering-plugin registry; this module is the Go *renderer* for the neutral
- * node it produces: each triple maps to a `bf_query` include triple directly.
+ * Go lowering of helper calls to template expressions. Renders backend-neutral
+ * `LoweringNode`s produced by registered lowering plugins (#2057) — one uniform
+ * path for both userland plugins and built-ins like `queryHref` (a default plugin
+ * that lowers to `bf_query`, #2042). Every node funnels through
+ * `renderLoweringNode`, which maps a logical helper id to its Go helper; the
+ * adapter carries no per-API recognition branch of its own.
  */
 
 import {
@@ -54,15 +55,15 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
 }
 
 /**
- * Try every active lowering matcher against an expression, returning the Go
- * rendering of the first neutral node produced, or null when none match (→ the
- * generic lowering). Matchers are bound to the component metadata at init
- * (`ctx.state.loweringMatchers`), so recognition of *which* API this is lives in
- * the plugin registry, not here.
+ * Lower a helper call to a Go template expression, or null when no registered
+ * plugin recognises it (→ the generic lowering). Matchers — including the
+ * built-in `queryHref` plugin (#2042) — are bound to the component metadata at
+ * init (`ctx.state.loweringMatchers`), so this is one uniform loop with no
+ * per-API branch.
  *
- * Cheap-out order mirrors the old inline recognizer: no matchers → null; else
- * reuse `preParsed` when it's already a call, otherwise a regex pre-filter gates
- * the parse so non-call expressions never pay for `parseExpression`.
+ * Cheap-out: no active matchers → null; else reuse `preParsed` when it's already
+ * a call, otherwise a regex pre-filter gates the parse so non-call expressions
+ * never pay for `parseExpression`.
  */
 export function lowerRegisteredCall(
   ctx: GoEmitContext,

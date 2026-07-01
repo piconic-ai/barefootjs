@@ -1,21 +1,24 @@
 /**
  * Call-lowering plugin registry (#2057).
  *
- * The compiler core carries no specific runtime-API names. Instead, a lowering
- * plugin *recognises* a call — by the import it comes from and its argument
- * shape — and returns a **backend-neutral `LoweringNode`**. Each adapter renders
- * that node in its own template syntax. This is a deliberate two-layer split:
+ * The compiler core carries no bespoke per-API recognition branches. Instead, a
+ * lowering plugin *recognises* a call — by the import it comes from and its
+ * argument shape — and returns a **backend-neutral `LoweringNode`**. Each adapter
+ * renders that node in its own template syntax. This is a deliberate two-layer
+ * split:
  *
  *   - **Layer 1 (this module + plugins):** adapter-agnostic. A plugin matches a
  *     call to a neutral node and never mentions Go/Perl/… syntax.
  *   - **Layer 2 (adapters):** plugin-agnostic. Each adapter has ONE renderer per
  *     node kind, so SSR/CSR parity is enforced once, not per plugin.
  *
- * A first-party package registers its plugin via {@link registerLoweringPlugin}
- * (a side-effect import at build time). Today the only plugin is `queryHref`,
- * still registered by core below; #2057 PR-3 moves that registration into the
- * `@barefootjs/router` layer and removes it from core, at which point core holds
- * zero runtime-API names. The registry itself is the durable *mechanism*.
+ * Everything flows through this one seam — including first-party APIs. A
+ * userland package registers its plugin via {@link registerLoweringPlugin}, and
+ * a built-in like `queryHref` is registered by the compiler *as a default
+ * plugin* (see `builtin-lowering-plugins.ts`), not as an adapter branch. So an
+ * adapter can't tell a shipped API from a third-party one: both are just entries
+ * in this registry. That uniformity is the point — there is no "special" path to
+ * keep in sync.
  *
  * This is NOT the "output-rewriting hook" CLAUDE.md forbids: a plugin returns a
  * structured IR node, never a rewritten output string, so the compiler's output
@@ -24,8 +27,6 @@
 
 import type { ParsedExpr } from './expression-parser.ts'
 import type { IRMetadata } from './types.ts'
-import { matchQueryHrefCall } from './query-href-lowering.ts'
-import { queryHrefLocalNames } from './adapters/env-signal.ts'
 
 /**
  * A backend-neutral include triple for a {@link LoweringNode} `guard-list`.
@@ -83,7 +84,7 @@ export type LoweringMatcher = (
  * plugin never emits adapter syntax — only neutral nodes.
  */
 export interface LoweringPlugin {
-  /** Stable id, for dedup/diagnostics (`'queryHref'`). */
+  /** Stable id, for dedup/diagnostics (e.g. `'my-pkg-url'`). */
   name: string
   prepare(metadata: IRMetadata): LoweringMatcher | null
 }
@@ -140,22 +141,20 @@ export function matchLoweringCall(
   return null
 }
 
-// ---------------------------------------------------------------------------
-// First-party default plugins
-// ---------------------------------------------------------------------------
-//
-// `queryHref` (#2042) is registered here by core for now. #2057 PR-3 relocates
-// this registration into `@barefootjs/router` (a side-effect import wired by the
-// build) and deletes it from core — leaving core with no runtime-API names.
+/**
+ * Test-only: replace the registry contents wholesale. The double-underscore
+ * prefix marks it as an internal seam — tests use it to restore global state in
+ * `afterEach` so a sample plugin can't leak into other suites. Never call from
+ * production code.
+ */
+export function __resetLoweringPluginsForTest(next: readonly LoweringPlugin[] = []): void {
+  plugins.length = 0
+  plugins.push(...next)
+}
 
-registerLoweringPlugin({
-  name: 'queryHref',
-  prepare(metadata) {
-    const localNames = queryHrefLocalNames(metadata)
-    if (localNames.size === 0) return null
-    return (callee, args) => {
-      const q = matchQueryHrefCall(callee, args, localNames)
-      return q ? { kind: 'guard-list', helper: 'query', base: q.base, triples: q.triples } : null
-    }
-  },
-})
+// The compiler ships built-in plugins (e.g. `queryHref`) and registers them here
+// by default — see `builtin-lowering-plugins.ts`, wired up on load in `index.ts`.
+// Both first-party built-ins and userland plugins go through this one registry,
+// so adapters have a single uniform path with no special-cased API branch. See
+// the sample plugin + tests in `__tests__/lowering-registry.test.ts` for the
+// guaranteed contract.

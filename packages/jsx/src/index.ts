@@ -84,11 +84,22 @@ export {
   getLoweringPlugins,
   prepareLoweringMatchers,
   matchLoweringCall,
+  __resetLoweringPluginsForTest,
   type LoweringPlugin,
   type LoweringNode,
   type LoweringTriple,
   type LoweringMatcher,
 } from './lowering-registry.ts'
+export {
+  queryHrefPlugin,
+  registerBuiltinLoweringPlugins,
+  BUILTIN_LOWERING_PLUGINS,
+} from './builtin-lowering-plugins.ts'
+// Register the built-in lowering plugins (queryHref, …) into the shared registry
+// on load, so every adapter that imports @barefootjs/jsx recognises them with no
+// explicit setup — queryHref is a default-applied plugin, not an adapter branch.
+import { registerBuiltinLoweringPlugins as __registerBuiltins } from './builtin-lowering-plugins.ts'
+__registerBuiltins()
 export { emitIRNode } from './adapters/ir-node-emitter.ts'
 export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter.ts'
 export { emitAttrValue } from './adapters/attr-value-emitter.ts'

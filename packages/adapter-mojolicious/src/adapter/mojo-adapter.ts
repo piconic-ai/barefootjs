@@ -162,10 +162,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private _searchParamsLocals: Set<string> = new Set()
 
   /**
-   * Call-lowering matchers active for this component (#2057), bound to its
-   * metadata at `generate()` entry via `prepareLoweringMatchers`. Read by the
-   * top-level emitter to lower a recognised call (e.g. `queryHref(base, { … })`)
-   * to a `bf->query(...)` helper call.
+   * Call-lowering matchers active for this component (#2057). Bound at
+   * `generate()` entry via `prepareLoweringMatchers` and read by the top-level
+   * emitter. Covers both userland plugins and the compiler's built-in plugins
+   * (e.g. `queryHref` → `bf->query`, #2042) — one uniform path, no per-API branch.
    */
   private _loweringMatchers: LoweringMatcher[] = []
   /**
@@ -1578,17 +1578,19 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       parsed = parseExpression(trimmed)
     }
 
-    // Registered call lowerings (#2057) — e.g. `queryHref(base, { … })` (#2042)
-    // → `bf->query(base, <triples>)`. Recognised before the support gate because
-    // the object-literal arg is otherwise `unsupported` (BF101). The `bf->query`
-    // helper includes a pair iff its guard is truthy AND its value is a non-empty
-    // string (the client's `if (value)`): a plain `key: v` passes guard `1`, a
-    // conditional `key: cond ? v : undefined` passes the lowered cond.
-    if (this._loweringMatchers.length > 0 && parsed.kind === 'call') {
+    // Registered call lowerings (#2057) — including the built-in `queryHref`
+    // plugin (#2042), which lowers `queryHref(base, { … })` to a neutral
+    // `guard-list` on the `query` helper → `bf->query(base, <triples>)`.
+    // Recognised before the support gate because the object-literal arg is
+    // otherwise `unsupported` (BF101). The `bf->query` helper includes a pair iff
+    // its guard is truthy AND its value is a non-empty string (the client's
+    // `if (value)`): a plain `key: v` passes guard `1`, a conditional
+    // `key: cond ? v : undefined` passes the lowered cond. Only the `query`
+    // helper renders to `bf->query`; another guard-list helper must not be
+    // silently mis-rendered as a query.
+    if (parsed.kind === 'call') {
       for (const matcher of this._loweringMatchers) {
         const node = matcher(parsed.callee, parsed.args)
-        // Only the `query` helper renders to `bf->query`; a future guard-list
-        // helper must not be silently mis-rendered as a query.
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const argsGo = queryHrefArgs(node, n => this.renderParsedExprToPerl(n))
           return `bf->query(${argsGo.join(', ')})`

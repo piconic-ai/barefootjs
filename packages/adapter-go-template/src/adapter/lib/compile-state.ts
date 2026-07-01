@@ -91,11 +91,11 @@ export class CompileState {
   searchParamsLocals: Set<string> = new Set()
 
   /**
-   * Call-lowering matchers active for this component, bound to its metadata at
-   * init via `prepareLoweringMatchers` (#2057). Each maps a recognised call
-   * (e.g. `queryHref(base, { … })`) to a backend-neutral `LoweringNode` the
-   * adapter renders (go: `bf_query`). Replaces the hardcoded `queryHref`
-   * name-recognition.
+   * Call-lowering matchers active for this component (#2057), bound to its
+   * metadata at init via `prepareLoweringMatchers`. Each maps a recognised call
+   * to a backend-neutral `LoweringNode` the adapter renders. Covers both userland
+   * plugins and the compiler's built-in plugins (e.g. `queryHref` → `bf_query`,
+   * #2042), so there is no separate per-API recognition path.
    */
   loweringMatchers: LoweringMatcher[] = []
 
