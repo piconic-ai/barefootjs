@@ -1,0 +1,22 @@
+# Gemfile for the Ruby on Rails (ERB) BarefootJS example.
+#
+# Everything the BarefootJS runtime itself needs (JSON, ERB) is Ruby stdlib —
+# see packages/adapter-erb/lib. On the framework side this pulls in only the
+# slice of Rails the app actually uses: `railties` (the Rails::Application boot
+# + `rails server`), `actionpack` (routing + ActionController, and transitively
+# ActionView / ActiveSupport). ActiveRecord, ActionMailer, ActiveJob,
+# ActionCable and the asset pipeline are deliberately NOT listed — see
+# config/application.rb. Puma is the app server (threaded, so the SSE routes —
+# AI chat, dev reload — don't block other requests).
+source 'https://rubygems.org'
+
+gem 'railties', '~> 8.0'
+gem 'actionpack', '~> 8.0'
+gem 'puma', '~> 8.0'
+
+group :development do
+  # File-watcher for `bin/dev` / Dockerfile.dev — restarts the server when
+  # Ruby source or the bind-mounted packages/adapter-erb/lib change (mirrors
+  # the Sinatra example's `rerun`).
+  gem 'rerun', '~> 0.14'
+end

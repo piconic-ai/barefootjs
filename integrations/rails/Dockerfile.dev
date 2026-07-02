@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Rails integration. The app source (config/, app/,
+# bin/, config.ru) and the host-built dist/ are bind-mounted in; `rerun`
+# (file-watcher) restarts Puma when Ruby source changes.
+
+FROM ruby:3.3-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace/integrations/rails
+
+# Baked in so the image has gems cached; the bind mount below overlays the rest
+# of this directory with the host source at container start, but gem installs
+# live under Ruby's system gem path (outside /workspace), so they survive the
+# overlay.
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+EXPOSE 3009
+
+# `rerun` restarts Puma on Ruby source changes only (app/, config/, config.ru,
+# lib/, and the bind-mounted packages/adapter-erb/lib). ERB template output
+# (dist/templates/*.erb) does NOT need a restart to pick up: the backend's
+# template cache is disabled whenever RAILS_ENV != production (see
+# config/initializers/barefoot.rb), so a `bun run build:watch` recompile alone
+# renders on the next request.
+CMD ["bundle", "exec", "rerun", "--pattern", "**/*.rb", "--dir", ".,../../packages/adapter-erb/lib", "--background", "--", \
+     "bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3009", "-e", "development", "config.ru"]

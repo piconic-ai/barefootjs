@@ -1,0 +1,65 @@
+/**
+ * IR traversal helpers for the ERB template adapter.
+ *
+ * Ported from the Mojolicious adapter's `lib/ir-scope.ts` (issue #2018
+ * track D lineage). Pure functions over the IR tree — no adapter instance
+ * state.
+ */
+
+import type { IRNode, IRProp, IRIfStatement, IRFragment } from '@barefootjs/jsx'
+
+/**
+ * Find the `children` prop's `jsx-children` payload (#1326). Narrowed
+ * via the AttrValue `kind` discriminator so adapter code stays type-
+ * safe if the IR shape evolves — adding a new AttrValue variant or
+ * renaming `children` to `jsxChildren` becomes a TS compile error
+ * here instead of silently dropping the children at runtime.
+ */
+export function resolveJsxChildrenProp(props: readonly IRProp[]): IRNode[] {
+  const prop = props.find(p => p.name === 'children')
+  if (!prop) return []
+  if (prop.value.kind !== 'jsx-children') return []
+  return prop.value.children
+}
+
+/**
+ * Collect the component's root scope element node(s) — the elements that
+ * become the rendered root and so carry `data-key` for a keyed loop item. A
+ * plain element root is itself; an `if-statement` (early-return) root
+ * contributes the top element of each branch (`consequent` + the `alternate`
+ * chain), since exactly one branch renders at runtime. Non-element branch
+ * tops (fragments / nested shapes) are walked one level so an
+ * `if (…) return <A/>` still resolves to `<A>`. (#1297)
+ */
+export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
+  const out = new Set<IRNode>()
+  const visit = (n: IRNode | null): void => {
+    if (!n) return
+    if (n.type === 'element') { out.add(n); return }
+    if (n.type === 'if-statement') {
+      const s = n as IRIfStatement
+      visit(s.consequent)
+      visit(s.alternate)
+      return
+    }
+    if (n.type === 'fragment') {
+      for (const c of (n as IRFragment).children) visit(c)
+    }
+  }
+  visit(node)
+  return out
+}
+
+/**
+ * True when every `v[:var]` reference the lowered Ruby expression carries is
+ * in the available set — i.e. the template already has that vars-hash key
+ * seeded. Guards in-template memo seeding from referencing a not-yet-seeded
+ * key. (#1297; mirrors the Mojo adapter's `$var`-scan, adapted to the ERB
+ * vars-hash variable model.)
+ */
+export function referencedVarsAreAvailable(expr: string, available: ReadonlySet<string>): boolean {
+  for (const m of expr.matchAll(/v\[:([A-Za-z_]\w*)\]/g)) {
+    if (!available.has(m[1])) return false
+  }
+  return true
+}

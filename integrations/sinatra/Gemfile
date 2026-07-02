@@ -1,0 +1,19 @@
+# Gemfile for the Sinatra (ERB) BarefootJS example.
+#
+# Everything the BarefootJS runtime itself needs (JSON, ERB) is Ruby stdlib —
+# see packages/adapter-erb/lib. Only the web-framework layer is a real
+# dependency: Sinatra for routing, Puma as the app server (threaded, so the
+# SSE routes — AI chat, dev reload — don't block other requests), rackup to
+# drive config.ru from the CLI.
+source 'https://rubygems.org'
+
+gem 'sinatra', '~> 4.2'
+gem 'puma', '~> 8.0'
+gem 'rackup', '~> 2.3'
+
+group :development do
+  # File-watcher for `bin/dev` / Dockerfile.dev — restarts the server when
+  # app.rb or the bind-mounted packages/adapter-erb/lib change (mirrors
+  # xslate's `plackup -R`, which has no Puma/rackup equivalent).
+  gem 'rerun', '~> 0.14'
+end

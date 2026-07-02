@@ -12,7 +12,7 @@ This project primarily uses TypeScript with Go template adapters. Use `bun` inst
 
 - `packages/jsx/src/` — Core compiler. Key files: `jsx-to-ir.ts` (Phase 1), `ir-to-client-js.ts` (Phase 2), `analyzer.ts` (reactivity analysis).
 - `packages/client/src/` — Client runtime (`createSignal`, `createEffect`, etc.) with DOM runtime under `./runtime`.
-- Adapters: `packages/adapter-hono/` (Hono/JSX), `packages/adapter-go-template/` (Go `html/template`).
+- Adapters: `packages/adapter-hono/` (Hono/JSX), `packages/adapter-go-template/` (Go `html/template`), `packages/adapter-erb/` (Ruby ERB).
 
 See `spec/compiler.md` for the full pipeline architecture, IR schema, transformation rules, adapter interface, and error codes.
 
