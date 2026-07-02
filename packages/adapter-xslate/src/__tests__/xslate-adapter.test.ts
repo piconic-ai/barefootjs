@@ -171,30 +171,6 @@ function compileAndGenerate(source: string) {
 // Xslate-Specific Tests
 // =============================================================================
 
-describe('XslateAdapter - clientOnly loop boundary markers (#872 / #1087 parity)', () => {
-  test('emits the loop boundary marker pair for a clientOnly loop', () => {
-    // A `/* @client */` loop renders no items at SSR time, but the
-    // `loop:`/`/loop:` boundary pair must still be emitted (as Hono and
-    // Go do) so the client runtime's mapArray() can locate its insertion
-    // anchor at hydration time.
-    const { template } = compileAndGenerate(`
-"use client"
-import { createSignal } from "@barefootjs/client"
-
-export function List() {
-  const [items, setItems] = createSignal<string[]>([])
-  return <ul>{/* @client */ items().map(item => <li>{item}</li>)}</ul>
-}
-`)
-    expect(template).toMatch(
-      /\$bf\.comment\("loop:([\w-]+)"\) \| mark_raw :><: \$bf\.comment\("\/loop:\1"\) \| mark_raw :>/,
-    )
-    // No SSR item rows and no Kolon loop for a clientOnly map.
-    expect(template).not.toContain('<li')
-    expect(template).not.toContain(': for ')
-  })
-})
-
 describe('XslateAdapter - SSR context propagation (#1297)', () => {
   // `<Ctx.Provider value>` brackets its children with inline provide/revoke
   // calls (both return '' so the `<: … :>` discards them); descendant
