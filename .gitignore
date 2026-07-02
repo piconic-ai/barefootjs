@@ -82,3 +82,7 @@ packages/adapter-*/MYMETA.*
 
 # Perl integration runtime libs (assembled by scripts/assemble-deps.ts)
 integrations/*/lib
+
+# Python
+__pycache__/
+*.pyc
