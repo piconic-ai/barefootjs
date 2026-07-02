@@ -245,6 +245,33 @@ function readProperty(obj: EvalValue, key: string): EvalValue {
   throw new EvalUnsupported(`cannot read property '${key}' of ${obj === null ? 'null' : typeof obj}`)
 }
 
+/**
+ * `Array.prototype.includes` membership test: SameValueZero, i.e. `===`
+ * except `NaN` equals itself (and `+0`/`-0` are not distinguished, which
+ * JSON-shaped `EvalValue` can't represent anyway).
+ */
+function sameValueZero(a: EvalValue, b: EvalValue): boolean {
+  if (typeof a === 'number' && typeof b === 'number' && Number.isNaN(a) && Number.isNaN(b)) return true
+  return a === b
+}
+
+/**
+ * `.includes(x)` — shared between `Array.prototype.includes` (SameValueZero
+ * membership) and `String.prototype.includes` (substring search), matching
+ * the receiver-type dispatch the SSR template lowering does at runtime
+ * (`bf_includes` / `$bf->includes`). Any other receiver type is not a JS
+ * `.includes` target; the reference returns `false` rather than throwing so
+ * the golden vectors stay simple values (mirrors `readProperty`'s
+ * "own-property only" convention of degrading rather than erroring on an
+ * unrepresentable shape — there's no receiver here for which JS itself would
+ * throw).
+ */
+function includes(obj: EvalValue, needle: EvalValue): boolean {
+  if (Array.isArray(obj)) return obj.some((el) => sameValueZero(el, needle))
+  if (typeof obj === 'string') return obj.includes(toStr(needle))
+  return false
+}
+
 function readIndex(obj: EvalValue, index: EvalValue): EvalValue {
   if (Array.isArray(obj)) {
     const i = toNumber(index)
@@ -322,9 +349,19 @@ export function evaluate(expr: ParsedExpr, env: EvalEnv): EvalValue {
       return out
     }
 
+    case 'array-method':
+      // `.includes(x)` is the one `array-method` in the evaluator subset
+      // (Go/Perl `includes` support). Every other array/string method
+      // (`join`, `slice`, `flat`, …) is outside the subset and falls to the
+      // `default` refusal below.
+      if (expr.method === 'includes' && expr.args.length === 1) {
+        return includes(evaluate(expr.object, env), evaluate(expr.args[0], env))
+      }
+      throw new EvalUnsupported(`array-method '${expr.method}' is not in the evaluator subset`)
+
     default:
-      // arrow-fn, higher-order, array-method, unsupported: a callback
-      // body that itself contains these is refused (BF101 upstream).
+      // arrow-fn, higher-order, unsupported: a callback body that itself
+      // contains these is refused (BF101 upstream).
       throw new EvalUnsupported(`node kind '${expr.kind}' is not in the evaluator subset`)
   }
 }

@@ -1064,11 +1064,26 @@ export { A }`, 'A.tsx', { adapter })
       expect(template).toContain('"property":"done"')
     }
 
-    // Fallback: a method-call predicate (`x => x.name.includes('a')`) is
-    // outside the evaluator surface, so `.every` keeps the inline grep form.
+    // #2075: `.includes(x)` is now in the evaluator surface (`array-method`
+    // gate, shared with the Perl `Evaluator.pm` runtime), so a method-call
+    // predicate built from it ALSO routes through `every_eval` rather than
+    // falling back — it's no longer the "unsupported method call" example.
+    const includesAdapter = new MojoAdapter()
+    const includesResult = compileJSX(`function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+}
+export { A }`, 'A.tsx', { adapter: includesAdapter })
+    const includesTemplate = includesResult.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(includesTemplate).toContain('bf->every_eval($items,')
+    expect(includesTemplate).toContain('"method":"includes"')
+    expect(includesTemplate).not.toContain('grep {')
+
+    // Fallback: a method-call predicate the evaluator still can't model
+    // (`.toUpperCase()` is outside the `array-method` gate — only `includes`
+    // is recognized there) keeps the inline grep form.
     const adapter = new MojoAdapter()
     const fb = compileJSX(`function A({ items }: { items: { name: string }[] }) {
-  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+  return <div>{items.every(x => x.name.toUpperCase() === 'A') ? 'y' : 'n'}</div>
 }
 export { A }`, 'A.tsx', { adapter })
     const fbTemplate = fb.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''

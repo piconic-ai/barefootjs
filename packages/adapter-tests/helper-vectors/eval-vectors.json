@@ -1672,6 +1672,155 @@
       "note": "Boolean() of an empty string is false"
     },
     {
+      "src": "item.tags.includes('go')",
+      "expr": {
+        "kind": "array-method",
+        "method": "includes",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": "go",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "perl",
+            "go"
+          ]
+        }
+      },
+      "expect": true,
+      "note": "array .includes: hit"
+    },
+    {
+      "src": "item.tags.includes('rust')",
+      "expr": {
+        "kind": "array-method",
+        "method": "includes",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": "rust",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "perl",
+            "go"
+          ]
+        }
+      },
+      "expect": false,
+      "note": "array .includes: miss"
+    },
+    {
+      "src": "nums.includes(2)",
+      "expr": {
+        "kind": "array-method",
+        "method": "includes",
+        "object": {
+          "kind": "identifier",
+          "name": "nums"
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": 2,
+            "literalType": "number",
+            "raw": "2"
+          }
+        ]
+      },
+      "env": {
+        "nums": [
+          1,
+          2,
+          3
+        ]
+      },
+      "expect": true,
+      "note": "array .includes: numeric element hit"
+    },
+    {
+      "src": "name.includes('ar')",
+      "expr": {
+        "kind": "array-method",
+        "method": "includes",
+        "object": {
+          "kind": "identifier",
+          "name": "name"
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": "ar",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "name": "bare"
+      },
+      "expect": true,
+      "note": "string .includes: substring hit"
+    },
+    {
+      "src": "item.tags.includes(tag)",
+      "expr": {
+        "kind": "array-method",
+        "method": "includes",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "identifier",
+            "name": "tag"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "perl"
+          ]
+        },
+        "tag": "perl"
+      },
+      "expect": true,
+      "note": "array .includes: needle from a materialized identifier"
+    },
+    {
       "src": "acc + item.price * item.qty",
       "expr": {
         "kind": "binary",

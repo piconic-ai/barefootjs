@@ -409,15 +409,31 @@ export { A }
     expect(findLast).toContain(', 0, {})')
   })
 
-  test('a method-call predicate falls back to the Kolon-lambda runtime call', () => {
+  test('.includes() in a predicate now lowers via the evaluator, not the Kolon-lambda fallback', () => {
+    // #2075: `.includes(x)` joined the evaluator's `array-method` surface
+    // (shared with the Perl `Evaluator.pm` runtime), so a predicate built
+    // from it routes through `$bf.every_eval` like any other pure predicate.
     const { template } = compileAndGenerate(`
 function A({ items }: { items: { name: string }[] }) {
   return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
 }
 export { A }
 `)
-    // No evaluator helper — the unsupported predicate keeps the `-> $x { … }`
-    // lambda form passed to the runtime `$bf.every`.
+    expect(template).toContain('$bf.every_eval(')
+    expect(template).toContain('"method":"includes"')
+    expect(template).not.toContain('-> $x {')
+  })
+
+  test('a method-call predicate outside the evaluator surface falls back to the Kolon-lambda runtime call', () => {
+    const { template } = compileAndGenerate(`
+function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.toUpperCase() === 'A') ? 'y' : 'n'}</div>
+}
+export { A }
+`)
+    // `.toUpperCase()` is outside the evaluator's `array-method` gate (only
+    // `includes` is recognized there), so the predicate keeps the
+    // `-> $x { … }` lambda form passed to the runtime `$bf.every`.
     expect(template).not.toContain('every_eval')
     expect(template).toContain('$bf.every(')
     expect(template).toContain('-> $x {')

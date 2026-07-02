@@ -9,10 +9,18 @@
  */
 
 import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
+import {
+  asCallbackMethodCall,
+  envSignalReaderFor,
+  freeVarsInBody,
+  materializeGetterCalls,
+  serializeParsedExpr,
+} from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { escapeGoString } from '../lib/go-emit.ts'
 import { convertInitialValue, getSignalInitialValueAsGo } from '../value/value-lowering.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -97,10 +105,19 @@ export function memoInitialFromParsedBody(
       : null
   // A request-scoped env-signal read (`searchParams().get('k')`, any local
   // alias, #1922) → the literal key, else null. The receiver must be a
-  // zero-arg call of an env-signal local and the key a string literal.
+  // zero-arg call of an env-signal local and the method one the registry
+  // recognises for that reader. Registry-driven (#2076 review): the ONE
+  // registered env signal today is `'search'` (`envSignalReaderFor`,
+  // @barefootjs/jsx `adapters/env-signal.ts`) — a future env signal adds a
+  // registry entry there, not a new arm here. `ctx.state.searchParamsLocals`
+  // still does the receiver-binding match (it already covers aliases); the
+  // registry supplies the emitted field name (`canonicalName`, capitalised)
+  // and the allowed method set, replacing the hardcoded `'get'` / `in.SearchParams`.
+  const envReader = envSignalReaderFor('search')
+  const envFieldName = envReader ? capitalizeFieldName(envReader.canonicalName) : 'SearchParams'
   const envGetKey = (e: ParsedExpr): string | null => {
     if (e.kind !== 'call' || e.callee.kind !== 'member' || e.callee.computed) return null
-    if (e.callee.property !== 'get') return null
+    if (!envReader || !envReader.methods.has(e.callee.property)) return null
     const recvName = getterCallName(e.callee.object)
     if (recvName === null || !ctx.state.searchParamsLocals.has(recvName)) return null
     const arg = e.args[0]
@@ -113,7 +130,7 @@ export function memoInitialFromParsedBody(
   // handler fills per request, so the memo SSR-computes instead of zero-valuing.
   {
     const key = envGetKey(body)
-    if (key !== null) return `in.SearchParams.Get(${JSON.stringify(key)})`
+    if (key !== null) return `in.${envFieldName}.Get(${JSON.stringify(key)})`
   }
 
   // () => searchParams().get('k') ?? '<lit>' — the defaulted form. Go's
@@ -130,7 +147,69 @@ export function memoInitialFromParsedBody(
     const key = envGetKey(body.left)
     if (key !== null) {
       const def = JSON.stringify(String(body.right.value))
-      return `func() string { if v := in.SearchParams.Get(${JSON.stringify(key)}); v != "" { return v }; return ${def} }()`
+      return `func() string { if v := in.${envFieldName}.Get(${JSON.stringify(key)}); v != "" { return v }; return ${def} }()`
+    }
+  }
+
+  // () => props.X.filter((p) => <predicate>) — a LIST-valued derived memo
+  // (#2075: the blog PostList `visible` shape, chained off a
+  // searchParams()-derived sibling memo like `tag`). The predicate body
+  // serializes to the runtime evaluator's ParsedExpr JSON and every free
+  // variable it captures rides in the `bf.FilterEval` env map as its own
+  // SSR-computed Go value. A getter call to an ENV signal local
+  // (`searchParams()`) is a per-request READER, not a value — the evaluator
+  // has no way to invoke it — so env-signal getters are excluded from the
+  // materialization set; the predicate keeps calling them as `call` nodes,
+  // which only matters if the predicate reads the env signal directly rather
+  // than through a derived sibling memo (in which case `serializeParsedExpr`
+  // refuses the body below and this memo falls through to its zero value,
+  // same as any other unsupported call shape).
+  {
+    const cb = asCallbackMethodCall(body)
+    if (cb && cb.method === 'filter') {
+      const propName = propsMemberName(cb.object)
+      const param = propName ? propsParams.find(p => p.name === propName) : undefined
+      if (propName && param) {
+        const knownGetterNames = new Set<string>()
+        for (const s of signals) {
+          if (!ctx.state.searchParamsLocals.has(s.getter)) knownGetterNames.add(s.getter)
+        }
+        for (const m of ctx.state.currentMemos ?? []) knownGetterNames.add(m.name)
+
+        const materialized = materializeGetterCalls(cb.arrow.body, knownGetterNames)
+        const predJSON = serializeParsedExpr(materialized)
+        if (predJSON !== null) {
+          const paramName = cb.arrow.params[0] ?? '_'
+          const freeVars = freeVarsInBody(materialized, new Set(cb.arrow.params))
+          const envEntries: string[] = []
+          let unresolved = false
+          for (const name of freeVars) {
+            let goExpr: string | null = null
+            const siblingMemo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
+            if (siblingMemo) {
+              goExpr = computeMemoInitialValueOrNull(ctx, siblingMemo, signals, propsParams, propFallbackVars)
+            } else {
+              const sig = signals.find(s => s.getter === name)
+              if (sig) {
+                goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars)
+              } else {
+                const p = propsParams.find(pp => pp.name === name)
+                if (p) goExpr = propRef(name)
+              }
+            }
+            if (goExpr === null) {
+              unresolved = true
+              break
+            }
+            envEntries.push(`${JSON.stringify(name)}: ${goExpr}`)
+          }
+          if (!unresolved) {
+            const itemsField = `in.${capitalizeFieldName(propName)}`
+            const envMap = `map[string]any{${envEntries.join(', ')}}`
+            return `bf.FilterEval(${itemsField}, "${escapeGoString(predJSON)}", ${JSON.stringify(paramName)}, ${envMap})`
+          }
+        }
+      }
     }
   }
 

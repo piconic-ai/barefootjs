@@ -116,7 +116,7 @@ import {
   objectLiteralToGoMap,
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
-import { isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
+import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
@@ -2112,6 +2112,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
+    // A LIST-valued `.filter(arrow)` memo (#2075 — the blog PostList `visible`
+    // shape) is a slice of the receiver's boxed elements, not a scalar.
+    // Decided FIRST, ahead of the memo's declared `type` and every other
+    // heuristic below: the analyzer's simple per-memo type inference doesn't
+    // model `.filter`'s predicate shape and can land on a bogus primitive
+    // (observed: `boolean`, from the predicate's own `!`/`||` structure),
+    // which would otherwise sail through the `typeInfoToGo(memo.type) ===
+    // 'interface{}'` gates below unchallenged. `bf.FilterEval` (the SSR
+    // constructor lowering, memo-compute.ts) returns `[]any`; the template's
+    // `range` / reflective field access handle the boxed elements the same
+    // way it already handles other `interface{}`-typed slices.
+    if (isListFilterMemo(memo)) return '[]any'
+
     // A template-literal memo always produces a string. Decide this first so a
     // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
     // heuristic below into `int`. The analyzer classified the body shape from

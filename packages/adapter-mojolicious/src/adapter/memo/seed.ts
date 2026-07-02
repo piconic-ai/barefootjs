@@ -14,6 +14,7 @@ import {
   type ContextConsumer,
   type ParsedExpr,
   collectContextConsumers,
+  envSignalReaderFor,
   extractArrowBodyExpression,
   isSupported,
   parseExpression,
@@ -80,15 +81,24 @@ export function generateDerivedMemoSeed(ctx: MojoMemoContext, ir: ComponentIR): 
   // untouched.
   for (const signal of signals) {
     // Request-scoped env signal (`createSearchParams()`, #1922): the runtime
-    // seeds the canonical `$searchParams` reader per request, and the
-    // expression lowering canonicalises any local alias (`const [sp] = …` →
-    // `$searchParams->get(...)`). Mark the canonical name available so a
-    // derived memo over the env signal seeds in-template (#2069); there is
-    // nothing to seed for the signal itself.
+    // seeds the canonical per-request reader (`$searchParams` today) once,
+    // and the expression lowering canonicalises any local alias (`const [sp]
+    // = …` → `$searchParams->get(...)`). Mark the canonical name available so
+    // a derived memo over the env signal seeds in-template (#2069); there is
+    // nothing to seed for the signal itself. The registry
+    // (`envSignalReaderFor`, packages/jsx/src/adapters/env-signal.ts) is the
+    // open-closed extension point (#2076 review): a future env signal
+    // registers its `{ key, canonicalName, methods }` once there and every
+    // seed path (Mojo/Xslate/Go) picks it up with no adapter edits. An
+    // `envReader` key unknown to the registry is not a `searchParams`-shaped
+    // reader — fall through to the normal tryLower path (the safe default).
     if (signal.envReader) {
-      available.add(signal.getter)
-      available.add('searchParams')
-      continue
+      const reader = envSignalReaderFor(signal.envReader)
+      if (reader) {
+        available.add(signal.getter)
+        available.add(reader.canonicalName)
+        continue
+      }
     }
     const perl = tryLowerToPerl(ctx, signal.initialValue, available)
     if (perl !== null) lines.push(`% my $${signal.getter} = ${perl};`)

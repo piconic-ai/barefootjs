@@ -58,17 +58,14 @@ runAdapterConformanceTests({
   // a `SearchParams bf.SearchParams` binding (zero value → empty query → the
   // author's default). See #1922; Mojo / Xslate stay skipped pending their own
   // env-signal lowering + per-request Perl reader.
-  skipJsx: [
-    // #2075 residual: a LIST-valued memo derived from the searchParams() env
-    // signal (the blog `visible` filter shape). Scalar derived memos SSR-
-    // compute in the generated constructor (`in.SearchParams.Get(...)` — see
-    // the #2075 constructor pins below), but a list memo would need typed
-    // evaluator plumbing (FilterEval returns []any; memo fields are typed
-    // slices), so its field zero-values and the SSR list renders empty.
-    // Mojo / Xslate render this fixture via their in-template memo seeds.
-    // https://github.com/piconic-ai/barefootjs/issues/2075
-    'search-params-derived-filter',
-  ],
+  //
+  // `search-params-derived-filter` (#2075) is no longer skipped: a LIST-
+  // valued memo derived from the searchParams() env signal (the blog
+  // `visible` filter shape) now SSR-computes via `bf.FilterEval` — the
+  // memo's field type is `[]any` and its constructor init serializes the
+  // `.filter` predicate to the runtime evaluator. See the #2075 constructor
+  // pins below.
+  skipJsx: [],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching
@@ -3073,6 +3070,33 @@ export function QueryEcho() {
 `, adapter)
     const { types } = adapter.generate(ir)
     expect(types).toContain('Q: in.SearchParams.Get("q"),')
+  })
+
+  // #2075 residual: a LIST-valued memo (`.filter(arrow)` over a props array)
+  // chained off the env-derived `tag` memo — the `search-params-derived-filter`
+  // shared fixture's shape. The field is `[]any` (not the misclassified `bool`
+  // the `/=>\s*!/` heuristic used to produce from the predicate's `!tag()`),
+  // and the constructor seeds it via `bf.FilterEval`, whose serialized
+  // predicate JSON is embedded (escaped) in the Go string literal.
+  test('computes a list-filter memo chained off a searchParams()-derived memo via bf.FilterEval', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('Visible []any')
+    expect(types).toContain('Visible: bf.FilterEval(in.Items,')
+    // The predicate JSON is escaped inside a Go double-quoted string literal,
+    // so assert on the substring that survives escaping (backslash-escaped
+    // quotes around the JSON keys/values).
+    expect(types).toContain('\\"method\\":\\"includes\\"')
   })
 })
 
