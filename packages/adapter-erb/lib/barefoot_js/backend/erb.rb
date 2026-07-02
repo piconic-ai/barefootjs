@@ -41,10 +41,17 @@ module BarefootJS
       # local variables in a dedicated eval scope per render (see
       # `render_named`) rather than passing a generic binding, so a template
       # can never accidentally see Ruby method-local state.
-      def initialize(path:, json_encoder: nil)
+      # `cache:` mirrors the Xslate/Kolon backend's `cache => $DEV ? 0 : 1`
+      # constructor option: true (default, production) parses each `.erb`
+      # file once and reuses the compiled ERB::Compiler output for the life
+      # of the process; false (dev) re-reads and re-parses from disk on
+      # every `render_named` call, so `bf build --watch` output is picked up
+      # on the next request without restarting the server.
+      def initialize(path:, json_encoder: nil, cache: true)
         @dir = path
         @json_encoder = json_encoder || ->(data) { JSON.generate(data) }
         @cache = {}
+        @cache_enabled = cache
       end
 
       def encode_json(data)
@@ -78,11 +85,15 @@ module BarefootJS
       private
 
       def load_template(name)
-        @cache[name] ||= begin
-          file = File.join(@dir, "#{name}.erb")
-          src = File.read(file, encoding: 'UTF-8')
-          ERB.new(src, trim_mode: '-', eoutvar: '_erbout')
-        end
+        return build_template(name) unless @cache_enabled
+
+        @cache[name] ||= build_template(name)
+      end
+
+      def build_template(name)
+        file = File.join(@dir, "#{name}.erb")
+        src = File.read(file, encoding: 'UTF-8')
+        ERB.new(src, trim_mode: '-', eoutvar: '_erbout')
       end
 
       # A dedicated per-render binding host. `bf` and `v` are the ONLY

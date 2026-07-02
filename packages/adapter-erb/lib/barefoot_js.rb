@@ -298,6 +298,17 @@ module BarefootJS
     # caller's `props[propName]` wins when present, otherwise the static
     # `value` does. `propName`-less entries (signal / memo locals) always
     # use the static value.
+    #
+    # Public (not `private_class_method`): `register_components_from_manifest`
+    # above uses it for the `ui/*` registry path, but a page that composes
+    # *flat* (non-`ui/*`) components by hand -- e.g. the blog islands in the
+    # Sinatra/xslate/Mojolicious integrations -- needs the exact same
+    # ssrDefaults-seeding logic for its own manual `register_child_renderer`
+    # calls. Mirrors the Perl runtime's `BarefootJS::_derive_stash_from_defaults`,
+    # which is likewise callable from integration code (Perl has no enforced
+    # privacy; the leading underscore is convention only) -- see
+    # integrations/xslate/app.psgi's `_register_blog_child` and
+    # integrations/mojolicious/app.pl's equivalent.
     def self.derive_vars_from_defaults(defaults, props)
       extra = {}
       defaults.each do |name, d|
@@ -319,7 +330,6 @@ module BarefootJS
       end
       extra
     end
-    private_class_method :derive_vars_from_defaults
 
     # -----------------------------------------------------------------
     # Streaming SSR (Out-of-Order)

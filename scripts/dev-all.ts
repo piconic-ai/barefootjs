@@ -10,10 +10,13 @@
  *   :4000/integrations/chi/*         → chi service
  *   :4000/integrations/nethttp/*     → nethttp service
  *   :4000/integrations/mojolicious/* → mojolicious service
+ *   :4000/integrations/xslate/*      → xslate service
+ *   :4000/integrations/sinatra/*     → sinatra service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
- * (hono, h3, elysia, echo, gin, chi, nethttp, mojolicious, site-core) resolve via Docker DNS. Each upstream
+ * (hono, h3, elysia, echo, gin, chi, nethttp, mojolicious, xslate, sinatra,
+ * site-core) resolve via Docker DNS. Each upstream
  * target is overridable via env vars so the same script also works on the
  * host (e.g. when iterating on the proxy itself), and so individual targets
  * can be redirected to host.docker.internal when an integration is being run
@@ -41,6 +44,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/nethttp',     target: process.env.NETHTTP_TARGET     ?? 'http://nethttp:8083',     label: 'net/http (Go)' },
   { prefix: '/integrations/mojolicious', target: process.env.MOJOLICIOUS_TARGET ?? 'http://mojolicious:3000', label: 'Mojolicious (Perl)' },
   { prefix: '/integrations/xslate',      target: process.env.XSLATE_TARGET      ?? 'http://xslate:3007',      label: 'Text::Xslate (Perl)' },
+  { prefix: '/integrations/sinatra',     target: process.env.SINATRA_TARGET     ?? 'http://sinatra:3008',      label: 'Sinatra (Ruby)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'

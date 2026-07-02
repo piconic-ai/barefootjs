@@ -14,6 +14,7 @@ same JSX components on a different stack:
 | `nethttp` | Go / net/http (stdlib) | 8083 | container |
 | `mojolicious` | Perl / Mojolicious::Lite | 3000 (morbo default) | container |
 | `xslate` | Perl / Text::Xslate (Plack / Starman) | 3007 | container |
+| `sinatra` | Ruby / Sinatra (ERB) | 3008 | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
 
 Plus `site/core` (the docs / landing / catalog site) on internal port 4001
@@ -43,6 +44,7 @@ host:                                  containers (docker compose):
                                          - nethttp      (golang + air)
                                          - mojolicious  (perl + morbo)
                                          - xslate       (perl + starman)
+                                         - sinatra      (ruby + puma + rerun)
                                          - site-core    (bun + Hono)
 ```
 
@@ -58,6 +60,7 @@ The proxy routes by path prefix:
 :4000/integrations/nethttp/*     → nethttp service
 :4000/integrations/mojolicious/* → mojolicious service
 :4000/integrations/xslate/*      → xslate service
+:4000/integrations/sinatra/*     → sinatra service
 :4000/*                          → site-core (landing / docs / catalog)
 ```
 
@@ -114,7 +117,8 @@ HONO_TARGET=http://host.docker.internal:3001 docker compose up proxy
 
 The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
 `ECHO_TARGET`, `GIN_TARGET`, `CHI_TARGET`, `NETHTTP_TARGET`,
-`MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, and `SITE_CORE_TARGET`.
+`MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, `SINATRA_TARGET`, and
+`SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
 
@@ -127,9 +131,10 @@ production image and lets dev tooling evolve independently.
 The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
 `Dockerfile`** — they deploy straight to Cloudflare Workers via
 `wrangler deploy` (Elysia uses its official Cloudflare adapter). The Go
-adapters (`echo`, `gin`, `chi`, `nethttp`) and the Perl adapters
-(`mojolicious`, `xslate`) ship a production container image (`Dockerfile`)
-deployed as a Cloudflare Container. Every adapter still has a `Dockerfile.dev` for the local
+adapters (`echo`, `gin`, `chi`, `nethttp`), the Perl adapters
+(`mojolicious`, `xslate`), and the Ruby adapter (`sinatra`) ship a
+production container image (`Dockerfile`) deployed as a Cloudflare
+Container. Every adapter still has a `Dockerfile.dev` for the local
 compose network.
 
 Each Go adapter is its own Cloudflare Worker + Container, routed on the

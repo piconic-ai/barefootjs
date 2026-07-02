@@ -151,6 +151,18 @@ services:
       - ./packages/adapter-perl/lib:/workspace/packages/adapter-perl/lib
       - ./packages/adapter-xslate/lib:/workspace/packages/adapter-xslate/lib
 
+  sinatra:
+    build:
+      context: .
+      dockerfile: integrations/sinatra/Dockerfile.dev
+    working_dir: /workspace/integrations/sinatra
+    environment:
+      BASE_PATH: /integrations/sinatra
+      RACK_ENV: development
+    volumes:
+      - ./integrations/sinatra:/workspace/integrations/sinatra
+      - ./packages/adapter-erb/lib:/workspace/packages/adapter-erb/lib
+
   site-core:
     build:
       context: .
