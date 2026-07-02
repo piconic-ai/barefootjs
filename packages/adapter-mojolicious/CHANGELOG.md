@@ -1,5 +1,14 @@
 # @barefootjs/mojolicious
 
+## 0.17.1
+
+### Patch Changes
+
+- 56e00aa: Emit the `<!--bf-loop:<id>-->` / `<!--bf-/loop:<id>-->` boundary marker pair for clientOnly (`/* @client */`) loops (#2066). Both adapters previously rendered nothing at the loop position, so the client runtime's `mapArray()` resolved `anchor = null` and appended hydrated items after sibling markers (#872 defect class). The pair now matches Hono / Go emission, with per-call-site marker ids (#1087) keeping sibling `.map()` ranges distinct.
+- 6b3bba3: Lower value-producing `.map(cb)` on the template-string adapters via the #2018 runtime evaluator (#2073). A `.map()` whose callback returns a value (the blog-showcase shape `` p.tags.map((t) => `#${t}`).join(' ') ``) previously refused with BF101 on Go / Mojo / Xslate; `map` now joins `CALLBACK_METHODS`, the projection body serializes per element through the new `map_eval` helpers (`bf->map_eval` / `$bf.map_eval` / `bf_map_eval` + `BarefootJS::Evaluator::map_json` / Go `MapEval`), one result per element with no flatten, composing through the existing `.join` lowering. The JSX-returning `.map` is an IRLoop upstream and unaffected; the fall-throughs (a bare `arr.map` reference or a function-reference callback) still refuse loudly.
+- d0fde8a: Surface BF101 for a filter predicate whose body contains a nested higher-order callback the adapter can only degrade (#2038). The runtime evaluator refuses nested arrows, and the legacy predicate fallbacks silently rewrote such predicates — Xslate's Kolon-lambda emit collapsed the inner call to its receiver (`!other.some(r => …)` → `!other`), Mojo degraded nested `find*` / sort / reduce / flatMap the same way, and the Go filter-expr `call` arm dropped the arrow argument entirely. Each adapter is now loud at its exact degrade points, with `/* @client */` as the escape hatch. Faithful nested lowerings are untouched: Mojo's inline `grep` for nested `filter` / `every` / `some` and Go's `len (bf_filter_eval …)` for `.filter(cb).length` still render (pinned by the new `filter-nested-callback-predicate` conformance fixture).
+  - @barefootjs/shared@0.17.1
+
 ## 0.17.0
 
 ### Minor Changes
