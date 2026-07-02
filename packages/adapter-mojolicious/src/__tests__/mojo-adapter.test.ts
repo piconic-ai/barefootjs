@@ -1517,6 +1517,44 @@ export { C }
   })
 })
 
+describe('MojoAdapter - #2075 searchParams()-derived memo seeding', () => {
+  // A memo derived from the createSearchParams() env signal must seed
+  // in-template from the canonical per-request `$searchParams` reader —
+  // including under a local alias (`const [sp] = …`), which the expression
+  // lowering canonicalises.
+  test('seeds an aliased scalar derived memo from the canonical reader', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`)
+    expect(template).toContain("% my $sort = ($searchParams->get('sort') // 'date');")
+  })
+
+  // A list-filter memo chained off the derived memo seeds too: the inline
+  // grep's `$_` topic and the callback param are lowering-internal bindings,
+  // not out-of-scope template vars (the pre-#2075 availability check
+  // rejected them and the list rendered empty at SSR).
+  test('seeds a filter memo chained off the derived memo', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`)
+    expect(template).toContain("% my $tag = ($searchParams->get('tag') // '');")
+    expect(template).toMatch(/% my \$visible = \[grep/)
+  })
+})
+
 describe('MojoAdapter - #2073 value-producing .map(cb)', () => {
   function emitMap(expr: string): string {
     const a = new MojoAdapter()

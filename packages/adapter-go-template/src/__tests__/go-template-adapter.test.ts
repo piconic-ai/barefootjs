@@ -58,7 +58,17 @@ runAdapterConformanceTests({
   // a `SearchParams bf.SearchParams` binding (zero value → empty query → the
   // author's default). See #1922; Mojo / Xslate stay skipped pending their own
   // env-signal lowering + per-request Perl reader.
-  skipJsx: [],
+  skipJsx: [
+    // #2075 residual: a LIST-valued memo derived from the searchParams() env
+    // signal (the blog `visible` filter shape). Scalar derived memos SSR-
+    // compute in the generated constructor (`in.SearchParams.Get(...)` — see
+    // the #2075 constructor pins below), but a list memo would need typed
+    // evaluator plumbing (FilterEval returns []any; memo fields are typed
+    // slices), so its field zero-values and the SSR list renders empty.
+    // Mojo / Xslate render this fixture via their in-template memo seeds.
+    // https://github.com/piconic-ai/barefootjs/issues/2075
+    'search-params-derived-filter',
+  ],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
   // shared fixtures) so adding a new adapter doesn't require touching
@@ -3024,6 +3034,45 @@ export { C }
 
   test('.flat(Infinity) emits the -1 full-depth sentinel', () => {
     expect(emitFlat('rows.flat(Infinity)')).toContain('bf_flat .Rows -1')
+  })
+})
+
+describe('GoTemplateAdapter - #2075 searchParams()-derived memo constructor', () => {
+  // A memo derived from the createSearchParams() env signal SSR-computes in
+  // the generated constructor from the canonical `in.SearchParams` reader —
+  // including under a local alias. `Get` returns "" for an absent key, so
+  // the `??` default fires on "" — the same documented `?? → or` divergence
+  // as the template-position lowering.
+  test('computes an aliased `?? default` derived memo from in.SearchParams', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain(
+      'Sort: func() string { if v := in.SearchParams.Get("sort"); v != "" { return v }; return "date" }(),',
+    )
+  })
+
+  test('computes a bare env read memo from in.SearchParams', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function QueryEcho() {
+  const [searchParams] = createSearchParams()
+  const q = createMemo(() => searchParams().get('q'))
+  return <p>{q()}</p>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('Q: in.SearchParams.Get("q"),')
   })
 })
 

@@ -12,6 +12,7 @@
 import {
   type ComponentIR,
   type ContextConsumer,
+  type ParsedExpr,
   collectContextConsumers,
   extractArrowBodyExpression,
   isSupported,
@@ -70,6 +71,17 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   // in-template when the init lowers cleanly AND references an in-scope var.
   // Object/array/constant inits keep the existing ssr-defaults seeding.
   for (const signal of signals) {
+    // Request-scoped env signal (`createSearchParams()`, #1922): the runtime
+    // seeds the canonical `$searchParams` reader per request, and the
+    // expression lowering canonicalises any local alias (`const [sp] = …` →
+    // `$searchParams.get(...)`). Mark the canonical name available so a
+    // derived memo over the env signal seeds in-template (#2069); there is
+    // nothing to seed for the signal itself.
+    if (signal.envReader) {
+      available.add(signal.getter)
+      available.add('searchParams')
+      continue
+    }
     const kolon = tryLowerToKolon(ctx, signal.initialValue, available)
     // Kolon can't express `: my $x = … $x …` — declaring `my $x` makes the
     // RHS `$x` an undefined lexical rather than the render var. A same-name
@@ -118,8 +130,75 @@ export function tryLowerToKolon(
 ): string | null {
   const trimmed = expr.trim()
   if (!trimmed) return null
-  if (!isSupported(parseExpression(trimmed)).supported) return null
+  const parsed = parseExpression(trimmed)
+  if (!isSupported(parsed).supported) return null
   const kolon = ctx.convertExpressionToKolon(trimmed)
   if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) return null
-  return referencedVarsAreAvailable(kolon, available) ? kolon : null
+  // The lowered Kolon for a higher-order body binds its own locals: callback
+  // params (`(p) => …` → `-> $p { … }` lambda params). Those are
+  // lowering-internal bindings, not template vars — allow them so a
+  // filter/sort memo body over in-scope vars still seeds (#2069). `_` covers
+  // any Perl-side topic var a helper's inline form may use.
+  const allowed = new Set(available)
+  allowed.add('_')
+  // `$bf` is the runtime helper object, passed to every render — a lowering
+  // that calls a runtime helper (`$bf.filter(...)`) is not referencing an
+  // out-of-scope template binding.
+  allowed.add('bf')
+  for (const p of collectArrowParams(parsed)) allowed.add(p)
+  return referencedVarsAreAvailable(kolon, allowed) ? kolon : null
+}
+
+/** Collect every arrow-callback param name in the parsed expression tree. */
+export function collectArrowParams(expr: ParsedExpr): Set<string> {
+  const out = new Set<string>()
+  const visit = (e: ParsedExpr): void => {
+    switch (e.kind) {
+      case 'arrow':
+        for (const p of e.params) out.add(p)
+        visit(e.body)
+        return
+      case 'call':
+        visit(e.callee)
+        e.args.forEach(visit)
+        return
+      case 'binary':
+      case 'logical':
+        visit(e.left)
+        visit(e.right)
+        return
+      case 'unary':
+        visit(e.argument)
+        return
+      case 'conditional':
+        visit(e.test)
+        visit(e.consequent)
+        visit(e.alternate)
+        return
+      case 'member':
+        visit(e.object)
+        return
+      case 'index-access':
+        visit(e.object)
+        visit(e.index)
+        return
+      case 'template-literal':
+        for (const p of e.parts) if (p.type === 'expression') visit(p.expr)
+        return
+      case 'array-literal':
+        e.elements.forEach(visit)
+        return
+      case 'array-method':
+        visit(e.object)
+        e.args.forEach(visit)
+        return
+      case 'object-literal':
+        for (const p of e.properties) visit(p.value)
+        return
+      default:
+        return
+    }
+  }
+  visit(expr)
+  return out
 }

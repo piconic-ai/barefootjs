@@ -159,6 +159,8 @@ import { fixture as contextProvider } from './context-provider'
 import { fixture as asyncBoundary } from './async-boundary'
 import { fixture as regionBoundary } from './region-boundary'
 import { fixture as searchParamsFixture } from './search-params'
+import { fixture as searchParamsDerivedMemo } from './search-params-derived-memo'
+import { fixture as searchParamsDerivedFilter } from './search-params-derived-filter'
 // Priority 10: Compiler stress catalog (#1244)
 import { fixture as style3Signals } from './style-3-signals'
 import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
@@ -382,6 +384,8 @@ export const jsxFixtures: JSXFixture[] = [
   asyncBoundary,
   regionBoundary,
   searchParamsFixture,
+  searchParamsDerivedMemo,
+  searchParamsDerivedFilter,
   // Priority 10: Compiler stress catalog (#1244)
   style3Signals,
   jsxSpreadReactive,

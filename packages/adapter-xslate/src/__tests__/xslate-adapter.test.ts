@@ -314,6 +314,38 @@ export function C() {
 // (`$bf.*_eval`), isomorphic with the Go / Mojo `*_eval` helpers. A predicate
 // the evaluator can't model (a method-call predicate) falls back to the Kolon
 // lambda runtime call. Template-text pins guard against silent divergence.
+describe('XslateAdapter - #2075 searchParams()-derived memo seeding', () => {
+  test('seeds an aliased scalar derived memo from the canonical reader', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`)
+    expect(template).toContain(": my $sort = ($searchParams.get('sort') // 'date');")
+  })
+
+  // The Kolon lambda param and the `$bf` runtime object are
+  // lowering-internal, not out-of-scope template vars (#2075).
+  test('seeds a filter memo chained off the derived memo', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`)
+    expect(template).toContain(": my $tag = ($searchParams.get('tag') // '');")
+    expect(template).toContain(': my $visible = $bf.filter($items,')
+  })
+})
+
 describe('XslateAdapter - #2073 value-producing .map(cb)', () => {
   // The blog-showcase shape (#1938/#1939): a value-returning `.map` (string
   // projection, not JSX) lowers through the evaluator — `$bf.map_eval`

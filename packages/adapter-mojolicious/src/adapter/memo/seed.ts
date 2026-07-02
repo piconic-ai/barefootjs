@@ -12,6 +12,7 @@
 import {
   type ComponentIR,
   type ContextConsumer,
+  type ParsedExpr,
   collectContextConsumers,
   extractArrowBodyExpression,
   isSupported,
@@ -78,6 +79,17 @@ export function generateDerivedMemoSeed(ctx: MojoMemoContext, ir: ComponentIR): 
   // existing ssr-defaults seeding, so the spread / loop fixtures are
   // untouched.
   for (const signal of signals) {
+    // Request-scoped env signal (`createSearchParams()`, #1922): the runtime
+    // seeds the canonical `$searchParams` reader per request, and the
+    // expression lowering canonicalises any local alias (`const [sp] = …` →
+    // `$searchParams->get(...)`). Mark the canonical name available so a
+    // derived memo over the env signal seeds in-template (#2069); there is
+    // nothing to seed for the signal itself.
+    if (signal.envReader) {
+      available.add(signal.getter)
+      available.add('searchParams')
+      continue
+    }
     const perl = tryLowerToPerl(ctx, signal.initialValue, available)
     if (perl !== null) lines.push(`% my $${signal.getter} = ${perl};`)
     available.add(signal.getter)
@@ -119,8 +131,70 @@ export function tryLowerToPerl(
 ): string | null {
   const trimmed = expr.trim()
   if (!trimmed) return null
-  if (!isSupported(parseExpression(trimmed)).supported) return null
+  const parsed = parseExpression(trimmed)
+  if (!isSupported(parsed).supported) return null
   const perl = ctx.convertExpressionToPerl(trimmed)
   if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) return null
-  return referencedVarsAreAvailable(perl, available) ? perl : null
+  // The lowered Perl for a higher-order body binds its own locals: callback
+  // params (`(p) => …` → `$p` in a coderef, or the `$_` topic in an inline
+  // `grep`). Those are lowering-internal bindings, not template vars — allow
+  // them so a filter/sort memo body over in-scope vars still seeds (#2069).
+  const allowed = new Set(available)
+  allowed.add('_')
+  for (const p of collectArrowParams(parsed)) allowed.add(p)
+  return referencedVarsAreAvailable(perl, allowed) ? perl : null
+}
+
+/** Collect every arrow-callback param name in the parsed expression tree. */
+export function collectArrowParams(expr: ParsedExpr): Set<string> {
+  const out = new Set<string>()
+  const visit = (e: ParsedExpr): void => {
+    switch (e.kind) {
+      case 'arrow':
+        for (const p of e.params) out.add(p)
+        visit(e.body)
+        return
+      case 'call':
+        visit(e.callee)
+        e.args.forEach(visit)
+        return
+      case 'binary':
+      case 'logical':
+        visit(e.left)
+        visit(e.right)
+        return
+      case 'unary':
+        visit(e.argument)
+        return
+      case 'conditional':
+        visit(e.test)
+        visit(e.consequent)
+        visit(e.alternate)
+        return
+      case 'member':
+        visit(e.object)
+        return
+      case 'index-access':
+        visit(e.object)
+        visit(e.index)
+        return
+      case 'template-literal':
+        for (const p of e.parts) if (p.type === 'expression') visit(p.expr)
+        return
+      case 'array-literal':
+        e.elements.forEach(visit)
+        return
+      case 'array-method':
+        visit(e.object)
+        e.args.forEach(visit)
+        return
+      case 'object-literal':
+        for (const p of e.properties) visit(p.value)
+        return
+      default:
+        return
+    }
+  }
+  visit(expr)
+  return out
 }

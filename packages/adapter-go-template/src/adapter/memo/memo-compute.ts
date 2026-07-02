@@ -95,6 +95,44 @@ export function memoInitialFromParsedBody(
     e.object.name === 'props'
       ? e.property
       : null
+  // A request-scoped env-signal read (`searchParams().get('k')`, any local
+  // alias, #1922) → the literal key, else null. The receiver must be a
+  // zero-arg call of an env-signal local and the key a string literal.
+  const envGetKey = (e: ParsedExpr): string | null => {
+    if (e.kind !== 'call' || e.callee.kind !== 'member' || e.callee.computed) return null
+    if (e.callee.property !== 'get') return null
+    const recvName = getterCallName(e.callee.object)
+    if (recvName === null || !ctx.state.searchParamsLocals.has(recvName)) return null
+    const arg = e.args[0]
+    if (!arg || arg.kind !== 'literal' || arg.literalType !== 'string') return null
+    return String(arg.value)
+  }
+
+  // () => searchParams().get('k') — a derived memo over the env signal
+  // (#2069). The constructor reads the canonical `in.SearchParams` reader the
+  // handler fills per request, so the memo SSR-computes instead of zero-valuing.
+  {
+    const key = envGetKey(body)
+    if (key !== null) return `in.SearchParams.Get(${JSON.stringify(key)})`
+  }
+
+  // () => searchParams().get('k') ?? '<lit>' — the defaulted form. Go's
+  // `SearchParams.Get` returns "" for an absent key (it can't surface JS's
+  // null), so the default fires on "" — the same documented `?? → or`
+  // divergence as the template-position lowering (`or (.SearchParams.Get
+  // "k") "<lit>"`); the two positions stay consistent.
+  if (
+    body.kind === 'logical' &&
+    (body.op === '??' || body.op === '||') &&
+    body.right.kind === 'literal' &&
+    body.right.literalType === 'string'
+  ) {
+    const key = envGetKey(body.left)
+    if (key !== null) {
+      const def = JSON.stringify(String(body.right.value))
+      return `func() string { if v := in.SearchParams.Get(${JSON.stringify(key)}); v != "" { return v }; return ${def} }()`
+    }
+  }
 
   // () => getter() === 'lit' / !== 'lit' — a selection memo. Resolves to a Go
   // bool when the signal's initial value is itself a string literal.
