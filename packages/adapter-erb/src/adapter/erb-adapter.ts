@@ -88,7 +88,7 @@ import {
   queryHrefArgs,
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
+import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
@@ -349,6 +349,30 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     }
     if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
     return this.booleanTypedProps.has(bare)
+  }
+
+  /**
+   * Whether an attribute-value expression should route through
+   * `bf.bool_str` (single source of truth for all three attribute-emission
+   * call sites that make this decision). Three witnesses (any one
+   * suffices): the JS source structurally evaluates to a boolean
+   * (`isBooleanResultExpr`), the attribute name is one of the ARIA
+   * true/false(/mixed) names (`isAriaBooleanAttr` — the expression itself
+   * may be opaque, e.g. `accepted()`), or the expression is a bare
+   * reference to a boolean-TYPED prop (`isBooleanTypedPropRef`).
+   *
+   * EXCEPT when the expression is already a top-level `String(...)` call
+   * (`isExplicitStringCall`): `convertExpressionToRuby` lowers that to
+   * `bf.string(...)`, which for a real boolean already returns the
+   * JS-correct `"true"`/`"false"` text — wrapping that STRING in
+   * `bf.bool_str` again is a bug (Ruby has no falsy-string, so
+   * `bf.bool_str("false")` always returns `"true"`), not a harmless
+   * no-op. See `isExplicitStringCall`'s docstring for the full
+   * Perl-vs-Ruby truthiness contrast.
+   */
+  private shouldWrapBoolStr(expr: string, name: string): boolean {
+    if (isExplicitStringCall(expr)) return false
+    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(expr)
   }
 
   /**
@@ -634,11 +658,59 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
 
     const rubyExpr = this.convertExpressionToRuby(expr.expr)
 
+    // A bare read of the `children` prop (`{children}` / `{props.children}`,
+    // optionally `?? fallback`) is pre-rendered HTML — captured via the
+    // ERB output-buffer slice in `renderComponent` when THIS component was
+    // itself invoked as a child, or materialized by `Context#render_child`
+    // before the registered renderer runs. Mojo / Xslate don't need this
+    // check: their runtimes bless the captured value itself (Mojo::ByteStream
+    // / Kolon's `mark_raw`), so any later `<%= %>`/`<: :>` auto-escape
+    // dispatches on the VALUE and skips already-raw content transparently.
+    // Stdlib ERB's `<%=` has no such wrapper type (see
+    // `BarefootJS::Backend::Erb#mark_raw`'s docstring — "there is nothing to
+    // opt out of"), so the ADAPTER must decide raw-vs-escaped at this call
+    // site instead: every other raw-HTML position (component forwarding,
+    // spread_attrs, hydration markers) already routes around `bf.h`
+    // structurally; a component reading its OWN `children` back as a text
+    // expression was the one position still falling through the generic
+    // escape-everything path. Emitting the same `bf.h(...)` wrap here would
+    // double-encode markup the runtime already rendered.
+    const wrapped = this.isChildrenValueExpr(expr) ? rubyExpr : `bf.h(${rubyExpr})`
+
     if (expr.slotId) {
-      return `<%= bf.text_start("${expr.slotId}") %><%= bf.h(${rubyExpr}) %><%= bf.text_end %>`
+      return `<%= bf.text_start("${expr.slotId}") %><%= ${wrapped} %><%= bf.text_end %>`
     }
 
-    return `<%= bf.h(${rubyExpr}) %>`
+    return `<%= ${wrapped} %>`
+  }
+
+  /**
+   * True when `expr` is a structural read of the `children` prop: a bare
+   * `children` identifier, `props.children` / `<propsObjectName>.children`,
+   * or either of those on the left of a `?? fallback`. Prefers the IR's
+   * already-parsed `expr.parsed` tree (attached once during IR construction)
+   * and falls back to parsing `expr.expr` only when that's absent — never a
+   * regex/string scan of the source text.
+   */
+  private isChildrenValueExpr(expr: IRExpression): boolean {
+    const parsed = expr.parsed ?? parseExpression(expr.expr.trim()) ?? undefined
+    return this.isChildrenReferenceParsedExpr(parsed)
+  }
+
+  private isChildrenReferenceParsedExpr(parsed: ParsedExpr | undefined): boolean {
+    if (!parsed) return false
+    if (parsed.kind === 'logical' && parsed.op === '??') {
+      return this.isChildrenReferenceParsedExpr(parsed.left)
+    }
+    if (parsed.kind === 'identifier') return parsed.name === 'children'
+    if (parsed.kind === 'member' && !parsed.computed && parsed.property === 'children') {
+      return (
+        parsed.object.kind === 'identifier' &&
+        (parsed.object.name === 'props' ||
+          (this.propsObjectName !== null && parsed.object.name === this.propsObjectName))
+      )
+    }
+    return false
   }
 
   // ===========================================================================
@@ -1119,7 +1191,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       ) {
         const ruby = this.convertExpressionToRuby(value.expr)
         const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+          this.shouldWrapBoolStr(value.expr, name)
             ? `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
             : `${name}="<%= bf.h(${ruby}) %>"`
         return `<% if !(${ruby}).nil? %>${body}<% end %>`
@@ -1140,29 +1212,14 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         const ruby = this.convertExpressionToRuby(value.expr)
         const tmp = `__bf_pu${this.presenceVarCounter++}`
         const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+          this.shouldWrapBoolStr(value.expr, name)
             ? `${name}="<%= bf.h(bf.bool_str(${tmp})) %>"`
             : `${name}="<%= bf.h(${tmp}) %>"`
         return `<% ${tmp} = ${ruby}; if bf.truthy?(${tmp}) %>${body}<% end %>`
       }
-      // Boolean-result handling. Two trigger paths:
+      // Boolean-result handling: see `shouldWrapBoolStr`'s docstring for
+      // the three wrap witnesses and the `String(...)`-call exception.
       //
-      //   - `isBooleanResultExpr(expr)` — the JS source structurally
-      //     evaluates to a boolean (comparison, `!`, literal, both-sides-
-      //     boolean logical / conditional).
-      //   - `isAriaBooleanAttr(name)` — the attribute is one of the ARIA
-      //     tri-state / boolean-state names whose spec values are
-      //     `"true" | "false" (| "mixed")`. The expression itself can be
-      //     opaque (e.g. `accepted()`), so we lean on the attribute name
-      //     as the type witness.
-      //
-      // Without either, Ruby's stringification turns a JS-false comparison
-      // into `"false"` already (matching JS) EXCEPT the attribute value
-      // never went through JS `String(boolean)` in the first place if the
-      // underlying value isn't a Ruby `true`/`false` (e.g. a raw 0/1 from
-      // JSON) — `bool_str` normalises via `bf.truthy?` first, so it's kept
-      // for parity with the Mojo/Go adapters' wire bytes regardless of the
-      // JSON round-trip's exact boolean representation.
       // `attr={cond ? value : undefined}` OMITS the attribute on the falsy
       // branch (Hono drops undefined-valued attributes) — wrap the whole
       // attribute in the condition instead of rendering `attr=""`.
@@ -1175,7 +1232,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         }
       }
       const ruby = this.convertExpressionToRuby(value.expr)
-      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
+      if (this.shouldWrapBoolStr(value.expr, name)) {
         return `${name}="<%= bf.h(bf.bool_str(${ruby})) %>"`
       }
       return `${name}="<%= bf.h(${ruby}) %>"`

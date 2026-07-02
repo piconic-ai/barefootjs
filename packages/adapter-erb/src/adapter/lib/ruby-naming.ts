@@ -39,6 +39,15 @@ const RUBY_KEYWORDS: ReadonlySet<string> = new Set([
   'module', 'next', 'nil', 'not', 'or', 'redo', 'rescue', 'retry',
   'return', 'self', 'super', 'then', 'true', 'undef', 'unless', 'until',
   'when', 'while', 'yield',
+  // Not Ruby keywords, but the two RESERVED locals every compiled template
+  // receives (the binding architecture contract: `bf` the runtime context,
+  // `v` the vars Hash). A loop/block param named `v` or `bf` (e.g.
+  // `items.values().map(v => ...)`, whose synthesized `.entries()` value
+  // binding is literally `v`) would otherwise shadow the vars Hash inside
+  // the loop body, silently breaking every subsequent `v[:name]` read for
+  // the rest of that scope. Route through the same collision-suffix path
+  // as a real keyword.
+  'bf', 'v',
 ])
 
 /** A syntactically valid Ruby local-variable / block-parameter identifier
