@@ -60,10 +60,20 @@ export interface MarkerIdSets {
   slots: Set<string>
   conds: Set<string>
   loops: Set<string>
+  /**
+   * Loop END markers (`/loop:<id>`), collected separately from the start
+   * markers so the suite can assert the boundary PAIR: the client runtime's
+   * mapArray() needs both markers to bracket its insertion range, so a
+   * start marker without its end (or vice versa) is a hydration break even
+   * though the id "appears" in the template. clientOnly loops emit the
+   * pair with no items between (#2066); the IR side has a single loop-id
+   * set, which both template-side sets must match.
+   */
+  loopEnds: Set<string>
 }
 
 function emptySets(): MarkerIdSets {
-  return { slots: new Set(), conds: new Set(), loops: new Set() }
+  return { slots: new Set(), conds: new Set(), loops: new Set(), loopEnds: new Set() }
 }
 
 /**
@@ -181,7 +191,9 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
  *   - cond: `bf-c="<id>"` attribute OR `cond-start:<id>` substring
  *     inside a comment marker.
  *   - loop: `loop:<id>` substring (NOT preceded by `/`, which would
- *     match the end-marker form).
+ *     match the end-marker form). The end-marker form (`/loop:<id>`) is
+ *     collected into `loopEnds` so the pair contract is asserted, not
+ *     just id presence.
  */
 export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   const out = emptySets()
@@ -192,6 +204,7 @@ export function extractTemplateMarkerIds(template: string): MarkerIdSets {
   for (const m of template.matchAll(/\bbf-c="([\w-]+)"/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/cond-start:([\w-]+)/g)) out.conds.add(m[1])
   for (const m of template.matchAll(/(?:^|[^/])loop:([\w-]+)/g)) out.loops.add(m[1])
+  for (const m of template.matchAll(/\/loop:([\w-]+)/g)) out.loopEnds.add(m[1])
   return out
 }
 
@@ -259,6 +272,10 @@ export function runMarkerConformance(opts: RunMarkerConformanceOptions): void {
         expect([...actual.slots].sort()).toEqual([...expected.slots].sort())
         expect([...actual.conds].sort()).toEqual([...expected.conds].sort())
         expect([...actual.loops].sort()).toEqual([...expected.loops].sort())
+        // Boundary-pair contract: every loop id must ALSO close with its
+        // `/loop:<id>` end marker. The IR carries one loop-id set; the
+        // template's start and end sets must both match it (#2066).
+        expect([...actual.loopEnds].sort()).toEqual([...expected.loops].sort())
       })
     }
   })

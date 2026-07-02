@@ -126,6 +126,7 @@ import { fixture as fragment } from './fragment'
 import { fixture as fragmentConditional } from './fragment-conditional'
 import { fixture as loopItemConditional } from './loop-item-conditional'
 import { fixture as clientOnly } from './client-only'
+import { fixture as clientOnlyLoop } from './client-only-loop'
 import { fixture as clientOnlyLoopWithSiblingCond } from './client-only-loop-with-sibling-cond'
 import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
@@ -346,6 +347,7 @@ export const jsxFixtures: JSXFixture[] = [
   fragmentConditional,
   loopItemConditional,
   clientOnly,
+  clientOnlyLoop,
   clientOnlyLoopWithSiblingCond,
   eventHandlers,
   defaultProps,

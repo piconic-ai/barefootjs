@@ -611,28 +611,6 @@ export function List() {
     expect(result.template).toMatch(/bf->comment\("\/loop:[^"]+"\)/)
   })
 
-  test('emits the loop boundary marker pair for a clientOnly loop (#872 / #1087 parity)', () => {
-    // A `/* @client */` loop renders no items at SSR time, but the
-    // `loop:`/`/loop:` boundary pair must still be emitted (as Hono and
-    // Go do) so the client runtime's mapArray() can locate its insertion
-    // anchor at hydration time.
-    const result = compileAndGenerate(`
-"use client"
-import { createSignal } from "@barefootjs/client"
-
-export function List() {
-  const [items, setItems] = createSignal<string[]>([])
-  return <ul>{/* @client */ items().map(item => <li>{item}</li>)}</ul>
-}
-`)
-    expect(result.template).toMatch(
-      /bf->comment\("loop:([\w-]+)"\) %><%== bf->comment\("\/loop:\1"\)/,
-    )
-    // No SSR item rows and no Perl loop for a clientOnly map.
-    expect(result.template).not.toContain('<li')
-    expect(result.template).not.toContain('% for my')
-  })
-
   test('compares string signals with Perl `eq`, not numeric `==` (#1672)', () => {
     // `sel() === t.id` where `sel` is a string signal must lower to `eq`.
     // Perl numeric `==` coerces non-numeric strings to 0, so `"b" == "a"` is
