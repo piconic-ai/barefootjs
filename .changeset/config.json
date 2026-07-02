@@ -22,6 +22,7 @@
     "barefootjs-hono-jsx-example",
     "barefootjs-integrations-shared",
     "barefootjs-mojolicious-example",
+    "barefootjs-sinatra-example",
     "barefootjs-site",
     "barefootjs-xslate-example"
   ]
