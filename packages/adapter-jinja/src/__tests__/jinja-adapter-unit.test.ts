@@ -111,7 +111,7 @@ export function Item(props: { defaultOn?: boolean }) {
   return <button>{on() ? 'ON' : 'OFF'}</button>
 }
 `)
-    expect(template).toContain('{% set on = (defaultOn if defaultOn is not none else false) %}')
+    expect(template).toContain('{% set on = (defaultOn if (defaultOn is defined and defaultOn is not none) else false) %}')
   })
 
   // Divergence from the Kolon port: Jinja's `{% set x = x + 1 %}` safely
@@ -128,7 +128,7 @@ export function C(props: { x?: number }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain('{% set x = (x if x is not none else 7) %}')
+    expect(template).toContain('{% set x = (x if (x is defined and x is not none) else 7) %}')
   })
 
   test('emits data_key_attr on the component root', () => {

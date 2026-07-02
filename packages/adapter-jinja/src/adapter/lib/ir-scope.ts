@@ -28,6 +28,11 @@ import type { IRNode, IRProp, IRIfStatement, IRFragment } from '@barefootjs/jsx'
 /** Tokens this adapter's own codegen can emit that are never context vars. */
 const NON_VAR_TOKENS = new Set([
   'bf', 'if', 'else', 'is', 'not', 'and', 'or', 'in', 'none', 'true', 'false',
+  // `is defined` — the nullish-coalescing (`??`) lowering's Undefined guard
+  // (`expr/emitters.ts`'s `logical`, and the nullable-optional-prop
+  // attribute-omission test in `jinja-adapter.ts`) emits this Jinja test
+  // keyword; it's never a context var.
+  'defined',
 ])
 
 /**

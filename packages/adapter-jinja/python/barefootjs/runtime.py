@@ -184,7 +184,23 @@ def js_number(value: Any) -> float:
 
 def js_truthy(value: Any) -> bool:
     """JS truthiness: `[]` / `{}` are truthy; only `None`, `False`, `0`,
-    `0.0`, `''`, and NaN are falsy."""
+    `0.0`, `''`, and NaN are falsy.
+
+    A template-engine "this variable was never bound" sentinel (Jinja's
+    `Undefined` under `ChainableUndefined`, e.g. an optional prop a caller
+    never passed and that isn't listed in the caller's props dict at all --
+    NOT the same as a prop explicitly set to `None`) is not one of the
+    isinstance branches below, so it falls through to the final line. It
+    must NOT hit the list/dict/tuple `True` short-circuit -- that would make
+    `bf.truthy(unset_var)` true, silently flipping every
+    `props.optionalFlag`-style condition on an unset prop (`asChild`-style
+    branches, `<Slot>` composition, ...) to its truthy branch. Kept
+    engine-agnostic (no jinja2 import here -- see the module divergence
+    notes): Jinja's `Undefined.__bool__` already returns `False`, matching
+    JS's own `Boolean(undefined) === false`, so routing the true catch-all
+    through Python's `bool(value)` does the right thing for both an
+    unrecognised engine sentinel AND any other unhandled type, while list /
+    dict / tuple keep the explicit JS-truthy-even-when-empty override."""
     if value is None or value is False:
         return False
     if value is True:
@@ -195,7 +211,9 @@ def js_truthy(value: Any) -> bool:
         return value != 0
     if isinstance(value, str):
         return value != ""  # incl. the JS-truthy "0"
-    return True  # list / dict / tuple -- JS objects/arrays are always truthy
+    if isinstance(value, (list, dict, tuple)):
+        return True  # JS objects/arrays are always truthy, even when empty
+    return bool(value)
 
 
 def js_bool_str(value: Any) -> str:

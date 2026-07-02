@@ -196,7 +196,17 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // every operand here is a pure lookup/call.
     if (op === '&&') return `(${r} if ${truthyTest(left, l)} else ${l})`
     if (op === '||') return `(${l} if ${truthyTest(left, l)} else ${r})`
-    return `(${l} if ${l} is not none else ${r})`
+    // `l is not none` alone is NOT equivalent to JS `??`'s null-or-undefined
+    // check: a context var that was never seeded at all (not merely set to
+    // `None`) resolves to Jinja's `ChainableUndefined` sentinel under
+    // `undefined=ChainableUndefined`, and `Undefined is not none` is TRUE
+    // (it's a distinct object, not the `None` singleton) — so the coalesce
+    // would silently return the Undefined sentinel itself instead of `r`.
+    // Guard with `is defined` too, mirroring the same pair this file's
+    // `jinja-adapter.ts` already uses for nullable-optional-prop attribute
+    // omission (see that file's header, divergence 5, and the `is defined
+    // and is not none` call sites).
+    return `(${l} if (${l} is defined and ${l} is not none) else ${r})`
   }
 
   callbackMethod(
@@ -381,7 +391,11 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // See the file header, divergence 1.
     if (op === '&&') return `(${r} if ${truthyTest(left, l)} else ${l})`
     if (op === '||') return `(${l} if ${truthyTest(left, l)} else ${r})`
-    return `(${l} if ${l} is not none else ${r})`
+    // See `JinjaFilterEmitter.logical`'s comment above (same file, same
+    // fix): guard with `is defined` too, so a context var that was never
+    // seeded (Jinja's `ChainableUndefined`, not Python `None`) still
+    // coalesces to `r` instead of leaking the Undefined sentinel through.
+    return `(${l} if (${l} is defined and ${l} is not none) else ${r})`
   }
 
   callbackMethod(
