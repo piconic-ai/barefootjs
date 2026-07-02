@@ -277,7 +277,7 @@ export {
 export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors.ts'
 
 // Expression Parser
-export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, materializeGetterCalls, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
+export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, materializeGetterCalls, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
 export type { StyleObjectEntry } from './expression-parser.ts'
 export type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, SortKey, FlatDepth, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
 export { buildLoopChainExpr } from './loop-chain.ts'

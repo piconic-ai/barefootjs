@@ -3310,6 +3310,87 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
   return [...found].sort()
 }
 
+/**
+ * Every value-position identifier in `expr` NOT bound by an enclosing arrow's
+ * own parameters — with proper lexical scoping: an arrow's params bind only
+ * within that arrow's body, and nested arrows accumulate onto the enclosing
+ * bound set. Unlike {@link freeVarsInBody} (which assumes a single flat param
+ * set and never recurses into nested `arrow` nodes, since a serializable
+ * evaluator body never contains one), this walks the full source-level tree —
+ * including arrows — so a caller can ask "is this name free ANYWHERE in the
+ * expression, honoring each arrow's own scope" rather than only within one
+ * callback body.
+ *
+ * Walks the same value positions as {@link serializeParsedExpr} /
+ * {@link freeVarsInBody}: call callee (skipped when it resolves to an
+ * evaluator builtin — see {@link evalBuiltinCalleeName} — so `Math.floor(x)`
+ * doesn't report `Math` as free) + args, binary/logical/unary operands,
+ * conditional branches, a member's OBJECT only (the property name is not a
+ * reference), an index-access's object + index, template-literal expression
+ * parts, array-literal elements, array-method object + args, and an
+ * object-literal's property VALUES (not keys). An `arrow` recurses into its
+ * body with its own params added to the bound set.
+ *
+ * Returns `null` when the tree contains an `unsupported` node (or any other
+ * shape this walk can't analyze) — the caller must fail safe rather than
+ * assume nothing is free.
+ */
+export function freeIdentifiers(expr: ParsedExpr): Set<string> | null {
+  const free = new Set<string>()
+
+  function visit(e: ParsedExpr, bound: ReadonlySet<string>): boolean {
+    switch (e.kind) {
+      case 'literal':
+      case 'regex':
+        return true
+      case 'identifier':
+        if (!bound.has(e.name)) free.add(e.name)
+        return true
+      case 'call': {
+        const isBuiltinCallee = evalBuiltinCalleeName(e.callee) !== null
+        if (!isBuiltinCallee && !visit(e.callee, bound)) return false
+        for (const a of e.args) if (!visit(a, bound)) return false
+        return true
+      }
+      case 'member':
+        return visit(e.object, bound)
+      case 'index-access':
+        return visit(e.object, bound) && visit(e.index, bound)
+      case 'binary':
+      case 'logical':
+        return visit(e.left, bound) && visit(e.right, bound)
+      case 'unary':
+        return visit(e.argument, bound)
+      case 'conditional':
+        return visit(e.test, bound) && visit(e.consequent, bound) && visit(e.alternate, bound)
+      case 'template-literal':
+        for (const p of e.parts) {
+          if (p.type === 'expression' && !visit(p.expr, bound)) return false
+        }
+        return true
+      case 'array-literal':
+        for (const el of e.elements) if (!visit(el, bound)) return false
+        return true
+      case 'array-method':
+        if (!visit(e.object, bound)) return false
+        for (const a of e.args) if (!visit(a, bound)) return false
+        return true
+      case 'object-literal':
+        for (const p of e.properties) if (!visit(p.value, bound)) return false
+        return true
+      case 'arrow': {
+        const inner = new Set(bound)
+        for (const p of e.params) inner.add(p)
+        return visit(e.body, inner)
+      }
+      case 'unsupported':
+        return false
+    }
+  }
+
+  return visit(expr, new Set()) ? free : null
+}
+
 // Operators the evaluator implements (Go `eval.go` evalBinary / evalUnary, Perl
 // `Evaluator.pm` _binary / _unary). An op outside these sets — loose `==`,
 // `instanceof`, `**`, bitwise/shift, or the parser's `'unknown'` sentinel — is

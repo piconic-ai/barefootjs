@@ -7,9 +7,8 @@ import { createFixture } from '../src/types'
 // and rendered an empty list.
 //
 // Mojo/Xslate seed both memos in-template (the filter lowers to an inline
-// `grep` / `$bf.filter` closing over the seeded `$tag`). Go's constructor has
-// no typed evaluator plumbing for LIST-valued derived memos yet — the residual
-// documented in #2075 — so the Go adapter test skips this fixture's render.
+// `grep` / `$bf.filter` closing over the seeded `$tag`). Go computes them in
+// the generated constructor via `bf.FilterEval` + the evaluator's `.includes`.
 export const fixture = createFixture({
   id: 'search-params-derived-filter',
   description: 'a filter memo chained off a searchParams()-derived memo SSR-renders the list',

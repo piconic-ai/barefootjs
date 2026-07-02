@@ -12,16 +12,16 @@
 import {
   type ComponentIR,
   type ContextConsumer,
-  type ParsedExpr,
   collectContextConsumers,
+  collectModuleStringConsts,
   envSignalReaderFor,
   extractArrowBodyExpression,
+  freeIdentifiers,
   isSupported,
   parseExpression,
 } from '@barefootjs/jsx'
 
 import type { XslateMemoContext } from '../emit-context.ts'
-import { referencedVarsAreAvailable } from '../lib/ir-scope.ts'
 
 /** Kolon literal for a context-consumer's `createContext` default. */
 export function contextDefaultKolon(c: ContextConsumer): string {
@@ -62,8 +62,21 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   const memos = ir.metadata.memos ?? []
   const signals = ir.metadata.signals ?? []
   if (memos.length === 0 && signals.length === 0) return ''
-  // Props seed first; each signal/memo adds its own name as it lands.
+  // Props seed first; each signal/memo adds its own name as it lands. A
+  // props-object component (`function C(props: {...})`, no destructure)
+  // reads fields off `props.<x>` rather than a destructured local, so
+  // `props` itself must be available for a memo body like
+  // `props.items.filter(...)` to seed. A module-scope string const (`const
+  // stateClasses = isDisabled() ? aCls : bCls`, select-item's
+  // disabled/default class pair) is a free identifier in the SOURCE tree
+  // but the lowering folds it to its literal string — never a `$var`
+  // reference — so it must count as available too, or the scope guard
+  // would wrongly reject an otherwise-seedable memo.
   const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
+  if (ir.metadata.propsObjectName) available.add(ir.metadata.propsObjectName)
+  for (const name of collectModuleStringConsts(ir.metadata.localConstants).keys()) {
+    available.add(name)
+  }
   const lines: string[] = []
 
   // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
@@ -72,23 +85,20 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   // in-template when the init lowers cleanly AND references an in-scope var.
   // Object/array/constant inits keep the existing ssr-defaults seeding.
   for (const signal of signals) {
-    // Request-scoped env signal (`createSearchParams()`, #1922): the runtime
-    // seeds the canonical per-request reader (`$searchParams` today) once,
-    // and the expression lowering canonicalises any local alias (`const [sp]
-    // = …` → `$searchParams.get(...)`). Mark the canonical name available so
-    // a derived memo over the env signal seeds in-template (#2069); there is
-    // nothing to seed for the signal itself. The registry
-    // (`envSignalReaderFor`, packages/jsx/src/adapters/env-signal.ts) is the
-    // open-closed extension point (#2076 review): a future env signal
-    // registers its `{ key, canonicalName, methods }` once there and every
-    // seed path (Mojo/Xslate/Go) picks it up with no adapter edits. An
-    // `envReader` key unknown to the registry is not a `searchParams`-shaped
-    // reader — fall through to the normal tryLower path (the safe default).
+    // Env signal (`createSearchParams()`, #1922): the runtime provides the
+    // per-request reader, so there is nothing to seed. Registered readers
+    // come from the shared registry (see `envSignalReaderFor`); an
+    // `envReader` key unknown to the registry falls through to the normal
+    // lowering below.
     if (signal.envReader) {
       const reader = envSignalReaderFor(signal.envReader)
       if (reader) {
+        // Only the SOURCE getter name matters for the `freeIdentifiers`
+        // scope check below (it walks the parsed JS tree, not the lowered
+        // Kolon) — the canonical reader name the lowering emits is a
+        // target-language detail, not a source identifier a memo body
+        // could reference.
         available.add(signal.getter)
-        available.add(reader.canonicalName)
         continue
       }
     }
@@ -131,7 +141,14 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
  * `null` when it shouldn't be seeded this way: not a supported shape
  * (`isSupported` pre-check, so object/array literals don't fail the build),
  * references no in-scope var (a constant — keep ssr-defaults seeding), or
- * references an out-of-scope binding. (#1297)
+ * the SOURCE expression has a free identifier outside `available` (an
+ * out-of-scope binding). The scope check runs over the parsed SOURCE tree
+ * via `freeIdentifiers` — not the lowered Kolon string — so a shadowed name
+ * (`filter((p) => p.ok) && p`, where the outer `p` is a different, unbound
+ * reference from the callback's own `p` param) is correctly rejected instead
+ * of the callback param masking the unrelated free `$p` in the emitted
+ * Kolon. An unanalyzable expression (`freeIdentifiers` → null) fails safe:
+ * no seed. (#1297)
  */
 export function tryLowerToKolon(
   ctx: XslateMemoContext,
@@ -144,71 +161,8 @@ export function tryLowerToKolon(
   if (!isSupported(parsed).supported) return null
   const kolon = ctx.convertExpressionToKolon(trimmed)
   if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) return null
-  // The lowered Kolon for a higher-order body binds its own locals: callback
-  // params (`(p) => …` → `-> $p { … }` lambda params). Those are
-  // lowering-internal bindings, not template vars — allow them so a
-  // filter/sort memo body over in-scope vars still seeds (#2069). `_` covers
-  // any Perl-side topic var a helper's inline form may use.
-  const allowed = new Set(available)
-  allowed.add('_')
-  // `$bf` is the runtime helper object, passed to every render — a lowering
-  // that calls a runtime helper (`$bf.filter(...)`) is not referencing an
-  // out-of-scope template binding.
-  allowed.add('bf')
-  for (const p of collectArrowParams(parsed)) allowed.add(p)
-  return referencedVarsAreAvailable(kolon, allowed) ? kolon : null
-}
-
-/** Collect every arrow-callback param name in the parsed expression tree. */
-export function collectArrowParams(expr: ParsedExpr): Set<string> {
-  const out = new Set<string>()
-  const visit = (e: ParsedExpr): void => {
-    switch (e.kind) {
-      case 'arrow':
-        for (const p of e.params) out.add(p)
-        visit(e.body)
-        return
-      case 'call':
-        visit(e.callee)
-        e.args.forEach(visit)
-        return
-      case 'binary':
-      case 'logical':
-        visit(e.left)
-        visit(e.right)
-        return
-      case 'unary':
-        visit(e.argument)
-        return
-      case 'conditional':
-        visit(e.test)
-        visit(e.consequent)
-        visit(e.alternate)
-        return
-      case 'member':
-        visit(e.object)
-        return
-      case 'index-access':
-        visit(e.object)
-        visit(e.index)
-        return
-      case 'template-literal':
-        for (const p of e.parts) if (p.type === 'expression') visit(p.expr)
-        return
-      case 'array-literal':
-        e.elements.forEach(visit)
-        return
-      case 'array-method':
-        visit(e.object)
-        e.args.forEach(visit)
-        return
-      case 'object-literal':
-        for (const p of e.properties) visit(p.value)
-        return
-      default:
-        return
-    }
-  }
-  visit(expr)
-  return out
+  const frees = freeIdentifiers(parsed)
+  if (frees === null) return null
+  for (const name of frees) if (!available.has(name)) return null
+  return kolon
 }

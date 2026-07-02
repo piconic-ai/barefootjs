@@ -23,9 +23,9 @@ export const ENV_SIGNAL_CLIENT_FACTORY: Record<string, string> = {
 
 /**
  * One env signal's SSR-reader surface — the single place a future env signal
- * registers itself so the adapter seed / memo paths stay open-closed (#2076
- * review: the memo-seeding path previously hardcoded `if (signal.envReader ===
- * 'search')`, which meant every future env signal needed a new branch there).
+ * registers itself so the adapter seed / memo paths stay open-closed:
+ * registering a new env signal is an analyzer factory entry + one registry
+ * entry here; adapter seed/memo paths consume the registry and need no edits.
  */
 export interface EnvSignalReader {
   /** The analyzer's `envReader` key (`'search'`). */

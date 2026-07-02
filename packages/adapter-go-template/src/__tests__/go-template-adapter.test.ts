@@ -3098,6 +3098,114 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
     // quotes around the JSON keys/values).
     expect(types).toContain('\\"method\\":\\"includes\\"')
   })
+
+  // #2077 review finding 3: `tag` (an earlier sibling the `visible` filter's
+  // predicate closes over) used to be recomputed verbatim a second time
+  // inline in `visible`'s `bf.FilterEval` env map — the same
+  // `in.SearchParams.Get("tag")` expression emitted twice in the constructor.
+  // It's now hoisted to a shared local before the `return`, referenced by
+  // BOTH the `Tag:` field and the env-map entry.
+  test('hoists the earlier sibling memo instead of duplicating its expression', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('var memoTag string =')
+    expect(types).toContain('Tag: memoTag,')
+    expect(types).toContain('"tag": memoTag')
+    // The multi-token `Get("tag")` expression appears exactly once in the
+    // whole constructor — the hoisted local, not a second inline copy.
+    expect(types.split('in.SearchParams.Get("tag")').length).toBe(2)
+  })
+})
+
+describe('GoTemplateAdapter - #2077 review sibling-memo recursion guard', () => {
+  // Finding 1: mutually-referencing memos (each resolving the other as a
+  // filter-arm free var, or as a bare-getter ternary condition) used to
+  // recurse without bound and blow the compiler's call stack
+  // (`RangeError: Maximum call stack size exceeded`, verified by probe before
+  // the fix). The cycle/declaration-order guard makes both directions fall
+  // back to the field's Go zero value instead of throwing.
+  test('mutual filter-arm memos compile without throwing and fall back to zero values', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { title: string }[] }) {
+  const a = createMemo(() => props.items.filter((x) => Boolean(b())))
+  const b = createMemo(() => props.items.filter((x) => Boolean(a())))
+  return <ul>{a().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A []any')
+    expect(types).toContain('B []any')
+    // Neither memo can resolve the OTHER as a free var (order rules out both
+    // directions at once — `a` can't see `b` because `b` is declared later,
+    // and vice versa), so `a`'s own computation falls back to the `[]any`
+    // zero value (hoisted since `b` references it), and `b`'s free-var
+    // resolution of `a` reuses that hoisted zero-valued local.
+    expect(types).toContain('var memoA []any = nil')
+    expect(types).toContain('A: memoA,')
+    expect(types).toContain('B: bf.FilterEval(in.Items,')
+    expect(types).toContain('map[string]any{"a": memoA}')
+  })
+
+  test('mutual ternary memos (bare-getter condition) compile without throwing and fall back to zero values', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C() {
+  const a = createMemo(() => (b() ? 'A' : 'Z'))
+  const b = createMemo(() => (a() ? 'B' : 'Y'))
+  return <p>{a()}{b()}</p>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A: "",')
+    expect(types).toContain('B: "",')
+  })
+
+  test('self-referencing filter-arm memo compiles without throwing', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { title: string }[] }) {
+  const a = createMemo(() => props.items.filter((x) => Boolean(a())))
+  return <ul>{a().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A: nil,')
+  })
+
+  test('self-referencing ternary memo compiles without throwing', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C() {
+  const a = createMemo(() => (a() ? 'A' : 'Z'))
+  return <p>{a()}</p>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A: "",')
+  })
 })
 
 describe('GoTemplateAdapter - #2073 value-producing .map(cb)', () => {

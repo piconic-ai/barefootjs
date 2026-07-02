@@ -344,6 +344,39 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
     expect(template).toContain(": my $tag = ($searchParams.get('tag') // '');")
     expect(template).toContain(': my $visible = $bf.filter($items,')
   })
+
+  // The seed-scope guard used to scan the LOWERED
+  // Kolon string, allowing every arrow-callback param tree-wide. That let an
+  // outer, unbound `p` (shadowed only inside the callback) slip past the
+  // guard as if it were the callback's own bound `$p` — emitting a bogus
+  // seed line. The guard now walks the parsed SOURCE tree with proper
+  // lexical scoping (`freeIdentifiers`), so this shape seeds nothing and
+  // falls back to the null/ssr-defaults path.
+  test('an outer unbound `p` shadowed only inside the callback does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { ok: boolean }[] }) {
+  const visible = createMemo(() => props.items.filter((p) => p.ok) && p)
+  return <div>{String(visible())}</div>
+}
+`)
+    expect(template).not.toContain('my $visible')
+  })
+
+  // An out-of-scope bare `_` reference must not seed either — the old
+  // unconditional `allowed.add('_')` / `allowed.add('bf')` masked this.
+  test('an out-of-scope bare `_` reference does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { count: number }) {
+  const doubled = createMemo(() => props.count * 2 + _)
+  return <div>{doubled()}</div>
+}
+`)
+    expect(template).not.toContain('my $doubled')
+  })
 })
 
 describe('XslateAdapter - #2073 value-producing .map(cb)', () => {
