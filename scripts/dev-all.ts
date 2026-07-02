@@ -11,6 +11,7 @@
  *   :4000/integrations/nethttp/*     → nethttp service
  *   :4000/integrations/mojolicious/* → mojolicious service
  *   :4000/integrations/flask/*       → flask service
+ *   :4000/integrations/fastapi/*     → fastapi service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
@@ -43,6 +44,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/mojolicious', target: process.env.MOJOLICIOUS_TARGET ?? 'http://mojolicious:3000', label: 'Mojolicious (Perl)' },
   { prefix: '/integrations/xslate',      target: process.env.XSLATE_TARGET      ?? 'http://xslate:3007',      label: 'Text::Xslate (Perl)' },
   { prefix: '/integrations/flask',       target: process.env.FLASK_TARGET       ?? 'http://flask:3008',       label: 'Flask (Python)' },
+  { prefix: '/integrations/fastapi',     target: process.env.FASTAPI_TARGET     ?? 'http://fastapi:3009',     label: 'FastAPI (Python)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'

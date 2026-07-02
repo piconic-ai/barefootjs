@@ -166,6 +166,21 @@ services:
       # fallback) so local dev works without running assemble-deps first.
       - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
 
+  fastapi:
+    build:
+      context: .
+      dockerfile: integrations/fastapi/Dockerfile.dev
+    working_dir: /workspace/integrations/fastapi
+    environment:
+      BASE_PATH: /integrations/fastapi
+      FASTAPI_ENV: development
+    volumes:
+      - ./integrations/fastapi:/workspace/integrations/fastapi
+      # app.py's sys.path fallback resolves `barefootjs` from the workspace
+      # source dir directly (mirrors xslate's `use lib '../../packages/...'`
+      # fallback) so local dev works without running assemble-deps first.
+      - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
+
   site-core:
     build:
       context: .
