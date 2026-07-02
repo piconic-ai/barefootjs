@@ -1,0 +1,30 @@
+name = "barefootjs-rails-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "RailsContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "RAILS_CONTAINER"
+class_name = "RailsContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RailsContainer"]
+
+# Two patterns: `/integrations/rails/*` matches /integrations/rails/... but not
+# the bare /integrations/rails, so add the no-slash variant explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/rails"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/rails/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/rails"

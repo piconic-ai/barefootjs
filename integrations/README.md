@@ -15,6 +15,7 @@ same JSX components on a different stack:
 | `mojolicious` | Perl / Mojolicious::Lite | 3000 (morbo default) | container |
 | `xslate` | Perl / Text::Xslate (Plack / Starman) | 3007 | container |
 | `sinatra` | Ruby / Sinatra (ERB) | 3008 | container |
+| `rails` | Ruby / Ruby on Rails (ERB) | 3009 | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
 
 Plus `site/core` (the docs / landing / catalog site) on internal port 4001
@@ -45,6 +46,7 @@ host:                                  containers (docker compose):
                                          - mojolicious  (perl + morbo)
                                          - xslate       (perl + starman)
                                          - sinatra      (ruby + puma + rerun)
+                                         - rails        (ruby + puma + rerun)
                                          - site-core    (bun + Hono)
 ```
 
@@ -61,6 +63,7 @@ The proxy routes by path prefix:
 :4000/integrations/mojolicious/* → mojolicious service
 :4000/integrations/xslate/*      → xslate service
 :4000/integrations/sinatra/*     → sinatra service
+:4000/integrations/rails/*       → rails service
 :4000/*                          → site-core (landing / docs / catalog)
 ```
 
@@ -117,7 +120,7 @@ HONO_TARGET=http://host.docker.internal:3001 docker compose up proxy
 
 The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
 `ECHO_TARGET`, `GIN_TARGET`, `CHI_TARGET`, `NETHTTP_TARGET`,
-`MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, `SINATRA_TARGET`, and
+`MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, `SINATRA_TARGET`, `RAILS_TARGET`, and
 `SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
@@ -132,10 +135,17 @@ The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
 `Dockerfile`** — they deploy straight to Cloudflare Workers via
 `wrangler deploy` (Elysia uses its official Cloudflare adapter). The Go
 adapters (`echo`, `gin`, `chi`, `nethttp`), the Perl adapters
-(`mojolicious`, `xslate`), and the Ruby adapter (`sinatra`) ship a
+(`mojolicious`, `xslate`), and the Ruby examples (`sinatra`, `rails`) ship a
 production container image (`Dockerfile`) deployed as a Cloudflare
 Container. Every adapter still has a `Dockerfile.dev` for the local
 compose network.
+
+The two Ruby examples (`sinatra`, `rails`) run the SAME shared JSX through the
+SAME `@barefootjs/erb` compiler + Ruby runtime; they differ only in the web
+framework glue around it — Sinatra's routing DSL + Rack builder vs. a
+hand-trimmed Rails app (routing + controllers, no ActiveRecord / asset
+pipeline). This mirrors the two Perl examples (`mojolicious`, `xslate`)
+coexisting on one adapter family.
 
 Each Go adapter is its own Cloudflare Worker + Container, routed on the
 `barefootjs.dev` zone via its `wrangler.toml` (e.g.

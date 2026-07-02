@@ -33,6 +33,7 @@ on:
           - integrations-mojolicious
           - integrations-xslate
           - integrations-sinatra
+          - integrations-rails
 
 permissions:
   contents: read
@@ -499,5 +500,44 @@ jobs:
       # ubuntu-latest ships with a running Docker daemon by default.
       - name: Deploy to Cloudflare Workers
         run: cd integrations/sinatra && bunx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-integrations-rails:
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.site == 'all' || github.event.inputs.site == 'integrations' || github.event.inputs.site == 'integrations-rails')
+      || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      # Wrangler 4.x shells out to Node and requires v22+. The runner's
+      # default Node 20 makes `bunx wrangler deploy` exit immediately.
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/erb' build
+
+      - name: Build integration
+        run: cd integrations/rails && bun run build
+
+      # wrangler deploy builds the Cloudflare Container image from the
+      # integration's Dockerfile, which needs Docker on the runner.
+      # ubuntu-latest ships with a running Docker daemon by default.
+      - name: Deploy to Cloudflare Workers
+        run: cd integrations/rails && bunx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
