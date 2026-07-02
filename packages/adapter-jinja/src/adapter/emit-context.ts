@@ -102,4 +102,16 @@ export interface JinjaMemoContext {
    * `JinjaSpreadContext.convertExpressionToJinja` for the `preParsed` contract.
    */
   convertExpressionToJinja(expr: string, preParsed?: ParsedExpr): string
+
+  /**
+   * Per-compile diagnostic list `convertExpressionToJinja` appends to on an
+   * unsupported shape (`_recordExprBF101`). `memo/seed.ts`'s `tryLowerToJinja`
+   * is a SPECULATIVE "try this in-template recomputation, else fall back to
+   * the static ssrDefault seed" helper — unlike every other
+   * `convertExpressionToJinja` call site, a failure here must NOT become a
+   * hard compile error, so the helper snapshots this array's length before
+   * calling in and truncates back to it on failure (discarding whatever
+   * `_recordExprBF101` appended) rather than letting the error escape.
+   */
+  readonly errors: CompilerError[]
 }

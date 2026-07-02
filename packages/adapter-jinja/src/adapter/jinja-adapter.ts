@@ -1378,7 +1378,10 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
 
   /** Build the narrow context the extracted memo seeding depends on. */
   private get memoCtx(): JinjaMemoContext {
-    return { convertExpressionToJinja: (e, preParsed) => this.convertExpressionToJinja(e, preParsed) }
+    return {
+      convertExpressionToJinja: (e, preParsed) => this.convertExpressionToJinja(e, preParsed),
+      errors: this.errors,
+    }
   }
 
   private convertExpressionToJinja(expr: string, preParsed?: ParsedExpr): string {

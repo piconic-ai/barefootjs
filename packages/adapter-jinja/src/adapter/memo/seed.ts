@@ -124,7 +124,25 @@ export function tryLowerToJinja(
   const trimmed = expr.trim()
   if (!trimmed) return null
   if (!isSupported(parseExpression(trimmed)).supported) return null
+  // `isSupported` is a shallow structural check (is this a JS shape the
+  // compiler recognizes at all — binary/logical/call/etc.), NOT a guarantee
+  // that the deeper Jinja evaluator-JSON serialization inside a nested
+  // `.filter`/`.find`/... predicate can actually represent this specific
+  // callback body (e.g. a predicate with chained method calls like
+  // `row => row.email.toLowerCase().includes(x)`). When it can't,
+  // `convertExpressionToJinja` records a HARD `BF101` compile error as a
+  // side effect (`_recordExprBF101`) — correct for every OTHER call site,
+  // which commits to using the lowered text, but wrong here: this helper is
+  // a SPECULATIVE "try the in-template recomputation, else keep the static
+  // ssrDefault seed" probe, so a refusal must degrade silently, not fail the
+  // whole component compile. Snapshot the diagnostic list and roll back any
+  // errors appended during this attempt before returning null.
+  const errorsBefore = ctx.errors.length
   const jinja = ctx.convertExpressionToJinja(trimmed)
+  if (ctx.errors.length > errorsBefore) {
+    ctx.errors.length = errorsBefore
+    return null
+  }
   if (jinja === '' || extractTopLevelIdentifiers(jinja).length === 0) return null
   return referencedVarsAreAvailable(jinja, available) ? jinja : null
 }
