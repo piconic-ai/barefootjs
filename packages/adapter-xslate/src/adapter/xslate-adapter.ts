@@ -568,8 +568,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // ===========================================================================
 
   renderLoop(loop: IRLoop): string {
-    // Client-only loops: skip SSR rendering entirely
-    if (loop.clientOnly) return ''
+    // clientOnly loops must not render items at SSR time, but must still emit
+    // the `loop:`/`/loop:` boundary marker pair (Hono and Go parity) so the
+    // client runtime's mapArray() can locate the insertion anchor when
+    // hydrating the array. Without the markers, mapArray() resolves
+    // anchor = null and appends after sibling markers (#872). The marker id
+    // disambiguates sibling `.map()` calls under the same parent (#1087).
+    if (loop.clientOnly) {
+      return `<: $bf.comment("loop:${loop.markerId}") | mark_raw :><: $bf.comment("/loop:${loop.markerId}") | mark_raw :>`
+    }
 
     // An array/object-destructure loop param (`([emoji, users]) => ...` or
     // `({ name, age }) => ...`) lowers to invalid Kolon — Kolon's `for LIST

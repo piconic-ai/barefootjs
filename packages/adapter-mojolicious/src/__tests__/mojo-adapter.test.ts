@@ -151,19 +151,12 @@ runAdapterConformanceTests({
     TemplatePrimitiveCaseId.USER_IMPORT_VIA_CONST,
     TemplatePrimitiveCaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
   ]),
-  // Mojo `renderLoop` does not yet emit the `bf->comment("loop:<id>")`
-  // boundary markers when the loop is `@client` (Hono and Go both do).
-  // The client runtime relies on these markers to locate the insertion
-  // anchor when hydrating the array; without them, mapArray() resolves
-  // anchor = null and appends after sibling markers (#872 parity).
-  // Tracked as a follow-up; remove from this set when Mojo emits the
-  // boundary pair for clientOnly loops too.
+  // `client-only` / `client-only-loop-with-sibling-cond` /
+  // `filter-nested-callback-predicate-client` are no longer skipped —
+  // `renderLoop` now emits the `bf->comment("loop:<id>")` boundary pair
+  // for clientOnly loops (Hono / Go parity), so mapArray() can locate
+  // its insertion anchor at hydration time (#872 / #1087).
   skipMarkerConformance: new Set([
-    'client-only',
-    'client-only-loop-with-sibling-cond',
-    // Same clientOnly-loop marker gap as `client-only` above — the #2038
-    // `/* @client */` suppression twin's loop is client-only by construction.
-    'filter-nested-callback-predicate-client',
     // Same as Hono: `/* @client */` markers on TodoApp's keyed `.map`
     // intentionally elide a slot id from the SSR template that the IR
     // still declares (s6). See hono-adapter.test for the contract.
@@ -616,6 +609,28 @@ export function List() {
     // Markers are scoped per-call-site (#1087): `bf->comment("loop:<id>")`.
     expect(result.template).toMatch(/bf->comment\("loop:[^"]+"\)/)
     expect(result.template).toMatch(/bf->comment\("\/loop:[^"]+"\)/)
+  })
+
+  test('emits the loop boundary marker pair for a clientOnly loop (#872 / #1087 parity)', () => {
+    // A `/* @client */` loop renders no items at SSR time, but the
+    // `loop:`/`/loop:` boundary pair must still be emitted (as Hono and
+    // Go do) so the client runtime's mapArray() can locate its insertion
+    // anchor at hydration time.
+    const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function List() {
+  const [items, setItems] = createSignal<string[]>([])
+  return <ul>{/* @client */ items().map(item => <li>{item}</li>)}</ul>
+}
+`)
+    expect(result.template).toMatch(
+      /bf->comment\("loop:([\w-]+)"\) %><%== bf->comment\("\/loop:\1"\)/,
+    )
+    // No SSR item rows and no Perl loop for a clientOnly map.
+    expect(result.template).not.toContain('<li')
+    expect(result.template).not.toContain('% for my')
   })
 
   test('compares string signals with Perl `eq`, not numeric `==` (#1672)', () => {
