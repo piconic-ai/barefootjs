@@ -1,0 +1,31 @@
+name = "barefootjs-flask-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "FlaskContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "FLASK_CONTAINER"
+class_name = "FlaskContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FlaskContainer"]
+
+# Two patterns: `/integrations/flask/*` matches /integrations/flask/...
+# but not the bare /integrations/flask, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/flask"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/flask/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/flask"

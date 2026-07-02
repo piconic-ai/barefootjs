@@ -1,0 +1,26 @@
+{
+  "name": "barefootjs-flask-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/assemble-deps.ts",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "dev": "PYTHONPATH=./lib BASE_PATH=/integrations/flask FLASK_DEBUG=1 PORT=3008 python3 app.py",
+    "deploy": "bun run build && wrangler deploy",
+    "test:e2e": "bunx playwright test",
+    "test:e2e:ui": "bunx playwright test --ui",
+    "clean": "rm -rf dist lib"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*"
+  },
+  "devDependencies": {
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/jinja": "workspace:*",
+    "@cloudflare/containers": "^0.3.2",
+    "@cloudflare/workers-types": "^4",
+    "@playwright/test": "^1.41.0",
+    "bun-types": "^1.1.0",
+    "wrangler": "^4"
+  }
+}

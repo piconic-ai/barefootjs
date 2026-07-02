@@ -1,0 +1,31 @@
+name = "barefootjs-fastapi-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "FastapiContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "FASTAPI_CONTAINER"
+class_name = "FastapiContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FastapiContainer"]
+
+# Two patterns: `/integrations/fastapi/*` matches /integrations/fastapi/...
+# but not the bare /integrations/fastapi, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/fastapi"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/fastapi/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/fastapi"
