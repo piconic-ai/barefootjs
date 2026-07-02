@@ -85,6 +85,7 @@ import {
   emitReduceEval,
   emitPredicateEval,
   emitFlatMapEval,
+  emitMapEval,
   stringTolerantEqOperands,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
@@ -3073,6 +3074,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     if (method === 'flatMap') {
       const evalForm = emitFlatMapEval(recv, body, params[0] ?? '_', emit)
+      if (evalForm !== null) return evalForm
+      return this.pushCallbackBF101(method, true)
+    }
+
+    // Value-producing `.map(cb)` (#2073): eval-only. (The JSX-returning
+    // `.map` is an IRLoop upstream and never reaches this dispatch.)
+    if (method === 'map') {
+      const evalForm = emitMapEval(recv, body, params[0] ?? '_', emit)
       if (evalForm !== null) return evalForm
       return this.pushCallbackBF101(method, true)
     }

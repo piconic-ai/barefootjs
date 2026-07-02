@@ -539,6 +539,21 @@ sub flat_map ($items, $proj, $param, $base_env = undef) {
     return \@out;
 }
 
+# map_items — project each element through $proj (a pure ParsedExpr), keeping
+# each result as one element (no flatten): JS value-producing `.map(cb)`
+# (#2073). Named map_items (not `map`) so the Perl builtin stays unshadowed.
+# Mirrors Go's MapEval. $base_env is optional.
+sub map_items ($items, $proj, $param, $base_env = undef) {
+    my @arr = ref $items eq 'ARRAY' ? @$items : ();
+    my %env = $base_env ? %$base_env : ();
+    my @out;
+    for my $item (@arr) {
+        $env{$param} = $item;
+        push @out, evaluate($proj, \%env);
+    }
+    return \@out;
+}
+
 # ---------------------------------------------------------------------------
 # JSON-string seams — the adapters emit `bf->filter_eval($recv, '<json>', …)`;
 # the predicate body arrives as a JSON string here, decoded then handed to the
@@ -573,6 +588,11 @@ sub find_index_json ($items, $pred_json, $param, $forward = 1, $base_env = undef
 sub flat_map_json ($items, $proj_json, $param, $base_env = undef) {
     require JSON::PP;
     return flat_map($items, JSON::PP->new->decode($proj_json), $param, $base_env);
+}
+
+sub map_json ($items, $proj_json, $param, $base_env = undef) {
+    require JSON::PP;
+    return map_items($items, JSON::PP->new->decode($proj_json), $param, $base_env);
 }
 
 1;

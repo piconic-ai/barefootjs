@@ -262,4 +262,33 @@ subtest 'flat_map projects + flattens one level' => sub {
     is_deeply($fj, [ 'a', 'b', 'c' ], 'flat_map_json decodes + projects');
 };
 
+# #2073: map_items is the value-producing `.map(cb)` — one result per element,
+# NO flatten (an array-valued projection stays one element). Mirrors the Go
+# TestMapEval shapes.
+subtest 'map_items projects one result per element (no flatten)' => sub {
+    my $tmpl = {
+        kind  => 'template-literal',
+        parts => [
+            { type => 'string',     value => '#' },
+            { type => 'expression', expr  => nid('t') },
+        ],
+    };
+    is_deeply(BarefootJS::Evaluator::map_items([ 'perl', 'go' ], $tmpl, 't'),
+        [ '#perl', '#go' ], 'template-literal projection maps each element');
+
+    my @users = ({ name => 'Ada' }, { name => 'Grace' });
+    my $field = nmem(nid('u'), 'name');
+    is_deeply(BarefootJS::Evaluator::map_items(\@users, $field, 'u'),
+        [ 'Ada', 'Grace' ], 'field projection maps each element');
+
+    my @rows = ({ tags => [ 'a', 'b' ] });
+    is_deeply(BarefootJS::Evaluator::map_items(\@rows, nmem(nid('i'), 'tags'), 'i'),
+        [ [ 'a', 'b' ] ], 'array-valued projection stays ONE element (no flatten)');
+
+    # JSON seam.
+    my $mj = BarefootJS::Evaluator::map_json(\@users,
+        JSON::PP->new->encode($field), 'u');
+    is_deeply($mj, [ 'Ada', 'Grace' ], 'map_json decodes + projects');
+};
+
 done_testing;

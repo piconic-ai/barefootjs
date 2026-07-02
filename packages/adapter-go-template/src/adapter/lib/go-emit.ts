@@ -193,6 +193,26 @@ export function emitFlatMapEval(
 }
 
 /**
+ * Emit a value-producing `.map(cb)` via the evaluator (#2073): the projection
+ * body is serialized and evaluated per element by `bf_map_eval`, one result
+ * per element (no flatten — the JS `.map` contract). Composes through the
+ * array-method chain (`bf_join (bf_map_eval …) " "`). Returns null when the
+ * projection is outside the evaluator surface (→ caller pushes BF101). The
+ * JSX-returning `.map` is an IRLoop upstream and never reaches this emit.
+ */
+export function emitMapEval(
+  recv: string,
+  body: ParsedExpr,
+  param: string,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [param], emit)
+  return `bf_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}" ${env}`
+}
+
+/**
  * Make an equality comparison string-tolerant when exactly one side is a Go
  * string literal: JS `sorted === 'asc'` is loosely false for `sorted = false`,
  * but Go's template `eq` ERRORS on bool-vs-string (`incompatible types for
