@@ -38,6 +38,7 @@ import {
   renderPredicateEval,
   renderFlatMethod,
   renderFlatMapEval,
+  renderMapEval,
 } from './array-method.ts'
 
 /**
@@ -463,6 +464,18 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       this.ctx._recordExprBF101(
         `.flatMap(...) projection is not lowerable to a template flat-map`,
         `Pre-compute the projection in the route handler, or mark the loop @client-only.`,
+      )
+      return "''"
+    }
+
+    // Value-producing map (#2073): eval-only; BF101 when the projection is
+    // outside the surface. (The JSX-returning `.map` is an IRLoop upstream.)
+    if (method === 'map') {
+      const evalForm = renderMapEval(recv, body, params[0], emit)
+      if (evalForm !== null) return evalForm
+      this.ctx._recordExprBF101(
+        `.map(...) projection is not lowerable to a template map`,
+        `Pre-compute the projection in the route handler, or mark the position @client-only.`,
       )
       return "''"
     }

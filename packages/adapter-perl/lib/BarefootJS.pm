@@ -1180,6 +1180,13 @@ sub flat_map_eval ($self, $recv, $proj_json, $param, $base_env = {}) {
     return BarefootJS::Evaluator::flat_map_json($recv, $proj_json, $param, $base_env);
 }
 
+# Value-producing `.map(cb)` (#2073): project each element through the
+# serialized projection body, one result per element (no flatten). Composes
+# through the array-method chain (`.map(cb).join(' ')`).
+sub map_eval ($self, $recv, $proj_json, $param, $base_env = {}) {
+    return BarefootJS::Evaluator::map_json($recv, $proj_json, $param, $base_env);
+}
+
 sub sort ($self, $recv, $opts = {}) {
     return [] unless ref($recv) eq 'ARRAY';
 

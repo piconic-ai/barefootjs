@@ -1517,6 +1517,48 @@ export { C }
   })
 })
 
+describe('MojoAdapter - #2073 value-producing .map(cb)', () => {
+  function emitMap(expr: string): string {
+    const a = new MojoAdapter()
+    const ir = compileToIR(`
+function C({ tags, users }: { tags: string[]; users: { name: string }[] }) {
+  return <div>{${expr}}</div>
+}
+export { C }
+`, a)
+    return a.generate(ir).template ?? ''
+  }
+
+  // The blog-showcase shape (#1938/#1939): a value-returning `.map` (string
+  // projection, not JSX) lowers through the evaluator — `bf->map_eval`
+  // projects each element (no flatten) and composes through `.join`.
+  test('.map(t => `#${t}`).join(" ") emits bf->map_eval composed into join', () => {
+    const t = emitMap("tags.map(t => `#${t}`).join(' ')")
+    expect(t).toContain(`join(' ', @{bf->map_eval($tags,`)
+    expect(t).toContain(`"kind":"template-literal"`)
+  })
+
+  test('.map(u => u.name) emits bf->map_eval with the field projection', () => {
+    const t = emitMap("users.map(u => u.name).join(', ')")
+    expect(t).toContain(`bf->map_eval($users,`)
+    expect(t).toContain(`"property":"name"`)
+  })
+
+  test('function-reference callback (.map(format)) still refuses with BF101', () => {
+    const a = new MojoAdapter()
+    const ir = compileToIR(`
+const format = (t: string) => t
+function C({ tags }: { tags: string[] }) {
+  return <div>{tags.map(format).join(' ')}</div>
+}
+export { C }
+`, a)
+    a.generate(ir)
+    const errs = (a as unknown as { errors: { code: string }[] }).errors
+    expect(errs.some(e => e.code === 'BF101')).toBe(true)
+  })
+})
+
 describe('MojoAdapter - #1448 Tier C .flatMap(field projection)', () => {
   function emitFlatMap(expr: string): string {
     const a = new MojoAdapter()

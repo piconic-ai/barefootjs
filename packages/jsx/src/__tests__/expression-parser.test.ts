@@ -1383,8 +1383,18 @@ describe('expression-parser', () => {
       expect(result.level).toBe('L2')
     })
 
-    test('L5: map() is NOT supported', () => {
+    test('L5: value-producing map() with an arrow IS supported (evaluator lowering, #2073)', () => {
       const expr = parseExpression('items().map(x => x.name)')
+      const result = isSupported(expr)
+      expect(result.supported).toBe(true)
+      expect(result.level).toBe('L5')
+    })
+
+    test('L5: map() with a function-reference callback is NOT supported', () => {
+      // No arrow argument → not a CALLBACK_METHODS shape; falls through to
+      // the UNSUPPORTED_METHODS gate and refuses loudly (like reduce's
+      // no-init fall-through).
+      const expr = parseExpression('items().map(format)')
       const result = isSupported(expr)
       expect(result.supported).toBe(false)
       expect(result.level).toBe('L5_UNSUPPORTED')

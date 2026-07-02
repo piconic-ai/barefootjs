@@ -247,8 +247,12 @@ export interface SupportResult {
 const UNSUPPORTED_METHODS = new Set([
   // Higher-order array methods. Seven of these (`filter`, `every`,
   // `some`, `find`, `findIndex`, `findLast`, `findLastIndex`) are
-  // intercepted as `higher-order` IR before reaching this gate;
-  // `map` is intercepted as an IRLoop. `reduce` / `reduceRight` stay
+  // intercepted as `higher-order` IR before reaching this gate.
+  // `map` is intercepted as an IRLoop when its callback returns JSX,
+  // and as a `CALLBACK_METHODS` evaluator lowering (`map_eval`, #2073)
+  // when it returns a value — it stays listed here so the fall-throughs
+  // (a bare `arr.map` reference, a function-reference callback) still
+  // refuse loudly. `reduce` / `reduceRight` stay
   // listed here so the shapes the Tier C catalogue can't lower still
   // refuse loudly: the `convertNode` call branch intercepts a matching
   // `.reduce(fn, init)` / `.reduceRight(fn, init)` into the structured
@@ -603,11 +607,12 @@ export function tsNodeToParsedExpr(node: ts.Node): ParsedExpr {
  * Higher-order array methods whose callback body the runtime evaluator drives
  * (#2018). Recognised generically as a `call` whose callee is `<recv>.<method>`
  * and whose first argument is an `arrow`; the adapter serializes the arrow body
- * to the evaluator. `map` is excluded — a JSX-returning `.map` is an IRLoop
- * upstream, and a value-returning `.map` has no template lowering.
+ * to the evaluator. A JSX-returning `.map` / `.flatMap` is an IRLoop upstream
+ * and never reaches this recognition; the value-returning `.map(cb)` form
+ * (e.g. `tags.map(t => \`#${t}\`).join(' ')`) lowers via `map_eval` (#2073).
  */
 export const CALLBACK_METHODS: ReadonlySet<string> = new Set([
-  'filter', 'every', 'some', 'find', 'findIndex', 'findLast', 'findLastIndex',
+  'filter', 'map', 'every', 'some', 'find', 'findIndex', 'findLast', 'findLastIndex',
   'sort', 'toSorted', 'reduce', 'reduceRight', 'flatMap',
 ])
 

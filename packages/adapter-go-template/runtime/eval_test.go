@@ -169,6 +169,44 @@ func TestFlatMapEval(t *testing.T) {
 	}
 }
 
+// MapEval is the value-producing `.map(cb)` lowering (#2073): one result per
+// element, NO flatten — an array-valued projection stays one element, the
+// exact contract that separates it from FlatMapEval.
+func TestMapEval(t *testing.T) {
+	// template-literal projection: t => `#${t}` → ["#perl", "#go"]
+	tmpl := mustJSON(t, map[string]any{
+		"kind": "template-literal",
+		"parts": []any{
+			map[string]any{"type": "string", "value": "#"},
+			map[string]any{"type": "expression", "expr": nid("t")},
+		},
+	})
+	if got := MapEval([]string{"perl", "go"}, tmpl, "t", nil); len(got) != 2 || got[0] != "#perl" || got[1] != "#go" {
+		t.Fatalf("MapEval template = %v, want [#perl #go]", got)
+	}
+
+	// field projection: u => u.name → ["Ada", "Grace"]
+	field := mustJSON(t, nmem(nid("u"), "name"))
+	users := []any{
+		map[string]any{"name": "Ada"},
+		map[string]any{"name": "Grace"},
+	}
+	if got := MapEval(users, field, "u", nil); len(got) != 2 || got[0] != "Ada" {
+		t.Fatalf("MapEval field = %v, want [Ada Grace]", got)
+	}
+
+	// An array-valued projection is kept as ONE element (no flatten).
+	rows := []any{map[string]any{"tags": []string{"a", "b"}}}
+	if got := MapEval(rows, mustJSON(t, nmem(nid("i"), "tags")), "i", nil); len(got) != 1 {
+		t.Fatalf("MapEval array-valued projection = %v, want length 1 (no flatten)", got)
+	}
+
+	// A bad body yields a non-nil empty slice (downstream range/join safe).
+	if got := MapEval([]any{1.0}, "not-json", "i", nil); got == nil || len(got) != 0 {
+		t.Fatalf("MapEval bad body = %v, want empty non-nil slice", got)
+	}
+}
+
 // FoldEval lifts bf_reduce's op restriction and acc-canonical form: the
 // reducer body `acc + item.price * item.qty` mixes `acc` with a product of two
 // fields — impossible in the +/* self/field catalogue, trivial for the

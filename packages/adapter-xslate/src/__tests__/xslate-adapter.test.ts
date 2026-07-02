@@ -314,6 +314,33 @@ export function C() {
 // (`$bf.*_eval`), isomorphic with the Go / Mojo `*_eval` helpers. A predicate
 // the evaluator can't model (a method-call predicate) falls back to the Kolon
 // lambda runtime call. Template-text pins guard against silent divergence.
+describe('XslateAdapter - #2073 value-producing .map(cb)', () => {
+  // The blog-showcase shape (#1938/#1939): a value-returning `.map` (string
+  // projection, not JSX) lowers through the evaluator — `$bf.map_eval`
+  // projects each element (no flatten) and composes through `$bf.join`.
+  test('.map(t => `#${t}`).join(" ") emits $bf.map_eval composed into $bf.join', () => {
+    const { template } = compileAndGenerate(`
+function TagLine({ tags }: { tags: string[] }) {
+  return <p>{tags.map((t) => \`#\${t}\`).join(' ')}</p>
+}
+export { TagLine }
+`)
+    expect(template).toContain("$bf.join($bf.map_eval($tags,")
+    expect(template).toContain('"kind":"template-literal"')
+  })
+
+  test('.map(u => u.name) emits $bf.map_eval with the field projection', () => {
+    const { template } = compileAndGenerate(`
+function NameList({ users }: { users: { name: string }[] }) {
+  return <div>{users.map((u) => u.name).join(', ')}</div>
+}
+export { NameList }
+`)
+    expect(template).toContain('$bf.map_eval($users,')
+    expect(template).toContain('"property":"name"')
+  })
+})
+
 describe('XslateAdapter - higher-order predicate lowering (#2018 P2)', () => {
   test('a serializable predicate lowers to $bf.filter_eval with the JSON body + env', () => {
     // A standalone `.filter().length` exercises the higher-order emitter (the

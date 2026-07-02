@@ -114,6 +114,9 @@ func FuncMap() template.FuncMap {
 		// `.flatMap(proj)`: project each element through the serialized
 		// projection body, then flatten one level.
 		"bf_flat_map_eval": FlatMapEval,
+		// Value-producing `.map(cb)` (#2073): project each element, one
+		// result per element (no flatten).
+		"bf_map_eval": MapEval,
 
 		// Comment marker (for hydration)
 		"bfComment":   Comment,

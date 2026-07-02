@@ -3027,6 +3027,49 @@ export { C }
   })
 })
 
+describe('GoTemplateAdapter - #2073 value-producing .map(cb)', () => {
+  function emitMap(expr: string): string {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+function C({ tags, users }: { tags: string[]; users: { name: string }[] }) {
+  return <div>{${expr}}</div>
+}
+export { C }
+`, adapter)
+    return adapter.generate(ir).template ?? ''
+  }
+
+  // The blog-showcase shape (#1938/#1939): a value-returning `.map` (string
+  // projection, not JSX) lowers through the evaluator — `bf_map_eval` projects
+  // each element (no flatten) and composes through `bf_join`. (Like the
+  // flatMap pins below, the projection JSON's quotes are backslash-escaped in
+  // the Go-template string; the JSON itself is verified by the render
+  // conformance fixtures + the runtime TestMapEval.)
+  test('.map(t => `#${t}`).join(" ") emits bf_map_eval composed into bf_join', () => {
+    const t = emitMap("tags.map(t => `#${t}`).join(' ')")
+    expect(t).toContain('bf_join (bf_map_eval .Tags')
+  })
+
+  test('.map(u => u.name) emits bf_map_eval with the receiver', () => {
+    const t = emitMap("users.map(u => u.name).join(', ')")
+    expect(t).toContain('bf_map_eval .Users')
+  })
+
+  test('function-reference callback (.map(format)) still refuses with BF101', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+const format = (t: string) => t
+function C({ tags }: { tags: string[] }) {
+  return <div>{tags.map(format).join(' ')}</div>
+}
+export { C }
+`, adapter)
+    adapter.generate(ir)
+    const errs = (adapter as unknown as { errors: { code: string }[] }).errors
+    expect(errs.some(e => e.code === 'BF101')).toBe(true)
+  })
+})
+
 describe('GoTemplateAdapter - #1448 Tier C .flatMap(field projection)', () => {
   function emitFlatMap(expr: string): string {
     const adapter = new GoTemplateAdapter()

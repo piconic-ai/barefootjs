@@ -35,6 +35,7 @@ import {
   renderPredicateEval,
   renderFlatMethod,
   renderFlatMapEval,
+  renderMapEval,
 } from './array-method.ts'
 
 /**
@@ -398,6 +399,18 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       if (evalForm !== null) return evalForm
       this.ctx._recordExprBF101(
         `'.flatMap(...)' projection is outside the Xslate adapter's evaluable surface`,
+        `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
+      )
+      return "''"
+    }
+
+    // Value-producing `.map(cb)` (#2073): serialize the projection body +
+    // emit `$bf.map_eval`. (The JSX-returning `.map` is an IRLoop upstream.)
+    if (method === 'map') {
+      const evalForm = renderMapEval(recv, body, params[0], emit)
+      if (evalForm !== null) return evalForm
+      this.ctx._recordExprBF101(
+        `'.map(...)' projection is outside the Xslate adapter's evaluable surface`,
         `Pre-compute the projected array, or move this position to a '/* @client */' boundary.`,
       )
       return "''"

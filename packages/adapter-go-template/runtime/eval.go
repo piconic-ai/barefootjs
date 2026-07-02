@@ -771,6 +771,26 @@ func FlatMapEval(items any, projJSON, param string, baseEnv map[string]any) []an
 	return out
 }
 
+// MapEval projects each element through the projection body (a pure ParsedExpr
+// JSON evaluated against `{param: item}` + baseEnv), keeping one result per
+// element — the value-producing `.map(cb)` lowering (#2073). Unlike
+// FlatMapEval there is no flatten: a projection yielding a slice contributes
+// that slice as a single element, matching JS `.map`. Returns a non-nil empty
+// slice on a bad body so a downstream `range` / `bf_join` sees a real slice.
+func MapEval(items any, projJSON, param string, baseEnv map[string]any) []any {
+	proj, ok := decodeEvalBody(projJSON)
+	if !ok {
+		return []any{}
+	}
+	env := seedPredEnv(baseEnv)
+	out := []any{}
+	for _, item := range toAnySlice(items) {
+		env[param] = item
+		out = append(out, EvalNode(proj, env))
+	}
+	return out
+}
+
 // Env builds the captured-free-var environment for FoldEval / SortEval from a
 // flat key, value, key, value, … argument list — the adapter emits
 // `bf_env "k1" v1 "k2" v2 …` for the free variables a callback body references

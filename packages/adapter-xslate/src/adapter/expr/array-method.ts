@@ -288,6 +288,27 @@ export function renderFlatMapEval(
 }
 
 /**
+ * Emit a value-producing `.map(cb)` via the runtime evaluator (#2073): the
+ * projection body serializes to JSON and `$bf.map_eval` projects each element,
+ * one result per element (no flatten — the JS `.map` contract). Composes
+ * through the array-method chain (`.map(cb).join(' ')`). Returns null when
+ * the projection is outside the evaluator surface (→ caller refuses with
+ * BF101). The JSX-returning `.map` is an IRLoop upstream and never reaches
+ * this emit.
+ */
+export function renderMapEval(
+  recv: string,
+  body: ParsedExpr,
+  param: string,
+  emit: (e: ParsedExpr) => string,
+): string | null {
+  const json = serializeParsedExpr(body)
+  if (json === null) return null
+  const env = emitEvalEnvArg(body, [param], emit)
+  return `$bf.map_eval(${recv}, '${escapePerlSingleQuote(json)}', '${param}', ${env})`
+}
+
+/**
  * Shared Kolon emit for `.sort(cmp)` / `.toSorted(cmp)`. Used by both the
  * filter-context emitter and the top-level emitter, plus the loop-array
  * wrap in `renderLoop`. The runtime `$bf.sort` accepts a hashref opts bag and
