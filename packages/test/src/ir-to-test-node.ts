@@ -98,11 +98,11 @@ function convertElement(node: IRElement, ctx: ConvertContext): TestNode {
         if (isDynamic && ctx.cmap.size > 0) {
           const resolved = resolveClassValue(value, ctx.cmap)
           if (resolved !== null) {
-            classes = resolved.split(/\s+/).filter(Boolean)
+            classes = splitClassTokens(resolved)
             continue
           }
         }
-        classes = value.split(/\s+/).filter(Boolean)
+        classes = splitClassTokens(value)
       }
       continue
     }
@@ -448,6 +448,17 @@ function refsToHandler(refs: SetterRef[]): EventHandler {
     }
   }
   return { setters, via }
+}
+
+/**
+ * Split a resolved className value into tokens, dropping any span that
+ * still carries an unresolved runtime interpolation (`${className}`,
+ * `foo-${x}`). Those are dynamic passthroughs the IR can't evaluate —
+ * they aren't real class tokens, and leaking them verbatim pollutes
+ * `.classes` for exact-match assertions.
+ */
+function splitClassTokens(value: string): string[] {
+  return value.split(/\s+/).filter(t => t && !t.includes('${'))
 }
 
 function resolveClassValue(value: string, cmap: Map<string, string>): string | null {

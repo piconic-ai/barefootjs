@@ -75,6 +75,117 @@ export { Label }
   })
 })
 
+// ---------------------------------------------------------------------------
+// Record<T, string>[key] indexed lookups (#2069)
+//
+// Long documented as a renderToTest resolution limit, resolved by the
+// structured `lookup` template part (PR #2000): `${MAP[KEY]}` against a
+// const Record literal expands to the UNION of every case's tokens —
+// the framework can't pick a concrete key at IR time, so it surfaces
+// all branches and tests assert per-variant tokens with `toContain`.
+// These pins keep every declaration flavor of that resolution from
+// silently regressing back to the old base-tokens-only behavior.
+// ---------------------------------------------------------------------------
+
+describe('Record[key] indexed lookup resolution (#2069)', () => {
+  test('module-scope Record referenced through a function-scope template const (Button shape)', () => {
+    const source = `
+type Size = 'sm' | 'md'
+const sizeClasses: Record<Size, string> = { sm: 'h-8 px-3', md: 'h-9 px-4' }
+function Badge({ size = 'md' }: { size?: Size }) {
+  const cls = \`base-token \${sizeClasses[size]}\`
+  return <div className={cls}>x</div>
+}
+export { Badge }
+`
+    const div = renderToTest(source, 'badge.tsx').find({ tag: 'div' })!
+    expect(div.classes).toContain('base-token')
+    // Union semantics: every case's tokens are present.
+    expect(div.classes).toContain('h-8')
+    expect(div.classes).toContain('px-3')
+    expect(div.classes).toContain('h-9')
+    expect(div.classes).toContain('px-4')
+  })
+
+  test('inline template lookup directly in className', () => {
+    const source = `
+type Size = 'sm' | 'md'
+const sizeClasses: Record<Size, string> = { sm: 'h-8', md: 'h-9' }
+function Badge({ size = 'md' }: { size?: Size }) {
+  return <div className={\`base-token \${sizeClasses[size]}\`}>x</div>
+}
+export { Badge }
+`
+    const div = renderToTest(source, 'badge.tsx').find({ tag: 'div' })!
+    expect(div.classes).toContain('h-8')
+    expect(div.classes).toContain('h-9')
+  })
+
+  test('function-scope Record const', () => {
+    const source = `
+type Size = 'sm' | 'md'
+function Badge({ size = 'md' }: { size?: Size }) {
+  const sizeClasses: Record<Size, string> = { sm: 'h-8', md: 'h-9' }
+  const cls = \`base-token \${sizeClasses[size]}\`
+  return <div className={cls}>x</div>
+}
+export { Badge }
+`
+    const div = renderToTest(source, 'badge.tsx').find({ tag: 'div' })!
+    expect(div.classes).toContain('h-8')
+    expect(div.classes).toContain('h-9')
+  })
+
+  test('as const / satisfies declaration flavors both resolve', () => {
+    const asConst = `
+function Badge({ size = 'md' }: { size?: 'sm' | 'md' }) {
+  const sizeClasses = { sm: 'h-8', md: 'h-9' } as const
+  const cls = \`base-token \${sizeClasses[size]}\`
+  return <div className={cls}>x</div>
+}
+export { Badge }
+`
+    const satisfies = `
+type Size = 'sm' | 'md'
+const sizeClasses = { sm: 'h-8', md: 'h-9' } satisfies Record<Size, string>
+function Badge({ size = 'md' }: { size?: Size }) {
+  const cls = \`base-token \${sizeClasses[size]}\`
+  return <div className={cls}>x</div>
+}
+export { Badge }
+`
+    for (const source of [asConst, satisfies]) {
+      const div = renderToTest(source, 'badge.tsx').find({ tag: 'div' })!
+      expect(div.classes).toContain('h-8')
+      expect(div.classes).toContain('h-9')
+    }
+  })
+
+  test('two lookups + base const resolve together; dynamic passthrough is dropped', () => {
+    const source = `
+type V = 'default' | 'secondary'
+type S = 'sm' | 'md'
+const base = 'inline-flex rounded-md'
+const variantClasses: Record<V, string> = { default: 'bg-primary', secondary: 'bg-secondary' }
+const sizeClasses: Record<S, string> = { sm: 'h-8', md: 'h-9' }
+function Btn({ variant = 'default', size = 'md', className = '' }: { variant?: V; size?: S; className?: string }) {
+  const cls = \`\${base} \${variantClasses[variant]} \${sizeClasses[size]} \${className}\`
+  return <button className={cls}>x</button>
+}
+export { Btn }
+`
+    const btn = renderToTest(source, 'btn.tsx').find({ tag: 'button' })!
+    expect(btn.classes).toContain('inline-flex')
+    expect(btn.classes).toContain('bg-primary')
+    expect(btn.classes).toContain('bg-secondary')
+    expect(btn.classes).toContain('h-8')
+    expect(btn.classes).toContain('h-9')
+    // The `${className}` passthrough can't resolve statically — it must
+    // be dropped from .classes, not leak as a literal '${className}' token.
+    expect(btn.classes.some(c => c.includes('${'))).toBe(false)
+  })
+})
+
 describe('memos and effects fields', () => {
   test('memos contains memo names from createMemo', () => {
     const source = `
