@@ -284,7 +284,7 @@ sys.stdout.write(html)
 
     return stdout
   } finally {
-    if (!process.env.BF_JINJA_DEBUG_KEEP_TEMP) await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
 }
 
