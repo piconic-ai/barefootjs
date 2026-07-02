@@ -22,7 +22,6 @@ describe('CSR Conformance Tests', () => {
     'class-vs-classname',
     'style-attribute',
     'fragment',
-    'default-props',
     // Local array variable (items) is not available at CSR template module scope.
     // CSR templates only have access to props and signals, not file-scope constants.
     'static-array-children',

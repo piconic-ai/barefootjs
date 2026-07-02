@@ -186,6 +186,109 @@ export { Btn }
   })
 })
 
+// ---------------------------------------------------------------------------
+// Default-prop values (#2069)
+//
+// renderToTest models the component compiled with NO incoming props, so a
+// literal destructure default (`{ size = 'md' }`) IS the statically-known
+// value of that prop. Bare references resolve to it in attributes,
+// template interpolations, and text expressions. Non-literal defaults
+// (arrows, computed expressions) stay unresolved by design.
+// ---------------------------------------------------------------------------
+
+describe('default-prop value resolution (#2069)', () => {
+  test('bare prop refs in attributes resolve to their literal defaults', () => {
+    const source = `
+function Btn({ type = 'button', label = 'Go', tone = 'ok' }: { type?: string; label?: string; tone?: string }) {
+  return <button type={type} aria-label={label} data-state={tone}>x</button>
+}
+export { Btn }
+`
+    const btn = renderToTest(source, 'btn.tsx').find({ tag: 'button' })!
+    expect(btn.props.type).toBe('button')
+    expect(btn.aria.label).toBe('Go')
+    expect(btn.dataState).toBe('ok')
+  })
+
+  test('number and boolean defaults resolve as their string forms', () => {
+    const source = `
+function Field({ rows = 3, required = false }: { rows?: number; required?: boolean }) {
+  return <textarea rows={rows} data-required={required} />
+}
+export { Field }
+`
+    const el = renderToTest(source, 'field.tsx').find({ tag: 'textarea' })!
+    expect(el.props.rows).toBe('3')
+    expect(el.props['data-required']).toBe('false')
+  })
+
+  test('template interpolations over defaulted props resolve', () => {
+    const source = `
+function Chip({ tone = 'ok' }: { tone?: string }) {
+  return <div className={\`chip chip-\${tone}\`}>x</div>
+}
+export { Chip }
+`
+    const div = renderToTest(source, 'chip.tsx').find({ tag: 'div' })!
+    expect(div.classes).toContain('chip')
+    expect(div.classes).toContain('chip-ok')
+  })
+
+  test('inline ternary className resolves to the union of both branches', () => {
+    // Matches the intermediate-const `valueBranches` union (#525): the
+    // framework can't pick a branch at IR time, so both surface.
+    const source = `
+function Row({ active = false }: { active?: boolean }) {
+  return <div className={active ? 'row-on' : 'row-off'}>x</div>
+}
+export { Row }
+`
+    const div = renderToTest(source, 'row.tsx').find({ tag: 'div' })!
+    expect(div.classes).toContain('row-on')
+    expect(div.classes).toContain('row-off')
+    // No `{active}` condition placeholder token.
+    expect(div.classes.some(c => c.includes('{'))).toBe(false)
+  })
+
+  test('bare prop ref in text resolves so findByText sees the zero-props render', () => {
+    const source = `
+function Note({ label = 'Hello' }: { label?: string }) {
+  return <div>{label}</div>
+}
+export { Note }
+`
+    const result = renderToTest(source, 'note.tsx')
+    expect(result.findByText('Hello')).not.toBeNull()
+  })
+
+  test('signal reads keep their source text (wiring stays the assertion surface)', () => {
+    const source = `
+"use client"
+import { createSignal } from '@barefootjs/client'
+function Counter() {
+  const [count, setCount] = createSignal(0)
+  return <span>{count()}</span>
+}
+export { Counter }
+`
+    const result = renderToTest(source, 'counter.tsx')
+    expect(result.findByText('count()')).not.toBeNull()
+  })
+
+  test('non-literal defaults stay unresolved', () => {
+    const source = `
+function List({ items = [] as string[], format = (s: string) => s }: { items?: string[]; format?: (s: string) => string }) {
+  return <ul data-items={items}>x</ul>
+}
+export { List }
+`
+    const ul = renderToTest(source, 'list.tsx').find({ tag: 'ul' })!
+    // `[]` is not a literal string/number/boolean — the expression text
+    // stays, same as before this resolution existed.
+    expect(ul.props['data-items']).toBe('items')
+  })
+})
+
 describe('memos and effects fields', () => {
   test('memos contains memo names from createMemo', () => {
     const source = `
