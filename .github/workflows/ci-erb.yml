@@ -29,12 +29,8 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      # Not SHA-pinned like the other third-party actions in this repo
-      # (actions/checkout, actions-setup-perl) — outbound network access
-      # for resolving ruby/setup-ruby's release SHA wasn't available when
-      # this workflow was authored. Tighten to a pinned SHA in a follow-up.
       - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: '3.3'
 
