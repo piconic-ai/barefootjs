@@ -13,13 +13,15 @@ import {
   type ComponentIR,
   type ContextConsumer,
   collectContextConsumers,
+  collectModuleStringConsts,
+  envSignalReaderFor,
   extractArrowBodyExpression,
+  freeIdentifiers,
   isSupported,
   parseExpression,
 } from '@barefootjs/jsx'
 
 import type { XslateMemoContext } from '../emit-context.ts'
-import { referencedVarsAreAvailable } from '../lib/ir-scope.ts'
 
 /** Kolon literal for a context-consumer's `createContext` default. */
 export function contextDefaultKolon(c: ContextConsumer): string {
@@ -60,8 +62,21 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   const memos = ir.metadata.memos ?? []
   const signals = ir.metadata.signals ?? []
   if (memos.length === 0 && signals.length === 0) return ''
-  // Props seed first; each signal/memo adds its own name as it lands.
+  // Props seed first; each signal/memo adds its own name as it lands. A
+  // props-object component (`function C(props: {...})`, no destructure)
+  // reads fields off `props.<x>` rather than a destructured local, so
+  // `props` itself must be available for a memo body like
+  // `props.items.filter(...)` to seed. A module-scope string const (`const
+  // stateClasses = isDisabled() ? aCls : bCls`, select-item's
+  // disabled/default class pair) is a free identifier in the SOURCE tree
+  // but the lowering folds it to its literal string — never a `$var`
+  // reference — so it must count as available too, or the scope guard
+  // would wrongly reject an otherwise-seedable memo.
   const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
+  if (ir.metadata.propsObjectName) available.add(ir.metadata.propsObjectName)
+  for (const name of collectModuleStringConsts(ir.metadata.localConstants).keys()) {
+    available.add(name)
+  }
   const lines: string[] = []
 
   // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
@@ -70,6 +85,23 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
   // in-template when the init lowers cleanly AND references an in-scope var.
   // Object/array/constant inits keep the existing ssr-defaults seeding.
   for (const signal of signals) {
+    // Env signal (`createSearchParams()`, #1922): the runtime provides the
+    // per-request reader, so there is nothing to seed. Registered readers
+    // come from the shared registry (see `envSignalReaderFor`); an
+    // `envReader` key unknown to the registry falls through to the normal
+    // lowering below.
+    if (signal.envReader) {
+      const reader = envSignalReaderFor(signal.envReader)
+      if (reader) {
+        // Only the SOURCE getter name matters for the `freeIdentifiers`
+        // scope check below (it walks the parsed JS tree, not the lowered
+        // Kolon) — the canonical reader name the lowering emits is a
+        // target-language detail, not a source identifier a memo body
+        // could reference.
+        available.add(signal.getter)
+        continue
+      }
+    }
     const kolon = tryLowerToKolon(ctx, signal.initialValue, available)
     // Kolon can't express `: my $x = … $x …` — declaring `my $x` makes the
     // RHS `$x` an undefined lexical rather than the render var. A same-name
@@ -109,7 +141,14 @@ export function generateDerivedMemoSeed(ctx: XslateMemoContext, ir: ComponentIR)
  * `null` when it shouldn't be seeded this way: not a supported shape
  * (`isSupported` pre-check, so object/array literals don't fail the build),
  * references no in-scope var (a constant — keep ssr-defaults seeding), or
- * references an out-of-scope binding. (#1297)
+ * the SOURCE expression has a free identifier outside `available` (an
+ * out-of-scope binding). The scope check runs over the parsed SOURCE tree
+ * via `freeIdentifiers` — not the lowered Kolon string — so a shadowed name
+ * (`filter((p) => p.ok) && p`, where the outer `p` is a different, unbound
+ * reference from the callback's own `p` param) is correctly rejected instead
+ * of the callback param masking the unrelated free `$p` in the emitted
+ * Kolon. An unanalyzable expression (`freeIdentifiers` → null) fails safe:
+ * no seed. (#1297)
  */
 export function tryLowerToKolon(
   ctx: XslateMemoContext,
@@ -118,8 +157,12 @@ export function tryLowerToKolon(
 ): string | null {
   const trimmed = expr.trim()
   if (!trimmed) return null
-  if (!isSupported(parseExpression(trimmed)).supported) return null
+  const parsed = parseExpression(trimmed)
+  if (!isSupported(parsed).supported) return null
   const kolon = ctx.convertExpressionToKolon(trimmed)
   if (kolon === '' || !/\$[A-Za-z_]\w*/.test(kolon)) return null
-  return referencedVarsAreAvailable(kolon, available) ? kolon : null
+  const frees = freeIdentifiers(parsed)
+  if (frees === null) return null
+  for (const name of frees) if (!available.has(name)) return null
+  return kolon
 }

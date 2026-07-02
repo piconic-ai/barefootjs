@@ -1064,11 +1064,26 @@ export { A }`, 'A.tsx', { adapter })
       expect(template).toContain('"property":"done"')
     }
 
-    // Fallback: a method-call predicate (`x => x.name.includes('a')`) is
-    // outside the evaluator surface, so `.every` keeps the inline grep form.
+    // #2075: `.includes(x)` is now in the evaluator surface (`array-method`
+    // gate, shared with the Perl `Evaluator.pm` runtime), so a method-call
+    // predicate built from it ALSO routes through `every_eval` rather than
+    // falling back — it's no longer the "unsupported method call" example.
+    const includesAdapter = new MojoAdapter()
+    const includesResult = compileJSX(`function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+}
+export { A }`, 'A.tsx', { adapter: includesAdapter })
+    const includesTemplate = includesResult.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(includesTemplate).toContain('bf->every_eval($items,')
+    expect(includesTemplate).toContain('"method":"includes"')
+    expect(includesTemplate).not.toContain('grep {')
+
+    // Fallback: a method-call predicate the evaluator still can't model
+    // (`.toUpperCase()` is outside the `array-method` gate — only `includes`
+    // is recognized there) keeps the inline grep form.
     const adapter = new MojoAdapter()
     const fb = compileJSX(`function A({ items }: { items: { name: string }[] }) {
-  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+  return <div>{items.every(x => x.name.toUpperCase() === 'A') ? 'y' : 'n'}</div>
 }
 export { A }`, 'A.tsx', { adapter })
     const fbTemplate = fb.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
@@ -1514,6 +1529,78 @@ export { C }
 
   test('.flat(Infinity) emits the -1 full-depth sentinel', () => {
     expect(emitFlat('rows.flat(Infinity)')).toContain('bf->flat($rows, -1)')
+  })
+})
+
+describe('MojoAdapter - #2075 searchParams()-derived memo seeding', () => {
+  // A memo derived from the createSearchParams() env signal must seed
+  // in-template from the canonical per-request `$searchParams` reader —
+  // including under a local alias (`const [sp] = …`), which the expression
+  // lowering canonicalises.
+  test('seeds an aliased scalar derived memo from the canonical reader', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`)
+    expect(template).toContain("% my $sort = ($searchParams->get('sort') // 'date');")
+  })
+
+  // A list-filter memo chained off the derived memo seeds too: the inline
+  // grep's `$_` topic and the callback param are lowering-internal bindings,
+  // not out-of-scope template vars (the pre-#2075 availability check
+  // rejected them and the list rendered empty at SSR).
+  test('seeds a filter memo chained off the derived memo', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`)
+    expect(template).toContain("% my $tag = ($searchParams->get('tag') // '');")
+    expect(template).toMatch(/% my \$visible = \[grep/)
+  })
+
+  // The seed-scope guard used to scan the LOWERED
+  // Perl string, allowing every arrow-callback param tree-wide. That let an
+  // outer, unbound `p` (shadowed only inside the callback) slip past the
+  // guard as if it were the callback's own bound `$p` — emitting a bogus
+  // seed line that would crash Perl strict mode. The guard now walks the
+  // parsed SOURCE tree with proper lexical scoping (`freeIdentifiers`), so
+  // this shape seeds nothing and falls back to the null/ssr-defaults path.
+  test('an outer unbound `p` shadowed only inside the callback does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { ok: boolean }[] }) {
+  const visible = createMemo(() => props.items.filter((p) => p.ok) && p)
+  return <div>{String(visible())}</div>
+}
+`)
+    expect(template).not.toContain('my $visible')
+  })
+
+  // An out-of-scope bare `_` reference (not the `grep` topic var of an
+  // in-scope higher-order lowering) must not seed either — the old
+  // unconditional `allowed.add('_')` masked this.
+  test('an out-of-scope bare `_` reference does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { count: number }) {
+  const doubled = createMemo(() => props.count * 2 + _)
+  return <div>{doubled()}</div>
+}
+`)
+    expect(template).not.toContain('my $doubled')
   })
 })
 

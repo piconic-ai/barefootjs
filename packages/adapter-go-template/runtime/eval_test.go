@@ -354,3 +354,70 @@ func TestFoldSortEval_CapturedFreeVars(t *testing.T) {
 		}
 	}
 }
+
+// narr builds an `array-method` ParsedExpr node — only `includes` is in the
+// evaluator subset (#2075).
+func narr(method string, obj map[string]any, args ...map[string]any) map[string]any {
+	anyArgs := make([]any, len(args))
+	for i, a := range args {
+		anyArgs[i] = a
+	}
+	return map[string]any{"kind": "array-method", "method": method, "object": obj, "args": anyArgs}
+}
+
+// TestIncludesEval pins EvalNode's "array-method" / "includes" arm directly
+// (independent of the golden vectors in eval_vectors_test.go): a numeric and
+// a string array hit/miss, a string-receiver substring search, and a non-
+// collection receiver degrading to false rather than panicking (#2075 — the
+// `visible` list-filter memo's `p.tags.includes(tag())` predicate).
+func TestIncludesEval(t *testing.T) {
+	arrNode := narr("includes", nmem(nid("item"), "tags"), nid("needle"))
+
+	hit := EvalNode(arrNode, map[string]any{
+		"item":   map[string]any{"tags": []any{"perl", "go"}},
+		"needle": "go",
+	})
+	if hit != true {
+		t.Errorf("array includes hit = %v, want true", hit)
+	}
+
+	miss := EvalNode(arrNode, map[string]any{
+		"item":   map[string]any{"tags": []any{"perl", "go"}},
+		"needle": "rust",
+	})
+	if miss != false {
+		t.Errorf("array includes miss = %v, want false", miss)
+	}
+
+	numHit := EvalNode(narr("includes", nid("nums"), nid("n")), map[string]any{
+		"nums": []any{1.0, 2.0, 3.0},
+		"n":    2.0,
+	})
+	if numHit != true {
+		t.Errorf("numeric array includes hit = %v, want true", numHit)
+	}
+
+	strHit := EvalNode(narr("includes", nid("name"), nlit("ar", "string")), map[string]any{
+		"name": "bare",
+	})
+	if strHit != true {
+		t.Errorf("string includes substring hit = %v, want true", strHit)
+	}
+
+	strMiss := EvalNode(narr("includes", nid("name"), nlit("zz", "string")), map[string]any{
+		"name": "bare",
+	})
+	if strMiss != false {
+		t.Errorf("string includes substring miss = %v, want false", strMiss)
+	}
+
+	// A non-collection receiver (a bare number) isn't a JS `.includes` target;
+	// the evaluator degrades to false rather than panicking (mirrors the JS
+	// reference, eval-reference.ts `includes`).
+	nonCollection := EvalNode(narr("includes", nid("n"), nlit(1, "number")), map[string]any{
+		"n": 42.0,
+	})
+	if nonCollection != false {
+		t.Errorf("non-collection receiver includes = %v, want false", nonCollection)
+	}
+}

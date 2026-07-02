@@ -95,6 +95,13 @@ describe('CSR Conformance Tests', () => {
     'toggle-shared',
     'reactive-props',
     'props-reactivity-comparison',
+    //   - `search-params-derived-memo`: the memo's template-eval reads the
+    //     env-signal getter (`sp()`), a binding only init/hydration wires up
+    //     (the per-request reader) — same init-wired-binding class as
+    //     `toggle-shared` above. The client-side env-signal behavior is
+    //     covered by the runtime `env-signal` tests; SSR coverage lives in
+    //     the per-adapter render conformance (#2075).
+    'search-params-derived-memo',
     //   - `todo-app`: its keyed `.map(...)` of `TodoItem` children is
     //     materialised at init time, so the SSR snapshot captures the
     //     empty `<ul>` while the CSR template lambda renders the full

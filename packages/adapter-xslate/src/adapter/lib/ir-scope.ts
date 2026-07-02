@@ -51,14 +51,3 @@ export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
   visit(node)
   return out
 }
-
-/**
- * True when every `$var` the lowered Kolon expression references is already in
- * scope — guards in-template memo seeding against an out-of-scope binding. (#1297)
- */
-export function referencedVarsAreAvailable(expr: string, available: ReadonlySet<string>): boolean {
-  for (const m of expr.matchAll(/\$([A-Za-z_]\w*)/g)) {
-    if (!available.has(m[1])) return false
-  }
-  return true
-}

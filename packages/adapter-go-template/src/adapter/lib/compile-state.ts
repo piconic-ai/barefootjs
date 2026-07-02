@@ -13,6 +13,7 @@
 import type {
   CompilerError,
   ContextConsumer,
+  EnvSignalReader,
   IRMetadata,
   IRNode,
   LoweringMatcher,
@@ -89,6 +90,24 @@ export class CompileState {
    * imported under (handles `import { searchParams as sp }`).
    */
   searchParamsLocals: Set<string> = new Set()
+
+  /**
+   * Env-signal getter (local binding name, e.g. `searchParams` or an alias) →
+   * its registered {@link EnvSignalReader}, keyed by the RECEIVER signal's own
+   * `envReader` registration rather than a hardcoded key — so a memo body's
+   * `<local>().<method>(...)` resolves to whichever reader that particular
+   * local belongs to (open-closed for a future second env signal).
+   */
+  envSignalReadersByLocal: Map<string, EnvSignalReader> = new Map()
+
+  /**
+   * Memo name → the hoisted Go local variable name the constructor assigned
+   * its SSR value to (populated by the sibling-memo hoisting pre-pass before
+   * the main memo-field loop runs). When a later filter-arm memo's free-var
+   * resolution finds an entry here, it reuses the local instead of
+   * recomputing the sibling's expression a second time.
+   */
+  hoistedMemoLocals: Map<string, string> = new Map()
 
   /**
    * Call-lowering matchers active for this component (#2057), bound to its

@@ -314,6 +314,71 @@ export function C() {
 // (`$bf.*_eval`), isomorphic with the Go / Mojo `*_eval` helpers. A predicate
 // the evaluator can't model (a method-call predicate) falls back to the Kolon
 // lambda runtime call. Template-text pins guard against silent divergence.
+describe('XslateAdapter - #2075 searchParams()-derived memo seeding', () => {
+  test('seeds an aliased scalar derived memo from the canonical reader', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`)
+    expect(template).toContain(": my $sort = ($searchParams.get('sort') // 'date');")
+  })
+
+  // The Kolon lambda param and the `$bf` runtime object are
+  // lowering-internal, not out-of-scope template vars (#2075).
+  test('seeds a filter memo chained off the derived memo', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`)
+    expect(template).toContain(": my $tag = ($searchParams.get('tag') // '');")
+    expect(template).toContain(': my $visible = $bf.filter($items,')
+  })
+
+  // The seed-scope guard used to scan the LOWERED
+  // Kolon string, allowing every arrow-callback param tree-wide. That let an
+  // outer, unbound `p` (shadowed only inside the callback) slip past the
+  // guard as if it were the callback's own bound `$p` — emitting a bogus
+  // seed line. The guard now walks the parsed SOURCE tree with proper
+  // lexical scoping (`freeIdentifiers`), so this shape seeds nothing and
+  // falls back to the null/ssr-defaults path.
+  test('an outer unbound `p` shadowed only inside the callback does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { ok: boolean }[] }) {
+  const visible = createMemo(() => props.items.filter((p) => p.ok) && p)
+  return <div>{String(visible())}</div>
+}
+`)
+    expect(template).not.toContain('my $visible')
+  })
+
+  // An out-of-scope bare `_` reference must not seed either — the old
+  // unconditional `allowed.add('_')` / `allowed.add('bf')` masked this.
+  test('an out-of-scope bare `_` reference does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { count: number }) {
+  const doubled = createMemo(() => props.count * 2 + _)
+  return <div>{doubled()}</div>
+}
+`)
+    expect(template).not.toContain('my $doubled')
+  })
+})
+
 describe('XslateAdapter - #2073 value-producing .map(cb)', () => {
   // The blog-showcase shape (#1938/#1939): a value-returning `.map` (string
   // projection, not JSX) lowers through the evaluator — `$bf.map_eval`
@@ -377,15 +442,31 @@ export { A }
     expect(findLast).toContain(', 0, {})')
   })
 
-  test('a method-call predicate falls back to the Kolon-lambda runtime call', () => {
+  test('.includes() in a predicate now lowers via the evaluator, not the Kolon-lambda fallback', () => {
+    // #2075: `.includes(x)` joined the evaluator's `array-method` surface
+    // (shared with the Perl `Evaluator.pm` runtime), so a predicate built
+    // from it routes through `$bf.every_eval` like any other pure predicate.
     const { template } = compileAndGenerate(`
 function A({ items }: { items: { name: string }[] }) {
   return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
 }
 export { A }
 `)
-    // No evaluator helper — the unsupported predicate keeps the `-> $x { … }`
-    // lambda form passed to the runtime `$bf.every`.
+    expect(template).toContain('$bf.every_eval(')
+    expect(template).toContain('"method":"includes"')
+    expect(template).not.toContain('-> $x {')
+  })
+
+  test('a method-call predicate outside the evaluator surface falls back to the Kolon-lambda runtime call', () => {
+    const { template } = compileAndGenerate(`
+function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.toUpperCase() === 'A') ? 'y' : 'n'}</div>
+}
+export { A }
+`)
+    // `.toUpperCase()` is outside the evaluator's `array-method` gate (only
+    // `includes` is recognized there), so the predicate keeps the
+    // `-> $x { … }` lambda form passed to the runtime `$bf.every`.
     expect(template).not.toContain('every_eval')
     expect(template).toContain('$bf.every(')
     expect(template).toContain('-> $x {')
