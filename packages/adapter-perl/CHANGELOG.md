@@ -1,5 +1,72 @@
 # @barefootjs/perl
 
+## 0.17.0
+
+### Minor Changes
+
+- 59b4efc: `queryHref` SSR parity for the Mojolicious and Xslate adapters (#2042).
+
+  `queryHref(base, { … })` now lowers to a `query` runtime helper on the Perl adapters, matching the go-template `bf_query` lowering shipped in #2044:
+
+  - **Mojolicious** lowers it to `bf->query(base, …)`, **Xslate** to `$bf.query(base, …)`. Each object property becomes a `(guard, key, value)` triple; the helper includes a pair iff its guard is truthy AND its value is a non-empty string — so a plain `key: v` passes guard `1`, and a conditional `key: cond ? v : undefined` passes the lowered condition (mirroring the client's `if (value)`).
+  - A new `query` helper in the shared Perl runtime (`BarefootJS.pm`) builds the URL with `URLSearchParams.set` overwrite semantics and `application/x-www-form-urlencoded` encoding (space → `+`, UTF-8 byte-wise), so the rendered query string equals the browser / Hono render byte-for-byte.
+  - `@barefootjs/jsx` gains a backend-neutral `matchQueryHrefCall` / `queryHrefArgs` helper shared by the SSR adapters' lowering.
+
+  Recognition handles aliased imports and both the `@barefootjs/client` and `@barefootjs/client/runtime` entry points. A non-literal params object falls back to the generic lowering.
+
+- caba215: `queryHref` now accepts an **array value** for multi-value query keys (#2048, the Q4 follow-up to #2042): `queryHref(base, { tag: ['a', 'b'] })` → `?tag=a&tag=b`, i.e. `URLSearchParams.append` rather than `set`. Empty / falsy members are skipped (same truthy-omit as a scalar), so an empty — or all-empty — array contributes nothing. `QueryParamValue` becomes `string | string[] | null | undefined`.
+
+  This works across the client and all SSR adapters byte-for-byte:
+
+  - **`@barefootjs/client`**: `queryHref` appends each non-empty array member.
+  - **`@barefootjs/perl`** (Mojolicious + Xslate via the shared `query` helper): an array ref appends one pair per non-empty member.
+  - **`@barefootjs/go-template`**: `bf_query` appends each non-empty member of a `[]string` (or `[]any`) value. To support this, the value-emptiness check moved from the lowering into the `bf_query` helper itself — a plain `key: v` now lowers to a `(true)` include and a conditional to `(cond)`, and the helper drops an included-but-empty value. This matches the client and Perl exactly (it also removes the previous Go-only divergence where an explicitly-included empty value was kept as `k=`); rendered output for existing scalar usage is unchanged.
+
+  The `query` helper's array behaviour is conformance-tested across the Go and Perl backends via the shared golden helper vectors.
+
+### Patch Changes
+
+- b57ed47: Lower `.flatMap(proj)` through the runtime evaluator (#2018, P3). The projection
+  body serializes to a ParsedExpr JSON blob and `bf_flat_map_eval` /
+  `bf->flat_map_eval` / `$bf.flat_map_eval` projects each element then flattens
+  one level, generalizing the structured self / field / tuple
+  (`bf_flat_map` / `bf_flat_map_tuple`) catalogue to any pure projection. A
+  projection the evaluator can't model falls back to the structured helper. The
+  shared runtime gains `BarefootJS::Evaluator::flat_map` / `flat_map_json` and a
+  `flat_map_eval` controller helper (Go `FlatMapEval`, registered as
+  `bf_flat_map_eval`). Rendered HTML is unchanged; only the emitted template text
+  moves to the evaluator helper. (`.flat(depth?)` is a non-callback array method
+  and stays folded.)
+- 39fc2ea: Lower standalone `.sort(cmp)` / `.reduce(fn, init)` on the Mojolicious and
+  Xslate adapters through the runtime evaluator (#2018, P1 — the Perl half of the
+  Go change). The comparator / reducer body is serialized to a ParsedExpr JSON
+  blob and evaluated per element by the new `bf->sort_eval` / `bf->reduce_eval`
+  (`$bf.sort_eval` / `$bf.reduce_eval` in Xslate) helpers, with captured free
+  variables threaded as a `base_env` hashref — generalizing the fixed `bf->sort` /
+  `bf->reduce` catalogues to any pure comparator / reducer body. A comparator the
+  evaluator can't model (e.g. `localeCompare`) falls back to the legacy `bf->sort`
+  path, so behavior there is unchanged. The shared Perl runtime gains
+  `BarefootJS::Evaluator::fold_json` / `sort_by_json` (the JSON-string seam the
+  templates emit into) and the `sort_eval` / `reduce_eval` controller helpers.
+  Rendered HTML is unchanged; only the emitted template text moves to the
+  evaluator helpers. The chained `.sort().map()` / `.filter().map()` loop-hoist
+  keeps the legacy path until its own phase (P3).
+- 6147144: Lower higher-order methods (`.filter` / `.find` / `.findIndex` / `.findLast` /
+  `.findLastIndex` / `.every` / `.some`) on the Mojolicious and Xslate adapters
+  through the runtime evaluator (#2018, P2 — the Perl half of the Go change). The
+  predicate body serializes to a ParsedExpr JSON blob and emits
+  `bf->filter_eval` / `bf->find_eval` / `bf->find_index_eval` / `bf->every_eval` /
+  `bf->some_eval` (`$bf.…` in Xslate), with captured free vars threaded as a
+  `base_env` hashref — the same JS-faithful evaluator the Go adapter uses, so the
+  two SSR backends stay byte-isomorphic. A predicate the evaluator can't model
+  (e.g. a method-call predicate) falls back to the inline `grep` / Kolon-lambda /
+  `bf->find` lowering, and `.filter(Boolean)` keeps its inline truthiness form.
+
+  The shared `BarefootJS` runtime gains `filter_eval` / `every_eval` / `some_eval`
+  / `find_eval` / `find_index_eval` controller helpers, delegating to the
+  `BarefootJS::Evaluator` predicate helpers. Rendered HTML is unchanged; only the
+  emitted template text moves to the evaluator helpers.
+
 ## 0.16.0
 
 ## 0.15.2
