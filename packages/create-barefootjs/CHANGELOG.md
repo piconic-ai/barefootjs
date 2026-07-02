@@ -1,5 +1,11 @@
 # create-barefootjs
 
+## 0.17.0
+
+### Patch Changes
+
+- @barefootjs/cli@0.17.0
+
 ## 0.16.0
 
 ### Patch Changes

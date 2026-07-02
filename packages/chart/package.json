@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/chart",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "SVG chart components for BarefootJS with signal-based reactivity",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,5 +1,506 @@
 # @barefootjs/go-template
 
+## 0.17.0
+
+### Minor Changes
+
+- 60f0b5b: Add the lightweight ParsedExpr evaluator to the Go runtime (#2018, Track B).
+
+  `bf.go`'s runtime gains a pure-expression evaluator (`EvalExpr` /
+  `EvalNode`) for higher-order callback bodies, plus the evaluator-driven
+  folds `FoldEval` (reduce / reduceRight over any reducer body) and
+  `SortEval` (sort by any comparator body). These are the runtime
+  generalization of the special-cased `bf_reduce` / `bf_sort` callback
+  catalogue: a callback body rides as a pure `ParsedExpr` and is evaluated
+  against an environment (`{acc, item, …captured free vars}`), so the
+  `+`/`*` op restriction, the `acc`-canonical form, and the comparator
+  pattern restriction all disappear.
+
+  The evaluator's coercion is JS-faithful (ToNumber / ToString / ToBoolean,
+  strict equality, `Math.round` half-toward-+Infinity), pinned isomorphically
+  by the Track A golden vectors — a new `eval_vectors_test.go` harness runs
+  every `eval-vectors.json` case in Go and matches the JS reference exactly.
+
+  Purely additive: the new functions are not yet wired into emit, so all
+  existing template output stays byte-identical and no adapter
+  `createSourceFile` is added. Migrating the emit path onto the evaluator
+  (and the byte-equal decision for the won't-fix `localeCompare` string
+  sort) is the follow-up integration.
+
+- caba215: `queryHref` now accepts an **array value** for multi-value query keys (#2048, the Q4 follow-up to #2042): `queryHref(base, { tag: ['a', 'b'] })` → `?tag=a&tag=b`, i.e. `URLSearchParams.append` rather than `set`. Empty / falsy members are skipped (same truthy-omit as a scalar), so an empty — or all-empty — array contributes nothing. `QueryParamValue` becomes `string | string[] | null | undefined`.
+
+  This works across the client and all SSR adapters byte-for-byte:
+
+  - **`@barefootjs/client`**: `queryHref` appends each non-empty array member.
+  - **`@barefootjs/perl`** (Mojolicious + Xslate via the shared `query` helper): an array ref appends one pair per non-empty member.
+  - **`@barefootjs/go-template`**: `bf_query` appends each non-empty member of a `[]string` (or `[]any`) value. To support this, the value-emptiness check moved from the lowering into the `bf_query` helper itself — a plain `key: v` now lowers to a `(true)` include and a conditional to `(cond)`, and the helper drops an included-but-empty value. This matches the client and Perl exactly (it also removes the previous Go-only divergence where an explicitly-included empty value was kept as `k=`); rendered output for existing scalar usage is unchanged.
+
+  The `query` helper's array behaviour is conformance-tested across the Go and Perl backends via the shared golden helper vectors.
+
+### Patch Changes
+
+- f3696f9: Render carousel (and similar) demos byte-identical to the Hono SSR reference (#1971).
+
+  Three Go-adapter SSR divergences that compiled clean but rendered wrong are fixed:
+
+  - **String-ternary memos mistyped as `bool`.** A memo like `() => orientation() === 'vertical' ? 'flex-col' : 'flex'` was classified boolean by the `===` in its condition and baked `class="false"`. Such string-literal/module-const-branch ternaries are now detected and resolved to a Go runtime conditional, including comparison conditions over a getter or an inline `props.X ?? 'default'`.
+  - **Optional object props always-truthy / dropped.** An optional named-struct prop (`opts?: EmblaOptionsType`) lowered to a value struct, so a `{{if .Opts}}`-guarded attribute could never be omitted and an inline `opts={{ … }}` was dropped. Optional named-struct props now lower to `map[string]interface{}` (nil/empty is falsy; keys round-trip through `bf_json` like `JSON.stringify`), and inline object literals bake to Go map literals.
+  - **Inline scalar-literal-array loops rendered zero items.** `[1,2,3,4,5].map(n => …{n}…)` had no datum plumbing for the scalar value. The loop wrapper now carries the value, the body define receives it, the literal slice is baked into the constructor, and `data-key` is stamped from the scalar.
+
+- f4e715b: Carry a module-scope constant's parsed value on the IR (`ConstantInfo.parsed`,
+  Roadmap A-2). The analyzer structures each module const's value once — parsed
+  from the parenthesised form so a bare object literal resolves to an
+  `object-literal` rather than being read as a block. The Go adapter's
+  static-record index lookup (`resolveStaticRecordLiteralIndex`, e.g. an icon
+  registry's `strokePaths['chevron-down']`) now reads the carried `object-literal`
+  structure for the common string/number value case instead of re-parsing the
+  const's value string, keeping `ts.createSourceFile` only as the fallback for
+  records the parser doesn't structure (spread / computed-key / template-key).
+  Byte-identical — verified by the Go adapter unit + conformance suites.
+- e0a8ec6: Collapse the two expression models into a single generic `ParsedExpr` (#2018 P5).
+
+  The compiler carried two parallel expression trees — the folded `ParsedExpr`
+  (which pre-extracted higher-order callbacks into specialized `higher-order` /
+  structured `array-method` kinds at parse time) and the generic `ParsedExpr2`
+  (call + member + multi-param arrow + regex, no folding). Now that the runtime
+  evaluator drives every higher-order callback body on both SSR backends (Go
+  `eval.go`, Perl `Evaluator.pm`), the folding workaround is retired and the two
+  models are unified on the single generic `ParsedExpr`.
+
+  - Higher-order callbacks (`.filter`/`.find`/`.findIndex`/`.findLast`/
+    `.findLastIndex`/`.every`/`.some`/`.sort`/`.toSorted`/`.reduce`/`.reduceRight`/
+    `.flatMap`) now parse to a generic `call` whose argument is a generic `arrow`;
+    the adapter serializes the arrow body to the runtime evaluator (eval-first)
+    and recovers a structured comparator (`sortComparatorFromArrow`) only for the
+    `localeCompare` sort fallback the evaluator can't model.
+  - Deleted the folded kinds (`higher-order`, `arrow-fn`, the structured sort /
+    reduce / flatMap `array-method` variants), their `extract*FromTS` extractors,
+    the `ParsedExpr2` tree, and the `parseExpression2` / bridge functions. The Go
+    constructor lowering now reads the single generic `parsed` tree.
+
+  Behavior-neutral: emitted SSR template text changes (`bf_sort …` →
+  `bf_sort_eval … "<json>"`), but rendered HTML is identical across Go, Mojo, and
+  Xslate (CSR conformance, real Go/Perl render parity, and `eval-vectors`
+  Go==Perl==JS gate it).
+
+- 96696bd: Normalize block-bodied `.filter()` predicates to a single boolean expression at IR-build time (#2040), retiring the per-adapter block-condition renderers.
+
+  A `filter(t => { … })` predicate is now folded with `foldBlockToExpr` (let-inline + early-return/`if` → ternary) and the boolean-context ternary is rewritten to `&&`/`||` via the new `predicateTernaryToLogical`, so it flows through the same expression-predicate path as `filter(t => !t.done)`. The IR's `filterPredicate.blockBody` field is removed — adapters only ever see `filterPredicate.predicate`.
+
+  `foldBlockToExpr` gains an optional `pureCallNames` oracle: an idempotent reactive getter read (`const f = filter()`) counts as pure, so a signal read on several branches still folds (the canonical TodoApp `active`/`completed`/`all` filter). `jsx-to-ir` supplies the analyzer's signal/memo names.
+
+  The Go / Mojolicious / Xslate adapters drop their now-dead `renderBlockBodyCondition` / `collectReturnPaths` / `buildSinglePathCondition` / `buildOrCondition` / `renderConditionsAnd` helpers; the shared expression-predicate renderer subsumes them. Render parity is unchanged (adapter conformance — Go + Perl — green; the boolean condition is truth-table-equivalent to the old OR-of-ANDs). Genuinely imperative filter blocks (loops, `break`, mutation) now refuse with BF021/BF101 instead of falling through.
+
+- b57ed47: Lower `.flatMap(proj)` through the runtime evaluator (#2018, P3). The projection
+  body serializes to a ParsedExpr JSON blob and `bf_flat_map_eval` /
+  `bf->flat_map_eval` / `$bf.flat_map_eval` projects each element then flattens
+  one level, generalizing the structured self / field / tuple
+  (`bf_flat_map` / `bf_flat_map_tuple`) catalogue to any pure projection. A
+  projection the evaluator can't model falls back to the structured helper. The
+  shared runtime gains `BarefootJS::Evaluator::flat_map` / `flat_map_json` and a
+  `flat_map_eval` controller helper (Go `FlatMapEval`, registered as
+  `bf_flat_map_eval`). Rendered HTML is unchanged; only the emitted template text
+  moves to the evaluator helper. (`.flat(depth?)` is a non-callback array method
+  and stays folded.)
+- 648c74b: Finish decomposing the Go adapter's `generateNewPropsFunction` by extracting the two loop-body wrapper builders into private emitters (readability). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `emitStaticBodyWrappers` — static nested components WITH body children: bakes the module-const / inline-literal loop array into the constructor and builds the wrapper slice.
+  - `emitDynamicBodyWrappers` — dynamic loop-body components whose array bakes to a module-const via a memo.
+
+  Both take the shared `emittedWrapperVars` set (the return-struct stage reads it). With this, `generateNewPropsFunction` drops from ~590 to ~210 lines — orchestration plus the return-struct field assembly.
+
+- 6306efc: Extract the Go html/template adapter's constructor-context expression lowering into `memo/ctor-lowering.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `memo/ctor-lowering.ts` — `lowerCtorExpr`, `lowerCtorCond`, `lowerCtorStringArray` moved out as free functions (mutually recursive). They lower the narrow surface of JS expressions a derived-state memo needs (#1897) into Go constructor code: literals, `<sp>.get('k')`, `<arr>.includes(<x>)`, module arrow-helper inlining, `?? `/`||`/`? :` string forms. They read `state.localConstants` / `state.propsObjectName` and `parseLiteralExpression`, and set `state.needsStringsImport` when they emit a `strings.*` call.
+  - No new `GoEmitContext` member is needed; the two external call sites now call `lowerCtorExpr(this.emitCtx, …)`.
+
+- 735ed91: Refactor the Go html/template adapter: extract pure helpers, internal types, and per-compile state out of the 8.6k-line single-file `GoTemplateAdapter` into focused `adapter/lib/*` modules.
+
+  Internal-only, output byte-identical (verified by the adapter unit + conformance suites). No behavioural or public-API change:
+
+  - `lib/go-naming.ts` — Go identifier/initialism/keyword tables and field-name capitalisation.
+  - `lib/go-emit.ts` — Go-template string escaping, arg wrapping, and `bf_*` runtime-helper emitters (de-duplicates two identical `escapeGoString` copies).
+  - `lib/types.ts` / `lib/ir-scope.ts` / `lib/constants.ts` — adapter bookkeeping interfaces (`GoTemplateAdapterOptions` re-exported unchanged), IR scope traversal, and the template-primitive table.
+  - `lib/compile-state.ts` — `CompileState` groups the ~24 per-compile fields reset at the start of `generate()`/`generateTypes()` into one object, preserving field lifetimes 1:1.
+
+- 57f9615: Extract the Go html/template adapter's memo initial-value computation core into `memo/memo-compute.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `memo/memo-compute.ts` — the six mutually-recursive memo-value functions moved out as free functions: `computeMemoInitialValue` (typed-field entry, zero-value defaulting), `computeMemoInitialValueOrNull` (pattern-matching core), `memoInitialFromParsedBody` (structural match over the analyzer-attached `parsed` tree), `computeComparisonTernaryGo`, `resolveComparisonOperandGo`, `resolveGetterValueAsGo`. They read `state.currentMemos` / `state.moduleStringConsts` and delegate to the value / type / template-interp / memo-value modules.
+  - `emit-context.ts` — `GoEmitContext` gains `extractPropFallback` (parallel to the existing `extractPropNameFromInitialValue`), the one adapter-resident parser the core calls back into.
+  - Removes the now-unused `EMPTY_PROP_FALLBACK_VARS` static from the adapter (all users moved into modules).
+
+- ce96cc5: Extract the Go html/template adapter's memo type-inference predicates into `memo/memo-type.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `memo/memo-type.ts` — `isTemplateLiteralMemo`, `isBooleanMemo`, `isStringTernaryMemo` moved out as pure free functions. They classify a memo's computation (template-literal / boolean / string-ternary) so `inferMemoType` can pick the right Go field type and SSR zero value. They read only `state.moduleStringConsts` and `extractPropNameFromInitialValue`.
+  - `inferMemoType` stays on the adapter as the orchestrator that calls the three predicates; no new `GoEmitContext` member is needed.
+
+- f108699: Extract the Go html/template adapter's block-body / object memo value computation into `memo/memo-value.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `memo/memo-value.ts` — `resolveBlockBodyMemoModuleConst` (recognise a guard-and-return-module-const memo, reading `state.localConstants`) and `computeObjectMemoInitialValue` (lower a `searchParams()`-derived object-returning memo to a Go `map[string]interface{}` literal via `lowerCtorExpr`, reading `state.searchParamsLocals`) moved out as free functions.
+  - No new `GoEmitContext` member is needed; call sites now use `…(this.emitCtx, …)`.
+
+- f1ac8e1: Split the self-contained sections out of the Go adapter's ~590-line `generateNewPropsFunction` into focused private emitters (readability). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `emitNewPropsDocComment` — the `NewXxxProps` doc header + per-component "handler-populated slice" NOTE.
+  - `emitStaticChildInstances` — the ~145-line static child-component instance emitter (props, rest-bag routing, context bindings, children passthrough).
+  - `emitSpreadBagInits` — spread-bag field initializers + the BF101 fallback.
+
+  These stay as adapter methods (orchestrator), just no longer inline. The loop-body wrapper builders (which share `emittedWrapperVars` / `propFallbackVars`) are left for a follow-up.
+
+- 7e673b2: Continue decomposing the Go html/template adapter (Phase 4). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `analysis/component-tree.ts` — pure IR structural walks (`hasClientInteractivity`, nested/child-component discovery) moved out as free functions that read no adapter state.
+  - `emit-context.ts` — introduce `GoEmitContext`, the narrow interface (per-compile `state` + the recursive entry points) that extracted emit modules depend on instead of the concrete adapter. The adapter implements it and passes `this`.
+  - `expr/helper-inline.ts` — local arrow-const helper inlining at a call site.
+  - `expr/url-builder.ts` — `URLSearchParams` builder helpers → `bf_query` lowering.
+
+- e0a9228: Deduplicate the per-compile state priming shared by `generate()` and `generateTypes()` into a single `primeCompileState(ir)` method (Go adapter readability). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  The two entry points each set the same ~10 `CompileState` fields from the IR (props-object / rest names, module-const + local-const tables, memos, type definitions, context consumers, `searchParams` locals) and call `augmentInheritedPropAccesses` — `generateTypes` carried a row of "Mirror `generate()`" comments warning about exactly the drift this removes.
+
+- 4d169c9: Extract the Go html/template adapter's prop-type resolution into `props/prop-types.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `props/prop-types.ts` — `buildPropTypeOverrides` (signal-inferred Go-type overrides), `resolvePropGoType` (the shared per-field type resolver — optional named-struct props → `map[string]interface{}`), and `collectNillablePropNames` moved out as free functions. They read only `state.localStructFields` and `extractPropNameFromInitialValue` and resolve via `typeInfoToGo`; no new `GoEmitContext` member.
+
+  Note: the struct _assembly_ generators (`generateInputStruct` / `generatePropsStruct` / `generateNewPropsFunction`) remain on the adapter — they are the orchestrator core that composes the extracted lowering modules (~18 cross-method dependencies), which the architecture deliberately keeps on the object rather than re-exposing through the seam.
+
+- 0321d8f: Split the Go adapter's `generatePropsStruct` into focused private field emitters (readability). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `emitPropsStructHeader` — the fixed `ScopeID` / `Bf*` / `Scripts` / `SearchParams` fields.
+  - `emitPropsDataFields` — prop, signal, and memo fields (owns the shared `propFieldNames` de-dup set so a signal/memo sharing a prop's name doesn't redeclare the field).
+  - `emitPropsAuxFields` — derived-const, `useContext`-consumer, nested-component-array, static-child, and spread-bag fields.
+
+  `generatePropsStruct` drops from ~190 lines to a 5-line orchestration.
+
+- e694d18: Extract the Go html/template adapter's spread-bag codegen into `spread/spread-codegen.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `spread/spread-codegen.ts` — the ten spread / object-map codegen methods moved out as free functions, with two exported entry points (`collectSpreadSlots`, `buildSpreadInitializer`) and eight module-local helpers (`classifySpreadBagSource`, `collectSpreadSlotsRecursive`, `parseJsObjectLiteralToGoMap`, `buildConditionalSpreadInitializer`, `unwrapParens`, `conditionToGoBool`, `objectLiteralToGoSpreadMap`, `recordIndexAccessToGoMap`). They read only `state.restPropsName` / `state.usesFmt` and `parseLiteralExpression`; no new `GoEmitContext` member.
+  - Removes the now-unused `parseRecordIndexAccess` import from the adapter (its last caller moved into the module).
+
+- f9bb3a8: Extract the Go html/template adapter's template-literal memo lowering into `memo/template-interp.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `memo/template-interp.ts` — `computeTemplateLiteralMemoInitialValue`, `resolveTemplateInterpolation`, `parseLocalKeyBinding`, `recordIndexInterpolationToGo`, `propsAccessName` moved out as free functions. They compute a template-literal memo's SSR initial value as a Go `string` expression (quasis → Go literals; `${…}` interpolations → module string consts / `Record`-index maps / `props.<name>` field reads), reading `state.localConstants` / `state.propsObjectName` and setting `state.usesFmt` when a `Record`-index interpolation emits `fmt.Sprint`.
+  - `emit-context.ts` — `GoEmitContext` gains `resolveModuleStringConst`, the one adapter-resident entry point this module calls back into (it depends on per-compile loop state that stays on the adapter).
+
+- 39db6d9: Extract the Go html/template adapter's type codegen into `type/type-codegen.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `type/type-codegen.ts` — `typeInfoToGo`, `tsTypeStringToGo`, `inferTypeFromValue` moved out as pure free functions. They render a prop/signal/const's TypeScript type (`TypeInfo`, a raw type string, or an inferred shape from a literal) into the Go struct-field type, reading only `state.localTypeNames`.
+  - `emit-context.ts` — `typeInfoToGo` is removed from `GoEmitContext`: now a free function, `value-lowering` imports it directly instead of calling back through the seam, shrinking the context surface.
+
+- 3fab788: Split the inline sections out of the Go adapter's `generateTypes` into focused private emitters, leaving it as clean orchestration (readability). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `buildLocalTypeTables` — populate `localTypeNames` / `localTypeAliases` / `localStructFields` from the IR's type definitions.
+  - `emitLocalTypeStructs` — emit Go structs / string aliases for local type definitions.
+  - `emitSynthStructs` — synthesise + emit a struct per untyped object-array signal (#1680).
+  - `resolveNestedLoopItemTypes` — resolve a null loop `itemType` from a memo-derived / direct module-const array (#1897).
+  - `composeFileHeader` — assemble the package clause + sorted import block once `usesFmt` / `usesHtmlTemplate` / `needsStringsImport` are known.
+
+  `generateTypes` drops from ~330 to ~50 lines — priming, the five `emit*`/`build*` steps, the three struct generators, and the header compose.
+
+- c9c97dd: Extract the Go html/template adapter's value-lowering cluster into `value/value-lowering.ts` (Roadmap B). Internal-only, output byte-identical (verified by the adapter unit + conformance suites); no behavioural or public-API change.
+
+  - `value/value-lowering.ts` — `convertInitialValue`, `jsLiteralToGo`, `objectLiteralToGoMap`, `tsLiteralToGo`, `getSignalInitialValueAsGo` moved out as pure free functions over `GoEmitContext`. They bake inline signal/const initial values into Go literals (scalars, prop references, fully-literal arrays/objects) and fall back to `nil`/`0` otherwise.
+  - `emit-context.ts` — `GoEmitContext` gains `typeInfoToGo` and `extractPropNameFromInitialValue`, the two adapter entry points the moved functions call back into (`parseLiteralExpression` was already on the seam). `typeInfoToGo` / `parseLiteralExpression` stay on the adapter as widely-shared members.
+
+- a40066c: Encode `bf_query` keys/values with `application/x-www-form-urlencoded` (matching the browser's `URLSearchParams` and the Perl `query` helper) instead of Go's `url.QueryEscape`, so a `queryHref(base, { … })` renders byte-for-byte identically across the go-template, Mojolicious, and Xslate SSR adapters and the Hono client (#2048, follow-up to #2042).
+
+  The two encoders agreed on everything except `~` and `*`: `url.QueryEscape` keeps `~` and percent-encodes `*`, whereas `URLSearchParams` percent-encodes `~` → `%7E` and keeps `*`. The new `formEscape` keeps the unreserved set `A-Z a-z 0-9 * - . _`, turns a space into `+`, and percent-encodes every other byte as `%XX` (uppercase, byte-wise UTF-8) — so query values containing `~` or `*` now match the other backends exactly.
+
+  The `query` helper is now covered by the shared golden helper vectors (`packages/adapter-tests/helper-vectors`), so the Go and Perl backends are conformance-tested against one set of `URLSearchParams`-derived expectations instead of hand-duplicated per-backend cases.
+
+- 1d5da4d: Go constructor lowering now reads `ConstantInfo.parsed2` / `ParsedExpr2` instead of re-parsing const values with `ts.createSourceFile`. The four `parseLiteralExpression` call sites in `ctor-lowering.ts` (and the derived-const caller in `go-template-adapter.ts`) are removed; `lowerCtorExpr` / `lowerCtorCond` / `lowerCtorStringArray` take the IR-carried `ParsedExpr2` tree, and a new `tsNodeToParsedExpr2` bridge converts the return-object initializers in `memo-value.ts`. Go-only (mojo/xslate untouched); output is byte-identical (786/556 conformance + Go suites).
+- 107f330: Lower standalone `.sort(cmp)` / `.reduce(fn, init)` on the Go adapter through the
+  runtime evaluator (#2018, P1). The comparator / reducer body is serialized to a
+  ParsedExpr JSON blob and evaluated per element by the new `bf_sort_eval` /
+  `bf_reduce_eval` template helpers, with captured free variables threaded as
+  `base_env` via `bf_env` — generalizing the fixed `bf_sort` / `bf_reduce`
+  catalogues to any pure comparator / reducer body. A comparator the evaluator
+  can't model (e.g. `localeCompare`) falls back to the legacy `bf_sort` path, so
+  behavior there is unchanged. The runtime struct-field reader now resolves a JS
+  field name (`id`) case-insensitively against the Go struct field (`ID`), which
+  the evaluator's raw field names require. Rendered HTML is unchanged; only the
+  emitted template text moves to the evaluator helpers. (The chained
+  `.sort().map()` / `.filter().map()` loop-hoist and the mojo/xslate adapters keep
+  the legacy path until their own phases.)
+- 9b8c769: Lower higher-order methods (`.filter` / `.find` / `.findIndex` / `.findLast` /
+  `.findLastIndex` / `.every` / `.some`) on the Go template adapter through the
+  runtime evaluator (#2018, P2). The predicate body — already a `ParsedExpr` on
+  the `higher-order` IR node — serializes to JSON and emits `bf_filter_eval` /
+  `bf_find_eval` / `bf_find_index_eval` / `bf_every_eval` / `bf_some_eval`, with
+  captured free vars threaded via `bf_env`, generalizing the field-equality /
+  truthiness predicate catalogue to any pure predicate body. A predicate the
+  evaluator can't model (a method-call / signal-getter predicate) falls back to
+  the structured `bf_filter` / `bf_find` / … helpers and the `{{range}}`
+  template-block path; `.filter(Boolean)` keeps its dedicated `bf_filter_truthy`
+  lowering. Rendered HTML is unchanged; only the emitted template text moves to
+  the evaluator helpers.
+- 23e46fc: Document `parseLiteralExpression` as the terminal sweep's final target — the last `ts.createSourceFile` in the adapter, a shared parser (many call sites across the constructor/value lowering) being removed incrementally via the Go-only `ParsedExpr2` bridge (tracked in #2006). Docstring-only; no behavioural or API change.
+- bc607ea: Resolve static `Record`-index lookups (`variantClasses[variant]`, icon registries) from the IR-carried `object-literal` tree instead of re-parsing the const value with `ts.createSourceFile` at emit time. Numeric record values now emit `literal.raw` — TypeScript's normalised `NumericLiteral.text` token (not the source spelling), which is exactly what the adapter's numeric lowering already emits, so the result is byte-identical to the former parse while skipping the second `ts.createSourceFile` and avoiding a round-trip through the parsed numeric `value`. Verified byte-identical by the conformance (786) and Go unit (556) suites.
+- 7a2a061: Inline component-scope arrow helpers structurally, removing the Go helper-inliner's `ts.createSourceFile` re-parses (#2006).
+
+  The Go adapter's `inlineLocalHelperCall` no longer parses the call expression or the helper arrow body with `parseLiteralExpression`. It substitutes the call args (carried as the call's `ParsedExpr` `preParsed` tree) into the helper body recovered structurally from `ConstantInfo.parsed2`, then lowers the substituted tree directly — so a compound arg (`props.a ?? props.b`) keeps its precedence by structure instead of the former text-splice parenthesisation. A new `parsedExpr2ToParsedExpr` bridge (the reverse of the `ParsedExpr2` ctor tree) is added to `@barefootjs/jsx` for this.
+
+  Output is byte-identical across the affected fixtures (`sortClass` / `tagClass` inliner). The block-bodied `URLSearchParams` URL-builder helpers (`hrefFor` / `sortHref` / `tagHref`) keep their text path — `ParsedExpr2` can't model a statement block, so there's no structured body tree to substitute in.
+
+- 1e6635a: Carry the parsed expression tree for intrinsic-element attribute expressions in the IR (continuing the "IR carries semantics, adapters emit from it" direction). Output byte-identical; the only public-API change is additive.
+
+  - `@barefootjs/jsx`: `ExpressionAttr` gains an optional `parsed` (`parseExpression(expr.trim())`), attached by the `jsxToIR` walk for each element attribute. Optional/best-effort like `IRExpression.parsed`.
+  - `@barefootjs/go-template`: the element attribute emitter reuses `value.parsed` for its condition/classification/value lowerings (`convertConditionToGo`, the conditional/template-literal classification parse, and `convertExpressionToGo`), instead of re-parsing the same attribute string up to several times per attribute.
+
+- a231927: Carry the parsed condition tree in the IR (continuing the "IR carries semantics, adapters emit from it" direction). Output byte-identical; the only public-API change is additive.
+
+  - `@barefootjs/jsx`: `IRConditional` and `IRIfStatement` gain an optional `parsedCondition` (`parseExpression(condition.trim())`), attached by the `jsxToIR` walk. Optional/best-effort like `IRExpression.parsed`.
+  - `@barefootjs/go-template`: `convertConditionToGo` takes an optional pre-parsed tree; `renderConditional` and `renderIfStatement` (incl. else-if chains) pass `parsedCondition`, so a rendered condition reuses the IR's parse instead of calling `parseExpression` again.
+
+- 22e0101: Carry the parsed expression tree in the IR for text-interpolation nodes, so SSR adapters emit from it instead of each re-parsing the string at emit time (and a multi-adapter build parses it once, not per adapter). Output byte-identical; the only public-API change is additive (`IRExpression` gains an optional `parsed` field).
+
+  - `@barefootjs/jsx`: `jsxToIR` now walks the produced tree and attaches `IRExpression.parsed` (`parseExpression(expr.trim())`) to every text-interpolation node. Best-effort — a node left without `parsed` (or an empty expr) just falls back to adapter-side parsing, so it is never a behavioural change.
+  - `@barefootjs/go-template`: `convertExpressionToGo` takes an optional pre-parsed tree and `renderExpression` passes `expr.parsed`, so a rendered interpolation reuses the IR's parse instead of calling `parseExpression` again. The string-based early returns (null/undefined, static record index, inlined consts, helper/url lowering) are unchanged and still run first.
+
+- 290b904: Carry parsed memo structure in the IR so adapters emit from it instead of re-parsing. Output byte-identical (adapter unit + conformance suites); no behavioural change. The only public-API change is additive and non-breaking: `MemoInfo` is now exported and gains an optional `parsed` field.
+
+  - `@barefootjs/jsx`: the analyzer now attaches `MemoInfo.parsed` — a structured `ParsedExpr` of the memo arrow's body (expression-bodied arrows only) — so adapters can shape-match a memo on the tree instead of re-parsing `computation`. `MemoInfo` is now exported.
+  - `@barefootjs/go-template`: replace the nine `computation.match(/…/)` regex shape-matches in `computeMemoInitialValueOrNull` with structural matching over `MemoInfo.parsed` (`getter() === 'lit'`, `props.X ?? false`, `cond() ? A : B`, `<ref> * N`, bare `getter()` / `props.X` / `var`). Block-bodied / unparsable memos fall back to the existing comparison-ternary / block-body / object-memo handling.
+
+- 2451595: Remove the `ts.createSourceFile` (`parseLiteralExpression` + `tsLiteralToGo`)
+  fallback from `jsLiteralToGo` in the Go adapter's value lowering (terminal
+  sweep, #2006). Signal/const inline initial values now bake exclusively from the
+  analyzer's carried structured `ParsedExpr` tree via `parsedLiteralToGo`, which
+  already reproduces every bakeable shape (scalars, a unary-minus number, scalar
+  arrays, and objects against a local struct) and keeps `nil` for everything else
+  (empty arrays, objects with no known struct, identifiers/calls, nested
+  object/array values, `as const`). The deleted fallback covered the same
+  bakeable shapes — every shape the analyzer leaves `unsupported` (so no tree is
+  carried) is also one the fallback's own `ts.is*` checks declined — so the
+  removal is byte-identical (verified by the 786/556 adapter gauntlet). The
+  inline primitive-literal loop-array bake now threads the loop's carried
+  `ParsedExpr` through the same structured path. The now-dead `tsLiteralToGo`
+  helper and its `typescript`/`typeInfoToGo` imports are deleted.
+- b725f3c: Lower the `.sort().map()` loop-hoist comparator through the runtime evaluator
+  (#2018, P3). The chained-sort site that wraps a loop's iterable now serializes
+  the comparator body and emits `bf_sort_eval` / `bf->sort_eval` / `$bf.sort_eval`
+  (the same path the standalone `.sort(cmp)` value call uses since P1), with
+  captured free vars threaded as the env argument. A comparator the evaluator
+  can't model (e.g. `localeCompare`, including a `||`-chain that ends in one)
+  falls back to the legacy structured `bf_sort` / `bf->sort` path, so behavior
+  there is unchanged. Rendered HTML is unchanged; only the emitted template text
+  moves to the evaluator helper. The `.filter().map()` loop gate stays an inline
+  `{{if}}` / `: if` on the raw predicate (already de-folded). This removes the
+  last standalone consumer of the structured `SortComparator` outside the parser,
+  ahead of collapsing the folded `ParsedExpr` model.
+- 25a9c0f: Introduce a backend-neutral call-lowering plugin registry (#2057, part 2).
+
+  The compiler core no longer hardcodes how a pure builder call like `queryHref(base, { … })` is recognized and lowered. A lowering plugin _matches_ a call to a backend-neutral `LoweringNode`; each adapter _renders_ that node in its own template syntax (`bf_query` / `bf->query` / `$bf.query`). This is a two-layer split — recognition is adapter-agnostic, rendering is plugin-agnostic — so SSR/CSR parity is enforced once, not per plugin.
+
+  New `@barefootjs/jsx` exports: `registerLoweringPlugin`, `prepareLoweringMatchers`, `matchLoweringCall`, `getLoweringPlugins`, and the `LoweringPlugin` / `LoweringNode` / `LoweringMatcher` types. `queryHref` is still registered by core for now; a later change relocates that registration to the router layer so core carries no runtime-API names.
+
+  Output is byte-identical: the Go / Mojolicious / Xslate adapters now obtain their query lowering through the registry instead of a hardcoded `queryHref` recognizer, producing the same templates as before.
+
+- 28db2cb: Carry a block-bodied memo's statements on the IR (`MemoInfo.parsedBlock`) so the
+  Go adapter can pattern-match block shapes without re-parsing `computation` with
+  `ts.createSourceFile`. The analyzer attaches them via a new
+  `parseBlockBodyTolerant` (best-effort: a statement the parser can't represent —
+  e.g. a trailing `return /* @client */ …` — is omitted rather than failing the
+  whole block, matching the adapter's former tolerant walk). The Go
+  `resolveBlockBodyMemoModuleConst` (the `const k = getter(); if (!k) return CONST`
+  guard memo, #1897) now reads `parsedBlock`. Additive and optional — other
+  adapters ignore the field, and `parseBlockBody` (strict) is unchanged.
+  Byte-identical, verified by go unit (556) + conformance (786). Removes the
+  `memo-value.ts` `ts.createSourceFile`.
+- d310046: Lower a comparison-ternary memo (`() => orientation() === 'vertical' ? A : B`)
+  from the analyzer-carried `MemoInfo.parsed` tree instead of re-parsing
+  `computation` with `ts.createSourceFile`. `computeComparisonTernaryGo` and
+  `resolveComparisonOperandGo` now operate on `ParsedExpr` (a `ParsedExpr`
+  counterpart of `propsAccessName` resolves the props-object member access). The
+  predicate only ever matched an expression-bodied conditional — a block-bodied
+  memo has no `parsed`, so it still returns null. Byte-identical (carousel
+  `directionClasses` / `positionClasses` / `paddingClass`); verified by go unit
+  (556) + conformance (786). Drops the adapter's package-wide `ts.createSourceFile`
+  count from 6 to 5.
+- ce5d511: Lower the guard-and-return-const block memo (#1897 / #1945) through the folded expression instead of a bespoke statement walk (#2040, PR-B of the memo follow-up stack).
+
+  The analyzer now folds a complete, value-producing block-bodied memo into a single `MemoInfo.parsed` expression (`foldBlockToExpr`), runs after all signals/memos are collected so idempotent reactive getter reads (`const k = getter()`) count as pure and a guard read across several branches still folds. An incomplete or unfoldable block leaves `parsed` undefined and consumers keep their `parsedBlock` fallback.
+
+  The Go adapter's `resolveBlockBodyMemoModuleConst` is rewritten to read the folded `MemoInfo.parsed` conditional (`!getter() ? MODULE_CONST : <derived>`) rather than walking `var-decl`/`if`/`return` statements with a local-var→signal map — the per-idiom statement matcher is gone, the recognition rides the general fold. The guard-falsy-init → module-const baking is unchanged.
+
+  Render parity verified: Go + Perl adapter conformance green; Go/Mojo/Xslate adapter unit suites green; the jsx suite carries only the pre-existing checker-alias failures.
+
+- aefe7a0: Make `memo/memo-type.ts` parse-free by classifying memo bodies from the IR
+  instead of re-parsing `computation` with `ts.createSourceFile`:
+
+  - `MemoInfo.bodyIsTemplateLiteral` — the analyzer sets this from the real arrow
+    AST node; `inferMemoType` reads it instead of the removed `isTemplateLiteralMemo`
+    helper. A no-substitution `` `plain` `` template folds to a plain string
+    `ParsedExpr` literal, so a dedicated boolean (not a `parsed.kind` check)
+    preserves the backtick distinction.
+  - `isStringTernaryMemo` now reads the analyzer-carried `MemoInfo.parsed`
+    conditional tree (the `moduleStringConsts` membership check stays a plain Set
+    lookup in the adapter). A block-bodied memo has no `parsed`, so it returns
+    false — matching the former predicate, which never descended a block.
+
+  Byte-identical (the analyzer logic mirrors the former adapter predicates over
+  the same source); verified by go unit (556) + conformance (786). Drops the
+  adapter's package-wide `ts.createSourceFile` count from 8 to 6 and advances the
+  constitution's "no expression parsing in adapters" rule by moving the
+  classification to Phase 1.
+
+- 8b19546: Read carried `ParsedExpr` trees in two more Go-adapter lowerings instead of
+  re-parsing source strings with `ts.createSourceFile` (Roadmap A terminal
+  sweep). Object-literal child-prop maps — an inline object passed to a child's
+  optional object prop (`<Carousel opts={{ align: 'start' }}>` →
+  `map[string]interface{}`) — now lower from the `ExpressionAttr.parsed`
+  `object-literal` tree via `objectLiteralToGoMap`. Scalar-literal loop typing —
+  `[1,2,3,4,5].map(...)` style loops whose `BfLoopItem` field types as
+  `interface{}` — now read a new `IRLoop.arrayParsed` (attached in `jsx-to-ir.ts`
+  as the parse of the same `array` string the adapter consumes, threaded through
+  `NestedComponentInfo.loopArrayParsed`) instead of re-parsing the loop's array
+  string in `scalarLiteralLoopGoType`. Both reproduce the previous output
+  byte-for-byte (string via `JSON.stringify`, numbers via the carried `raw`
+  token, unary-minus numbers preserved) and fall back / defer identically when
+  the tree is absent or unsupported — verified by the adapter conformance and Go
+  adapter suites (786 / 556).
+- 07649cb: Lower the object-returning `searchParams()` memo from the analyzer-carried `parsedBlock` instead of re-parsing `computation` with `ts.createSourceFile` (terminal sweep, #2006).
+
+  - `@barefootjs/jsx` — add `parsedExprToParsedExpr2`, a pure structural `ParsedExpr` → `ParsedExpr2` converter for the object-memo value surface; the block-body tolerant parser (`parseStatement`) now also carries `object-literal` var-decl inits and returns (an object-literal return is parenthesised to force expression context), completing the Roadmap A-1 deferral.
+  - `@barefootjs/go-template` — `computeObjectMemoInitialValue` walks `MemoInfo.parsedBlock` / `parsedBlockComplete` and lowers each return-object property via `parsedExprToParsedExpr2` + `lowerCtorExpr`, dropping the adapter's last `parseLiteralExpression` (`ts.createSourceFile`) call.
+
+  Byte-identical Go output (786 adapter-conformance / 553+3-skip go-template tests stay green); no public-API or behavioural change.
+
+- a421530: Lower object / struct-array signal initial values from the carried IR tree too
+  (Roadmap A-4). `parsedLiteralToGo` now bakes an object literal against a
+  concrete local struct — mirroring `tsLiteralToGo`'s object branch (Go field
+  names resolved from the struct's field map, deferring on an unknown struct, an
+  undeclared key, or a nested object/array value). Combined with A-3's scalar
+  support, every fully-literal signal-array init — a typed struct array
+  `createSignal<Item[]>([{ id: "a" }])`, an untyped synthesised-struct array, or a
+  scalar array — now bakes from the structured tree instead of re-parsing the
+  value string with
+  `ts.createSourceFile`, which stays the fallback only for shapes the tree can't
+  represent (`as const`, calls, identifiers). Byte-identical — verified by the Go
+  adapter struct/scalar bake unit tests + conformance suite.
+- fd4655c: Add an `object-literal` kind to `ParsedExpr` (Roadmap A-1). The expression
+  parser now structures plain object literals (`{ a: 1, b: x }` / shorthand
+  `{ a }`) into `{ kind: 'object-literal', properties, raw }` instead of falling
+  through to `unsupported`; spread, computed-key, method, and getter/setter
+  literals still fall through unchanged. A matching `objectLiteral` method was
+  added to the shared `ParsedExprEmitter` dispatcher, so every adapter
+  (`go-template`, `mojolicious`, `xslate`) handles the new kind explicitly — the
+  same drift defence used for `array-literal` / `array-method`.
+
+  This is the foundational, byte-identical step that unblocks carrying signal
+  and local-`const` object/array values structurally on the IR (so the Go
+  adapter can drop its remaining `ts.createSourceFile` / value-regex lowering).
+  Adapters currently emit the new kind exactly as they emitted an object literal
+  before — through their `unsupported` path — and the IR-carry gates still treat
+  it like `unsupported`, so no emitted output changes.
+
+- e9ed338: Add `queryHref` — a pure, functional URL-query builder (#2042).
+
+  `queryHref(base, { … })` is the build counterpart to `searchParams()` (the reactive reader): instead of imperatively mutating a `URLSearchParams`, pass a params object of **string** values. Each entry is included iff its value is a non-empty string (so a conditional include folds into the value as `cond ? value : undefined`); values are encoded with `URLSearchParams`. It runs natively on the client and is a pure function (no reactivity). (Number/boolean values are intentionally not accepted — JS truthiness omits `0`/`false`, which the SSR string guard can't model without per-value type info; stringify at the call site.)
+
+  The go-template adapter lowers a `queryHref(base, { … })` call to `bf_query` directly — because the call and its object literal are already structured IR, there is no block-body recognizer and no emit-time re-parse. This is the functional alternative to the imperative `URLSearchParams` builder idiom: write the query inline (`href={queryHref(base, { … })}`) rather than a multi-statement helper.
+
+  Notes / scope:
+
+  - go-template SSR lowering only in this cut; Mojolicious / Xslate parity (their query helpers) is a follow-up. They keep the generic lowering until then.
+  - Helper wrappers whose params-object references the helper's params aren't inlined yet (a pre-existing inliner limitation, since object literals lower opaquely from source) — the direct call is the supported idiom.
+
+- d330fe1: Lower `queryHref` through a default-applied built-in `LoweringPlugin` instead of a per-adapter recognition branch (#2057). Its runtime stays in `@barefootjs/client`; the compiler registers `queryHrefPlugin` by default, so each adapter (go-template / mojolicious / xslate) recognises `queryHref(base, { … })` through the same registry matcher loop as any userland plugin and renders it to its query helper (`bf_query` / `bf->query` / `$bf.query`). Adapters no longer carry a queryHref-specific branch. Output is unchanged — `queryHref` still lowers identically.
+- 5b3b134: Retire the imperative `URLSearchParams` href-builder recognizer (#2042).
+
+  With `queryHref` shipped on every SSR adapter and the last usage migrated, the ad-hoc recognizer for the `(…) => { const u = new URLSearchParams(); … }` idiom is removed:
+
+  - `@barefootjs/jsx`: deleted `url-builder-shape.ts` (`recognizeUrlBuilder`), the `ConstantInfo.urlBuilder` field, and the `UrlBuilderInfo` / `UrlBuilderSet` types (compiler-internal surface added in #2039).
+  - `@barefootjs/go-template`: removed `lowerUrlBuilderHelperCall` and the builder emitter; `expr/url-builder.ts` now only lowers the structured `queryHref(base, { … })` call to `bf_query`.
+
+  No user-facing behavior change: components use `queryHref` (lowered structurally, no recognizer / re-parse). The trailing-slash `String.replace(/\/+$/, '')` → `strings.TrimRight` ctor lowering is independent and unchanged.
+
+- 758f4db: Lower the searchParams-derived object memo (#2015) through the general fold instead of a bespoke statement walk (#2040, PR-C of the memo follow-up stack).
+
+  `computeObjectMemoInitialValue` previously walked `parsedBlock` for `const sp = searchParams()` bindings + a terminal `return { … }`. It now folds the block with `foldBlockToExpr`, adding `searchParams` to the purity oracle (an idempotent request-query read, safe to inline at each `sp.get('k')` site), and lowers the resulting object-literal. `sp` is inlined to `searchParams()`, so `lowerCtorExpr` now recognises a `searchParams().get('k')` receiver in addition to the `const sp` env form. `foldBlockToExpr` is exported from `@barefootjs/jsx`.
+
+  This drops the statement-shape matching (var-decl scan + last-return check) for the object memo, and as a side benefit lowers an object memo that calls `searchParams().get('k')` directly without a `const` binding. A block that doesn't fold to an object literal returns null → the same nil fallback as before. Render parity verified by the Go adapter conformance + unit suites.
+
+- c8c7d50: Recognize the `searchParams` env signal structurally via `createSearchParams()` (#2057, part 1).
+
+  The request-scoped query env signal is now a `createSignal`-shaped factory the compiler recognizes by structure, removing the `searchParams` name allow-list from the compiler core:
+
+  ```tsx
+  // before
+  import { searchParams } from "@barefootjs/client";
+  searchParams().get("sort");
+
+  // after
+  import { createSearchParams } from "@barefootjs/client";
+  const [searchParams, setSearchParams] = createSearchParams();
+  searchParams().get("sort"); // reactive read
+  setSearchParams({ sort: "price" }); // single imperative navigation path
+  ```
+
+  Because `searchParams` is now a real signal getter, it lands in the fold purity oracle and reactive-getter set structurally — the clean fix for the fold-oracle special-casing (superseding the reverted #2055) with no name allow-list.
+
+  - `@barefootjs/client`: **breaking** — the bare `searchParams` export is replaced by `createSearchParams()`, which returns a `[getter, setter]` tuple. The getter is the request-scoped query reader (unchanged SSR + client resolution); `setSearchParams(next)` is the single imperative navigation path (soft same-route nav via the router seam, hard-nav fallback otherwise), replacing the confusing mutable-`URLSearchParams` write path. `SearchParamsInit` accepts a query string, `URLSearchParams`, or a record.
+  - `@barefootjs/jsx`: `createSearchParams` is a recognized signal primitive tagged with an `envReader` key on `SignalInfo`; `CLIENT_EXPORTS` swaps `searchParams` for `createSearchParams`; env-signal recognition flows from IR structure, not import names. Codegen keeps env signals out of normal value/field emission while leaving them in the reactivity graph.
+  - `@barefootjs/shared`: new `BF_SEAM_NAV_SEARCH` seam for imperative query navigation.
+  - Adapters (`go-template`, `hono`, `mojolicious`, `xslate`): env-signal reader lowering keys off signal structure instead of the import name; the per-request reader binding (`bf.SearchParams` / `$searchParams`) is unchanged.
+
+  Migration: replace `import { searchParams } from '@barefootjs/client'` + `searchParams()` with `import { createSearchParams } from '@barefootjs/client'` + `const [searchParams] = createSearchParams()`, and use `setSearchParams(...)` for imperative query navigation.
+
+- 837ae95: Carry a signal's parsed initial value on the IR (`SignalInfo.parsed`, Roadmap
+  A-3) and lower literal signal inits from it. The analyzer structures each
+  signal's `initialValue` once (best-effort, from the same type-stripped string
+  the adapter consumes). A new `ParsedExpr.literal.raw` field carries the numeric
+  literal's `ts.NumericLiteral.text` (TS's normalised token) so a structured
+  lowering matches the existing `ts.createSourceFile` path byte-for-byte instead
+  of the lossy `parseFloat` value. The Go adapter's scalar-array signal bake
+  (`convertInitialValue` → `jsLiteralToGo`) now reads the carried tree via a new
+  `parsedLiteralToGo` helper, which reproduces the scalar / scalar-array shapes
+  exactly and defers (returns null) everything else — object/struct-array baking,
+  empty arrays, `as const` — to the unchanged `ts.createSourceFile` fallback. So
+  only the reproduced shapes skip the re-parse; behaviour is byte-identical,
+  verified by the Go adapter unit + conformance suites.
+- 5d89c86: Carry a `SpreadAttr.parsed` tree on the IR so the Go adapter's conditional inline-object spread codegen lowers from the parsed tree instead of re-parsing the spread source with `ts.createSourceFile` (`parseLiteralExpression`). Additive and best-effort (mirrors `ExpressionAttr.parsed`); the generated Go is byte-identical (786/556 conformance + go-template tests unchanged).
+- d779e7b: Lower a spread bag's signal object-literal initial value (`{...attrs()}` where
+  `attrs` is `createSignal({ ... })`) from the carried IR tree instead of
+  re-parsing with `ts.createSourceFile`. The analyzer now parenthesises a signal's
+  `initialValue` before parsing (`(${initialValue})`), so a bare object-literal
+  init resolves to an `object-literal` `ParsedExpr` rather than being read as a
+  block — `parseExpression` unwraps the parens, so array / scalar / prop-ref inits
+  (the existing consumers) are unchanged. The Go spread codegen reads
+  `signal.parsed` via a new `parsedObjectLiteralToGoMap`; a non-object / spread /
+  computed init leaves `parsed` absent or non-object, returning null exactly as
+  the former string parser did. Byte-identical — verified by go unit (556),
+  conformance (786), and jsx unit (2216). Drops the adapter's package-wide
+  `ts.createSourceFile` count by one.
+
+  Also adds an optional `ObjectLiteralProperty.keyKind` (`identifier` / `string` /
+  `numeric`) to the shared `ParsedExpr` so the spread lowering can keep rejecting
+  numeric object keys (`{ 1: 'a' }`) exactly as the former parser did — `key`
+  normalises numeric and string keys to the same text. Additive and optional;
+  other consumers ignore it.
+
+- 53f1d4d: Untyped object-array signal struct synthesis now reads the analyzer-carried `signal.parsed` tree instead of re-parsing `initialValue` with `ts.createSourceFile` (`parseLiteralExpression`). Byte-identical output (786 adapter-tests / 556 go-template).
+- 86dde58: Lower a template-literal memo's SSR value from the carried IR tree instead of
+  re-parsing `computation` with `ts.createSourceFile`.
+  `computeTemplateLiteralMemoInitialValue` now reads the template from `memo.parsed`
+  (expression body) or `memo.parsedBlock` (block body — the Toggle `classes` memo,
+  collecting its `const X = props.Y ?? 'lit'` key bindings), and its interpolation
+  resolvers (`resolveTemplateInterpolation` / `parseLocalKeyBinding` / the
+  record-index lowering) operate on `ParsedExpr`. The record-index case reads the
+  `recordConst`'s carried `ConstantInfo.parsed` object-literal rather than the
+  shared `parseRecordIndexAccess` (which the other adapters keep using unchanged).
+  Byte-identical — verified by go unit (556) + conformance (786), including the
+  carousel class memos and the Toggle `variantClasses[variant]` record index.
+  Removes the `template-interp.ts` `ts.createSourceFile`.
+- 3938a6f: Carry the regex-`replace` shape as pure IR, retiring an emit-time `ts.createSourceFile` / `parseLiteralExpression` re-parse in the go-template adapter (#2039).
+
+  - The regex form of `String.replace` is now carried structurally (an `array-method` `replace` whose first arg is a `regex` node) rather than collapsing to `unsupported`, so the derived-memo constructor lowering recovers the `/\/+$/` trailing-slash strip → `strings.TrimRight` off the IR, with no `ts.createSourceFile` on the `bf build` hot path. Template use of a regex `.replace` stays refused with the same deferred-form diagnostic via `isSupported`.
+
+  No change to rendered HTML across the go-template, Mojolicious, and Xslate SSR adapters.
+
+- Updated dependencies [c8c7d50]
+  - @barefootjs/shared@0.17.0
+
 ## 0.16.0
 
 ### Patch Changes

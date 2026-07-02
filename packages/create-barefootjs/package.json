@@ -1,6 +1,6 @@
 {
   "name": "create-barefootjs",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Scaffold a new BarefootJS app — `npm create barefootjs@latest <dir>`",
   "type": "module",
   "main": "./dist/index.js",

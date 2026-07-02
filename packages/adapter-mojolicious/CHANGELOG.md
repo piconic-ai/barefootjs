@@ -1,5 +1,214 @@
 # @barefootjs/mojolicious
 
+## 0.17.0
+
+### Minor Changes
+
+- ec6072b: Add the shared Perl ParsedExpr evaluator for both backends (#2018, Track C).
+
+  `BarefootJS::Evaluator` lands in `packages/adapter-perl/lib/BarefootJS/`
+  (the engine-agnostic core, alongside `SearchParams.pm`) as **one**
+  implementation both the Mojo and Xslate backends share. It evaluates a
+  pure `ParsedExpr` callback body (`reduce` / `sort` / `map` / `filter` /
+  `find`) against an environment (`{acc, item, …captured free vars}`),
+  plus `fold` / `sort_by` — the evaluator-driven generalization of the
+  `bf->reduce` / `bf->sort` callback catalogue (any reducer / comparator
+  body, lifting the op and pattern restrictions).
+
+  The coercion is JS-faithful (ToNumber / ToString / ToBoolean, strict
+  equality, `Math.round` half-toward-+Infinity) and deliberately distinct
+  from the divergent `bf->string` / `number` helpers. It distinguishes a JS
+  _string_ `"10"` from a JS _number_ `10` via SV flags, so relational
+  comparison and the `+` overload match JS even for numeric strings —
+  proven isomorphic with the Go evaluator by the shared Track A golden
+  vectors (a new `t/eval_vectors.t` runs every `eval-vectors.json` case and
+  matches the JS reference exactly; same input → same output as Go).
+
+  Purely additive (core Perl only: `B` / `POSIX` / `Scalar::Util`); not yet
+  wired into emit, so existing template output is unchanged. The emit
+  migration is the follow-up integration (Track E).
+
+- 59b4efc: `queryHref` SSR parity for the Mojolicious and Xslate adapters (#2042).
+
+  `queryHref(base, { … })` now lowers to a `query` runtime helper on the Perl adapters, matching the go-template `bf_query` lowering shipped in #2044:
+
+  - **Mojolicious** lowers it to `bf->query(base, …)`, **Xslate** to `$bf.query(base, …)`. Each object property becomes a `(guard, key, value)` triple; the helper includes a pair iff its guard is truthy AND its value is a non-empty string — so a plain `key: v` passes guard `1`, and a conditional `key: cond ? v : undefined` passes the lowered condition (mirroring the client's `if (value)`).
+  - A new `query` helper in the shared Perl runtime (`BarefootJS.pm`) builds the URL with `URLSearchParams.set` overwrite semantics and `application/x-www-form-urlencoded` encoding (space → `+`, UTF-8 byte-wise), so the rendered query string equals the browser / Hono render byte-for-byte.
+  - `@barefootjs/jsx` gains a backend-neutral `matchQueryHrefCall` / `queryHrefArgs` helper shared by the SSR adapters' lowering.
+
+  Recognition handles aliased imports and both the `@barefootjs/client` and `@barefootjs/client/runtime` entry points. A non-literal params object falls back to the generic lowering.
+
+### Patch Changes
+
+- 679bb2d: Render carousel demos byte-identical to the Hono SSR reference on the Perl adapters (#1971).
+
+  - **Both adapters:** an inline object-literal child prop (carousel's `opts={{ align: 'start' }}`) is now lowered to a Perl/Kolon hashref instead of being refused with BF101, so the child can serialize it for `data-opts`.
+  - **Mojolicious:** a `<Ctx.Provider value>` member that references a client-only function — a local handler const (`scrollPrev`) or a signal setter (`setCanScrollPrev`) — is now lowered to `undef` instead of an undeclared `$scrollPrev`, which previously tripped Perl strict mode at render time. Members that resolve to a prop / signal getter / memo are unaffected.
+
+  All three carousel demos now render byte-identical HTML on Mojolicious, Text::Xslate, Go, and Hono (covered by `carousel-cross-adapter.test.ts`).
+
+- e0a8ec6: Collapse the two expression models into a single generic `ParsedExpr` (#2018 P5).
+
+  The compiler carried two parallel expression trees — the folded `ParsedExpr`
+  (which pre-extracted higher-order callbacks into specialized `higher-order` /
+  structured `array-method` kinds at parse time) and the generic `ParsedExpr2`
+  (call + member + multi-param arrow + regex, no folding). Now that the runtime
+  evaluator drives every higher-order callback body on both SSR backends (Go
+  `eval.go`, Perl `Evaluator.pm`), the folding workaround is retired and the two
+  models are unified on the single generic `ParsedExpr`.
+
+  - Higher-order callbacks (`.filter`/`.find`/`.findIndex`/`.findLast`/
+    `.findLastIndex`/`.every`/`.some`/`.sort`/`.toSorted`/`.reduce`/`.reduceRight`/
+    `.flatMap`) now parse to a generic `call` whose argument is a generic `arrow`;
+    the adapter serializes the arrow body to the runtime evaluator (eval-first)
+    and recovers a structured comparator (`sortComparatorFromArrow`) only for the
+    `localeCompare` sort fallback the evaluator can't model.
+  - Deleted the folded kinds (`higher-order`, `arrow-fn`, the structured sort /
+    reduce / flatMap `array-method` variants), their `extract*FromTS` extractors,
+    the `ParsedExpr2` tree, and the `parseExpression2` / bridge functions. The Go
+    constructor lowering now reads the single generic `parsed` tree.
+
+  Behavior-neutral: emitted SSR template text changes (`bf_sort …` →
+  `bf_sort_eval … "<json>"`), but rendered HTML is identical across Go, Mojo, and
+  Xslate (CSR conformance, real Go/Perl render parity, and `eval-vectors`
+  Go==Perl==JS gate it).
+
+- 96696bd: Normalize block-bodied `.filter()` predicates to a single boolean expression at IR-build time (#2040), retiring the per-adapter block-condition renderers.
+
+  A `filter(t => { … })` predicate is now folded with `foldBlockToExpr` (let-inline + early-return/`if` → ternary) and the boolean-context ternary is rewritten to `&&`/`||` via the new `predicateTernaryToLogical`, so it flows through the same expression-predicate path as `filter(t => !t.done)`. The IR's `filterPredicate.blockBody` field is removed — adapters only ever see `filterPredicate.predicate`.
+
+  `foldBlockToExpr` gains an optional `pureCallNames` oracle: an idempotent reactive getter read (`const f = filter()`) counts as pure, so a signal read on several branches still folds (the canonical TodoApp `active`/`completed`/`all` filter). `jsx-to-ir` supplies the analyzer's signal/memo names.
+
+  The Go / Mojolicious / Xslate adapters drop their now-dead `renderBlockBodyCondition` / `collectReturnPaths` / `buildSinglePathCondition` / `buildOrCondition` / `renderConditionsAnd` helpers; the shared expression-predicate renderer subsumes them. Render parity is unchanged (adapter conformance — Go + Perl — green; the boolean condition is truth-table-equivalent to the old OR-of-ANDs). Genuinely imperative filter blocks (loops, `break`, mutation) now refuse with BF021/BF101 instead of falling through.
+
+- b57ed47: Lower `.flatMap(proj)` through the runtime evaluator (#2018, P3). The projection
+  body serializes to a ParsedExpr JSON blob and `bf_flat_map_eval` /
+  `bf->flat_map_eval` / `$bf.flat_map_eval` projects each element then flattens
+  one level, generalizing the structured self / field / tuple
+  (`bf_flat_map` / `bf_flat_map_tuple`) catalogue to any pure projection. A
+  projection the evaluator can't model falls back to the structured helper. The
+  shared runtime gains `BarefootJS::Evaluator::flat_map` / `flat_map_json` and a
+  `flat_map_eval` controller helper (Go `FlatMapEval`, registered as
+  `bf_flat_map_eval`). Rendered HTML is unchanged; only the emitted template text
+  moves to the evaluator helper. (`.flat(depth?)` is a non-callback array method
+  and stays folded.)
+- b725f3c: Lower the `.sort().map()` loop-hoist comparator through the runtime evaluator
+  (#2018, P3). The chained-sort site that wraps a loop's iterable now serializes
+  the comparator body and emits `bf_sort_eval` / `bf->sort_eval` / `$bf.sort_eval`
+  (the same path the standalone `.sort(cmp)` value call uses since P1), with
+  captured free vars threaded as the env argument. A comparator the evaluator
+  can't model (e.g. `localeCompare`, including a `||`-chain that ends in one)
+  falls back to the legacy structured `bf_sort` / `bf->sort` path, so behavior
+  there is unchanged. Rendered HTML is unchanged; only the emitted template text
+  moves to the evaluator helper. The `.filter().map()` loop gate stays an inline
+  `{{if}}` / `: if` on the raw predicate (already de-folded). This removes the
+  last standalone consumer of the structured `SortComparator` outside the parser,
+  ahead of collapsing the folded `ParsedExpr` model.
+- 25a9c0f: Introduce a backend-neutral call-lowering plugin registry (#2057, part 2).
+
+  The compiler core no longer hardcodes how a pure builder call like `queryHref(base, { … })` is recognized and lowered. A lowering plugin _matches_ a call to a backend-neutral `LoweringNode`; each adapter _renders_ that node in its own template syntax (`bf_query` / `bf->query` / `$bf.query`). This is a two-layer split — recognition is adapter-agnostic, rendering is plugin-agnostic — so SSR/CSR parity is enforced once, not per plugin.
+
+  New `@barefootjs/jsx` exports: `registerLoweringPlugin`, `prepareLoweringMatchers`, `matchLoweringCall`, `getLoweringPlugins`, and the `LoweringPlugin` / `LoweringNode` / `LoweringMatcher` types. `queryHref` is still registered by core for now; a later change relocates that registration to the router layer so core carries no runtime-API names.
+
+  Output is byte-identical: the Go / Mojolicious / Xslate adapters now obtain their query lowering through the registry instead of a hardcoded `queryHref` recognizer, producing the same templates as before.
+
+- f3b26ac: Refactor the Mojolicious and Text::Xslate adapters: decompose the monolithic single-file `MojoAdapter` (~2994 lines) and `XslateAdapter` (~2561 lines) into the same focused domain modules the Go adapter uses, behind a narrow `*EmitContext` seam (issue #2018 track D).
+
+  Internal-only, output byte-identical (verified by the adapter conformance suites — mojo 527 pass / 0 fail, xslate 353 pass / 0 fail). No behavioural or public-API change (`MojoAdapterOptions` / `XslateAdapterOptions` re-exported unchanged):
+
+  - `emit-context.ts` — `*EmitContext` / `*SpreadContext` / `*MemoContext`: the contracts the extracted modules depend on instead of the concrete adapter class.
+  - `lib/types.ts` / `lib/constants.ts` / `lib/{perl,kolon}-naming.ts` / `lib/ir-scope.ts` — render-context & options types, the template-primitive tables, Perl/Kolon hash-key quoting, and IR scope traversal.
+  - `analysis/component-tree.ts` — `hasClientInteractivity` and the BF103 imported-loop-child check.
+  - `value/parsed-literal.ts` — const-initializer string-literal lowering and string-type helpers.
+  - `expr/operand.ts` / `expr/array-method.ts` / `expr/emitters.ts` — operand-type classification, the array/string method lowering, and the filter- and top-level `ParsedExpr` emitters.
+  - `memo/seed.ts` — in-template derived-memo / context seeding.
+  - `spread/spread-codegen.ts` — conditional-spread / object-literal → Perl/Kolon hashref lowering.
+  - `props/prop-classes.ts` — per-compile prop classification sets.
+
+  `type/` is intentionally absent: unlike the Go adapter, these template targets are dynamically typed and emit no struct/type codegen.
+
+  Helpers that are byte-identical across the two Perl-family adapters are marked `SHARED CANDIDATE` as groundwork for a future shared Perl-evaluator codegen module.
+
+- b19b256: Lower conditional-spread and inline object-literal expressions from the IR-carried structured `ParsedExpr` tree instead of re-parsing source with `ts.createSourceFile` at emit time (#2018, mirroring go-template's U5/U6/Roadmap-A). Behaviour and output are unchanged — the condition and scalar values still route through `convertExpressionToPerl` / `convertExpressionToKolon`, which re-parse, so the emitted Perl/Kolon stays byte-identical. The now-orphaned `parsePureStringLiteral` (superseded by the shared `collectModuleStringConsts`) was removed from the Mojo adapter.
+- dc845ef: Remove the spread-lowering `ParsedExpr` round-trip in the Mojolicious and Xslate adapters (#2018).
+
+  The conditional-spread / object-literal spread codegen previously re-stringified the IR-carried `ParsedExpr` tree (`stringifyParsedExpr`) and routed it back through `convertExpressionToPerl` / `convertExpressionToKolon`, which re-parsed the text. The seam now matches go-template's `convertExpressionToGo(jsExpr, out?, preParsed?)`: the converters accept an optional `preParsed?: ParsedExpr` and thread the carried tree straight through, eliminating the stringify→re-parse round-trip. Output is byte-identical (the carried tree is exactly what re-parsing the stringified text produced). `stringifyParsedExpr` is retained only for BF101 diagnostic message text.
+
+- fd4655c: Add an `object-literal` kind to `ParsedExpr` (Roadmap A-1). The expression
+  parser now structures plain object literals (`{ a: 1, b: x }` / shorthand
+  `{ a }`) into `{ kind: 'object-literal', properties, raw }` instead of falling
+  through to `unsupported`; spread, computed-key, method, and getter/setter
+  literals still fall through unchanged. A matching `objectLiteral` method was
+  added to the shared `ParsedExprEmitter` dispatcher, so every adapter
+  (`go-template`, `mojolicious`, `xslate`) handles the new kind explicitly — the
+  same drift defence used for `array-literal` / `array-method`.
+
+  This is the foundational, byte-identical step that unblocks carrying signal
+  and local-`const` object/array values structurally on the IR (so the Go
+  adapter can drop its remaining `ts.createSourceFile` / value-regex lowering).
+  Adapters currently emit the new kind exactly as they emitted an object literal
+  before — through their `unsupported` path — and the IR-carry gates still treat
+  it like `unsupported`, so no emitted output changes.
+
+- 39fc2ea: Lower standalone `.sort(cmp)` / `.reduce(fn, init)` on the Mojolicious and
+  Xslate adapters through the runtime evaluator (#2018, P1 — the Perl half of the
+  Go change). The comparator / reducer body is serialized to a ParsedExpr JSON
+  blob and evaluated per element by the new `bf->sort_eval` / `bf->reduce_eval`
+  (`$bf.sort_eval` / `$bf.reduce_eval` in Xslate) helpers, with captured free
+  variables threaded as a `base_env` hashref — generalizing the fixed `bf->sort` /
+  `bf->reduce` catalogues to any pure comparator / reducer body. A comparator the
+  evaluator can't model (e.g. `localeCompare`) falls back to the legacy `bf->sort`
+  path, so behavior there is unchanged. The shared Perl runtime gains
+  `BarefootJS::Evaluator::fold_json` / `sort_by_json` (the JSON-string seam the
+  templates emit into) and the `sort_eval` / `reduce_eval` controller helpers.
+  Rendered HTML is unchanged; only the emitted template text moves to the
+  evaluator helpers. The chained `.sort().map()` / `.filter().map()` loop-hoist
+  keeps the legacy path until its own phase (P3).
+- 6147144: Lower higher-order methods (`.filter` / `.find` / `.findIndex` / `.findLast` /
+  `.findLastIndex` / `.every` / `.some`) on the Mojolicious and Xslate adapters
+  through the runtime evaluator (#2018, P2 — the Perl half of the Go change). The
+  predicate body serializes to a ParsedExpr JSON blob and emits
+  `bf->filter_eval` / `bf->find_eval` / `bf->find_index_eval` / `bf->every_eval` /
+  `bf->some_eval` (`$bf.…` in Xslate), with captured free vars threaded as a
+  `base_env` hashref — the same JS-faithful evaluator the Go adapter uses, so the
+  two SSR backends stay byte-isomorphic. A predicate the evaluator can't model
+  (e.g. a method-call predicate) falls back to the inline `grep` / Kolon-lambda /
+  `bf->find` lowering, and `.filter(Boolean)` keeps its inline truthiness form.
+
+  The shared `BarefootJS` runtime gains `filter_eval` / `every_eval` / `some_eval`
+  / `find_eval` / `find_index_eval` controller helpers, delegating to the
+  `BarefootJS::Evaluator` predicate helpers. Rendered HTML is unchanged; only the
+  emitted template text moves to the evaluator helpers.
+
+- d330fe1: Lower `queryHref` through a default-applied built-in `LoweringPlugin` instead of a per-adapter recognition branch (#2057). Its runtime stays in `@barefootjs/client`; the compiler registers `queryHrefPlugin` by default, so each adapter (go-template / mojolicious / xslate) recognises `queryHref(base, { … })` through the same registry matcher loop as any userland plugin and renders it to its query helper (`bf_query` / `bf->query` / `$bf.query`). Adapters no longer carry a queryHref-specific branch. Output is unchanged — `queryHref` still lowers identically.
+- c8c7d50: Recognize the `searchParams` env signal structurally via `createSearchParams()` (#2057, part 1).
+
+  The request-scoped query env signal is now a `createSignal`-shaped factory the compiler recognizes by structure, removing the `searchParams` name allow-list from the compiler core:
+
+  ```tsx
+  // before
+  import { searchParams } from "@barefootjs/client";
+  searchParams().get("sort");
+
+  // after
+  import { createSearchParams } from "@barefootjs/client";
+  const [searchParams, setSearchParams] = createSearchParams();
+  searchParams().get("sort"); // reactive read
+  setSearchParams({ sort: "price" }); // single imperative navigation path
+  ```
+
+  Because `searchParams` is now a real signal getter, it lands in the fold purity oracle and reactive-getter set structurally — the clean fix for the fold-oracle special-casing (superseding the reverted #2055) with no name allow-list.
+
+  - `@barefootjs/client`: **breaking** — the bare `searchParams` export is replaced by `createSearchParams()`, which returns a `[getter, setter]` tuple. The getter is the request-scoped query reader (unchanged SSR + client resolution); `setSearchParams(next)` is the single imperative navigation path (soft same-route nav via the router seam, hard-nav fallback otherwise), replacing the confusing mutable-`URLSearchParams` write path. `SearchParamsInit` accepts a query string, `URLSearchParams`, or a record.
+  - `@barefootjs/jsx`: `createSearchParams` is a recognized signal primitive tagged with an `envReader` key on `SignalInfo`; `CLIENT_EXPORTS` swaps `searchParams` for `createSearchParams`; env-signal recognition flows from IR structure, not import names. Codegen keeps env signals out of normal value/field emission while leaving them in the reactivity graph.
+  - `@barefootjs/shared`: new `BF_SEAM_NAV_SEARCH` seam for imperative query navigation.
+  - Adapters (`go-template`, `hono`, `mojolicious`, `xslate`): env-signal reader lowering keys off signal structure instead of the import name; the per-request reader binding (`bf.SearchParams` / `$searchParams`) is unchanged.
+
+  Migration: replace `import { searchParams } from '@barefootjs/client'` + `searchParams()` with `import { createSearchParams } from '@barefootjs/client'` + `const [searchParams] = createSearchParams()`, and use `setSearchParams(...)` for imperative query navigation.
+
+- Updated dependencies [c8c7d50]
+  - @barefootjs/shared@0.17.0
+
 ## 0.16.0
 
 ### Patch Changes
