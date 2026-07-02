@@ -62,18 +62,20 @@ const PREDICATE_METHODS = new Set<HigherOrderMethod>([
  * filters. Higher-order predicates are emitted using Kolon's own scalar
  * comparison operators (which delegate to Perl semantics).
  *
- * NOTE: Kolon has no `grep { } @{...}` form, so nested higher-order chains
- * (`x.tags.filter(...).length`) inside a predicate route through the
- * top-level emitter's `$bf`-helper higher-order lowering. This emitter keeps
- * the scalar-comparison surface the predicates the adapter accepts actually
- * use; richer nested shapes fall back to the helper or surface as BF101 via
- * the top-level emitter.
+ * NOTE: Kolon has no `grep { } @{...}` form, so a nested higher-order call
+ * (`x.tags.filter(...)`, `other.some(...)`) inside a predicate has no faithful
+ * scalar lowering here. Such predicates surface BF101 via `onUnsupported`
+ * (#2038) instead of silently degrading to the callback's receiver.
  */
 export class XslateFilterEmitter implements ParsedExprEmitter {
   constructor(
     private readonly param: string,
     private readonly localVarMap: Map<string, string>,
     private readonly isStringName: (n: string) => boolean = () => false,
+    // Records a BF101 for predicate shapes this emitter can only degrade
+    // (#2038). Optional so emitter construction stays possible without an
+    // adapter; a missing hook keeps the old silent-degrade emit.
+    private readonly onUnsupported?: (message: string, reason?: string) => void,
   ) {}
 
   identifier(name: string): string {
@@ -155,12 +157,15 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     _restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
-    // Nested callback method inside a filter predicate has no Kolon scalar
-    // form; defer to the receiver so the predicate at least references a real
-    // value (a richer chain would surface its own diagnostic at the top level).
-    // Matches the pre-#2018-P5 `higherOrder` arm, which returned `emit(object)`
-    // for every method.
-    void method
+    // A nested callback method inside a filter predicate has no Kolon scalar
+    // form. The pre-#2038 behavior degraded it to its receiver, which silently
+    // changes predicate semantics (`!other.some(r => …)` collapses to
+    // `!other`), so surface BF101 instead. The receiver emit is kept only so
+    // the template stays syntactically valid while the build fails.
+    this.onUnsupported?.(
+      `Filter predicate contains a nested '.${method}(...)' callback, which has no Kolon scalar form`,
+      `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
+    )
     return emit(object)
   }
 

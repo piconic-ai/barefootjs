@@ -101,6 +101,14 @@ runAdapterConformanceTests({
     // Tagged-template-literal call in a className — same family, same
     // refusal (BF101).
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // #2038: a filter predicate whose body contains a NESTED callback call
+    // (`t => !picked().some(p => …)`). Kolon has no inline `grep` form, so
+    // `XslateFilterEmitter.callbackMethod` used to degrade the inner call to
+    // its receiver, silently changing predicate semantics — the compiler is
+    // loud instead of lossy. (Mojo is NOT pinned: it lowers the nested
+    // `.some` to a real inline Perl `grep`.)
+    // https://github.com/piconic-ai/barefootjs/issues/2038
+    'filter-nested-callback-predicate': [{ code: 'BF101', severity: 'error' }],
     // NB: `.find` / `.findIndex` / `.findLast` / `.findLastIndex` are NOT
     // pinned here — unlike mojo (which refuses them), Xslate lowers them to
     // `$bf.find` / `find_index` / `find_last` / `find_last_index` via the same
@@ -344,5 +352,41 @@ export { A }
     expect(template).not.toContain('every_eval')
     expect(template).toContain('$bf.every(')
     expect(template).toContain('-> $x {')
+  })
+})
+
+describe('XslateAdapter - nested callback inside a predicate is loud (#2038)', () => {
+  // Kolon has no inline `grep` form, so a nested callback call inside a
+  // predicate body has no faithful scalar lowering. Pre-#2038 the
+  // Kolon-lambda fallback degraded the inner call to its receiver
+  // (`!picked().some(p => …)` → `!$picked`), silently changing predicate
+  // semantics — the thread-demo repro. The emit must surface BF101 instead.
+  const nestedSomeSource = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number }
+export function Picker() {
+  const [items, setItems] = createSignal<Item[]>([])
+  const [picked, setPicked] = createSignal<Item[]>([])
+  return <ul>{items().filter(t => !picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+}
+`
+
+  test('nested .some(...) in a loop filter predicate surfaces BF101', () => {
+    const adapter = new XslateAdapter()
+    const result = compileJSX(nestedSomeSource.trimStart(), 'test.tsx', { adapter })
+    const bf101 = result.errors?.filter(e => e.code === 'BF101') ?? []
+    expect(bf101.length).toBeGreaterThan(0)
+    expect(bf101.some(e => e.message.includes(".some(...)"))).toBe(true)
+  })
+
+  test('nested .some(...) + /* @client */ suppresses BF101', () => {
+    const adapter = new XslateAdapter()
+    const result = compileJSX(
+      nestedSomeSource.replace('<ul>{items()', '<ul>{/* @client */ items()').trimStart(),
+      'test.tsx',
+      { adapter },
+    )
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
   })
 })

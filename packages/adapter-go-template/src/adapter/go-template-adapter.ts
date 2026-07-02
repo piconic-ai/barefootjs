@@ -3657,6 +3657,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return `$.${capitalizeFieldName(expr.callee.name)}`
         }
+        // A nested callback method call (`other.some(r => …)`) reaching this
+        // arm has no Go template form in filter context — the fallthrough
+        // below renders only the callee and silently DROPS the arrow argument,
+        // changing predicate semantics (#2038). The one faithful nested shape
+        // (`.filter(cb).length` → `len (bf_filter_eval …)`) is intercepted at
+        // the `member` arm before this node is visited; everything else must
+        // be loud.
+        if (asCallbackMethodCall(expr) !== null) {
+          return this.refuseFilterExprNode(expr)
+        }
         const result = this.renderFilterExpr(expr.callee, param, localVarMap)
         if (this.filterExprUnsupported) return 'false'
         return result
@@ -3721,29 +3731,35 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return `or (${left}) (${right})`
       }
 
-      default: {
-        // The filter predicate body contains a node kind we can't lower to a Go
-        // template action — most commonly a nested higher-order
-        // (`x => x.tags.filter(...).length > 0`). Surface BF101 with the
-        // offending expression. Set the recursion-wide `filterExprUnsupported`
-        // flag so parent branches return `false` instead of wrapping the
-        // sentinel into `false.Length` / `gt false.Length 0` etc.: the build
-        // fails on BF101 anyway, but the emitted template must stay
-        // syntactically valid so `text/template` parsing doesn't cascade into
-        // confusing secondary errors.
-        this.filterExprUnsupported = true
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Filter predicate contains an expression that cannot be lowered to a Go template action: ${exprToString(expr)}`,
-          loc: this.makeLoc(),
-          suggestion: {
-            message: 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Rewrite the predicate to avoid nested higher-order methods (`.filter()` / `.map()` / etc. inside the predicate body)',
-          },
-        })
-        return 'false'
-      }
+      default:
+        // The filter predicate body contains a node kind we can't lower to a
+        // Go template action. Shared refusal with the nested-callback guard in
+        // the `call` arm (#2038).
+        return this.refuseFilterExprNode(expr)
     }
+  }
+
+  /**
+   * Refuse a filter-predicate node that has no Go template lowering. Surfaces
+   * BF101 with the offending expression and sets the recursion-wide
+   * `filterExprUnsupported` flag so parent branches return `false` instead of
+   * wrapping the sentinel into `false.Length` / `gt false.Length 0` etc.: the
+   * build fails on BF101 anyway, but the emitted template must stay
+   * syntactically valid so `text/template` parsing doesn't cascade into
+   * confusing secondary errors.
+   */
+  private refuseFilterExprNode(expr: ParsedExpr): string {
+    this.filterExprUnsupported = true
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Filter predicate contains an expression that cannot be lowered to a Go template action: ${exprToString(expr)}`,
+      loc: this.makeLoc(),
+      suggestion: {
+        message: 'Options:\n1. Use /* @client */ for client-side evaluation\n2. Rewrite the predicate to avoid nested higher-order methods (`.filter()` / `.map()` / etc. inside the predicate body)',
+      },
+    })
+    return 'false'
   }
 
   /**

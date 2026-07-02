@@ -2207,8 +2207,12 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       // the receiver and the callback BODY are supported. Recognised before the
       // `UNSUPPORTED_METHODS` gate so the eval-lowered shapes aren't refused
       // (a BARE method reference — `arr.filter` uncalled, no arrow arg — still
-      // falls through to the gate). A nested callback inside the body refuses
-      // at the adapter's `serializeParsedExpr` purity gate, not here.
+      // falls through to the gate). A nested callback inside the body is NOT
+      // refused here: the evaluator refuses it (`serializeParsedExpr` → null)
+      // and each adapter then either lowers it faithfully (Mojo's inline
+      // `grep`, Go's `len (bf_filter_eval …)`) or surfaces BF101 at its
+      // predicate fallback's exact degrade points (#2038) — a blanket refusal
+      // here would break the faithful shapes (#1443 PR4).
       const cb = asCallbackMethodCall(expr)
       if (cb) {
         const objSupport = checkSupport(cb.object)

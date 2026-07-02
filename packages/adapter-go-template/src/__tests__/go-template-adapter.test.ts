@@ -98,6 +98,13 @@ runAdapterConformanceTests({
     // (`cn\`base \${tone()}\``) likewise can't lower into Go template
     // syntax — same BF101 refusal.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // #2038: a filter predicate whose body contains a NESTED callback call
+    // (`t => !picked().some(p => …)`). The evaluator refuses nested arrows
+    // and `renderFilterExpr` has no faithful Go form for the inner call (its
+    // `call` arm used to silently drop the arrow argument and render only
+    // the callee) — the compiler is loud instead of lossy.
+    // https://github.com/piconic-ai/barefootjs/issues/2038
+    'filter-nested-callback-predicate': [{ code: 'BF101', severity: 'error' }],
     // #1310: rest destructure in .map() callback. The object-rest shape read
     // via member access (`rest-destructure-object-in-map`) now lowers — each
     // binding resolves to a field on a synthetic `$__bf_item0` range var (the
@@ -1824,6 +1831,53 @@ export function TodoList() {
       ))}
     </ul>
   )
+}
+`, adapter)
+      adapter.generate(ir)
+      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
+      expect(bf101).toEqual([])
+    })
+
+    test('nested .some(...) in filter predicate surfaces BF101 instead of dropping the callback (#2038)', () => {
+      // Pre-#2038 the `call` arm of `renderFilterExprNode` rendered only the
+      // callee for a nested callback call, silently DROPPING the arrow
+      // argument (`!picked().some(p => p.id === t.id)` degraded to a bogus
+      // field-path read) — a lossy predicate rewrite. The compiler is loud
+      // now: BF101 with the /* @client */ escape hatch.
+      const adapter = new GoTemplateAdapter()
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Item = { id: number }
+
+export function Picker() {
+  const [items, setItems] = createSignal<Item[]>([])
+  const [picked, setPicked] = createSignal<Item[]>([])
+  return <ul>{items().filter(t => !picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+}
+`, adapter)
+      const bf101 = adapter.errors.filter(e => e.code === 'BF101')
+      expect(bf101.length).toBeGreaterThan(0)
+      expect(bf101.some(e => e.message.includes('.some('))).toBe(true)
+      // The emitted template must stay syntactically valid (refusal sentinel,
+      // not a half-rendered predicate).
+      expect(result.template).not.toContain('.Some')
+      expect(result.template).toContain('{{if false}}')
+    })
+
+    test('nested .some(...) in filter predicate + /* @client */ suppresses BF101 (#2038)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Item = { id: number }
+
+export function Picker() {
+  const [items, setItems] = createSignal<Item[]>([])
+  const [picked, setPicked] = createSignal<Item[]>([])
+  return <ul>{/* @client */ items().filter(t => !picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.id}</li>)}</ul>
 }
 `, adapter)
       adapter.generate(ir)

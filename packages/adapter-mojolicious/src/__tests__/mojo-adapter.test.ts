@@ -792,6 +792,47 @@ export function C() {
     expect(template).toContain('scalar(@{[grep { $_->{active} } @{$t->{tags}}]})')
   })
 
+  test('lowers nested .some(...) in filter predicate to an inline grep — no BF101 (#2038)', () => {
+    // The evaluator refuses the nested arrow (`serializeParsedExpr` → null),
+    // but the Perl filter emitter has a FAITHFUL form for nested
+    // filter / every / some: a real inline `grep` closing over the outer
+    // loop var. Pin it positively so the #2038 loudness fix (which targets
+    // the degrade-only arms: nested `find*`, sort / reduce / flatMap) never
+    // over-reaches into this supported shape.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number }
+export function Picker() {
+  const [items] = createSignal<Item[]>([])
+  const [picked] = createSignal<Item[]>([])
+  return <ul>{items().filter(t => !picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('grep')
+    expect(template).toContain('@{$picked}')
+  })
+
+  test('nested .find(...) in filter predicate surfaces BF101 instead of degrading to its receiver (#2038)', () => {
+    // `find*` returns an element, not a boolean — there is no inline grep
+    // form, and the pre-#2038 emitter silently degraded the call to its
+    // receiver (`picked().find(p => …)` → `$picked`), changing predicate
+    // semantics. The compiler is loud now.
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; parent: number }
+export function Picker() {
+  const [items] = createSignal<Item[]>([])
+  const [picked] = createSignal<Item[]>([])
+  return <ul>{items().filter(t => picked().find(p => p.id === t.parent) !== null).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+}`, 'C.tsx', { adapter })
+    const bf101 = result.errors?.filter(e => e.code === 'BF101') ?? []
+    expect(bf101.length).toBeGreaterThan(0)
+    expect(bf101.some(e => e.message.includes(".find(...)"))).toBe(true)
+  })
+
   test('lowers .filter(function (x) { return x.done }).map(...) — function-keyword filter (#1443)', () => {
     // Function expressions with a single `return <expr>` body normalise
     // to the arrow-fn IR shape at parse time, so the higher-order
