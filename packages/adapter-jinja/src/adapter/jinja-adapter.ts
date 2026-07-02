@@ -140,7 +140,7 @@ import {
   queryHrefArgs,
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
-import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
+import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
@@ -1025,8 +1025,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         this.nullableOptionalProps.has(normalizedBareId)
       ) {
         const jinja = this.convertExpressionToJinja(value.expr)
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+        const body = this.shouldBoolStr(value.expr, name)
             ? `${name}="{{ bf.bool_str(${jinja}) }}"`
             : `${name}="{{ bf.string(${jinja}) }}"`
         // `jinja` is a bare identifier reference for this narrowly-gated
@@ -1053,8 +1052,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         // both the guard and the value.
         const jinja = this.convertExpressionToJinja(value.expr)
         const tmp = `bf_pu${this.presenceVarCounter++}`
-        const body =
-          isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)
+        const body = this.shouldBoolStr(value.expr, name)
             ? `${name}="{{ bf.bool_str(${tmp}) }}"`
             : `${name}="{{ bf.string(${tmp}) }}"`
         return `\n{% set ${tmp} = ${jinja} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp)} %}\n${body}\n{% endif %}\n`
@@ -1077,7 +1075,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       // other value is a text-position interpolation — route through
       // `bf.string` (see the file header, divergence 2).
       const jinja = this.convertExpressionToJinja(value.expr)
-      if (isBooleanResultExpr(value.expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(value.expr)) {
+      if (this.shouldBoolStr(value.expr, name)) {
         return `${name}="{{ bf.bool_str(${jinja}) }}"`
       }
       return `${name}="{{ bf.string(${jinja}) }}"`
@@ -1518,6 +1516,23 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     }
     if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
     return this.booleanTypedProps.has(bare)
+  }
+
+  /**
+   * Whether an attribute-value expression should route through
+   * `bf.bool_str` (vs. plain `bf.string`) at its interpolation site.
+   * `isExplicitStringCall` is checked FIRST and short-circuits the other
+   * three: an explicit `String(x)` call already lowers to `bf.string(x)`,
+   * which — unlike Kolon's Perl port — correctly stringifies a real
+   * boolean on its own (see `runtime.js_string`'s bool branch), so
+   * layering `bf.bool_str` on top would run Python truthiness over the
+   * ALREADY-STRINGIFIED text instead of the original boolean. See
+   * `isExplicitStringCall`'s docstring in `boolean-result.ts` for the full
+   * double-wrap failure mode this guards against.
+   */
+  private shouldBoolStr(expr: string, name: string): boolean {
+    if (isExplicitStringCall(expr)) return false
+    return isBooleanResultExpr(expr) || isAriaBooleanAttr(name) || this.isBooleanTypedPropRef(expr)
   }
 
   /**

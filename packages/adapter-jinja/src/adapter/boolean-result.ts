@@ -99,6 +99,40 @@ export function isBooleanResultExpr(expr: string): boolean {
 }
 
 /**
+ * True when `expr`'s top-level shape is an explicit JS `String(x)` call
+ * (the `EVAL_BUILTIN_IDENTS` builtin the compiler recognizes structurally —
+ * `packages/jsx/src/expression-parser.ts`'s `EVAL_BUILTIN_IDENTS`; lowered
+ * by this adapter's `String` template primitive to `bf.string(x)`, see
+ * `lib/constants.ts`).
+ *
+ * Guards the `isAriaBooleanAttr`-driven `bf.bool_str(...)` override in
+ * `jinja-adapter.ts`'s `elementAttrEmitter`: `bf.string` and `bf.bool_str`
+ * produce IDENTICAL text for a real Python `bool` (both are `"true"` /
+ * `"false"`), so applying `bf.bool_str` to `String(x)`'s ALREADY-STRINGIFIED
+ * result is not a no-op — it is a Python-truthiness test over that STRING
+ * ("false" is a non-empty Python string, hence truthy, so
+ * `bf.bool_str(bf.string(false))` would wrongly render `"true"`). The Kolon
+ * port has the identical double-wrap shape and "works" only by an
+ * unrelated accident (`JSON::PP::Boolean` stringifies to `"0"`/`"1"`, and
+ * Perl specifically treats the STRING `"0"` as falsy) that doesn't hold in
+ * Python. An author who explicitly writes `String(...)` has already opted
+ * into JS `String()` semantics — `bf.string(x)` alone (which DOES special-
+ * case booleans, see `runtime.js_string`) is the complete, correct
+ * lowering; no attribute-name-driven override should run again on top of
+ * it.
+ */
+export function isExplicitStringCall(expr: string): boolean {
+  const parsed = parseExpression(expr.trim())
+  return (
+    !!parsed &&
+    parsed.kind === 'call' &&
+    parsed.callee.kind === 'identifier' &&
+    parsed.callee.name === 'String' &&
+    parsed.args.length === 1
+  )
+}
+
+/**
  * ARIA attributes whose spec values are `"true"`, `"false"`, and (for
  * tri-state members) `"mixed"`. When a fixture binds one of these to an
  * arbitrary JS expression (`aria-checked={accepted()}`), the expression's
