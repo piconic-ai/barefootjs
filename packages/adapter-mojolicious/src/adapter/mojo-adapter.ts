@@ -1389,13 +1389,22 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // now lowering `.length` on a higher-order object to
     // `scalar(@{...})`, the canonical
     // `x.tags.filter(t => t.active).length > 0` shape lowers
-    // cleanly. Predicates that combine a nested higher-order with
-    // something OTHER than `.length` (e.g. `.includes`, `.join`)
-    // still fall back to whatever the emitter produces — most of
-    // those would yield runtime errors in Perl, which is the user's
-    // signal to refactor. Wholesale refusal would also block the
-    // canonical case the issue exists to enable.
-    return emitParsedExpr(expr, new MojoFilterEmitter(param, localVarMap, n => this._isStringValueName(n)))
+    // cleanly, and nested `filter` / `every` / `some` lower to real
+    // inline `grep` forms. The shapes the emitter can only DEGRADE
+    // (nested `find*`, sort / reduce / flatMap inside a predicate)
+    // surface BF101 through the hook below instead of silently
+    // rewriting the predicate (#2038). Wholesale refusal would block
+    // the canonical case #1443 exists to enable, so the gate lives at
+    // the exact degrade points inside `MojoFilterEmitter.callbackMethod`.
+    return emitParsedExpr(
+      expr,
+      new MojoFilterEmitter(
+        param,
+        localVarMap,
+        n => this._isStringValueName(n),
+        (message, reason) => this._recordExprBF101(message, reason),
+      ),
+    )
   }
 
   // ===========================================================================

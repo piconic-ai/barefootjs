@@ -81,6 +81,11 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // against it lowers to `eq`/`ne` (#1672). Defaults to "never" for callers
     // that don't thread it through.
     private readonly isStringName: (n: string) => boolean = () => false,
+    // Records a BF101 for nested callback shapes this emitter can only
+    // degrade — `find*` and the non-predicate methods (#2038). Optional so
+    // emitter construction stays possible without an adapter; a missing hook
+    // keeps the old silent-degrade emit.
+    private readonly onUnsupported?: (message: string, reason?: string) => void,
   ) {}
 
   identifier(name: string): string {
@@ -172,20 +177,34 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   ): string {
     // Filter context only meaningfully handles the predicate methods
     // (filter / every / some land here through nested `.filter(...)` chains).
-    // Sort / reduce / flatMap never arise inside a predicate, so route them to
-    // the truthy sentinel like the old `default` arm did.
-    if (!PREDICATE_METHODS.has(method)) return '1'
+    // Sort / reduce / flatMap have no scalar Perl form here — the old
+    // `default` arm degraded them to the truthy sentinel, silently rewriting
+    // the predicate, so surface BF101 instead (#2038).
+    if (!PREDICATE_METHODS.has(method)) {
+      this.onUnsupported?.(
+        `Filter predicate contains a nested '.${method}(...)' callback, which has no Perl scalar form`,
+        `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
+      )
+      return '1'
+    }
     // The predicate body is also a filter context, but with this
     // callback's own `param` (potentially shadowing the outer one),
     // so we spin up a nested emitter with the inner param.
     const param = arrow.params[0]
     const predicate = arrow.body
     const arrayExpr = emit(object)
-    const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap, this.isStringName))
+    const predBody = emitParsedExpr(predicate, new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported))
     const grepBody = predBody.replace(new RegExp(`\\$${param}\\b`, 'g'), '$_')
     if (method === 'filter') return `[grep { ${grepBody} } @{${arrayExpr}}]`
     if (method === 'every') return `!(grep { !(${grepBody}) } @{${arrayExpr}})`
     if (method === 'some') return `!!(grep { ${grepBody} } @{${arrayExpr}})`
+    // `find` / `findIndex` / `findLast` / `findLastIndex` return an element
+    // (or index), not a boolean — there is no inline grep form. Degrading to
+    // the receiver silently changes predicate semantics, so be loud (#2038).
+    this.onUnsupported?.(
+      `Filter predicate contains a nested '.${method}(...)' callback, which has no Perl scalar form`,
+      `Rewrite the predicate without a nested callback method, or add /* @client */ for client-only evaluation (no SSR).`,
+    )
     return arrayExpr
   }
 

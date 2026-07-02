@@ -101,10 +101,24 @@ runAdapterConformanceTests({
     // Tagged-template-literal call in a className — same family, same
     // refusal (BF101).
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
-    // NB: `.find` / `.findIndex` / `.findLast` / `.findLastIndex` are NOT
-    // pinned here — unlike mojo (which refuses them), Xslate lowers them to
-    // `$bf.find` / `find_index` / `find_last` / `find_last_index` via the same
-    // Kolon-lambda mechanism as `.filter` / `.every` / `.some`, so they render.
+    // #2038: a filter predicate whose body contains a NESTED callback call
+    // (`t => !picked().some(p => …)` / `t => picked().find(p => …)`). Kolon
+    // has no inline `grep` form, so `XslateFilterEmitter.callbackMethod` used
+    // to degrade the inner call to its receiver, silently changing predicate
+    // semantics — the compiler is loud instead of lossy. (Mojo is pinned only
+    // for the `.find` variant: it lowers a nested `.some` to a real inline
+    // Perl `grep`.) The `/* @client */` twin
+    // (`filter-nested-callback-predicate-client`) has no pin here: it must
+    // render clean on every adapter, which asserts the suppression contract.
+    // https://github.com/piconic-ai/barefootjs/issues/2038
+    'filter-nested-callback-predicate': [{ code: 'BF101', severity: 'error' }],
+    'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error' }],
+    // NB: TOP-LEVEL `.find` / `.findIndex` / `.findLast` / `.findLastIndex`
+    // (text position) are NOT pinned here — unlike mojo (which refuses them),
+    // Xslate lowers them to `$bf.find` / `find_index` / `find_last` /
+    // `find_last_index` via the same Kolon-lambda mechanism as `.filter` /
+    // `.every` / `.some`, so they render. Only the NESTED-in-a-predicate form
+    // above is refused (#2038).
   },
   // Template-primitive registry parity: same V1 surface as mojo, so the
   // same two cases stay skipped (bespoke user import + customSerialize
@@ -118,6 +132,9 @@ runAdapterConformanceTests({
   skipMarkerConformance: new Set([
     'client-only',
     'client-only-loop-with-sibling-cond',
+    // Same clientOnly-loop marker gap as `client-only` above — the #2038
+    // `/* @client */` suppression twin's loop is client-only by construction.
+    'filter-nested-callback-predicate-client',
     'todo-app',
     // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
     'data-table',
@@ -346,3 +363,9 @@ export { A }
     expect(template).toContain('-> $x {')
   })
 })
+
+// #2038 nested-callback-predicate loudness is pinned at the shared
+// conformance layer: `filter-nested-callback-predicate` /
+// `filter-nested-find-predicate` (BF101 via `expectedDiagnostics` above) and
+// `filter-nested-callback-predicate-client` (the `/* @client */` suppression
+// twin, which must render clean).

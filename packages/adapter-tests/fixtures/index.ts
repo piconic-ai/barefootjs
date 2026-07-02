@@ -105,6 +105,9 @@ import { fixture as ifStatement } from './if-statement'
 import { fixture as mapBasic } from './map-basic'
 import { fixture as mapWithIndex } from './map-with-index'
 import { fixture as filterSimple } from './filter-simple'
+import { fixture as filterNestedCallbackPredicate } from './filter-nested-callback-predicate'
+import { fixture as filterNestedCallbackPredicateClient } from './filter-nested-callback-predicate-client'
+import { fixture as filterNestedFindPredicate } from './filter-nested-find-predicate'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
@@ -322,6 +325,9 @@ export const jsxFixtures: JSXFixture[] = [
   mapBasic,
   mapWithIndex,
   filterSimple,
+  filterNestedCallbackPredicate,
+  filterNestedCallbackPredicateClient,
+  filterNestedFindPredicate,
   sortSimple,
   filterSortChain,
   mapNested,

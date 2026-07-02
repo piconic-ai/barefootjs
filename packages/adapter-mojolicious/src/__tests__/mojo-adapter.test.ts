@@ -65,6 +65,14 @@ runAdapterConformanceTests({
     // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
     // via the same gate.
     'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // #2038: a filter predicate containing a nested `.find(...)` callback.
+    // `find*` returns an element, not a boolean — there is no inline grep
+    // form, and the emitter used to degrade the call to its receiver.
+    // The nested `.some` sibling (`filter-nested-callback-predicate`) is
+    // NOT pinned: Mojo lowers it to a real inline Perl `grep` and must
+    // render to Hono parity instead.
+    // https://github.com/piconic-ai/barefootjs/issues/2038
+    'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error' }],
     // #1467 demo-corpus context providers (`radio-group`, `accordion`,
     // `dialog`, `popover`, `select`, `dropdown-menu`, `combobox`,
     // `command`) are no longer pinned — an object-literal provider value
@@ -153,6 +161,9 @@ runAdapterConformanceTests({
   skipMarkerConformance: new Set([
     'client-only',
     'client-only-loop-with-sibling-cond',
+    // Same clientOnly-loop marker gap as `client-only` above — the #2038
+    // `/* @client */` suppression twin's loop is client-only by construction.
+    'filter-nested-callback-predicate-client',
     // Same as Hono: `/* @client */` markers on TodoApp's keyed `.map`
     // intentionally elide a slot id from the SSR template that the IR
     // still declares (s6). See hono-adapter.test for the contract.
@@ -790,6 +801,31 @@ export function C() {
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
     expect(template).toContain('scalar(@{[grep { $_->{active} } @{$t->{tags}}]})')
+  })
+
+  test('lowers nested .some(...) in filter predicate to an inline grep — no BF101 (#2038)', () => {
+    // The evaluator refuses the nested arrow (`serializeParsedExpr` → null),
+    // but the Perl filter emitter has a FAITHFUL form for nested
+    // filter / every / some: a real inline `grep` closing over the outer
+    // loop var. Pin the emitted EP shape positively so the #2038 loudness
+    // fix (which targets the degrade-only arms: nested `find*`,
+    // sort / reduce / flatMap — see the `filter-nested-find-predicate`
+    // expectedDiagnostics entry) never over-reaches into this supported
+    // shape. The rendered-HTML side of this contract lives in the shared
+    // `filter-nested-callback-predicate` fixture (Hono-parity render).
+    const adapter = new MojoAdapter()
+    const result = compileJSX(`'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number }
+export function Picker() {
+  const [items] = createSignal<Item[]>([])
+  const [picked] = createSignal<Item[]>([])
+  return <ul>{items().filter(t => !picked().some(p => p.id === t.id)).map(t => <li key={t.id}>{t.id}</li>)}</ul>
+}`, 'C.tsx', { adapter })
+    expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
+    const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
+    expect(template).toContain('grep')
+    expect(template).toContain('@{$picked}')
   })
 
   test('lowers .filter(function (x) { return x.done }).map(...) — function-keyword filter (#1443)', () => {

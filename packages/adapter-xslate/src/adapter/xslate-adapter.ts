@@ -1147,7 +1147,18 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    return emitParsedExpr(expr, new XslateFilterEmitter(param, localVarMap, n => this._isStringValueName(n)))
+    return emitParsedExpr(
+      expr,
+      new XslateFilterEmitter(
+        param,
+        localVarMap,
+        n => this._isStringValueName(n),
+        // A nested callback method inside the predicate has no Kolon scalar
+        // form — surface BF101 (#2038) instead of silently degrading it to
+        // its receiver.
+        (message, reason) => this._recordExprBF101(message, reason),
+      ),
+    )
   }
 
   // ===========================================================================
