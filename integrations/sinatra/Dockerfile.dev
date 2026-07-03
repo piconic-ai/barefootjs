@@ -19,7 +19,7 @@ WORKDIR /workspace/integrations/sinatra
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-EXPOSE 3008
+EXPOSE 3010
 
 # `rerun` restarts Puma on Ruby source changes only (app.rb, config.ru, lib/,
 # and the bind-mounted packages/adapter-erb/lib). ERB template output
@@ -27,4 +27,4 @@ EXPOSE 3008
 # template cache is disabled whenever RACK_ENV != production (see app.rb), so
 # a `bun run build:watch` recompile alone renders on the next request.
 CMD ["bundle", "exec", "rerun", "--pattern", "**/*.rb", "--dir", ".,../../packages/adapter-erb/lib", "--background", "--", \
-     "bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3008", "-e", "development", "config.ru"]
+     "bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3010", "-e", "development", "config.ru"]

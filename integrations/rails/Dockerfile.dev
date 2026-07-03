@@ -19,7 +19,7 @@ WORKDIR /workspace/integrations/rails
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
-EXPOSE 3009
+EXPOSE 3011
 
 # `rerun` restarts Puma on Ruby source changes only (app/, config/, config.ru,
 # lib/, and the bind-mounted packages/adapter-erb/lib). ERB template output
@@ -28,4 +28,4 @@ EXPOSE 3009
 # config/initializers/barefoot.rb), so a `bun run build:watch` recompile alone
 # renders on the next request.
 CMD ["bundle", "exec", "rerun", "--pattern", "**/*.rb", "--dir", ".,../../packages/adapter-erb/lib", "--background", "--", \
-     "bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3009", "-e", "development", "config.ru"]
+     "bundle", "exec", "puma", "-b", "tcp://0.0.0.0:3011", "-e", "development", "config.ru"]

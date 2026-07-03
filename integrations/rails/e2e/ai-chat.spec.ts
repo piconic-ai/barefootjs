@@ -6,4 +6,4 @@
 
 import { aiChatTests } from '../../shared/e2e/ai-chat.spec'
 
-aiChatTests('http://localhost:3009/integrations/rails')
+aiChatTests('http://localhost:3011/integrations/rails')

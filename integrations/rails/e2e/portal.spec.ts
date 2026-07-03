@@ -6,4 +6,4 @@
 
 import { portalTests } from '../../shared/e2e/portal.spec'
 
-portalTests('http://localhost:3009/integrations/rails')
+portalTests('http://localhost:3011/integrations/rails')

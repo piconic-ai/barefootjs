@@ -11,6 +11,8 @@
  *   :4000/integrations/nethttp/*     → nethttp service
  *   :4000/integrations/mojolicious/* → mojolicious service
  *   :4000/integrations/xslate/*      → xslate service
+ *   :4000/integrations/flask/*       → flask service
+ *   :4000/integrations/fastapi/*     → fastapi service
  *   :4000/integrations/sinatra/*     → sinatra service
  *   :4000/integrations/rails/*       → rails service
  *   :4000/*                          → site-core service
@@ -45,8 +47,10 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/nethttp',     target: process.env.NETHTTP_TARGET     ?? 'http://nethttp:8083',     label: 'net/http (Go)' },
   { prefix: '/integrations/mojolicious', target: process.env.MOJOLICIOUS_TARGET ?? 'http://mojolicious:3000', label: 'Mojolicious (Perl)' },
   { prefix: '/integrations/xslate',      target: process.env.XSLATE_TARGET      ?? 'http://xslate:3007',      label: 'Text::Xslate (Perl)' },
-  { prefix: '/integrations/sinatra',     target: process.env.SINATRA_TARGET     ?? 'http://sinatra:3008',      label: 'Sinatra (Ruby)' },
-  { prefix: '/integrations/rails',       target: process.env.RAILS_TARGET       ?? 'http://rails:3009',        label: 'Rails (Ruby)' },
+  { prefix: '/integrations/flask',       target: process.env.FLASK_TARGET       ?? 'http://flask:3008',       label: 'Flask (Python)' },
+  { prefix: '/integrations/fastapi',     target: process.env.FASTAPI_TARGET     ?? 'http://fastapi:3009',     label: 'FastAPI (Python)' },
+  { prefix: '/integrations/sinatra',     target: process.env.SINATRA_TARGET     ?? 'http://sinatra:3010',     label: 'Sinatra (Ruby)' },
+  { prefix: '/integrations/rails',       target: process.env.RAILS_TARGET       ?? 'http://rails:3011',       label: 'Rails (Ruby)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'

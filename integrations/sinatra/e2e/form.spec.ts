@@ -6,4 +6,4 @@
 
 import { formTests } from '../../shared/e2e/form.spec'
 
-formTests('http://localhost:3008/integrations/sinatra')
+formTests('http://localhost:3010/integrations/sinatra')

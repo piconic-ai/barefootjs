@@ -6,4 +6,4 @@
 
 import { aiChatTests } from '../../shared/e2e/ai-chat.spec'
 
-aiChatTests('http://localhost:3008/integrations/sinatra')
+aiChatTests('http://localhost:3010/integrations/sinatra')

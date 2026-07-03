@@ -10,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3008',
+    baseURL: 'http://localhost:3010',
     trace: 'on-first-retry',
     launchOptions: { executablePath: process.env.PW_EXECUTABLE_PATH || undefined },
   },
@@ -28,8 +28,8 @@ export default defineConfig({
     // (tests don't need hot reload) and exercises the production render path
     // (ERB template cache on).
     command:
-      'BASE_PATH=/integrations/sinatra RACK_ENV=production bundle exec rackup -s puma -p 3008 -o 0.0.0.0 config.ru',
-    url: 'http://localhost:3008/integrations/sinatra/',
+      'BASE_PATH=/integrations/sinatra RACK_ENV=production bundle exec rackup -s puma -p 3010 -o 0.0.0.0 config.ru',
+    url: 'http://localhost:3010/integrations/sinatra/',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },

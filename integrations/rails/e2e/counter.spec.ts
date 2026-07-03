@@ -6,4 +6,4 @@
 
 import { counterTests } from '../../shared/e2e/counter.spec'
 
-counterTests('http://localhost:3009/integrations/rails')
+counterTests('http://localhost:3011/integrations/rails')

@@ -6,4 +6,4 @@
 
 import { toggleTests } from '../../shared/e2e/toggle.spec'
 
-toggleTests('http://localhost:3008/integrations/sinatra')
+toggleTests('http://localhost:3010/integrations/sinatra')

@@ -6,4 +6,4 @@
 
 import { conditionalReturnTests } from '../../shared/e2e/conditional-return.spec'
 
-conditionalReturnTests('http://localhost:3008/integrations/sinatra')
+conditionalReturnTests('http://localhost:3010/integrations/sinatra')

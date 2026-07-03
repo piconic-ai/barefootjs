@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Flask integration. app.py and the host-built
+# dist/ are bind-mounted in; Flask's debug reloader restarts the process on
+# app.py / lib changes. Templates re-render on each request in dev because
+# the JinjaBackend Environment is built with `cache_size=0` (see app.py's
+# `DEV` flag).
+
+FROM python:3.12-slim
+
+WORKDIR /workspace/integrations/flask
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 3008
+
+ENV FLASK_DEBUG=1
+ENV PORT=3008
+
+# Werkzeug's stat reloader (enabled by app.py's FLASK_DEBUG check) watches
+# app.py + every imported module (including the bind-mounted `lib/`) and
+# restarts the process on change.
+CMD ["python3", "app.py"]

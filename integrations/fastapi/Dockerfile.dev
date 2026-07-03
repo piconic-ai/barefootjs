@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the FastAPI integration. app.py and the host-built
+# dist/ are bind-mounted in; Uvicorn's `--reload` watcher restarts the
+# process on app.py / lib changes. Templates re-render on each request in dev
+# because the JinjaBackend Environment is built with `cache_size=0` (see
+# app.py's `DEV` flag).
+
+FROM python:3.12-slim
+
+WORKDIR /workspace/integrations/fastapi
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 3009
+
+ENV FASTAPI_DEBUG=1
+ENV PORT=3009
+
+# Uvicorn's reload watcher (enabled by app.py's FASTAPI_DEBUG check) watches
+# app.py + every imported module (including the bind-mounted `lib/`) and
+# restarts the process on change.
+CMD ["python3", "app.py"]

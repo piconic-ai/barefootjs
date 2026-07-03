@@ -10,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3009',
+    baseURL: 'http://localhost:3011',
     trace: 'on-first-retry',
     launchOptions: { executablePath: process.env.PW_EXECUTABLE_PATH || undefined },
   },
@@ -27,8 +27,8 @@ export default defineConfig({
     // (tests don't need hot reload) and exercises the production render path
     // (ERB template cache on). Puma loads config.ru directly.
     command:
-      'BASE_PATH=/integrations/rails RAILS_ENV=production bundle exec puma -b tcp://0.0.0.0:3009 -e production config.ru',
-    url: 'http://localhost:3009/integrations/rails/',
+      'BASE_PATH=/integrations/rails RAILS_ENV=production bundle exec puma -b tcp://0.0.0.0:3011 -e production config.ru',
+    url: 'http://localhost:3011/integrations/rails/',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },
