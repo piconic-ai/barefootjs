@@ -37,15 +37,19 @@ site below):
     per-request reference cycle leak. CPython's garbage collector handles
     reference cycles natively, so the Python port captures `parent` (self)
     directly with no `weakref` dance -- functionally equivalent, no leak.
-  * `includes` / `index_of` / `last_index_of` compare array elements with
-    Python's native `==` rather than Perl's `eq` (which stringifies both
-    sides). Python's `int`/`float`/`str` are genuinely distinct types
-    (unlike Perl scalars), so `==` gives true JS strict-equality behaviour
-    for cross-type probes (`2 == "2"` is False) -- this actually ELIMINATES
-    the Perl-documented "cross-type probe is strict-equality false"
-    divergence rather than reproducing it. (Edge case: Python `bool` is an
-    `int` subclass, so `True == 1`, which JS `true === 1` is not; not
-    exercised by the golden vectors.)
+  * `index_of` / `last_index_of` compare array elements with Python's native
+    `==` rather than Perl's `eq` (which stringifies both sides). Python's
+    `int`/`float`/`str` are genuinely distinct types (unlike Perl scalars),
+    so `==` gives true JS strict-equality behaviour for cross-type probes
+    (`2 == "2"` is False) -- this actually ELIMINATES the Perl-documented
+    "cross-type probe is strict-equality false" divergence rather than
+    reproducing it. (Edge case: Python `bool` is an `int` subclass, so
+    `True == 1`, which JS `true === 1` is not; not exercised by the golden
+    vectors.) `includes` (#2075) no longer shares this native-`==` path: it
+    dispatches through `evaluator._same_value_zero` -- the same
+    SameValueZero algorithm the evaluator's serialized-callback `.includes`
+    arm uses, so both positions agree, and native `==`'s two remaining gaps
+    (NaN never equals itself; `bool` is an `int` subclass) are closed too.
   * Several Perl helpers stringify a value via raw Perl interpolation
     (`"$val"`) rather than routing through `bf->string`. In Python, raw
     `str()` on a float would print `3.0` instead of the JS-correct `"3"`, so
@@ -786,15 +790,18 @@ class BarefootJS:
     # -----------------------------------------------------------------
 
     def includes(self, recv: Any, elem: Any) -> bool:
+        # `Array.prototype.includes(x)` + `String.prototype.includes(sub)`
+        # lower to the same `bf.includes(recv, elem)` shape -- see #1448
+        # Tier A. Dispatch on `recv`'s Python type: a `list` scans elements
+        # with `evaluator._same_value_zero` (#2075) -- SameValueZero
+        # membership, matching `Array.prototype.includes`'s semantics (no
+        # cross-type coercion, e.g. `[2].includes("2")` is false; NaN
+        # matches NaN) and the evaluator's serialized-callback `.includes`
+        # arm, so both positions agree. A `dict` (JS has no `.includes` on
+        # plain objects) and anything else falls through to the string
+        # branch: substring search via `js_string` coercion.
         if isinstance(recv, list):
-            for item in recv:
-                if item is None:
-                    if elem is None:
-                        return True
-                    continue
-                if elem is not None and item == elem:
-                    return True
-            return False
+            return any(_evaluator._same_value_zero(item, elem) for item in recv)
         if isinstance(recv, dict):
             return False
         s = js_string(recv)

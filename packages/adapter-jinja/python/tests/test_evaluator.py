@@ -40,6 +40,10 @@ def ncall_math(fn, arg):
     return {"kind": "call", "callee": nmem(nid("Math"), fn), "args": [arg]}
 
 
+def nincludes(obj, needle):
+    return {"kind": "array-method", "method": "includes", "object": obj, "args": [needle]}
+
+
 class EvaluatorTest(unittest.TestCase):
     def test_fold_arbitrary_reducer_body(self):
         # acc + item.price * item.qty
@@ -113,6 +117,40 @@ class EvaluatorTest(unittest.TestCase):
         # `.length` is a string/array property only; a numeric scalar has none.
         length = evaluator.evaluate(nmem(nid("n"), "length"), {"n": 123})
         self.assertIsNone(length)
+
+    def test_array_method_includes(self):
+        # `.includes` (#2075) is the one `array-method` in the evaluator
+        # subset, dispatching on the receiver type like the SSR template
+        # lowering does at runtime (`bf.includes`): array -> SameValueZero
+        # membership (the same value rules as `===`, so a numeric 2 does NOT
+        # match the string "2"); string -> substring search; anything else
+        # degrades to false rather than raising.
+        hit = evaluator.evaluate(nincludes(nid("tags"), nstr("go")), {"tags": ["perl", "go"]})
+        self.assertIsInstance(hit, bool)
+        self.assertTrue(hit)
+
+        miss = evaluator.evaluate(nincludes(nid("tags"), nstr("rust")), {"tags": ["perl", "go"]})
+        self.assertIsInstance(miss, bool)
+        self.assertFalse(miss)
+
+        # SameValueZero, not loose equality: the numeric element 2 matches
+        # the numeric needle 2, but the string needle "2" (a different JS
+        # type) does not -- mirroring `===`'s type-sensitivity.
+        num_hit = evaluator.evaluate(nincludes(nid("nums"), nnum(2)), {"nums": [1, 2, 3]})
+        self.assertTrue(num_hit)
+        num_vs_string = evaluator.evaluate(nincludes(nid("nums"), nstr("2")), {"nums": [1, 2, 3]})
+        self.assertFalse(num_vs_string)
+
+        sub = evaluator.evaluate(nincludes(nid("name"), nstr("ar")), {"name": "bare"})
+        self.assertTrue(sub)
+
+        # A non-array, non-string receiver (number, null, object) is not a
+        # JS `.includes` target; the evaluator degrades to false rather than
+        # raising.
+        scalar_recv = evaluator.evaluate(nincludes(nid("n"), nnum(1)), {"n": 42})
+        self.assertFalse(scalar_recv)
+        null_recv = evaluator.evaluate(nincludes(nid("n"), nstr("x")), {"n": None})
+        self.assertFalse(null_recv)
 
     def test_sort_by_non_array_receiver_returns_empty_list(self):
         cmp = nbin("-", nid("a"), nid("b"))

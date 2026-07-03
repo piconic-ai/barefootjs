@@ -3,15 +3,25 @@
  * `packages/adapter-xslate/src/__tests__/xslate-adapter.test.ts` (lines
  * 152-400): SSR context propagation, memo seeding, signal seeding +
  * data-key, #1966 @client attribute deferral, #2073 map_eval, #2018 P2
- * predicate lowering. Expected template strings are translated to Jinja
- * syntax. `runAdapterConformanceTests` itself (lines 24-150) and
- * `src/test-render.ts` are workstream C and are NOT ported here.
+ * predicate lowering, #2075 searchParams()-derived memo seeding. Expected
+ * template strings are translated to Jinja syntax. `runAdapterConformanceTests`
+ * itself (lines 24-150) and `src/test-render.ts` are workstream C and are NOT
+ * ported here.
  *
  * One describe (`prop-derived signal SSR seeding + data-key`) diverges
  * behaviourally, not just syntactically: the "does NOT in-template-seed a
  * same-name signal" Xslate test is inverted here to "DOES seed" — see
  * `memo/seed.ts`'s file header for why Jinja's `{% set %}` doesn't have
  * Kolon's `my`-shadowing hazard.
+ *
+ * The "#2075 searchParams()-derived memo seeding" describe also diverges: the
+ * "filter memo chained off the derived memo" case asserts a `bf.filter_eval(`
+ * seed (not Xslate's `$bf.filter(` lambda-closure), and asserts the
+ * evaluator's captured env dict (`{'tag': tag}`) rather than a bare `$tag`
+ * lambda-body reference — see `memo/seed.ts`'s file header on
+ * `materializeGetterCalls` (divergence 3: Jinja has no lambda fallback, so a
+ * sibling-getter call inside a predicate must materialize to a free var the
+ * evaluator can capture, instead of closing over the lexical directly).
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -252,16 +262,32 @@ export { A }
     expect(findLast).toContain(", false, {})")
   })
 
+  // #2075: `.includes(x)` joined the evaluator's `array-method` surface
+  // (shared with the Perl/Go evaluator runtimes), so a predicate built from
+  // it now routes through `bf.every_eval` like any other pure predicate —
+  // no BF101, despite being a method-call predicate.
+  test('.includes() in a predicate now lowers via the evaluator, not a BF101 refusal', () => {
+    const { template } = compileAndGenerate(`
+function A({ items }: { items: { name: string }[] }) {
+  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+}
+export { A }
+`)
+    expect(template).toContain('bf.every_eval(')
+    expect(template).toContain('"method":"includes"')
+    expect(template).not.toContain('bf.truthy(\'\')')
+  })
+
   // Divergence 3 (`jinja-adapter.ts`'s header): Jinja has no lambda
-  // expression, so a predicate the evaluator can't serialize (a nested
-  // method-call predicate) has NO fallback — unlike Kolon, which falls back
-  // to a `-> $x { … }` lambda passed to `$bf.every`. This surfaces BF101
-  // instead.
-  test('a method-call predicate has no lambda fallback — surfaces BF101', () => {
+  // expression, so a predicate the evaluator can't serialize (a method call
+  // outside the evaluator's `array-method` gate — only `includes` is
+  // recognized there) has NO fallback — unlike Kolon, which falls back to a
+  // `-> $x { … }` lambda passed to `$bf.every`. This surfaces BF101 instead.
+  test('a method-call predicate outside the evaluator surface has no lambda fallback — surfaces BF101', () => {
     const adapter = new JinjaAdapter()
     const ir = compileToIR(`
 function A({ items }: { items: { name: string }[] }) {
-  return <div>{items.every(x => x.name.includes('a')) ? 'y' : 'n'}</div>
+  return <div>{items.every(x => x.name.toUpperCase() === 'A') ? 'y' : 'n'}</div>
 }
 export { A }
 `)
@@ -274,6 +300,86 @@ export { A }
     expect(template).not.toContain('every_eval')
     expect(template).not.toContain('bf.every(')
     expect(template).toContain("bf.truthy('')")
+  })
+})
+
+// #2075: derived signal/memo seeding now consumes the shared
+// `computeSsrSeedPlan` (packages/jsx/src/ssr-seed-plan.ts) instead of
+// re-deriving scope/support locally — same plan Xslate/Mojo consume, ported
+// to `{% set %}` syntax. Mirrors
+// `packages/adapter-xslate/src/__tests__/xslate-adapter.test.ts`'s
+// "#2075 searchParams()-derived memo seeding" describe.
+describe('JinjaAdapter - #2075 searchParams()-derived memo seeding', () => {
+  test('seeds an aliased scalar derived memo from the canonical reader', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`)
+    expect(template).toContain(
+      "{% set sort = (searchParams.get('sort') if (searchParams.get('sort') is defined and searchParams.get('sort') is not none) else 'date') %}",
+    )
+  })
+
+  // The evaluator-JSON `param` and the `bf` runtime object are
+  // lowering-internal, not out-of-scope template vars (#2075). Jinja routes
+  // the filter predicate through `bf.filter_eval` (divergence 3 — no lambda
+  // fallback), materializing the sibling getter call `tag()` into a bare
+  // free-var read (`materializeGetterCalls`) so the evaluator can serialize
+  // it at all; the captured env then resolves against the `tag` seed line
+  // emitted just above (see `memo/seed.ts`'s file header).
+  test('seeds a filter memo chained off the derived memo', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`)
+    expect(template).toContain(
+      "{% set tag = (searchParams.get('tag') if (searchParams.get('tag') is defined and searchParams.get('tag') is not none) else '') %}",
+    )
+    expect(template).toContain('{% set visible = bf.filter_eval(items,')
+    expect(template).toContain("{'tag': tag}")
+  })
+
+  // The seed-scope guard used to scan the LOWERED Jinja text for bare-word
+  // tokens. That let an outer, unbound `p` (shadowed only inside the
+  // callback) slip past as if it were the callback's own bound `p` —
+  // emitting a bogus seed line. The guard now walks the parsed SOURCE tree
+  // with proper lexical scoping (`freeIdentifiers`, inside
+  // `computeSsrSeedPlan`), so this shape seeds nothing and falls back to the
+  // static ssr-defaults path.
+  test('an outer unbound `p` shadowed only inside the callback does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { ok: boolean }[] }) {
+  const visible = createMemo(() => props.items.filter((p) => p.ok) && p)
+  return <div>{String(visible())}</div>
+}
+`)
+    expect(template).not.toContain('{% set visible')
+  })
+
+  // An out-of-scope bare `_` reference must not seed either.
+  test('an out-of-scope bare `_` reference does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { count: number }) {
+  const doubled = createMemo(() => props.count * 2 + _)
+  return <div>{doubled()}</div>
+}
+`)
+    expect(template).not.toContain('{% set doubled')
   })
 })
 

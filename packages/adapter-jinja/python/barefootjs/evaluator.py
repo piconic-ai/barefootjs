@@ -143,8 +143,28 @@ def evaluate(node: Any, env: dict) -> Any:
         for prop in node.get("properties") or []:
             out[prop.get("key")] = evaluate(prop.get("value"), env)
         return out
+    if kind == "array-method" and (node.get("method") or "") == "includes":
+        args = node.get("args") or []
+        if len(args) == 1:
+            # `.includes(x)` (#2075) -- the one `array-method` in the
+            # evaluator subset, shared between `Array.prototype.includes`
+            # (SameValueZero membership) and `String.prototype.includes`
+            # (substring search), matching the receiver-type dispatch the SSR
+            # template lowering does at runtime (`bf.includes`). Mirrors the
+            # JS reference's `includes()` (eval-reference.ts) and the Perl
+            # port's identical `array-method`/`includes` arm
+            # (Evaluator.pm).
+            obj = evaluate(node.get("object"), env)
+            needle = evaluate(args[0], env)
+            if isinstance(obj, list):
+                return _bool(any(_same_value_zero(el, needle) for el in obj))
+            if _is_string(obj):
+                return _bool(_to_string(needle) in obj)
+            # Any other receiver is not a JS `.includes` target -- degrade to
+            # false rather than raising, mirroring the reference.
+            return _bool(False)
 
-    # arrow-fn / higher-order / array-method / unsupported: a callback body
+    # arrow-fn / higher-order / unsupported array-method: a callback body
     # containing these is refused upstream (BF101); never reached here.
     return None
 
@@ -321,6 +341,19 @@ def _strict_eq(l: Any, r: Any) -> bool:
     if _is_string(l) and _is_string(r):
         return l == r
     return False
+
+
+def _same_value_zero(l: Any, r: Any) -> bool:
+    """`Array.prototype.includes` membership test -- `===` except `NaN`
+    equals itself (and +0/-0 are not distinguished, which the JSON-decoded
+    values here can't represent anyway). Reuses `_strict_eq`'s type/value
+    rules and only special-cases the two-NaN case that `_strict_eq`
+    (deliberately, for `===`) reports as unequal."""
+    if _is_number(l) and _is_number(r):
+        lf, rf = float(l), float(r)
+        if lf != lf and rf != rf:  # NaN sameValueZero NaN
+            return True
+    return _strict_eq(l, r)
 
 
 def _unary(op: str, v: Any) -> Any:

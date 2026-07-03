@@ -75,12 +75,25 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertTrue(_is_nan(self.bf.round("not")))
 
     def test_includes_dispatch(self):
+        # `Array.prototype.includes(x)` + `String.prototype.includes(sub)`
+        # lower to the same `bf.includes(recv, elem)` shape -- see #1448
+        # Tier A. `BarefootJS.includes` dispatches on `recv`'s Python type:
+        # a `list` scans elements via `evaluator._same_value_zero` (#2075 --
+        # SameValueZero, handling None/undefined parity, and no
+        # numeric/string coercion -- see the cross-type cases below);
+        # anything else (a `dict`, or a scalar) falls back to a substring
+        # search via `js_string` coercion.
         self.assertTrue(self.bf.includes(["a", "b", "c"], "b"))
         self.assertFalse(self.bf.includes(["a", "b", "c"], "z"))
         self.assertTrue(self.bf.includes([1, 2, 3], 2))
         self.assertFalse(self.bf.includes([], "a"))
         self.assertTrue(self.bf.includes([None, "a"], None))
         self.assertFalse(self.bf.includes(["a", "b"], None))
+
+        # SameValueZero never coerces across types.
+        self.assertFalse(self.bf.includes([2], "2"))
+        self.assertTrue(self.bf.includes([2], 2))
+        self.assertTrue(self.bf.includes(["2"], "2"))
 
         self.assertTrue(self.bf.includes("hello world", "world"))
         self.assertFalse(self.bf.includes("hello world", "earth"))

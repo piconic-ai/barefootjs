@@ -5,22 +5,25 @@
  * `resolveJsxChildrenProp` and `collectRootScopeNodes` are byte-identical
  * (adapter-agnostic IR walks).
  *
- * `referencedVarsAreAvailable` keeps Kolon's approach of scanning the
- * RENDERED template text (rather than re-deriving free vars from the
- * original JS AST) so it stays exactly in sync with whatever the emitter
- * actually produced — but Kolon's `$` sigil made that scan trivially safe
- * (`\$([A-Za-z_]\w*)`), and Jinja identifiers have no sigil: a bare word in
- * the rendered text could be a genuine context-var reference, a `bf.`
- * runtime-helper method name, a Jinja grammar keyword emitted by this
- * adapter's own condition/ternary lowering (`if`/`else`/`is`/`not`/`and`/
- * `or`/`none`/`true`/`false`), or content inside a single-quoted string
- * literal. `extractTopLevelIdentifiers` makes the scan sound again: it
- * strips quoted string spans first, then matches identifier tokens NOT
- * immediately preceded by a `.` (excluding dotted property/method names —
- * the same exclusion the `$` sigil gave Kolon for free, since Kolon's regex
- * only ever matched right after `$`), then drops the closed set of tokens
- * this adapter's own codegen can emit that aren't context vars (`bf` and the
- * Jinja keywords above).
+ * `extractTopLevelIdentifiers` scans the RENDERED template text (rather than
+ * re-deriving free vars from the original JS AST) so it stays exactly in
+ * sync with whatever the emitter actually produced — but Jinja identifiers
+ * have no sigil (unlike Kolon's `$`, which made a trivially safe
+ * `\$([A-Za-z_]\w*)` scan possible): a bare word in the rendered text could
+ * be a genuine context-var reference, a `bf.` runtime-helper method name, a
+ * Jinja grammar keyword emitted by this adapter's own condition/ternary
+ * lowering (`if`/`else`/`is`/`not`/`and`/`or`/`none`/`true`/`false`), or
+ * content inside a single-quoted string literal. This helper makes the scan
+ * sound: it strips quoted string spans first, then matches identifier tokens
+ * NOT immediately preceded by a `.` (excluding dotted property/method names
+ * — the same exclusion the `$` sigil gave Kolon for free, since Kolon's
+ * regex only ever matched right after `$`), then drops the closed set of
+ * tokens this adapter's own codegen can emit that aren't context vars (`bf`
+ * and the Jinja keywords above). `memo/seed.ts` uses it to detect a
+ * constant lowering (no top-level identifier at all) that should keep the
+ * static ssr-defaults seed instead of an in-template `{% set %}`; scope
+ * AVAILABILITY itself is now the shared `computeSsrSeedPlan`'s job
+ * (packages/jsx/src/ssr-seed-plan.ts), not this module's (#2075).
  */
 
 import type { IRNode, IRProp, IRIfStatement, IRFragment } from '@barefootjs/jsx'
@@ -89,19 +92,4 @@ export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
   }
   visit(node)
   return out
-}
-
-/**
- * True when every top-level identifier the rendered Jinja expression
- * references is already in scope — guards in-template memo/signal seeding
- * against an out-of-scope binding. (#1297)
- */
-export function referencedVarsAreAvailable(
-  jinjaExpr: string,
-  available: ReadonlySet<string>,
-): boolean {
-  for (const name of extractTopLevelIdentifiers(jinjaExpr)) {
-    if (!available.has(name)) return false
-  }
-  return true
 }
