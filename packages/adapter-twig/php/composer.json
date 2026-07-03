@@ -1,0 +1,25 @@
+{
+    "name": "barefootjs/twig",
+    "description": "PHP runtime for the @barefootjs/twig adapter -- engine-agnostic BarefootJS server runtime targeting Twig, ported from packages/adapter-perl/lib/BarefootJS.pm (see also the packages/adapter-jinja/python port).",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kobaken",
+            "email": "kentafly88@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "twig/twig": "^3.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "Barefoot\\": "src/"
+        },
+        "files": [
+            "src/naming.php"
+        ]
+    },
+    "minimum-stability": "stable"
+}
