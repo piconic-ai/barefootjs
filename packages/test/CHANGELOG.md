@@ -1,5 +1,15 @@
 # @barefootjs/test
 
+## 0.17.1
+
+### Patch Changes
+
+- d0882c7: Drop unresolvable dynamic interpolation spans (e.g. a `${className}` passthrough) from `TestNode.classes` instead of leaking them as literal `${...}` tokens. `Record<T, string>[key]` indexed lookups already resolve with union semantics (structured `lookup` template part, PR #2000); this cleans the one remaining artifact in the resolved token list so exact-match assertions on `.classes` see only real class tokens.
+- 4803308: Resolve literal destructure defaults (`{ size = 'md' }`) in `renderToTest()` (#2071). The framework models the zero-props render, so a bare reference to a defaulted prop now resolves to its literal default in expression attributes (`type={type}` → `'button'`), template interpolations (`` `chip-${tone}` `` → `chip-ok` in `.classes`), and text expressions (`findByText('Hello')` finds `{label}` with `{ label = 'Hello' }`). Inline ternary classNames now union both branches like the intermediate-const path (#525) instead of leaking a `{cond}` placeholder token. Non-literal defaults (arrows, arrays, computed expressions) keep their expression text; signal/memo reads are untouched.
+- Updated dependencies [6b3bba3]
+- Updated dependencies [882847c]
+  - @barefootjs/jsx@0.17.1
+
 ## 0.17.0
 
 ### Patch Changes
