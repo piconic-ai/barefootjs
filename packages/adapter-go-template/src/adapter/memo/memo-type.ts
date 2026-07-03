@@ -6,10 +6,24 @@
  * right SSR zero value).
  */
 
+import { asCallbackMethodCall } from '@barefootjs/jsx'
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
+
+/**
+ * True when a memo's body is a `.filter(<arrow>)` callback-method call
+ * (#2075) — a LIST-valued derived memo (the blog PostList `visible` shape:
+ * `createMemo(() => props.items.filter((p) => …))`), not a scalar. Exported
+ * so both `isBooleanMemo` (guard below) and `inferMemoType`'s field-type
+ * decision (go-template-adapter.ts) share the one recognition point.
+ */
+export function isListFilterMemo(memo: { parsed?: ParsedExpr }): boolean {
+  if (!memo.parsed) return false
+  const cb = asCallbackMethodCall(memo.parsed)
+  return cb !== null && cb.method === 'filter'
+}
 
 /**
  * Heuristic: does this memo evaluate to a boolean? True when its computation is
@@ -24,6 +38,11 @@ export function isBooleanMemo(
   propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>,
 ): boolean {
   const c = memo.computation
+  // A LIST-valued `.filter(arrow)` memo (#2075) is never boolean, even though
+  // its predicate arrow body often contains a `!` negation (`!tag() || …`) —
+  // that would otherwise trip the `/=>\s*!/` heuristic below into
+  // misclassifying the whole memo. Bail before any regex runs.
+  if (isListFilterMemo(memo)) return false
   // A ternary whose two branches are string literals is a STRING memo, not
   // boolean — the `===` lives in the *condition*, so the blanket comparison
   // check below would misclassify it as bool and bake `false`. Bail first.

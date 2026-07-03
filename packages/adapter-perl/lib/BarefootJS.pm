@@ -581,8 +581,14 @@ sub round ($self, $value) {
 # receiver shapes apart without TS type inference, so both lower to
 # the same IR node (`array-method` / method `includes`). This helper
 # dispatches at the Perl level via `ref()`:
-#   - ARRAY ref:  scan elements with `eq`; one defined-vs-undef
-#                 hop matches JS's `===` for null/undefined.
+#   - ARRAY ref:  scan elements with `BarefootJS::Evaluator::_same_value_zero`,
+#                 matching `Array.prototype.includes`'s SameValueZero
+#                 semantics (no cross-type coercion, e.g. `[2].includes("2")`
+#                 is false; NaN matches NaN) — the same algorithm the
+#                 evaluator's serialized-callback path already uses for
+#                 `.includes`, so both positions agree. This used to be a
+#                 stringy `eq` scan, which coerced numbers to strings
+#                 (`[2].includes("2")` was true) and diverged from JS.
 #   - scalar:     `index($recv, $sub) != -1`, with both args
 #                 coerced through `// ''` so an undef receiver /
 #                 needle doesn't trip Perl's substr warning.
@@ -593,11 +599,7 @@ sub round ($self, $value) {
 sub includes ($self, $recv, $elem) {
     if (ref($recv) eq 'ARRAY') {
         for my $item (@$recv) {
-            if (!defined $item) {
-                return 1 if !defined $elem;
-                next;
-            }
-            return 1 if defined $elem && $item eq $elem;
+            return 1 if BarefootJS::Evaluator::_same_value_zero($item, $elem);
         }
         return 0;
     }

@@ -224,10 +224,6 @@ my %DIVERGENCES = (
         expect => '0.3',
         reason => 'Perl stringifies doubles via %.15g',
     },
-    'includes/cross-type probe is strict-equality false' => {
-        expect => 1,
-        reason => 'bf->includes scans with eq (string equality), so 2 eq "2" matches',
-    },
     'filter_truthy/the string "0" is truthy' => {
         expect => ['x'],
         reason => 'Perl truthiness treats the string "0" as false',

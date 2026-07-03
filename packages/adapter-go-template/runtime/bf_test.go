@@ -570,6 +570,32 @@ func TestIncludes_StringReceiver(t *testing.T) {
 	}
 }
 
+// TestIncludes_SameValueZero pins the element-search equality used by
+// the slice/array branch of `Includes` to SameValueZero — the same
+// algorithm the evaluator's `evalIncludes`/`evalSameValueZero` (eval.go)
+// use for the serialized-callback path. Before this, the template-position
+// `Includes` used `reflect.DeepEqual`, which is type-strict (never treats
+// `int` and `float64` as equal, unlike JS's single "number" type) and never
+// matches NaN to NaN; these cases pin the two places that diverge from JS
+// `Array.prototype.includes` (and from the evaluator) under DeepEqual.
+func TestIncludes_SameValueZero(t *testing.T) {
+	// int 2 vs float64 2: DeepEqual says false, SameValueZero (and JS) say true.
+	if !Includes([]any{2}, float64(2)) {
+		t.Error(`Includes([]any{2}, float64(2)) should be true (SameValueZero: cross-numeric-type match)`)
+	}
+	// NaN.includes(NaN): DeepEqual on floats uses ==, which is false for
+	// NaN; SameValueZero (and JS `.includes`) treat NaN as matching itself.
+	nan := math.NaN()
+	if !Includes([]any{nan}, nan) {
+		t.Error(`Includes([]any{NaN}, NaN) should be true (SameValueZero: NaN matches NaN)`)
+	}
+	// [2].includes("2"): SameValueZero (and JS) never coerce across types,
+	// so a string needle must not match a numeric element.
+	if Includes([]any{2}, "2") {
+		t.Error(`Includes([]any{2}, "2") should be false (SameValueZero: no cross-type coercion)`)
+	}
+}
+
 func TestFirst(t *testing.T) {
 	items := []string{"a", "b", "c"}
 	if got := First(items); got != "a" {

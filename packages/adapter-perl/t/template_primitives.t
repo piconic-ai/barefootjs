@@ -81,17 +81,28 @@ subtest 'floor / ceil / round — Math.* mirrors; propagate NaN' => sub {
 # `Array.prototype.includes(x)` + `String.prototype.includes(sub)` lower
 # to the same `$bf->includes($recv, $elem)` shape — see #1448 Tier A.
 # The Perl helper dispatches on `ref()`: ARRAY ref scans elements with
-# `eq`; scalar falls back to `index(..., ...) != -1`. Anything else
-# (HASH ref, code ref) returns false to match the JS semantic that
-# `.includes` is only defined on Array / TypedArray / String.
+# `BarefootJS::Evaluator::_same_value_zero` (SameValueZero — no cross-type
+# coercion, NaN matches NaN), matching the evaluator's serialized-callback
+# `.includes` path so both positions agree; scalar falls back to
+# `index(..., ...) != -1`. Anything else (HASH ref, code ref) returns
+# false to match the JS semantic that `.includes` is only defined on
+# Array / TypedArray / String.
 subtest 'includes — array + string + non-array/string dispatch' => sub {
-    # Array receiver: element-wise `eq` (handles defined/undef parity).
+    # Array receiver: SameValueZero element search (handles defined/undef
+    # parity, and no numeric/string coercion — see the cross-type cases
+    # below).
     ok  $bf->includes(['a', 'b', 'c'], 'b'), 'array contains element → 1';
     ok !$bf->includes(['a', 'b', 'c'], 'z'), 'array does not contain → 0';
     ok  $bf->includes([1, 2, 3], 2),         'numeric element';
     ok !$bf->includes([], 'a'),              'empty array → 0';
     ok  $bf->includes([undef, 'a'], undef),  'undef element matches undef needle';
     ok !$bf->includes(['a', 'b'], undef),    'undef needle, no undef element → 0';
+
+    # SameValueZero never coerces across types — pins the divergence from
+    # the old stringy `eq` scan (where `[2].includes("2")` was true).
+    ok !$bf->includes([2], '2'),   '[2].includes("2") → 0 (no numeric→string coercion)';
+    ok  $bf->includes([2], 2),     '[2].includes(2) → 1';
+    ok  $bf->includes(['2'], '2'), '["2"].includes("2") → 1 (string vs string still matches)';
 
     # String receiver: substring search.
     ok  $bf->includes('hello world', 'world'), 'substring present → 1';

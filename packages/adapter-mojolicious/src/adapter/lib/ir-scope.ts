@@ -55,16 +55,3 @@ export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
   visit(node)
   return out
 }
-
-/**
- * True when every `$var` the lowered (Perl / Kolon) expression references is
- * in the available set — i.e. the template already has that var in scope.
- * Guards in-template memo seeding from referencing an out-of-scope binding
- * (which would trip Perl strict mode). (#1297)
- */
-export function referencedVarsAreAvailable(expr: string, available: ReadonlySet<string>): boolean {
-  for (const m of expr.matchAll(/\$([A-Za-z_]\w*)/g)) {
-    if (!available.has(m[1])) return false
-  }
-  return true
-}

@@ -25,6 +25,12 @@ describe('CSR Conformance Tests', () => {
     // Local array variable (items) is not available at CSR template module scope.
     // CSR templates only have access to props and signals, not file-scope constants.
     'static-array-children',
+    // #2073 follow-up: the `.map(format)` function-reference callback closes
+    // over the module-scope `format` const, which — same class as
+    // `static-array-children` above — isn't reachable from the CSR template
+    // lambda (only props/signals are). Real-JS-runtime coverage (Hono) lives
+    // in the shared fixture's render conformance.
+    'array-map-function-reference',
     // #1247: prop-derived static-array loops materialize their children at init
     // time (via the clone-and-insert fallback in the static-loop emitter), not
     // at template-eval time. This test harness runs only the `template:`
@@ -95,6 +101,19 @@ describe('CSR Conformance Tests', () => {
     'toggle-shared',
     'reactive-props',
     'props-reactivity-comparison',
+    //   - `search-params-derived-memo`: the memo's template-eval reads the
+    //     env-signal getter (`sp()`), a binding only init/hydration wires up
+    //     (the per-request reader) — same init-wired-binding class as
+    //     `toggle-shared` above. The client-side env-signal behavior is
+    //     covered by the runtime `env-signal` tests; SSR coverage lives in
+    //     the per-adapter render conformance (#2075).
+    'search-params-derived-memo',
+    //   - `search-params-derived-memo-bare`: same reason — the bare-getter
+    //     sibling of `search-params-derived-memo` above (no `??` default).
+    //     The CSR harness's stubbed getter yields the JS literal `null`
+    //     (real text), while `expectedHtml`'s empty comparison target
+    //     reflects the per-adapter render contract (#2075).
+    'search-params-derived-memo-bare',
     //   - `todo-app`: its keyed `.map(...)` of `TodoItem` children is
     //     materialised at init time, so the SSR snapshot captures the
     //     empty `<ul>` while the CSR template lambda renders the full

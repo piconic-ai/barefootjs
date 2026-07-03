@@ -161,9 +161,21 @@ func EvalNode(node any, env map[string]any) any {
 			out[key] = EvalNode(pm["value"], env)
 		}
 		return out
+
+	case "array-method":
+		// `.includes(x)` is the one `array-method` the evaluator executes (the
+		// JS reference's `evaluate` "array-method" arm, eval-reference.ts):
+		// every other array/string method (`join`, `slice`, `flat`, …) is
+		// refused upstream (BF101) and never reaches here.
+		method, _ := n["method"].(string)
+		rawArgs, _ := n["args"].([]any)
+		if method != "includes" || len(rawArgs) != 1 {
+			return nil
+		}
+		return evalIncludes(EvalNode(n["object"], env), EvalNode(rawArgs[0], env))
 	}
-	// arrow-fn / higher-order / array-method / unsupported: a callback body
-	// containing these is refused upstream (BF101); never reached here.
+	// arrow-fn / higher-order / unsupported: a callback body containing these
+	// is refused upstream (BF101); never reached here.
 	return nil
 }
 
@@ -375,6 +387,44 @@ func evalStrictEq(l, r any) bool {
 	// runtime trusts that gate rather than re-validating, returning false
 	// here (it does not attempt JS reference identity, which templates can't
 	// model anyway).
+	return false
+}
+
+// evalSameValueZero implements `Array.prototype.includes`'s membership
+// comparison: `===` except `NaN` equals itself (JS's SameValueZero). Reuses
+// evalStrictEq — the one divergence, both operands NaN, is checked first;
+// every other pair (including "one NaN, one not") falls through to the same
+// equality `evalBinary`'s `===` uses, so the two operators stay in lockstep.
+func evalSameValueZero(a, b any) bool {
+	if evalIsNumeric(a) && evalIsNumeric(b) {
+		af, bf := toFloat64(a), toFloat64(b)
+		if math.IsNaN(af) && math.IsNaN(bf) {
+			return true
+		}
+	}
+	return evalStrictEq(a, b)
+}
+
+// evalIncludes implements `.includes(needle)`, shared between
+// `Array.prototype.includes` (SameValueZero membership over a slice/array
+// receiver) and `String.prototype.includes` (substring search), mirroring
+// the receiver-type dispatch the SSR template lowering already does
+// (`bf_includes`). Any other receiver type is not a JS `.includes` target;
+// this degrades to false rather than panicking (there is no receiver here
+// for which JS itself would throw), matching the JS reference
+// (eval-reference.ts `includes`).
+func evalIncludes(obj, needle any) bool {
+	if arr := toAnySlice(obj); arr != nil {
+		for _, el := range arr {
+			if evalSameValueZero(el, needle) {
+				return true
+			}
+		}
+		return false
+	}
+	if s, ok := obj.(string); ok {
+		return strings.Contains(s, evalToString(needle))
+	}
 	return false
 }
 
