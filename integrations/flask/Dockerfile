@@ -18,6 +18,9 @@ COPY dist ./dist
 
 ENV BASE_PATH=/integrations/flask
 ENV FLASK_ENV=production
+# The Cloudflare Container worker probes defaultPort 8080 (container.ts);
+# without this the app falls back to its dev port 3008 and never comes up.
+ENV PORT=8080
 EXPOSE 8080
 USER app
 CMD ["python3", "app.py"]
