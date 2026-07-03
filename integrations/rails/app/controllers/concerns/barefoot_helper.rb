@@ -25,36 +25,36 @@
 # only". The controllers render the assembled string with `render html:` +
 # `layout: false`.
 module BarefootHelper
-  include Barefoot
+  include ExampleApp
 
   # Build a per-request runtime, register child renderers, render the component
   # template, and wrap the result in the page layout.
   def render_component(component, heading: '', title: nil, props: nil, children: {}, signal_init: {}, stash: {}, extra_css: '', back: nil)
-    bf = BarefootJS::Context.new(Barefoot::BACKEND)
-    scope_id = "#{component}_#{Barefoot.rand_suffix}"
+    bf = BarefootJS::Context.new(ExampleApp::BACKEND)
+    scope_id = "#{component}_#{ExampleApp.rand_suffix}"
     bf._scope_id(scope_id)
     bf._props(props) if props && !props.empty?
 
     children.each do |slot, child_template|
       child_init = signal_init[slot]
       bf.register_child_renderer(slot, lambda do |child_props, _caller|
-        child_bf = BarefootJS::Context.new(Barefoot::BACKEND)
+        child_bf = BarefootJS::Context.new(ExampleApp::BACKEND)
         slot_id = child_props.delete(:_bf_slot)
         # Loop children carry no _bf_slot; fall back to template + suffix so
         # each instance gets a distinct scope id (client JS finds children by
         # scope). Slot children pin to <parent>_<slot>.
-        child_bf._scope_id(slot_id ? "#{scope_id}_#{slot_id}" : "#{child_template}_#{Barefoot.rand_suffix}")
+        child_bf._scope_id(slot_id ? "#{scope_id}_#{slot_id}" : "#{child_template}_#{ExampleApp.rand_suffix}")
         child_bf._is_child(true)
         # Share the parent's script collector so a child's register_script
         # de-dupes against the page's existing <script> set.
         child_bf._scripts(bf._scripts)
         child_bf._script_seen(bf._script_seen)
         extra = child_init ? child_init.call(child_props) : {}
-        Barefoot::BACKEND.render_named(child_template, child_bf, child_props.merge(extra))
+        ExampleApp::BACKEND.render_named(child_template, child_bf, child_props.merge(extra))
       end)
     end
 
-    body = Barefoot::BACKEND.render_named(component, bf, stash)
+    body = ExampleApp::BACKEND.render_named(component, bf, stash)
     document = layout(
       title: title || "#{component} - BarefootJS",
       heading: heading,
@@ -67,14 +67,14 @@ module BarefootHelper
   end
 
   def layout(title:, heading:, body:, scripts:, extra_css: '', back: nil)
-    base = Barefoot::BASE
+    base = ExampleApp::BASE
     heading_html = heading && !heading.empty? ? "<h1>#{heading}</h1>" : ''
     # Subpages link back to the example list (BASE/); the list page itself
     # passes back: '' to suppress the link (the header breadcrumb already
     # navigates up to /integrations).
     back_href = back || "#{base}/"
     back_html = back_href.empty? ? '' : %(<p><a href="#{back_href}">&larr; Back</a></p>)
-    dev_snippet = Barefoot::DEV ? BarefootJS::DevReload.snippet("#{base}/_bf/reload") : ''
+    dev_snippet = ExampleApp::DEV ? BarefootJS::DevReload.snippet("#{base}/_bf/reload") : ''
     <<~HTML
       <!DOCTYPE html>
       <html lang="en" class="dark">
@@ -117,29 +117,29 @@ module BarefootHelper
   # in-memory todo store, using Rails' cookies API.
   # -----------------------------------------------------------------------
   def bf_session
-    id = cookies[Barefoot::SESSION_COOKIE]
+    id = cookies[ExampleApp::SESSION_COOKIE]
     if id.nil? || id.empty?
       id = SecureRandom.hex(16)
-      cookies[Barefoot::SESSION_COOKIE] = {
+      cookies[ExampleApp::SESSION_COOKIE] = {
         value: id,
-        path: Barefoot::BASE,
+        path: ExampleApp::BASE,
         httponly: true,
         same_site: :lax,
-        expires: Time.now + Barefoot::SESSION_TTL_SEC,
+        expires: Time.now + ExampleApp::SESSION_TTL_SEC,
       }
     end
 
-    Barefoot::SESSIONS_MUTEX.synchronize do
-      unless Barefoot::SESSIONS.key?(id)
-        Barefoot::SESSIONS[id] = { todos: Barefoot.seed_todos, next_id: 4 }
-        Barefoot::SESSION_ORDER.push(id)
-        while Barefoot::SESSION_ORDER.length > Barefoot::SESSION_STORE_MAX
-          Barefoot::SESSIONS.delete(Barefoot::SESSION_ORDER.shift)
+    ExampleApp::SESSIONS_MUTEX.synchronize do
+      unless ExampleApp::SESSIONS.key?(id)
+        ExampleApp::SESSIONS[id] = { todos: ExampleApp.seed_todos, next_id: 4 }
+        ExampleApp::SESSION_ORDER.push(id)
+        while ExampleApp::SESSION_ORDER.length > ExampleApp::SESSION_STORE_MAX
+          ExampleApp::SESSIONS.delete(ExampleApp::SESSION_ORDER.shift)
         end
       end
-      Barefoot::SESSION_ORDER.delete(id)
-      Barefoot::SESSION_ORDER.push(id)
-      Barefoot::SESSIONS[id]
+      ExampleApp::SESSION_ORDER.delete(id)
+      ExampleApp::SESSION_ORDER.push(id)
+      ExampleApp::SESSIONS[id]
     end
   end
 

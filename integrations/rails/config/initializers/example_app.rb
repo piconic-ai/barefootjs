@@ -26,7 +26,7 @@ require 'barefoot_js/dev_reload'
 # Namespaced so nothing leaks into the global Object space (unlike the Sinatra
 # port's bare top-level constants). config.ru and the BarefootHelper concern
 # both reach in through this module.
-module Barefoot
+module ExampleApp
   # URL prefix the app is mounted under. Defaults to /integrations/rails so the
   # app is deploy-ready for barefootjs.dev/integrations/rails. config.ru's
   # Rack::Builder mounts the static assets + this app at the same prefix.

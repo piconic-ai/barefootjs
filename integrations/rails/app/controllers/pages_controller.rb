@@ -4,7 +4,7 @@
 # component demo. Each action is a 1:1 port of the matching Sinatra route.
 class PagesController < ApplicationController
   def index
-    base = Barefoot::BASE
+    base = ExampleApp::BASE
     body = <<~HTML
       <p>This example renders the same shared JSX components on Ruby on Rails
       (ERB) — a hand-trimmed Rails app (routing + controllers only, no
@@ -77,6 +77,6 @@ class PagesController < ApplicationController
                      title: 'AI Chat — SSE Streaming (Rails)',
                      heading: 'AI Chat — SSE Streaming',
                      stash: { messages: [], input: '', streamingText: '', isStreaming: false },
-                     extra_css: %(<link rel="stylesheet" href="#{Barefoot::BASE}/styles/ai-chat.css">))
+                     extra_css: %(<link rel="stylesheet" href="#{ExampleApp::BASE}/styles/ai-chat.css">))
   end
 end

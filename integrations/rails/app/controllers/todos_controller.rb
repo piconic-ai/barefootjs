@@ -26,7 +26,7 @@ class TodosController < ApplicationController
     todo = nil
     # id assignment + increment must be atomic together (Puma is threaded) or
     # two concurrent POSTs could read the same next_id before either increments.
-    Barefoot::SESSIONS_MUTEX.synchronize do
+    ExampleApp::SESSIONS_MUTEX.synchronize do
       todo = { id: session[:next_id], text: input[:text], done: false, editing: false }
       session[:todos].push(todo)
       session[:next_id] += 1
@@ -38,7 +38,7 @@ class TodosController < ApplicationController
     session = bf_session
     input = parse_json_body
     id = params[:id].to_i
-    todo = Barefoot::SESSIONS_MUTEX.synchronize do
+    todo = ExampleApp::SESSIONS_MUTEX.synchronize do
       t = session[:todos].find { |x| x[:id] == id }
       next nil unless t
 
@@ -54,14 +54,14 @@ class TodosController < ApplicationController
   def api_destroy
     session = bf_session
     id = params[:id].to_i
-    Barefoot::SESSIONS_MUTEX.synchronize { session[:todos].reject! { |t| t[:id] == id } }
+    ExampleApp::SESSIONS_MUTEX.synchronize { session[:todos].reject! { |t| t[:id] == id } }
     head :no_content
   end
 
   def api_reset
     session = bf_session
-    Barefoot::SESSIONS_MUTEX.synchronize do
-      session[:todos] = Barefoot.seed_todos
+    ExampleApp::SESSIONS_MUTEX.synchronize do
+      session[:todos] = ExampleApp.seed_todos
       session[:next_id] = 4
     end
     render plain: 'ok'

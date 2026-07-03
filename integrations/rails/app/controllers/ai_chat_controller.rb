@@ -10,7 +10,7 @@ class AiChatController < ApplicationController
   def stream
     response.headers['Content-Type'] = 'text/event-stream'
     response.headers['Cache-Control'] = 'no-cache'
-    text = Barefoot::AI_RESPONSES.sample
+    text = ExampleApp::AI_RESPONSES.sample
     text.each_char do |ch|
       response.stream.write "data: #{JSON.generate(ch)}\n\n"
       sleep 0.03

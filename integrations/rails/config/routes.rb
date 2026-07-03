@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Routes are defined WITHOUT the BASE prefix: config.ru mounts the whole Rails
-# app under BASE (`map "#{Barefoot::BASE}" { run Rails.application }`), which
+# app under BASE (`map "#{ExampleApp::BASE}" { run Rails.application }`), which
 # strips the prefix from PATH_INFO before Rails routing sees it — exactly how
 # the Sinatra example's config.ru works. Hrefs in the rendered HTML are still
 # written with the BASE prefix (see BarefootHelper), so nothing here relies on

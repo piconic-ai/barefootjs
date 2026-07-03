@@ -19,28 +19,28 @@ require_relative 'config/environment'
 root = Rails.root
 
 app = Rack::Builder.new do
-  map "#{Barefoot::BASE}/client" do
+  map "#{ExampleApp::BASE}/client" do
     run Rack::Files.new(root.join('dist/client').to_s)
   end
 
-  map "#{Barefoot::BASE}/styles" do
+  map "#{ExampleApp::BASE}/styles" do
     run Rack::Files.new(root.join('dist/styles').to_s)
   end
 
-  if Barefoot::DEV
-    map "#{Barefoot::BASE}/_bf/reload" do
+  if ExampleApp::DEV
+    map "#{ExampleApp::BASE}/_bf/reload" do
       run BarefootJS::DevReload.to_app(dist_dir: root.join('dist').to_s)
     end
   end
 
-  map Barefoot::BASE do
+  map ExampleApp::BASE do
     run Rails.application
   end
 
   map '/' do
     # Rack 3 requires lowercase header names (Rack::Lint enforces this in
     # development).
-    run ->(_env) { [302, { 'location' => "#{Barefoot::BASE}/" }, []] }
+    run ->(_env) { [302, { 'location' => "#{ExampleApp::BASE}/" }, []] }
   end
 end
 
