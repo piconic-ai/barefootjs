@@ -58,6 +58,13 @@ runAdapterConformanceTests({
   // a `SearchParams bf.SearchParams` binding (zero value → empty query → the
   // author's default). See #1922; Mojo / Xslate stay skipped pending their own
   // env-signal lowering + per-request Perl reader.
+  //
+  // `search-params-derived-filter` (#2075) is no longer skipped: a LIST-
+  // valued memo derived from the searchParams() env signal (the blog
+  // `visible` filter shape) now SSR-computes via `bf.FilterEval` — the
+  // memo's field type is `[]any` and its constructor init serializes the
+  // `.filter` predicate to the runtime evaluator. See the #2075 constructor
+  // pins below.
   skipJsx: [],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives here (not on the
@@ -165,6 +172,11 @@ runAdapterConformanceTests({
     // `string-trim` no longer pinned — pre-existing `bf_trim`
     // (wraps `strings.TrimSpace`) handles the strip (#1448 Tier A
     // ninth PR, closing out Tier A).
+    // #2073 follow-up: a function-reference `.map(format)` callback has no
+    // arrow body to serialize — not a CALLBACK_METHODS shape — so the
+    // UNSUPPORTED_METHODS gate refuses it with BF101 rather than emitting
+    // a broken template.
+    'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two
@@ -3027,6 +3039,205 @@ export { C }
   })
 })
 
+describe('GoTemplateAdapter - #2075 searchParams()-derived memo constructor', () => {
+  // A memo derived from the createSearchParams() env signal SSR-computes in
+  // the generated constructor from the canonical `in.SearchParams` reader —
+  // including under a local alias. `Get` returns "" for an absent key, so
+  // the `??` default fires on "" — the same documented `?? → or` divergence
+  // as the template-position lowering.
+  test('computes an aliased `?? default` derived memo from in.SearchParams', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain(
+      'Sort: func() string { if v := in.SearchParams.Get("sort"); v != "" { return v }; return "date" }(),',
+    )
+  })
+
+  test('computes a bare env read memo from in.SearchParams', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function QueryEcho() {
+  const [searchParams] = createSearchParams()
+  const q = createMemo(() => searchParams().get('q'))
+  return <p>{q()}</p>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('Q: in.SearchParams.Get("q"),')
+  })
+
+  // #2075 residual: a LIST-valued memo (`.filter(arrow)` over a props array)
+  // chained off the env-derived `tag` memo — the `search-params-derived-filter`
+  // shared fixture's shape. The field is `[]any` (not the misclassified `bool`
+  // the `/=>\s*!/` heuristic used to produce from the predicate's `!tag()`),
+  // and the constructor seeds it via `bf.FilterEval`, whose serialized
+  // predicate JSON is embedded (escaped) in the Go string literal.
+  test('computes a list-filter memo chained off a searchParams()-derived memo via bf.FilterEval', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('Visible []any')
+    expect(types).toContain('Visible: bf.FilterEval(in.Items,')
+    // The predicate JSON is escaped inside a Go double-quoted string literal,
+    // so assert on the substring that survives escaping (backslash-escaped
+    // quotes around the JSON keys/values).
+    expect(types).toContain('\\"method\\":\\"includes\\"')
+  })
+
+  // #2077 review finding 3: `tag` (an earlier sibling the `visible` filter's
+  // predicate closes over) used to be recomputed verbatim a second time
+  // inline in `visible`'s `bf.FilterEval` env map — the same
+  // `in.SearchParams.Get("tag")` expression emitted twice in the constructor.
+  // It's now hoisted to a shared local before the `return`, referenced by
+  // BOTH the `Tag:` field and the env-map entry.
+  test('hoists the earlier sibling memo instead of duplicating its expression', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('var memoTag string =')
+    expect(types).toContain('Tag: memoTag,')
+    expect(types).toContain('"tag": memoTag')
+    // The multi-token `Get("tag")` expression appears exactly once in the
+    // whole constructor — the hoisted local, not a second inline copy.
+    expect(types.split('in.SearchParams.Get("tag")').length).toBe(2)
+  })
+})
+
+describe('GoTemplateAdapter - env-derived memo sourced from the SSR seed plan (Package I)', () => {
+  // `CompileState.ssrSeedPlan` (and `envSignalReadersByLocal` derived from it)
+  // is now the single authority for env-reader recognition. `compileToIR`
+  // already JSON-round-trips the IR (mirrors the adapter conformance
+  // harness), so each `env-reader` step's `reader.methods` — a ReadonlySet —
+  // arrives serialized to `{}`; `primeCompileState` re-resolves a live reader
+  // via `envSignalReaderFor(step.reader.key)` before trusting `.methods`.
+  // Pins that the env-derived memo constructor still SSR-computes through
+  // that re-resolution instead of silently falling back to a zero value.
+  test('computes an env-derived memo constructor through the JSON-round-tripped ssrSeedPlan', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function QueryEcho() {
+  const [searchParams] = createSearchParams()
+  const q = createMemo(() => searchParams().get('q'))
+  return <p>{q()}</p>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('Q: in.SearchParams.Get("q"),')
+  })
+})
+
+describe('GoTemplateAdapter - #2077 review sibling-memo recursion guard', () => {
+  // Finding 1: mutually-referencing memos (each resolving the other as a
+  // filter-arm free var, or as a bare-getter ternary condition) used to
+  // recurse without bound and blow the compiler's call stack
+  // (`RangeError: Maximum call stack size exceeded`, verified by probe before
+  // the fix). The cycle/declaration-order guard makes both directions fall
+  // back to the field's Go zero value instead of throwing.
+  test('mutual filter-arm memos compile without throwing and fall back to zero values', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { title: string }[] }) {
+  const a = createMemo(() => props.items.filter((x) => Boolean(b())))
+  const b = createMemo(() => props.items.filter((x) => Boolean(a())))
+  return <ul>{a().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A []any')
+    expect(types).toContain('B []any')
+    // Neither memo can resolve the OTHER as a free var (order rules out both
+    // directions at once — `a` can't see `b` because `b` is declared later,
+    // and vice versa), so `a`'s own computation falls back to the `[]any`
+    // zero value (hoisted since `b` references it), and `b`'s free-var
+    // resolution of `a` reuses that hoisted zero-valued local.
+    expect(types).toContain('var memoA []any = nil')
+    expect(types).toContain('A: memoA,')
+    expect(types).toContain('B: bf.FilterEval(in.Items,')
+    expect(types).toContain('map[string]any{"a": memoA}')
+  })
+
+  test('mutual ternary memos (bare-getter condition) compile without throwing and fall back to zero values', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C() {
+  const a = createMemo(() => (b() ? 'A' : 'Z'))
+  const b = createMemo(() => (a() ? 'B' : 'Y'))
+  return <p>{a()}{b()}</p>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A: "",')
+    expect(types).toContain('B: "",')
+  })
+
+  test('self-referencing filter-arm memo compiles without throwing', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { title: string }[] }) {
+  const a = createMemo(() => props.items.filter((x) => Boolean(a())))
+  return <ul>{a().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A: nil,')
+  })
+
+  test('self-referencing ternary memo compiles without throwing', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C() {
+  const a = createMemo(() => (a() ? 'A' : 'Z'))
+  return <p>{a()}</p>
+}
+`, adapter)
+    let types = ''
+    expect(() => { types = adapter.generate(ir).types }).not.toThrow()
+    expect(types).toContain('A: "",')
+  })
+})
+
 describe('GoTemplateAdapter - #2073 value-producing .map(cb)', () => {
   function emitMap(expr: string): string {
     const adapter = new GoTemplateAdapter()
@@ -3055,19 +3266,9 @@ export { C }
     expect(t).toContain('bf_map_eval .Users')
   })
 
-  test('function-reference callback (.map(format)) still refuses with BF101', () => {
-    const adapter = new GoTemplateAdapter()
-    const ir = compileToIR(`
-const format = (t: string) => t
-function C({ tags }: { tags: string[] }) {
-  return <div>{tags.map(format).join(' ')}</div>
-}
-export { C }
-`, adapter)
-    adapter.generate(ir)
-    const errs = (adapter as unknown as { errors: { code: string }[] }).errors
-    expect(errs.some(e => e.code === 'BF101')).toBe(true)
-  })
+  // The function-reference `.map(format)` BF101 refusal is now covered
+  // cross-adapter by the `array-map-function-reference` shared fixture's
+  // `expectedDiagnostics` entry above.
 })
 
 describe('GoTemplateAdapter - #1448 Tier C .flatMap(field projection)', () => {

@@ -3131,6 +3131,82 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
 }
 
 /**
+ * Rewrite every zero-arg `call` node whose callee is a bare identifier in
+ * `names` into that identifier — `tag()` → `tag` — leaving everything else
+ * untouched. Returns a new tree; the input is never mutated.
+ *
+ * Rationale: in an SSR seed/constructor context a signal/memo getter call
+ * reads the already-computed SEEDED value, so `tag()` reduces to "the value
+ * bound to `tag`". Materialising the call lets the runtime evaluator (which
+ * refuses any non-builtin call, {@link toEvalNode}'s `evalBuiltinCalleeName`
+ * gate) evaluate a predicate that reads sibling memos — e.g. a `.filter`
+ * predicate `(p) => !tag() || p.tags.includes(tag())` — with the getter's
+ * value supplied through the evaluator's `base_env` instead of an
+ * unsupported call node. `names` is caller-supplied (typically the sibling
+ * signals/memos seeded alongside the derived memo being lowered), so a call
+ * to an unrelated function is left as a `call` node and still refused by the
+ * evaluator's builtin gate if it reaches `serializeParsedExpr`.
+ */
+export function materializeGetterCalls(expr: ParsedExpr, names: ReadonlySet<string>): ParsedExpr {
+  const rw = (e: ParsedExpr): ParsedExpr => materializeGetterCalls(e, names)
+  switch (expr.kind) {
+    case 'call':
+      if (
+        expr.args.length === 0 &&
+        expr.callee.kind === 'identifier' &&
+        names.has(expr.callee.name)
+      ) {
+        return { kind: 'identifier', name: expr.callee.name }
+      }
+      return { kind: 'call', callee: rw(expr.callee), args: expr.args.map(rw) }
+    case 'binary':
+      return { kind: 'binary', op: expr.op, left: rw(expr.left), right: rw(expr.right) }
+    case 'logical':
+      return { kind: 'logical', op: expr.op, left: rw(expr.left), right: rw(expr.right) }
+    case 'unary':
+      return { kind: 'unary', op: expr.op, argument: rw(expr.argument) }
+    case 'conditional':
+      return {
+        kind: 'conditional',
+        test: rw(expr.test),
+        consequent: rw(expr.consequent),
+        alternate: rw(expr.alternate),
+      }
+    case 'member':
+      return { kind: 'member', object: rw(expr.object), property: expr.property, computed: expr.computed }
+    case 'index-access':
+      return { kind: 'index-access', object: rw(expr.object), index: rw(expr.index) }
+    case 'template-literal':
+      return {
+        kind: 'template-literal',
+        parts: expr.parts.map(p => (p.type === 'string' ? p : { type: 'expression', expr: rw(p.expr) })),
+      }
+    case 'array-literal':
+      return { kind: 'array-literal', elements: expr.elements.map(rw) }
+    case 'array-method':
+      // `flat`'s `args` is always `[]` (the depth is carried structurally in
+      // `flatDepth`, not `args`) — still rewrite `object`, just skip the
+      // `args.map` that every other method needs.
+      if (expr.method === 'flat') return { ...expr, object: rw(expr.object) }
+      return { ...expr, object: rw(expr.object), args: expr.args.map(rw) }
+    case 'object-literal':
+      return {
+        kind: 'object-literal',
+        raw: expr.raw,
+        properties: expr.properties.map(p => ({ ...p, value: rw(p.value) })),
+      }
+    case 'arrow':
+      return { kind: 'arrow', params: expr.params, body: rw(expr.body) }
+    // Leaves / opaque shapes — nothing to rewrite.
+    case 'identifier':
+    case 'literal':
+    case 'regex':
+    case 'unsupported':
+      return expr
+  }
+}
+
+/**
  * Serialize a pure-expression `ParsedExpr` (a higher-order callback body) into
  * the minimal JSON the runtime evaluator consumes — the format pinned by the
  * `eval-vectors` golden cases and read by Go `eval.go` `EvalNode` / Perl
@@ -3210,10 +3286,20 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
         // carries the ref on its `value` identifier, which is visited here.)
         for (const p of e.properties) visit(p.value)
         return
+      case 'array-method':
+        // Only `.includes(x)` is serializable ({@link toEvalNode}); its
+        // `object` (the receiver) and `args` (the needle) are the value
+        // positions serialized, so visit both when the tree reaches here
+        // with that method. Every other `array-method` is non-serializable
+        // and doesn't occur in a serializable body.
+        if (e.method === 'includes') {
+          visit(e.object)
+          e.args.forEach(visit)
+        }
+        return
       // Non-serializable kinds don't occur in a serializable body
       // (serializeParsedExpr returns null for them); nothing to collect.
       case 'literal':
-      case 'array-method':
       case 'arrow':
       case 'regex':
       case 'unsupported':
@@ -3222,6 +3308,87 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
   }
   visit(body)
   return [...found].sort()
+}
+
+/**
+ * Every value-position identifier in `expr` NOT bound by an enclosing arrow's
+ * own parameters — with proper lexical scoping: an arrow's params bind only
+ * within that arrow's body, and nested arrows accumulate onto the enclosing
+ * bound set. Unlike {@link freeVarsInBody} (which assumes a single flat param
+ * set and never recurses into nested `arrow` nodes, since a serializable
+ * evaluator body never contains one), this walks the full source-level tree —
+ * including arrows — so a caller can ask "is this name free ANYWHERE in the
+ * expression, honoring each arrow's own scope" rather than only within one
+ * callback body.
+ *
+ * Walks the same value positions as {@link serializeParsedExpr} /
+ * {@link freeVarsInBody}: call callee (skipped when it resolves to an
+ * evaluator builtin — see {@link evalBuiltinCalleeName} — so `Math.floor(x)`
+ * doesn't report `Math` as free) + args, binary/logical/unary operands,
+ * conditional branches, a member's OBJECT only (the property name is not a
+ * reference), an index-access's object + index, template-literal expression
+ * parts, array-literal elements, array-method object + args, and an
+ * object-literal's property VALUES (not keys). An `arrow` recurses into its
+ * body with its own params added to the bound set.
+ *
+ * Returns `null` when the tree contains an `unsupported` node (or any other
+ * shape this walk can't analyze) — the caller must fail safe rather than
+ * assume nothing is free.
+ */
+export function freeIdentifiers(expr: ParsedExpr): Set<string> | null {
+  const free = new Set<string>()
+
+  function visit(e: ParsedExpr, bound: ReadonlySet<string>): boolean {
+    switch (e.kind) {
+      case 'literal':
+      case 'regex':
+        return true
+      case 'identifier':
+        if (!bound.has(e.name)) free.add(e.name)
+        return true
+      case 'call': {
+        const isBuiltinCallee = evalBuiltinCalleeName(e.callee) !== null
+        if (!isBuiltinCallee && !visit(e.callee, bound)) return false
+        for (const a of e.args) if (!visit(a, bound)) return false
+        return true
+      }
+      case 'member':
+        return visit(e.object, bound)
+      case 'index-access':
+        return visit(e.object, bound) && visit(e.index, bound)
+      case 'binary':
+      case 'logical':
+        return visit(e.left, bound) && visit(e.right, bound)
+      case 'unary':
+        return visit(e.argument, bound)
+      case 'conditional':
+        return visit(e.test, bound) && visit(e.consequent, bound) && visit(e.alternate, bound)
+      case 'template-literal':
+        for (const p of e.parts) {
+          if (p.type === 'expression' && !visit(p.expr, bound)) return false
+        }
+        return true
+      case 'array-literal':
+        for (const el of e.elements) if (!visit(el, bound)) return false
+        return true
+      case 'array-method':
+        if (!visit(e.object, bound)) return false
+        for (const a of e.args) if (!visit(a, bound)) return false
+        return true
+      case 'object-literal':
+        for (const p of e.properties) if (!visit(p.value, bound)) return false
+        return true
+      case 'arrow': {
+        const inner = new Set(bound)
+        for (const p of e.params) inner.add(p)
+        return visit(e.body, inner)
+      }
+      case 'unsupported':
+        return false
+    }
+  }
+
+  return visit(expr, new Set()) ? free : null
 }
 
 // Operators the evaluator implements (Go `eval.go` evalBinary / evalUnary, Perl
@@ -3355,10 +3522,24 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
       }
       return { kind: 'object-literal', properties }
     }
+    case 'array-method': {
+      // `.includes(x)` is the one `array-method` the evaluator executes
+      // (Go `eval.go` / Perl `Evaluator.pm`, includes support): the
+      // receiver-type dispatch (array SameValueZero membership vs string
+      // substring) happens at evaluator runtime, same as the SSR template
+      // lowering's `bf_includes` / `$bf->includes`. Every other
+      // `array-method` (`join`, `slice`, `flat`, …) is outside the
+      // evaluator's surface and refuses below.
+      if (e.method === 'includes' && e.args.length === 1) {
+        const object = toEvalNode(e.object)
+        const arg = toEvalNode(e.args[0])
+        return object && arg ? { kind: 'array-method', method: 'includes', object, args: [arg] } : null
+      }
+      return null
+    }
     // Outside the evaluator's pure-expression surface — refuse so the caller
     // falls back to BF101 / `@client`. A nested `arrow` (a callback inside the
     // body) is refused here, keeping the evaluator non-recursive.
-    case 'array-method':
     case 'arrow':
     case 'regex':
     case 'unsupported':

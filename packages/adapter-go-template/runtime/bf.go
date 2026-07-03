@@ -1014,7 +1014,14 @@ func At(items any, index int) any {
 // the adapter can't disambiguate the receiver at compile time,
 // so this helper dispatches at runtime on `reflect.Kind()`:
 //
-//   - slice/array receiver:  DeepEqual element search
+//   - slice/array receiver:  SameValueZero element search (matches
+//     the evaluator's `evalSameValueZero`/`evalIncludes` in eval.go,
+//     which back the serialized-callback path) — numeric types compare
+//     by value across int/float64 the way JS's single "number" type
+//     does, and NaN matches NaN (unlike `===`). This used to be
+//     `reflect.DeepEqual`, which is type-strict (`int(2)` != `float64(2)`)
+//     and never matches NaN to NaN; that diverged from the evaluator's
+//     `.includes` and from JS itself, so it was unified here.
 //   - string receiver:       strings.Contains substring search
 //
 // Anything else returns false (matches the JS semantic where
@@ -1037,7 +1044,7 @@ func Includes(recv any, elem any) bool {
 		return false
 	}
 	for i := 0; i < v.Len(); i++ {
-		if reflect.DeepEqual(v.Index(i).Interface(), elem) {
+		if evalSameValueZero(v.Index(i).Interface(), elem) {
 			return true
 		}
 	}

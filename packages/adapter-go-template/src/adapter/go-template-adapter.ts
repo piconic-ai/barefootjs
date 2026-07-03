@@ -62,8 +62,9 @@ import {
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
-  searchParamsLocalNames,
-  prepareLoweringMatchers
+  prepareLoweringMatchers,
+  envSignalReaderFor,
+  computeSsrSeedPlan,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION } from '@barefootjs/shared'
@@ -116,10 +117,10 @@ import {
   objectLiteralToGoMap,
 } from "./value/value-lowering.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
-import { isBooleanMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
+import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames } from "./props/prop-types.ts"
 
@@ -273,7 +274,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentMemos = ir.metadata.memos ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
-    this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
+    // Single authority (Package G): the plan already decided which signals are
+    // per-request env readers, in declaration order. `ir.metadata.ssrSeedPlan`
+    // may be absent for hand-built metadata (tests), hence the fallback to the
+    // same shared computation rather than a second, divergent derivation.
+    this.state.ssrSeedPlan = ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata)
+    this.state.envSignalReadersByLocal = new Map()
+    this.state.searchParamsLocals = new Set()
+    for (const step of this.state.ssrSeedPlan.steps) {
+      if (step.kind !== 'env-reader') continue
+      // `reader.methods` is a ReadonlySet — JSON round-tripping (adapter
+      // conformance harness) serializes it to `{}`, so re-resolve a live
+      // reader from the registry by key instead of trusting `step.reader`.
+      const reader = envSignalReaderFor(step.reader.key)
+      if (reader) this.state.envSignalReadersByLocal.set(step.name, reader)
+      if (step.reader.key === 'search') this.state.searchParamsLocals.add(step.name)
+    }
     this.state.loweringMatchers = prepareLoweringMatchers(ir.metadata)
     augmentInheritedPropAccesses(ir)
   }
@@ -1001,6 +1017,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.emitDynamicBodyWrappers(lines, ir, componentName, dynamicWithBody, propFallbackVars, emittedWrapperVars)
 
+    // Sibling-memo hoisting (#2075/#2077 review finding 3): a filter-arm memo
+    // whose predicate free vars reference an EARLIER sibling memo would
+    // otherwise recompute that sibling's whole expression a second time
+    // inline in its `bf.FilterEval` env map, duplicating it against the
+    // sibling's own field. Two-pass: first collect which memos are
+    // referenced this way, then hoist each into a local emitted once before
+    // the `return`; the memo-field loop below (and the referencing memo's own
+    // env-map entry, via `ctx.state.hoistedMemoLocals`) both reuse the local
+    // instead of re-emitting the expression. Declared `var name Type = value`
+    // (not `:=`) because an unresolved computation can fall back to the bare
+    // `nil` literal, which `:=` can't type-infer.
+    const memoPropsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+    this.state.hoistedMemoLocals = new Map()
+    const hoistNames = new Set<string>()
+    for (const memo of ir.metadata.memos) {
+      for (const name of filterArmEarlierSiblingRefs(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams)) {
+        hoistNames.add(name)
+      }
+    }
+    if (hoistNames.size > 0) {
+      for (const memo of ir.metadata.memos) {
+        if (!hoistNames.has(memo.name)) continue
+        const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
+        const value = computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
+        let localName = `memo${capitalizeFieldName(memo.name)}`
+        while (GO_KEYWORDS.has(localName)) localName += '_'
+        lines.push(`\tvar ${localName} ${goType} = ${value}`)
+        this.state.hoistedMemoLocals.set(memo.name, localName)
+      }
+      lines.push('')
+    }
+
     lines.push(`\treturn ${propsTypeName}{`)
     lines.push('\t\tScopeID: scopeID,')
     // Host context, for when *this* component is itself a slot-attached child.
@@ -1098,11 +1146,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // Memo initial values (from signal initials). Prop-shadowing memos were
-    // folded into the prop field above.
-    const memoPropsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+    // folded into the prop field above; a memo the pre-pass already hoisted
+    // (above) reuses that local instead of recomputing its expression.
     for (const memo of ir.metadata.memos) {
       const fieldName = capitalizeFieldName(memo.name)
       if (propFieldNames.has(fieldName)) continue
+      const hoistedLocal = this.state.hoistedMemoLocals.get(memo.name)
+      if (hoistedLocal) {
+        lines.push(`\t\t${fieldName}: ${hoistedLocal},`)
+        continue
+      }
       // Pass the inferred Go type so an unresolved computation zeroes to that
       // type (`false` for a boolean memo), not the int `0`.
       const goType = this.inferMemoType(memo, ir.metadata.signals, memoPropsParamMap)
@@ -2096,10 +2149,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       // A memo: when no pattern applies, return null so the caller OMITS the
-      // field and Go's typed zero value applies.
+      // field and Go's typed zero value applies. Seed the resolution stack
+      // with this memo's own name — a fresh top-level computation, so
+      // self-reference must be caught on the first recursion.
       const memo = memos.find(m => m.name === getterName)
       if (memo) {
-        return computeMemoInitialValueOrNull(this.emitCtx, memo, signals, propsParams)
+        return computeMemoInitialValueOrNull(
+          this.emitCtx, memo, signals, propsParams, undefined, new Set([memo.name]),
+        )
       }
     }
 
@@ -2112,6 +2169,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     signals: { getter: string; initialValue: string; type: TypeInfo }[],
     propsParamMap: Map<string, { name: string; type: TypeInfo; defaultValue?: string }>
   ): string {
+    // A LIST-valued `.filter(arrow)` memo (#2075 — the blog PostList `visible`
+    // shape) is a slice of the receiver's boxed elements, not a scalar.
+    // Decided FIRST, ahead of the memo's declared `type` and every other
+    // heuristic below: the analyzer's simple per-memo type inference doesn't
+    // model `.filter`'s predicate shape and can land on a bogus primitive
+    // (observed: `boolean`, from the predicate's own `!`/`||` structure),
+    // which would otherwise sail through the `typeInfoToGo(memo.type) ===
+    // 'interface{}'` gates below unchallenged. `bf.FilterEval` (the SSR
+    // constructor lowering, memo-compute.ts) returns `[]any`; the template's
+    // `range` / reflective field access handle the boxed elements the same
+    // way it already handles other `interface{}`-typed slices.
+    if (isListFilterMemo(memo)) return '[]any'
+
     // A template-literal memo always produces a string. Decide this first so a
     // class-string `/` (e.g. `ring-ring/50`) doesn't trip the arithmetic
     // heuristic below into `int`. The analyzer classified the body shape from

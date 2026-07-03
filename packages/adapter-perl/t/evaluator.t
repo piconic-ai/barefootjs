@@ -20,6 +20,11 @@ sub ncall_math {
     return { kind => 'call', callee => nmem(nid('Math'), $fn), args => [$arg] };
 }
 
+sub nincludes {
+    my ($object, $needle) = @_;
+    return { kind => 'array-method', method => 'includes', object => $object, args => [$needle] };
+}
+
 # A plain false for the `computed` flag; the evaluator only checks truthiness.
 sub JSON_false { return 0 }
 
@@ -132,6 +137,40 @@ subtest 'boolean-valued ops return JS booleans, not 1/0' => sub {
     # `.length` is a string/array property only; a numeric scalar has none.
     my $len = BarefootJS::Evaluator::evaluate(nmem(nid('n'), 'length'), { n => 123 });
     ok(!defined $len, '(123).length is null, not 3');
+};
+
+# `.includes` (#2075) is the one `array-method` in the evaluator subset,
+# dispatching on the receiver type like the SSR template lowering does at
+# runtime (`bf_includes` / `$bf->includes`): array → SameValueZero membership
+# (the same value rules as `===`, so a numeric 2 does NOT match the string
+# "2"); string → substring search; anything else degrades to false rather
+# than dying.
+subtest 'array-method includes' => sub {
+    my $hit = BarefootJS::Evaluator::evaluate(nincludes(nid('tags'), nstr('go')), { tags => [ 'perl', 'go' ] });
+    ok(JSON::PP::is_bool($hit), 'array hit is a JS boolean');
+    ok($hit, 'array .includes: hit');
+
+    my $miss = BarefootJS::Evaluator::evaluate(nincludes(nid('tags'), nstr('rust')), { tags => [ 'perl', 'go' ] });
+    ok(JSON::PP::is_bool($miss), 'array miss is a JS boolean');
+    ok(!$miss, 'array .includes: miss');
+
+    # SameValueZero, not loose equality: the numeric element 2 matches the
+    # numeric needle 2, but the string needle "2" (a different JS type) does
+    # not — mirroring `===`'s type-sensitivity.
+    my $num_hit = BarefootJS::Evaluator::evaluate(nincludes(nid('nums'), { kind => 'literal', value => 2 }), { nums => [ 1, 2, 3 ] });
+    ok($num_hit, 'array .includes: numeric element hit');
+    my $num_vs_string = BarefootJS::Evaluator::evaluate(nincludes(nid('nums'), nstr('2')), { nums => [ 1, 2, 3 ] });
+    ok(!$num_vs_string, 'array .includes: numeric element does not match a string needle');
+
+    my $sub = BarefootJS::Evaluator::evaluate(nincludes(nid('name'), nstr('ar')), { name => 'bare' });
+    ok($sub, 'string .includes: substring hit');
+
+    # A non-array, non-string receiver (number, null, object) is not a JS
+    # `.includes` target; the evaluator degrades to false rather than dying.
+    my $scalar_recv = BarefootJS::Evaluator::evaluate(nincludes(nid('n'), { kind => 'literal', value => 1 }), { n => 42 });
+    ok(!$scalar_recv, 'non-collection receiver (number) is false, not a die');
+    my $null_recv = BarefootJS::Evaluator::evaluate(nincludes(nid('n'), nstr('x')), { n => undef });
+    ok(!$null_recv, 'non-collection receiver (null) is false, not a die');
 };
 
 # sort_by tolerates a non-array receiver by returning an empty arrayref (the

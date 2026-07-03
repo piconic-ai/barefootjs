@@ -615,13 +615,23 @@ function buildGoPropsInit(
       // a bare `[]any{…}` would fail to compile against the typed field.
       // Fall back to `[]any` when the field type is `[]any` / unknown.
       const elemType = goSliceElemType(goTypes, componentName, goField)
-      lines.push(
-        `\t\t${goField}: ${
-          elemType
-            ? goTypedSliceLiteralFromArray(value, elemType)
-            : goArrayLiteralFromArray(value)
-        },`,
-      )
+      let sliceLiteral: string
+      if (elemType && elemType.startsWith('map[')) {
+        // An untyped object-array Input field (an inline prop object type
+        // that didn't synthesize a named struct, e.g. `items: { title:
+        // string; tags: string[] }[]` — `typeInfoToGo`'s 'object' case,
+        // type-codegen.ts) resolves to `[]map[string]interface{}`, not a
+        // named struct. `goTypedSliceLiteralFromArray`'s `goStructLiteral`
+        // emits bare `Field: value` entries, which is struct-literal syntax
+        // and doesn't compile as a map literal's keys — route these through
+        // the map-literal builder instead (#2075, search-params-derived-filter).
+        sliceLiteral = goTypedMapSliceLiteralFromArray(value, elemType)
+      } else if (elemType) {
+        sliceLiteral = goTypedSliceLiteralFromArray(value, elemType)
+      } else {
+        sliceLiteral = goArrayLiteralFromArray(value)
+      }
+      lines.push(`\t\t${goField}: ${sliceLiteral},`)
     } else if (value && typeof value === 'object') {
       // Plain object → Go `map[string]any` literal (#1407 follow-up).
       // Used by `jsx-spread-rest-prop` to populate the input-bag
@@ -658,7 +668,11 @@ function goSliceElemType(
     new RegExp(`type ${componentName}Input struct \\{([\\s\\S]*?)\\n\\}`),
   )
   if (!struct) return null
-  const field = struct[1].match(new RegExp(`\\n\\s*${goField}\\s+\\[\\]([\\w.]+)`))
+  // The element-type token can carry brackets/braces of its own (a map type
+  // like `map[string]interface{}`), not just word chars — broadened so the
+  // capture doesn't truncate at the first `[`. The token has no internal
+  // whitespace, so it still stops cleanly before a trailing `// comment`.
+  const field = struct[1].match(new RegExp(`\\n\\s*${goField}\\s+\\[\\]([\\w.[\\]{}]+)`))
   if (!field) return null
   const elem = field[1]
   if (elem === 'any' || elem === 'interface{}') return null
@@ -674,6 +688,30 @@ function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string): string 
   const entries = arr.map(v => {
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return goStructLiteral(v as Record<string, unknown>, elemType)
+    }
+    if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v)
+    if (v === null) return 'nil'
+    return goArrayLiteralFromArray(v as unknown[])
+  })
+  return `[]${elemType}{${entries.join(', ')}}`
+}
+
+/**
+ * Emit a typed Go slice-of-map literal (`[]map[string]interface{}{map[string]any{…}, …}`)
+ * for an untyped object-array Input field. Object elements become
+ * `map[string]any{"Field": val, …}` literals with PascalCase keys — Go
+ * template map lookup is case-sensitive, so `{{.Title}}` needs a capitalized
+ * key, same as the untyped `goArrayLiteralFromArray` fallback's object
+ * entries. `map[string]any` and `map[string]interface{}` are the identical
+ * type (`any` is the builtin alias for `interface{}`), so the emitted
+ * literal is assignable to `elemType` regardless of which spelling the
+ * Input struct field carries. (#2075, search-params-derived-filter)
+ */
+function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): string {
+  const entries = arr.map(v => {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      return goMapLiteralFromObject(v as Record<string, unknown>, true)
     }
     if (typeof v === 'string') return `"${v.replace(/"/g, '\\"')}"`
     if (typeof v === 'number' || typeof v === 'boolean') return String(v)
