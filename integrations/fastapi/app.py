@@ -747,10 +747,6 @@ under a plain FastAPI app.</p>
 <ul>
     <li><a href="{BASE}/counter">Counter</a></li>
     <li><a href="{BASE}/toggle">Toggle</a></li>
-    <li><a href="{BASE}/form">Form</a></li>
-    <li><a href="{BASE}/reactive-props">Reactive Props</a></li>
-    <li><a href="{BASE}/conditional-return">Conditional Return</a></li>
-    <li><a href="{BASE}/portal">Portal</a></li>
     <li><a href="{BASE}/todos">Todo (@client)</a></li>
     <li><a href="{BASE}/todos-ssr">Todo (no @client markers)</a></li>
     <li><a href="{BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
