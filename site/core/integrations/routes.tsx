@@ -26,6 +26,10 @@ const ADAPTERS: Adapter[] = [
   { slug: 'gin',         name: 'Gin',         language: 'Go' },
   { slug: 'chi',         name: 'Chi',         language: 'Go' },
   { slug: 'nethttp',     name: 'net/http',    language: 'Go' },
+  { slug: 'flask',       name: 'Flask',       language: 'Python' },
+  { slug: 'fastapi',     name: 'FastAPI',     language: 'Python' },
+  { slug: 'sinatra',     name: 'Sinatra',     language: 'Ruby' },
+  { slug: 'rails',       name: 'Rails',       language: 'Ruby' },
   { slug: 'mojolicious', name: 'Mojolicious', language: 'Perl' },
   { slug: 'xslate',      name: 'Text::Xslate', language: 'Perl' },
 ]
@@ -56,7 +60,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — Barefoot.js',
       description:
-        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), and Mojolicious and Text::Xslate (Perl).',
+        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), Flask and FastAPI (Python), Sinatra and Rails (Ruby), and Mojolicious and Text::Xslate (Perl).',
     }),
   )
 
