@@ -1292,17 +1292,23 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
           `('${escapeMinijinjaSingleQuoted(part.whenTrue)}' if ${cond} else '${escapeMinijinjaSingleQuoted(part.whenFalse)}')`,
         )
       } else if (part.type === 'lookup') {
-        // `${MAP[KEY]}` against a Record<T, string> literal — emit a Jinja
-        // dict literal with an immediate `.get(key, '')` lookup. `.get`'s
-        // explicit default mirrors the go-template adapter's "empty when no
-        // case matches" semantics directly (Jinja's bare `{…}[missing]`
-        // already stringifies to '' too, verified empirically, but `.get`
-        // is the more direct/idiomatic expression of the same contract).
+        // `${MAP[KEY]}` against a Record<T, string> literal — emit a
+        // minijinja dict literal indexed by KEY, piped through the builtin
+        // `default` filter for the "empty when no case matches" semantics
+        // (mirrors the go-template adapter's fallback contract). This is a
+        // minijinja divergence from the Jinja2 port: minijinja maps have no
+        // `.get(key, default)` method (`unknown method: map has no method
+        // named get`, verified) — Jinja2's dict `.get` doesn't exist here.
+        // Instead, a missing-key index on a map returns `undefined` under
+        // `UndefinedBehavior::Chainable`, and `| default('')` supplies the
+        // fallback inline (verified: `{{ {'a':'x'}[k] | default('DD') }}` →
+        // 'DD' on miss, 'x' on hit, incl. nested in call args/concat). See
+        // README.md's divergence record.
         const keyExpr = this.convertExpressionToJinja(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${minijinjaHashKey(k)}: '${escapeMinijinjaSingleQuoted(v)}'`)
           .join(', ')
-        parts.push(`bf.string({${entries}}.get(${keyExpr}, ''))`)
+        parts.push(`bf.string(({${entries}}[${keyExpr}] | default('')))`)
       }
     }
     // Join with Jinja string concatenation (`~`). Every term is already a

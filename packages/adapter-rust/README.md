@@ -158,10 +158,26 @@ async fn main() {
 ## Divergences from `@barefootjs/jinja`
 
 Beyond the identity fields (`name`, `extension`, class name) and the render
-engine itself, this is a near-verbatim port. Places the TypeScript side
-could not port byte-for-byte from `@barefootjs/jinja`, all in
-`src/test-render.ts` (the conformance-render harness, not the adapter
-itself — the emitted template syntax is unaffected):
+engine itself, this is a near-verbatim port. One divergence DOES reach the
+emitted template syntax:
+
+- **Record/map lookup with a default.** Jinja2's dict has a `.get(k, d)`
+  method; `@barefootjs/jinja` emits `{'a': 'x', ...}.get(key, '')` for a
+  `Record<K, string>[key]` template-literal lookup. minijinja maps have no
+  `.get` method (`unknown method: map has no method named get`, verified).
+  This adapter instead emits `({'a': 'x', ...}[key] | default(''))`: a
+  missing-key index on a minijinja map returns `undefined` under
+  `UndefinedBehavior::Chainable`, and the builtin `default` filter supplies
+  the fallback inline (verified: `{{ {'a':'x'}[k] | default('DD') }}` →
+  `'DD'` on miss, `'x'` on hit, including nested in call args/string
+  concat). See `convertTemplateLiteralPartsToJinja`'s `lookup` branch in
+  `src/adapter/minijinja-adapter.ts`.
+
+The remaining divergences are all in the TypeScript side's places the
+conformance harness could not port byte-for-byte from `@barefootjs/jinja`,
+confined to `src/test-render.ts` (the conformance-render harness, not the
+adapter itself — the emitted template syntax is unaffected beyond the point
+above):
 
 - **Render invocation.** `@barefootjs/jinja` generates a throwaway Python
   *script* per fixture (inline Python source building a props dict +
