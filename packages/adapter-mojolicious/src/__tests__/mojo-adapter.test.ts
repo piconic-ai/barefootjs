@@ -134,6 +134,11 @@ runAdapterConformanceTests({
     // runtime `bf->find` / `find_index` / `find_last` / `find_last_index` helpers
     // (per-element coderef predicate), matching Xslate. `.join` was never
     // pinned (handled by `renderArrayMethod`'s `case 'join'`).
+    // #2073 follow-up: a function-reference `.map(format)` callback has no
+    // arrow body to serialize — not a CALLBACK_METHODS shape — so the
+    // UNSUPPORTED_METHODS gate refuses it with BF101 rather than emitting
+    // a broken template.
+    'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
@@ -1631,19 +1636,9 @@ export { C }
     expect(t).toContain(`"property":"name"`)
   })
 
-  test('function-reference callback (.map(format)) still refuses with BF101', () => {
-    const a = new MojoAdapter()
-    const ir = compileToIR(`
-const format = (t: string) => t
-function C({ tags }: { tags: string[] }) {
-  return <div>{tags.map(format).join(' ')}</div>
-}
-export { C }
-`, a)
-    a.generate(ir)
-    const errs = (a as unknown as { errors: { code: string }[] }).errors
-    expect(errs.some(e => e.code === 'BF101')).toBe(true)
-  })
+  // The function-reference `.map(format)` BF101 refusal is now covered
+  // cross-adapter by the `array-map-function-reference` shared fixture's
+  // `expectedDiagnostics` entry above.
 })
 
 describe('MojoAdapter - #1448 Tier C .flatMap(field projection)', () => {

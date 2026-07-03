@@ -160,6 +160,7 @@ import { fixture as asyncBoundary } from './async-boundary'
 import { fixture as regionBoundary } from './region-boundary'
 import { fixture as searchParamsFixture } from './search-params'
 import { fixture as searchParamsDerivedMemo } from './search-params-derived-memo'
+import { fixture as searchParamsDerivedMemoBare } from './search-params-derived-memo-bare'
 import { fixture as searchParamsDerivedFilter } from './search-params-derived-filter'
 // Priority 10: Compiler stress catalog (#1244)
 import { fixture as style3Signals } from './style-3-signals'
@@ -203,6 +204,7 @@ import { fixture as arrayFlatInfinity } from './methods/array-flat-infinity'
 import { fixture as arrayFlatMapField } from './methods/array-flatmap-field'
 import { fixture as arrayMapValueTemplate } from './methods/array-map-value-template'
 import { fixture as arrayMapValueField } from './methods/array-map-value-field'
+import { fixture as arrayMapFunctionReference } from './methods/array-map-function-reference'
 import { fixture as arrayFlatMapSelf } from './methods/array-flatmap-self'
 import { fixture as arrayFlatMapTuple } from './methods/array-flatmap-tuple'
 import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
@@ -385,6 +387,7 @@ export const jsxFixtures: JSXFixture[] = [
   regionBoundary,
   searchParamsFixture,
   searchParamsDerivedMemo,
+  searchParamsDerivedMemoBare,
   searchParamsDerivedFilter,
   // Priority 10: Compiler stress catalog (#1244)
   style3Signals,
@@ -426,6 +429,7 @@ export const jsxFixtures: JSXFixture[] = [
   arrayFlatMapField,
   arrayMapValueTemplate,
   arrayMapValueField,
+  arrayMapFunctionReference,
   arrayFlatMapSelf,
   arrayFlatMapTuple,
   // #1448 Tier A — String methods.

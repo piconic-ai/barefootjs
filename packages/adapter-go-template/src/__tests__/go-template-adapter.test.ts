@@ -172,6 +172,11 @@ runAdapterConformanceTests({
     // `string-trim` no longer pinned — pre-existing `bf_trim`
     // (wraps `strings.TrimSpace`) handles the strip (#1448 Tier A
     // ninth PR, closing out Tier A).
+    // #2073 follow-up: a function-reference `.map(format)` callback has no
+    // arrow body to serialize — not a CALLBACK_METHODS shape — so the
+    // UNSUPPORTED_METHODS gate refuses it with BF101 rather than emitting
+    // a broken template.
+    'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
   // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
   // via `GoTemplateAdapter.templatePrimitives` (#1188). The two
@@ -3261,19 +3266,9 @@ export { C }
     expect(t).toContain('bf_map_eval .Users')
   })
 
-  test('function-reference callback (.map(format)) still refuses with BF101', () => {
-    const adapter = new GoTemplateAdapter()
-    const ir = compileToIR(`
-const format = (t: string) => t
-function C({ tags }: { tags: string[] }) {
-  return <div>{tags.map(format).join(' ')}</div>
-}
-export { C }
-`, adapter)
-    adapter.generate(ir)
-    const errs = (adapter as unknown as { errors: { code: string }[] }).errors
-    expect(errs.some(e => e.code === 'BF101')).toBe(true)
-  })
+  // The function-reference `.map(format)` BF101 refusal is now covered
+  // cross-adapter by the `array-map-function-reference` shared fixture's
+  // `expectedDiagnostics` entry above.
 })
 
 describe('GoTemplateAdapter - #1448 Tier C .flatMap(field projection)', () => {

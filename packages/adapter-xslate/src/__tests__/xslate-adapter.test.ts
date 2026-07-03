@@ -119,6 +119,11 @@ runAdapterConformanceTests({
     // `find_last_index` via the same Kolon-lambda mechanism as `.filter` /
     // `.every` / `.some`, so they render. Only the NESTED-in-a-predicate form
     // above is refused (#2038).
+    // #2073 follow-up: a function-reference `.map(format)` callback has no
+    // arrow body to serialize — not a CALLBACK_METHODS shape — so the
+    // UNSUPPORTED_METHODS gate refuses it with BF101 rather than emitting
+    // a broken template.
+    'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
   // Template-primitive registry parity: same V1 surface as mojo, so the
   // same two cases stay skipped (bespoke user import + customSerialize
