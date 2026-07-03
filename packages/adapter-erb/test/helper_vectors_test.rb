@@ -180,7 +180,12 @@ class HelperVectorsTest < Minitest::Test
   def self.load_vectors
     return [] unless File.exist?(HELPER_VECTORS_PATH)
 
-    JSON.parse(File.read(HELPER_VECTORS_PATH), symbolize_names: true)[:cases]
+    # Force UTF-8 regardless of the process locale -- JSON is UTF-8 by spec,
+    # but `File.read`'s default encoding follows `Encoding.default_external`,
+    # which a locale-less environment (`LANG`/`LC_ALL` unset -> POSIX) drops
+    # to US-ASCII, tripping `JSON.parse` on the file's non-ASCII bytes (e.g.
+    # "≡").
+    JSON.parse(File.read(HELPER_VECTORS_PATH, encoding: Encoding::UTF_8), symbolize_names: true)[:cases]
   end
 
   VECTORS = load_vectors

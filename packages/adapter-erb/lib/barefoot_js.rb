@@ -424,9 +424,13 @@ module BarefootJS
 
     # `Array.prototype.includes(x)` / `String.prototype.includes(sub)`
     # share a method name in JS; dispatch on Ruby class the way BarefootJS.pm
-    # dispatches on `ref()`.
+    # dispatches on `ref()`. The Array arm scans with
+    # `Evaluator.same_value_zero?` (SameValueZero: no cross-type coercion,
+    # e.g. `[2].includes("2")` is false; `NaN` matches `NaN`) -- the same
+    # algorithm the evaluator's serialized-callback `array-method` path uses
+    # for `.includes`, so both positions agree.
     def includes(recv, elem)
-      return recv.any? { |item| item.nil? ? elem.nil? : (!elem.nil? && item == elem) } if recv.is_a?(Array)
+      return recv.any? { |item| Evaluator.same_value_zero?(item, elem) } if recv.is_a?(Array)
       return false if recv.is_a?(Hash)
 
       s = recv.nil? ? '' : string(recv)

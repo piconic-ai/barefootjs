@@ -49,17 +49,3 @@ export function collectRootScopeNodes(node: IRNode): Set<IRNode> {
   visit(node)
   return out
 }
-
-/**
- * True when every `v[:var]` reference the lowered Ruby expression carries is
- * in the available set — i.e. the template already has that vars-hash key
- * seeded. Guards in-template memo seeding from referencing a not-yet-seeded
- * key. (#1297; mirrors the Mojo adapter's `$var`-scan, adapted to the ERB
- * vars-hash variable model.)
- */
-export function referencedVarsAreAvailable(expr: string, available: ReadonlySet<string>): boolean {
-  for (const m of expr.matchAll(/v\[:([A-Za-z_]\w*)\]/g)) {
-    if (!available.has(m[1])) return false
-  }
-  return true
-}

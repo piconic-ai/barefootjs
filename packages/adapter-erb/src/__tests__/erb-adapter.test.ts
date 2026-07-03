@@ -108,6 +108,13 @@ runAdapterConformanceTests({
     // parity. It stays in `skipMarkerConformance` below for the shared
     // `/* @client */` keyed-map slot-id elision contract only (same as
     // `todo-app`), not a render or BF101 gap.
+    //
+    // #2073 follow-up: a function-reference `.map(format)` callback has no
+    // arrow body to serialize — not a CALLBACK_METHODS shape — so the
+    // UNSUPPORTED_METHODS gate (shared `@barefootjs/jsx` code) refuses it
+    // with BF101 rather than emitting a broken template. Same pin as
+    // mojo/xslate.
+    'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
   // Template-primitive registry parity: same V1 surface as mojo/xslate, so
   // the same two cases stay skipped:
@@ -211,6 +218,82 @@ export function Child({ value }: { value: number }) {
 }
 `)
     expect(template).toMatch(/v\[:displayValue\]\s*=\s*\(v\[:value\]\s*\*\s*10\)/)
+  })
+})
+
+describe('ErbAdapter - #2075 searchParams()-derived memo seeding', () => {
+  // A memo derived from the createSearchParams() env signal must seed
+  // in-template from the canonical per-request `v[:search_params]` reader —
+  // including under a local alias (`const [sp] = …`), which the expression
+  // lowering canonicalises.
+  test('seeds an aliased scalar derived memo from the canonical reader', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function SortStatus() {
+  const [sp] = createSearchParams()
+  const sort = createMemo(() => sp().get('sort') ?? 'date')
+  return <p>sort: {sort()}</p>
+}
+`)
+    expect(template).toContain(
+      "v[:sort] = ((v[:search_params].get('sort')).nil? ? 'date' : v[:search_params].get('sort'))",
+    )
+  })
+
+  // A list-filter memo chained off the derived memo seeds too: the block
+  // param (`p`) is a lowering-internal binding, not an out-of-scope
+  // template var (the pre-#2075 availability check rejected them and the
+  // list rendered empty at SSR).
+  test('seeds a filter memo chained off the derived memo', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function TaggedList(props: { items: { title: string; tags: string[] }[] }) {
+  const [searchParams] = createSearchParams()
+  const tag = createMemo(() => searchParams().get('tag') ?? '')
+  const visible = createMemo(() => props.items.filter((p) => !tag() || p.tags.includes(tag())))
+  return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
+}
+`)
+    expect(template).toContain(
+      "v[:tag] = ((v[:search_params].get('tag')).nil? ? '' : v[:search_params].get('tag'))",
+    )
+    expect(template).toMatch(/v\[:visible\] = v\[:items\]\.select \{ \|p\|/)
+  })
+
+  // The seed-scope guard used to scan the LOWERED Ruby string, allowing
+  // every arrow-callback param tree-wide. That let an outer, unbound `p`
+  // (shadowed only inside the callback) slip past the guard as if it were
+  // the callback's own bound `p` — emitting a bogus seed line that would
+  // read an un-seeded key. The guard now walks the parsed SOURCE tree with
+  // proper lexical scoping (`freeIdentifiers`), so this shape seeds nothing
+  // and falls back to the nil/ssr-defaults path.
+  test('an outer unbound `p` shadowed only inside the callback does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { items: { ok: boolean }[] }) {
+  const visible = createMemo(() => props.items.filter((p) => p.ok) && p)
+  return <div>{String(visible())}</div>
+}
+`)
+    expect(template).not.toMatch(/v\[:visible\] =/)
+  })
+
+  // An out-of-scope bare `_` reference (not a lowering-internal loop-index
+  // binding) must not seed either — the old unconditional allow-list masked
+  // this.
+  test('an out-of-scope bare `_` reference does not seed', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { count: number }) {
+  const doubled = createMemo(() => props.count * 2 + _)
+  return <div>{doubled()}</div>
+}
+`)
+    expect(template).not.toMatch(/v\[:doubled\] =/)
   })
 })
 

@@ -91,6 +91,24 @@ module BarefootJS
         out = {}
         (node[:properties] || []).each { |prop| out[prop[:key].to_sym] = evaluate(prop[:value], env) }
         out
+      when 'array-method'
+        args = node[:args] || []
+        if node[:method] == 'includes' && args.length == 1
+          # `.includes(x)` (#2075) -- the one `array-method` in the
+          # evaluator subset, shared between `Array.prototype.includes`
+          # (SameValueZero membership) and `String.prototype.includes`
+          # (substring search), matching the receiver-type dispatch the SSR
+          # template lowering does at runtime (`bf.includes`). Mirrors the
+          # JS reference's `includes()` (eval-reference.ts).
+          includes_value(evaluate(node[:object], env), evaluate(args[0], env))
+        else
+          # Every other array/string method (`join`, `slice`, `flat`, ...)
+          # is outside the subset; a callback body containing one is
+          # refused upstream (BF101) and should never reach here, but the
+          # evaluator refuses explicitly rather than falling through
+          # silently, matching the JS reference.
+          raise EvalUnsupported, "array-method '#{node[:method]}' is not in the evaluator subset"
+        end
       else
         raise EvalUnsupported, "node kind '#{kind}' is not in the evaluator subset"
       end
@@ -264,6 +282,42 @@ module BarefootJS
       v.is_a?(Array) || v.is_a?(Hash)
     end
     private_class_method :non_primitive?
+
+    # same_value_zero?(l, r): `Array.prototype.includes` membership test --
+    # `===` except `NaN` equals itself (and +0/-0 are not distinguished,
+    # which the JSON-decoded values here can't represent anyway). Reuses
+    # `strict_eq`'s type/value rules for the primitive cases and only
+    # special-cases the two-NaN case that `strict_eq` (deliberately, for
+    # `===`) reports as unequal. Unlike `strict_eq`, never raises for a
+    # non-primitive operand -- the JS reference's `sameValueZero` uses
+    # native `===` directly (reference equality for objects/arrays, never a
+    # throw), not the subset's throwing `strictEquals`; two freshly
+    # JSON-decoded structures are never the same object, so this degrades to
+    # `false` rather than raising. Public (unlike `strict_eq`) because
+    # `BarefootJS::Context#includes` (barefoot_js.rb) calls it directly,
+    # matching the Perl port's cross-module `_same_value_zero` use.
+    def same_value_zero?(l, r)
+      return true if l.is_a?(Numeric) && r.is_a?(Numeric) && l.to_f.nan? && r.to_f.nan?
+
+      strict_eq(l, r)
+    rescue EvalUnsupported
+      false
+    end
+
+    # includes_value(obj, needle): the receiver-dispatch behind the
+    # `array-method` `includes` node above, factored out so
+    # `BarefootJS::Context#includes` (the runtime helper compiled templates
+    # call directly, outside any evaluator subtree) can share it too --
+    # mirrors `BarefootJS.pm::includes` delegating to
+    # `BarefootJS::Evaluator::_same_value_zero`.
+    def includes_value(obj, needle)
+      return obj.any? { |el| same_value_zero?(el, needle) } if obj.is_a?(Array)
+      return obj.include?(to_string(needle)) if obj.is_a?(String)
+
+      # Any other receiver is not a JS `.includes` target -- degrade to
+      # false rather than raising, mirroring the reference.
+      false
+    end
 
     def boolean?(v)
       v.is_a?(TrueClass) || v.is_a?(FalseClass)

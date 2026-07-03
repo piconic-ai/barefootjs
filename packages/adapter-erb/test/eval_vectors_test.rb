@@ -14,7 +14,9 @@ class EvalVectorsTest < Minitest::Test
   def self.load_vectors
     return [] unless File.exist?(VECTORS_PATH)
 
-    JSON.parse(File.read(VECTORS_PATH), symbolize_names: true)[:cases]
+    # See the equivalent comment in helper_vectors_test.rb: force UTF-8 so
+    # this doesn't depend on the process locale.
+    JSON.parse(File.read(VECTORS_PATH, encoding: Encoding::UTF_8), symbolize_names: true)[:cases]
   end
 
   VECTORS = load_vectors
