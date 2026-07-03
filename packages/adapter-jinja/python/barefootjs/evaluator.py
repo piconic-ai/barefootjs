@@ -15,7 +15,7 @@ which is shared by the Mojo + Xslate Perl backends), living alongside
 ``search_params.py`` in the engine-agnostic core. The accepted subset and
 its semantics are documented in ``spec/compiler.md`` ("ParsedExpr Evaluator
 Semantics") and pinned isomorphically by the cross-language golden vectors
-(``packages/adapter-tests/helper-vectors/eval-vectors.json``), shared with
+(``packages/adapter-tests/vectors/eval-vectors.json``), shared with
 the Go evaluator (bf.go) and the Perl evaluator -- same input -> same output.
 
 The coercion below is JS-faithful (ToNumber / ToString / ToBoolean, strict

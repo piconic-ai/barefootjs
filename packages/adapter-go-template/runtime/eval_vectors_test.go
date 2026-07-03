@@ -11,7 +11,7 @@ import (
 // generated from the JS reference evaluator and shared with the Perl
 // evaluator. The file only exists in the monorepo checkout — consumers
 // of the published Go module don't receive it, so the test skips there.
-const evalVectorsPath = "../../adapter-tests/helper-vectors/eval-vectors.json"
+const evalVectorsPath = "../../adapter-tests/vectors/eval-vectors.json"
 
 type evalVector struct {
 	Src    string          `json:"src"`

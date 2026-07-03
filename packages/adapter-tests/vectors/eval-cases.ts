@@ -14,7 +14,7 @@
  * `parseExpression` — so every vector carries a genuine `ParsedExpr`
  * tree, never a hand-transcribed one — and computes `expect` by running
  * the JS reference evaluator (eval-reference.ts). JS parity is therefore
- * mechanical, exactly like helper-vectors/cases.ts.
+ * mechanical, exactly like cases.ts.
  *
  * Each case should pin a rule stated in the spec's "ParsedExpr
  * Evaluator Semantics" section, named by its `note`.

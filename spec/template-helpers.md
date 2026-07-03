@@ -29,7 +29,7 @@ covered by the adapter conformance fixtures in
 ## Reference semantics
 
 **JavaScript is normative.** Every catalogue entry has a JS reference
-implementation in `packages/adapter-tests/helper-vectors/cases.ts`;
+implementation in `packages/adapter-tests/vectors/cases.ts`;
 expected values are **computed by executing it**, never transcribed.
 
 Compatibility contract:
@@ -50,7 +50,7 @@ Compatibility contract:
 
 ## Golden vectors
 
-`packages/adapter-tests/helper-vectors/vectors.json` — generated,
+`packages/adapter-tests/vectors/vectors.json` — generated,
 committed, consumed by one thin harness per backend.
 
 ```json
@@ -77,23 +77,33 @@ drifts from `cases.ts`.
 
 Each backend ships one harness file (currently:
 `packages/adapter-go-template/runtime/vectors_test.go`,
-`packages/adapter-perl/t/helper_vectors.t`; the JS reference is the
-generator itself). A harness declares its backend's status in three
-machine-checked tables — this is the **only** place per-backend
-status is recorded:
+`packages/adapter-perl/t/helper_vectors.t`,
+`packages/adapter-jinja/python/tests/test_helper_vectors.py`,
+`packages/adapter-erb/test/helper_vectors_test.rb`; the JS reference
+is the generator itself). A harness declares its backend's status in
+three tables — this is the **only** place per-backend status is
+recorded:
 
 1. **Bindings** — canonical id → the code shape compiled templates
    execute on this backend (a helper function, or the native operator
    the adapter emits). A vector whose `fn` has no binding **fails**:
-   a backend cannot silently fall behind the catalogue.
+   a backend cannot silently fall behind the catalogue. Bindings live
+   in the harness file itself.
 2. **Divergence declarations** — case key → the backend's actual
-   value plus a reason. A declared case asserts the *pinned* value,
-   so the divergence itself is regression-tested; if the backend
-   later starts matching JS, the stale declaration fails so it gets
-   removed. Divergences are visible, enumerable per backend, and
-   never rot as prose.
-3. **Unsupported list** — helper id → reason, skipped visibly. Empty
-   for mature backends; lets a bootstrapping adapter land its harness
+   value plus a reason, declared in
+   `packages/adapter-tests/vectors/divergences/<backend>.json`. A
+   declared case asserts the *pinned* value, so the divergence itself
+   is regression-tested; if the backend later starts matching JS, the
+   stale declaration fails so it gets removed. Divergences are
+   visible, enumerable per backend, and never rot as prose. This is
+   machine-checked twice: by each harness (which fails on a stale or
+   dead declaration) and centrally by
+   `packages/adapter-tests/src/__tests__/divergences.test.ts` (schema,
+   dangling keys, runner-path existence, and the expected backend
+   set).
+3. **Unsupported list** — helper id → reason, declared in the same
+   `divergences/<backend>.json` file, skipped visibly. Empty for
+   mature backends; lets a bootstrapping adapter land its harness
    first and burn the list down.
 
 ## Adding a catalogue entry
@@ -103,8 +113,8 @@ status is recorded:
 2. Add the JS reference implementation and cases to `cases.ts` — at
    least one vector per rule. Regenerate `vectors.json`.
 3. Bind the id in every harness. Where a backend genuinely diverges,
-   add a divergence declaration with its measured value and reason
-   instead of bending the vector.
+   add an entry to its `divergences/<backend>.json` with its measured
+   value and reason instead of bending the vector.
 4. All harnesses green = done.
 
 ## Catalogue

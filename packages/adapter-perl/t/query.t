@@ -6,7 +6,7 @@ use utf8;
 #
 # The full CROSS-BACKEND behaviour (control flow + form-encoding parity with the
 # browser's URLSearchParams) is defined ONCE in the shared golden helper vectors
-# — packages/adapter-tests/helper-vectors/vectors.json, fn "query" — and run
+# — packages/adapter-tests/vectors/vectors.json, fn "query" — and run
 # here by t/helper_vectors.t and by the Go runtime's TestHelperVectors, so the
 # Perl and Go expectations can't drift apart.
 #

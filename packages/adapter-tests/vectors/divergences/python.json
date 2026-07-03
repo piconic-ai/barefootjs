@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "backend": "python",
+  "runner": "packages/adapter-jinja/python/tests/test_helper_vectors.py",
+  "spec": "spec/template-helpers.md",
+  "divergences": {
+    "add/beyond the safe-integer edge rounds as a double": {
+      "expect": 9007199254740993,
+      "reason": "Python int arithmetic is exact (arbitrary precision), not double-rounded"
+    },
+    "div/zero divisor yields Infinity": {
+      "throws": true,
+      "exception": "ZeroDivisionError",
+      "reason": "Python native / raises ZeroDivisionError on a zero divisor"
+    },
+    "number/empty string coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: empty input must not silently zero downstream arithmetic (matches the Perl port)"
+    },
+    "number/null coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: unset props must not silently zero downstream arithmetic (matches the Perl port)"
+    },
+    "string/null renders as the string \"null\"": {
+      "expect": "",
+      "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML (matches the Perl port)"
+    },
+    "sort/localeCompare orders case-insensitively (ICU collation)": {
+      "expect": ["B", "a"],
+      "reason": "Python str comparison is codepoint order, not ICU collation"
+    },
+    "sort/relational compare on numeric strings is lexical": {
+      "expect": ["9", "10"],
+      "reason": "the \"auto\" compare goes numeric when both keys look_like_number (Perl/Go parity)"
+    },
+    "reduce/numeric-string items concatenate under JS +": {
+      "expect": 11.0,
+      "reason": "numeric folds parse numeric strings instead of concatenating (Perl/Go parity)"
+    }
+  },
+  "unsupported": {}
+}

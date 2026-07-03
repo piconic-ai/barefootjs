@@ -10,9 +10,10 @@ require 'barefoot_js'
 # packages/adapter-tests (a monorepo-only path) -- skip everywhere else.
 # Structurally a Ruby port of packages/adapter-perl/t/helper_vectors.t: one
 # binding per canonical helper id, bound to the exact code shape a compiled
-# ERB template would execute, plus a %DIVERGENCES table pinning every
-# deliberate departure from the JS-normative `expect`.
-HELPER_VECTORS_PATH = File.expand_path('../../adapter-tests/helper-vectors/vectors.json', __dir__)
+# ERB template would execute, plus a DIVERGENCES table (loaded below) pinning
+# every deliberate departure from the JS-normative `expect`.
+HELPER_VECTORS_PATH = File.expand_path('../../adapter-tests/vectors/vectors.json', __dir__)
+DIVERGENCES_PATH = File.expand_path('../../adapter-tests/vectors/divergences/ruby.json', __dir__)
 
 class PureBackend
   def encode_json(data)
@@ -141,41 +142,26 @@ class HelperVectorsTest < Minitest::Test
   }.freeze
 
   # Per-backend status declarations (spec/template-helpers.md "Adapter
-  # status model"). Keyed by "fn/note". A pinned case that starts matching
-  # JS fails as stale; a key that matches no vector case fails as dead.
-  DIVERGENCES = {
-    'add/beyond the safe-integer edge rounds as a double' => {
-      expect: 9_007_199_254_740_993,
-      reason: 'Ruby Integer arithmetic is arbitrary-precision exact, not double-rounded',
-    },
-    'string/null renders as the string "null"' => {
-      expect: '',
-      reason: 'deliberate: an unset prop must not surface a literal "null" in HTML',
-    },
-    'number/empty string coerces to 0' => {
-      nan: true,
-      reason: 'deliberate: empty input must not silently zero downstream arithmetic',
-    },
-    'number/null coerces to 0' => {
-      nan: true,
-      reason: 'deliberate: unset props must not silently zero downstream arithmetic',
-    },
-    'sort/localeCompare orders case-insensitively (ICU collation)' => {
-      expect: %w[B a],
-      reason: 'String#<=> is byte/codepoint order, not ICU collation (same barrier as Go/Perl)',
-    },
-    'sort/relational compare on numeric strings is lexical' => {
-      expect: %w[9 10],
-      reason: 'the shared "auto" compare goes numeric when both keys look like numbers ' \
-              '(same catalogue as Go bf_sort / Perl BarefootJS::sort)',
-    },
-    'reduce/numeric-string items concatenate under JS +' => {
-      expect: 11,
-      reason: 'numeric folds parse numeric strings instead of concatenating (same catalogue as Perl bf->reduce)',
-    },
-  }.freeze
+  # status model") live in packages/adapter-tests/vectors/divergences/
+  # ruby.json -- the spec stays backend-neutral. This harness still fails
+  # stale/dead declarations (a pinned case that starts matching JS, or a
+  # key that matches no vector case). Keyed by "fn/note".
+  def self.load_divergences
+    return [{}, {}] unless File.exist?(HELPER_VECTORS_PATH)
 
-  UNSUPPORTED = {}.freeze
+    unless File.exist?(DIVERGENCES_PATH)
+      raise "divergences file not found: #{DIVERGENCES_PATH} " \
+            '(vectors.json is present, so this checkout should have it too)'
+    end
+
+    # Same UTF-8 rationale as load_vectors below.
+    doc = JSON.parse(File.read(DIVERGENCES_PATH, encoding: Encoding::UTF_8), symbolize_names: true)
+    # Keys stay strings because the lookup key is "#{fn}/#{note}"; inner
+    # values stay symbolized so value_match?'s :$num sentinel branch applies.
+    [doc[:divergences].transform_keys(&:to_s), doc[:unsupported].transform_keys(&:to_s)]
+  end
+
+  DIVERGENCES, UNSUPPORTED = load_divergences.map(&:freeze)
 
   def self.load_vectors
     return [] unless File.exist?(HELPER_VECTORS_PATH)
@@ -219,18 +205,16 @@ class HelperVectorsTest < Minitest::Test
 
         if (d = DIVERGENCES[key])
           label = "#{key} (declared divergence: #{d[:reason]})"
-          if d[:dies]
+          if d[:throws]
             assert err, "#{label}: expected the call to raise, got #{explain(got)}"
             next
           end
           assert_nil err, "#{label}: raised unexpectedly: #{err}"
           refute value_match?(got, vector_case[:expect]),
                  "stale divergence declaration for '#{key}' -- the backend now matches JS; remove it"
-          if d[:nan]
-            assert got.is_a?(Numeric) && got.to_f.nan?, "#{label}: got #{explain(got)}, want NaN"
-          else
-            assert plain_match?(got, d[:expect]), "#{label}: got #{explain(got)}, pinned #{explain(d[:expect])}"
-          end
+          raise "#{label}: divergence declares neither expect nor throws" unless d.key?(:expect)
+
+          assert value_match?(got, d[:expect]), "#{label}: got #{explain(got)}, pinned #{explain(d[:expect])}"
           next
         end
 
@@ -278,21 +262,6 @@ class HelperVectorsTest < Minitest::Test
       return false unless got.is_a?(Hash) && got.keys.length == expect.keys.length
 
       return expect.keys.all? { |k| got.key?(k) && value_match?(got[k], expect[k]) }
-    end
-    return false if got.nil?
-    return got == expect if got.is_a?(Numeric) && expect.is_a?(Numeric)
-
-    got == expect
-  end
-
-  # plain_match?: like value_match? but against a plain Ruby divergence
-  # pin (no $num sentinel form).
-  def plain_match?(got, expect)
-    return got.nil? if expect.nil?
-    if expect.is_a?(Array)
-      return false unless got.is_a?(Array) && got.length == expect.length
-
-      return got.each_index.all? { |i| plain_match?(got[i], expect[i]) }
     end
     return false if got.nil?
     return got == expect if got.is_a?(Numeric) && expect.is_a?(Numeric)

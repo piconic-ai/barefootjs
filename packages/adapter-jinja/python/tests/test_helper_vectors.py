@@ -1,7 +1,7 @@
 """Golden helper-vector conformance, ported from
 packages/adapter-perl/t/helper_vectors.t.
 
-Runs `packages/adapter-tests/helper-vectors/vectors.json` -- generated from
+Runs `packages/adapter-tests/vectors/vectors.json` -- generated from
 the JS reference implementations (spec/template-helpers.md) -- against this
 package's `BarefootJS` runtime. One binding per canonical helper id in the
 spec catalogue, bound to the exact code shape a compiled Jinja template
@@ -9,11 +9,12 @@ would execute (a `bf.<method>(...)` call, or the native Python operator the
 adapter emits for `add`/`sub`/`mul`/`div`/`neg`, mirroring how
 `helper_vectors.t` binds those to native Perl operators).
 
-Per spec/template-helpers.md's "Adapter status model", this file is the
-single source of truth for this backend's divergences from the JS-normative
-expect -- keyed by `fn/note`, mirroring the Perl harness's `%DIVERGENCES`
-table exactly in spirit (values differ where Python's actual behaviour
-differs from Perl's).
+Per spec/template-helpers.md's "Adapter status model", this backend's
+divergences from the JS-normative expect live in
+`packages/adapter-tests/vectors/divergences/python.json` -- keyed by
+`fn/note`, mirroring the Perl harness's `%DIVERGENCES` table exactly in
+spirit (values differ where Python's actual behaviour differs from Perl's).
+This harness still fails on stale or dead declarations in that file.
 
 Skipped everywhere the golden vectors file isn't available (i.e. outside a
 monorepo checkout), matching the Perl/Go harnesses' `skip_all` policy.
@@ -21,6 +22,7 @@ monorepo checkout), matching the Perl/Go harnesses' `skip_all` policy.
 
 from __future__ import annotations
 
+import builtins
 import json
 import math
 import os
@@ -30,7 +32,10 @@ from barefootjs import BarefootJS
 from barefootjs.backend_jinja import default_json_encoder
 
 VECTORS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "helper-vectors", "vectors.json"
+    os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "vectors.json"
+)
+DIVERGENCES_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "divergences", "python.json"
 )
 
 
@@ -159,53 +164,35 @@ BINDINGS = {
     "flat_map_tuple": _bind_flat_map_tuple,
 }
 
-# Helper ids not implemented on this backend yet -- empty (this backend's
-# catalogue is complete).
-UNSUPPORTED: dict = {}
-
 # Per-backend status declarations (spec/template-helpers.md "Adapter status
-# model"). Forms:
-#   {"expect": <value>}          assert the pinned value (exact, no numeric
-#                                 coercion -- deliberately stricter than the
-#                                 spec's value-compat `_match` so an int-vs-
-#                                 float rounding accident can't hide behind
-#                                 the comparison)
-#   {"nan": True}                assert a real NaN result
-#   {"raises": <ExceptionType>}  assert the call raises
-DIVERGENCES = {
-    "add/beyond the safe-integer edge rounds as a double": {
-        "expect": 9007199254740993,
-        "reason": "Python int arithmetic is exact (arbitrary precision), not double-rounded",
-    },
-    "div/zero divisor yields Infinity": {
-        "raises": ZeroDivisionError,
-        "reason": "Python native / raises ZeroDivisionError on a zero divisor",
-    },
-    "number/empty string coerces to 0": {
-        "nan": True,
-        "reason": "deliberate: empty input must not silently zero downstream arithmetic (matches the Perl port)",
-    },
-    "number/null coerces to 0": {
-        "nan": True,
-        "reason": "deliberate: unset props must not silently zero downstream arithmetic (matches the Perl port)",
-    },
-    'string/null renders as the string "null"': {
-        "expect": "",
-        "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML (matches the Perl port)",
-    },
-    "sort/localeCompare orders case-insensitively (ICU collation)": {
-        "expect": ["B", "a"],
-        "reason": "Python str comparison is codepoint order, not ICU collation",
-    },
-    "sort/relational compare on numeric strings is lexical": {
-        "expect": ["9", "10"],
-        "reason": 'the "auto" compare goes numeric when both keys look_like_number (Perl/Go parity)',
-    },
-    "reduce/numeric-string items concatenate under JS +": {
-        "expect": 11.0,
-        "reason": "numeric folds parse numeric strings instead of concatenating (Perl/Go parity)",
-    },
-}
+# model"), loaded from packages/adapter-tests/vectors/divergences/python.json.
+# Forms:
+#   {"expect": <value>}                  assert the pinned value (exact, no
+#                                         numeric coercion -- deliberately
+#                                         stricter than the spec's
+#                                         value-compat `_match` so an
+#                                         int-vs-float rounding accident
+#                                         can't hide behind the comparison)
+#   {"expect": {"$num": "NaN"}}          assert a real NaN result
+#   {"throws": true, "exception": <n>}   assert the call raises the named
+#                                         builtin exception (default
+#                                         `Exception` if `exception` absent)
+#
+# If the golden vectors file is present but this file is missing, fail
+# loudly rather than silently running with no divergence declarations.
+if os.path.exists(VECTORS_PATH):
+    if not os.path.exists(DIVERGENCES_PATH):
+        raise FileNotFoundError(
+            f"golden vectors present at {VECTORS_PATH!r} but divergences file missing at "
+            f"{DIVERGENCES_PATH!r}"
+        )
+    with open(DIVERGENCES_PATH, encoding="utf-8") as _fh:
+        _divergences_doc = json.load(_fh)
+    DIVERGENCES = _divergences_doc["divergences"]
+    UNSUPPORTED = _divergences_doc["unsupported"]
+else:
+    DIVERGENCES = {}
+    UNSUPPORTED = {}
 
 
 def _match(got, expect):
@@ -269,10 +256,12 @@ class HelperVectorsTest(unittest.TestCase):
                 self.assertIsNotNone(bind, f"no Python binding for helper '{fn}' -- add it to BINDINGS")
 
                 divergence = DIVERGENCES.get(key)
-                if divergence and divergence.get("raises"):
+                if divergence and divergence.get("throws"):
                     seen_declarations.add(key)
+                    exception_name = divergence.get("exception")
+                    exception_cls = getattr(builtins, exception_name) if exception_name else Exception
                     with self.assertRaises(
-                        divergence["raises"],
+                        exception_cls,
                         msg=f"{key} (declared divergence: {divergence['reason']})",
                     ):
                         bind(*args)
@@ -291,17 +280,14 @@ class HelperVectorsTest(unittest.TestCase):
                         _match(got, expect),
                         f"stale divergence declaration for '{key}' -- the backend now matches JS; remove it",
                     )
-                    if divergence.get("nan"):
+                    want = divergence["expect"]
+                    if isinstance(want, dict) and want.get("$num") == "NaN":
                         self.assertTrue(
                             isinstance(got, float) and got != got,
                             f"{label}: got {got!r}, wanted real NaN",
                         )
                     else:
-                        want = divergence["expect"]
-                        if isinstance(want, (int, float)) and not isinstance(want, bool):
-                            self.assertEqual(got, want, label)
-                        else:
-                            self.assertEqual(got, want, label)
+                        self.assertEqual(got, want, label)
                     continue
 
                 self.assertTrue(_match(got, expect), f"{key}: got {got!r}, want {expect!r}")

@@ -16,7 +16,7 @@ use BarefootJS::Evaluator;
 # the CPAN dist — packages/adapter-tests only exists in a monorepo
 # checkout — so skip everywhere else.
 my $vectors_path = File::Spec->catfile(
-    $FindBin::Bin, '..', '..', 'adapter-tests', 'helper-vectors', 'eval-vectors.json'
+    $FindBin::Bin, '..', '..', 'adapter-tests', 'vectors', 'eval-vectors.json'
 );
 plan skip_all => 'eval vectors not available outside the monorepo checkout'
     unless -e $vectors_path;

@@ -8,7 +8,7 @@ require 'barefoot_js/evaluator'
 # "ParsedExpr Evaluator Semantics"), generated from the JS reference
 # evaluator and shared with the Go and Perl evaluators. The file lives in
 # packages/adapter-tests (a monorepo-only path) -- skip everywhere else.
-VECTORS_PATH = File.expand_path('../../adapter-tests/helper-vectors/eval-vectors.json', __dir__)
+VECTORS_PATH = File.expand_path('../../adapter-tests/vectors/eval-vectors.json', __dir__)
 
 class EvalVectorsTest < Minitest::Test
   def self.load_vectors
