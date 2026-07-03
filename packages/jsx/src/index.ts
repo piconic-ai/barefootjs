@@ -12,6 +12,10 @@ export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutp
 export { extractSsrDefaults } from './ssr-defaults.ts'
 export type { SsrDefault } from './ssr-defaults.ts'
 
+// Backend-neutral SSR seed plan (in-template derived signal/memo seeding)
+export { computeSsrSeedPlan } from './ssr-seed-plan.ts'
+export type { SsrSeedPlan, SsrSeedStep } from './ssr-seed-plan.ts'
+
 // Pure IR types
 export type {
   ComponentIR,

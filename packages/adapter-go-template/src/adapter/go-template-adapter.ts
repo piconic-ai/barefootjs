@@ -62,9 +62,9 @@ import {
   isLowerableObjectRestDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
-  searchParamsLocalNames,
   prepareLoweringMatchers,
   envSignalReaderFor,
+  computeSsrSeedPlan,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION } from '@barefootjs/shared'
@@ -274,12 +274,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentMemos = ir.metadata.memos ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.contextConsumers = collectContextConsumers(ir.metadata)
-    this.state.searchParamsLocals = searchParamsLocalNames(ir.metadata)
+    // Single authority (Package G): the plan already decided which signals are
+    // per-request env readers, in declaration order. `ir.metadata.ssrSeedPlan`
+    // may be absent for hand-built metadata (tests), hence the fallback to the
+    // same shared computation rather than a second, divergent derivation.
+    this.state.ssrSeedPlan = ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata)
     this.state.envSignalReadersByLocal = new Map()
-    for (const s of ir.metadata.signals) {
-      if (!s.envReader) continue
-      const reader = envSignalReaderFor(s.envReader)
-      if (reader) this.state.envSignalReadersByLocal.set(s.getter, reader)
+    this.state.searchParamsLocals = new Set()
+    for (const step of this.state.ssrSeedPlan.steps) {
+      if (step.kind !== 'env-reader') continue
+      // `reader.methods` is a ReadonlySet — JSON round-tripping (adapter
+      // conformance harness) serializes it to `{}`, so re-resolve a live
+      // reader from the registry by key instead of trusting `step.reader`.
+      const reader = envSignalReaderFor(step.reader.key)
+      if (reader) this.state.envSignalReadersByLocal.set(step.name, reader)
+      if (step.reader.key === 'search') this.state.searchParamsLocals.add(step.name)
     }
     this.state.loweringMatchers = prepareLoweringMatchers(ir.metadata)
     augmentInheritedPropAccesses(ir)

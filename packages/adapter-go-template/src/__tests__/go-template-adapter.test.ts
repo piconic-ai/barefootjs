@@ -3127,6 +3127,31 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
   })
 })
 
+describe('GoTemplateAdapter - env-derived memo sourced from the SSR seed plan (Package I)', () => {
+  // `CompileState.ssrSeedPlan` (and `envSignalReadersByLocal` derived from it)
+  // is now the single authority for env-reader recognition. `compileToIR`
+  // already JSON-round-trips the IR (mirrors the adapter conformance
+  // harness), so each `env-reader` step's `reader.methods` — a ReadonlySet —
+  // arrives serialized to `{}`; `primeCompileState` re-resolves a live reader
+  // via `envSignalReaderFor(step.reader.key)` before trusting `.methods`.
+  // Pins that the env-derived memo constructor still SSR-computes through
+  // that re-resolution instead of silently falling back to a zero value.
+  test('computes an env-derived memo constructor through the JSON-round-tripped ssrSeedPlan', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createMemo, createSearchParams } from '@barefootjs/client'
+export function QueryEcho() {
+  const [searchParams] = createSearchParams()
+  const q = createMemo(() => searchParams().get('q'))
+  return <p>{q()}</p>
+}
+`, adapter)
+    const { types } = adapter.generate(ir)
+    expect(types).toContain('Q: in.SearchParams.Get("q"),')
+  })
+})
+
 describe('GoTemplateAdapter - #2077 review sibling-memo recursion guard', () => {
   // Finding 1: mutually-referencing memos (each resolving the other as a
   // filter-arm free var, or as a bare-getter ternary condition) used to

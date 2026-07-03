@@ -65,11 +65,13 @@ export function matchFilterArmMemo(
   const param = propName ? propsParams.find(p => p.name === propName) : undefined
   if (!propName || !param) return null
 
-  const knownGetterNames = new Set<string>()
-  for (const s of signals) {
-    if (!ctx.state.searchParamsLocals.has(s.getter)) knownGetterNames.add(s.getter)
-  }
-  for (const m of ctx.state.currentMemos ?? []) knownGetterNames.add(m.name)
+  // Single authority (Package G plan): every step that isn't `env-reader` is
+  // value-materializable at SSR time — env readers are per-request readers
+  // the runtime evaluator can't invoke, so they're excluded here exactly as
+  // the plan's own consumers exclude them.
+  const knownGetterNames = new Set<string>(
+    ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),
+  )
 
   const materialized = materializeGetterCalls(cb.arrow.body, knownGetterNames)
   const predJSON = serializeParsedExpr(materialized)
@@ -97,6 +99,9 @@ export function filterArmEarlierSiblingRefs(
   if (!memo.parsed) return []
   const match = matchFilterArmMemo(ctx, memo.parsed, signals, propsParams)
   if (!match) return []
+  // `currentMemos` order equals the plan's memo-step order (plan lists
+  // signals first, then memos, both in declaration order) — kept here rather
+  // than filtering `ssrSeedPlan.steps` since this index is memo-only already.
   const memos = ctx.state.currentMemos ?? []
   const currentIndex = memos.findIndex(m => m.name === memo.name)
   if (currentIndex < 0) return []

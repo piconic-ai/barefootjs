@@ -13,12 +13,7 @@ import {
   type ComponentIR,
   type ContextConsumer,
   collectContextConsumers,
-  collectModuleStringConsts,
-  envSignalReaderFor,
-  extractArrowBodyExpression,
-  freeIdentifiers,
-  isSupported,
-  parseExpression,
+  computeSsrSeedPlan,
 } from '@barefootjs/jsx'
 
 import type { MojoMemoContext } from '../emit-context.ts'
@@ -51,117 +46,28 @@ export function generateContextConsumerSeed(ir: ComponentIR): string {
 }
 
 /**
- * Seed memos whose SSR default is `null` (not statically evaluable) by
- * computing them in-template from the already-seeded prop / signal vars.
- * Targets the prop-derived memo shape (`createMemo(() => props.value * 10)`)
- * that the static `extractSsrDefaults` evaluator can't fold — without this
- * the memo's `$x` renders empty (the reason `props-reactivity-comparison`
- * was skipped). Only emitted when the lowered expression references vars the
- * template already has in scope (props params + signals + prior memos), so a
- * memo over an out-of-scope binding stays on the null path rather than
- * tripping Perl strict mode. (#1297)
+ * Emit `% my $<name> = <perl>;` seed lines for every `derived` step of the
+ * backend-neutral SSR seed plan — the scope/availability/ordering analysis
+ * lives in `computeSsrSeedPlan` (packages/jsx/src/ssr-seed-plan.ts); this
+ * only lowers each step's expression to Perl and applies the two
+ * backend-specific emit guards: skip an empty lowering, and skip a lowering
+ * that references no `$var` at all (a constant init/body — e.g. a `derived`
+ * step with empty `frees` — keeps the existing static ssr-defaults seed
+ * instead). `env-reader` and `opaque` steps emit nothing (the runtime
+ * supplies the reader, or the adapter's ssr-defaults path already covers it).
+ * (#1297, #2075)
  */
 export function generateDerivedMemoSeed(ctx: MojoMemoContext, ir: ComponentIR): string {
-  const memos = ir.metadata.memos ?? []
-  const signals = ir.metadata.signals ?? []
-  if (memos.length === 0 && signals.length === 0) return ''
-  // Props seed first; each signal/memo adds its own name as it lands so a
-  // later one can reference an earlier one. A props-object component
-  // (`function C(props: {...})`, no destructure) reads fields off
-  // `props.<x>` rather than a destructured local, so `props` itself must be
-  // available for a memo body like `props.items.filter(...)` to seed. A
-  // module-scope string const (`const stateClasses = isDisabled() ? aCls :
-  // bCls`, select-item's disabled/default class pair) is a free identifier
-  // in the SOURCE tree but the lowering folds it to its literal string —
-  // never a `$var` reference — so it must count as available too, or the
-  // scope guard would wrongly reject an otherwise-seedable memo.
-  const available = new Set<string>(ir.metadata.propsParams.map(p => p.name))
-  if (ir.metadata.propsObjectName) available.add(ir.metadata.propsObjectName)
-  for (const name of collectModuleStringConsts(ir.metadata.localConstants).keys()) {
-    available.add(name)
-  }
+  // Package G attached this to metadata at compile time; the `??` fallback
+  // only covers hand-built metadata in older tests that predate the attached
+  // plan — same shared function, so there's no divergence from the compiler.
+  const plan = ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata)
   const lines: string[] = []
-
-  // Prop/signal-derived signals (`createSignal(props.defaultOn ?? false)`):
-  // a loop-child render receives no stash seed for the signal, so its `$on`
-  // would trip strict mode; and even when an entry render seeds it, the
-  // static default can't capture the per-call prop. Seed it in-template from
-  // the passed prop — but ONLY when the init lowers cleanly AND references an
-  // in-scope var (i.e. it's genuinely derived). Object/array/constant inits
-  // (`createSignal({…})`, `createSignal([…])`, `createSignal('b')`) keep the
-  // existing ssr-defaults seeding, so the spread / loop fixtures are
-  // untouched.
-  for (const signal of signals) {
-    // Env signal (`createSearchParams()`, #1922): the runtime provides the
-    // per-request reader, so there is nothing to seed. Registered readers
-    // come from the shared registry (see `envSignalReaderFor`); an
-    // `envReader` key unknown to the registry falls through to the normal
-    // lowering below.
-    if (signal.envReader) {
-      const reader = envSignalReaderFor(signal.envReader)
-      if (reader) {
-        // Only the SOURCE getter name matters for the `freeIdentifiers`
-        // scope check below (it walks the parsed JS tree, not the lowered
-        // Perl) — the canonical reader name the lowering emits is a
-        // target-language detail, not a source identifier a memo body
-        // could reference.
-        available.add(signal.getter)
-        continue
-      }
-    }
-    const perl = tryLowerToPerl(ctx, signal.initialValue, available)
-    if (perl !== null) lines.push(`% my $${signal.getter} = ${perl};`)
-    available.add(signal.getter)
-  }
-
-  for (const memo of memos) {
-    // Seed every memo whose body lowers cleanly — not just the ones whose
-    // static SSR default is null. A statically-foldable prop-derived memo
-    // (`createMemo(() => props.disabled ?? false)` → default `false`)
-    // still depends on the per-call prop: the static stash seed bakes in
-    // the absent-prop fold, so a caller passing `disabled => 1` would
-    // render the default branch (#1897, select's disabled item). The
-    // in-template recomputation reads the prop lexical the stash already
-    // seeded, so it's correct per call; block-bodied arrows /
-    // out-of-scope references fall back to the static ssr-defaults seed.
-    const body = extractArrowBodyExpression(memo.computation)
-    if (body !== null) {
-      const perl = tryLowerToPerl(ctx, body, available)
-      if (perl !== null) lines.push(`% my $${memo.name} = ${perl};`)
-    }
-    available.add(memo.name)
+  for (const step of plan.steps) {
+    if (step.kind !== 'derived') continue
+    const perl = ctx.convertExpressionToPerl(step.expr, step.parsed)
+    if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) continue
+    lines.push(`% my $${step.name} = ${perl};`)
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
-}
-
-/**
- * Lower a signal init / memo body to Perl for an in-template SSR seed, or
- * `null` when it shouldn't be seeded this way. Returns null — without
- * recording a BF101 — when the expression isn't a supported shape
- * (`isSupported` pre-check, so object/array literals don't fail the build),
- * when the lowering references no in-scope var (a constant — keep the
- * existing ssr-defaults seeding), or when the SOURCE expression has a free
- * identifier outside `available` (an out-of-scope binding). The scope check
- * runs over the parsed SOURCE tree via `freeIdentifiers` — not the lowered
- * Perl string — so a shadowed name (`filter((p) => p.ok) && p`, where the
- * outer `p` is a different, unbound reference from the callback's own `p`
- * param) is correctly rejected instead of the callback param masking the
- * unrelated free `$p` in the emitted Perl. An unanalyzable expression
- * (`freeIdentifiers` → null) fails safe: no seed. (#1297)
- */
-export function tryLowerToPerl(
-  ctx: MojoMemoContext,
-  expr: string,
-  available: ReadonlySet<string>,
-): string | null {
-  const trimmed = expr.trim()
-  if (!trimmed) return null
-  const parsed = parseExpression(trimmed)
-  if (!isSupported(parsed).supported) return null
-  const perl = ctx.convertExpressionToPerl(trimmed)
-  if (perl === '' || !/\$[A-Za-z_]\w*/.test(perl)) return null
-  const frees = freeIdentifiers(parsed)
-  if (frees === null) return null
-  for (const name of frees) if (!available.has(name)) return null
-  return perl
 }

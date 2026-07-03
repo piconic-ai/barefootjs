@@ -18,6 +18,7 @@ import type {
   IRNode,
   LoweringMatcher,
   MemoInfo,
+  SsrSeedPlan,
   TypeDefinition,
   TypeInfo,
 } from '@barefootjs/jsx'
@@ -99,6 +100,17 @@ export class CompileState {
    * local belongs to (open-closed for a future second env signal).
    */
   envSignalReadersByLocal: Map<string, EnvSignalReader> = new Map()
+
+  /**
+   * The backend-neutral SSR seed plan (`computeSsrSeedPlan`, Package G) for
+   * the IR currently being compiled — single authority for which signal/memo
+   * getters are value-materializable at SSR time (`env-reader` steps are
+   * per-request readers; everything else is `derived`/`opaque`). Populated in
+   * `primeCompileState`; `envSignalReadersByLocal` and `searchParamsLocals`
+   * derive from it there, and the memo-analysis path in `memo-compute.ts`
+   * reads its `steps` directly instead of re-deriving from `metadata`.
+   */
+  ssrSeedPlan: SsrSeedPlan = { baseScope: [], steps: [] }
 
   /**
    * Memo name → the hoisted Go local variable name the constructor assigned
