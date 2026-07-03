@@ -115,6 +115,13 @@ export const evalCases: EvalCase[] = [
   { src: 'Number(item.s)', env: { item: { s: '3.14' } }, note: 'Number() parses a numeric string' },
   { src: 'Boolean(item.s)', env: { item: { s: '' } }, note: 'Boolean() of an empty string is false' },
 
+  // ----- array-method: includes --------------------------------------------
+  { src: "item.tags.includes('go')", env: { item: { tags: ['perl', 'go'] } }, note: 'array .includes: hit' },
+  { src: "item.tags.includes('rust')", env: { item: { tags: ['perl', 'go'] } }, note: 'array .includes: miss' },
+  { src: 'nums.includes(2)', env: { nums: [1, 2, 3] }, note: 'array .includes: numeric element hit' },
+  { src: "name.includes('ar')", env: { name: 'bare' }, note: 'string .includes: substring hit' },
+  { src: 'item.tags.includes(tag)', env: { item: { tags: ['perl'] }, tag: 'perl' }, note: 'array .includes: needle from a materialized identifier' },
+
   // ----- realistic callback bodies (the issue's motivating shapes) --------
   { src: 'acc + item.price * item.qty', env: { acc: 100, item: { price: 5, qty: 3 } }, note: 'reduce body: running total with precedence' },
   { src: 'a.price - b.price', env: { a: { price: 30 }, b: { price: 10 } }, note: 'sort comparator: numeric field difference' },

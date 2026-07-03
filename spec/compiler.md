@@ -626,7 +626,7 @@ This subsection pins the evaluator's contract so the backends stay byte-isomorph
 
 **Value domain.** JSON-shaped values: IEEE-754 number, string, boolean, null, array, object. There is no `undefined` — a missing object field and an out-of-range array index both read as **null** (the backends' single absent value). Numbers are full IEEE-754 doubles, so a coercion or division can yield a **non-finite** value: `Number("x")` and `0/0` produce `NaN` (always falsy, and `NaN !== NaN`); `1/0` produces `Infinity`. In `eval-vectors.json` a non-finite EXPECT is carried with the reserved `{"$num": "NaN" | "Infinity" | "-Infinity"}` sentinel — the same encoding the helper vectors use (spec/template-helpers.md) — so backend harnesses match against it rather than a literal number.
 
-**Accepted node kinds** (any other kind in a callback body — `arrow-fn`, `higher-order`, `array-method`, etc. — is refused):
+**Accepted node kinds** (any other kind in a callback body — `arrow-fn`, `higher-order`, an `array-method` other than `includes`, etc. — is refused):
 
 | Kind | Semantics |
 |---|---|
@@ -641,6 +641,7 @@ This subsection pins the evaluator's contract so the backends stay byte-isomorph
 | `template-literal` | string parts verbatim; expression parts coerced via ToString |
 | `array-literal` / `object-literal` | element/property values evaluated left-to-right |
 | `call` | **allowlisted builtins only**: `Math.max` / `Math.min` / `Math.abs` / `Math.floor` / `Math.ceil` / `Math.round`, and `String` / `Number` / `Boolean`. Any other callee is refused. |
+| `array-method` (`includes` only) | `x.includes(y)` — array receiver: SameValueZero membership (`===`, except `NaN` equals itself); string receiver: substring search (ToString'd needle); any other receiver type: `false`. Every other `array-method` (`join`, `slice`, `flat`, …) is refused. |
 
 **Evaluation order.** Strict left-to-right. Operands are evaluated before the operator is applied, except for the short-circuiting forms (`&&`, `||`, `??`, and the ternary), which evaluate the right/branch operand only when reached.
 

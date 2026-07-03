@@ -5,6 +5,7 @@
  */
 
 import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
+import type { SsrSeedPlan } from './ssr-seed-plan.ts'
 
 /**
  * Loop-hoisted sort comparator for the `.sort().map()` / `.toSorted().map()`
@@ -1526,6 +1527,16 @@ export interface IRMetadata {
    * resolves the compiled module rather than the source `.tsx`.
    */
   clientSignalImportSources?: Set<string>
+  /**
+   * Backend-neutral SSR seed plan: per-binding derived/opaque/env-reader
+   * classification in declaration order, plus the base scope, computed by
+   * `computeSsrSeedPlan` from this metadata. Attached by `buildMetadata` and
+   * serialized into IR JSON like the rest of the metadata; template adapters
+   * consume it instead of re-deriving scope/derivability themselves (their
+   * target-syntax choices — lowering, self-shadow rules, constant-emit
+   * guards — stay adapter-side).
+   */
+  ssrSeedPlan?: SsrSeedPlan
 }
 
 // =============================================================================

@@ -149,6 +149,20 @@ describe('serializeParsedExpr', () => {
     expect(serializeParsedExpr(parseExpression('Boolean(item.s)'))).not.toBeNull()
   })
 
+  test('`.includes(x)` array-method serializes (the one array-method the evaluator executes)', () => {
+    expect(evalJSON("item.tags.includes('go')")).toEqual({
+      kind: 'array-method',
+      method: 'includes',
+      object: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'tags' },
+      args: [{ kind: 'literal', value: 'go' }],
+    })
+  })
+
+  test('every other array-method still folds outside the evaluator surface', () => {
+    expect(serializeParsedExpr(parseExpression('item.tags.join(",")'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.slice(0, 1)'))).toBeNull()
+  })
+
   test('a computed member value carries `computed: true` (plain access omits it)', () => {
     // `row['price']` folds to a computed `member`; the flag is preserved so a
     // computed member stays distinguishable. (`row.price` carries no `computed`.)
@@ -200,5 +214,10 @@ describe('freeVarsInBody', () => {
     // arguments, however, ARE real references.
     const body = parseExpression('Math.max(a, factor) + Number(label) + String(x) + Boolean(flag)')
     expect(freeVarsInBody(body, new Set(['a']))).toEqual(['factor', 'flag', 'label', 'x'])
+  })
+
+  test('`.includes(x)` array-method: both the receiver and the needle are free vars', () => {
+    const body = parseExpression('!tag || p.tags.includes(tag)')
+    expect(freeVarsInBody(body, new Set())).toEqual(['p', 'tag'])
   })
 })

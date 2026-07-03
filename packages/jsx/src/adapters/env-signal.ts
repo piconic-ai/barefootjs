@@ -22,26 +22,74 @@ export const ENV_SIGNAL_CLIENT_FACTORY: Record<string, string> = {
 }
 
 /**
- * The getter name(s) of the `searchParams` env signal in this component.
+ * One env signal's SSR-reader surface — the single place a future env signal
+ * registers itself so the adapter seed / memo paths stay open-closed:
+ * registering a new env signal is an analyzer factory entry + one registry
+ * entry here; adapter seed/memo paths consume the registry and need no edits.
+ */
+export interface EnvSignalReader {
+  /** The analyzer's `envReader` key (`'search'`). */
+  key: string
+  /**
+   * Canonical per-request reader binding every adapter's lowering
+   * canonicalises to (`searchParams` → Perl `$searchParams`, Go
+   * `in.SearchParams` via capitalisation).
+   */
+  canonicalName: string
+  /** Reader method names the SSR lowerings recognise (`.get(key)`). */
+  methods: ReadonlySet<string>
+}
+
+/**
+ * Env-signal key → its {@link EnvSignalReader} descriptor. The open-closed
+ * contract: adding a new env signal is an analyzer factory entry
+ * (`ENV_SIGNAL_FACTORIES`, #2057) + one entry here — the adapter seed / memo
+ * paths consume this registry (via {@link envSignalReaderFor} /
+ * {@link envSignalLocalNames}) and need no edits.
+ */
+export const ENV_SIGNAL_READERS: ReadonlyMap<string, EnvSignalReader> = new Map([
+  ['search', { key: 'search', canonicalName: 'searchParams', methods: new Set(['get']) }],
+])
+
+/** Look up an env signal's reader descriptor by its `envReader` key, or `null` when unregistered/absent. */
+export function envSignalReaderFor(key: string | undefined): EnvSignalReader | null {
+  if (key === undefined) return null
+  return ENV_SIGNAL_READERS.get(key) ?? null
+}
+
+/**
+ * The getter name(s) of env signal(s) in this component, optionally filtered
+ * to one `envReader` key.
  *
- * Recognised **structurally** (#2057): the env signal is now declared as a
+ * Recognised **structurally** (#2057): an env signal is declared as a
  * `createSignal`-shaped `const [searchParams, setSearchParams] =
  * createSearchParams()`, so the analyzer collects it into `metadata.signals`
- * with `envReader: 'search'` — exactly like any other signal, but tagged. This
+ * with `envReader: '<key>'` — exactly like any other signal, but tagged. This
  * function returns those getters (whatever the destructured name is —
  * `searchParams`, or an alias), so adapters match the reader `.get()` call
- * against the binding actually used, with **no `searchParams`-name allow-list**
- * (this supersedes the import-name matching, and the closed #2055).
+ * against the binding actually used, with **no name allow-list** (this
+ * supersedes the import-name matching, and the closed #2055).
  *
- * Empty when the component declares no env signal (the component keeps the
- * generic signal lowering).
+ * With `key` omitted, collects every env signal's getters regardless of
+ * which reader they belong to; with `key` given, only that reader's
+ * (`searchParamsLocalNames` is the `'search'`-filtered convenience below).
+ *
+ * Empty when the component declares no matching env signal (the component
+ * keeps the generic signal lowering).
  */
-export function searchParamsLocalNames(metadata: IRMetadata): Set<string> {
+export function envSignalLocalNames(metadata: IRMetadata, key?: string): Set<string> {
   const names = new Set<string>()
   for (const s of metadata.signals) {
-    if (s.envReader === 'search') names.add(s.getter)
+    if (s.envReader !== undefined && (key === undefined || s.envReader === key)) {
+      names.add(s.getter)
+    }
   }
   return names
+}
+
+/** The getter name(s) of the `searchParams` env signal in this component. See {@link envSignalLocalNames}. */
+export function searchParamsLocalNames(metadata: IRMetadata): Set<string> {
+  return envSignalLocalNames(metadata, 'search')
 }
 
 /**

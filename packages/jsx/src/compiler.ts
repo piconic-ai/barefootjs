@@ -23,6 +23,7 @@ import { generateModuleExports, collectInlineExportedNames } from './module-expo
 import { applyCssLayerPrefix } from './css-layer-prefixer.ts'
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
 import { extractSsrDefaults } from './ssr-defaults.ts'
+import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 
 /**
  * Extended compile options with required adapter
@@ -482,7 +483,7 @@ function compileMultipleComponents(
 export function buildMetadata(
   ctx: ReturnType<typeof analyzeComponent>,
 ): IRMetadata {
-  return {
+  const metadata: IRMetadata = {
     componentName: ctx.componentName || 'Unknown',
     hasDefaultExport: ctx.hasDefaultExport,
     isExported: ctx.isExported,
@@ -512,6 +513,10 @@ export function buildMetadata(
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
   }
+  // Computed from the assembled metadata (not `ctx`): the plan reads the
+  // exact fields adapters see, so the two can never disagree.
+  metadata.ssrSeedPlan = computeSsrSeedPlan(metadata)
+  return metadata
 }
 
 // =============================================================================
