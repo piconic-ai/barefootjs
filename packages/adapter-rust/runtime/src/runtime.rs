@@ -666,7 +666,15 @@ impl RenderSession {
     /// doc: loop-child scope ids only need to be locally unique within one
     /// render: `normalizeHTML` canonicalises `<ComponentName>_*` suffixes
     /// away in the conformance fixtures anyway).
-    fn next_rand_hex6(&self) -> String {
+    ///
+    /// `pub` (beyond `render_child`'s own internal use above) so a
+    /// production host can mint the SAME kind of locally-unique suffix for
+    /// a request's ROOT scope id (mirrors `packages/adapter-jinja/python/
+    /// barefootjs`-based integrations' `rand_suffix()` helper, e.g.
+    /// `integrations/flask/app.py`'s `f"{component}_{rand_suffix()}"`) --
+    /// see `packages/adapter-rust/runtime/src/manifest.rs` and the axum
+    /// integration's route handlers.
+    pub fn next_rand_hex6(&self) -> String {
         let mut counter = self.rng_counter.lock().unwrap();
         *counter = counter.wrapping_add(0x9E37_79B9_7F4A_7C15);
         let mut z = *counter;
@@ -787,7 +795,12 @@ impl BfInstance {
         self.session.scripts.lock().unwrap().push(path.to_string());
     }
 
-    fn scripts(&self) -> String {
+    /// `pub` (beyond the `"scripts"` `call_method` dispatch below) so a
+    /// production host can read back the accumulated `<script>` tags AFTER
+    /// rendering, to splice into its own page layout (mirrors Python
+    /// integrations' `bf.scripts()` call in their layout helper, e.g.
+    /// `integrations/flask/app.py`'s `layout(..., scripts=bf.scripts())`).
+    pub fn scripts(&self) -> String {
         self.session
             .scripts
             .lock()

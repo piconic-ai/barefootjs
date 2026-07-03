@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Axum integration. Source and the host-built
+# dist/ are bind-mounted in (see docker-compose.yml); cargo-watch rebuilds
+# and restarts the server on .rs changes. `bun run build:watch` rebuilds
+# dist/ independently on the host; this image only re-parses templates
+# because the Rust process re-reads dist/templates/*.j2 on every request
+# when APP_ENV=development (see src/render.rs's `with_env`).
+#
+# Build context is the repo root so the Cargo.toml path dependency
+# (../../packages/adapter-rust/runtime) resolves the same as on the host.
+
+FROM rust:1-alpine
+
+RUN apk add --no-cache musl-dev
+
+RUN cargo install cargo-watch --locked
+
+WORKDIR /workspace/integrations/axum
+
+EXPOSE 3012
+
+ENV APP_ENV=development
+
+CMD ["cargo", "watch", "-x", "run"]

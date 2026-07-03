@@ -8,10 +8,12 @@
 
 pub mod backend_minijinja;
 pub mod evaluator;
+pub mod manifest;
 pub mod num;
 pub mod runtime;
 pub mod search_params;
 
+pub use manifest::{derive_stash_from_defaults, load_manifest, register_components_from_manifest, to_template_name};
 pub use num::JsValue;
 pub use runtime::{BfInstance, ChildRendererSpec, RenderSession};
 pub use search_params::SearchParams;
