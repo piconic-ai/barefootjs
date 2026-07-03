@@ -82,6 +82,15 @@ try:
 except FileNotFoundError:
     MANIFEST = {}
 
+# The blog post corpus -- generated at build time by scripts/gen-blog-data.ts
+# from ../shared/blog/posts.ts (the single TS source of truth the JS adapters
+# import directly; this Python server reads the JSON mirror instead). See
+# BLOG_DATA's use in the blog routes below.
+try:
+    BLOG_DATA: dict[str, Any] = _json.loads((HERE / "dist" / "blog-data.json").read_text())
+except FileNotFoundError:
+    BLOG_DATA = {"posts": [], "listItems": [], "allTags": []}
+
 
 def stash_from_ssr_defaults(component: str, props: dict) -> dict:
     """Port of `barefootjs.runtime._derive_stash_from_defaults` for
@@ -502,6 +511,236 @@ async def ai_chat_stream() -> StreamingResponse:
     )
 
 
+# ---------------------------------------------------------------------------
+# Blog -- the @barefootjs/router showcase (FastAPI/Jinja2).
+#
+# Port of ../flask/app.py's blog section -- same runtime (JinjaBackend), same
+# helpers (`_register_blog_child`, `blog_island`, `blog_page`), same route
+# table, structured section-by-section so the two files can be diffed side
+# by side; only the Flask/WSGI -> FastAPI/ASGI idiom differences change
+# (async view functions, `request.query_params` instead of `request.args`).
+#
+# There is no special server-side "partial navigation" endpoint: the router
+# (packages/router/src/router.ts) fetches a full HTML page for every
+# navigation and diffs `[bf-region]` boundaries client-side, so every blog
+# route below just returns a normal HTML document -- the same "any backend,
+# zero cooperation" point the other adapters' blog ports make.
+#
+# searchParams() SSR (#2076): PostList imports `createSearchParams()`, and
+# simple memos derived directly from it now SSR-compute in-template (see
+# search-params-derived-memo / search-params-derived-filter in
+# packages/adapter-tests/fixtures). PostList's own `params` memo returns an
+# OBJECT (`{ sort, tag }`) built through a helper function (`asSortKey`), and
+# `sortClass`/`tagClass` are plain functions called with different literal
+# arguments per link -- shapes the seed plan does not lower (the manifest's
+# `ssrDefaults` for PostList shows `params`/`visible` as `null`, i.e. still
+# caller-provided). We seed `params` from the request query (validated the
+# same way the client's `asSortKey` would) and `visible` with the full list;
+# the client re-derives the sorted/filtered list + active sort/tag highlight
+# from `searchParams()` on hydration. This is the `stash_from_ssr_defaults`-
+# adjacent "render-context derivation" the task calls out as sanctioned --
+# not a workaround, just supplying what the static extractor cannot.
+# ---------------------------------------------------------------------------
+BLOG_SORT_KEYS = ("date", "title", "tag")
+
+
+def as_sort_key(raw: Optional[str]) -> str:
+    """Mirrors PostList's `asSortKey`: an unknown/absent `?sort=` falls back
+    to 'date' so the SSR row order always matches a valid post-hydration
+    state."""
+    return raw if raw in BLOG_SORT_KEYS else "date"
+
+
+def _register_blog_child(
+    parent_bf: BarefootJS, slot: str, component: str, extra_seed: Optional[dict] = None,
+) -> None:
+    """Register a renderer for a flat (non-`ui/*`) child component from the
+    build manifest (`post_list_item` -> PostListItem, `reader_toolbar` ->
+    ReaderToolbar): a fresh child scope chained off the caller's slot, the
+    shared script collector + renderer registry, and the manifest's
+    ssrDefaults seeded (caller prop wins)."""
+    entry = MANIFEST.get(component)
+    if not entry:
+        return
+    defaults = entry.get("ssrDefaults")
+
+    def make_renderer(
+        component: str = component, defaults: Optional[dict] = defaults, extra_seed: dict = extra_seed or {},
+    ) -> Callable:
+        def renderer(props: dict, caller: Optional[BarefootJS] = None) -> str:
+            host = caller or parent_bf
+            host_scope = host._scope_id()
+            child = BarefootJS(None, {"backend": backend})
+            slot_id = props.pop("_bf_slot", None)
+            data_key = props.pop("key", None)
+            if data_key is not None:
+                child._data_key(data_key)
+            child._scope_id(f"{host_scope}_{slot_id}" if slot_id else f"{component}_{rand_suffix()}")
+            child._is_child(True)
+            if slot_id:
+                child._bf_parent(host_scope)
+                child._bf_mount(slot_id)
+            child._child_renderers(parent_bf._child_renderers())
+            child._scripts(parent_bf._scripts())
+            child._script_seen(parent_bf._script_seen())
+            extra = stash_from_ssr_defaults(component, props) if defaults else {}
+            return backend.render_named(component, child, {**extra, **extra_seed, **props})
+
+        return renderer
+
+    parent_bf.register_child_renderer(slot, make_renderer())
+
+
+def blog_island(
+    root: BarefootJS,
+    component: str,
+    props: Optional[dict] = None,
+    extra: Optional[dict] = None,
+    children: Optional[dict] = None,
+) -> str:
+    """Render one top-level island to an HTML string, sharing `root`'s script
+    collector + renderer registry so islands compose into one page.
+
+        props    -- client props (-> bf-p, so the client hydration sees them,
+                    AND template vars)
+        extra    -- SSR-only template vars (derived memo / getter values not
+                    lowered)
+        children -- slot key -> child template name, or (template, extra_seed)
+    """
+    props = props or {}
+    extra = extra or {}
+    children = children or {}
+    bf = BarefootJS(None, {"backend": backend})
+    bf._scope_id(f"{component}_{rand_suffix()}")
+    if props:
+        bf._props(props)
+    bf._scripts(root._scripts())
+    bf._script_seen(root._script_seen())
+    bf._child_renderers(root._child_renderers())
+    for slot, spec in children.items():
+        template_name, seed = spec if isinstance(spec, tuple) else (spec, {})
+        _register_blog_child(bf, slot, template_name, seed)
+    seed = stash_from_ssr_defaults(component, props)
+    return backend.render_named(component, bf, {**seed, **props, **extra})
+
+
+def blog_page(root: BarefootJS, title: str, base: str, content_html: str) -> str:
+    """Assemble the region-shell page around already-rendered content HTML.
+    `root` is the request-scoped runtime whose script collector the content
+    islands (and the shell islands rendered here) all share."""
+    static = f"{BASE}/client"
+    theme = blog_island(root, "ThemeToggle")
+    sidebar = blog_island(root, "Sidebar")
+    shell = blog_island(
+        root, "PageShell",
+        {},                                              # no client props
+        {"children": backend.mark_raw(content_html)},     # SSR-only: page content
+        {"reader_toolbar": "ReaderToolbar"},
+    )
+    import_map = _json.dumps({
+        "imports": {
+            "@barefootjs/client": f"{static}/barefoot.js",
+            "@barefootjs/client/runtime": f"{static}/barefoot.js",
+            "@barefootjs/client/reactive": f"{static}/barefoot.js",
+        }
+    })
+    scripts = root.scripts()
+    esc_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return f"""<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{esc_title}</title>
+<script type="importmap">{import_map}</script>
+<link rel="stylesheet" href="{BASE}/styles/blog.css">
+</head>
+<body>
+<header class="shell">
+<a class="shell-brand" href="{base}">\U0001F4F0 Barefoot Blog</a>
+<div class="shell-island">{theme}</div>
+</header>
+<div class="layout">
+<aside bf-region="nav:0">{sidebar}</aside>
+<main>{shell}</main>
+</div>
+{scripts}
+<script type="module" src="{static}/router-entry.js"></script>
+</body>
+</html>
+"""
+
+
+@router.get("/blog")
+async def blog_index_route(request: Request) -> Response:
+    root = BarefootJS(None, {"backend": backend})
+    base = f"{BASE}/blog"
+    sort = as_sort_key(request.query_params.get("sort"))
+    tag = request.query_params.get("tag") or ""
+    items = BLOG_DATA["listItems"]
+    post_list = blog_island(
+        root, "PostList",
+        # Client props (-> bf-p): `visible()` re-derives from these on every
+        # `searchParams()` change, so they must reach the client.
+        {"items": items, "tags": BLOG_DATA["allTags"], "base": base},
+        {
+            # SSR-only derived values -- see the blog section docstring above
+            # for why these can't be lowered in-template. `params` from the
+            # request query (correct server-side labels); `visible` falls
+            # back to the full list. `sortClass`/`tagClass`/`root` are the
+            # neutral defaults the compiled template's collapsed per-link
+            # getters share -- the client sets the correct active
+            # highlight + hrefs from searchParams.
+            "params": {"sort": sort, "tag": tag},
+            "visible": items,
+            "sortClass": "sort",
+            "root": base,
+            "tagClass": "tag",
+        },
+        {"post_list_item": "PostListItem"},
+    )
+    now = blog_island(root, "NowPlaying", {}, {"Math": {"min": 0}})
+    title = f"#{tag} — Barefoot Blog" if tag else "Barefoot Blog — Latest posts"
+    return html_response(blog_page(root, title, base, post_list + now))
+
+
+@router.get("/blog/posts/{slug}")
+async def blog_post_route(slug: str) -> Response:
+    # Sort newest-first (the index's default display order) so the article
+    # pager walks down the list the reader is browsing; the corpus is
+    # authored oldest-first.
+    posts = sorted(BLOG_DATA["posts"], key=lambda p: p["date"], reverse=True)
+    idx = next((i for i, p in enumerate(posts) if p["slug"] == slug), None)
+    if idx is None:
+        return Response(content="Not Found", status_code=404, media_type="text/plain")
+    p = posts[idx]
+    prev_post = posts[idx - 1] if idx > 0 else None
+    next_post = posts[idx + 1] if idx < len(posts) - 1 else None
+    base = f"{BASE}/blog"
+    root = BarefootJS(None, {"backend": backend})
+    # The whole article is the shared <PostArticle> island; the interactive
+    # widgets are its nested children (NowPlaying needs Math seeded).
+    content = blog_island(
+        root, "PostArticle",
+        {
+            "slug": p["slug"], "title": p["title"], "date": p["date"],
+            "tags": p["tags"], "body": p["body"],
+            "position": idx + 1, "total": len(posts), "base": base,
+            "prevSlug": prev_post["slug"] if prev_post else None,
+            "prevTitle": prev_post["title"] if prev_post else None,
+            "nextSlug": next_post["slug"] if next_post else None,
+            "nextTitle": next_post["title"] if next_post else None,
+        },
+        {},
+        {
+            "like_button": "LikeButton",
+            "reading_timer": "ReadingTimer",
+            "now_playing": ("NowPlaying", {"Math": {"min": 0}}),
+        },
+    )
+    return html_response(blog_page(root, f"{p['title']} — Barefoot Blog", base, content))
+
+
 def home_page() -> str:
     body = f"""<p>This example renders the same shared JSX components with Jinja2
 under a plain FastAPI app.</p>
@@ -515,6 +754,7 @@ under a plain FastAPI app.</p>
     <li><a href="{BASE}/todos">Todo (@client)</a></li>
     <li><a href="{BASE}/todos-ssr">Todo (no @client markers)</a></li>
     <li><a href="{BASE}/ai-chat">AI Chat (SSE Streaming)</a></li>
+    <li><a href="{BASE}/blog">Blog (@barefootjs/router - partial navigation)</a></li>
 </ul>
 """
     return layout(

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/assemble-deps.ts",
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
     "dev": "PYTHONPATH=./lib BASE_PATH=/integrations/fastapi FASTAPI_DEBUG=1 PORT=3009 python3 app.py",
     "deploy": "bun run build && wrangler deploy",
@@ -12,7 +12,8 @@
     "clean": "rm -rf dist lib"
   },
   "dependencies": {
-    "@barefootjs/client": "workspace:*"
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/router": "workspace:*"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
