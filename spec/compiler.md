@@ -608,6 +608,7 @@ interface level; `JsxAdapter` is purely code reuse.
 - **HonoAdapter** (`@barefootjs/hono`) - Generates hono/jsx compatible TSX
 - **GoTemplateAdapter** (`@barefootjs/go-template`) - Generates Go html/template files
 - **MojoAdapter** (`@barefootjs/mojolicious`) - Generates Mojolicious EP template files (.html.ep)
+- **ErbAdapter** (`@barefootjs/erb`) - Generates ERB (Ruby) template files
 
 ### Implementing a New Adapter
 
@@ -905,7 +906,7 @@ This applies equally to **attribute bindings**, not just child/text expressions:
 
 ### Known limitations — methods that don't lower to the template adapters
 
-The Go / Mojo / Xslate template adapters lower a finite, growing catalogue of `Array.prototype` / `String.prototype` methods (see "Currently lowered" in the now-closed origin catalogue issue [#1448](https://github.com/piconic-ai/barefootjs/issues/1448), whose residual gaps are folded into the master known-limitations catalog [#2069](https://github.com/piconic-ai/barefootjs/issues/2069), the v2 successor of #1395). The shapes below are the residual gaps. They are intentional — each is either covered by an escape hatch or carries a cross-adapter design barrier — and `/* @client */` (or lifting the expression into an event handler / `createEffect`, where full JS is available) is the workaround for all of them.
+The Go / Mojo / Xslate / Erb template adapters lower a finite, growing catalogue of `Array.prototype` / `String.prototype` methods (see "Currently lowered" in the now-closed origin catalogue issue [#1448](https://github.com/piconic-ai/barefootjs/issues/1448), whose residual gaps are folded into the master known-limitations catalog [#2069](https://github.com/piconic-ai/barefootjs/issues/2069), the v2 successor of #1395). The shapes below are the residual gaps. They are intentional — each is either covered by an escape hatch or carries a cross-adapter design barrier — and `/* @client */` (or lifting the expression into an event handler / `createEffect`, where full JS is available) is the workaround for all of them.
 
 - **`.flat` / `.flatMap` richer transforms (BF101).** Value-returning `.flat(depth?)` and `.flatMap` lower for the structured catalogue: `flat` with a literal depth (`FlatDepth`), and `flatMap` self / field / array-literal-tuple-of-leaves projections (`FlatMapOp`) — `i => i`, `i => i.field`, `i => [i.a, i.b]`. Refused: a non-literal `.flat()` depth, and `.flatMap` callbacks with a transform body (arithmetic, calls, computed / deep access, **literal** array elements, the spread form) or the 2-arg `flatMap(fn, thisArg)`. The **JSX-returning** `.flatMap` lowers separately as an `IRLoop` and is unaffected.
 - **Sort comparator follow-ups (BF021).** Function-reference comparators (`sort(myCmp)` — needs scope resolution; inline the comparator instead) and `localeCompare(b, locale, opts)`. The latter is effectively won't-fix for byte-equal SSR: Go (`golang.org/x/text/collate`) and Perl (`Unicode::Collate`) collation cannot be guaranteed byte-equal to each other or to the JS / CSR path, which breaks the three-adapter parity contract.

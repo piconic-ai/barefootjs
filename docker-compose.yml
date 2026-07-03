@@ -181,6 +181,30 @@ services:
       # fallback) so local dev works without running assemble-deps first.
       - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
 
+  sinatra:
+    build:
+      context: .
+      dockerfile: integrations/sinatra/Dockerfile.dev
+    working_dir: /workspace/integrations/sinatra
+    environment:
+      BASE_PATH: /integrations/sinatra
+      RACK_ENV: development
+    volumes:
+      - ./integrations/sinatra:/workspace/integrations/sinatra
+      - ./packages/adapter-erb/lib:/workspace/packages/adapter-erb/lib
+
+  rails:
+    build:
+      context: .
+      dockerfile: integrations/rails/Dockerfile.dev
+    working_dir: /workspace/integrations/rails
+    environment:
+      BASE_PATH: /integrations/rails
+      RAILS_ENV: development
+    volumes:
+      - ./integrations/rails:/workspace/integrations/rails
+      - ./packages/adapter-erb/lib:/workspace/packages/adapter-erb/lib
+
   site-core:
     build:
       context: .

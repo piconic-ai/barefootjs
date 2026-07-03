@@ -1,0 +1,31 @@
+name = "barefootjs-sinatra-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "SinatraContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "SINATRA_CONTAINER"
+class_name = "SinatraContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SinatraContainer"]
+
+# Two patterns: `/integrations/sinatra/*` matches /integrations/sinatra/...
+# but not the bare /integrations/sinatra, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/sinatra"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/sinatra/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/sinatra"
