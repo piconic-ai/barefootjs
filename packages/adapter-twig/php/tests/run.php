@@ -25,6 +25,7 @@ $testFiles = [
     'test_query.php',
     'test_search_params.php',
     'test_spread_attrs.php',
+    'test_props_attr.php',
     'test_render_child.php',
     'test_render.php',
 ];
