@@ -14,7 +14,17 @@ import (
 // reference implementations (spec/template-helpers.md). The file only
 // exists in the monorepo checkout — consumers of the published Go
 // module don't receive it, so TestHelperVectors skips there.
-const vectorsPath = "../../adapter-tests/helper-vectors/vectors.json"
+const vectorsPath = "../../adapter-tests/vectors/vectors.json"
+
+// vectorDivergencesPath points at this backend's declared divergences
+// from the JS-normative expect (spec/template-helpers.md "Adapter
+// status model"). Package-local (testdata/, Go's conventional location
+// for test fixtures), so it's always present regardless of whether the
+// golden vectors themselves are available outside the monorepo
+// checkout. Loaded inside TestHelperVectors, after the vectors file
+// itself is confirmed present, so the not-in-monorepo skip above
+// already happened before this one would ever fire.
+const vectorDivergencesPath = "testdata/vector-divergences.json"
 
 type helperVector struct {
 	Fn     string            `json:"fn"`
@@ -143,78 +153,27 @@ func toStringSlice(args []any) []string {
 	return out
 }
 
-// vectorDivergence pins one deliberate divergence of THIS backend
-// from the JS-normative expect (spec/template-helpers.md "Adapter
-// status model"). The harness asserts the pinned value, so the
-// divergence itself is regression-tested; if the backend later
-// matches JS, the stale declaration fails so it gets removed.
-type vectorDivergence struct {
-	expect any
-	reason string
+// divergenceEntry pins one deliberate divergence of THIS backend from
+// the JS-normative expect (spec/template-helpers.md "Adapter status
+// model"). The harness asserts the pinned value, so the divergence
+// itself is regression-tested; if the backend later matches JS, the
+// stale declaration fails so it gets removed.
+type divergenceEntry struct {
+	Expect json.RawMessage `json:"expect"`
+	Throws bool            `json:"throws"`
+	Reason string          `json:"reason"`
 }
 
-// Keyed by the case key `fn + "/" + note`. This table is the single
-// source of truth for the Go backend's divergences — the spec stays
+// divergenceFile is the shape of vectorDivergencesPath. Keyed by the
+// case key `fn + "/" + note`, it is the single source of truth for the
+// Go backend's divergences and unsupported helpers — the spec stays
 // backend-neutral.
-var vectorDivergences = map[string]vectorDivergence{
-	"div/zero divisor yields Infinity": {
-		expect: 0,
-		reason: "bf.Div degrades to 0 so a template render survives instead of emitting +Inf",
-	},
-	"mod/float remainder": {
-		expect: 1,
-		reason: "bf.Mod truncates operands to integers",
-	},
-	"number/empty string coerces to 0": {
-		expect: math.NaN(),
-		reason: "deliberate: empty input must not silently zero downstream arithmetic",
-	},
-	"number/null coerces to 0": {
-		expect: math.NaN(),
-		reason: "deliberate: unset props must not silently zero downstream arithmetic",
-	},
-	"number/surrounding whitespace is trimmed": {
-		expect: math.NaN(),
-		reason: "strconv.ParseFloat does not trim whitespace",
-	},
-	"string/null renders as the string \"null\"": {
-		expect: "",
-		reason: "deliberate: an unset prop must not surface a literal \"null\" in HTML",
-	},
-	"round/negative half rounds toward +Infinity": {
-		expect: -2.0,
-		reason: "math.Round is half-away-from-zero",
-	},
-	"round/negative half rounds toward +Infinity (away tie)": {
-		expect: -3.0,
-		reason: "math.Round is half-away-from-zero",
-	},
-	"sort/localeCompare orders case-insensitively (ICU collation)": {
-		expect: []any{"B", "a"},
-		reason: "strings.Compare is byte order, not ICU collation",
-	},
-	"sort/relational compare on numeric strings is lexical": {
-		expect: []any{"9", "10"},
-		reason: "the \"auto\" compare goes numeric when both keys parse as numbers",
-	},
-	"reduce/numeric-string items concatenate under JS +": {
-		expect: 11.0,
-		reason: "numeric folds parse numeric strings (toFloat64WithOK) instead of concatenating",
-	},
-	"search_params_get/absent key is null": {
-		expect: "",
-		reason: "url.Values.Get returns \"\" for an absent key where JS URLSearchParams.get returns null; the ?? → or lowering folds both to the author default, so SSR output still matches",
-	},
+type divergenceFile struct {
+	Version     int                        `json:"version"`
+	Backend     string                     `json:"backend"`
+	Divergences map[string]divergenceEntry `json:"divergences"`
+	Unsupported map[string]string          `json:"unsupported"`
 }
-
-// vectorUnsupported marks helper ids this backend has not implemented
-// yet (skipped visibly with the reason). Empty for Go — the binding
-// table is complete; the mechanism exists so a bootstrapping backend
-// can land its harness first and burn the list down. Note the Go
-// FuncMap also carries bf_first/bf_last/bf_contains, which the
-// compiler never emits — they are Go-internal conveniences outside
-// the catalogue, not entries for this list.
-var vectorUnsupported = map[string]string{}
 
 func TestHelperVectors(t *testing.T) {
 	data, err := os.ReadFile(vectorsPath)
@@ -233,11 +192,26 @@ func TestHelperVectors(t *testing.T) {
 		t.Fatal("vectors.json contains no cases")
 	}
 
-	declared := make(map[string]bool, len(vectorDivergences))
+	// Declarations live in vectorDivergencesPath, not inline, so this
+	// harness and the other backends' harnesses share one JSON schema
+	// (spec/template-helpers.md "Adapter status model"). This harness
+	// still enforces the machinery itself: stale declarations (the
+	// backend now matches JS) and dead declarations (the case they
+	// reference no longer exists) both fail the suite.
+	divData, err := os.ReadFile(vectorDivergencesPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", vectorDivergencesPath, err)
+	}
+	var divFile divergenceFile
+	if err := json.Unmarshal(divData, &divFile); err != nil {
+		t.Fatalf("parse %s: %v", vectorDivergencesPath, err)
+	}
+
+	declared := make(map[string]bool, len(divFile.Divergences))
 	for i, c := range file.Cases {
 		key := c.Fn + "/" + c.Note
 		t.Run(key, func(t *testing.T) {
-			if reason, ok := vectorUnsupported[c.Fn]; ok {
+			if reason, ok := divFile.Unsupported[c.Fn]; ok {
 				t.Skipf("unsupported on this backend: %s", reason)
 			}
 			bind, ok := vectorBindings[c.Fn]
@@ -257,14 +231,24 @@ func TestHelperVectors(t *testing.T) {
 				t.Fatalf("case %d: decode expect: %v", i, err)
 			}
 			got := bind(args)
-			if d, ok := vectorDivergences[key]; ok {
+			if d, ok := divFile.Divergences[key]; ok {
 				declared[key] = true
 				if vectorEqual(got, expect) {
 					t.Errorf("stale divergence declaration for %q — the backend now matches JS (%v); remove it", key, got)
 					return
 				}
-				if !vectorEqual(got, d.expect) {
-					t.Errorf("divergence drift for %q: got %v (%T), pinned %v (%s)", key, got, got, d.expect, d.reason)
+				if d.Throws {
+					t.Fatalf("throws divergences are not supported by the Go harness — bindings return values")
+				}
+				if d.Expect == nil {
+					t.Fatalf("malformed divergence declaration for %q: missing expect", key)
+				}
+				pinned, err := decodeVectorValue(d.Expect)
+				if err != nil {
+					t.Fatalf("case %d: decode divergence expect: %v", i, err)
+				}
+				if !vectorEqual(got, pinned) {
+					t.Errorf("divergence drift for %q: got %v (%T), pinned %v (%s)", key, got, got, pinned, d.Reason)
 				}
 				return
 			}
@@ -275,7 +259,7 @@ func TestHelperVectors(t *testing.T) {
 	}
 	// A declaration referencing a case that no longer exists is dead —
 	// likely a renamed note. Fail so the key gets re-pointed.
-	for key := range vectorDivergences {
+	for key := range divFile.Divergences {
 		if !declared[key] {
 			t.Errorf("divergence declaration %q matches no vector case — renamed note?", key)
 		}

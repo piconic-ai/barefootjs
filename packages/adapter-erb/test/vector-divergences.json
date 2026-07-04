@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "backend": "ruby",
+  "runner": "packages/adapter-erb/test/helper_vectors_test.rb",
+  "spec": "spec/template-helpers.md",
+  "divergences": {
+    "add/beyond the safe-integer edge rounds as a double": {
+      "expect": 9007199254740993,
+      "reason": "Ruby Integer arithmetic is arbitrary-precision exact, not double-rounded"
+    },
+    "string/null renders as the string \"null\"": {
+      "expect": "",
+      "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML"
+    },
+    "number/empty string coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: empty input must not silently zero downstream arithmetic"
+    },
+    "number/null coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: unset props must not silently zero downstream arithmetic"
+    },
+    "sort/localeCompare orders case-insensitively (ICU collation)": {
+      "expect": ["B", "a"],
+      "reason": "String#<=> is byte/codepoint order, not ICU collation (same barrier as Go/Perl)"
+    },
+    "sort/relational compare on numeric strings is lexical": {
+      "expect": ["9", "10"],
+      "reason": "the shared \"auto\" compare goes numeric when both keys look like numbers (same catalogue as Go bf_sort / Perl BarefootJS::sort)"
+    },
+    "reduce/numeric-string items concatenate under JS +": {
+      "expect": 11,
+      "reason": "numeric folds parse numeric strings instead of concatenating (same catalogue as Perl bf->reduce)"
+    }
+  },
+  "unsupported": {}
+}

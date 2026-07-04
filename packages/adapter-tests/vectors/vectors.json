@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generator": "packages/adapter-tests/helper-vectors/generate.ts",
+  "generator": "packages/adapter-tests/vectors/generate.ts",
   "spec": "spec/template-helpers.md",
   "cases": [
     {

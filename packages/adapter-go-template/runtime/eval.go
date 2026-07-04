@@ -28,7 +28,7 @@ import (
 // The accepted pure subset and its semantics (evaluation order, coercion,
 // equality, allowed operators / builtins) are documented in spec/compiler.md
 // ("ParsedExpr Evaluator Semantics") and pinned isomorphically by the golden
-// vectors in packages/adapter-tests/helper-vectors/eval-vectors.json (shared
+// vectors in packages/adapter-tests/vectors/eval-vectors.json (shared
 // with the Perl evaluator). The coercion rules below are the literal JS rules
 // (ToNumber / ToString / ToBoolean) — deliberately NOT the divergent
 // bf->string / bf_reduce helper conventions — so the contract is unambiguous

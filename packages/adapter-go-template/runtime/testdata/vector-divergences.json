@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "backend": "go",
+  "runner": "packages/adapter-go-template/runtime/vectors_test.go",
+  "spec": "spec/template-helpers.md",
+  "divergences": {
+    "div/zero divisor yields Infinity": {
+      "expect": 0,
+      "reason": "bf.Div degrades to 0 so a template render survives instead of emitting +Inf"
+    },
+    "mod/float remainder": {
+      "expect": 1,
+      "reason": "bf.Mod truncates operands to integers"
+    },
+    "number/empty string coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: empty input must not silently zero downstream arithmetic"
+    },
+    "number/null coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: unset props must not silently zero downstream arithmetic"
+    },
+    "number/surrounding whitespace is trimmed": {
+      "expect": { "$num": "NaN" },
+      "reason": "strconv.ParseFloat does not trim whitespace"
+    },
+    "string/null renders as the string \"null\"": {
+      "expect": "",
+      "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML"
+    },
+    "round/negative half rounds toward +Infinity": {
+      "expect": -2.0,
+      "reason": "math.Round is half-away-from-zero"
+    },
+    "round/negative half rounds toward +Infinity (away tie)": {
+      "expect": -3.0,
+      "reason": "math.Round is half-away-from-zero"
+    },
+    "sort/localeCompare orders case-insensitively (ICU collation)": {
+      "expect": ["B", "a"],
+      "reason": "strings.Compare is byte order, not ICU collation"
+    },
+    "sort/relational compare on numeric strings is lexical": {
+      "expect": ["9", "10"],
+      "reason": "the \"auto\" compare goes numeric when both keys parse as numbers"
+    },
+    "reduce/numeric-string items concatenate under JS +": {
+      "expect": 11.0,
+      "reason": "numeric folds parse numeric strings (toFloat64WithOK) instead of concatenating"
+    },
+    "search_params_get/absent key is null": {
+      "expect": "",
+      "reason": "url.Values.Get returns \"\" for an absent key where JS URLSearchParams.get returns null; the ?? → or lowering folds both to the author default, so SSR output still matches"
+    }
+  },
+  "unsupported": {}
+}
