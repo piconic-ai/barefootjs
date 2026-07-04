@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generator": "packages/adapter-tests/helper-vectors/eval-generate.ts",
+  "generator": "packages/adapter-tests/vectors/eval-generate.ts",
   "spec": "spec/compiler.md#parsedexpr-evaluator-semantics",
   "cases": [
     {

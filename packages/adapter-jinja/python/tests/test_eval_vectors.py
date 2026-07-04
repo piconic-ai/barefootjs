@@ -1,7 +1,7 @@
 """Golden ParsedExpr-evaluator vectors, ported from
 packages/adapter-perl/t/eval_vectors.t.
 
-Runs `packages/adapter-tests/helper-vectors/eval-vectors.json` -- generated
+Runs `packages/adapter-tests/vectors/eval-vectors.json` -- generated
 from the JS reference evaluator, shared with the Go and Perl evaluators --
 against `barefootjs.evaluator.evaluate`. The evaluator is JS-faithful by
 contract, so unlike the helper vectors there are NO Python-side
@@ -18,7 +18,7 @@ import unittest
 from barefootjs import evaluator
 
 VECTORS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "helper-vectors", "eval-vectors.json"
+    os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "eval-vectors.json"
 )
 
 

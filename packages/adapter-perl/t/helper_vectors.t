@@ -35,7 +35,7 @@ my $bf = bless { c => undef, config => {}, backend => PureBackend->new }, 'Baref
 # the CPAN dist — packages/adapter-tests only exists in a monorepo
 # checkout — so skip everywhere else.
 my $vectors_path = File::Spec->catfile(
-    $FindBin::Bin, '..', '..', 'adapter-tests', 'helper-vectors', 'vectors.json'
+    $FindBin::Bin, '..', '..', 'adapter-tests', 'vectors', 'vectors.json'
 );
 plan skip_all => 'golden vectors not available outside the monorepo checkout'
     unless -e $vectors_path;
@@ -48,6 +48,23 @@ my $doc = do {
     # bytes — otherwise _form_escape would re-encode them and double-escape.
     JSON::PP->new->utf8->decode(scalar <$fh>);
 };
+
+# Per-backend status declarations (spec/template-helpers.md "Adapter
+# status model") live in t/vector-divergences.json, package-local to this
+# adapter — the spec stays backend-neutral. This harness enforces them: a
+# pinned case that starts matching JS fails as stale, and a key that
+# matches no vector case fails as dead (see the two checks below).
+my $divergences_path = File::Spec->catfile($FindBin::Bin, 'vector-divergences.json');
+die "divergences file not found: $divergences_path (it is package-local and must always be present)"
+    unless -e $divergences_path;
+
+my $divergences_doc = do {
+    open my $fh, '<:raw', $divergences_path or die "open $divergences_path: $!";
+    local $/;
+    JSON::PP->new->utf8->decode(scalar <$fh>);
+};
+my %DIVERGENCES = %{ $divergences_doc->{divergences} };
+my %UNSUPPORTED = %{ $divergences_doc->{unsupported} };
 
 # One binding per canonical helper id in the spec catalogue, bound to
 # the exact code shape compiled templates execute on the Perl backends.
@@ -176,77 +193,6 @@ sub _field_eq_pred {
         : sub { my $v = $get->($_[0]); defined $v && $v eq $value };
 }
 
-# Per-backend status declarations (spec/template-helpers.md "Adapter
-# status model"). This file is the single source of truth for the
-# Perl backends' divergences — the spec stays backend-neutral.
-#
-# %DIVERGENCES pins a deliberate divergence from the JS-normative
-# expect, keyed by `fn/note`. Forms:
-#   { expect => <value>, reason => ... }  assert the pinned value
-#   { nan    => 1,       reason => ... }  assert a real NaN result
-#   { dies   => 1,       reason => ... }  assert the call dies
-# A pinned case that starts matching JS fails as stale; a key that
-# matches no vector case fails as dead.
-my %DIVERGENCES = (
-    'add/beyond the safe-integer edge rounds as a double' => {
-        expect => 9007199254740993,
-        reason => 'Perl IV arithmetic is 64-bit exact, not double-rounded',
-    },
-    'div/zero divisor yields Infinity' => {
-        dies   => 1,
-        reason => 'Perl native / dies on a zero divisor',
-    },
-    'mod/remainder keeps the dividend sign' => {
-        expect => 2,
-        reason => 'Perl native % takes the divisor sign',
-    },
-    'mod/float remainder' => {
-        expect => 1,
-        reason => 'Perl native % truncates operands to integers',
-    },
-    'number/empty string coerces to 0' => {
-        nan    => 1,
-        reason => 'deliberate: empty input must not silently zero downstream arithmetic',
-    },
-    'number/null coerces to 0' => {
-        nan    => 1,
-        reason => 'deliberate: unset props must not silently zero downstream arithmetic',
-    },
-    'string/null renders as the string "null"' => {
-        expect => '',
-        reason => 'deliberate: an unset prop must not surface a literal "null" in HTML',
-    },
-    'string/true renders as the string "true"' => {
-        expect => '1',
-        reason => 'Perl has no boolean type; template data carries 1/0',
-    },
-    'string/17-significant-digit double round-trips' => {
-        expect => '0.3',
-        reason => 'Perl stringifies doubles via %.15g',
-    },
-    'filter_truthy/the string "0" is truthy' => {
-        expect => ['x'],
-        reason => 'Perl truthiness treats the string "0" as false',
-    },
-    'sort/localeCompare orders case-insensitively (ICU collation)' => {
-        expect => ['B', 'a'],
-        reason => 'cmp is byte order, not ICU collation',
-    },
-    'sort/relational compare on numeric strings is lexical' => {
-        expect => ['9', '10'],
-        reason => 'the "auto" compare goes numeric when both keys look_like_number',
-    },
-    'reduce/numeric-string items concatenate under JS +' => {
-        expect => 11,
-        reason => 'numeric folds parse numeric strings instead of concatenating',
-    },
-);
-
-# Helper ids not implemented on this backend yet — skipped visibly.
-# Empty for the Perl backends; the mechanism exists so a bootstrapping
-# backend can land its harness first and burn the list down.
-my %UNSUPPORTED = ();
-
 my %seen_declarations;
 for my $case (@{ $doc->{cases} }) {
     my ($fn, $note) = @{$case}{qw(fn note)};
@@ -267,7 +213,7 @@ for my $case (@{ $doc->{cases} }) {
     if (my $d = $DIVERGENCES{$key}) {
         $seen_declarations{$key} = 1;
         my $label = "$key (declared divergence: $d->{reason})";
-        if ($d->{dies}) {
+        if ($d->{throws}) {
             ok($err, $label) or diag("expected the call to die, got: " . explain_value($got));
             next;
         }
@@ -280,10 +226,10 @@ for my $case (@{ $doc->{cases} }) {
             fail("stale divergence declaration for '$key' — the backend now matches JS; remove it");
             next;
         }
-        my $want_ok = $d->{nan} ? (looks_like_number($got // '') && $got != $got)
-                                : _match_plain($got, $d->{expect});
-        ok($want_ok, $label)
-            or diag('got ' . explain_value($got) . ', pinned ' . explain_value($d->{nan} ? 'NaN' : $d->{expect}));
+        die "divergence '$key' has neither throws nor expect — malformed perl.json entry"
+            unless exists $d->{expect};
+        ok(_match($got, $d->{expect}), $label)
+            or diag('got ' . explain_value($got) . ', pinned ' . explain_value($d->{expect}));
         next;
     }
 
@@ -345,21 +291,6 @@ sub _match {
             return 0 unless exists $got->{$k};
             _match($got->{$k}, $expect->{$k}) or return 0;
         }
-        return 1;
-    }
-    return 0 if !defined $got || ref $got;
-    return ($got == $expect ? 1 : 0) if looks_like_number($expect) && looks_like_number($got);
-    return ($got eq $expect) ? 1 : 0;
-}
-
-# _match_plain: like _match but against a plain Perl value from a
-# divergence declaration (no JSON boolean / sentinel forms).
-sub _match_plain {
-    my ($got, $expect) = @_;
-    return !defined $got if !defined $expect;
-    if (ref $expect eq 'ARRAY') {
-        return 0 unless ref $got eq 'ARRAY' && @$got == @$expect;
-        _match_plain($got->[$_], $expect->[$_]) or return 0 for 0 .. $#$expect;
         return 1;
     }
     return 0 if !defined $got || ref $got;

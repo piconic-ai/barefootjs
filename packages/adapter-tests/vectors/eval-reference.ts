@@ -4,7 +4,7 @@
  *
  * This is the *semantic source of truth* for the pure-expression subset
  * each backend runtime (Go `bf.go`, shared Perl `Evaluator.pm`)
- * re-implements. Like the helper-vectors `reference` table, it is the
+ * re-implements. Like the helper vectors' `reference` table, it is the
  * literal JS each construct lowers to (`a + b`, `Number(x)`, …), so the
  * golden `eval-vectors.json` encodes real JS engine behaviour and the
  * backends are held to JS parity.

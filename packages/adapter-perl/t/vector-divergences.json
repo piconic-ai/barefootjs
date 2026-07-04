@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "backend": "perl",
+  "runner": "packages/adapter-perl/t/helper_vectors.t",
+  "spec": "spec/template-helpers.md",
+  "divergences": {
+    "add/beyond the safe-integer edge rounds as a double": {
+      "expect": 9007199254740993,
+      "reason": "Perl IV arithmetic is 64-bit exact, not double-rounded"
+    },
+    "div/zero divisor yields Infinity": {
+      "throws": true,
+      "reason": "Perl native / dies on a zero divisor"
+    },
+    "mod/remainder keeps the dividend sign": {
+      "expect": 2,
+      "reason": "Perl native % takes the divisor sign"
+    },
+    "mod/float remainder": {
+      "expect": 1,
+      "reason": "Perl native % truncates operands to integers"
+    },
+    "number/empty string coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: empty input must not silently zero downstream arithmetic"
+    },
+    "number/null coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: unset props must not silently zero downstream arithmetic"
+    },
+    "string/null renders as the string \"null\"": {
+      "expect": "",
+      "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML"
+    },
+    "string/true renders as the string \"true\"": {
+      "expect": "1",
+      "reason": "Perl has no boolean type; template data carries 1/0"
+    },
+    "string/17-significant-digit double round-trips": {
+      "expect": "0.3",
+      "reason": "Perl stringifies doubles via %.15g"
+    },
+    "filter_truthy/the string \"0\" is truthy": {
+      "expect": ["x"],
+      "reason": "Perl truthiness treats the string \"0\" as false"
+    },
+    "sort/localeCompare orders case-insensitively (ICU collation)": {
+      "expect": ["B", "a"],
+      "reason": "cmp is byte order, not ICU collation"
+    },
+    "sort/relational compare on numeric strings is lexical": {
+      "expect": ["9", "10"],
+      "reason": "the \"auto\" compare goes numeric when both keys look_like_number"
+    },
+    "reduce/numeric-string items concatenate under JS +": {
+      "expect": 11,
+      "reason": "numeric folds parse numeric strings instead of concatenating"
+    }
+  },
+  "unsupported": {}
+}

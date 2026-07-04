@@ -7,7 +7,7 @@ use utf8;
 # The cross-language VALUE semantics of `get` (absent → null/undef, present →
 # first value, repeated keys, present-but-empty, `+`/`%XX`/encoded-separator
 # decoding, first-`=` split) are owned by the language-independent golden
-# vectors — `search_params_get` in packages/adapter-tests/helper-vectors,
+# vectors — `search_params_get` in packages/adapter-tests/vectors,
 # asserted here via t/helper_vectors.t and in the Go runtime's vectors_test.go,
 # so Go/Perl/JS parity is mechanical. This file covers only what those value
 # vectors can't: the lazy-load factory seam, lenient parsing (never dies), the

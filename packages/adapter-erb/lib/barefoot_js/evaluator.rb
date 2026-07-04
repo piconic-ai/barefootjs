@@ -17,7 +17,7 @@ module BarefootJS
   # the Go evaluator (bf.go). The accepted subset and its semantics are
   # documented in spec/compiler.md ("ParsedExpr Evaluator Semantics") and
   # pinned isomorphically by the cross-language golden vectors
-  # (packages/adapter-tests/helper-vectors/eval-vectors.json). The literal
+  # (packages/adapter-tests/vectors/eval-vectors.json). The literal
   # JS reference implementation is eval-reference.ts -- this port follows it
   # node-for-node, including its refusal behaviour (EvalUnsupported), which
   # is a closer contract match than the Perl port's silent-nil shortcuts
