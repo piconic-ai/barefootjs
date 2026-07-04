@@ -1,0 +1,33 @@
+[package]
+name = "barefootjs-axum-example"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Path dependency into the Rust runtime crate this build's `bf build` output
+# targets (packages/adapter-rust/runtime, crate `barefootjs`). The Docker
+# build context is the REPO ROOT (see wrangler.toml's `image_build_context`)
+# specifically so this relative path resolves inside the image too.
+barefootjs = { path = "../../packages/adapter-rust/runtime" }
+# Same crate the `barefootjs` path dependency uses (unified by cargo's
+# resolver to one version) -- needed directly here only for the
+# `Environment<'static>` type this app holds in `AppState` and threads
+# through `render.rs::with_env`; all actual template-rendering logic still
+# goes through `barefootjs::backend_minijinja`.
+minijinja = { version = "2", features = ["loader"] }
+
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "time", "signal"] }
+tower-http = { version = "0.6", features = ["fs"] }
+# Small, single-purpose: turns an `async fn` body with `yield` into a
+# `futures_core::Stream` -- used for the char-by-char AI chat SSE endpoint
+# (`tokio::time::sleep` between yields keeps the runtime unblocked, per the
+# design contract's fastapi/app.py rationale pointer).
+async-stream = "0.3"
+futures-core = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 2

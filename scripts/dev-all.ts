@@ -15,11 +15,12 @@
  *   :4000/integrations/fastapi/*     → fastapi service
  *   :4000/integrations/sinatra/*     → sinatra service
  *   :4000/integrations/rails/*       → rails service
+ *   :4000/integrations/axum/*        → axum service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
  * (hono, h3, elysia, echo, gin, chi, nethttp, mojolicious, xslate, sinatra,
- * rails, site-core) resolve via Docker DNS. Each upstream
+ * rails, axum, site-core) resolve via Docker DNS. Each upstream
  * target is overridable via env vars so the same script also works on the
  * host (e.g. when iterating on the proxy itself), and so individual targets
  * can be redirected to host.docker.internal when an integration is being run
@@ -51,6 +52,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/fastapi',     target: process.env.FASTAPI_TARGET     ?? 'http://fastapi:3009',     label: 'FastAPI (Python)' },
   { prefix: '/integrations/sinatra',     target: process.env.SINATRA_TARGET     ?? 'http://sinatra:3010',     label: 'Sinatra (Ruby)' },
   { prefix: '/integrations/rails',       target: process.env.RAILS_TARGET       ?? 'http://rails:3011',       label: 'Rails (Ruby)' },
+  { prefix: '/integrations/axum',        target: process.env.AXUM_TARGET        ?? 'http://axum:3012',        label: 'Axum (Rust)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'
