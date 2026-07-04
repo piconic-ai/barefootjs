@@ -114,9 +114,9 @@ runAdapterConformanceTests({
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<: $color :>;padding:8px`) via
     // `tryLowerStyleObject` (#1322).
-    // Tagged-template-literal call in a className — same family, same
-    // refusal (BF101).
-    'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // (`tagged-template-classname` graduated by #2092 — the tag resolves
+    // through the interleave-tag catalogue and desugars to an untagged
+    // template literal, so it lowers like any other className template.)
     // #2038: a filter predicate whose body contains a NESTED callback call
     // (`t => !picked().some(p => …)` / `t => picked().find(p => …)`). Kolon
     // has no inline `grep` form, so `XslateFilterEmitter.callbackMethod` used

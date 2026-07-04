@@ -1554,9 +1554,11 @@ describe('JSX spread of a reactive object', () => {
 
 describe('tagged template literal for className', () => {
   // `cn\`base ${signal()}\`` is the most common alternative to `cva` in
-  // small codebases. The compiler currently treats a TaggedTemplate as
-  // an opaque call; reactive deps inside the placeholders may not be
-  // analysed.
+  // small codebases. Resolved by #2092: `cn`'s body structurally matches
+  // the interleave-tag catalogue (`parts.reduce((acc, p, i) => acc + p +
+  // (args[i] ?? ''), '')`), so the tagged template desugars to the
+  // equivalent untagged template literal — the signal dependency inside
+  // the placeholder IS analysed, producing a reactive className binding.
   test('cn`base ${signal()}` produces the className binding', () => {
     const src = `
       'use client'
@@ -1569,7 +1571,14 @@ describe('tagged template literal for className', () => {
         return <div onClick={() => setTone('secondary')} className={cn\`base \${tone()}\`} />
       }
     `
-    expectNoFatalErrors(compile(src))
+    const c = compile(src)
+    expectNoFatalErrors(c)
+    // The tag call is gone from the emitted client JS — replaced by the
+    // desugared untagged template literal — and the className update
+    // effect reads the signal getter reactively.
+    expect(c.clientJs).not.toMatch(/\bcn`/)
+    expect(c.clientJs).toContain('`base ${(tone()) ?? \'\'}`')
+    expect(c.clientJs).toMatch(/setAttribute\('class',\s*String\(__v\)\)/)
   })
 })
 
