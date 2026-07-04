@@ -68,18 +68,14 @@ jobs:
 
       - name: Run unit tests
         parallel:
-          client:
-            steps:
-              - run: bun test packages/client
-          jsx:
-            steps:
-              - run: bun test packages/jsx
-          test-pkg:
-            steps:
-              - run: bun test packages/test
-          adapter-tests:
-            steps:
-              - run: bun test packages/adapter-tests
+          - name: client
+            run: bun test packages/client
+          - name: jsx
+            run: bun test packages/jsx
+          - name: test-pkg
+            run: bun test packages/test
+          - name: adapter-tests
+            run: bun test packages/adapter-tests
 
   test-ui:
     runs-on: ubuntu-latest
