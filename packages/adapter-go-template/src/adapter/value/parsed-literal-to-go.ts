@@ -24,7 +24,7 @@
 import type { ParsedExpr, TypeDefinition, TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { goFieldNameForKey } from '../lib/go-naming.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
@@ -51,6 +51,13 @@ function structPropertyType(ctx: GoEmitContext, structGoType: string, key: strin
  * `"Name"`, not the source-cased `"name"` — mirrors the same convention
  * `test-render.ts`'s `goArrayLiteralFromArray` uses for object elements
  * passed as harness props.
+ *
+ * Keys are sanitized with `goFieldNameForKey` — the SAME function the
+ * accessor side (`buildSegmentAccessor` / `structFieldsFor`) uses — so a
+ * non-identifier key (`'data-x'`) bakes as `"DataX"` and dot access
+ * `.Meta.DataX` finds it. `capitalizeFieldName` alone would bake
+ * `"Data-x"`, a key no emitted accessor can ever reach (Copilot review,
+ * PR #2089).
  */
 function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
   if (expr.kind !== 'object-literal') return null
@@ -62,7 +69,7 @@ function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string |
         ? bakeInlineObjectAsGoMap(ctx, prop.value)
         : parsedLiteralToGo(ctx, prop.value)
     if (go === null) return null
-    entries.push(`${JSON.stringify(capitalizeFieldName(prop.key))}: ${go}`)
+    entries.push(`${JSON.stringify(goFieldNameForKey(prop.key))}: ${go}`)
   }
   return `map[string]interface{}{${entries.join(', ')}}`
 }

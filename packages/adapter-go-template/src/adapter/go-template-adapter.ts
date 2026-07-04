@@ -2870,10 +2870,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (objHO && (objHO.method === 'find' || objHO.method === 'findLast')) {
       const findResult = this.renderHigherOrderExpr(objHO, emit)
       if (findResult) {
-        return `{{with ${findResult}}}{{.${capitalizeFieldName(property)}}}{{end}}`
+        return `{{with ${findResult}}}{{.${goFieldNameForKey(property)}}}{{end}}`
       }
       const templateBlock = this.renderFindTemplateBlock(
-        objHO, emit, capitalizeFieldName(property),
+        objHO, emit, goFieldNameForKey(property),
       )
       if (templateBlock) return templateBlock
     }
@@ -2898,14 +2898,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // Inside a loop, the loop param variable refers to the current item
     // (dot). e.g. `msg.role` inside `{{range $_, $msg := .Messages}}` → `.Role`
+    //
+    // Field names route through `goFieldNameForKey` — the same sanitizer the
+    // struct/map bake side uses — NOT bare `capitalizeFieldName`: a
+    // non-identifier property (`meta["data-x"]`, parsed as computed member
+    // access) would otherwise emit `.Data-x`, which is not even valid Go
+    // template syntax, let alone a reachable field (PR #2089 review). For
+    // identifier keys (snake_case included) the two functions agree, so
+    // nothing previously reachable changes shape.
     const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
     if (object.kind === 'identifier' && currentLoopParam && object.name === currentLoopParam) {
-      return `.${capitalizeFieldName(property)}`
+      return `.${goFieldNameForKey(property)}`
     }
 
     const obj = emit(object)
     if (property === 'length') return `len ${obj}`
-    return `${obj}.${capitalizeFieldName(property)}`
+    return `${obj}.${goFieldNameForKey(property)}`
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {

@@ -963,6 +963,54 @@ export function Rows() {
       expect(types).toContain('Rows: []Row{Row{DataID: "a"}},')
     })
 
+    test('bakes a non-Go-identifier key inside a nested INLINE object with the same sanitizer as the accessor side (#2089 review)', () => {
+      // A nested inline-object property (`meta: { 'data-x': string }` — no
+      // named Go struct, lowered to map[string]interface{}) bakes as a Go map
+      // literal. The map KEY must be produced by `goFieldNameForKey` — the
+      // same function `buildSegmentAccessor`/`structFieldsFor` use — so the
+      // emitted accessor (`.Meta.DataX`, an exact-string MapIndex on maps)
+      // actually finds the value. `capitalizeFieldName` alone would bake
+      // `"Data-x"`, a key no emitted accessor can reach, silently rendering
+      // empty (flagged by Copilot on PR #2089).
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Row = { id: string; meta: { "data-x": string } }
+export function Rows() {
+  const [rows] = createSignal<Row[]>([{ id: "r1", meta: { "data-x": "v" } }])
+  return <ul>{rows().map(({ id, meta }) => <li key={id}>{meta["data-x"]}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('map[string]interface{}{"DataX": "v"}')
+      expect(types).not.toContain('"Data-x"')
+    })
+
+    test('snake_case keys keep their underscore in the generated field name (#2089 review)', () => {
+      // Underscores are VALID Go identifier characters, and `Foo_bar` is the
+      // field name this adapter has always generated for a snake_case key —
+      // `goFieldNameForKey` must NOT split on `_` (that would rename the
+      // generated field to `FooBar`, silently diverging from the `.Foo_bar`
+      // dot access the member emitter produces AND breaking consumers'
+      // hand-written constructors against previously generated types).
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Row = { foo_bar: string }
+export function Rows() {
+  const [rows] = createSignal<Row[]>([{ foo_bar: "a" }])
+  return <ul>{rows().map((r) => <li key={r.foo_bar}>{r.foo_bar}</li>)}</ul>
+}
+`)
+      const out = adapter.generate(ir)
+      expect(out.types!).toContain('Foo_bar string `json:"foo_bar"`')
+      expect(out.template).toContain('.Foo_bar')
+    })
+
     test('collapses whitespace-padded empty array literal to nil (#1675 review)', () => {
       // The empty-literal fast-path must match `[ ]` too, not only the exact
       // `[]`, so a padded empty initial value still defaults to nil rather than
