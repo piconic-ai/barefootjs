@@ -13,11 +13,11 @@ mod render;
 mod session;
 mod todo;
 
-use axum::extract::State;
+use axum::extract::{Request, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::get;
-use axum::Router;
+use axum::{Router, ServiceExt};
 use barefootjs::backend_minijinja;
 use barefootjs::JsValue;
 use minijinja::Environment;
@@ -75,12 +75,23 @@ async fn main() {
         sessions: Arc::new(session::SessionStore::new()),
     };
 
-    let app = build_router(state.clone(), &base);
+    // Trim trailing slashes BEFORE routing (`/integrations/axum/` →
+    // `/integrations/axum`): axum's `nest` matches only the bare prefix, so
+    // without this the slash spelling 404s in production while flask/gin
+    // accept both. The layer must wrap the finished `Router` (path rewriting
+    // has to happen before route matching), hence `ServiceExt::into_make_service`
+    // instead of serving the `Router` directly.
+    let app = tower::Layer::layer(
+        &tower_http::normalize_path::NormalizePathLayer::trim_trailing_slash(),
+        build_router(state.clone(), &base),
+    );
 
     let port: u16 = std::env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8080);
     let listener = tokio::net::TcpListener::bind(("0.0.0.0", port)).await.expect("bind failed");
     println!("barefoot: axum example listening on 0.0.0.0:{port} (base {base})");
-    axum::serve(listener, app).await.expect("server error");
+    axum::serve(listener, ServiceExt::<Request>::into_make_service(app))
+        .await
+        .expect("server error");
 }
 
 fn build_router(state: AppState, base: &str) -> Router {
