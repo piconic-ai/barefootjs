@@ -47,22 +47,38 @@ runAdapterConformanceTests({
     // lowers and the only remaining gate is the imported-child one.
     'todo-app': [{ code: 'BF103', severity: 'error' }],
     'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
-    // Array-destructure loop param (`([k, v]) => …`) can't lower to a
-    // single Kolon loop variable (same BF104 as mojo).
-    'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
-    // Both BF103 (imported child) and BF104 (destructure) fire.
+    // `([emoji, users]) => ...` / `([id, t]) => ...` are plain array-index
+    // (tuple) destructures, no rest — #2087 Phase B's `segments`-walking
+    // accessor lowers both to `$__bf_item[0]` / `$__bf_item[1]` `: my` locals
+    // like any other fixed binding, so BF104 no longer fires for either
+    // fixture. Each now hits a DIFFERENT, pre-existing, orthogonal gap
+    // instead: the loop array (`entries`) is a function-scope local const
+    // with a computed initializer (`Object.entries(props.x ?? {}).filter(...)`)
+    // that the adapter can't bind as a template variable — see the dedicated
+    // `arrayConst` BF101 check in `renderLoop`. This was always true; it was
+    // simply unreachable before because BF104 refused the destructure shape
+    // first.
+    'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+    // Both BF103 (sibling-imported `<Tag>` child component) and the BF101
+    // above fire; BF104 no longer does (see above).
     'static-array-from-props-with-component': [
       { code: 'BF103', severity: 'error' },
-      { code: 'BF104', severity: 'error' },
+      { code: 'BF101', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the object-rest shape read via
-    // member access (`rest-destructure-object-in-map`) now lowers via Kolon
-    // `: my` binding locals (`$rest` aliases the item). The other three stay
-    // refused: rest SPREAD needs a residual object, array-index / nested paths
-    // can't unpack a tuple (same surface as mojo).
-    'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // #1310 / #2087: rest destructure in .map() callback. All four shapes now
+    // lower via #2087 Phase B's `segments`-walking accessor:
+    //   - object-rest read via member access (`rest-destructure-object-in-map`):
+    //     `$bf.omit($__bf_item, [...exclude keys...])`, `$rest.flag` reads the
+    //     residual hashref.
+    //   - object-rest spread onto the root element
+    //     (`rest-destructure-object-spread-in-map`): same `$bf.omit(...)`
+    //     residual, forwarded via the existing `$bf.spread_attrs($rest)` path.
+    //   - array-rest (`rest-destructure-array-in-map`): `$bf.slice($__bf_item,
+    //     N, nil)` — the same runtime helper `.slice()` JS-method calls use.
+    //   - nested rest inside an object pattern (`rest-destructure-nested-in-map`):
+    //     the parent-prefix accessor (`$__bf_item.cells`) feeds the same
+    //     `$bf.slice(...)` call.
+    // None of these are pinned here anymore.
     // XSLATE-SPECIFIC (mojo passes this): the site/ui Button auto-infers a
     // `<Slot>` sibling that spreads `{...props}` / `{...children.props}`
     // onto its root element. Kolon hashref method args can't splat a
