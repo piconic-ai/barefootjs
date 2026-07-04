@@ -506,7 +506,11 @@ class BarefootJS:
         props = self._props()
         if not props:
             return ""
-        j = self.backend.encode_json(props)
+        # The JSON must be attribute-escaped: a raw `'` inside a string value
+        # (e.g. a blog paragraph) terminates the single-quoted attribute and
+        # truncates the hydration payload. The browser entity-decodes the
+        # attribute value, so the client's JSON.parse sees the original text.
+        j = _html_escape(self.backend.encode_json(props))
         return f" bf-p='{j}'"
 
     # -----------------------------------------------------------------

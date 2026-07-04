@@ -240,7 +240,11 @@ fn form_escape(v: &JsValue) -> String {
 /// formatter's plain-interpolation escaper (`&quot;` for `"`) -- see
 /// `backend_minijinja.rs`'s formatter docstring for why the two differ.
 fn html_escape(v: &JsValue) -> String {
-    js_string(v).replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&#34;").replace('\'', "&#39;")
+    escape_html_chars(&js_string(v))
+}
+
+fn escape_html_chars(s: &str) -> String {
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&#34;").replace('\'', "&#39;")
 }
 
 fn style_to_css(v: &JsValue) -> Option<String> {
@@ -756,7 +760,11 @@ impl BfInstance {
         if self.props_is_empty() {
             return String::new();
         }
-        let j = backend_minijinja::encode_json(self.props.as_ref().unwrap());
+        // The JSON must be attribute-escaped: a raw `'` inside a string value
+        // (e.g. a blog paragraph) terminates the single-quoted attribute and
+        // truncates the hydration payload. The browser entity-decodes the
+        // attribute value, so the client's JSON.parse sees the original text.
+        let j = escape_html_chars(&backend_minijinja::encode_json(self.props.as_ref().unwrap()));
         format!(" bf-p='{j}'")
     }
 
