@@ -682,7 +682,202 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div><button bf="s0"
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L125 — ✅ Nested \`.filter()\` / \`.map()\` now compiles everywhere 1`] = `
+"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.item)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const children = _p.children
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L132 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
+"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.item)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const children = _p.children
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = items().filter(x => x.tags.some(t => t.active)).map(t => t.name)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0-->\${escapeText(([]).filter(x => x.tags.some(t => t.active)).map(t => t.name))}<!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L135 — ✅ Add /* @client */ to evaluate on the client 1`] = `
+"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.item)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const children = _p.children
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  // @client: s0
+  createEffect(() => {
+    updateClientMarker(__scope, 's0', items().filter(x => x.tags.some(t => t.active)).map(t => t.name))
+  })
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-client:s0--><!--/--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L142 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
 "import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -748,7 +943,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L135 — ✅ Use /* @client */ 1`] = `
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L145 — ✅ Use /* @client */ 1`] = `
 "import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -811,7 +1006,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L152 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L162 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
 "import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -877,7 +1072,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L155 — ✅ Use arrow functions for adapter portability 1`] = `
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L165 — ✅ Use arrow functions for adapter portability 1`] = `
 "import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -943,7 +1138,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L168 — ✅ Value-producing block bodies normalize (let-inline) and lower everywhere 1`] = `
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L178 — ✅ Value-producing block bodies normalize (let-inline) and lower everywhere 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -1008,7 +1203,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L183 — ✅ Use /* @client */ 1`] = `
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L193 — ✅ Use /* @client */ 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
@@ -1073,7 +1268,7 @@ hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
-exports[`docs/core/rendering/jsx-compatibility.md doc-examples L201 — ✅ Use /* @client */, or inline / re-declare the comparator locally 1`] = `
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L211 — ✅ Use /* @client */, or inline / re-declare the comparator locally 1`] = `
 "import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {

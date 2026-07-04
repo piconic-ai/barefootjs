@@ -57,6 +57,16 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   reverse: (a: unknown[]) => [...a].reverse(),
   // Depth -1 is the compiled Infinity sentinel (spec entry).
   flat: (a: unknown[], depth: number) => a.flat(depth === -1 ? Infinity : depth),
+  // A DYNAMIC `.flat(depth)` (#2094): unlike `flat` above, there is no
+  // compile-time `-1`-means-Infinity sentinel — the depth is whatever
+  // render-time value the expression evaluates to, so the reference is
+  // literal `.flat(depth)` and native JS's own `ToIntegerOrInfinity`
+  // coercion does the work (truncate toward zero; NaN / negative → 0;
+  // Infinity / a huge finite value → full flatten). This is a SEPARATE
+  // canonical helper id, not an overload of `flat`, precisely because a
+  // genuine depth of `-1` means the OPPOSITE thing here (no flatten) than
+  // it does for the pre-normalised literal path.
+  flat_dynamic: (a: unknown[], depth: unknown) => a.flat(depth as number),
   join: (a: unknown[], sep: string) => a.join(sep),
   arr: (...elements: unknown[]) => elements,
   filter_truthy: (a: unknown[]) => a.filter(Boolean),
@@ -354,6 +364,15 @@ export const cases: HelperCase[] = [
   { fn: 'flat', args: [[1, [2, [3]]], 1], note: 'deeper nesting survives depth 1' },
   { fn: 'flat', args: [[1, [2, [3, [4]]]], -1], note: 'depth -1 is the Infinity sentinel' },
   { fn: 'flat', args: [[1, [2]], 0], note: 'depth 0 is a shallow copy' },
+
+  // Dynamic `.flat(depth)` coercion (#2094, JS `ToIntegerOrInfinity`) — a
+  // depth value that isn't known until render time.
+  { fn: 'flat_dynamic', args: [[1, [2, [3]]], 2.7], note: 'float depth truncates toward zero (2.7 -> 2)' },
+  { fn: 'flat_dynamic', args: [[1, [2, [3]]], -1], note: 'negative depth never recurses (shallow copy, NOT the literal-path Infinity sentinel)' },
+  { fn: 'flat_dynamic', args: [[1, [2, [3]]], 0], note: 'depth 0 is a shallow copy (no-op)' },
+  { fn: 'flat_dynamic', args: [[1, [2, [3, [4]]]], 1000000000], note: 'huge finite depth flattens fully' },
+  { fn: 'flat_dynamic', args: [[1, [2, [3, [4]]]], 'Infinity'], note: 'a value that coerces to Infinity flattens fully' },
+  { fn: 'flat_dynamic', args: [[1, [2, [3]]], 'not-a-number'], note: 'a non-numeric value coerces via NaN to depth 0' },
 
   { fn: 'join', args: [[1, 2, 3], ','], note: 'numeric elements stringify' },
   { fn: 'join', args: [['a', 'b'], ' - '], note: 'multi-char separator' },

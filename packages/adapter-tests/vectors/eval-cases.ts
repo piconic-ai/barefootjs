@@ -127,4 +127,61 @@ export const evalCases: EvalCase[] = [
   { src: 'a.price - b.price', env: { a: { price: 30 }, b: { price: 10 } }, note: 'sort comparator: numeric field difference' },
   { src: 'item.qty * 2', env: { item: { qty: 21 } }, note: 'map body: arithmetic projection' },
   { src: "item.tags.length > 0 && item.active", env: { item: { tags: ['a'], active: true } }, note: 'filter body: length guard plus boolean field' },
+
+  // ----- array-method: join (#2094) ----------------------------------------
+  { src: "item.tags.join(',')", env: { item: { tags: ['a', 'b', 'c'] } }, note: '.join with a custom separator' },
+  { src: 'item.tags.join()', env: { item: { tags: ['a', 'b'] } }, note: '.join with no separator defaults to a comma' },
+  { src: "item.tags.join('-')", env: { item: { tags: [] } }, note: '.join on an empty array is the empty string' },
+  { src: "item.tags.join(',')", env: { item: { tags: ['a', null, 'b'] } }, note: '.join renders a null element as empty (not the string "null")' },
+
+  // ----- nested `.map` / `.filter` inside a callback body (#2094) ---------
+  // The #1938 blog-showcase shape: a flatMap projection body itself maps a
+  // nested field.
+  {
+    src: "item.tags.map(t => '#' + t)",
+    env: { item: { tags: ['go', 'perl'] } },
+    note: 'nested .map: string-prefix projection (the #1938 blog-showcase shape)',
+  },
+  {
+    src: 'item.tags.map(t => `#${t}`)',
+    env: { item: { tags: ['go', 'perl'] } },
+    note: 'nested .map: template-literal projection',
+  },
+  {
+    src: 'item.tags.map(t => t.n * 2)',
+    env: { item: { tags: [{ n: 1 }, { n: 2 }, { n: 3 }] } },
+    note: 'nested .map: arithmetic field projection',
+  },
+  {
+    src: 'item.tags.filter(t => t.active && t.n > 1)',
+    env: { item: { tags: [{ active: true, n: 1 }, { active: true, n: 2 }, { active: false, n: 3 }] } },
+    note: 'nested .filter: predicate with comparison + logical operators',
+  },
+  {
+    src: 'item.tags.filter(t => t.active).length > 0',
+    env: { item: { tags: [{ active: false }, { active: true }] } },
+    note: 'nested .filter composed with .length and a relational comparison (the doc/#2038 motivating shape)',
+  },
+  {
+    src: 'item.tags.filter(t => t.active).length > 0',
+    env: { item: { tags: [{ active: false }, { active: false }] } },
+    note: 'nested .filter composed with .length: no match is falsy',
+  },
+  {
+    src: "item.posts.map(p => p.tags.map(t => '#' + t).join(' ')).join(', ')",
+    env: {
+      item: {
+        posts: [
+          { tags: ['a', 'b'] },
+          { tags: ['c'] },
+        ],
+      },
+    },
+    note: 'doubly-nested .map + .join (the #1938 blog-showcase posts.flatMap(p => p.tags.map(...)) shape, one level flattened by the outer .map/.join composition)',
+  },
+  {
+    src: 'item.tags.map((t, i) => t.n + i)',
+    env: { item: { tags: [{ n: 10 }, { n: 20 }, { n: 30 }] } },
+    note: 'nested .map: 2-param arrow (value, index)',
+  },
 ]

@@ -25,7 +25,7 @@
  * Anything outside the subset throws `EvalUnsupported` — the same gate
  * the backends use to refuse a callback body (BF101 upstream).
  */
-import type { ParsedExpr, TemplatePart } from '@barefootjs/jsx'
+import { asCallbackMethodCall, type ParsedExpr, type TemplatePart } from '@barefootjs/jsx'
 
 /** A runtime value in the evaluator's domain (JSON-shaped). */
 export type EvalValue = string | number | boolean | null | EvalValue[] | { [k: string]: EvalValue }
@@ -272,6 +272,18 @@ function includes(obj: EvalValue, needle: EvalValue): boolean {
   return false
 }
 
+/**
+ * `.join(sep?)` (#2094) — elements ToString'd and joined; a null/undefined
+ * element ToStrings to the empty string (matching JS `Array.prototype.join`,
+ * where `null`/`undefined` elements are skipped/empty rather than the
+ * literal string `"null"` that `toStr` would otherwise produce for a `null`
+ * `EvalValue`). Default separator is `,`, matching JS.
+ */
+function evalJoin(obj: EvalValue, sep: string): string {
+  if (!Array.isArray(obj)) throw new EvalUnsupported('.join on a non-array is not in the evaluator subset')
+  return obj.map((el) => (el === null ? '' : toStr(el))).join(sep)
+}
+
 function readIndex(obj: EvalValue, index: EvalValue): EvalValue {
   if (Array.isArray(obj)) {
     const i = toNumber(index)
@@ -326,6 +338,27 @@ export function evaluate(expr: ParsedExpr, env: EvalEnv): EvalValue {
       return readIndex(evaluate(expr.object, env), evaluate(expr.index, env))
 
     case 'call': {
+      // A nested `.map(cb)` / `.filter(cb)` callback call (#2094) — the same
+      // recognition the compiler's `callbackMethod()` dispatch uses. Only
+      // these two widen into the subset (order-preserving, per-element,
+      // bounded); a nested `.some`/`.find`/`.every`/`.sort`/`.reduce`/`.flat`/
+      // `.flatMap` still refuses via the generic non-builtin-callee check
+      // below.
+      const cb = asCallbackMethodCall(expr)
+      if (cb && (cb.method === 'map' || cb.method === 'filter')) {
+        const receiver = evaluate(cb.object, env)
+        if (!Array.isArray(receiver)) {
+          throw new EvalUnsupported(`.${cb.method} on a non-array is not in the evaluator subset`)
+        }
+        const [p0, p1] = cb.arrow.params
+        const callCb = (item: EvalValue, index: number): EvalValue => {
+          const inner: EvalEnv = { ...env, [p0]: item }
+          if (p1 !== undefined) inner[p1] = index
+          return evaluate(cb.arrow.body, inner)
+        }
+        if (cb.method === 'map') return receiver.map((item, i) => callCb(item, i))
+        return receiver.filter((item, i) => toBool(callCb(item, i)))
+      }
       const name = builtinName(expr.callee)
       if (name === null) {
         throw new EvalUnsupported('only built-in calls (Math.*, String/Number/Boolean) are in the subset')
@@ -350,12 +383,18 @@ export function evaluate(expr: ParsedExpr, env: EvalEnv): EvalValue {
     }
 
     case 'array-method':
-      // `.includes(x)` is the one `array-method` in the evaluator subset
-      // (Go/Perl `includes` support). Every other array/string method
-      // (`join`, `slice`, `flat`, …) is outside the subset and falls to the
+      // `.includes(x)` / `.join(sep?)` are in the evaluator subset (Go/Perl
+      // support); a nested `.map`/`.filter` reaches the `call` arm above
+      // instead (it carries an `arrow` callback, not a plain `args` list —
+      // see {@link asCallbackMethodCall}). Every other array/string method
+      // (`slice`, `flat`, …) is outside the subset and falls to the
       // `default` refusal below.
       if (expr.method === 'includes' && expr.args.length === 1) {
         return includes(evaluate(expr.object, env), evaluate(expr.args[0], env))
+      }
+      if (expr.method === 'join' && expr.args.length <= 1) {
+        const sep = expr.args.length === 1 ? toStr(evaluate(expr.args[0], env)) : ','
+        return evalJoin(evaluate(expr.object, env), sep)
       }
       throw new EvalUnsupported(`array-method '${expr.method}' is not in the evaluator subset`)
 

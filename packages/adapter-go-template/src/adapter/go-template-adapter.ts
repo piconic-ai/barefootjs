@@ -3360,7 +3360,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
-  flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
+  flatMethod(
+    object: ParsedExpr,
+    depth: FlatDepth | { expr: ParsedExpr },
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    if (typeof depth === 'object') {
+      // Dynamic depth (#2094) → `bf_flat_dynamic <recv> <renderedDepthExpr>`,
+      // a SEPARATE runtime helper from `bf_flat` below. `bf_flat`'s `-1`
+      // argument is a compile-time SENTINEL meaning "flatten fully"
+      // (`Infinity` normalised at parse time); a genuinely dynamic render-time
+      // value of `-1` means the JS-correct OPPOSITE (no flatten — negative
+      // depth never recurses). Reusing `bf_flat` for both would silently
+      // invert that case, so the dynamic form routes through `FlatDynamicDepth`
+      // (`bf.go`), which performs full `ToIntegerOrInfinity` coercion from
+      // scratch on whatever value the rendered expression evaluates to.
+      return `bf_flat_dynamic ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(depth.expr))}`
+    }
     // `.flat(depth?)` → `bf_flat <recv> <depth>`. `Infinity` lowers to the `-1`
     // sentinel (flatten fully); a finite depth flattens that many levels
     // (`0` = shallow copy).

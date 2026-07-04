@@ -177,9 +177,24 @@ export interface ParsedExprEmitter {
   // a structured `FlatDepth` (the validated literal / `'infinity'`) rather
   // than a `ParsedExpr[]` args list. Non-callback, so it is NOT routed
   // through `callbackMethod`.
+  //
+  // `depth` is `FlatDepth` for the literal path (unchanged: adapters keep
+  // their existing `bf_flat`-family emit exactly as before) or
+  // `{ expr: ParsedExpr }` for a DYNAMIC depth (#2094) — an adapter renders
+  // `expr` with the `emit` callback and passes the result to a SEPARATE
+  // runtime helper that coerces it at render time (JS `ToIntegerOrInfinity`;
+  // see the `depthExpr` doc on `ParsedExpr`'s `array-method`/`flat` variant
+  // for why this must NOT be the same helper as the literal path — the
+  // literal path's `-1` sentinel means "flatten fully", but a genuinely
+  // dynamic `-1` means the opposite per JS). Only the Go adapter implements
+  // the dynamic runtime coercion in this phase; the other adapters still
+  // must emit SOMETHING for the dynamic form (their existing
+  // `bf_flat`-family helper, called with the rendered expression) so the
+  // interface compiles everywhere — their coercion catches up in a later
+  // phase.
   flatMethod(
     object: ParsedExpr,
-    depth: FlatDepth,
+    depth: FlatDepth | { expr: ParsedExpr },
     emit: (e: ParsedExpr) => string,
   ): string
   unsupported(raw: string, reason: string): string
@@ -232,7 +247,11 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.objectLiteral(expr.properties, expr.raw, emit)
     case 'array-method':
       if (expr.method === 'flat') {
-        return emitter.flatMethod(expr.object, expr.flatDepth, emit)
+        return emitter.flatMethod(
+          expr.object,
+          expr.depthExpr ? { expr: expr.depthExpr } : expr.flatDepth,
+          emit,
+        )
       }
       return emitter.arrayMethod(expr.method, expr.object, expr.args, emit)
     case 'unsupported':
