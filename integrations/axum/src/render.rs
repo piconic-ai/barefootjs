@@ -159,6 +159,22 @@ pub fn render_component(
     props: JsValue,
     stash: JsValue,
 ) -> Result<(String, String), String> {
+    let defaults = ssr_defaults_for(&state.manifest, component);
+    let mut vars = barefootjs::derive_stash_from_defaults(&defaults, &props);
+    merge_into(&mut vars, &stash);
+    render_root(state, session, component, &props, &vars)
+}
+
+/// Shared tail of [`render_component`] / [`render_island`]: mint a root
+/// scope id, attach `props` as the `bf-p` hydration payload (when
+/// non-empty), and render `component` with the caller-assembled `vars`.
+fn render_root(
+    state: &AppState,
+    session: &Arc<RenderSession>,
+    component: &str,
+    props: &JsValue,
+    vars: &JsValue,
+) -> Result<(String, String), String> {
     let scope_id = format!("{component}_{}", session.next_rand_hex6());
     let mut root = BfInstance::root(Arc::clone(session), scope_id);
     if let Some(m) = props.as_object() {
@@ -167,11 +183,7 @@ pub fn render_component(
         }
     }
 
-    let defaults = ssr_defaults_for(&state.manifest, component);
-    let mut vars = barefootjs::derive_stash_from_defaults(&defaults, &props);
-    merge_into(&mut vars, &stash);
-
-    let body = with_env(state, |env| backend_minijinja::render_named(env, component, root.as_mj_value(), &vars))
+    let body = with_env(state, |env| backend_minijinja::render_named(env, component, root.as_mj_value(), vars))
         .map_err(|e| format!("{e:#}"))?;
     let scripts = root.scripts();
     Ok((body, scripts))
@@ -233,7 +245,17 @@ pub fn render_island(
     props: JsValue,
     extra: JsValue,
 ) -> Result<String, String> {
-    let (body, _scripts) = render_component(state, session, component, props, extra)?;
+    // flask's `blog_island` renders with `{**seed, **props, **extra}`: the
+    // caller's client props are ALSO template vars, wholesale — not just
+    // where an ssrDefaults entry's `propName` picks them up. PostArticle
+    // depends on this (its `title`/`date`/`body`/… props have no static
+    // defaults, so `derive_stash_from_defaults` alone drops them and the
+    // article SSRs empty; hydration never fills static text back in).
+    let defaults = ssr_defaults_for(&state.manifest, component);
+    let mut vars = barefootjs::derive_stash_from_defaults(&defaults, &props);
+    merge_into(&mut vars, &props);
+    merge_into(&mut vars, &extra);
+    let (body, _scripts) = render_root(state, session, component, &props, &vars)?;
     Ok(body)
 }
 
