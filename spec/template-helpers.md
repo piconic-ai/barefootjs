@@ -79,7 +79,8 @@ Each backend ships one harness file (currently:
 `packages/adapter-go-template/runtime/vectors_test.go`,
 `packages/adapter-perl/t/helper_vectors.t`,
 `packages/adapter-jinja/python/tests/test_helper_vectors.py`,
-`packages/adapter-erb/test/helper_vectors_test.rb`; the JS reference
+`packages/adapter-erb/test/helper_vectors_test.rb`,
+`packages/adapter-twig/php/tests/test_helper_vectors.php`; the JS reference
 is the generator itself). A harness declares its backend's status in
 three tables — this is the **only** place per-backend status is
 recorded:

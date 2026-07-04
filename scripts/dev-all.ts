@@ -15,6 +15,7 @@
  *   :4000/integrations/fastapi/*     → fastapi service
  *   :4000/integrations/sinatra/*     → sinatra service
  *   :4000/integrations/rails/*       → rails service
+ *   :4000/integrations/php/*         → php service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
@@ -51,6 +52,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/fastapi',     target: process.env.FASTAPI_TARGET     ?? 'http://fastapi:3009',     label: 'FastAPI (Python)' },
   { prefix: '/integrations/sinatra',     target: process.env.SINATRA_TARGET     ?? 'http://sinatra:3010',     label: 'Sinatra (Ruby)' },
   { prefix: '/integrations/rails',       target: process.env.RAILS_TARGET       ?? 'http://rails:3011',       label: 'Rails (Ruby)' },
+  { prefix: '/integrations/php',         target: process.env.PHP_TARGET         ?? 'http://php:3012',         label: 'PHP (Twig)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'

@@ -205,6 +205,21 @@ services:
       - ./integrations/rails:/workspace/integrations/rails
       - ./packages/adapter-erb/lib:/workspace/packages/adapter-erb/lib
 
+  php:
+    build:
+      context: .
+      dockerfile: integrations/php/Dockerfile.dev
+    working_dir: /workspace/integrations/php
+    environment:
+      BASE_PATH: /integrations/php
+      PHP_ENV: development
+    volumes:
+      - ./integrations/php:/workspace/integrations/php
+      # index.php's autoload fallback resolves the Barefoot\ runtime from
+      # the workspace source dir directly (mirrors flask's sys.path
+      # fallback) so local dev works without running assemble-deps first.
+      - ./packages/adapter-twig/php:/workspace/packages/adapter-twig/php
+
   site-core:
     build:
       context: .
