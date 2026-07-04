@@ -16,6 +16,22 @@ const mark = (page: Page, sel: string) =>
 const marker = (page: Page, sel: string) =>
   page.$eval(sel, (el) => (el as unknown as { __mark?: string }).__mark).catch(() => null)
 
+// Direct-load SSR guard (adapter-local addition): a post page fetched by URL
+// must carry the article content in the SERVER-rendered HTML — title, date,
+// pager position, and body are static props, so hydration never fills them
+// in after the fact. This pins the flask-`blog_island` var-merge semantics
+// (`{**seed, **props, **extra}`) in `render.rs::render_island`; without the
+// props merge the article SSRs empty and every other test here still passes.
+test('ssr: direct-loading a post page renders the full article server-side', async ({ page }) => {
+  const res = await page.goto(`${BLOG}/posts/disposal-is-the-hard-part`, { waitUntil: 'commit' })
+  const html = (await res?.text()) ?? ''
+  expect(html).toContain('Disposal is the hard part')
+  expect(html).toContain('2026-06-10')
+  expect(html).toContain('data-slug="disposal-is-the-hard-part"')
+  expect(html).toContain('Swapping HTML in is easy.')
+  await expect(page.locator('.post h1')).toHaveText('Disposal is the hard part')
+})
+
 test('v0.5: sort/tag is a query-only update with no region swap', async ({ page }) => {
   await page.goto(BLOG, { waitUntil: 'networkidle' })
   await expect(page.locator('.sortable-list li')).toHaveCount(10)
