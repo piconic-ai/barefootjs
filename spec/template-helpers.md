@@ -90,21 +90,24 @@ recorded:
    a backend cannot silently fall behind the catalogue. Bindings live
    in the harness file itself.
 2. **Divergence declarations** — case key → the backend's actual
-   value plus a reason, declared in
-   `packages/adapter-tests/vectors/divergences/<backend>.json`. A
-   declared case asserts the *pinned* value, so the divergence itself
-   is regression-tested; if the backend later starts matching JS, the
+   value plus a reason, declared in the backend's own package, in a
+   file named `vector-divergences.json` (e.g.
+   `packages/adapter-perl/t/vector-divergences.json`). A declared case
+   asserts the *pinned* value, so the divergence itself is
+   regression-tested; if the backend later starts matching JS, the
    stale declaration fails so it gets removed. Divergences are
    visible, enumerable per backend, and never rot as prose. This is
    machine-checked twice: by each harness (which fails on a stale or
    dead declaration) and centrally by
-   `packages/adapter-tests/src/__tests__/divergences.test.ts` (schema,
-   dangling keys, runner-path existence, and the expected backend
-   set).
+   `packages/adapter-tests/src/__tests__/divergences.test.ts`, which
+   discovers every `vector-divergences.json` file under `packages/` by
+   basename and validates it (schema, dangling keys, runner-path
+   existence, runner/declaration living in the same package, and the
+   expected backend set).
 3. **Unsupported list** — helper id → reason, declared in the same
-   `divergences/<backend>.json` file, skipped visibly. Empty for
-   mature backends; lets a bootstrapping adapter land its harness
-   first and burn the list down.
+   `vector-divergences.json` file, skipped visibly. Empty for mature
+   backends; lets a bootstrapping adapter land its harness first and
+   burn the list down.
 
 ## Adding a catalogue entry
 
@@ -113,7 +116,7 @@ recorded:
 2. Add the JS reference implementation and cases to `cases.ts` — at
    least one vector per rule. Regenerate `vectors.json`.
 3. Bind the id in every harness. Where a backend genuinely diverges,
-   add an entry to its `divergences/<backend>.json` with its measured
+   add an entry to its own `vector-divergences.json` with its measured
    value and reason instead of bending the vector.
 4. All harnesses green = done.
 

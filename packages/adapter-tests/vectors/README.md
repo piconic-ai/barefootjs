@@ -22,7 +22,7 @@ when a committed file drifts from its case definitions.
 |---|---|---|
 | `cases.ts` | `generate.ts` | `vectors.json` |
 | `eval-cases.ts` + `eval-reference.ts` | `eval-generate.ts` | `eval-vectors.json` |
-| — (hand-maintained) | — | `divergences/<backend>.json` |
+| — (hand-maintained) | — | `<backend package>/vector-divergences.json` (see "Divergence declarations" below) |
 
 Regenerate:
 
@@ -67,10 +67,17 @@ The two corpora hold backends to different strictness:
 
 ## Divergence declarations
 
-`divergences/<backend>.json` is where a helper-vector backend records
-every place it deliberately (or by host-language limitation) differs
-from the JS reference, instead of bending the shared vector data.
-Schema:
+A `vector-divergences.json` file — living in each backend's own
+package, next to (or near) its runner, e.g.
+`packages/adapter-perl/t/vector-divergences.json` — is where a
+helper-vector backend records every place it deliberately (or by
+host-language limitation) differs from the JS reference, instead of
+bending the shared vector data. This file's *contents* stay
+package-local, but its *basename* is a fixed convention
+(`vector-divergences.json`, not `<backend>.json`) — the central
+validator (below) discovers every declaration file under `packages/`
+by that exact name, so a new adapter needs no edit here or in the
+validator. Schema:
 
 ```json
 {
@@ -120,19 +127,24 @@ The machinery every runner must implement:
 This declaration file is checked twice: by the backend's own harness
 (schema-adjacent, drift against live results) and centrally by
 `packages/adapter-tests/src/__tests__/divergences.test.ts`, which
-validates every `divergences/*.json` file's schema, cross-references
-every key against `vectors.json`, confirms the declared `runner` path
-exists, and confirms the expected backend set (`go`, `perl`,
-`python`, `ruby`) is exactly the set of files present.
+walks `packages/` from the repo root for every file named
+`vector-divergences.json` (skipping `node_modules`, `dist`, and hidden
+directories), validates each one's schema, cross-references every key
+against `vectors.json`, confirms the declared `runner` path exists and
+lives in the same package as the declaration file, and confirms the
+discovered `backend` values are unique and include the expected set
+(`go`, `perl`, `python`, `ruby`) — a new adapter's file extends that
+set automatically; an existing backend silently disappearing still
+fails.
 
 ## Current runners
 
-| Backend | Runner |
-|---|---|
-| Go | `packages/adapter-go-template/runtime/vectors_test.go` |
-| Perl | `packages/adapter-perl/t/helper_vectors.t` |
-| Python | `packages/adapter-jinja/python/tests/test_helper_vectors.py` |
-| Ruby | `packages/adapter-erb/test/helper_vectors_test.rb` |
+| Backend | Runner | Declarations |
+|---|---|---|
+| Go | `packages/adapter-go-template/runtime/vectors_test.go` | `packages/adapter-go-template/runtime/testdata/vector-divergences.json` |
+| Perl | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` |
+| Python | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` |
+| Ruby | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` |
 
 The JS reference is the generator itself (`cases.ts` / `generate.ts`,
 `eval-cases.ts` / `eval-reference.ts` / `eval-generate.ts`) — there is
@@ -152,10 +164,12 @@ corpus is plain JSON. The runner must:
 2. Read `eval-vectors.json` and run each case's `ParsedExpr` tree
    through the backend's evaluator, matching the reference exactly
    (no divergence allowance).
-3. Declare deliberate divergences and unsupported helpers in
-   `divergences/<backend>.json` per the schema above. A bootstrapping
-   backend may start with most of the catalogue in `unsupported` and
-   burn the list down over time — that's expected, not a failure.
+3. Add a `vector-divergences.json` file to **your own package** (next
+   to, or near, your runner) per the schema above — no edit to
+   `packages/adapter-tests` needed; the central validator discovers it
+   by basename. A bootstrapping backend may start with most of the
+   catalogue in `unsupported` and burn the list down over time —
+   that's expected, not a failure.
 
 Point at any of the four existing runners (table above) as a
 reference implementation; they all consume the same two JSON files

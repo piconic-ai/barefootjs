@@ -50,14 +50,12 @@ my $doc = do {
 };
 
 # Per-backend status declarations (spec/template-helpers.md "Adapter
-# status model") live in packages/adapter-tests/vectors/divergences/perl.json
-# — the spec stays backend-neutral. This harness enforces them: a pinned
-# case that starts matching JS fails as stale, and a key that matches no
-# vector case fails as dead (see the two checks below).
-my $divergences_path = File::Spec->catfile(
-    $FindBin::Bin, '..', '..', 'adapter-tests', 'vectors', 'divergences', 'perl.json'
-);
-die "divergences file not found: $divergences_path (vectors.json is present, so this checkout should have it too)"
+# status model") live in t/vector-divergences.json, package-local to this
+# adapter — the spec stays backend-neutral. This harness enforces them: a
+# pinned case that starts matching JS fails as stale, and a key that
+# matches no vector case fails as dead (see the two checks below).
+my $divergences_path = File::Spec->catfile($FindBin::Bin, 'vector-divergences.json');
+die "divergences file not found: $divergences_path (it is package-local and must always be present)"
     unless -e $divergences_path;
 
 my $divergences_doc = do {

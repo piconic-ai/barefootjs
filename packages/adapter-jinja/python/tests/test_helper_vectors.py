@@ -11,8 +11,8 @@ adapter emits for `add`/`sub`/`mul`/`div`/`neg`, mirroring how
 
 Per spec/template-helpers.md's "Adapter status model", this backend's
 divergences from the JS-normative expect live in
-`packages/adapter-tests/vectors/divergences/python.json` -- keyed by
-`fn/note`, mirroring the Perl harness's `%DIVERGENCES` table exactly in
+`tests/vector-divergences.json` (package-local, next to this file) -- keyed
+by `fn/note`, mirroring the Perl harness's `%DIVERGENCES` table exactly in
 spirit (values differ where Python's actual behaviour differs from Perl's).
 This harness still fails on stale or dead declarations in that file.
 
@@ -34,9 +34,7 @@ from barefootjs.backend_jinja import default_json_encoder
 VECTORS_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "vectors.json"
 )
-DIVERGENCES_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "divergences", "python.json"
-)
+DIVERGENCES_PATH = os.path.join(os.path.dirname(__file__), "vector-divergences.json")
 
 
 class _PureBackend:
@@ -165,8 +163,9 @@ BINDINGS = {
 }
 
 # Per-backend status declarations (spec/template-helpers.md "Adapter status
-# model"), loaded from packages/adapter-tests/vectors/divergences/python.json.
-# Forms:
+# model"), loaded from tests/vector-divergences.json (package-local, always
+# present regardless of whether the golden vectors themselves are available
+# outside the monorepo checkout). Forms:
 #   {"expect": <value>}                  assert the pinned value (exact, no
 #                                         numeric coercion -- deliberately
 #                                         stricter than the spec's
@@ -177,22 +176,10 @@ BINDINGS = {
 #   {"throws": true, "exception": <n>}   assert the call raises the named
 #                                         builtin exception (default
 #                                         `Exception` if `exception` absent)
-#
-# If the golden vectors file is present but this file is missing, fail
-# loudly rather than silently running with no divergence declarations.
-if os.path.exists(VECTORS_PATH):
-    if not os.path.exists(DIVERGENCES_PATH):
-        raise FileNotFoundError(
-            f"golden vectors present at {VECTORS_PATH!r} but divergences file missing at "
-            f"{DIVERGENCES_PATH!r}"
-        )
-    with open(DIVERGENCES_PATH, encoding="utf-8") as _fh:
-        _divergences_doc = json.load(_fh)
-    DIVERGENCES = _divergences_doc["divergences"]
-    UNSUPPORTED = _divergences_doc["unsupported"]
-else:
-    DIVERGENCES = {}
-    UNSUPPORTED = {}
+with open(DIVERGENCES_PATH, encoding="utf-8") as _fh:
+    _divergences_doc = json.load(_fh)
+DIVERGENCES = _divergences_doc["divergences"]
+UNSUPPORTED = _divergences_doc["unsupported"]
 
 
 def _match(got, expect):

@@ -1,6 +1,14 @@
 /**
- * Central validation for the per-backend divergence declarations
- * (packages/adapter-tests/vectors/divergences/*.json).
+ * Central validation for the per-backend divergence declarations.
+ *
+ * Each backend adapter owns its declarations as a file named
+ * `vector-divergences.json` living inside that adapter's own package
+ * (e.g. `packages/adapter-perl/t/vector-divergences.json`,
+ * `packages/adapter-go-template/runtime/testdata/vector-divergences.json`)
+ * — not centralized under adapter-tests. This test discovers every such
+ * file by walking `packages/` from the repo root and matching on that
+ * exact basename, so a new adapter's declarations are picked up
+ * automatically without editing this file.
  *
  * Each backend's conformance harness declares the golden-vector cases
  * where it deliberately diverges from the JS reference (or can't
@@ -13,15 +21,18 @@
  *   - every entry has a reason and exactly one of expect/throws
  *   - every `unsupported` key names a real helper (`fn`) in vectors.json
  *   - the runner path a declaration points at actually exists
- *   - the four expected backends are exactly the set of files present
+ *   - the declaration file lives in the same package as its runner
+ *   - backend values are unique and include the expected backend set
  */
 import { describe, test, expect } from 'bun:test'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
 import { buildVectors } from '../../vectors/generate'
 
-const DIVERGENCES_DIR = join(import.meta.dir, '../../vectors/divergences')
 const REPO_ROOT = join(import.meta.dir, '../../../..')
+const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
+
+const DECLARATION_BASENAME = 'vector-divergences.json'
 
 const EXPECTED_BACKENDS = ['go', 'perl', 'python', 'ruby']
 
@@ -38,22 +49,63 @@ function isNumSentinel(value: unknown): boolean {
   )
 }
 
+/**
+ * Recursively finds every file named `vector-divergences.json` under
+ * `dir`, skipping `node_modules`, `dist`, and hidden directories
+ * (dotfiles). Returns absolute paths.
+ */
+function findDivergenceFiles(dir: string): string[] {
+  const found: string[] = []
+  for (const entry of readdirSync(dir)) {
+    if (entry === 'node_modules' || entry === 'dist' || entry.startsWith('.')) continue
+    const full = join(dir, entry)
+    const stat = statSync(full)
+    if (stat.isDirectory()) {
+      found.push(...findDivergenceFiles(full))
+    } else if (entry === DECLARATION_BASENAME) {
+      found.push(full)
+    }
+  }
+  return found
+}
+
+/** The first path segment under `packages/`, e.g. `adapter-perl`. */
+function packageNameOf(absPath: string): string {
+  const rel = relative(PACKAGES_ROOT, absPath)
+  return rel.split(sep)[0] ?? ''
+}
+
 const caseKeys = new Set(buildVectors().cases.map((c) => `${c.fn}/${c.note}`))
 const helperFns = new Set(buildVectors().cases.map((c) => c.fn))
 
-const files = readdirSync(DIVERGENCES_DIR).filter((f) => f.endsWith('.json'))
+const files = findDivergenceFiles(PACKAGES_ROOT)
 
 describe('per-backend divergence declarations', () => {
-  test('the four expected backends are exactly the set of files present', () => {
-    const stems = files.map((f) => f.replace(/\.json$/, '')).sort()
-    expect(stems).toEqual([...EXPECTED_BACKENDS].sort())
+  test('discovered backend values are unique and include the expected set', () => {
+    const backends = files.map((f) => {
+      const raw = readFileSync(f, 'utf8')
+      const decl = JSON.parse(raw) as { backend: unknown }
+      return decl.backend
+    })
+
+    for (const backend of backends) {
+      expect(typeof backend).toBe('string')
+      expect((backend as string).length).toBeGreaterThan(0)
+    }
+
+    const uniqueBackends = new Set(backends)
+    expect(uniqueBackends.size).toBe(backends.length)
+
+    for (const expectedBackend of EXPECTED_BACKENDS) {
+      expect(uniqueBackends.has(expectedBackend)).toBe(true)
+    }
   })
 
   for (const file of files) {
-    const stem = file.replace(/\.json$/, '')
+    const relPath = relative(REPO_ROOT, file)
 
-    describe(stem, () => {
-      const raw = readFileSync(join(DIVERGENCES_DIR, file), 'utf8')
+    describe(relPath, () => {
+      const raw = readFileSync(file, 'utf8')
       const decl = JSON.parse(raw) as {
         version: unknown
         backend: unknown
@@ -67,15 +119,16 @@ describe('per-backend divergence declarations', () => {
         expect(decl.version).toBe(1)
       })
 
-      test('backend matches the filename stem', () => {
-        expect(decl.backend).toBe(stem)
-      })
-
       test('runner is a non-empty string pointing at an existing file', () => {
         expect(typeof decl.runner).toBe('string')
         expect((decl.runner as string).length).toBeGreaterThan(0)
         const resolved = join(REPO_ROOT, decl.runner as string)
         expect(existsSync(resolved)).toBe(true)
+      })
+
+      test('declaration file lives in the same package as its declared runner', () => {
+        const runnerAbs = join(REPO_ROOT, decl.runner as string)
+        expect(packageNameOf(file)).toBe(packageNameOf(runnerAbs))
       })
 
       test('every divergence key matches a real fn/note case in vectors.json', () => {

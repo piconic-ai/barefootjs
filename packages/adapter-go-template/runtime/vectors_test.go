@@ -18,10 +18,13 @@ const vectorsPath = "../../adapter-tests/vectors/vectors.json"
 
 // vectorDivergencesPath points at this backend's declared divergences
 // from the JS-normative expect (spec/template-helpers.md "Adapter
-// status model"). Loaded inside TestHelperVectors, after the vectors
-// file itself is confirmed present, so the not-in-monorepo skip above
+// status model"). Package-local (testdata/, Go's conventional location
+// for test fixtures), so it's always present regardless of whether the
+// golden vectors themselves are available outside the monorepo
+// checkout. Loaded inside TestHelperVectors, after the vectors file
+// itself is confirmed present, so the not-in-monorepo skip above
 // already happened before this one would ever fire.
-const vectorDivergencesPath = "../../adapter-tests/vectors/divergences/go.json"
+const vectorDivergencesPath = "testdata/vector-divergences.json"
 
 type helperVector struct {
 	Fn     string            `json:"fn"`

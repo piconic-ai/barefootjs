@@ -13,7 +13,7 @@ require 'barefoot_js'
 # ERB template would execute, plus a DIVERGENCES table (loaded below) pinning
 # every deliberate departure from the JS-normative `expect`.
 HELPER_VECTORS_PATH = File.expand_path('../../adapter-tests/vectors/vectors.json', __dir__)
-DIVERGENCES_PATH = File.expand_path('../../adapter-tests/vectors/divergences/ruby.json', __dir__)
+DIVERGENCES_PATH = File.expand_path('vector-divergences.json', __dir__)
 
 class PureBackend
   def encode_json(data)
@@ -142,16 +142,14 @@ class HelperVectorsTest < Minitest::Test
   }.freeze
 
   # Per-backend status declarations (spec/template-helpers.md "Adapter
-  # status model") live in packages/adapter-tests/vectors/divergences/
-  # ruby.json -- the spec stays backend-neutral. This harness still fails
-  # stale/dead declarations (a pinned case that starts matching JS, or a
-  # key that matches no vector case). Keyed by "fn/note".
+  # status model") live in test/vector-divergences.json, package-local to
+  # this adapter -- the spec stays backend-neutral. This harness still
+  # fails stale/dead declarations (a pinned case that starts matching JS,
+  # or a key that matches no vector case). Keyed by "fn/note".
   def self.load_divergences
-    return [{}, {}] unless File.exist?(HELPER_VECTORS_PATH)
-
     unless File.exist?(DIVERGENCES_PATH)
       raise "divergences file not found: #{DIVERGENCES_PATH} " \
-            '(vectors.json is present, so this checkout should have it too)'
+            '(it is package-local and must always be present)'
     end
 
     # Same UTF-8 rationale as load_vectors below.
