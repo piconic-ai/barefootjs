@@ -19,7 +19,8 @@ use JSON::PP ();
     sub encode_json { JSON::PP->new->canonical->encode($_[1]) }
 }
 
-sub bf_with ($props) {
+sub bf_with {
+    my ($props) = @_;
     my $bf = BarefootJS->new(undef, { backend => PropsAttrStubBackend->new });
     $bf->_props($props) if $props;
     return $bf;
