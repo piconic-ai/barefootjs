@@ -168,7 +168,11 @@ sub props_attr ($self) {
     return '' unless $props && %$props;
     # encode_json returns a character string (not bytes) for safe embedding
     # in templates (the Mojo backend uses Mojo::JSON::to_json).
-    my $json = $self->backend->encode_json($props);
+    # The JSON must then be attribute-escaped: a raw `'` inside a string
+    # value (e.g. a blog paragraph) terminates the single-quoted attribute
+    # and truncates the hydration payload. The browser entity-decodes the
+    # attribute value, so the client's JSON.parse sees the original text.
+    my $json = _html_escape($self->backend->encode_json($props));
     return qq{ bf-p='$json'};
 }
 

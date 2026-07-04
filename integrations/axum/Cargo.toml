@@ -19,7 +19,14 @@ minijinja = { version = "2", features = ["loader"] }
 
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "time", "signal"] }
-tower-http = { version = "0.6", features = ["fs"] }
+# `normalize-path` trims trailing slashes BEFORE routing so
+# `/integrations/axum/` and `/integrations/axum/counter/` resolve to the
+# same handlers as their bare forms — axum's `nest` does not normalize
+# these itself (flask/gin accept both spellings, and the deployed proxy
+# surfaces both). `tower` is needed directly for the `Layer` trait to
+# apply it around the whole `Router`.
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "normalize-path"] }
 # Small, single-purpose: turns an `async fn` body with `yield` into a
 # `futures_core::Stream` -- used for the char-by-char AI chat SSE endpoint
 # (`tokio::time::sleep` between yields keeps the runtime unblocked, per the

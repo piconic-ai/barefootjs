@@ -16,6 +16,12 @@ const mark = (page: Page, sel: string) =>
 const marker = (page: Page, sel: string) =>
   page.$eval(sel, (el) => (el as unknown as { __mark?: string }).__mark).catch(() => null)
 
+// Direct-load SSR is guarded by the SHARED suite (e2e/blog-ssr.spec.ts →
+// integrations/shared/e2e/blog-ssr.spec.ts): it pins the flask-`blog_island`
+// var-merge semantics (`{**seed, **props, **extra}`) in
+// `render.rs::render_island` — without the props merge the article SSRs
+// empty while every region test below still passes.
+
 test('v0.5: sort/tag is a query-only update with no region swap', async ({ page }) => {
   await page.goto(BLOG, { waitUntil: 'networkidle' })
   await expect(page.locator('.sortable-list li')).toHaveCount(10)
