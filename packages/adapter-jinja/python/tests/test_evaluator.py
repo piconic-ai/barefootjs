@@ -254,6 +254,138 @@ class EvaluatorTest(unittest.TestCase):
         mj = evaluator.map_json(users, json.dumps(field), "u")
         self.assertEqual(mj, ["Ada", "Grace"])
 
+    def test_nested_map_call_inside_a_callback_body(self):
+        # #2094: a `.map(cb)` call nested INSIDE a callback body the
+        # evaluator is already given, e.g. a `.flatMap(p => p.tags.map(t =>
+        # '#'+t))` projection (the #1938 blog-showcase shape). The inner
+        # `.map` is a `call` node whose callee is `{kind: 'member', property:
+        # 'map', computed: false}` and whose first arg is an `arrow` node.
+        prefix_tmpl = {
+            "kind": "template-literal",
+            "parts": [
+                {"type": "string", "value": "#"},
+                {"type": "expression", "expr": nid("t")},
+            ],
+        }
+        inner_map = {
+            "kind": "call",
+            "callee": nmem(nmem(nid("p"), "tags"), "map"),
+            "args": [{"kind": "arrow", "params": ["t"], "body": prefix_tmpl}],
+        }
+        self.assertEqual(
+            evaluator.evaluate(inner_map, {"p": {"tags": ["a", "b"]}}),
+            ["#a", "#b"],
+        )
+
+        # 2-param arrow (value, index).
+        idx_body = nbin("+", nid("t"), ncall_math("abs", nid("i")))
+        inner_map_idx = {
+            "kind": "call",
+            "callee": nmem(nid("xs"), "map"),
+            "args": [{"kind": "arrow", "params": ["t", "i"], "body": idx_body}],
+        }
+        self.assertEqual(evaluator.evaluate(inner_map_idx, {"xs": [10, 20]}), [10, 21])
+
+        # doubly-nested .map + .join: posts.flatMap(p => p.tags.map(t =>
+        # '#'+t).join(', ')) -- the #1938 blog-showcase shape, one level
+        # flattened by the outer `flat_map` composition.
+        join_of_map = {
+            "kind": "array-method",
+            "method": "join",
+            "object": inner_map,
+            "args": [nstr(", ")],
+        }
+        self.assertEqual(
+            evaluator.evaluate(join_of_map, {"p": {"tags": ["a", "b"]}}), "#a, #b"
+        )
+        posts = [{"tags": ["a", "b"]}, {"tags": ["c"]}]
+        proj = {
+            "kind": "array-method",
+            "method": "join",
+            "object": {
+                "kind": "call",
+                "callee": nmem(nmem(nid("p"), "tags"), "map"),
+                "args": [{"kind": "arrow", "params": ["t"], "body": prefix_tmpl}],
+            },
+            "args": [nstr(", ")],
+        }
+        self.assertEqual(evaluator.flat_map(posts, proj, "p"), ["#a, #b", "#c"])
+
+    def test_nested_filter_call_inside_a_callback_body(self):
+        # #2094: a `.filter(cb)` call nested inside a callback body,
+        # composed with `.length` and a relational comparison (the doc /
+        # #2038 motivating shape): `.filter(u => u.active).length > 0`.
+        inner_filter = {
+            "kind": "call",
+            "callee": nmem(nid("users"), "filter"),
+            "args": [
+                {
+                    "kind": "arrow",
+                    "params": ["u"],
+                    "body": nmem(nid("u"), "active"),
+                }
+            ],
+        }
+        composed = nbin(">", nmem(inner_filter, "length"), nnum(0))
+        self.assertTrue(
+            evaluator.evaluate(
+                composed,
+                {"users": [{"active": True}, {"active": False}]},
+            )
+        )
+        self.assertFalse(
+            evaluator.evaluate(
+                composed,
+                {"users": [{"active": False}, {"active": False}]},
+            )
+        )
+
+        # predicate with comparison + logical operators.
+        pred_body = {
+            "kind": "logical",
+            "op": "&&",
+            "left": nbin(">=", nmem(nid("u"), "age"), nnum(18)),
+            "right": nmem(nid("u"), "active"),
+        }
+        inner_filter2 = {
+            "kind": "call",
+            "callee": nmem(nid("users"), "filter"),
+            "args": [{"kind": "arrow", "params": ["u"], "body": pred_body}],
+        }
+        rows = [{"age": 20, "active": True}, {"age": 15, "active": True}, {"age": 40, "active": False}]
+        self.assertEqual(
+            [r["age"] for r in evaluator.evaluate(inner_filter2, {"users": rows})], [20]
+        )
+
+    def test_array_method_join(self):
+        # #2094: `.join(sep?)` as an `array-method` node, sharing the shape
+        # with `.includes` above. Default separator is `,`; a `None`
+        # (null/undefined) element joins as `''`, NOT the string "null"
+        # (which is what a bare ToString call on `None` produces).
+        def njoin(obj, sep=None):
+            node = {"kind": "array-method", "method": "join", "object": obj}
+            if sep is not None:
+                node["args"] = [sep]
+            return node
+
+        self.assertEqual(
+            evaluator.evaluate(njoin(nid("xs"), nstr("-")), {"xs": ["a", "b", "c"]}), "a-b-c"
+        )
+        self.assertEqual(
+            evaluator.evaluate(njoin(nid("xs")), {"xs": ["a", "b"]}), "a,b"
+        )
+        self.assertEqual(evaluator.evaluate(njoin(nid("xs")), {"xs": []}), "")
+        self.assertEqual(
+            evaluator.evaluate(njoin(nid("xs")), {"xs": ["a", None, "b"]}), "a,,b"
+        )
+
+    def test_length_member_read_on_arrays_and_strings(self):
+        # `.length` on both arrays and strings, needed for a composed case
+        # (`.filter(...).length > 0`); already handled by `_read_property`.
+        self.assertEqual(evaluator.evaluate(nmem(nid("xs"), "length"), {"xs": [1, 2, 3]}), 3)
+        self.assertEqual(evaluator.evaluate(nmem(nid("s"), "length"), {"s": "abc"}), 3)
+        self.assertEqual(evaluator.evaluate(nmem(nid("xs"), "length"), {"xs": []}), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -123,6 +123,10 @@ def evaluate(node: Any, env: dict) -> Any:
             evaluate(node.get("object"), env), evaluate(node.get("index"), env)
         )
     if kind == "call":
+        nested = _array_callback_call(node)
+        if nested is not None:
+            method, object_node, arrow_node = nested
+            return _array_callback(method, object_node, arrow_node, env)
         name = _builtin_name(node.get("callee"))
         if not name:
             return None
@@ -143,26 +147,41 @@ def evaluate(node: Any, env: dict) -> Any:
         for prop in node.get("properties") or []:
             out[prop.get("key")] = evaluate(prop.get("value"), env)
         return out
-    if kind == "array-method" and (node.get("method") or "") == "includes":
-        args = node.get("args") or []
-        if len(args) == 1:
-            # `.includes(x)` (#2075) -- the one `array-method` in the
-            # evaluator subset, shared between `Array.prototype.includes`
-            # (SameValueZero membership) and `String.prototype.includes`
-            # (substring search), matching the receiver-type dispatch the SSR
-            # template lowering does at runtime (`bf.includes`). Mirrors the
-            # JS reference's `includes()` (eval-reference.ts) and the Perl
-            # port's identical `array-method`/`includes` arm
-            # (Evaluator.pm).
+    if kind == "array-method":
+        method = node.get("method") or ""
+        if method == "includes":
+            args = node.get("args") or []
+            if len(args) == 1:
+                # `.includes(x)` (#2075) -- the one `array-method` in the
+                # evaluator subset, shared between `Array.prototype.includes`
+                # (SameValueZero membership) and `String.prototype.includes`
+                # (substring search), matching the receiver-type dispatch the SSR
+                # template lowering does at runtime (`bf.includes`). Mirrors the
+                # JS reference's `includes()` (eval-reference.ts) and the Perl
+                # port's identical `array-method`/`includes` arm
+                # (Evaluator.pm).
+                obj = evaluate(node.get("object"), env)
+                needle = evaluate(args[0], env)
+                if isinstance(obj, list):
+                    return _bool(any(_same_value_zero(el, needle) for el in obj))
+                if _is_string(obj):
+                    return _bool(_to_string(needle) in obj)
+                # Any other receiver is not a JS `.includes` target -- degrade
+                # to false rather than raising, mirroring the reference.
+                return _bool(False)
+        elif method == "join":
+            # `.join(sep?)` (#2094): a plain `array-method` node alongside
+            # `includes` above. JS semantics: default separator is `,`; a
+            # `null`/`undefined` element joins as `''` -- NOT the string
+            # "null" that a bare `_to_string(None)` ToString call would
+            # produce (see `_to_string`'s docstring-equivalent note above),
+            # so that special case is applied here, before stringifying,
+            # rather than inside `_to_string` itself.
+            args = node.get("args") or []
+            sep = _to_string(evaluate(args[0], env)) if len(args) >= 1 else ","
             obj = evaluate(node.get("object"), env)
-            needle = evaluate(args[0], env)
-            if isinstance(obj, list):
-                return _bool(any(_same_value_zero(el, needle) for el in obj))
-            if _is_string(obj):
-                return _bool(_to_string(needle) in obj)
-            # Any other receiver is not a JS `.includes` target -- degrade to
-            # false rather than raising, mirroring the reference.
-            return _bool(False)
+            arr = obj if isinstance(obj, list) else []
+            return sep.join("" if el is None else _to_string(el) for el in arr)
 
     # arrow-fn / higher-order / unsupported array-method: a callback body
     # containing these is refused upstream (BF101); never reached here.
@@ -364,6 +383,66 @@ def _unary(op: str, v: Any) -> Any:
     if op == "+":
         return _to_number(v)
     return None
+
+
+# ---------------------------------------------------------------------------
+# Nested `.map`/`.filter` callback calls (#2094) -- widens the evaluator's
+# "call" case to also execute a `.map(cb)` / `.filter(cb)` call nested INSIDE
+# a callback body it's already given, e.g. a `.flatMap(p => p.tags.map(t =>
+# '#'+t))` projection whose body itself contains a `.map`. Everything else
+# nested (`.some`/`.find`/`.every`/`.sort`/`.reduce`/`.flat`/`.flatMap`,
+# standalone arrows) stays refused -- that gating is the compiler's job
+# upstream (`serializeParsedExpr`) and is not touched here. Mirrors Go's
+# `evalArrayCallbackCall` / `evalArrayCallback`.
+# ---------------------------------------------------------------------------
+
+
+def _array_callback_call(node: dict) -> tuple[str, Any, dict] | None:
+    """Recognise a `call` node shaped like a nested `.map(cb)` / `.filter(cb)`
+    call: `callee` is a non-computed `member` node whose `property` is `map`
+    or `filter`, and the first (only) arg is an `arrow` node. Returns
+    `(method, object_node, arrow_node)` or `None` when the node doesn't match
+    (the caller then falls through to the ordinary builtin-name dispatch)."""
+    callee = node.get("callee")
+    if not isinstance(callee, dict) or (callee.get("kind") or "") != "member":
+        return None
+    if callee.get("computed"):
+        return None
+    prop = callee.get("property") or ""
+    if prop not in ("map", "filter"):
+        return None
+    raw_args = node.get("args") or []
+    if not raw_args:
+        return None
+    arrow_node = raw_args[0]
+    if not isinstance(arrow_node, dict) or (arrow_node.get("kind") or "") != "arrow":
+        return None
+    return prop, callee.get("object"), arrow_node
+
+
+def _array_callback(method: str, object_node: Any, arrow_node: dict, env: dict) -> Any:
+    """Evaluate a nested `.map(cb)` / `.filter(cb)` call recognised by
+    `_array_callback_call`. `params` (plain strings, e.g. `["t"]` or
+    `["t", "i"]`) bind the 1st param to the element and the 2nd (if present)
+    to the integer index, in a COPY of the parent env (a fresh child scope
+    per call -- never mutating the parent dict in place across sibling
+    iterations, the classic Python gotcha)."""
+    obj = evaluate(object_node, env)
+    arr = obj if isinstance(obj, list) else []
+    params = [p for p in (arrow_node.get("params") or [])]
+    body = arrow_node.get("body")
+
+    def call_cb(item: Any, index: int) -> Any:
+        inner = dict(env)
+        if len(params) > 0:
+            inner[params[0]] = item
+        if len(params) > 1:
+            inner[params[1]] = index
+        return evaluate(body, inner)
+
+    if method == "map":
+        return [call_cb(item, i) for i, item in enumerate(arr)]
+    return [item for i, item in enumerate(arr) if _truthy(call_cb(item, i))]
 
 
 # ---------------------------------------------------------------------------
