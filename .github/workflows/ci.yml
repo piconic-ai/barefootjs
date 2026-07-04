@@ -67,7 +67,19 @@ jobs:
           bun run --filter '@barefootjs/client' build
 
       - name: Run unit tests
-        run: bun test packages/client packages/jsx packages/test packages/adapter-tests
+        parallel:
+          client:
+            steps:
+              - run: bun test packages/client
+          jsx:
+            steps:
+              - run: bun test packages/jsx
+          test-pkg:
+            steps:
+              - run: bun test packages/test
+          adapter-tests:
+            steps:
+              - run: bun test packages/adapter-tests
 
   test-ui:
     runs-on: ubuntu-latest
@@ -91,7 +103,6 @@ jobs:
 
   e2e-site-ui:
     runs-on: ubuntu-latest
-    needs: test
     strategy:
       fail-fast: false
       matrix:
