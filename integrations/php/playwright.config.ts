@@ -10,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3012',
+    baseURL: 'http://localhost:3013',
     trace: 'on-first-retry',
     launchOptions: { executablePath: process.env.PW_EXECUTABLE_PATH || undefined },
   },
@@ -25,8 +25,8 @@ export default defineConfig({
     // dev-reload overhead) -- mirrors integrations/flask's rationale for
     // running e2e against a production-shaped server rather than dev mode.
     command:
-      'PHP_CLI_SERVER_WORKERS=8 APP_ENV=production BASE_PATH=/integrations/php PORT=3012 php -S 0.0.0.0:3012 index.php',
-    url: 'http://localhost:3012/integrations/php/',
+      'PHP_CLI_SERVER_WORKERS=8 APP_ENV=production BASE_PATH=/integrations/php PORT=3013 php -S 0.0.0.0:3013 index.php',
+    url: 'http://localhost:3013/integrations/php/',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },

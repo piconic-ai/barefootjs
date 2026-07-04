@@ -6,4 +6,4 @@
 
 import { counterTests } from '../../shared/e2e/counter.spec'
 
-counterTests('http://localhost:3012/integrations/php')
+counterTests('http://localhost:3013/integrations/php')

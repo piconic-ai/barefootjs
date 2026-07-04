@@ -19,7 +19,7 @@ COPY composer.json composer.lock ./
 ENV BASE_PATH=/integrations/php
 ENV APP_ENV=production
 # The Cloudflare Container worker probes defaultPort 8080 (container.ts);
-# without this the app falls back to its dev port 3012 and never comes up.
+# without this the app falls back to its dev port 3013 and never comes up.
 ENV PORT=8080
 EXPOSE 8080
 USER app

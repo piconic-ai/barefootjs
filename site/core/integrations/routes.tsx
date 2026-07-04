@@ -32,6 +32,7 @@ const ADAPTERS: Adapter[] = [
   { slug: 'rails',       name: 'Rails',       language: 'Ruby' },
   { slug: 'mojolicious', name: 'Mojolicious', language: 'Perl' },
   { slug: 'xslate',      name: 'Text::Xslate', language: 'Perl' },
+  { slug: 'axum',        name: 'Axum',         language: 'Rust' },
   { slug: 'php',         name: 'Twig',        language: 'PHP' },
 ]
 
@@ -61,7 +62,7 @@ export function createIntegrationsApp() {
     c.render(<IntegrationsIndex />, {
       title: 'Integrations — Barefoot.js',
       description:
-        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), Flask and FastAPI (Python), Sinatra and Rails (Ruby), Mojolicious and Text::Xslate (Perl), and Twig (PHP).',
+        'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), Flask and FastAPI (Python), Sinatra and Rails (Ruby), Mojolicious and Text::Xslate (Perl), Axum (Rust), and Twig (PHP).',
     }),
   )
 

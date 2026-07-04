@@ -5,7 +5,7 @@
   "scripts": {
     "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts && composer install --no-interaction --no-progress",
     "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
-    "dev": "PHP_CLI_SERVER_WORKERS=8 BASE_PATH=/integrations/php PORT=3012 php -S 0.0.0.0:3012 index.php",
+    "dev": "PHP_CLI_SERVER_WORKERS=8 BASE_PATH=/integrations/php PORT=3013 php -S 0.0.0.0:3013 index.php",
     "deploy": "bun run build && wrangler deploy",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui",

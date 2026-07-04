@@ -1,0 +1,141 @@
+name: CI — Rust (Axum) Adapter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-rust/**'
+      - 'packages/adapter-tests/**'
+      - 'integrations/axum/**'
+      - '.github/workflows/ci-rust.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-rust/**'
+      - 'packages/adapter-tests/**'
+      - 'integrations/axum/**'
+      - '.github/workflows/ci-rust.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      # ubuntu-latest ships rustup with a stable toolchain preinstalled;
+      # updating in place avoids an unpinned third-party action (every other
+      # action in this repo is SHA-pinned).
+      - name: Setup Rust
+        run: rustup update stable && rustup default stable && rustup component add clippy
+
+      - name: Cache Rust dependencies and build artifacts
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/adapter-rust/runtime/target
+          key: rust-${{ runner.os }}-${{ hashFiles('packages/adapter-rust/runtime/Cargo.lock') }}
+          restore-keys: |
+            rust-${{ runner.os }}-
+
+      - name: Run Rust runtime unit tests
+        # Includes the golden-vector conformance harness (see
+        # spec/template-helpers.md).
+        run: cd packages/adapter-rust/runtime && cargo test
+
+      - name: Run cargo clippy
+        run: cd packages/adapter-rust/runtime && cargo clippy --all-targets -- -D warnings
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/rust' build
+
+      # The conformance suite compiles the shared IR fixtures, then renders
+      # the emitted minijinja templates through the Rust BarefootJS runtime's
+      # bf-render binary — built above by `cargo test`.
+      - name: Run unit tests
+        run: bun test packages/adapter-rust
+
+  e2e-axum:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      # See the note on the test job's Setup Rust step: rustup is
+      # preinstalled on ubuntu-latest, no third-party action needed.
+      - name: Setup Rust
+        run: rustup update stable && rustup default stable
+
+      - name: Cache Rust dependencies and build artifacts
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/adapter-rust/runtime/target
+            integrations/axum/target
+          key: rust-${{ runner.os }}-${{ hashFiles('packages/adapter-rust/runtime/Cargo.lock', 'integrations/axum/Cargo.lock') }}
+          restore-keys: |
+            rust-${{ runner.os }}-
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/rust' build
+
+      - name: Build integrations/axum
+        run: cd integrations/axum && bun run build
+
+      - name: Build Rust binary
+        run: cd integrations/axum && cargo build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          # Key on package.json (committed, deterministic) — not bun.lock
+          # which is gitignored and re-solved per run.
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Run integrations/axum E2E tests
+        run: cd integrations/axum && bun run test:e2e
+
+      - name: Upload Playwright report (integrations/axum)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-integrations-axum
+          path: integrations/axum/playwright-report/
+          retention-days: 30

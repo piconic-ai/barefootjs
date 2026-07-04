@@ -34,7 +34,7 @@ const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
 
 const DECLARATION_BASENAME = 'vector-divergences.json'
 
-const EXPECTED_BACKENDS = ['go', 'perl', 'python', 'ruby']
+const EXPECTED_BACKENDS = ['go', 'perl', 'python', 'ruby', 'rust']
 
 const NUM_SENTINELS = new Set(['NaN', 'Infinity', '-Infinity'])
 

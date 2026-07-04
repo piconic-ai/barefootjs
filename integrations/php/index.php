@@ -54,7 +54,7 @@ use Barefoot\TwigBackend;
 // URL prefix the app is mounted under. Defaults to /integrations/php so the
 // app is deploy-ready for barefootjs.dev/integrations/php.
 $BASE = rtrim(getenv('BASE_PATH') ?: '/integrations/php', '/');
-$PORT = (int) (getenv('PORT') ?: 3012);
+$PORT = (int) (getenv('PORT') ?: 3013);
 // Mirrors app.py's `FLASK_ENV` dev/production switch (there is no PHP-wide
 // standard for this, so -- like Flask's own `FLASK_DEBUG` only controlling
 // error pages/reloader, not our hand-rolled Twig Environment -- we read a

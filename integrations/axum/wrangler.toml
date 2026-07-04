@@ -1,0 +1,33 @@
+name = "barefootjs-axum-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "AxumContainer"
+image = "./Dockerfile"
+# Build from the repo root so the Cargo.toml path dependency pointing at
+# ../../packages/adapter-rust/runtime can resolve inside the image.
+image_build_context = "../.."
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "AXUM_CONTAINER"
+class_name = "AxumContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AxumContainer"]
+
+# Two patterns: `/integrations/axum/*` matches /integrations/axum/... but not
+# the bare /integrations/axum, so add the no-slash variant explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/axum"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/axum/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/axum"

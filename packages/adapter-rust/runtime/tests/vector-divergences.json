@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "backend": "rust",
+  "runner": "packages/adapter-rust/runtime/tests/helper_vectors.rs",
+  "spec": "spec/template-helpers.md",
+  "divergences": {
+    "number/empty string coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: empty input must not silently zero downstream arithmetic (matches the Perl/Python port)"
+    },
+    "number/null coerces to 0": {
+      "expect": { "$num": "NaN" },
+      "reason": "deliberate: unset props must not silently zero downstream arithmetic (matches the Perl/Python port)"
+    },
+    "string/null renders as the string \"null\"": {
+      "expect": "",
+      "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML (matches the Perl/Python port)"
+    },
+    "sort/localeCompare orders case-insensitively (ICU collation)": {
+      "expect": ["B", "a"],
+      "reason": "Rust str comparison is codepoint order, not ICU collation (same gap as the Python port's native str comparison)"
+    },
+    "sort/relational compare on numeric strings is lexical": {
+      "expect": ["9", "10"],
+      "reason": "the \"auto\" compare goes numeric when both keys look_like_number (Perl/Go/Python parity policy, ported verbatim)"
+    },
+    "reduce/numeric-string items concatenate under JS +": {
+      "expect": 11,
+      "reason": "numeric folds parse numeric strings instead of concatenating (Perl/Go/Python parity policy, ported verbatim)"
+    }
+  },
+  "unsupported": {}
+}

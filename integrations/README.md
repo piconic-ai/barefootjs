@@ -18,7 +18,8 @@ same JSX components on a different stack:
 | `fastapi` | Python / FastAPI (Jinja2) | 3009 | container |
 | `sinatra` | Ruby / Sinatra (ERB) | 3010 | container |
 | `rails` | Ruby / Ruby on Rails (ERB) | 3011 | container |
-| `php` | PHP / built-in server (Twig) | 3012 | container |
+| `axum` | Rust / Axum (minijinja) | 3012 | container |
+| `php` | PHP / built-in server (Twig) | 3013 | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
 
 Plus `site/core` (the docs / landing / catalog site) on internal port 4001
@@ -52,6 +53,7 @@ host:                                  containers (docker compose):
                                          - fastapi      (python + uvicorn --reload)
                                          - sinatra      (ruby + puma + rerun)
                                          - rails        (ruby + puma + rerun)
+                                         - axum         (rust + cargo-watch)
                                          - php          (php built-in server)
                                          - site-core    (bun + Hono)
 ```
@@ -72,6 +74,7 @@ The proxy routes by path prefix:
 :4000/integrations/fastapi/*     → fastapi service
 :4000/integrations/sinatra/*     → sinatra service
 :4000/integrations/rails/*       → rails service
+:4000/integrations/axum/*        → axum service
 :4000/integrations/php/*         → php service
 :4000/*                          → site-core (landing / docs / catalog)
 ```
@@ -130,7 +133,7 @@ HONO_TARGET=http://host.docker.internal:3001 docker compose up proxy
 The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
 `ECHO_TARGET`, `GIN_TARGET`, `CHI_TARGET`, `NETHTTP_TARGET`,
 `MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, `FLASK_TARGET`, `FASTAPI_TARGET`,
-`SINATRA_TARGET`, `RAILS_TARGET`, `PHP_TARGET`, and
+`SINATRA_TARGET`, `RAILS_TARGET`, `AXUM_TARGET`, `PHP_TARGET`, and
 `SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
@@ -146,9 +149,9 @@ The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
 `Dockerfile`** — they deploy straight to Cloudflare Workers via
 `wrangler deploy` (Elysia uses its official Cloudflare adapter). The Go
 adapters (`echo`, `gin`, `chi`, `nethttp`), the Perl adapters
-(`mojolicious`, `xslate`), the Python adapters (`flask`, `fastapi`), and the
-Ruby examples (`sinatra`, `rails`) ship a production container image
-(`Dockerfile`) deployed as a Cloudflare
+(`mojolicious`, `xslate`), the Python adapters (`flask`, `fastapi`), the
+Ruby examples (`sinatra`, `rails`), and the Rust adapter (`axum`) ship a
+production container image (`Dockerfile`) deployed as a Cloudflare
 Container. Every adapter still has a `Dockerfile.dev` for the local
 compose network.
 

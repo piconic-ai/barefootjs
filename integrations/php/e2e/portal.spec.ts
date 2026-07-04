@@ -6,4 +6,4 @@
 
 import { portalTests } from '../../shared/e2e/portal.spec'
 
-portalTests('http://localhost:3012/integrations/php')
+portalTests('http://localhost:3013/integrations/php')

@@ -6,4 +6,4 @@
 
 import { aiChatTests } from '../../shared/e2e/ai-chat.spec'
 
-aiChatTests('http://localhost:3012/integrations/php')
+aiChatTests('http://localhost:3013/integrations/php')

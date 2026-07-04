@@ -205,6 +205,20 @@ services:
       - ./integrations/rails:/workspace/integrations/rails
       - ./packages/adapter-erb/lib:/workspace/packages/adapter-erb/lib
 
+  axum:
+    build:
+      context: .
+      dockerfile: integrations/axum/Dockerfile.dev
+    working_dir: /workspace/integrations/axum
+    environment:
+      BASE_PATH: /integrations/axum
+      PORT: "3012"
+    volumes:
+      - ./integrations/axum:/workspace/integrations/axum
+      - ./packages/adapter-rust/runtime:/workspace/packages/adapter-rust/runtime
+      - cargo-registry:/root/.cargo/registry
+      - cargo-target-cache:/workspace/integrations/axum/target
+
   php:
     build:
       context: .
@@ -213,6 +227,7 @@ services:
     environment:
       BASE_PATH: /integrations/php
       PHP_ENV: development
+      PORT: "3013"
     volumes:
       - ./integrations/php:/workspace/integrations/php
       # index.php's autoload fallback resolves the Barefoot\ runtime from
@@ -231,3 +246,5 @@ services:
 volumes:
   go-mod-cache:
   go-build-cache:
+  cargo-registry:
+  cargo-target-cache:
