@@ -157,7 +157,7 @@ import {
   collectModuleStringConsts,
   extractArrowBodyExpression,
   collectContextConsumers,
-  isLowerableObjectRestDestructure,
+  isLowerableLoopDestructure,
   type ContextConsumer,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
@@ -166,7 +166,7 @@ import {
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
-import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
+import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
@@ -199,6 +199,34 @@ import {
 
 export type { MinijinjaAdapterOptions } from './lib/types.ts'
 import type { MinijinjaAdapterOptions } from './lib/types.ts'
+
+/**
+ * Build a chained Jinja attribute/subscript accessor from a `.map()`
+ * destructure binding's structured `segments` path (#2087 Phase B) — walking
+ * `segments` instead of string-parsing `LoopParamBinding.path` (repo rule:
+ * never parse JS/TS syntax with regex or string matching). Verified against
+ * the real minijinja 2.21 engine (scratch spike): a `field` step with an
+ * identifier key reads via native dotted access (`.name`, cheapest / most
+ * idiomatic Jinja form); a non-identifier key (`data-priority`) reads via a
+ * single-quoted bracket subscript (`['data-priority']`, same quoting
+ * convention as `minijinjaHashKey`/`escapeMinijinjaSingleQuoted` — quotes are
+ * mandatory here since a bareword subscript would be a variable lookup, not
+ * this adapter's concern for a bracket step but kept consistent regardless);
+ * an `index` step reads a numeric Array index (`[0]`). Empty `segments` (a
+ * rest binding at the loop root) returns `base` unchanged.
+ */
+function minijinjaAccessorFromSegments(base: string, segments: readonly LoopBindingPathSegment[]): string {
+  let accessor = base
+  for (const seg of segments) {
+    accessor +=
+      seg.kind === 'index'
+        ? `[${seg.index}]`
+        : seg.isIdent
+          ? `.${seg.key}`
+          : `['${escapeMinijinjaSingleQuoted(seg.key)}']`
+  }
+  return accessor
+}
 
 export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRenderCtx> {
   name = 'minijinja'
@@ -669,31 +697,75 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     }
 
     // An array/object-destructure loop param (`([emoji, users]) => ...` or
-    // `({ name, age }) => ...`) lowers to invalid Jinja — Jinja's `for item in
-    // list` binds a single loop variable and can't unpack a tuple the way a
-    // Python `for` statement can. Surface this at build time instead of
-    // shipping a broken template line.
-    // A destructure loop param is lowerable for the object-rest / simple-field
-    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
-    // access): each binding becomes a `{% set %}` local off the per-item var,
-    // so the body's `id` / `rest.flag` resolve. Array-index / nested /
-    // rest-spread shapes still can't unpack a tuple → BF104. (#1310)
+    // `({ name, age }) => ...`) lowers to invalid Jinja in general — Jinja's
+    // `for item in list` binds a single loop variable and can't unpack a
+    // tuple the way a Python `for` statement can. `isLowerableLoopDestructure`
+    // (#2087) instead admits any FIXED-binding shape — single field, nested
+    // field, array-index, any depth/mix (`{ user: { name } }`, `([k, v])`,
+    // `{ cells: [head] }`) — by walking the binding's structured `segments`
+    // path into a chained Jinja accessor (`__bf_item.user.name`,
+    // `minijinjaAccessorFromSegments`), plus array-rest (`[first, ...tail]`,
+    // native `bf.slice`) and object-rest (`{ id, ...rest }`, native
+    // `bf.omit`) whose every use is a member read (`rest.flag`) or a
+    // `{...rest}` spread onto an intrinsic element. Bare-value rest uses, a
+    // spread onto a component/provider, and `.filter().map(destructure)`
+    // still have no Jinja scalar form → BF104.
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the Jinja adapter cannot lower — Jinja \`for item in list\` binds a single loop variable and can't unpack a tuple.`,
+        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the Jinja adapter cannot lower — the rest binding is used in a way (bare value, or spread onto a component) that has no native Jinja accessor form.`,
         loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message:
             `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple elements with index syntax in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
+            `  1. Read the rest binding as a member access (\`rest.field\`) or spread it onto an intrinsic element (\`<li {...rest}>\`) instead of using it as a bare value.\n` +
             `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
             `  3. Move the loop into a primitive that the adapter registers explicitly.`,
         },
       })
+    }
+
+    // A `.map()` loop whose array is a bare identifier bound to a
+    // FUNCTION-scope local const with a non-statically-evaluable initializer
+    // that reads props/signals (e.g. `const entries =
+    // Object.entries(props.x ?? {}).filter(...)`) can't render correctly.
+    // Module-scope consts (`isModule`, e.g. `const payments = [...]` at the
+    // top of the file) are a DIFFERENT, already-working case — the shared
+    // `ssr-defaults.ts` statically evaluates those and seeds them straight
+    // into the render context, so a bare `payments` reference resolves for
+    // free (data-table demo). Function-scope locals get no such seeding
+    // (`ssr-defaults.ts`: "component-scope locals can depend on
+    // signals/props and are evaluated lazily elsewhere") — and this
+    // adapter's only "elsewhere" is inlining a const's value at its use
+    // site (`_resolveLiteralConst`'s numeric/single-quoted-string fast
+    // path, or a static-record-literal lookup), never binding one as a
+    // `{% set %}` template local. Left unchecked, `{% for item in entries
+    // %}` over an unbound name would silently iterate zero times
+    // (minijinja's `UndefinedBehavior::Chainable` tolerates it rather than
+    // raising, same as Jinja's `ChainableUndefined`) instead of failing
+    // loudly. Pre-existing, general limitation, orthogonal to #2087's
+    // destructure-binding work — newly reachable in this adapter's test
+    // corpus only because the widened destructure gate (#2087 Phase A/B)
+    // no longer refuses this fixture's `([emoji, users]) => ...` param
+    // first. Mirrors adapter-jinja's identical check.
+    const arrayName = loop.array.trim()
+    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
+      if (arrayConst && !arrayConst.isModule && this._resolveLiteralConst(arrayName) === null) {
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the MiniJinja adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+          suggestion: {
+            message:
+              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          },
+        })
+      }
     }
 
     const rawArray = this.convertExpressionToJinja(loop.array)
@@ -744,11 +816,27 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     }
     if (supportableDestructure) {
       for (const b of loop.paramBindings ?? []) {
-        indexLocalLines.push(
-          b.rest
-            ? `{% set ${minijinjaIdent(b.name)} = ${minijinjaIdent(loopVar)} %}`
-            : `{% set ${minijinjaIdent(b.name)} = ${minijinjaIdent(loopVar)}${b.path} %}`,
-        )
+        // Built off the binding's structured `segments` path (never `b.path`
+        // — repo rule: no string-parsing of a JS-shaped accessor). See
+        // `minijinjaAccessorFromSegments`.
+        const parent = minijinjaAccessorFromSegments(minijinjaIdent(loopVar), b.segments ?? [])
+        if (b.rest?.kind === 'array') {
+          // MiniJinja has no native slice syntax — route through the
+          // runtime's `bf.slice` (matches the JS `.slice(from)` semantics,
+          // including the past-end-length edge case) so the residual local
+          // is the exact same tail array `tail === item.slice(from)`.
+          indexLocalLines.push(`{% set ${minijinjaIdent(b.name)} = bf.slice(${parent}, ${b.rest.from}) %}`)
+        } else if (b.rest?.kind === 'object') {
+          // A TRUE residual dict (not an alias of the parent) via the
+          // runtime's `bf.omit` helper (runtime.rs) — so a member read
+          // (`rest.flag`) and the existing `{...rest}` spread emit
+          // (`bf.spread_attrs`) both see only the non-destructured keys,
+          // same as the Hono/CSR IIFE.
+          const excludeKeys = b.rest.exclude.map(k => `'${escapeMinijinjaSingleQuoted(k.key)}'`).join(', ')
+          indexLocalLines.push(`{% set ${minijinjaIdent(b.name)} = bf.omit(${parent}, [${excludeKeys}]) %}`)
+        } else {
+          indexLocalLines.push(`{% set ${minijinjaIdent(b.name)} = ${parent} %}`)
+        }
       }
     }
 

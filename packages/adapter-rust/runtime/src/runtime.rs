@@ -1125,6 +1125,9 @@ impl Object for BfInstance {
             "at" => Ok(js_to_mj(&at(a(0), a(1)))),
             "concat" => Ok(js_to_mj(&concat(a(0), a(1)))),
             "slice" => Ok(js_to_mj(&slice(a(0), a(1), a(2)))),
+            // Object-rest residual for a `.map()` destructure binding (#2087
+            // Phase B) -- see `omit`'s docstring.
+            "omit" => Ok(js_to_mj(&omit(a(0), a(1)))),
             "reverse" => Ok(js_to_mj(&reverse(a(0)))),
             "flat" => {
                 let depth = if matches!(a(1), JsValue::Null) { 1 } else { num::to_f64(a(1)) as i64 };
@@ -1323,6 +1326,32 @@ pub fn slice(recv: &JsValue, start: &JsValue, end: &JsValue) -> JsValue {
         return JsValue::Array(Vec::new());
     }
     JsValue::Array(items[s as usize..e as usize].to_vec())
+}
+
+/// Build a TRUE residual object -- every key of `recv` NOT listed in
+/// `exclude` -- for a `.map()` callback's object-rest destructure binding
+/// (`{ id, title, ...rest }`, #2087 Phase B). Mirrors `slice`'s array-rest
+/// counterpart: the adapter binds the destructured local straight to this
+/// helper's result (`{% set rest = bf.omit(item, ["id", "title"]) %}`), so a
+/// member read (`rest.flag`) or the existing `{...rest}` spread emit
+/// (`bf.spread_attrs`) both see only the non-destructured keys, same as the
+/// Hono/CSR IIFE (`(({ id: __bfR0, title: __bfR1, ...__bfRest }) =>
+/// __bfRest)(__bfItem())`). A non-object `recv`, or a non-array `exclude`,
+/// degrades to an empty object (consistent with `slice`'s non-array-recv →
+/// empty-array fallback) rather than panicking.
+pub fn omit(recv: &JsValue, exclude: &JsValue) -> JsValue {
+    let map = match recv.as_object() {
+        Some(m) => m,
+        None => return JsValue::Object(BTreeMap::new()),
+    };
+    let exclude_keys: HashSet<&str> =
+        exclude.as_array().unwrap_or(&[]).iter().filter_map(|v| v.as_str()).collect();
+    JsValue::Object(
+        map.iter()
+            .filter(|(k, _)| !exclude_keys.contains(k.as_str()))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect(),
+    )
 }
 
 pub fn reverse(recv: &JsValue) -> JsValue {

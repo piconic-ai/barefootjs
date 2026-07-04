@@ -40,25 +40,44 @@ runAdapterConformanceTests({
     // `.map`) as xslate.
     'todo-app': [{ code: 'BF103', severity: 'error' }],
     'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
-    // Array-destructure loop param (`([k, v]) => …`) can't lower to a
-    // single Jinja `for` loop variable (same BF104 as xslate — Jinja's
-    // `for item in list` binds one loop variable, just like Kolon's
-    // `for $arr -> $item`).
-    'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
-    // Both BF103 (imported child) and BF104 (destructure) fire.
+    // The `([emoji, users]) => ...` / `([id, t]) => ...` params in these two
+    // fixtures no longer trip BF104 — the destructure itself now lowers
+    // cleanly to a native `{% set %}` accessor (#2087 Phase B). But both
+    // fixtures' loop array is `entries`, a bare identifier bound to a
+    // function-scope local const with a NON-inlineable initializer
+    // (`Object.entries(props.x ?? {}).filter(...)`) — a pre-existing,
+    // orthogonal limitation this adapter has always had (it only ever
+    // INLINES a local const's value at its use site — numeric/string
+    // literal, or a static-record-literal lookup — never binds one as a
+    // `{% set %}` template local), just never reachable before because the
+    // narrower pre-#2087 gate refused the destructure param first. Left
+    // unhandled it would silently render an EMPTY list (minijinja's
+    // `UndefinedBehavior::Chainable` tolerates iterating an unbound name as
+    // zero iterations) instead of failing loudly, so `renderLoop` in
+    // `minijinja-adapter.ts` now detects this shape and raises BF101
+    // instead — see the "Loop array `<name>` is a local computed value"
+    // diagnostic (mirrors adapter-jinja's identical check). Fixing the
+    // underlying gap (computed-array-from-props as a loop source) is out of
+    // scope for #2087; tracked as a follow-up at
+    // https://github.com/piconic-ai/barefootjs/issues/2087.
+    'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+    // Both BF103 (imported child) and BF101 (unresolvable computed loop
+    // array, see above) fire.
     'static-array-from-props-with-component': [
       { code: 'BF103', severity: 'error' },
-      { code: 'BF104', severity: 'error' },
+      { code: 'BF101', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the object-rest shape read via
-    // member access (`rest-destructure-object-in-map`) lowers via a Jinja
-    // `{% set %}` local binding (same mechanism as Kolon's `: my`). The
-    // other three stay refused: rest SPREAD needs a residual object,
-    // array-index / nested paths can't unpack a tuple (same surface as
-    // xslate).
-    'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // Rest-destructure `.map()` callbacks (#2087 Phase B): every shape now
+    // lowers natively — fixed bindings at any depth/shape via a chained
+    // Jinja accessor built off `LoopParamBinding.segments`
+    // (`minijinjaAccessorFromSegments`), array-rest via the runtime's
+    // `bf.slice`, and object-rest (read via member access OR spread onto an
+    // intrinsic element) via a TRUE residual dict from the new `bf.omit`
+    // runtime helper. No `expectedDiagnostics` pins remain for any of the
+    // `rest-destructure-*-in-map` / `destructure-*-in-map` fixtures — see
+    // `rest-destructure-object-spread-in-map` for the residual-spread case
+    // and `destructure-array-index-in-map` / `destructure-nested-object-in-map`
+    // for the no-rest fixed-binding shapes.
     // The site/ui Button auto-infers a `<Slot>` sibling that spreads
     // `{...props}` / `{...children.props}` onto its root element. Jinja
     // dict literals can't splat a runtime dict into named call-site
