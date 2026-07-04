@@ -3,8 +3,9 @@
  *
  * Runs every case in cases.ts through its JS reference implementation
  * and writes vectors.json — the language-independent conformance data
- * consumed by the Go (runtime/vectors_test.go) and Perl
- * (t/helper_vectors.t) harnesses.
+ * consumed by the Go (runtime/vectors_test.go), Perl
+ * (t/helper_vectors.t), Python (tests/test_helper_vectors.py), and
+ * Ruby (test/helper_vectors_test.rb) harnesses.
  *
  *   cd packages/adapter-tests && bun run generate:helper-vectors
  *
@@ -67,7 +68,7 @@ export function encodeExpect(value: unknown, context: string): unknown {
 export function buildVectors(): VectorFile {
   return {
     version: 1,
-    generator: 'packages/adapter-tests/helper-vectors/generate.ts',
+    generator: 'packages/adapter-tests/vectors/generate.ts',
     spec: 'spec/template-helpers.md',
     cases: cases.map((c) => {
       const ref = reference[c.fn]

@@ -6,9 +6,10 @@
  * `parseExpression` (so each vector carries a genuine `ParsedExpr` tree)
  * and runs it through the JS reference evaluator (eval-reference.ts) to
  * compute `expect`. Writes eval-vectors.json — the language-independent
- * conformance data the Go (runtime/eval_vectors_test.go) and Perl
- * (t/eval_vectors.t) harnesses consume to prove their evaluators are
- * isomorphic with JS.
+ * conformance data the Go (runtime/eval_vectors_test.go), Perl
+ * (t/eval_vectors.t), Python (tests/test_eval_vectors.py), and Ruby
+ * (test/eval_vectors_test.rb) harnesses consume to prove their
+ * evaluators are isomorphic with JS.
  *
  *   cd packages/adapter-tests && bun run generate:eval-vectors
  *
@@ -36,7 +37,7 @@ export interface EvalVectorFile {
 export function buildEvalVectors(): EvalVectorFile {
   return {
     version: 1,
-    generator: 'packages/adapter-tests/helper-vectors/eval-generate.ts',
+    generator: 'packages/adapter-tests/vectors/eval-generate.ts',
     spec: 'spec/compiler.md#parsedexpr-evaluator-semantics',
     cases: evalCases.map((c) => {
       const context = `${c.note}: ${c.src}`

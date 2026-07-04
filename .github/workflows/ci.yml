@@ -20,6 +20,9 @@ on:
       - 'ui/**'
       - 'site/ui/**'
       - '.github/workflows/ci.yml'
+      # Central divergence validation in adapter-tests re-checks every
+      # adapter's declarations, so it must re-run when any adapter edits its.
+      - 'packages/**/vector-divergences.json'
   pull_request:
     paths:
       - 'packages/client/**'
@@ -38,6 +41,9 @@ on:
       - 'ui/**'
       - 'site/ui/**'
       - '.github/workflows/ci.yml'
+      # Central divergence validation in adapter-tests re-checks every
+      # adapter's declarations, so it must re-run when any adapter edits its.
+      - 'packages/**/vector-divergences.json'
 
 permissions:
   contents: read
