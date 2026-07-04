@@ -63,9 +63,10 @@
 //!     because `math.floor(float('nan'))` raises in Python) -- `f64::floor`
 //!     / `f64::ceil` pass NaN/Infinity through unchanged per IEEE-754.
 //!
-//! See `tests/helper_vectors.rs`'s `DIVERGENCES` table for where this
-//! removes Python-only divergence declarations (`add/beyond the
-//! safe-integer edge...`, `div/zero divisor yields Infinity`).
+//! See `tests/vector-divergences.json` for where this removes Python-only
+//! divergence declarations (`add/beyond the safe-integer edge...`,
+//! `div/zero divisor yields Infinity`) -- those two keys simply have no
+//! entry in this backend's declaration file.
 
 use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;

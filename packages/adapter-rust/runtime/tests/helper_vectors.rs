@@ -2,32 +2,42 @@
 //! `packages/adapter-jinja/python/tests/test_helper_vectors.py` (itself a
 //! port of `packages/adapter-perl/t/helper_vectors.t`).
 //!
-//! Runs `packages/adapter-tests/helper-vectors/vectors.json` -- generated
-//! from the JS reference implementations (spec/template-helpers.md) --
-//! against this crate's `runtime` free functions, bound to the exact
-//! shape a compiled minijinja template would execute (a `bf.<method>(...)`
-//! call, or the native operator the adapter emits for
-//! `add`/`sub`/`mul`/`div`/`neg`).
+//! Runs `packages/adapter-tests/vectors/vectors.json` -- generated from the
+//! JS reference implementations (spec/template-helpers.md) -- against this
+//! crate's `runtime` free functions, bound to the exact shape a compiled
+//! minijinja template would execute (a `bf.<method>(...)` call, or the
+//! native operator the adapter emits for `add`/`sub`/`mul`/`div`/`neg`).
 //!
-//! Per spec/template-helpers.md's "Adapter status model", this file is the
-//! single source of truth for this backend's divergences from the
-//! JS-normative expect -- keyed by `fn/note`. Every retained divergence
-//! below is re-derived for Rust (not copy-pasted from the Python table):
-//! two of the Python port's eight divergences VANISH here because `f64`
-//! arithmetic is IEEE-754-native (see `num.rs`'s module docstring) --
-//! `add`'s safe-integer-edge rounding and `div`'s zero-divisor case both
-//! now match the JS-normative expect exactly, so they carry NO entry here.
+//! Per PR #2084 ("Promote golden vectors to a first-class JSON corpus with
+//! JSON-declared per-backend divergences"), this backend's divergences and
+//! unsupported helpers are NOT hard-coded in this file -- they are declared
+//! in `tests/vector-divergences.json` (schema: `packages/adapter-tests/
+//! vectors/README.md`, "Divergence declarations"), the same convention the
+//! Go/Perl/Python/Ruby runners use. Only the language-specific bindings
+//! table (`call_binding` below) stays code, mirroring
+//! `packages/adapter-go-template/runtime/vectors_test.go`.
+//!
+//! Two of the Python port's divergences VANISH for this backend because
+//! `f64` arithmetic is IEEE-754-native (see `num.rs`'s module docstring):
+//! `add`'s safe-integer-edge rounding and `div`'s zero-divisor case both now
+//! match the JS-normative expect exactly, so they carry NO entry in
+//! `tests/vector-divergences.json`.
 
 use barefootjs::backend_minijinja;
 use barefootjs::num::{self, JsValue};
 use barefootjs::runtime;
 use barefootjs::SearchParams;
+use serde::Deserialize;
 use serde_json::Value as JsonValue;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 
 fn vectors_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../adapter-tests/helper-vectors/vectors.json")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../adapter-tests/vectors/vectors.json")
+}
+
+fn divergences_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/vector-divergences.json")
 }
 
 fn obj(v: &JsValue, key: &str) -> JsValue {
@@ -163,47 +173,6 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
     })
 }
 
-enum Divergence {
-    Nan,
-    Expect(JsValue),
-}
-
-fn divergence_for(key: &str) -> Option<(Divergence, &'static str)> {
-    match key {
-        "number/empty string coerces to 0" => Some((
-            Divergence::Nan,
-            "deliberate: empty input must not silently zero downstream arithmetic (matches the Perl/Python port)",
-        )),
-        "number/null coerces to 0" => Some((
-            Divergence::Nan,
-            "deliberate: unset props must not silently zero downstream arithmetic (matches the Perl/Python port)",
-        )),
-        "string/null renders as the string \"null\"" => Some((
-            Divergence::Expect(JsValue::String(String::new())),
-            "deliberate: an unset prop must not surface a literal \"null\" in HTML (matches the Perl/Python port)",
-        )),
-        "sort/localeCompare orders case-insensitively (ICU collation)" => Some((
-            Divergence::Expect(JsValue::Array(vec![JsValue::from("B"), JsValue::from("a")])),
-            "Rust str comparison is codepoint order, not ICU collation (same gap as the Python port's native str comparison)",
-        )),
-        "sort/relational compare on numeric strings is lexical" => Some((
-            Divergence::Expect(JsValue::Array(vec![JsValue::from("9"), JsValue::from("10")])),
-            "the \"auto\" compare goes numeric when both keys look_like_number (Perl/Go/Python parity policy, ported verbatim)",
-        )),
-        "reduce/numeric-string items concatenate under JS +" => Some((
-            Divergence::Expect(JsValue::Number(11.0)),
-            "numeric folds parse numeric strings instead of concatenating (Perl/Go/Python parity policy, ported verbatim)",
-        )),
-        // NOTE, for the record: `add/beyond the safe-integer edge rounds as
-        // a double` and `div/zero divisor yields Infinity` are Python-only
-        // divergences that VANISH here -- `f64` arithmetic is IEEE-754
-        // native (no arbitrary-precision int, no ZeroDivisionError), so
-        // both now match the JS-normative `expect` exactly. See num.rs's
-        // module docstring.
-        _ => None,
-    }
-}
-
 /// Spec value-compat comparison against a JSON-decoded expect -- sentinel
 /// hashes, booleans by truthiness, numbers numerically, arrays/objects
 /// recursively.
@@ -264,6 +233,34 @@ fn py_truthy(v: &JsValue) -> bool {
     }
 }
 
+/// Shape of `tests/vector-divergences.json`
+/// (`packages/adapter-tests/vectors/README.md`, "Divergence declarations").
+/// Keyed by the case key `fn + "/" + note`, it is the single source of
+/// truth for this backend's divergences and unsupported helpers -- the spec
+/// stays backend-neutral, and this file is also validated centrally by
+/// `packages/adapter-tests/src/__tests__/divergences.test.ts`.
+#[derive(Deserialize)]
+struct DivergenceEntry {
+    #[serde(default)]
+    expect: Option<JsonValue>,
+    #[serde(default)]
+    throws: bool,
+    #[allow(dead_code)]
+    #[serde(default)]
+    exception: Option<String>,
+    reason: String,
+}
+
+#[derive(Deserialize)]
+struct DivergenceFile {
+    #[allow(dead_code)]
+    version: i64,
+    #[allow(dead_code)]
+    backend: String,
+    divergences: HashMap<String, DivergenceEntry>,
+    unsupported: HashMap<String, String>,
+}
+
 #[test]
 fn helper_vectors_match_js_reference_or_declared_divergence() {
     let path = vectors_path();
@@ -275,7 +272,18 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
     let cases = doc["cases"].as_array().expect("vectors.json has no cases");
     assert!(!cases.is_empty(), "vectors.json contains no cases");
 
-    let mut seen_declarations = std::collections::HashSet::new();
+    // Declarations live in tests/vector-divergences.json, not inline, so
+    // this harness and the other backends' harnesses share one JSON
+    // schema (packages/adapter-tests/vectors/README.md, "Divergence
+    // declarations"). This harness still enforces the machinery itself:
+    // stale declarations (the backend now matches JS) and dead
+    // declarations (the case they reference no longer exists) both fail
+    // the suite.
+    let div_path = divergences_path();
+    let div_raw = std::fs::read_to_string(&div_path).unwrap_or_else(|e| panic!("read {div_path:?}: {e}"));
+    let div_file: DivergenceFile = serde_json::from_str(&div_raw).unwrap_or_else(|e| panic!("parse {div_path:?}: {e}"));
+
+    let mut declared = HashSet::new();
     let mut failures = Vec::new();
 
     for case in cases {
@@ -286,6 +294,11 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
         let args: Vec<JsValue> = raw_args.iter().map(JsValue::from_json).collect();
         let expect = &case["expect"];
 
+        if let Some(reason) = div_file.unsupported.get(fn_name) {
+            eprintln!("SKIP {key}: unsupported on this backend: {reason}");
+            continue;
+        }
+
         let got = match call_binding(fn_name, &args) {
             Some(v) => v,
             None => {
@@ -294,24 +307,25 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
             }
         };
 
-        if let Some((divergence, reason)) = divergence_for(&key) {
-            seen_declarations.insert(key.clone());
-            let label = format!("{key} (declared divergence: {reason})");
+        if let Some(entry) = div_file.divergences.get(&key) {
+            declared.insert(key.clone());
             if matches(&got, expect) {
-                failures.push(format!("stale divergence declaration for '{key}' -- the backend now matches JS; remove it"));
+                failures.push(format!("stale divergence declaration for '{key}' -- the backend now matches JS ({got:?}); remove it"));
                 continue;
             }
-            match divergence {
-                Divergence::Nan => {
-                    if !matches!(&got, JsValue::Number(n) if n.is_nan()) {
-                        failures.push(format!("{label}: got {got:?}, wanted real NaN"));
-                    }
+            if entry.throws {
+                failures.push(format!("{key}: throws divergences are not supported by the Rust harness -- bindings return values, not Results"));
+                continue;
+            }
+            let pinned = match &entry.expect {
+                Some(v) => v,
+                None => {
+                    failures.push(format!("{key}: malformed divergence declaration -- missing expect"));
+                    continue;
                 }
-                Divergence::Expect(want) => {
-                    if got != want {
-                        failures.push(format!("{label}: got {got:?}, want {want:?}"));
-                    }
-                }
+            };
+            if !matches(&got, pinned) {
+                failures.push(format!("{key} (declared divergence: {}): got {got:?}, pinned {pinned:?}", entry.reason));
             }
             continue;
         }
@@ -321,10 +335,10 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
         }
     }
 
-    // Every declared divergence must have matched exactly one vector case
-    // (a renamed `note` would otherwise silently stop being exercised).
-    for key in ["number/empty string coerces to 0", "number/null coerces to 0", "string/null renders as the string \"null\"", "sort/localeCompare orders case-insensitively (ICU collation)", "sort/relational compare on numeric strings is lexical", "reduce/numeric-string items concatenate under JS +"] {
-        if !seen_declarations.contains(key) {
+    // A declaration referencing a case that no longer exists is dead --
+    // likely a renamed note. Fail so the key gets re-pointed.
+    for key in div_file.divergences.keys() {
+        if !declared.contains(key) {
             failures.push(format!("divergence declaration matches no vector case -- renamed note? {key}"));
         }
     }

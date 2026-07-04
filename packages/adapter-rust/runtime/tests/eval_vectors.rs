@@ -2,7 +2,7 @@
 //! `packages/adapter-jinja/python/tests/test_eval_vectors.py` (itself a
 //! port of `packages/adapter-perl/t/eval_vectors.t`).
 //!
-//! Runs `packages/adapter-tests/helper-vectors/eval-vectors.json` --
+//! Runs `packages/adapter-tests/vectors/eval-vectors.json` --
 //! generated from the JS reference evaluator, shared with the Go and Perl
 //! evaluators -- against `barefootjs::evaluator::evaluate`. The evaluator
 //! is JS-faithful by contract, so unlike the helper vectors there are NO
@@ -15,7 +15,7 @@ use serde_json::Value as JsonValue;
 use std::path::PathBuf;
 
 fn vectors_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../adapter-tests/helper-vectors/eval-vectors.json")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../adapter-tests/vectors/eval-vectors.json")
 }
 
 /// Spec value-compat comparison -- non-finite sentinel hashes, booleans by

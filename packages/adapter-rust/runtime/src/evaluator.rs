@@ -14,7 +14,7 @@
 //! The accepted subset and its semantics are documented in
 //! `spec/compiler.md` ("ParsedExpr Evaluator Semantics") and pinned
 //! isomorphically by the cross-language golden vectors
-//! (`packages/adapter-tests/helper-vectors/eval-vectors.json`), shared with
+//! (`packages/adapter-tests/vectors/eval-vectors.json`), shared with
 //! the Go evaluator (`bf.go`) and the Perl evaluator -- same input -> same
 //! output, so unlike the runtime helper vectors there are NO backend
 //! divergences declared against this file's tests (see
