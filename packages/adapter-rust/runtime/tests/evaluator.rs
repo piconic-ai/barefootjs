@@ -305,3 +305,103 @@ fn map_items_projects_one_result_per_element_no_flatten() {
     let mj = evaluator::map_json(&users, &field_node.to_string(), "u", &Env::new()).unwrap();
     assert_eq!(mj, vec![JsValue::from("Ada"), JsValue::from("Grace")]);
 }
+
+#[test]
+fn nested_map_and_filter_inside_a_callback_body() {
+    // p => p.tags.map(t => '#' + t) -- the #1938 blog-showcase flatMap
+    // projection shape: the projection body itself contains a `.map` call.
+    let tags = JsValue::Array(vec![JsValue::from("go"), JsValue::from("perl")]);
+    let post = obj(&[("tags", tags)]);
+    let nested_map = json!({
+        "kind": "call",
+        "callee": {"kind": "member", "object": nmem(nid("p"), "tags"), "property": "map", "computed": false},
+        "args": [{
+            "kind": "arrow",
+            "params": ["t"],
+            "body": nbin("+", nstr("#"), nid("t")),
+        }],
+    });
+    let out = evaluator::evaluate(&nested_map, &env_of(&[("p", post.clone())]));
+    assert_eq!(out, JsValue::Array(vec![JsValue::from("#go"), JsValue::from("#perl")]));
+
+    // i => i.tags.filter(t => t !== 'x') -- nested .filter.
+    let tags2 = JsValue::Array(vec![JsValue::from("a"), JsValue::from("x"), JsValue::from("b")]);
+    let item = obj(&[("tags", tags2)]);
+    let nested_filter = json!({
+        "kind": "call",
+        "callee": {"kind": "member", "object": nmem(nid("i"), "tags"), "property": "filter", "computed": false},
+        "args": [{
+            "kind": "arrow",
+            "params": ["t"],
+            "body": {"kind": "binary", "op": "!==", "left": nid("t"), "right": nstr("x")},
+        }],
+    });
+    let out = evaluator::evaluate(&nested_filter, &env_of(&[("i", item)]));
+    assert_eq!(out, JsValue::Array(vec![JsValue::from("a"), JsValue::from("b")]));
+
+    // A 2-param arrow (value, index).
+    let nested_map_idx = json!({
+        "kind": "call",
+        "callee": {"kind": "member", "object": nid("xs"), "property": "map", "computed": false},
+        "args": [{
+            "kind": "arrow",
+            "params": ["t", "idx"],
+            "body": nbin("+", nid("t"), nid("idx")),
+        }],
+    });
+    let xs = JsValue::Array(vec![num(10.0), num(20.0), num(30.0)]);
+    let out = evaluator::evaluate(&nested_map_idx, &env_of(&[("xs", xs)]));
+    assert_eq!(out, JsValue::Array(vec![num(10.0), num(21.0), num(32.0)]));
+
+    // Non-array receiver -> null (mirrors Go's `toAnySlice(nil)` short-circuit).
+    let scalar_recv = json!({
+        "kind": "call",
+        "callee": {"kind": "member", "object": nid("n"), "property": "map", "computed": false},
+        "args": [{"kind": "arrow", "params": ["t"], "body": nid("t")}],
+    });
+    assert_eq!(evaluator::evaluate(&scalar_recv, &env_of(&[("n", num(42.0))])), JsValue::Null);
+}
+
+#[test]
+fn array_method_join() {
+    let njoin = |object: JsonValue, args: Vec<JsonValue>| json!({"kind": "array-method", "method": "join", "object": object, "args": args});
+
+    let tags = JsValue::Array(vec![JsValue::from("a"), JsValue::from("b"), JsValue::from("c")]);
+    let custom_sep = evaluator::evaluate(&njoin(nid("tags"), vec![nstr("-")]), &env_of(&[("tags", tags.clone())]));
+    assert_eq!(custom_sep, JsValue::from("a-b-c"));
+
+    let default_sep = evaluator::evaluate(&njoin(nid("tags"), vec![]), &env_of(&[("tags", tags)]));
+    assert_eq!(default_sep, JsValue::from("a,b,c"));
+
+    let empty = evaluator::evaluate(&njoin(nid("tags"), vec![nstr(",")]), &env_of(&[("tags", JsValue::Array(vec![]))]));
+    assert_eq!(empty, JsValue::from(""));
+
+    // A null element joins as '' -- not the literal string "null".
+    let with_null = JsValue::Array(vec![JsValue::from("a"), JsValue::Null, JsValue::from("b")]);
+    let joined = evaluator::evaluate(&njoin(nid("tags"), vec![nstr(",")]), &env_of(&[("tags", with_null)]));
+    assert_eq!(joined, JsValue::from("a,,b"));
+
+    // Composed: doubly-nested .map + .join (the #1938 blog-showcase shape).
+    let posts = JsValue::Array(vec![
+        obj(&[("tags", JsValue::Array(vec![JsValue::from("a"), JsValue::from("b")]))]),
+        obj(&[("tags", JsValue::Array(vec![JsValue::from("c")]))]),
+    ]);
+    let inner_map_join = njoin(
+        json!({
+            "kind": "call",
+            "callee": {"kind": "member", "object": nmem(nid("p"), "tags"), "property": "map", "computed": false},
+            "args": [{"kind": "arrow", "params": ["t"], "body": nbin("+", nstr("#"), nid("t"))}],
+        }),
+        vec![nstr(" ")],
+    );
+    let outer = njoin(
+        json!({
+            "kind": "call",
+            "callee": {"kind": "member", "object": nid("posts"), "property": "map", "computed": false},
+            "args": [{"kind": "arrow", "params": ["p"], "body": inner_map_join}],
+        }),
+        vec![nstr(", ")],
+    );
+    let out = evaluator::evaluate(&outer, &env_of(&[("posts", posts)]));
+    assert_eq!(out, JsValue::from("#a #b, #c"));
+}

@@ -185,6 +185,11 @@ final class Evaluator
             );
         }
         if ($kind === 'call') {
+            $callback = self::arrayCallbackCall($node);
+            if ($callback !== null) {
+                [$method, $objectNode, $arrowNode] = $callback;
+                return self::evalArrayCallback($method, $objectNode, $arrowNode, $env);
+            }
             $name = self::builtinName(self::get($node, 'callee'));
             if ($name === '') {
                 return null;
@@ -226,10 +231,11 @@ final class Evaluator
             }
             return $out;
         }
-        if ($kind === 'array-method' && (self::get($node, 'method') ?? '') === 'includes') {
+        if ($kind === 'array-method') {
+            $method = (string) (self::get($node, 'method') ?? '');
             $argsNode = self::get($node, 'args');
             $argsArr = is_array($argsNode) ? $argsNode : [];
-            if (count($argsArr) === 1) {
+            if ($method === 'includes' && count($argsArr) === 1) {
                 // `.includes(x)` (#2075) -- the one `array-method` in the
                 // evaluator subset, shared between `Array.prototype.includes`
                 // (SameValueZero membership) and `String.prototype.includes`
@@ -251,11 +257,121 @@ final class Evaluator
                 // to false rather than raising, mirroring the reference.
                 return false;
             }
+            if ($method === 'join' && count($argsArr) <= 1) {
+                // `.join(sep?)` (#2094) -- default separator is `,`; a
+                // `null`/`undefined` element joins as `''`, not the string
+                // "null" (mirrors evalJoin in the Go reference).
+                $sep = count($argsArr) === 1
+                    ? self::toStringJs(self::evaluate($argsArr[0], $env))
+                    : ',';
+                $obj = self::evaluate(self::get($node, 'object'), $env);
+                return self::evalJoin($obj, $sep);
+            }
         }
 
         // arrow-fn / higher-order / unsupported array-method: a callback
         // body containing these is refused upstream (BF101); never reached.
         return null;
+    }
+
+    /**
+     * Recognize a nested `.map(cb)` / `.filter(cb)` callback call inside a
+     * `call` node (#2094): `callee` is a non-computed `member` node whose
+     * `property` is `map`/`filter`, and the first argument is an `arrow`
+     * node. Returns `[method, objectNode, arrowNode]` or `null` when the
+     * shape doesn't match (mirrors Go's `evalArrayCallbackCall`). Everything
+     * else nested (`.some`/`.find`/`.every`/`.sort`/`.reduce`/`.flat`/
+     * `.flatMap`, standalone arrows) stays refused upstream (BF101) -- this
+     * function only widens the two cases the compiler now allows to nest.
+     */
+    private static function arrayCallbackCall($node): ?array
+    {
+        $callee = self::get($node, 'callee');
+        if ((!is_array($callee) && !is_object($callee)) || self::kind($callee) !== 'member') {
+            return null;
+        }
+        if (self::get($callee, 'computed')) {
+            return null;
+        }
+        $prop = (string) (self::get($callee, 'property') ?? '');
+        if ($prop !== 'map' && $prop !== 'filter') {
+            return null;
+        }
+        $argsNode = self::get($node, 'args');
+        $argsArr = is_array($argsNode) ? $argsNode : [];
+        if (count($argsArr) === 0) {
+            return null;
+        }
+        $arrowNode = $argsArr[0];
+        if ((!is_array($arrowNode) && !is_object($arrowNode)) || self::kind($arrowNode) !== 'arrow') {
+            return null;
+        }
+        return [$prop, self::get($callee, 'object'), $arrowNode];
+    }
+
+    /**
+     * Evaluate a nested `.map`/`.filter` callback call: evaluate the
+     * receiver, then invoke the arrow body once per element against a FRESH
+     * CHILD ENV (a copy of the parent env with the param(s) bound) --
+     * `$env` is passed by value here, and PHP arrays are copy-on-write, so
+     * mutating `$inner` never leaks back into the caller's `$env`. The
+     * arrow's 1st param binds the element, the 2nd (if present) binds the
+     * integer index -- mirrors Go's `evalArrayCallback`.
+     */
+    private static function evalArrayCallback(string $method, $objectNode, $arrowNode, array $env)
+    {
+        $arr = self::evaluate($objectNode, $env);
+        if (!self::isJsArray($arr)) {
+            return null;
+        }
+        $paramsNode = self::get($arrowNode, 'params');
+        $params = [];
+        foreach ((is_array($paramsNode) ? $paramsNode : []) as $p) {
+            $params[] = (string) $p;
+        }
+        $body = self::get($arrowNode, 'body');
+        $callCb = function ($item, int $index) use ($body, $params, $env) {
+            $inner = $env; // copy: fresh child scope per invocation
+            if (count($params) > 0) {
+                $inner[$params[0]] = $item;
+            }
+            if (count($params) > 1) {
+                $inner[$params[1]] = $index;
+            }
+            return self::evaluate($body, $inner);
+        };
+        if ($method === 'map') {
+            $out = [];
+            $i = 0;
+            foreach ($arr as $item) {
+                $out[] = $callCb($item, $i);
+                ++$i;
+            }
+            return $out;
+        }
+        $out = [];
+        $i = 0;
+        foreach ($arr as $item) {
+            if (self::truthy($callCb($item, $i))) {
+                $out[] = $item;
+            }
+            ++$i;
+        }
+        return $out;
+    }
+
+    /** `Array.prototype.join(sep?)` -- default separator `,`; a `null`
+     * element joins as `''`, not the string "null" (#2094). */
+    private static function evalJoin($obj, string $sep): string
+    {
+        if (!self::isJsArray($obj)) {
+            return '';
+        }
+        $parts = [];
+        foreach ($obj as $el) {
+            $parts[] = $el === null ? '' : self::toStringJs($el);
+        }
+        return implode($sep, $parts);
     }
 
     /** Decode a ParsedExpr JSON string and evaluate it. Mirrors the Go

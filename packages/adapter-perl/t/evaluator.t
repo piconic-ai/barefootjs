@@ -330,4 +330,92 @@ subtest 'map_items projects one result per element (no flatten)' => sub {
     is_deeply($mj, [ 'Ada', 'Grace' ], 'map_json decodes + projects');
 };
 
+# #2094: the evaluator widening lets a callback body (already evaluated here
+# for reduce/sort/filter/find/…) itself contain a nested `.map(cb)` /
+# `.filter(cb)` call — e.g. the #1938 blog-showcase
+# `.flatMap(p => p.tags.map(t => '#'+t))` projection body. Mirrors the Go
+# TestArrayCallback shapes.
+subtest 'nested .map / .filter callback calls (#2094)' => sub {
+    # item.tags.map(t => '#' + t)
+    my $map_call = {
+        kind    => 'call',
+        callee  => nmem(nmem(nid('item'), 'tags'), 'map'),
+        args    => [ {
+            kind   => 'arrow',
+            params => ['t'],
+            body   => nbin('+', nstr('#'), nid('t')),
+        } ],
+    };
+    is_deeply(
+        BarefootJS::Evaluator::evaluate($map_call, { item => { tags => [ 'go', 'perl' ] } }),
+        [ '#go', '#perl' ],
+        'nested .map: string-prefix projection',
+    );
+
+    # item.tags.filter(t => t.active)
+    my $filter_call = {
+        kind   => 'call',
+        callee => nmem(nmem(nid('item'), 'tags'), 'filter'),
+        args   => [ {
+            kind   => 'arrow',
+            params => ['t'],
+            body   => nmem(nid('t'), 'active'),
+        } ],
+    };
+    my $filtered = BarefootJS::Evaluator::evaluate($filter_call, {
+        item => { tags => [ { active => JSON::PP::true, n => 1 }, { active => JSON::PP::false, n => 2 } ] },
+    });
+    is_deeply([ map { $_->{n} } @$filtered ], [1], 'nested .filter: keeps only active');
+
+    # 2-param arrow (value, index): item.tags.map((t, i) => t.n + i)
+    my $indexed = {
+        kind   => 'call',
+        callee => nmem(nmem(nid('item'), 'tags'), 'map'),
+        args   => [ {
+            kind   => 'arrow',
+            params => ['t', 'i'],
+            body   => nbin('+', nmem(nid('t'), 'n'), nid('i')),
+        } ],
+    };
+    is_deeply(
+        BarefootJS::Evaluator::evaluate($indexed, { item => { tags => [ { n => 10 }, { n => 20 }, { n => 30 } ] } }),
+        [ 10, 21, 32 ],
+        'nested .map: 2-param arrow does not leak the index across sibling calls',
+    );
+
+    # .filter(...).length > 0 — the doc/#2038 motivating composed shape.
+    my $len_gt = {
+        kind => 'binary', op => '>',
+        left => nmem($filter_call, 'length'),
+        right => { kind => 'literal', value => 0, literalType => 'number' },
+    };
+    ok(BarefootJS::Evaluator::evaluate($len_gt, {
+        item => { tags => [ { active => JSON::PP::true }, { active => JSON::PP::false } ] },
+    }), '.filter(...).length > 0 composes: at least one active');
+    ok(!BarefootJS::Evaluator::evaluate($len_gt, {
+        item => { tags => [ { active => JSON::PP::false }, { active => JSON::PP::false } ] },
+    }), '.filter(...).length > 0 composes: none active is falsy');
+};
+
+# #2094: `.join(sep?)` — a sibling `array-method` alongside `.includes`.
+subtest 'array-method join (#2094)' => sub {
+    my $tags = nmem(nid('item'), 'tags');
+    my $join_default = { kind => 'array-method', method => 'join', object => $tags, args => [] };
+    is(BarefootJS::Evaluator::evaluate($join_default, { item => { tags => [ 'a', 'b' ] } }),
+        'a,b', 'no separator defaults to a comma');
+
+    my $join_custom = {
+        kind => 'array-method', method => 'join', object => $tags,
+        args => [ nstr('-') ],
+    };
+    is(BarefootJS::Evaluator::evaluate($join_custom, { item => { tags => [ 'a', 'b', 'c' ] } }),
+        'a-b-c', 'custom separator');
+
+    is(BarefootJS::Evaluator::evaluate($join_custom, { item => { tags => [] } }),
+        '', 'empty array joins to the empty string');
+
+    is(BarefootJS::Evaluator::evaluate($join_default, { item => { tags => [ 'a', undef, 'b' ] } }),
+        'a,,b', 'a null/undef element joins as empty, not the string "null"');
+};
+
 done_testing;

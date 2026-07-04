@@ -332,16 +332,21 @@ export function renderFlatMethod(
   emit: (e: ParsedExpr) => string,
 ): string {
   if (typeof depth === 'object') {
-    // Dynamic depth (#2094): the EMIT path is wired up in this phase so the
-    // shared `flatMethod` interface compiles everywhere, but the RUNTIME
-    // coercion (JS `ToIntegerOrInfinity`) for this backend is Phase 2 — the
-    // existing helper below still assumes a pre-normalised int depth (its
-    // `-1` argument means "flatten fully", the compile-time Infinity
-    // sentinel), so a dynamic depth that is negative, fractional, or
-    // itself `Infinity`-like won't match JS semantics until the runtime
-    // helper is updated to coerce it (see the `depthExpr` doc in
-    // expression-parser.ts and the Go reference implementation).
-    return `$bf.flat(${recv}, ${emit(depth.expr)})`
+    // Dynamic depth (#2094): routed to a SEPARATE runtime helper
+    // (`$bf.flat_dynamic`), not `$bf.flat`. The literal-depth path below
+    // already uses `-1` as a compile-time SENTINEL baked into the template
+    // source meaning "the source literally said `Infinity`". A genuinely
+    // dynamic depth that happens to evaluate to `-1` at render time means
+    // the OPPOSITE in real JS (`[1,[2]].flat(-1)` never recurses — same as
+    // `.flat(0)`). Since both paths would otherwise hand the same
+    // literal-looking argument to one shared helper, that helper couldn't
+    // tell which case it's in — so `flat_dynamic` performs its own
+    // `ToIntegerOrInfinity`-style coercion (truncate toward zero; negative
+    // -> 0; NaN/non-numeric -> 0; +Infinity or a huge finite value ->
+    // flatten fully) and then delegates to `flat`. See `sub flat_dynamic`
+    // in BarefootJS.pm and the Go reference (`FlatDynamicDepth`/
+    // `coerceFlatDepth` in bf.go).
+    return `$bf.flat_dynamic(${recv}, ${emit(depth.expr)})`
   }
   const d = depth === 'infinity' ? -1 : depth
   return `$bf.flat(${recv}, ${d})`

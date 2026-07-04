@@ -908,6 +908,111 @@ final class BarefootJS
         return $out;
     }
 
+    /**
+     * Coerce an arbitrary PHP value to `[float, ok]` mirroring JS
+     * `ToNumber`, for `flat_dynamic()`'s depth-coercion pipeline. `ok` is
+     * `false` for a shape `ToNumber` can't coerce meaningfully (`null`, or a
+     * non-numeric string) -- `coerceFlatDepth()` treats that the same as an
+     * actual `NaN` result (-> depth `0`), matching JS. Mirrors Go's
+     * `flatDepthToFloat` (adapter-go-template/runtime/bf.go).
+     *
+     * PHP-specific traps this deliberately avoids: PHP's `(int)`/`(float)`
+     * casts on a non-numeric string silently yield `0` rather than
+     * signalling failure (`(int)"Infinity"` is `0` in PHP), which would
+     * misclassify `"Infinity"` as a NaN-that-looks-like-0 instead of
+     * `+Infinity`; and PHP's `is_numeric()` returns `false` for
+     * `"Infinity"`/`"NaN"` (unlike JS `Number("Infinity")`), so those exact
+     * (case-sensitive, as JS spells them) spellings are checked explicitly
+     * BEFORE falling back to `is_numeric()` + `(float)` for ordinary
+     * numeric strings.
+     *
+     * @return array{0: float, 1: bool}
+     */
+    private static function flatDepthToFloat($depth): array
+    {
+        if ($depth === null) {
+            return [0.0, false];
+        }
+        if (is_int($depth) || is_float($depth)) {
+            return [(float) $depth, true];
+        }
+        if (is_bool($depth)) {
+            return [$depth ? 1.0 : 0.0, true];
+        }
+        if (is_string($depth)) {
+            $s = trim($depth);
+            if ($s === '') {
+                return [0.0, true]; // JS: Number("") is 0
+            }
+            if ($s === 'Infinity' || $s === '+Infinity') {
+                return [INF, true];
+            }
+            if ($s === '-Infinity') {
+                return [-INF, true];
+            }
+            if ($s === 'NaN') {
+                return [NAN, false]; // NaN input -> "not ok", like Go
+            }
+            if (is_numeric($s)) {
+                return [(float) $s, true];
+            }
+            return [0.0, false]; // not numeric -> NaN
+        }
+        return [0.0, false]; // array / object
+    }
+
+    /**
+     * JS `ToIntegerOrInfinity` coercion for `.flat(depth)`'s dynamic
+     * argument (#2094): truncate toward zero; NaN/non-numeric -> 0;
+     * negative -> 0; `+Infinity` or a huge finite value -> flatten fully
+     * (mapped to `flat()`'s existing `-1` "flatten fully" sentinel).
+     *
+     * Mirrors Go's `coerceFlatDepth` (adapter-go-template/runtime/bf.go) --
+     * see that function's doc for why `flat_dynamic()` cannot share
+     * `flat()`'s literal-depth entry point: a genuinely dynamic depth that
+     * evaluates to `-1` means "never recurse" in real JS
+     * (`[1,[2]].flat(-1)` behaves like `.flat(0)`) -- the OPPOSITE of what
+     * `flat()`'s `-1` argument means when it arrives from a *literal*
+     * `Infinity` in the source. Since both call sites would otherwise hand
+     * the same literal-looking `-1` to one shared function, that function
+     * cannot tell which case it's in, so the two paths must stay separate
+     * entry points.
+     */
+    private static function coerceFlatDepth($depth): int
+    {
+        [$f, $ok] = self::flatDepthToFloat($depth);
+        if (!$ok || is_nan($f)) {
+            return 0;
+        }
+        if ($f === INF) {
+            return -1; // flat()'s "flatten fully" sentinel
+        }
+        if ($f === -INF) {
+            return 0;
+        }
+        $trunc = $f >= 0 ? floor($f) : ceil($f); // truncate toward zero
+        if ($trunc < 0) {
+            return 0;
+        }
+        if ($trunc > 1_000_000) {
+            return -1; // huge finite depth ~= flatten fully
+        }
+        return (int) $trunc;
+    }
+
+    /**
+     * `Array.prototype.flat(depth)` where `$depth` is a genuinely dynamic
+     * value (#2094) -- e.g. a prop -- rather than a compile-time literal.
+     * Coerces `$depth` via JS `ToIntegerOrInfinity` (`coerceFlatDepth()`)
+     * then delegates to `flat()`. Deliberately a DISTINCT entry point from
+     * `flat()` rather than a smarter overload of it -- see
+     * `coerceFlatDepth()`'s docstring for why.
+     */
+    public function flat_dynamic($recv, $depth): array
+    {
+        return $this->flat($recv, self::coerceFlatDepth($depth));
+    }
+
     /** `Array.prototype.flatMap(fn)` field/self projection then flatten one
      * level. */
     public function flat_map($recv, string $keyKind, string $key): array

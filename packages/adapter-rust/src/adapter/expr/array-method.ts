@@ -326,16 +326,20 @@ export function renderFlatMethod(
   emit: (e: ParsedExpr) => string,
 ): string {
   if (typeof depth === 'object') {
-    // Dynamic depth (#2094): the EMIT path is wired up in this phase so the
-    // shared `flatMethod` interface compiles everywhere, but the RUNTIME
-    // coercion (JS `ToIntegerOrInfinity`) for this backend is Phase 2 — the
-    // existing helper below still assumes a pre-normalised int depth (its
-    // `-1` argument means "flatten fully", the compile-time Infinity
-    // sentinel), so a dynamic depth that is negative, fractional, or
-    // itself `Infinity`-like won't match JS semantics until the runtime
-    // helper is updated to coerce it (see the `depthExpr` doc in
-    // expression-parser.ts and the Go reference implementation).
-    return `bf.flat(${recv}, ${emit(depth.expr)})`
+    // Dynamic depth (#2094): routed to a DISTINCT runtime entry point,
+    // `bf.flat_dynamic`, rather than reusing `bf.flat`. `bf.flat`'s `depth`
+    // is a compile-time int baked directly into the template source, where
+    // `-1` is a SENTINEL meaning "the source literally wrote `Infinity`".
+    // A genuinely dynamic depth value that happens to evaluate to `-1` at
+    // render time means the OPPOSITE in real JS (`[1,[2]].flat(-1)` never
+    // recurses — same as `.flat(0)`). Since both call sites would otherwise
+    // hand the same literal-looking argument to one shared function, that
+    // function couldn't tell which case it's in — so it's two functions.
+    // `bf.flat_dynamic` coerces its depth argument at RENDER time via JS
+    // `ToIntegerOrInfinity` (truncate toward zero; negative → 0; NaN → 0;
+    // +Infinity / a huge finite value → flatten fully) and delegates to the
+    // same underlying flatten routine as `bf.flat`.
+    return `bf.flat_dynamic(${recv}, ${emit(depth.expr)})`
   }
   const d = depth === 'infinity' ? -1 : depth
   return `bf.flat(${recv}, ${d})`

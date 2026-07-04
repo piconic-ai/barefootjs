@@ -146,6 +146,7 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
             let depth = if args.len() > 1 { num::to_f64(&a(1)) as i64 } else { 1 };
             JsValue::Array(runtime::flat(a(0).as_array().unwrap_or(&[]), depth))
         }
+        "flat_dynamic" => JsValue::Array(runtime::flat_dynamic(a(0).as_array().unwrap_or(&[]), &a(1))),
         "join" => JsValue::String(runtime::join(&a(0), &a(1))),
         "arr" => JsValue::Array(args.to_vec()),
         "filter_truthy" => JsValue::Array(a(0).as_array().unwrap_or(&[]).iter().filter(|x| runtime::js_truthy(x)).cloned().collect()),

@@ -475,6 +475,49 @@ pub fn flat(items: &[JsValue], depth: i64) -> Vec<JsValue> {
     out
 }
 
+/// `.flat(depth)` where `depth` is a genuinely DYNAMIC runtime value (#2094)
+/// -- e.g. a prop, rather than a compile-time literal integer / `Infinity`.
+/// Coerces `depth` via JS `ToIntegerOrInfinity` (truncate toward zero;
+/// NaN/non-numeric -> 0; -Infinity -> 0; +Infinity or a huge finite value ->
+/// flatten fully) and delegates to [`flat`].
+///
+/// Deliberately a SEPARATE entry point from [`flat`], not a smarter overload
+/// of it: `flat`'s `depth` is a compile-time int baked directly into the
+/// template source, where `-1` is a SENTINEL meaning "the source literally
+/// wrote `Infinity`". A genuinely dynamic depth that happens to evaluate to
+/// `-1` at render time means the OPPOSITE in real JS (`[1,[2]].flat(-1)`
+/// never recurses -- same as `.flat(0)`). Since both call sites would
+/// otherwise hand the SAME literal-looking argument to one shared function,
+/// that function could not tell which case it's in -- so it must be two
+/// functions. Mirrors Go's `FlatDynamicDepth` / `coerceFlatDepth`
+/// (`packages/adapter-go-template/runtime/bf.go`).
+pub fn flat_dynamic(items: &[JsValue], depth: &JsValue) -> Vec<JsValue> {
+    flat(items, coerce_flat_depth(depth))
+}
+
+/// JS `ToIntegerOrInfinity` on a dynamic `.flat(depth)` argument, mapped
+/// onto [`flat`]'s int contract (`-1` = flatten fully). Reuses
+/// [`crate::evaluator::to_number`] for the `ToNumber` step (already
+/// JS-faithful, including string-literal coercion of `"Infinity"` /
+/// `"NaN"` via `num::looks_like_number` / `num::parse_number_literal`).
+fn coerce_flat_depth(depth: &JsValue) -> i64 {
+    let f = evaluator::to_number(depth);
+    if f.is_nan() {
+        return 0;
+    }
+    if f.is_infinite() {
+        return if f > 0.0 { -1 } else { 0 };
+    }
+    let trunc = f.trunc();
+    if trunc < 0.0 {
+        return 0;
+    }
+    if trunc > 1_000_000.0 {
+        return -1;
+    }
+    trunc as i64
+}
+
 pub fn flat_map(recv: &JsValue, key_kind: &str, key: &str) -> JsValue {
     let items = match recv.as_array() {
         Some(a) => a,
@@ -1133,6 +1176,11 @@ impl Object for BfInstance {
                 let depth = if matches!(a(1), JsValue::Null) { 1 } else { num::to_f64(a(1)) as i64 };
                 Ok(js_to_mj(&JsValue::Array(flat(a(0).as_array().unwrap_or(&[]), depth))))
             }
+            // Dynamic-depth `.flat(depth)` (#2094) -- `depth` is an arbitrary
+            // runtime value (not a compile-time literal), coerced here via
+            // JS `ToIntegerOrInfinity`. Deliberately a distinct entry point
+            // from "flat" above -- see `flat_dynamic`'s docstring.
+            "flat_dynamic" => Ok(js_to_mj(&JsValue::Array(flat_dynamic(a(0).as_array().unwrap_or(&[]), a(1))))),
             "flat_map" => Ok(js_to_mj(&flat_map(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or("")))),
             "flat_map_tuple" => {
                 let specs: Vec<(String, String)> = js_args[1..]

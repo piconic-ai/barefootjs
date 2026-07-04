@@ -811,6 +811,59 @@ sub flat ($self, $recv, $depth = 1) {
     return \@out;
 }
 
+# `Array.prototype.flat(depth)` with a DYNAMIC depth (#2094) — the depth is
+# itself an arbitrary runtime value (e.g. a prop), not a compile-time literal,
+# so it must be coerced with JS's `ToIntegerOrInfinity` before delegating to
+# `flat` above: truncate toward zero; negative -> 0; NaN / non-numeric -> 0;
+# +Infinity or a huge finite value -> flatten fully.
+#
+# Deliberately a SEPARATE entry point from `flat`, not a smarter version of
+# it: the literal-depth path's `-1` argument is a compile-time SENTINEL baked
+# into the template source, meaning "the source literally said `Infinity`". A
+# genuinely dynamic depth that happens to evaluate to `-1` at render time
+# means the OPPOSITE in real JS (`[1,[2]].flat(-1)` never recurses — same as
+# `.flat(0)`). Since both paths would otherwise hand the same literal-looking
+# argument to one shared function, that function couldn't tell which case
+# it's in — so the two stay separate. Mirrors Go's `FlatDynamicDepth` /
+# `coerceFlatDepth` in bf.go.
+sub flat_dynamic ($self, $recv, $depth) {
+    return $self->flat($recv, _coerce_flat_depth($depth));
+}
+
+# _coerce_flat_depth: JS `ToIntegerOrInfinity` for a dynamic `.flat(depth)`
+# argument, collapsed to `flat`'s int contract (`-1` == flatten fully).
+#
+# Perl's scalar type system blurs string/number duality, so `looks_like_number`
+# (already the codebase's ToNumber-style coercion check, see BarefootJS::
+# Evaluator's `_to_number`) is reused here rather than inventing a new
+# convention. `looks_like_number` on this Perl (5.38) already recognises the
+# strings "Infinity" / "-Infinity" / "NaN" as numeric (verified empirically:
+# `perl -MScalar::Util=looks_like_number -e 'print looks_like_number("Infinity")'`
+# prints 1), and `$str + 0` on those strings yields the corresponding Perl
+# non-finite double, so no extra string special-casing is needed here.
+sub _coerce_flat_depth ($depth) {
+    return 0 unless defined $depth;
+    my $f;
+    if (ref($depth) eq 'JSON::PP::Boolean') {
+        $f = $depth ? 1 : 0;
+    }
+    elsif (!ref($depth) && looks_like_number($depth)) {
+        $f = $depth + 0;
+    }
+    else {
+        # undef handled above; anything else non-numeric (a plain string
+        # that isn't a number, a HASH/ARRAY ref, ...) coerces via NaN.
+        return 0;
+    }
+    return 0 if $f != $f;              # NaN
+    return -1 if $f == 9**9**9;        # +Infinity -> flatten fully sentinel
+    return 0  if $f == -(9**9**9);     # -Infinity -> 0
+    my $trunc = int($f);               # Perl's int() truncates toward zero
+    return 0  if $trunc < 0;
+    return -1 if $trunc > 1_000_000;   # huge finite ~= flatten fully
+    return $trunc;
+}
+
 # `Array.prototype.flatMap(fn)` value-returning field projection
 # (#1448 Tier C) — map each element through a self / field projection,
 # then flatten one level. `field` reads a HASH-ref key (the raw JS prop
