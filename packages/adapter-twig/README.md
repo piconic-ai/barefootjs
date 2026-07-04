@@ -61,8 +61,8 @@ export default createConfig({
 
 `bf build` then emits `.twig` templates + client JS under `outDir`. A PHP
 host renders a component by constructing a `Twig\Environment` (with
-`autoescape: 'html'`, `strict_variables: false`, and a custom 'html'
-escaper matching Perl/Go/markupsafe's numeric-entity output — see the
-adapter header comment for why the default `htmlspecialchars` escaper
-diverges) over a `FilesystemLoader` pointed at the emitted templates,
-wiring in the PHP `TwigBackend` as the render backend.
+`autoescape: 'html'`, `strict_variables: false`) over a `FilesystemLoader`
+pointed at the emitted templates, wiring in the PHP `TwigBackend` as the
+render backend. Twig's default escaper emits `&quot;`/`&#039;` for `"`/`'`
+where Perl/Go/markupsafe emit the numeric `&#34;`/`&#39;` forms — see the
+adapter header comment for how that byte-form difference is handled.

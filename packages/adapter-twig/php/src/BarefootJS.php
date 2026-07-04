@@ -507,9 +507,23 @@ final class BarefootJS
     /** JS `String(v)` mirror: `null` renders as the empty string (not
      * "null") so an unset prop doesn't surface a literal "null"/"undefined"
      * in user-facing HTML (documented divergence, matches the Perl/Python
-     * ports). */
-    public function string($value): string
+     * ports).
+     *
+     * `\Twig\Markup` passes through UNCHANGED (object identity, not its
+     * string content): captured children / `render_child` output arrive at
+     * `{{ bf.string(...) }}` interpolation positions as Markup, and only the
+     * Markup instance survives Twig's autoescaper un-escaped. The Python
+     * port gets this for free (`markupsafe.Markup` is a `str` subclass, so
+     * `js_string` returns it via the string arm, safety intact); PHP's
+     * Markup is not a string, so the pass-through must be explicit here.
+     *
+     * @return string|\Twig\Markup
+     */
+    public function string($value)
     {
+        if ($value instanceof \Twig\Markup) {
+            return $value;
+        }
         if ($value === null) {
             return '';
         }
@@ -1174,10 +1188,16 @@ final class BarefootJS
      * look like numbers, else lexically. `null` coalesces to '' / 0. */
     private function compareSortKey($av, $bv, string $compareType): int
     {
+        // String comparisons below MUST use strcmp(), not PHP's `<=>`: PHP
+        // applies "smart" numeric-string comparison when both operands look
+        // numeric ("10" <=> "9" compares 10 > 9 numerically), which would
+        // silently make the 'string' compare_type behave like 'auto' for
+        // numeric-looking values -- see the matching note on
+        // Evaluator::relational().
         if ($compareType === 'string') {
             $a = $av === null ? '' : $this->string($av);
             $b = $bv === null ? '' : $this->string($bv);
-            return $a <=> $b;
+            return strcmp($a, $b) <=> 0;
         }
         if ($compareType === 'auto') {
             if ($this->isNumericLike($av) && $this->isNumericLike($bv)) {
@@ -1185,7 +1205,7 @@ final class BarefootJS
             }
             $a = $av === null ? '' : $this->string($av);
             $b = $bv === null ? '' : $this->string($bv);
-            return $a <=> $b;
+            return strcmp($a, $b) <=> 0;
         }
         // numeric
         $an = $av === null ? 0.0 : $this->numericValue($av);

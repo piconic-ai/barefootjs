@@ -21,7 +21,7 @@ namespace Barefoot;
  * The accepted subset and its semantics are documented in
  * spec/compiler.md ("ParsedExpr Evaluator Semantics") and pinned
  * isomorphically by the cross-language golden vectors
- * (packages/adapter-tests/helper-vectors/eval-vectors.json), shared with the
+ * (packages/adapter-tests/vectors/eval-vectors.json), shared with the
  * Go, Perl and Python evaluators -- same input -> same output.
  *
  * Node access: unlike Perl/Python (whose JSON decoders always produce a
@@ -392,8 +392,15 @@ final class Evaluator
     {
         // JS Abstract Relational Comparison: both strings -> compare by code
         // unit; otherwise coerce both to numbers (a NaN operand -> false).
+        // MUST use strcmp(), not PHP's `<=>`/`<` operators: PHP applies
+        // "smart" numeric-string comparison when both operands look
+        // numeric ("10" <=> "9" compares 10 > 9 numerically), which would
+        // silently defeat the eval-vectors.json pin that two numeric
+        // strings compare LEXICALLY under JS `<` (see the golden vector
+        // "two numeric strings compare lexically, not numerically").
+        // strcmp() always does a raw byte comparison.
         if (is_string($l) && is_string($r)) {
-            $c = $l <=> $r;
+            $c = strcmp($l, $r) <=> 0;
         } else {
             $ln = self::toNumber($l);
             $rn = self::toNumber($r);

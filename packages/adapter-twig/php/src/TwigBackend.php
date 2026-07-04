@@ -51,26 +51,33 @@ final class TwigBackend
     private $jsonEncoder;
 
     /**
-     * @param list<string> $paths Template directories (FilesystemLoader).
-     * @param Environment|null $env Pre-built Environment; when given, $paths
-     *   and $environmentOptions are ignored.
-     * @param callable|null $jsonEncoder Overrides the default canonical
-     *   (sorted-key) encoder.
-     * @param array<string, mixed> $environmentOptions Extra Twig\Environment
-     *   options, merged under the defaults below.
+     * Options-shaped constructor, mirroring the Python backend's
+     * `JinjaBackend(paths=[...], environment_options={...})` keyword style
+     * (PHP has no keyword arguments for arrays, so one assoc-array options
+     * bag is the canonical calling convention — the same shape the adapter's
+     * generated render harness and the integrations use).
+     *
+     * @param array{
+     *   paths?: list<string>,
+     *   env?: Environment|null,
+     *   json_encoder?: callable|null,
+     *   environment_options?: array<string, mixed>,
+     * } $options `paths`: template directories (FilesystemLoader);
+     *   `env`: pre-built Environment (when given, `paths` and
+     *   `environment_options` are ignored); `json_encoder`: overrides the
+     *   default canonical (sorted-key) encoder; `environment_options`:
+     *   extra Twig\Environment options, merged under the defaults below.
      */
-    public function __construct(
-        array $paths = [],
-        ?Environment $env = null,
-        ?callable $jsonEncoder = null,
-        array $environmentOptions = []
-    ) {
-        $this->jsonEncoder = $jsonEncoder ?? [self::class, 'defaultJsonEncoder'];
+    public function __construct(array $options = [])
+    {
+        $paths = $options['paths'] ?? [];
+        $env = $options['env'] ?? null;
+        $this->jsonEncoder = $options['json_encoder'] ?? [self::class, 'defaultJsonEncoder'];
         if ($env !== null) {
             $this->env = $env;
             return;
         }
-        $options = $environmentOptions + [
+        $options = ($options['environment_options'] ?? []) + [
             'autoescape' => 'html',
             'strict_variables' => false,
             'cache' => false,

@@ -52,7 +52,7 @@ export function P(props: { base: string; sort: string; tag: string }) {
   return <a href={queryHref(props.base, { sort: props.sort !== 'date' ? props.sort : undefined, tag: props.tag })}>x</a>
 }
 `)
-    expect(t).toContain("bf.query(base, bf.neq(sort, 'date'), 'sort', sort, 1, 'tag', tag)")
+    expect(t).toContain("bf.query(base, (bf.neq(sort, 'date')), 'sort', sort, 1, 'tag', tag)")
   })
 
   // A bare-value guard (`flag ? v : undefined`) is JS *string* truthiness —
@@ -69,7 +69,7 @@ export function P(props: { base: string; flag: string; val: string }) {
   return <a href={queryHref(props.base, { q: props.flag ? props.val : undefined })}>x</a>
 }
 `)
-    expect(t).toContain("bf.query(base, bf.neq(flag, ''), 'q', val)")
+    expect(t).toContain("bf.query(base, (bf.neq(flag, '')), 'q', val)")
   })
 
   // An array value (`{ tag: props.tags }`) lowers to the bare receiver

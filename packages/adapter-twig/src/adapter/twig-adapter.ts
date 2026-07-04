@@ -25,10 +25,15 @@
  *   Jinja macro children capture          → Twig `{% set NAME %}…{% endset %}` set-block (same construct; see "Children capture" below)
  *
  * The render Twig `Environment` this adapter's output assumes:
- * `FilesystemLoader`, `autoescape: 'html'`, `strict_variables: false`, and a
- * CUSTOM 'html' escaper (numeric-quote entities `&#34;`/`&#39;`, matching
- * Perl/Go/markupsafe byte-for-byte — Twig's default `htmlspecialchars`
- * emits `&quot;`/`&#039;`, which would diverge). Unlike Jinja, Twig needs no
+ * `FilesystemLoader`, `autoescape: 'html'`, `strict_variables: false`. Note
+ * Twig's default `htmlspecialchars`-based escaper emits `&quot;`/`&#039;`
+ * for `"`/`'`, where Perl/Go/markupsafe emit the numeric forms
+ * `&#34;`/`&#39;` — a byte-form difference the PHP runtime side canonicalizes
+ * at the conformance-harness layer rather than a custom Twig escaper (see
+ * `packages/adapter-twig/php/`); this adapter's own HTML-attribute escaping
+ * for STATIC text it inlines directly (`escapeAttrText`, e.g. `style="..."`
+ * literal segments) still emits the numeric forms for parity with the other
+ * adapters' static-text escaping. Unlike Jinja, Twig needs no
  * `undefined=ChainableUndefined` equivalent — `strict_variables: false`
  * alone makes an unset template var resolve to `null` for every purpose this
  * adapter cares about (member/index access, `is defined`, `??`). Templates

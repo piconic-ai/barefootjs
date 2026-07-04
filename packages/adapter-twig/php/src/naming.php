@@ -21,24 +21,35 @@ namespace Barefoot;
  * `BarefootJS::render_child`'s prop passing) is mangled through this
  * function first, so a prop literally named e.g. `for` or `filter` doesn't
  * collide with Twig syntax.
+ *
+ * This file is registered as a composer "files" autoload entry (loaded
+ * unconditionally on every request via a plain `require`, not
+ * `require_once`) AND is `require_once`'d directly by
+ * `php/tests/_harness.php::bf_require_runtime()` for the Twig-independent
+ * test files. `define()`/`function_exists()` guards (rather than a bare
+ * top-level `const`/`function`, which cannot appear inside a conditional in
+ * PHP) make loading this file twice -- regardless of which mechanism gets
+ * there first -- a safe no-op instead of a "Cannot redeclare" fatal error.
  */
 
-/**
- * @var list<string> TWIG_RESERVED_WORDS
- */
-const TWIG_RESERVED_WORDS = [
-    'and', 'or', 'not', 'in', 'is', 'matches', 'starts', 'ends', 'if', 'else', 'elseif',
-    'for', 'set', 'true', 'false', 'null', 'none', 'with', 'block', 'macro', 'import',
-    'from', 'as', 'extends', 'include', 'embed', 'use', 'filter', 'do', 'then', 'endif',
-    'endfor', 'endset', 'defined', 'same', 'divisible', 'constant', 'even', 'odd', 'iterable',
-];
+if (!defined(__NAMESPACE__ . '\\TWIG_RESERVED_WORDS')) {
+    /** @var list<string> TWIG_RESERVED_WORDS */
+    define(__NAMESPACE__ . '\\TWIG_RESERVED_WORDS', [
+        'and', 'or', 'not', 'in', 'is', 'matches', 'starts', 'ends', 'if', 'else', 'elseif',
+        'for', 'set', 'true', 'false', 'null', 'none', 'with', 'block', 'macro', 'import',
+        'from', 'as', 'extends', 'include', 'embed', 'use', 'filter', 'do', 'then', 'endif',
+        'endfor', 'endset', 'defined', 'same', 'divisible', 'constant', 'even', 'odd', 'iterable',
+    ]);
+}
 
-/**
- * Mangle a JS identifier (prop name, signal getter, loop param, ...) into a
- * Twig-safe variable name: reserved words get a trailing `_` suffix,
- * everything else passes through unchanged.
- */
-function twig_ident(string $name): string
-{
-    return in_array($name, TWIG_RESERVED_WORDS, true) ? $name . '_' : $name;
+if (!function_exists(__NAMESPACE__ . '\\twig_ident')) {
+    /**
+     * Mangle a JS identifier (prop name, signal getter, loop param, ...)
+     * into a Twig-safe variable name: reserved words get a trailing `_`
+     * suffix, everything else passes through unchanged.
+     */
+    function twig_ident(string $name): string
+    {
+        return in_array($name, TWIG_RESERVED_WORDS, true) ? $name . '_' : $name;
+    }
 }
