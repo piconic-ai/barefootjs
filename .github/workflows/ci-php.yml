@@ -1,0 +1,110 @@
+name: CI — PHP (Twig) Adapter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-twig/**'
+      - 'packages/adapter-tests/**'
+      - 'integrations/php/**'
+      - '.github/workflows/ci-php.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-twig/**'
+      - 'packages/adapter-tests/**'
+      - 'integrations/php/**'
+      - '.github/workflows/ci-php.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      # ubuntu-latest ships PHP 8.3+ and Composer; the runtime requires
+      # php >= 8.2 and its only dependency is twig/twig (test_render.php
+      # skips gracefully without it — installed here so it runs for real).
+      - name: Install Twig (Composer)
+        run: composer install --no-interaction --working-dir=packages/adapter-twig/php
+
+      - name: Run PHP runtime unit tests
+        # Includes the golden-vector conformance harness
+        # (test_helper_vectors.php, test_eval_vectors.php; see
+        # spec/template-helpers.md) plus the live Twig render test
+        # (test_render.php).
+        run: php packages/adapter-twig/php/tests/run.php
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/twig' build
+
+      # The conformance suite compiles the shared IR fixtures, then renders
+      # the emitted Twig templates through real Twig + the PHP BarefootJS
+      # runtime (it skips gracefully when `php` or twig/twig is absent —
+      # installed above so it runs for real).
+      - name: Run unit tests (incl. live Twig render + conformance)
+        run: bun test packages/adapter-twig
+
+  e2e-php:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/twig' build
+
+      - name: Build integrations/php
+        run: cd integrations/php && bun run build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          # Key on package.json (committed, deterministic) — not bun.lock
+          # which is gitignored and re-solved per run.
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Run integrations/php E2E tests
+        run: cd integrations/php && bun run test:e2e
+
+      - name: Upload Playwright report (integrations/php)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-integrations-php
+          path: integrations/php/playwright-report/
+          retention-days: 30

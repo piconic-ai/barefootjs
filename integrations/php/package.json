@@ -1,0 +1,27 @@
+{
+  "name": "barefootjs-php-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts && composer install --no-interaction --no-progress",
+    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "dev": "PHP_CLI_SERVER_WORKERS=8 BASE_PATH=/integrations/php PORT=3013 php -S 0.0.0.0:3013 index.php",
+    "deploy": "bun run build && wrangler deploy",
+    "test:e2e": "bunx playwright test",
+    "test:e2e:ui": "bunx playwright test --ui",
+    "clean": "rm -rf dist lib vendor composer.lock"
+  },
+  "dependencies": {
+    "@barefootjs/client": "workspace:*",
+    "@barefootjs/router": "workspace:*"
+  },
+  "devDependencies": {
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/twig": "workspace:*",
+    "@cloudflare/containers": "^0.3.2",
+    "@cloudflare/workers-types": "^4",
+    "@playwright/test": "^1.41.0",
+    "bun-types": "^1.1.0",
+    "wrangler": "^4"
+  }
+}

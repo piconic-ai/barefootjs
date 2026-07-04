@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the PHP integration. index.php and the host-built
+# dist/ + lib/ + vendor/ are bind-mounted in. There is no reloader to
+# restart here (unlike Flask's Werkzeug reloader) -- PHP's built-in server
+# re-executes index.php fresh on every request, and the Twig Environment is
+# built with `cache: false` / `auto_reload: true` in dev (see index.php's
+# `$DEV` flag), so edits to index.php or the compiled templates are picked
+# up on the very next request with no restart needed.
+
+FROM php:8.4-cli
+
+WORKDIR /workspace/integrations/php
+
+EXPOSE 3013
+
+ENV BASE_PATH=/integrations/php
+ENV PORT=3013
+
+CMD ["sh", "-c", "PHP_CLI_SERVER_WORKERS=8 php -S 0.0.0.0:${PORT} index.php"]

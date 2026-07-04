@@ -86,3 +86,7 @@ integrations/*/lib
 # Python
 __pycache__/
 *.pyc
+
+# PHP (Composer)
+vendor/
+composer.lock

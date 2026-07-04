@@ -16,6 +16,7 @@
  *   :4000/integrations/sinatra/*     → sinatra service
  *   :4000/integrations/rails/*       → rails service
  *   :4000/integrations/axum/*        → axum service
+ *   :4000/integrations/php/*         → php service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
@@ -53,6 +54,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/sinatra',     target: process.env.SINATRA_TARGET     ?? 'http://sinatra:3010',     label: 'Sinatra (Ruby)' },
   { prefix: '/integrations/rails',       target: process.env.RAILS_TARGET       ?? 'http://rails:3011',       label: 'Rails (Ruby)' },
   { prefix: '/integrations/axum',        target: process.env.AXUM_TARGET        ?? 'http://axum:3012',        label: 'Axum (Rust)' },
+  { prefix: '/integrations/php',         target: process.env.PHP_TARGET         ?? 'http://php:3013',         label: 'PHP (Twig)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'
