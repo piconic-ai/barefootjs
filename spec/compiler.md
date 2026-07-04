@@ -855,7 +855,22 @@ error[BF021]: Expression cannot be compiled to marked template: Higher-order met
    = help: Add /* @client */ to evaluate this expression on the client only
 ```
 
-**Sort comparators**: The comparator body is parsed into a structured `SortComparator` (a `keys: SortKey[]` list). A body is split on top-level `||` into one comparison key per operand (multi-key tie-breaks), and each operand (leaf) must match one of the accepted shapes below. Comparators outside the catalogue — function references (`sort(myCmp)`), multi-statement / local-var block bodies, and `localeCompare(b, locale, opts)` — trigger BF021.
+**Sort comparators**: The comparator body is parsed into a structured `SortComparator` (a `keys: SortKey[]` list). A body is split on top-level `||` into one comparison key per operand (multi-key tie-breaks), and each operand (leaf) must match one of the accepted shapes below. Comparators outside the catalogue — multi-statement / local-var block bodies and `localeCompare(b, locale, opts)` — trigger BF021.
+
+**Function-reference comparators** (`sort(myCmp)`, #2090): a bare identifier callback is resolved ONE HOP through the same scope machinery the compiler uses for cva-style `className` consts — a `const myCmp = (a, b) => …` or `function myCmp(a, b) {…}` declared anywhere in the same file (module scope or component scope; a component-scope declaration shadows a module-scope one of the same name) — and the resolved arrow is fed through the identical catalogue below, so a resolved reference compiles byte-for-byte like an inline comparator. Two residual refusals still trigger BF021:
+
+```
+error[BF021]: Expression cannot be compiled to marked template: Sort comparator 'myCmp' could not be resolved to a local function — declare it in the same file or inline it.
+
+  --> src/components/List.tsx:9:30
+   |
+ 9 |             {items().sort(myCmp).map(t => (
+   |                           ^^^^^
+   |
+   = help: Add /* @client */ to evaluate this expression on the client only
+```
+
+— `myCmp` is imported, a prop, or otherwise has no local `const`/`function` binding in the file (alias chains like `const c2 = c1` are also NOT followed — only one hop is resolved); or the identifier resolves to a local binding whose body is off-catalogue, in which case the message names the comparator and matches the inline-comparator refusal:
 
 ```
 error[BF021]: Expression cannot be compiled to marked template: Sort comparator 'myCmp' is not a supported shape.
@@ -878,6 +893,7 @@ error[BF021]: Expression cannot be compiled to marked template: Sort comparator 
 - `toSorted((a, b) => b.priority - a.priority)` → descending by `priority`
 - `sort((a, b) => a.price - b.price || a.name.localeCompare(b.name))` → multi-key: `price` asc, ties broken by `name`
 - `sort((a, b) => { return a.price - b.price })` → single-`return` block body (unwrapped to the returned comparator)
+- `sort(byPrice)` / `toSorted(byPrice)` where `byPrice` is a same-file `const`/`function` comparator (#2090) → resolved one hop, then compiled exactly like the equivalent inline arrow
 - `filter(...).sort(...).map(...)` → filter + sort chaining
 - `sort(...).filter(...).map(...)` → sort + filter chaining
 
@@ -909,7 +925,7 @@ This applies equally to **attribute bindings**, not just child/text expressions:
 The Go / Mojo / Xslate / Erb template adapters lower a finite, growing catalogue of `Array.prototype` / `String.prototype` methods (see "Currently lowered" in the now-closed origin catalogue issue [#1448](https://github.com/piconic-ai/barefootjs/issues/1448), whose residual gaps are folded into the master known-limitations catalog [#2069](https://github.com/piconic-ai/barefootjs/issues/2069), the v2 successor of #1395). The shapes below are the residual gaps. They are intentional — each is either covered by an escape hatch or carries a cross-adapter design barrier — and `/* @client */` (or lifting the expression into an event handler / `createEffect`, where full JS is available) is the workaround for all of them.
 
 - **`.flat` / `.flatMap` richer transforms (BF101).** Value-returning `.flat(depth?)` and `.flatMap` lower for the structured catalogue: `flat` with a literal depth (`FlatDepth`), and `flatMap` self / field / array-literal-tuple-of-leaves projections (`FlatMapOp`) — `i => i`, `i => i.field`, `i => [i.a, i.b]`. Refused: a non-literal `.flat()` depth, and `.flatMap` callbacks with a transform body (arithmetic, calls, computed / deep access, **literal** array elements, the spread form) or the 2-arg `flatMap(fn, thisArg)`. The **JSX-returning** `.flatMap` lowers separately as an `IRLoop` and is unaffected.
-- **Sort comparator follow-ups (BF021).** Function-reference comparators (`sort(myCmp)` — needs scope resolution; inline the comparator instead) and `localeCompare(b, locale, opts)`. The latter is effectively won't-fix for byte-equal SSR: Go (`golang.org/x/text/collate`) and Perl (`Unicode::Collate`) collation cannot be guaranteed byte-equal to each other or to the JS / CSR path, which breaks the three-adapter parity contract.
+- **Sort comparator follow-ups (BF021).** `localeCompare(b, locale, opts)` is effectively won't-fix for byte-equal SSR: Go (`golang.org/x/text/collate`) and Perl (`Unicode::Collate`) collation cannot be guaranteed byte-equal to each other or to the JS / CSR path, which breaks the three-adapter parity contract. Function-reference comparators (`sort(myCmp)`) now resolve (#2090) when `myCmp` is a same-file `const`/`function` — the residual gap is an imported or aliased comparator (`import { myCmp } from './cmp'`, or `const c2 = c1`), which still needs `/* @client */` or inlining.
 - **String methods out of scope.** `.charAt`, `.charCodeAt`, `.codePointAt`, `.normalize` (rarely needed in template position — compose with `String(...)` if required) and the iterator forms (`@@iterator`, `matchAll`, which would need synthetic IR).
 - **Mutating array methods (Tier D).** `.push` / `.pop` / `.splice` / `.fill` / … have no template-level meaning (SSR renders a snapshot); they only appear in client-runtime callbacks, which never reach the lowering path.
 

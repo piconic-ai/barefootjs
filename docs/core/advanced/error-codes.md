@@ -141,10 +141,18 @@ Simple subtraction: `(a, b) => a.field - b.field`:
 // ✅ SSR-compilable
 {items().sort((a, b) => a.price - b.price).map(...)}     // ascending
 {items().toSorted((a, b) => b.date - a.date).map(...)}   // descending
+{items().sort((a, b) => { return a.price - b.price }).map(...)}     // single-return block body
+{items().sort((a, b) => a.name.localeCompare(b.name)).map(...)}     // zero-arg localeCompare
 
-// ❌ BF021 — block bodies, localeCompare, ternary operators, etc. are not supported
-{items().sort((a, b) => { return a.price - b.price }).map(...)}
-{items().sort((a, b) => a.name.localeCompare(b.name)).map(...)}
+// A bare identifier reference to a same-file const/function comparator
+// resolves one hop and compiles like the inline arrow above (#2090):
+const byPrice = (a, b) => a.price - b.price
+{items().sort(byPrice).map(...)}
+
+// ❌ BF021 — locale/options localeCompare, and an unresolved comparator
+// (imported, a prop, or an alias chain) are not supported
+{items().sort((a, b) => a.name.localeCompare(b.name, 'ja', { numeric: true })).map(...)}
+{items().sort(importedCmp).map(...)}
 ```
 
 #### Workaround

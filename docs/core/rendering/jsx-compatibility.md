@@ -76,7 +76,7 @@ return <div>...</div>
 ))}
 ```
 
-Supported comparator shapes: `(a, b) => a - b`, `(a, b) => a.field - b.field`, `(a, b) => a.localeCompare(b)`, `(a, b) => a.field.localeCompare(b.field)`, relational-ternary returns (`(a, b) => a.field > b.field ? 1 : -1`, including the 3-way `a < b ? -1 : a > b ? 1 : 0` form), and any of these `||`-chained for multi-key tie-breaks. A single-`return` block body (`(a, b) => { return a.field - b.field }`) works too. Reverse the operands (or the ternary sign) for descending order. Other shapes — function references (`sort(myCmp)`), multi-statement block bodies, and `localeCompare(b, locale, opts)` — produce a compile error; use `/* @client */` in that case.
+Supported comparator shapes: `(a, b) => a - b`, `(a, b) => a.field - b.field`, `(a, b) => a.localeCompare(b)`, `(a, b) => a.field.localeCompare(b.field)`, relational-ternary returns (`(a, b) => a.field > b.field ? 1 : -1`, including the 3-way `a < b ? -1 : a > b ? 1 : 0` form), and any of these `||`-chained for multi-key tie-breaks. A single-`return` block body (`(a, b) => { return a.field - b.field }`) works too. Reverse the operands (or the ternary sign) for descending order. A bare identifier reference to a same-file `const`/`function` comparator (`sort(byPrice)`) resolves one hop and compiles the same as the inline arrow. Other shapes — multi-statement block bodies, `localeCompare(b, locale, opts)`, and an unresolved reference (imported, a prop, or an alias chain like `const c2 = c1`) — produce a compile error; use `/* @client */` in that case.
 
 
 ## Event Handling
@@ -107,7 +107,8 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 | `.filter()` with `function` keyword callback | works | **BF101** |
 | `.reduce()`, `.forEach()`, `.flatMap()` | works | **BF101** |
 | Nested higher-order in filter predicate (`x => x.tags.filter(...).length > 0`) | works | **BF101** |
-| Sort comparator that's a function reference, multi-statement block body, or `localeCompare(b, locale, opts)` | **BF021** (all adapters) | **BF021** |
+| Sort comparator that's a multi-statement block body or `localeCompare(b, locale, opts)` | **BF021** (all adapters) | **BF021** |
+| Sort comparator that's a function reference to an imported/prop identifier, or an alias chain (`const c2 = c1`) | **BF021** (all adapters) | **BF021** |
 | `typeof` in a filter predicate | **BF021** (all adapters) | **BF021** |
 
 `BF021` is raised at the IR layer and applies to every adapter. `BF101` is raised by adapters that can't lower the expression to their template language. Either way, add [`/* @client */`](./client-directive.md) to opt into client-only evaluation and suppress the error.
@@ -156,7 +157,7 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 
 ### Patterns that error on all adapters
 
-**Unsupported sort comparators** (imperative block bodies, function references):
+**Unsupported sort comparators** (imperative block bodies, unresolved function references):
 
 A value-producing block body normalizes to an expression — pure `const`
 bindings inline (let-inline) and a value-producing `if` / early `return`
@@ -180,6 +181,24 @@ Only a genuinely imperative comparator — one that re-assigns a local, loops, o
 
 // ✅ Use /* @client */
 {/* @client */ items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map(item => (
+  <Item key={item.id} item={item} />
+))}
+```
+
+A same-file `const`/`function` comparator reference resolves one hop and
+compiles (see the "Sort comparators" section above); an **imported** or
+**aliased** reference does not — the compiler follows the identifier back
+only one binding, so it can't see through a re-export or `const c2 = c1`:
+
+```tsx
+// ❌ BF021 — `byPrice` is imported, not declared in this file
+import { byPrice } from './comparators'
+{items().sort(byPrice).map(item => (
+  <Item key={item.id} item={item} />
+))}
+
+// ✅ Use /* @client */, or inline / re-declare the comparator locally
+{/* @client */ items().sort(byPrice).map(item => (
   <Item key={item.id} item={item} />
 ))}
 ```

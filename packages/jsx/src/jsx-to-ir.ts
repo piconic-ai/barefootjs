@@ -35,7 +35,8 @@ import {
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, type ParsedExpr } from './expression-parser.ts'
-import type { IRLoopSort } from './types.ts'
+import type { IRLoopSort, FunctionInfo } from './types.ts'
+import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
 import { containsReactiveExpression } from './reactivity-checker.ts'
@@ -2441,35 +2442,57 @@ type SortExtractionResult = {
  * (eval-first) and the client's JS round-trip. Accepted catalogue: subtraction
  * (`a.f - b.f`, `a - b`, reverse for desc), `.localeCompare`, and the
  * relational-ternary sign forms; any of them `||`-chained for multi-key.
+ *
+ * A bare identifier callback (`.sort(byPrice)`, #2090) is resolved one hop
+ * through {@link resolveSortComparatorIdentifier} — a module- or
+ * component-scope `const byPrice = (a, b) => …` or `function byPrice(a, b)
+ * {…}` — before falling into the same arrow + catalogue gate below, so a
+ * resolved reference is byte-for-byte equivalent to inlining it. Alias
+ * chains (`const c2 = c1`) and imported/prop identifiers are NOT followed —
+ * they surface a distinct "could not be resolved" BF021.
  */
 function extractSortComparator(
   callback: ts.Expression,
   _method: 'sort' | 'toSorted',
   ctx: TransformContext
 ): SortExtractionResult {
-  const unsupported = (): SortExtractionResult => {
-    // Surface the OUTER callback source — users see the string they wrote.
-    const raw = ctx.getJS(callback)
-    return {
-      result: null,
-      unsupportedReason:
-        `Sort comparator '${raw}' is not a supported shape. Accepted:\n` +
-        `  (a, b) => a - b\n` +
-        `  (a, b) => a.field - b.field\n` +
-        `  (a, b) => a.localeCompare(b)\n` +
-        `  (a, b) => a.field.localeCompare(b.field)\n` +
-        `  (a, b) => a.field > b.field ? 1 : a.field < b.field ? -1 : 0\n` +
-        `  any of the above '||'-chained for multi-key tie-breaks\n` +
-        `(reverse the operands for descending order).`,
+  // Surface the OUTER callback source — users see the string they wrote
+  // (for an identifier callback, `ctx.getJS` returns just the bare name).
+  const outerRaw = ctx.getJS(callback)
+  const unsupported = (): SortExtractionResult => ({
+    result: null,
+    unsupportedReason:
+      `Sort comparator '${outerRaw}' is not a supported shape. Accepted:\n` +
+      `  (a, b) => a - b\n` +
+      `  (a, b) => a.field - b.field\n` +
+      `  (a, b) => a.localeCompare(b)\n` +
+      `  (a, b) => a.field.localeCompare(b.field)\n` +
+      `  (a, b) => a.field > b.field ? 1 : a.field < b.field ? -1 : 0\n` +
+      `  any of the above '||'-chained for multi-key tie-breaks\n` +
+      `(reverse the operands for descending order).`,
+  })
+
+  let resolvedNode: ts.Expression = callback
+  if (ts.isIdentifier(callback)) {
+    const resolved = resolveSortComparatorIdentifier(callback.text, ctx)
+    if (!resolved) {
+      return {
+        result: null,
+        unsupportedReason:
+          `Sort comparator '${outerRaw}' could not be resolved to a local function — ` +
+          `declare it in the same file or inline it.`,
+      }
     }
+    resolvedNode = resolved
   }
-  if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback)) {
+
+  if (!ts.isArrowFunction(resolvedNode) && !ts.isFunctionExpression(resolvedNode)) {
     return {
       result: null,
       unsupportedReason: 'Sort comparator must be an arrow function or function expression',
     }
   }
-  const arrow = tsNodeToParsedExpr(callback)
+  const arrow = tsNodeToParsedExpr(resolvedNode)
   if (arrow.kind !== 'arrow' || arrow.params.length !== 2) return unsupported()
   // Gate on the same catalogue the localeCompare fallback recovers, so the
   // hoist decision (and thus the SSR/client split) is byte-for-byte unchanged.
@@ -2482,6 +2505,35 @@ function extractSortComparator(
       raw: stringifyParsedExpr(arrow.body),
     },
   }
+}
+
+/**
+ * Resolve a bare-identifier sort comparator callback (`.sort(byPrice)`,
+ * #2090) to its underlying arrow / function-expression node, ONE HOP only
+ * — no alias chains (`const c2 = c1` is not followed; `c2` resolves to the
+ * identifier `c1`, not a function, and is left unresolved).
+ *
+ * Tries a `const` binding first (`findLocalConst`, shadowing-aware: inner
+ * component-scope wins over module scope), then a `function` declaration
+ * (`ctx.analyzer.localFunctions`, same shadowing preference via
+ * `findLocalFunction`). Returns null when the name doesn't resolve to a
+ * local arrow / function-expression — covers a non-function const, an
+ * import, a prop, or a name with no local binding at all. The caller
+ * surfaces BF021 either way; the specific message (off-catalogue vs.
+ * unresolved) is decided by the caller, not here.
+ */
+function resolveSortComparatorIdentifier(name: string, ctx: TransformContext): ts.Expression | null {
+  const constInfo = findLocalConst(name, ctx)
+  if (constInfo) {
+    const ast = parseConstInitializer(constInfo)
+    if (ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast))) return ast
+  }
+  const fnInfo = findLocalFunction(name, ctx)
+  if (fnInfo) {
+    const ast = parseFunctionInfoAsExpr(fnInfo)
+    if (ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast))) return ast
+  }
+  return null
 }
 
 /**
@@ -4292,6 +4344,22 @@ function findLocalConst(name: string, ctx: TransformContext) {
 }
 
 /**
+ * Resolve a `function` declaration name with the same shadowing-aware
+ * lookup as {@link findLocalConst} — a component-scope declaration wins
+ * over a module-scope one of the same name, and among several
+ * component-scope declarations the last in source order wins.
+ *
+ * Returns undefined when no local function matches.
+ */
+function findLocalFunction(name: string, ctx: TransformContext) {
+  const matches = ctx.analyzer.localFunctions.filter(f => f.name === name)
+  if (matches.length === 0) return undefined
+  const fnScoped = matches.filter(f => !f.isModule)
+  const pool = fnScoped.length > 0 ? fnScoped : matches
+  return pool[pool.length - 1]
+}
+
+/**
  * Detect a PascalCase JSX tag that is really a *dynamic tag* local
  * (`const Tag = children.tag`) rather than a component reference.
  *
@@ -4471,6 +4539,59 @@ function parseConstInitializerImpl(c: { value?: string }): ts.Expression | null 
 /** Get text for a node living in any source file (synthetic or otherwise). */
 function astText(node: ts.Node): string {
   return node.getText(node.getSourceFile())
+}
+
+/**
+ * Re-parse a `FunctionInfo` (a `function foo(...) {...}` declaration
+ * collected by the analyzer) into an anonymous `ts.FunctionExpression`, for
+ * the same reason `parseConstInitializer` re-parses a const's initializer
+ * text — the analyzer stores source text, not a live AST node tied to
+ * `ctx.sourceFile`.
+ *
+ * Wraps as `const __bf_resolve_fn__ = function(params) body` (an
+ * EXPRESSION position) rather than reparsing a standalone `function foo() {}`
+ * statement, because `convertNode` in expression-parser.ts only recognizes
+ * `ts.isArrowFunction` / `ts.isFunctionExpression` — not
+ * `ts.isFunctionDeclaration`. The returned node's parameters/body are then
+ * structurally identical to a function-expression sort comparator, so it
+ * flows through the existing `tsNodeToParsedExpr` → `sortComparatorFromArrow`
+ * path unchanged. Uses `typedParams`/`typedBody` when present (verbatim
+ * source, may carry type annotations that don't affect `ts.isIdentifier(p.name)`
+ * checks downstream) and falls back to reconstructing from `params`/`body`.
+ *
+ * Returns null when the source doesn't parse cleanly (e.g. no body).
+ * Memoized per `FunctionInfo` object identity — mirrors
+ * `constInitializerCache`.
+ */
+const functionInfoExprCache = new WeakMap<object, ts.Expression | null>()
+
+function parseFunctionInfoAsExpr(fn: FunctionInfo): ts.Expression | null {
+  const cached = functionInfoExprCache.get(fn as object)
+  if (cached !== undefined) return cached
+  const result = parseFunctionInfoAsExprImpl(fn)
+  functionInfoExprCache.set(fn as object, result)
+  return result
+}
+
+function parseFunctionInfoAsExprImpl(fn: FunctionInfo): ts.Expression | null {
+  if (!fn.body) return null
+  const params = fn.typedParams !== undefined
+    ? fn.typedParams
+    : fn.params.map(formatParamWithType).join(', ')
+  const body = fn.typedBody ?? fn.body
+  const wrapped = `const __bf_resolve_fn__ = function(${params}) ${body}`
+  const sf = ts.createSourceFile(
+    '__bf_resolve_fn.ts',
+    wrapped,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TS,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  const decl = stmt.declarationList.declarations[0]
+  if (!decl?.initializer) return null
+  return decl.initializer
 }
 
 /**
