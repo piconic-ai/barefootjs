@@ -67,15 +67,16 @@ jobs:
           bun run --filter '@barefootjs/client' build
 
       - name: Run unit tests
-        parallel:
-          - name: client
-            run: bun test packages/client
-          - name: jsx
-            run: bun test packages/jsx
-          - name: test-pkg
-            run: bun test packages/test
-          - name: adapter-tests
-            run: bun test packages/adapter-tests
+        run: |
+          bun test packages/client & pids+=($!)
+          bun test packages/jsx & pids+=($!)
+          bun test packages/test & pids+=($!)
+          bun test packages/adapter-tests & pids+=($!)
+          status=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || status=1
+          done
+          exit $status
 
   test-ui:
     runs-on: ubuntu-latest
