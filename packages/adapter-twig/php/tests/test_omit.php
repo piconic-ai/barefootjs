@@ -9,9 +9,11 @@ declare(strict_types=1);
  * (`twig-adapter.ts`'s `renderLoop`): each loop iteration binds `rest` to
  * `bf.omit(item, [excludeKeys])`, a TRUE residual hash (every key of the
  * item except the ones the pattern destructured explicitly), not an alias
- * of the whole item. No JS/Perl/Python counterpart -- this helper is
- * Twig-only, since Twig (unlike those hosts) has no bareword-key hash
- * literal it could use to materialize the residual inline.
+ * of the whole item. Every template-adapter runtime ships the same helper
+ * under the same contract (#2087 Phase B: Go `bf_omit`, shared Perl
+ * `BarefootJS::omit`, Python/Rust `bf.omit`) -- except ERB, which uses
+ * Ruby's native `Hash#except`. Only the JS/CSR side has no `omit`: it
+ * materializes the residual with a real destructure IIFE instead.
  */
 
 require_once __DIR__ . '/_harness.php';
