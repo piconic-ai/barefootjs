@@ -326,7 +326,23 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
 }
 
 // `.flat(depth?)` → `$bf.flat($recv, $depth)`.
-export function renderFlatMethod(recv: string, depth: FlatDepth): string {
+export function renderFlatMethod(
+  recv: string,
+  depth: FlatDepth | { expr: ParsedExpr },
+  emit: (e: ParsedExpr) => string,
+): string {
+  if (typeof depth === 'object') {
+    // Dynamic depth (#2094): the EMIT path is wired up in this phase so the
+    // shared `flatMethod` interface compiles everywhere, but the RUNTIME
+    // coercion (JS `ToIntegerOrInfinity`) for this backend is Phase 2 — the
+    // existing helper below still assumes a pre-normalised int depth (its
+    // `-1` argument means "flatten fully", the compile-time Infinity
+    // sentinel), so a dynamic depth that is negative, fractional, or
+    // itself `Infinity`-like won't match JS semantics until the runtime
+    // helper is updated to coerce it (see the `depthExpr` doc in
+    // expression-parser.ts and the Go reference implementation).
+    return `$bf.flat(${recv}, ${emit(depth.expr)})`
+  }
   const d = depth === 'infinity' ? -1 : depth
   return `$bf.flat(${recv}, ${d})`
 }
