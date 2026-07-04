@@ -193,9 +193,9 @@ only one binding, so it can't see through a re-export or `const c2 = c1`:
 ```tsx
 // ❌ BF021 — `byPrice` is imported, not declared in this file
 import { byPrice } from './comparators'
-{items().sort(byPrice).map(item => (
-  <Item key={item.id} item={item} />
-))}
+function SortedList({ items }: { items: Item[] }) {
+  return <ul>{items.sort(byPrice).map((item) => <li key={item.id}>{item.name}</li>)}</ul>
+}
 
 // ✅ Use /* @client */, or inline / re-declare the comparator locally
 {/* @client */ items().sort(byPrice).map(item => (
