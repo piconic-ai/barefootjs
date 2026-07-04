@@ -1425,6 +1425,25 @@ sub _style_to_css ($value) {
     return @parts ? CORE::join(';', @parts) : undef;
 }
 
+
+# Object-rest residual for a `.map()` destructure binding
+# (`{ id, ...rest } => …`, #2087 Phase B): returns a NEW hashref holding
+# every key of `$bag` except those named in `$keys` (an ARRAY ref of key
+# strings). This is plain JS destructure semantics (`const { id, ...rest }
+# = item`) — unlike `spread_attrs` below, there's no event-handler /
+# `children` filtering or key remapping here, because the residual is a
+# *value* the template may read fields off of (`$rest->{flag}`) or later
+# forward wholesale to `spread_attrs` (`{...rest}` on an element) — either
+# consumer applies its own rules downstream. A non-hashref `$bag` returns
+# an empty hashref rather than dying, so this stays safe as a `my` local
+# initializer even off unexpected/absent data (same defensive contract as
+# `spread_attrs`'s "no bag → nothing").
+sub omit ($self, $bag, $keys) {
+    return {} unless defined $bag && ref($bag) eq 'HASH';
+    my %exclude = map { $_ => 1 } @$keys;
+    return { map { $_ => $bag->{$_} } grep { !$exclude{$_} } keys %$bag };
+}
+
 sub spread_attrs ($self, $bag) {
     return '' unless defined $bag && ref($bag) eq 'HASH';
     my @parts;

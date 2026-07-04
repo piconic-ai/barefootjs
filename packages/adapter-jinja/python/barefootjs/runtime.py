@@ -1191,6 +1191,25 @@ class BarefootJS:
         return self.backend.mark_raw(" ".join(parts))
 
     # -----------------------------------------------------------------
+    # Loop-destructure object-rest residual object (#2087 Phase B)
+    # -----------------------------------------------------------------
+
+    def omit(self, recv: Any, keys: Any) -> dict:
+        """Shallow copy of `recv` with `keys` removed -- the TRUE residual
+        dict for an object-rest `.map()` callback binding
+        (`{ id, title, ...rest }` -> `{% set rest = bf.omit(item, ['id',
+        'title']) %}`), so `rest.flag` member reads and
+        `bf.spread_attrs(rest)` (forwarding `{...rest}` onto an element)
+        both see exactly the sibling keys NOT already destructured -- never
+        the whole item. Mirrors `spread_attrs`'s defensive non-dict
+        handling: a non-dict `recv` yields `{}` rather than raising.
+        """
+        if not isinstance(recv, dict):
+            return {}
+        exclude = set(keys) if keys else set()
+        return {k: v for k, v in recv.items() if k not in exclude}
+
+    # -----------------------------------------------------------------
     # Evaluator-driven sort / reduce / higher-order predicates (#2018):
     # the comparator / reducer / predicate body rides as a
     # serialized-ParsedExpr JSON string and is evaluated per element,

@@ -6,8 +6,11 @@ import { createFixture } from '../src/types'
  *
  * Exercises the IR walker recursing into a nested array binding inside an
  * object pattern, where the inner pattern carries the rest token. Same
- * adapter parity contract as the flat-rest fixtures: Hono / CSR lowers it;
- * Go / Mojo refuse the loop destructure with BF104. See #1310.
+ * adapter parity contract as the flat-rest fixtures: Hono / CSR lowers it,
+ * and since #2087 the template adapters do too — the nested fixed binding
+ * walks the structured `segments` path (`.cells[0]`), and the nested
+ * array-rest slices the parent accessor. Previously refused with BF104
+ * (#1310).
  */
 export const fixture = createFixture({
   id: 'rest-destructure-nested-in-map',

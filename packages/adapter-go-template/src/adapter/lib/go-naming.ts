@@ -50,6 +50,35 @@ export function capitalizeFieldName(name: string): string {
 }
 
 /**
+ * Resolve ANY source property key — identifier or not (`data-priority`,
+ * `aria-label`, a numeric key) — to a valid Go struct field name. Splits on
+ * runs of characters that are invalid in a Go identifier (underscores are
+ * VALID and preserved, so a snake_case key round-trips to the exact same
+ * name `capitalizeFieldName` alone has always produced — `foo_bar` →
+ * `Foo_bar`, never `FooBar`; renaming it would break both existing member
+ * emission and consumers' hand-written constructors against generated
+ * types) and PascalCases each segment through `capitalizeFieldName`, so a
+ * hyphenated key gets a real field instead of being silently dropped
+ * (`data-priority` → `DataPriority`). A result that would start with a
+ * digit (numeric key `0`) is prefixed with `Field` (`Field0`), and a key
+ * with no usable characters at all falls back to `Field` — both keep the
+ * emitted struct compiling (not expected from real TS property names, but
+ * keeps the function total).
+ *
+ * Single source of truth for the source-key → Go-name mapping: used for
+ * struct-field generation (#2087 Phase B — `structFieldsFor`), inline-map
+ * baking (`bakeInlineObjectAsGoMap`), and the `member()` dot-access
+ * emitter, so the baked side and the accessor side can never disagree
+ * (PR #2089 review).
+ */
+export function goFieldNameForKey(key: string): string {
+  const parts = key.split(/[^A-Za-z0-9_]+/).filter(Boolean)
+  if (parts.length === 0) return 'Field'
+  const name = parts.map(capitalizeFieldName).join('')
+  return /^[0-9]/.test(name) ? `Field${name}` : name
+}
+
+/**
  * Convert a slot ID (e.g., 's6') to a Go struct field suffix (e.g., 'Slot6').
  * Keeps field names human-readable regardless of the internal slot ID format.
  */

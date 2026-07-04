@@ -79,7 +79,7 @@ import {
   parseRecordIndexAccess,
   extractArrowBodyExpression,
   collectContextConsumers,
-  isLowerableObjectRestDestructure,
+  isLowerableLoopDestructure,
   type ContextConsumer,
   collectModuleStringConsts,
   lookupStaticRecordLiteral,
@@ -89,7 +89,7 @@ import {
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
-import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
+import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { ErbRenderCtx } from './lib/types.ts'
@@ -129,6 +129,24 @@ import {
 
 export type { ErbAdapterOptions } from './lib/types.ts'
 import type { ErbAdapterOptions } from './lib/types.ts'
+
+/**
+ * Build a chained Ruby Hash/Array accessor from a `.map()` destructure
+ * binding's structured `segments` path (#2087 Phase B) — walking `segments`
+ * instead of string-parsing `LoopParamBinding.path` (repo rule: never parse
+ * JS/TS syntax with regex or string matching). A `field` step reads a
+ * symbol key (`[:name]` / `[:"data-priority"]`, matching every item Hash's
+ * `JSON.parse(..., symbolize_names: true)` construction); an `index` step
+ * reads a numeric Array index (`[0]`). Empty `segments` (a rest binding at
+ * the loop root) returns `base` unchanged.
+ */
+function rubyAccessorFromSegments(base: string, segments: readonly LoopBindingPathSegment[]): string {
+  let accessor = base
+  for (const seg of segments) {
+    accessor += seg.kind === 'index' ? `[${seg.index}]` : `[${rubySymbolLiteral(seg.key)}]`
+  }
+  return accessor
+}
 
 export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCtx> {
   name = 'erb'
@@ -795,29 +813,64 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
 
     // An array/object-destructure loop param (`([emoji, users]) => ...` or
     // `({ name, age }) => ...`) lowers to invalid Ruby block-param syntax in
-    // general — the adapter would otherwise need `|[emoji, users]|`-shaped
-    // destructuring the IR doesn't carry structurally for every case. A
-    // destructure loop param IS lowerable for the object-rest / simple-field
-    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
-    // access): each binding becomes a Ruby local off the per-item Hash, so
-    // the body's `id` / `rest[:flag]` resolve natively. Array-index / nested
-    // / rest-spread shapes still can't unpack into scalar locals → BF104.
+    // general — Ruby has no destructuring-assignment analog for an arbitrary
+    // nested pattern in a single statement. `isLowerableLoopDestructure`
+    // (#2087) instead admits any FIXED-binding shape — single field, nested
+    // field, array-index, any depth/mix (`{ user: { name } }`, `([k, v])`,
+    // `{ cells: [head] }`) — by walking the binding's structured `segments`
+    // path into a chained Ruby accessor (`__bf_item[:user][:name]`), plus
+    // array-rest (`[first, ...tail]`, native `bf.slice`) and object-rest
+    // (`{ id, ...rest }`, native `Hash#except`) whose every use is a member
+    // read (`rest.flag`) or a `{...rest}` spread onto an intrinsic element.
+    // Bare-value rest uses, a spread onto a component/provider, and
+    // `.filter().map(destructure)` still have no Ruby scalar form → BF104.
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the ERB adapter cannot lower — Ruby local bindings can't unpack a tuple in a single assignment.`,
+        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the ERB adapter cannot lower — the rest binding is used in a way (bare value, or spread onto a component) that has no native Ruby accessor form.`,
         loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message:
             `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple elements with index syntax in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
+            `  1. Read the rest binding as a member access (\`rest.field\`) or spread it onto an intrinsic element (\`<li {...rest}>\`) instead of using it as a bare value.\n` +
             `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
             `  3. Move the loop into a primitive that the adapter registers explicitly.`,
         },
       })
+    }
+
+    // Loop array is a bare identifier naming a component-scope (non-module)
+    // `const` the adapter has no way to compute at SSR render time. Only a
+    // pure-literal const (`resolveLiteralConst`) or a module-scope
+    // pure-string const (`resolveModuleStringConst`) is ever inlined —
+    // anything else (`const entries = Object.entries(props.x).filter(...)`)
+    // falls through to the generic `v[:entries]` vars-Hash read, which is
+    // never seeded (the ERB test/production vars-seed only covers props,
+    // signals, and memos — see `test-render.ts::buildRubyProps`) and raises
+    // a Ruby `NoMethodError` on `.length` at render time. This is a
+    // pre-existing, orthogonal gap surfaced by #2087 widening the loop
+    // destructure gate (`isLowerableLoopDestructure` now admits the
+    // array-index destructure `static-array-from-props(-with-component)`
+    // use, which used to be hidden behind the old destructure BF104) — it
+    // reproduces identically with a non-destructured param, so it is NOT a
+    // destructure-lowering limitation. Surface BF101 honestly instead of
+    // emitting a loop bound that silently crashes / renders empty.
+    if (loop.arrayParsed?.kind === 'identifier') {
+      const arrayName = loop.arrayParsed.name
+      const isUnresolvableLocalConst =
+        !this.loopBoundNames.has(arrayName) &&
+        this.resolveModuleStringConst(arrayName) === null &&
+        this.resolveLiteralConst(arrayName) === null &&
+        this.localConstants.some(c => c.name === arrayName && !c.isModule)
+      if (isUnresolvableLocalConst) {
+        this._recordExprBF101(
+          `Loop array \`${arrayName}\` is a component-scope const computed from a runtime expression the ERB adapter cannot evaluate at SSR render time.`,
+          `Options:\n1. Inline the array expression directly in the .map() call instead of a preceding const.\n2. Mark the loop position as @client-only so the array materialises on the client.\n3. Precompute the value server-side and pass it in as a prop.`,
+        )
+      }
     }
 
     const rawArray = this.convertExpressionToRuby(loop.array)
@@ -915,15 +968,36 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     lines.push(`<%- (0...${array}.length).each do |${indexVar}| -%>`)
     if (loop.iterationShape !== 'keys') {
       if (supportableDestructure) {
-        // Per-item local + one local per binding; `rest` aliases the item
-        // so `rest[:flag]` resolves (object-rest read via member access).
+        // Per-item local + one local per binding, built off the binding's
+        // structured `segments` path (never `b.path` — repo rule: no
+        // string-parsing of a JS-shaped accessor). See `rubyAccessorFromSegments`.
         lines.push(`<%- __bf_item = ${array}[${indexVar}] -%>`)
         for (const b of loop.paramBindings ?? []) {
-          lines.push(
-            b.rest
-              ? `<%- ${rubyLocal(b.name)} = __bf_item -%>`
-              : `<%- ${rubyLocal(b.name)} = __bf_item[${rubySymbolLiteral(b.path.slice(1))}] -%>`,
-          )
+          // Fixed bindings: `segments` is the FULL accessor path from the
+          // item to this binding. Rest bindings: `segments` is the PARENT
+          // prefix (possibly empty, at the loop root) — the accessor below
+          // is the rest's parent object/array, not the rest binding itself.
+          const accessor = rubyAccessorFromSegments('__bf_item', b.segments ?? [])
+          if (b.rest?.kind === 'array') {
+            // Native Ruby range-slice has different past-end nil semantics
+            // than JS `Array.prototype.slice` (`arr[4..]` is `nil` where
+            // `arr.slice(4)` is `[]`) — route through the runtime's `slice`
+            // helper (barefoot_js.rb) so both edge cases (`from` at or past
+            // length) return `[]` like JS, matching the Go/Perl ports.
+            lines.push(`<%- ${rubyLocal(b.name)} = bf.slice(${accessor}, ${b.rest.from}) -%>`)
+          } else if (b.rest?.kind === 'object') {
+            // A TRUE residual Hash (not an alias of the parent) via native
+            // `Hash#except` (Ruby >= 3.0; CI pins 3.3) — so a member read
+            // (`rest.flag` → `rest[:flag]`, `ErbTopLevelEmitter#member`) and
+            // the existing `{...rest}` spread emit (`bf.spread_attrs`) both
+            // see only the non-destructured keys, same as the Hono/CSR IIFE.
+            // Symbol keys match the vars-Hash convention: every item Hash is
+            // built by `JSON.parse(..., symbolize_names: true)`.
+            const excludeSyms = b.rest.exclude.map(k => rubySymbolLiteral(k.key)).join(', ')
+            lines.push(`<%- ${rubyLocal(b.name)} = ${accessor}.except(${excludeSyms}) -%>`)
+          } else {
+            lines.push(`<%- ${rubyLocal(b.name)} = ${accessor} -%>`)
+          }
         }
       } else {
         lines.push(`<%- ${rubyLocal(param)} = ${array}[${indexVar}] -%>`)

@@ -35,25 +35,45 @@ runAdapterConformanceTests({
     // `.map`) as xslate.
     'todo-app': [{ code: 'BF103', severity: 'error' }],
     'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
-    // Array-destructure loop param (`([k, v]) => …`) can't lower to a
-    // single Jinja `for` loop variable (same BF104 as xslate — Jinja's
-    // `for item in list` binds one loop variable, just like Kolon's
-    // `for $arr -> $item`).
-    'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
-    // Both BF103 (imported child) and BF104 (destructure) fire.
+    // #2087 Phase A/B widened the destructure gate (`isLowerableLoopDestructure`)
+    // to admit array-index / nested-path fixed bindings, so the
+    // `([emoji, users]) => ...` / `([id, t]) => ...` params in these two
+    // fixtures no longer trip BF104 — the destructure itself now lowers
+    // cleanly to a native `{% set %}` accessor. But both fixtures' loop
+    // array is `entries`, a bare identifier bound to a function-scope local
+    // const with a NON-inlineable initializer
+    // (`Object.entries(props.x ?? {}).filter(...)`) — a pre-existing,
+    // orthogonal limitation this adapter has always had (it only ever
+    // INLINES a local const's value at its use site — numeric/string
+    // literal, or a static-record-literal lookup — never binds one as a
+    // `{% set %}` template local), just never reachable before because the
+    // narrower pre-#2087 gate refused the destructure param first. Left
+    // unhandled it would silently render an EMPTY list (Jinja's
+    // `ChainableUndefined` tolerates iterating an unbound name as zero
+    // iterations) instead of failing loudly, so `renderLoop` in
+    // `jinja-adapter.ts` now detects this shape and raises BF101 instead —
+    // see the "Loop array `<name>` is a local computed value" diagnostic.
+    // Fixing the underlying gap (computed-array-from-props as a loop
+    // source) is out of scope for #2087; tracked as a follow-up at
+    // https://github.com/piconic-ai/barefootjs/issues/2087.
+    'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+    // Both BF103 (imported child) and BF101 (unresolvable computed loop
+    // array, see above) fire.
     'static-array-from-props-with-component': [
       { code: 'BF103', severity: 'error' },
-      { code: 'BF104', severity: 'error' },
+      { code: 'BF101', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the object-rest shape read via
-    // member access (`rest-destructure-object-in-map`) lowers via a Jinja
-    // `{% set %}` local binding (same mechanism as Kolon's `: my`). The
-    // other three stay refused: rest SPREAD needs a residual object,
-    // array-index / nested paths can't unpack a tuple (same surface as
-    // xslate).
-    'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // Rest-destructure / structured-path `.map()` callbacks (#2087 Phase B):
+    // `isLowerableLoopDestructure` now admits fixed bindings at any
+    // field/index depth, array-rest (`bf.slice`), and object-rest whose uses
+    // are member reads or a `{...rest}` spread onto an intrinsic element
+    // (`bf.omit` builds the TRUE residual dict). Each binding becomes a
+    // native `{% set %}` local off the per-item var — see
+    // `renderLoop`/`jinjaAccessorFromSegments` in `jinja-adapter.ts`. So
+    // `rest-destructure-object-in-map`, `rest-destructure-object-spread-in-map`,
+    // `rest-destructure-array-in-map`, `rest-destructure-nested-in-map`,
+    // `destructure-array-index-in-map`, and `destructure-nested-object-in-map`
+    // all render clean now — none of them are pinned here.
     // The site/ui Button auto-infers a `<Slot>` sibling that spreads
     // `{...props}` / `{...children.props}` onto its root element. Jinja
     // dict literals can't splat a runtime dict into named call-site

@@ -6,14 +6,12 @@ import { createFixture } from '../src/types'
  * #1309 / #1244 added IR-level support for rest patterns and the Hono / CSR
  * emit path lowers them to an inline residual-object accessor
  * (`(({ id: __bfR0, title: __bfR1, ...__bfRest }) => __bfRest)(__bfItem())`).
- * Text-template adapters (Go, Mojo) have no analogous lowering — they
- * already refuse any loop destructure (`paramBindings.length > 0`) with
- * BF104, but no fixture pinned that contract for the rest variant.
- *
- * This fixture lets each adapter declare its position against the rest
- * shape (currently both Go and Mojo expect BF104 via `expectedDiagnostics`).
- * When either adapter grows a native lowering, dropping the diagnostic
- * here is the single edit that flips the contract on. See #1310.
+ * The template adapters first lowered the member-read-only shape pinned
+ * here (the rest binding aliased to the whole item, `rest.flag` read back
+ * off it — #1310); #2087 generalized the destructure lowering (structured
+ * `segments` accessors, slice-based array-rest, residual-bag object-rest
+ * feeding the spread pipeline). All seven template adapters render this
+ * fixture through their real engines; none pin a diagnostic for it.
  */
 export const fixture = createFixture({
   id: 'rest-destructure-object-in-map',

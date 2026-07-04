@@ -42,7 +42,7 @@ runAdapterConformanceTests({
   // parent-scope-derived IDs matching Hono.
   // Per-fixture build-time contracts for shapes the ERB adapter
   // intentionally refuses to lower. Mirrors mojo's set — the lowering
-  // gates (`isLowerableObjectRestDestructure`, `collectImportedLoopChild
+  // gates (`isLowerableLoopDestructure`, `collectImportedLoopChild
   // ComponentErrors`, `refuseUnsupportedAttrExpression`, the #2038
   // nested-higher-order-callback gate) are shared code in `@barefootjs/jsx`
   // that every EP/ERB-family adapter reuses verbatim.
@@ -57,25 +57,42 @@ runAdapterConformanceTests({
     // level so the shared-component corpus stays adapter-neutral.
     'todo-app': [{ code: 'BF103', severity: 'error' }],
     'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
-    // Array-destructure loop param (`([k, v]) => ...`) lowers to
-    // invalid Ruby block-param syntax (`|[k, v]|` can't unpack a tuple
-    // into scalar locals the way this adapter's loop emission needs).
-    // Same BF104 gate (`isLowerableObjectRestDestructure`) as mojo.
-    'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
-    // Both BF103 (imported child) and BF104 (destructure) fire.
+    // `static-array-from-props` / `static-array-from-props-with-component`:
+    // the `.map(([emoji, users]) => …)` / `.map(([id, t]) => …)` callback is
+    // a plain array-index destructure (the `.filter(...)` runs on a
+    // separate `const entries = …` statement, so `loop.filterPredicate` is
+    // unset — this is not the `.filter().map(destructure)` chain
+    // `isLowerableLoopDestructure` still refuses), and #2087 Phase B's
+    // segments-walking accessor DOES lower it natively. But both fixtures'
+    // loop array is that same `entries` — a component-scope `const`
+    // computed from `Object.entries(props.x).filter(...)`, a runtime
+    // expression the ERB adapter has no mechanism to evaluate at SSR
+    // render time (only a pure-literal or module-string const is ever
+    // inlined; a computed const falls through to an unseeded `v[:entries]`
+    // and crashes). This is a pre-existing, orthogonal gap the widened
+    // destructure gate merely exposes — it reproduces identically with a
+    // non-destructured param (verified) — not a destructure-lowering
+    // limitation, so it is NOT part of #2087's scope. Tracked as its own
+    // gap under https://github.com/piconic-ai/barefootjs/issues/2087;
+    // pinned honestly as BF101 (the adapter's own check, see `renderLoop`'s
+    // "Loop array is a bare identifier..." comment) rather than faked as
+    // BF104 or silently producing broken Ruby.
+    'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
     'static-array-from-props-with-component': [
       { code: 'BF103', severity: 'error' },
-      { code: 'BF104', severity: 'error' },
+      { code: 'BF101', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the object-rest shape read via
-    // member access (`rest-destructure-object-in-map`) lowers via a per-item
-    // Ruby local plus one local per binding (`rest` aliases the item so
-    // `rest[:flag]` resolves). The other three stay refused: rest SPREAD
-    // (`{...rest}`) needs a residual Hash, and array-index / nested paths
-    // can't unpack into scalar locals (same surface as mojo).
-    'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // #2087 Phase B: `isLowerableLoopDestructure` now admits every fixed-
+    // binding shape (any field/index depth — `destructure-array-index-in-map`,
+    // `destructure-nested-object-in-map`), array-rest (`rest-destructure-
+    // array-in-map`, native `bf.slice`), and object-rest whose every use is a
+    // member read or a `{...rest}` spread onto an intrinsic element
+    // (`rest-destructure-object-in-map`, `rest-destructure-object-spread-in-
+    // map`, `rest-destructure-nested-in-map` — native `Hash#except` builds a
+    // true residual Hash). None of the six destructure-in-map fixtures are
+    // pinned here any more; all render to Hono parity. See
+    // `rubyAccessorFromSegments` / the object-rest-in-loop branch in
+    // `erb-adapter.ts`'s `renderLoop`.
     // #1244 stress catalog #12 (#1323): tagged-template-literal call
     // (`cn\`base \${tone()}\``) has no idiomatic ERB template form — refused
     // via `refuseUnsupportedAttrExpression`, same gate mojo/xslate share.

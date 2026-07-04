@@ -40,6 +40,7 @@ import type {
   TypeInfo,
   TemplatePrimitiveRegistry,
   IRMetadata,
+  LoopBindingPathSegment,
 } from '@barefootjs/jsx'
 import {
   BaseAdapter,
@@ -64,13 +65,13 @@ import {
   collectModuleStringConsts,
   extractArrowBodyExpression,
   collectContextConsumers,
-  isLowerableObjectRestDestructure,
   type ContextConsumer,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
   prepareLoweringMatchers,
   queryHrefArgs,
   sortComparatorFromArrow,
+  isLowerableLoopDestructure,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -79,7 +80,7 @@ import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
 import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
-import { kolonHashKey } from './lib/kolon-naming.ts'
+import { kolonHashKey, escapeKolonSingleQuoted } from './lib/kolon-naming.ts'
 import {
   resolveJsxChildrenProp,
   collectRootScopeNodes,
@@ -107,6 +108,47 @@ import {
 
 export type { XslateAdapterOptions } from './lib/types.ts'
 import type { XslateAdapterOptions } from './lib/types.ts'
+
+/**
+ * Build a Kolon accessor expression for a `.map()` destructure binding's
+ * structured `segments` path (#2087 Phase B), walking `field` (`.key` for an
+ * identifier-safe name, `["key"]` — quoted with `kolonHashKey`'s convention —
+ * otherwise, since Kolon parses `$x.data-priority` as a subtraction) /
+ * `index` (`[N]`) steps onto `base`. Verified against real Text::Xslate that
+ * dot- and bracket-access chain freely (`$x.cells[0]`, `$x["cells"][0]`).
+ * Never string-parses `LoopParamBinding.path` — see the repo-wide rule
+ * against regex-parsing JS/TS-derived syntax.
+ *
+ * Used both for a fixed binding's FULL accessor (`base` = `$__bf_item`,
+ * `segments` = the whole path) and a rest binding's PARENT-prefix accessor
+ * (`segments` may be empty, at the loop root, in which case this returns
+ * `base` unchanged) — see `LoopParamBinding.segments` jsdoc for which case
+ * a binding is in.
+ */
+function kolonSegmentAccessor(base: string, segments: readonly LoopBindingPathSegment[]): string {
+  let expr = base
+  for (const seg of segments) {
+    expr +=
+      seg.kind === 'field'
+        ? seg.isIdent
+          ? `.${seg.key}`
+          : `[${kolonHashKey(seg.key)}]`
+        : `[${seg.index}]`
+  }
+  return expr
+}
+
+/**
+ * Quote a string as a Kolon single-quoted literal, unconditionally — unlike
+ * `kolonHashKey` (which leaves an identifier-safe name unquoted for `key =>
+ * val` hashref-literal position), a plain array-literal element
+ * (`$bf.omit($x, [id, title])`) is NOT hash-key position: Kolon has no
+ * bareword-as-string convention there, so every object-rest exclude key
+ * needs an explicit string literal.
+ */
+function kolonStringLiteral(s: string): string {
+  return `'${escapeKolonSingleQuoted(s)}'`
+}
 
 export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRenderCtx> {
   name = 'xslate'
@@ -578,31 +620,77 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return `<: $bf.comment("loop:${loop.markerId}") | mark_raw :><: $bf.comment("/loop:${loop.markerId}") | mark_raw :>`
     }
 
-    // An array/object-destructure loop param (`([emoji, users]) => ...` or
-    // `({ name, age }) => ...`) lowers to invalid Kolon — Kolon's `for LIST
-    // -> $item` binds a single scalar and can't unpack a tuple. Surface this
-    // at build time instead of shipping a broken template line.
-    // A destructure loop param is lowerable for the object-rest / simple-field
-    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
-    // access): each binding becomes a Kolon `: my` local off the per-item var,
-    // so the body's `$id` / `$rest.flag` resolve. Array-index / nested /
-    // rest-spread shapes still can't unpack a tuple → BF104. (#1310)
+    // A `.map()` destructure loop param (`([k, v]) => ...` / `({ id, user: {
+    // name } }) => ...` / `({ id, ...rest }) => ...`) lowers to a Kolon `: my`
+    // local per binding, walking each binding's structured `segments` path
+    // (#2087 Phase B) into a native `.key` / `["key"]` / `[N]` accessor off
+    // the per-item var — so the body's `$id` / `$name` / `$rest.flag` /
+    // `{...rest}` all resolve natively, at any nesting depth.
+    //
+    // Check the IR's structured `paramBindings` field rather than
+    // string-matching `loop.param`: Phase 1 populates `paramBindings`
+    // iff the param is a destructure pattern (array or object); a
+    // simple identifier leaves it `undefined`. The structured check is
+    // robust to whitespace / formatting variants in the source.
+    //
+    // `isLowerableLoopDestructure` (#2087) still refuses: an object-rest
+    // binding used any way other than member access (`rest.flag`) or a
+    // `{...rest}` spread onto an intrinsic element (that needs the actual
+    // residual *object*, which isn't always safe to materialize — see the
+    // gate's own jsdoc for the full list); a `.filter().map(destructure)`
+    // chain (the filter-param rewrite is out of scope here); and a
+    // computed property key (`{ [k]: v }`, refused earlier as BF025).
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the Xslate adapter cannot lower — Kolon \`for LIST -> $item\` binds a single scalar and can't unpack a tuple.`,
+        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Xslate adapter cannot lower — see the diagnostic detail for the specific shape.`,
         loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message:
             `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple elements with index syntax in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
+            `  1. If this is an object-rest binding (\`{ ...rest }\`), only reading \`rest.field\` or spreading \`{...rest}\` onto an intrinsic element lowers — other uses (passing \`rest\` to a function, rendering it as text) need the client runtime.\n` +
+            `  2. If this is chained \`.filter().map(({ ... }) => ...)\`, hoist the destructure into a variable inside the callback body instead.\n` +
+            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
         },
       })
+    }
+
+    // A `.map()` loop whose array is a bare identifier bound to a
+    // FUNCTION-scope local const with a non-statically-evaluable initializer
+    // that reads props/signals (e.g. `const entries =
+    // Object.entries(props.x ?? {}).filter(...)`) can't render correctly.
+    // Module-scope consts (`isModule`, e.g. `const payments = [...]` at the
+    // top of the file) are a DIFFERENT, already-working case handled
+    // elsewhere. Function-scope locals get no per-render stash slot — this
+    // adapter's only "elsewhere" for a local const is inlining its value at
+    // the use site (`_resolveLiteralConst`'s numeric/single-quoted-string
+    // fast path, or a static-record-literal lookup), never binding one as a
+    // `: my` template local. Left unchecked, `: for $entries -> $__bf_item {`
+    // over an undeclared `$entries` faults at request time instead of
+    // failing loudly at build time. Pre-existing, general limitation,
+    // orthogonal to #2087's destructure-binding work — newly reachable in
+    // this adapter's test corpus only because the widened destructure gate
+    // (#2087 Phase A/B) no longer refuses this fixture's `([emoji, users])
+    // => ...` param first.
+    const arrayName = loop.array.trim()
+    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
+      if (arrayConst && !arrayConst.isModule && this._resolveLiteralConst(arrayName) === null) {
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the Xslate adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+          suggestion: {
+            message:
+              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          },
+        })
+      }
     }
 
     const rawArray = this.convertExpressionToKolon(loop.array)
@@ -642,8 +730,20 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Index alias: when an explicit `index` param is present (`.map((x, i) =>
     // ...)`) or the iteration is `keys`-shaped, expose it via a `: my` Kolon
     // local bound to the loop variable's `.index` accessor. A supported
-    // destructure param adds one `: my` local per binding (`rest` aliases the
-    // item so `$rest.flag` resolves).
+    // destructure param adds one `: my` local per binding, walking each
+    // binding's `segments` path (#2087 Phase B):
+    //   - fixed (`b.rest` unset): the FULL accessor from `$__bf_item`.
+    //   - array-rest: `$bf.slice(parent, from, nil)` — the same runtime
+    //     helper `.slice()` JS-method calls lower to (see `array-method.ts`),
+    //     so the "no end → to length" arithmetic stays in one place. Kolon's
+    //     undefined literal is `nil`, not Perl's `undef`.
+    //   - object-rest: `$bf.omit(parent, [...excluded keys...])` — a TRUE
+    //     residual hashref (not the whole item aliased), so both
+    //     `$rest.flag` (member-access use) and `$bf.spread_attrs($rest)`
+    //     (spread-onto-element use) see only the non-destructured keys.
+    // `parent` is `$__bf_item` walked through the binding's PARENT-prefix
+    // `segments` (empty at the loop root, per the `LoopParamBinding` jsdoc) —
+    // NOT the same as a fixed binding's full-accessor segments.
     const indexLocalLines: string[] = []
     if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`: my $${param} = $~${loopVar}.index;`)
@@ -652,11 +752,17 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     }
     if (supportableDestructure) {
       for (const b of loop.paramBindings ?? []) {
-        indexLocalLines.push(
-          b.rest
-            ? `: my $${b.name} = $${loopVar};`
-            : `: my $${b.name} = $${loopVar}${b.path};`,
-        )
+        const parent = kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])
+        if (b.rest?.kind === 'object') {
+          const exclude = b.rest.exclude.map(k => kolonStringLiteral(k.key)).join(', ')
+          indexLocalLines.push(`: my $${b.name} = $bf.omit(${parent}, [${exclude}]);`)
+        } else if (b.rest?.kind === 'array') {
+          indexLocalLines.push(`: my $${b.name} = $bf.slice(${parent}, ${b.rest.from}, nil);`)
+        } else {
+          indexLocalLines.push(
+            `: my $${b.name} = ${kolonSegmentAccessor(`$${loopVar}`, b.segments ?? [])};`,
+          )
+        }
       }
     }
 

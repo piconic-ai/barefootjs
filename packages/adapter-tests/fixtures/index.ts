@@ -178,6 +178,13 @@ import { fixture as restDestructureObjectInMap } from './rest-destructure-object
 import { fixture as restDestructureObjectSpreadInMap } from './rest-destructure-object-spread-in-map'
 import { fixture as restDestructureArrayInMap } from './rest-destructure-array-in-map'
 import { fixture as restDestructureNestedInMap } from './rest-destructure-nested-in-map'
+// #2087: fixed-binding (no-rest) destructure shapes admitted by
+// `isLowerableLoopDestructure`'s `segments`-based gate — array-index
+// (tuple) and nested-object-path destructure. All seven template adapters
+// (Go/Mojo/Xslate/Twig/Jinja/ERB/Rust) lower these via their
+// `segments`-based accessor emitters; Hono/CSR lowered them all along.
+import { fixture as destructureArrayIndexInMap } from './destructure-array-index-in-map'
+import { fixture as destructureNestedObjectInMap } from './destructure-nested-object-in-map'
 // Priority 11: JS Array / String method lowering (#1448 Tier A).
 // One fixture per method — every adapter starts pinned with BF101 in
 // its own `expectedDiagnostics`, and each method PR removes its row
@@ -410,6 +417,9 @@ export const jsxFixtures: JSXFixture[] = [
   restDestructureObjectSpreadInMap,
   restDestructureArrayInMap,
   restDestructureNestedInMap,
+  // #2087 Phase A: fixed-binding (no-rest) destructure — array-index / nested.
+  destructureArrayIndexInMap,
+  destructureNestedObjectInMap,
   // #1448 Tier A — Array methods.
   arrayIncludes,
   arrayIndexOf,

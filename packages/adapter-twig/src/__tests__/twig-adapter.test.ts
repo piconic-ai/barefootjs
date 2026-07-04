@@ -34,25 +34,33 @@ runAdapterConformanceTests({
     // `.map`) as Jinja.
     'todo-app': [{ code: 'BF103', severity: 'error' }],
     'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
-    // Array-destructure loop param (`([k, v]) => …`) can't lower to a
-    // single Twig `for` loop variable (same BF104 as Jinja — Twig's
-    // `for item in list` binds one loop variable, just like Jinja's
-    // `for item in arr`).
-    'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
-    // Both BF103 (imported child) and BF104 (destructure) fire.
+    // The `([emoji, users]) => …` array-destructure param itself now lowers
+    // (#2087 Phase B — see the destructure comment below), but the loop
+    // ARRAY is a function-scope computed const (`const entries =
+    // Object.entries(props.reactions ?? {}).filter(...)`) that the adapter
+    // can't bind as a template variable — refused loudly with BF101 (same
+    // check and policy as Jinja / ERB) instead of silently iterating zero
+    // times over an unbound name.
+    'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+    // Both BF103 (imported child) and BF101 (computed local-const loop
+    // array, as above) fire.
     'static-array-from-props-with-component': [
       { code: 'BF103', severity: 'error' },
-      { code: 'BF104', severity: 'error' },
+      { code: 'BF101', severity: 'error' },
     ],
-    // Rest-destructure `.map()` callbacks — the object-rest shape read via
-    // member access (`rest-destructure-object-in-map`) lowers via a Twig
-    // `{% set %}` local binding (same mechanism as Jinja's `{% set %}`).
-    // The other three stay refused: rest SPREAD needs a residual object,
-    // array-index / nested paths can't unpack a tuple (same surface as
-    // Jinja).
-    'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // #2087 Phase B: every `.map()` destructure shape in the shared corpus
+    // now lowers on Twig via a `{% set %}` local built from the binding's
+    // structured `segments` path (`twigLoopBindingAccessor` in
+    // `lib/twig-naming.ts`) — fixed bindings at any field/index depth
+    // (`destructure-array-index-in-map`, `destructure-nested-object-in-map`),
+    // array-rest via `bf.slice` (`rest-destructure-array-in-map`,
+    // `rest-destructure-nested-in-map`), and object-rest via the new
+    // `bf.omit` residual helper, read by member access
+    // (`rest-destructure-object-in-map`) or spread onto the element
+    // (`rest-destructure-object-spread-in-map`). No `expectedDiagnostics`
+    // pins remain for any of them — see `twig-adapter.ts`'s `renderLoop` for
+    // the still-refused shapes (bare-value rest use, `.filter().map()`
+    // chains, `__bf_`-prefixed names).
     // The site/ui Button auto-infers a `<Slot>` sibling that spreads
     // `{...props}` / `{...children.props}` onto its root element. Twig
     // hash literals can't splat a runtime dict into named call-site

@@ -132,7 +132,7 @@ import {
   collectModuleStringConsts,
   extractArrowBodyExpression,
   collectContextConsumers,
-  isLowerableObjectRestDestructure,
+  isLowerableLoopDestructure,
   type ContextConsumer,
   lookupStaticRecordLiteral,
   searchParamsLocalNames,
@@ -146,7 +146,12 @@ import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
 import { JINJA_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
-import { jinjaHashKey, jinjaIdent, escapeJinjaSingleQuoted } from './lib/jinja-naming.ts'
+import {
+  jinjaHashKey,
+  jinjaIdent,
+  escapeJinjaSingleQuoted,
+  jinjaAccessorFromSegments,
+} from './lib/jinja-naming.ts'
 import {
   resolveJsxChildrenProp,
   collectRootScopeNodes,
@@ -643,32 +648,78 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       return `{{ bf.comment("loop:${loop.markerId}") | safe }}{{ bf.comment("/loop:${loop.markerId}") | safe }}`
     }
 
-    // An array/object-destructure loop param (`([emoji, users]) => ...` or
-    // `({ name, age }) => ...`) lowers to invalid Jinja — Jinja's `for item in
-    // list` binds a single loop variable and can't unpack a tuple the way a
-    // Python `for` statement can. Surface this at build time instead of
-    // shipping a broken template line.
-    // A destructure loop param is lowerable for the object-rest / simple-field
-    // shape (`.map(({ id, title, ...rest }) => …)`, `rest` read via member
-    // access): each binding becomes a `{% set %}` local off the per-item var,
-    // so the body's `id` / `rest.flag` resolve. Array-index / nested /
-    // rest-spread shapes still can't unpack a tuple → BF104. (#1310)
+    // Jinja's `{% for item in list %}` binds a single loop variable — it
+    // can't natively unpack a tuple the way a Python `for` statement can, so
+    // a `.map()` destructure param never lowers to a bare Jinja for-target.
+    // Instead, `isLowerableLoopDestructure` (#2087) admits any shape whose
+    // bindings resolve to a per-adapter accessor without needing the JS/CSR
+    // runtime: fixed bindings at any field/index depth (`{ id }`, `[k, v]`,
+    // `{ user: { name } }`), array-rest (`[first, ...tail]`), and
+    // object-rest whose every use is a member read (`rest.flag`) or a
+    // `{...rest}` spread onto an intrinsic element. Each admitted binding
+    // becomes a `{% set %}` local off the per-item var (a native accessor
+    // for fixed bindings, `bf.slice`/`bf.omit` for rest), so the body's
+    // `id` / `v` / `name` / `rest.flag` all resolve. Still refused (BF104):
+    // a bare-value rest use (`String(rest)`, `{rest}` as text, `{...fn(rest)}`),
+    // a rest spread onto a component/provider, `.filter().map(destructure)`,
+    // and `__bf_`-prefixed binding names (would collide with the synthetic
+    // per-item var).
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.errors.push({
         code: 'BF104',
         severity: 'error',
-        message: `Loop callback uses an array/object destructure pattern (\`${loop.param}\`) that the Jinja adapter cannot lower — Jinja \`for item in list\` binds a single loop variable and can't unpack a tuple.`,
+        message: `Loop callback uses a destructure pattern (\`${loop.param}\`) that the Jinja adapter cannot lower to a native accessor — Jinja \`for item in list\` binds a single loop variable and this shape needs the actual residual value materialized (e.g. a bare object-rest use, or a rest spread onto a component).`,
         loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
         suggestion: {
           message:
             `Options:\n` +
-            `  1. Rename the parameter to a single name and access tuple elements with index syntax in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
-            `  2. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
-            `  3. Move the loop into a primitive that the adapter registers explicitly.`,
+            `  1. Rename the parameter to a single name and access tuple/object elements directly in the body (e.g. \`entry => entry[0]\` instead of \`([k, v]) => ...\`).\n` +
+            `  2. If using object rest, only read individual fields off it (\`rest.flag\`) or spread it onto an intrinsic element (\`{...rest}\`) — not as a bare value.\n` +
+            `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
+            `  4. Move the loop into a primitive that the adapter registers explicitly.`,
         },
       })
+    }
+
+    // A `.map()` loop whose array is a bare identifier bound to a
+    // FUNCTION-scope local const with a non-statically-evaluable initializer
+    // that reads props/signals (e.g. `const entries =
+    // Object.entries(props.x ?? {}).filter(...)`) can't render correctly.
+    // Module-scope consts (`isModule`, e.g. `const payments = [...]` at the
+    // top of the file) are a DIFFERENT, already-working case — the shared
+    // `ssr-defaults.ts` statically evaluates those and seeds them straight
+    // into the render context, so a bare `payments` reference resolves for
+    // free (data-table demo). Function-scope locals get no such seeding
+    // (`ssr-defaults.ts`: "component-scope locals can depend on
+    // signals/props and are evaluated lazily elsewhere") — and this
+    // adapter's only "elsewhere" is inlining a const's value at its use
+    // site (`_resolveLiteralConst`'s numeric/single-quoted-string fast
+    // path, or a static-record-literal lookup), never binding one as a
+    // `{% set %}` template local. Left unchecked, `{% for item in entries
+    // %}` over an unbound name would silently iterate zero times (Jinja's
+    // `ChainableUndefined` tolerates it rather than raising) instead of
+    // failing loudly. Pre-existing, general limitation, orthogonal to
+    // #2087's destructure-binding work — newly reachable in this adapter's
+    // test corpus only because the widened destructure gate (#2087 Phase
+    // A/B) no longer refuses this fixture's `([emoji, users]) => ...`
+    // param first.
+    const arrayName = loop.array.trim()
+    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+      const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
+      if (arrayConst && !arrayConst.isModule && this._resolveLiteralConst(arrayName) === null) {
+        this.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the Jinja adapter cannot bind as a template variable — only numeric/string-literal locals inline at their use site.`,
+          loc: loop.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+          suggestion: {
+            message:
+              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          },
+        })
+      }
     }
 
     const rawArray = this.convertExpressionToJinja(loop.array)
@@ -709,8 +760,21 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // Index alias: when an explicit `index` param is present (`.map((x, i) =>
     // ...)`) or the iteration is `keys`-shaped, expose it via a `{% set %}`
     // local bound to Jinja's `loop.index0`. A supported destructure param
-    // adds one `{% set %}` local per binding (`rest` aliases the item so
-    // `rest.flag` resolves).
+    // adds one `{% set %}` local per binding, built from the binding's
+    // structured `segments` path (#2087 Phase B — never string-parse
+    // `b.path`):
+    //
+    //   - fixed binding: a native accessor walking `segments` off the
+    //     per-item var (`.field` / `[index]`, any depth).
+    //   - array-rest binding: `bf.slice(<parent accessor>, from, none)` —
+    //     the exact JS slice, so every read of the binding (including
+    //     `.length` via the shared member emitter's `bf.length` routing)
+    //     matches JS semantics with no adapter-side special-casing.
+    //   - object-rest binding: `bf.omit(<parent accessor>, [<excluded
+    //     sibling keys>])` — a TRUE residual dict (not an alias to the
+    //     whole item), so `rest.flag` member reads and the existing
+    //     `{...rest}` → `bf.spread_attrs(rest)` emit path both see only the
+    //     keys NOT already destructured.
     const indexLocalLines: string[] = []
     if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`{% set ${jinjaIdent(param)} = loop.index0 %}`)
@@ -719,11 +783,19 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     }
     if (supportableDestructure) {
       for (const b of loop.paramBindings ?? []) {
-        indexLocalLines.push(
-          b.rest
-            ? `{% set ${jinjaIdent(b.name)} = ${jinjaIdent(loopVar)} %}`
-            : `{% set ${jinjaIdent(b.name)} = ${jinjaIdent(loopVar)}${b.path} %}`,
-        )
+        const parentAccessor = jinjaAccessorFromSegments(jinjaIdent(loopVar), b.segments ?? [])
+        if (!b.rest) {
+          indexLocalLines.push(`{% set ${jinjaIdent(b.name)} = ${parentAccessor} %}`)
+        } else if (b.rest.kind === 'array') {
+          indexLocalLines.push(
+            `{% set ${jinjaIdent(b.name)} = bf.slice(${parentAccessor}, ${b.rest.from}, none) %}`,
+          )
+        } else {
+          const excludeKeys = b.rest.exclude.map(k => jinjaHashKey(k.key)).join(', ')
+          indexLocalLines.push(
+            `{% set ${jinjaIdent(b.name)} = bf.omit(${parentAccessor}, [${excludeKeys}]) %}`,
+          )
+        }
       }
     }
 

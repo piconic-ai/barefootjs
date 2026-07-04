@@ -89,15 +89,24 @@ runAdapterConformanceTests({
     // shared-component corpus stays adapter-neutral.
     'todo-app': [{ code: 'BF103', severity: 'error' }],
     'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
-    // Array-destructure loop param (`([k, v]) => ...`): Go's `{{range
-    // $a, $b := ...}}` only supports single-name bindings, so the
-    // adapter would otherwise emit invalid template syntax.
-    'static-array-from-props': [{ code: 'BF104', severity: 'error' }],
-    // Same destructure shape with a child component body — fires both
-    // BF103 (imported child in loop) and BF104 (destructure param).
+    // `([emoji, users]) => ...` is an array-index tuple destructure — #2087
+    // Phase B's widened gate now admits this shape (`destructure-array-index-in-map`
+    // exercises the same `segments`-based lowering). The remaining refusal here
+    // is orthogonal: `entries` is a function-scope local const with a computed
+    // initializer (`Object.entries(props.reactions ?? {}).filter(...)`) that
+    // the Go adapter has no binding for (only a STRING-derived local resolves
+    // to a generated struct field, via `computeDerivedConstFields`/`isStringExpr`)
+    // — left unchecked this would silently execute-time-fail instead of
+    // building loud, so `renderLoop` raises BF101 for a bare-identifier loop
+    // array bound to such a const. See the `renderLoop` comment at the check
+    // site; Jinja / ERB apply the same narrow check for the same reason.
+    'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+    // Same computed-const array as above, plus the pre-existing BF103 (a
+    // sibling-imported child component used inside the loop body) — the
+    // destructure param itself no longer contributes a diagnostic.
     'static-array-from-props-with-component': [
       { code: 'BF103', severity: 'error' },
-      { code: 'BF104', severity: 'error' },
+      { code: 'BF101', severity: 'error' },
     ],
     // (`style-3-signals` graduated alongside `style-object-dynamic` — see note
     // above; the `style={{ … }}` object now lowers to a CSS string.)
@@ -116,17 +125,21 @@ runAdapterConformanceTests({
     // https://github.com/piconic-ai/barefootjs/issues/2038
     'filter-nested-callback-predicate': [{ code: 'BF101', severity: 'error' }],
     'filter-nested-find-predicate': [{ code: 'BF101', severity: 'error' }],
-    // #1310: rest destructure in .map() callback. The object-rest shape read
-    // via member access (`rest-destructure-object-in-map`) now lowers — each
-    // binding resolves to a field on a synthetic `$__bf_item0` range var (the
-    // reserved `__bf_item` name, depth-suffixed) and `rest.flag` →
-    // `$__bf_item0.Flag` (`destructureBindingsSupportable`). The
-    // other three stay refused: rest SPREAD (`{...rest}`) needs a residual
-    // object, and array-index / nested paths (`[a, ...t]`, `{ cells: [h] }`)
-    // need index/slice machinery Go's `{{range}}` can't express inline.
-    'rest-destructure-object-spread-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-array-in-map': [{ code: 'BF104', severity: 'error' }],
-    'rest-destructure-nested-in-map': [{ code: 'BF104', severity: 'error' }],
+    // #1310 / #2087: rest destructure in .map() callback. `isLowerableLoopDestructure`
+    // now admits every shape this fixture family exercises — each fixed/rest
+    // binding resolves via `buildSegmentAccessor`/`buildDestructureBindingMap`
+    // against a synthetic `$__bf_item0` range var (the reserved `__bf_item`
+    // name, depth-suffixed): a plain field → `$__bf_item0.Id`, an array-index
+    // step → `(index $__bf_item0 0)`, an array-rest → `(bf_slice $__bf_item0
+    // 1)` (composes under `.length` via `member()`'s generic `len <obj>` arm),
+    // and an object-rest member read (`rest.flag`) → `$__bf_item0.Flag`. A
+    // `{...rest}` SPREAD (`rest-destructure-object-spread-in-map`) routes
+    // through the new `bf_omit` runtime helper instead, so the residual omits
+    // exactly the sibling keys the pattern destructured out. No fixture in
+    // this family is pinned anymore — all six render to real Go / byte-exact
+    // HTML (`rest-destructure-object-in-map`, `rest-destructure-object-spread-in-map`,
+    // `rest-destructure-array-in-map`, `rest-destructure-nested-in-map`,
+    // `destructure-array-index-in-map`, `destructure-nested-object-in-map`).
     // #1443: `[a, b].filter(Boolean).join(' ')` (registry Slot) now
     // lowers to `bf_join (bf_filter_truthy (bf_arr ...)) " "`. No
     // BF101 expected — pinned positively by the
@@ -922,10 +935,18 @@ export function Dyn() {
       expect(types).toContain('Items: nil,')
     })
 
-    test('keeps nil for object keys that are not Go-identifier-safe (#1675 review)', () => {
-      // A quoted key like "data-id" capitalises to `Data-id`, which is not a
-      // valid Go struct field identifier — baking it would emit a keyed struct
-      // literal that doesn't compile, so the whole array must stay nil.
+    test('bakes a non-Go-identifier object key via a sanitized struct field (#1675 review, revised #2087)', () => {
+      // A quoted key like "data-id" used to capitalise to `Data-id` (not a
+      // valid Go struct field identifier), so the struct field was dropped
+      // entirely and the whole array baked to nil rather than emit invalid
+      // Go — silently losing the data. #2087 Phase B's `goFieldNameForKey`
+      // (packages/adapter-go-template/src/adapter/lib/go-naming.ts) instead
+      // PascalCases each segment split on the hyphen (`data-id` → `DataID`,
+      // matching the `id` whole-word initialism), giving the field a real
+      // Go name — needed so the destructure-rest residual lowering
+      // (`rest-destructure-object-spread-in-map`, #2087) has something to
+      // read a non-identifier sibling key back from. The array now bakes for
+      // real instead of deferring to nil.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -938,7 +959,56 @@ export function Rows() {
 }
 `)
       const types = adapter.generate(ir).types!
-      expect(types).toContain('Rows: nil,')
+      expect(types).toContain('DataID string `json:"data-id"`')
+      expect(types).toContain('Rows: []Row{Row{DataID: "a"}},')
+    })
+
+    test('bakes a non-Go-identifier key inside a nested INLINE object with the same sanitizer as the accessor side (#2089 review)', () => {
+      // A nested inline-object property (`meta: { 'data-x': string }` — no
+      // named Go struct, lowered to map[string]interface{}) bakes as a Go map
+      // literal. The map KEY must be produced by `goFieldNameForKey` — the
+      // same function `buildSegmentAccessor`/`structFieldsFor` use — so the
+      // emitted accessor (`.Meta.DataX`, an exact-string MapIndex on maps)
+      // actually finds the value. `capitalizeFieldName` alone would bake
+      // `"Data-x"`, a key no emitted accessor can reach, silently rendering
+      // empty (flagged by Copilot on PR #2089).
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Row = { id: string; meta: { "data-x": string } }
+export function Rows() {
+  const [rows] = createSignal<Row[]>([{ id: "r1", meta: { "data-x": "v" } }])
+  return <ul>{rows().map(({ id, meta }) => <li key={id}>{meta["data-x"]}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('map[string]interface{}{"DataX": "v"}')
+      expect(types).not.toContain('"Data-x"')
+    })
+
+    test('snake_case keys keep their underscore in the generated field name (#2089 review)', () => {
+      // Underscores are VALID Go identifier characters, and `Foo_bar` is the
+      // field name this adapter has always generated for a snake_case key —
+      // `goFieldNameForKey` must NOT split on `_` (that would rename the
+      // generated field to `FooBar`, silently diverging from the `.Foo_bar`
+      // dot access the member emitter produces AND breaking consumers'
+      // hand-written constructors against previously generated types).
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+type Row = { foo_bar: string }
+export function Rows() {
+  const [rows] = createSignal<Row[]>([{ foo_bar: "a" }])
+  return <ul>{rows().map((r) => <li key={r.foo_bar}>{r.foo_bar}</li>)}</ul>
+}
+`)
+      const out = adapter.generate(ir)
+      expect(out.types!).toContain('Foo_bar string `json:"foo_bar"`')
+      expect(out.template).toContain('.Foo_bar')
     })
 
     test('collapses whitespace-padded empty array literal to nil (#1675 review)', () => {
@@ -3589,6 +3659,14 @@ export function C() {
 
   test('@client attribute inside a keyed .map() loop body is also deferred', () => {
     const adapter = new GoTemplateAdapter()
+    // `days` is signal-backed (not a bare function-scope local) so the loop
+    // array itself resolves to a real `.Days []Day` field — a plain
+    // `const days: Day[] = [...]` array-of-objects local has no such backing
+    // (the Go adapter only binds a STRING-derived function-scope const as a
+    // field; #2087's `renderLoop` BF101 check now catches that case loudly
+    // instead of emitting a template that references a nonexistent field).
+    // This test's actual subject is the `/* @client */` attribute deferral
+    // inside a loop body, which is orthogonal to how the array is sourced.
     const result = compileJSX(`
 "use client"
 import { createSignal } from "@barefootjs/client"
@@ -3596,10 +3674,10 @@ type Day = { n: number }
 export function C() {
   const [sel] = createSignal(0)
   const pred = (d: Day) => sel() === d.n
-  const days: Day[] = [{ n: 1 }, { n: 2 }]
+  const [days] = createSignal<Day[]>([{ n: 1 }, { n: 2 }])
   return (
     <div>
-      {days.map((day: Day) => (
+      {days().map((day: Day) => (
         <div key={day.n} data-x={/* @client */ pred(day)}>cell</div>
       ))}
     </div>
@@ -3608,7 +3686,7 @@ export function C() {
 `.trimStart(), 'test.tsx', { adapter })
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     expect(result.errors ?? []).toEqual([])
-    // The loop still renders (the array is a static const) but the deferred
+    // The loop still renders (the array is signal-backed) but the deferred
     // attribute is absent from the emitted `<div>` cell.
     expect(template).toContain('range')
     expect(template).not.toContain('data-x')

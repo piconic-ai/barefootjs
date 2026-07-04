@@ -1431,6 +1431,44 @@ final class BarefootJS
         return $this->backend->mark_raw(implode(' ', $parts));
     }
 
+    /**
+     * Object-rest residual (`{ id, title, ...rest }` -> `rest`), #2087 Phase
+     * B. Returns a TRUE residual -- a fresh assoc array holding every key of
+     * `$bag` EXCEPT those in `$exclude` (the sibling keys the destructure
+     * pattern already bound explicitly) -- not an alias of the whole item,
+     * so a template read of `rest.someExplicitlyDestructuredKey` can't
+     * observe a value the JS destructure semantics say it shouldn't see.
+     *
+     * Mirrors `spread_attrs`'s bag-shape handling: `$bag` is either a
+     * `stdClass` (a JSON-decoded loop item) or a plain PHP assoc array (the
+     * "canonical value convention" accepts both as an "object" -- see
+     * `spread_attrs`'s docstring above). Returns a plain PHP array (not
+     * `stdClass`) so both Twig's dot accessor (`rest.flag`) and
+     * `spread_attrs`'s own bag handling work on the result unchanged --
+     * verified empirically against Twig 3.x: dot notation resolves an
+     * ARRAY-ITEM key before falling back to an object property, so `.flag`
+     * on an assoc array works exactly like `.flag` on a `stdClass`.
+     */
+    public function omit($bag, array $exclude): array
+    {
+        if ($bag instanceof \stdClass) {
+            $assoc = get_object_vars($bag);
+        } elseif (is_array($bag)) {
+            $assoc = $bag;
+        } else {
+            return [];
+        }
+        $excludeSet = array_flip(array_map('strval', $exclude));
+        $out = [];
+        foreach ($assoc as $key => $val) {
+            if (array_key_exists((string) $key, $excludeSet)) {
+                continue;
+            }
+            $out[$key] = $val;
+        }
+        return $out;
+    }
+
     // -----------------------------------------------------------------
     // NEW helpers vs. the Perl/Python ports (design doc section 2): JS
     // `===`/`!==` for the JSON value domain -- Twig `==` compiles to PHP

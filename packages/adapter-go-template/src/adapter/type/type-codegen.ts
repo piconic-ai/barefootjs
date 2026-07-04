@@ -4,7 +4,11 @@
  * Free functions over a {@link GoEmitContext}. They resolve a prop/signal/const's
  * type (`TypeInfo`, a raw type string, or — as a last resort — an inferred shape
  * from a literal value) into the Go type used for its struct field. They read
- * only `state.localTypeNames`; `inferTypeFromValue` is fully pure.
+ * `state.localStructFields` / `state.localTypeAliases` (an ACTUAL Go-backed
+ * local type — a generated struct or a string-union alias) rather than the
+ * broader `state.localTypeNames` (every type definition, including a tuple
+ * alias no struct was ever emitted for — #2087); `inferTypeFromValue` is fully
+ * pure.
  */
 
 import type { TypeInfo } from '@barefootjs/jsx'
@@ -42,7 +46,19 @@ export function typeInfoToGo(
     case 'object':
       return 'map[string]interface{}'
     case 'interface':
-      if (typeInfo.raw && ctx.state.localTypeNames.has(typeInfo.raw)) {
+      // Gate on an ACTUAL backing (a generated struct — `localStructFields` —
+      // or a string-union alias — `localTypeAliases`, which emits `type X =
+      // string`), not mere presence in `localTypeNames`: the latter registers
+      // EVERY type definition unconditionally (#2087), including a tuple alias
+      // (`type Row = readonly [string, string]`) that `typeDefinitionToGo`
+      // can't turn into a struct (no object properties) and so never actually
+      // emits. Returning the bare name for one of those would reference an
+      // undeclared Go type (`[]Row`) and fail to compile — fall through to the
+      // generic-array/interface{} handling below instead, so a tuple-typed
+      // signal bakes as `[]interface{}` (each item itself an `interface{}`
+      // holding a `[]interface{}`) and the destructure `index`/`bf_slice`
+      // lowering still works via reflection regardless of the static type.
+      if (typeInfo.raw && (ctx.state.localStructFields.has(typeInfo.raw) || ctx.state.localTypeAliases.has(typeInfo.raw))) {
         return typeInfo.raw
       }
       // Resolve a raw type string pattern (e.g. `Array<Todo>`).
@@ -76,7 +92,10 @@ export function tsTypeStringToGo(ctx: GoEmitContext, tsType: string): string {
   }
   const arrayMatch = t.match(/^Array<(.+)>$/)
   if (arrayMatch) return `[]${tsTypeStringToGo(ctx, arrayMatch[1])}`
-  if (ctx.state.localTypeNames.has(t)) return t
+  // Same backing gate as `typeInfoToGo`'s 'interface' case above — an
+  // unbacked local type name (a tuple alias with no struct fields) must not
+  // be returned bare, or the generated code references an undeclared type.
+  if (ctx.state.localStructFields.has(t) || ctx.state.localTypeAliases.has(t)) return t
   return 'interface{}'
 }
 

@@ -32,6 +32,8 @@
  *    both sides.
  */
 
+import type { LoopBindingPathSegment } from '@barefootjs/jsx'
+
 /**
  * Escape a string for a Jinja/Python single-quoted literal: backslash first
  * (so it doesn't double-escape the quote we add next), then the quote.
@@ -73,4 +75,40 @@ const RESERVED_WORDS = new Set([
  */
 export function jinjaIdent(name: string): string {
   return RESERVED_WORDS.has(name) ? `${name}_` : name
+}
+
+/**
+ * Build a native Jinja accessor expression from a `.map()` destructure
+ * binding's structured {@link LoopBindingPathSegment} path (#2087 Phase B) —
+ * the per-adapter counterpart to the JS accessor suffix carried in
+ * `LoopParamBinding.path`. Walks `segments` (never string-parses `path` —
+ * repo rule) appending, per step:
+ *
+ *   - `{ kind: 'index', index }` → `[N]` (a Python list index — same postfix
+ *     Jinja uses for dict-key lookup, so this is unambiguous either way).
+ *   - `{ kind: 'field', key, isIdent: true }` → `.key` (bare attribute
+ *     access — Jinja resolves it against a dict transparently).
+ *   - `{ kind: 'field', key, isIdent: false }` → `[<quoted key>]` (e.g. a
+ *     `'data-priority'` sibling key can't be a bare Jinja attribute, same
+ *     reasoning as `jinjaHashKey` on dict-literal keys).
+ *
+ * `base` is the already-`jinjaIdent`-mangled loop variable (or a parent
+ * accessor expression when called recursively); an empty `segments` array
+ * (a rest binding sitting at the loop root) returns `base` unchanged.
+ */
+export function jinjaAccessorFromSegments(
+  base: string,
+  segments: readonly LoopBindingPathSegment[],
+): string {
+  let acc = base
+  for (const seg of segments) {
+    if (seg.kind === 'index') {
+      acc += `[${seg.index}]`
+    } else if (seg.isIdent) {
+      acc += `.${seg.key}`
+    } else {
+      acc += `[${jinjaHashKey(seg.key)}]`
+    }
+  }
+  return acc
 }
