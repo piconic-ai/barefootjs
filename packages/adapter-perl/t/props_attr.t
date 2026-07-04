@@ -36,7 +36,9 @@ is $attr, q{ bf-p='{&#34;note&#34;:&#34;it&#39;s &lt;b&gt; &amp; co&#34;}'},
 my ($value) = $attr =~ /bf-p='([^']*)'/;
 my %ent = ('&#34;' => '"', '&#39;' => "'", '&lt;' => '<', '&gt;' => '>', '&amp;' => '&');
 (my $decoded = $value) =~ s/(&#34;|&#39;|&lt;|&gt;|&amp;)/$ent{$1}/g;
-is JSON::PP->new->decode($decoded), { note => q{it's <b> & co} },
+# Assign first: `is JSON::PP->...` parses as indirect-object notation.
+my $parsed = JSON::PP->new->decode($decoded);
+is $parsed, { note => q{it's <b> & co} },
     'attribute round-trips through entity decoding';
 
 done_testing;
