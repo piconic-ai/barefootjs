@@ -696,6 +696,26 @@ export interface RestExcludeKey {
 }
 
 /**
+ * Structured, non-string form of a `.map()` callback destructure accessor
+ * step — one entry per `.foo` / `["a-b"]` / `[0]` step folded into
+ * {@link LoopParamBinding.path}. Adapters that need to build their own
+ * accessor expression (rather than splice `path` in as a JS suffix) walk
+ * `segments` instead of parsing `path` with a regex (repo rule: never parse
+ * JS/TS syntax with regex or string matching).
+ *
+ * - `{ kind: 'field', key, isIdent }`: an object-property step. `isIdent`
+ *   uses the same `ts.isIdentifierStart`/`isIdentifierPart` classification
+ *   as {@link RestExcludeKey.isIdent} — an adapter choosing between a native
+ *   `.foo` accessor and a quoted/bracketed one (`["data-priority"]`, a
+ *   quoted map key, ...) reads this instead of re-deriving the identifier
+ *   rule itself.
+ * - `{ kind: 'index', index }`: an array-position step (`[0]`, `[1]`, ...).
+ */
+export type LoopBindingPathSegment =
+  | { kind: 'field'; key: string; isIdent: boolean }
+  | { kind: 'index'; index: number }
+
+/**
  * Destructured binding extracted from a `.map()` callback's item parameter.
  *
  * For *fixed* bindings (plain identifier, alias, nested access), `path` is a
@@ -721,6 +741,24 @@ export interface LoopParamBinding {
   rest?:
     | { kind: 'object'; exclude: readonly RestExcludeKey[] }
     | { kind: 'array'; from: number }
+  /**
+   * Structured form of `path` (see {@link LoopBindingPathSegment}).
+   *
+   * - Fixed bindings (`rest` unset): the full accessor from the loop item to
+   *   this binding, one segment per `path` step. Always non-empty — a fixed
+   *   binding always has at least one accessor step.
+   * - Rest bindings (`rest` set): the structured form of the PARENT prefix
+   *   (i.e. of `path`, which for rest bindings holds the parent prefix, not
+   *   an accessor to the rest binding itself) — possibly empty when the
+   *   rest sits at the loop root (`({ ...rest }) => …` / `([...rest]) => …`).
+   *
+   * Optional only so older/foreign IR (built before this field existed)
+   * still type-checks; `extractLoopParamBindings` always populates it now.
+   * Downstream gates (`isLowerableLoopDestructure`) treat a missing
+   * `segments` as "unknown shape" and refuse conservatively rather than
+   * reading it as "binding at the loop root".
+   */
+  segments?: readonly LoopBindingPathSegment[]
 }
 
 export interface IRComponent {

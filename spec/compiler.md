@@ -801,7 +801,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation) |
 | BF023 | Missing `key` attribute in `.map()` loop — root JSX element has no `key` prop |
 | BF024 | Missing `key` attribute in nested `.map()` loop — inner loop root JSX element has no `key` prop |
-| BF025 | Unsupported destructure shape in `.map()` callback (rest element or computed property key) |
+| BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
 | BF043 | Props destructuring breaks reactivity |
 | BF044 | Signal/memo getter passed without calling it |
 | BF060 | Reactive binding (signal/memo getter) referenced from template scope (staged-IR; opt-in diagnostic) |

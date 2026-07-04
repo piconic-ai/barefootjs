@@ -23,6 +23,7 @@ import {
   type AttrValue,
   type IRTemplatePart,
   type LoopParamBinding,
+  type LoopBindingPathSegment,
   type RestExcludeKey,
   type FlatMapCallback,
   type FlatMapJsxFragment,
@@ -2650,7 +2651,11 @@ function extractLoopParamBindings(
       : `${prefix}[${JSON.stringify(key)}]`
   }
 
-  const walk = (p: ts.ArrayBindingPattern | ts.ObjectBindingPattern, prefix: string): void => {
+  const walk = (
+    p: ts.ArrayBindingPattern | ts.ObjectBindingPattern,
+    prefix: string,
+    segments: readonly LoopBindingPathSegment[],
+  ): void => {
     if (unsupported) return
     if (ts.isArrayBindingPattern(p)) {
       const elements = p.elements
@@ -2676,14 +2681,16 @@ function extractLoopParamBindings(
             name: el.name.text,
             path: prefix,
             rest: { kind: 'array', from: index },
+            segments,
           })
           return
         }
         const path = `${prefix}[${index}]`
+        const nextSegments = [...segments, { kind: 'index', index } as const]
         if (ts.isIdentifier(el.name)) {
-          bindings.push({ name: el.name.text, path })
+          bindings.push({ name: el.name.text, path, segments: nextSegments })
         } else {
-          walk(el.name, path)
+          walk(el.name, path, nextSegments)
         }
       }
       return
@@ -2712,6 +2719,7 @@ function extractLoopParamBindings(
           name: el.name.text,
           path: prefix,
           rest: { kind: 'object', exclude: collectedKeys },
+          segments,
         })
         return
       }
@@ -2728,18 +2736,20 @@ function extractLoopParamBindings(
         unsupported = true
         return
       }
-      collectedKeys.push({ key: keyText, isIdent: isIdent(keyText) })
+      const keyIsIdent = isIdent(keyText)
+      collectedKeys.push({ key: keyText, isIdent: keyIsIdent })
       const path = appendDotAccess(prefix, keyText)
+      const nextSegments = [...segments, { kind: 'field', key: keyText, isIdent: keyIsIdent } as const]
       if (ts.isIdentifier(el.name)) {
-        bindings.push({ name: el.name.text, path })
+        bindings.push({ name: el.name.text, path, segments: nextSegments })
       } else {
-        walk(el.name, path)
+        walk(el.name, path, nextSegments)
       }
     }
   }
 
   if (ts.isArrayBindingPattern(pattern) || ts.isObjectBindingPattern(pattern)) {
-    walk(pattern, '')
+    walk(pattern, '', [])
     if (unsupported) return { unsupported: true }
     return bindings
   }

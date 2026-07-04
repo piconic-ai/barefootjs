@@ -26,6 +26,9 @@ export type {
   IRConditional,
   IRLoop,
   IRLoopChildComponent,
+  LoopParamBinding,
+  LoopBindingPathSegment,
+  RestExcludeKey,
   IRComponent,
   IRFragment,
   IRSlot,
@@ -286,7 +289,7 @@ export type { StyleObjectEntry } from './expression-parser.ts'
 export type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, SortKey, FlatDepth, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
 export { buildLoopChainExpr } from './loop-chain.ts'
 export type { LoopChainInputs } from './loop-chain.ts'
-export { isLowerableObjectRestDestructure } from './loop-destructure.ts'
+export { isLowerableLoopDestructure, isLowerableObjectRestDestructure } from './loop-destructure.ts'
 
 // Debug analysis
 export {
