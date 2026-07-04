@@ -31,6 +31,7 @@ import type {
   IRAsync,
   IRMetadata,
   TemplatePrimitiveRegistry,
+  LoopBindingPathSegment,
 } from '@barefootjs/jsx'
 import {
   BaseAdapter,
@@ -59,7 +60,7 @@ import {
   emitAttrValue,
   augmentInheritedPropAccesses,
   collectContextConsumers,
-  isLowerableObjectRestDestructure,
+  isLowerableLoopDestructure,
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   prepareLoweringMatchers,
@@ -74,6 +75,7 @@ import {
   GO_KEYWORDS,
   capitalize,
   capitalizeFieldName,
+  goFieldNameForKey,
   slotIdToFieldSuffix,
   loopKeyToGoFieldPath,
 } from "./lib/go-naming.ts"
@@ -230,9 +232,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private loopScalarItemStack: boolean[] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
-   *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`). Innermost
-   *  last. Lets `.map(({ id, ...rest }) => …)` resolve instead of BF104. */
+   *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`, an
+   *  array-rest → `(bf_slice $__bf_item0 1)`, a nested/index path →
+   *  `(index $__bf_item0.Cells 0)`). Innermost last. Lets `.map(({ id, ...rest
+   *  })` / `.map(([k, v]) =>` / nested-path destructure resolve instead of
+   *  BF104 (#2087 Phase B — see `buildDestructureBindingMap`). */
   private loopBindingStack: Array<Map<string, string>> = []
+  /**
+   * Stack of object-rest exclude-key maps, parallel to `loopBindingStack`
+   * (same push/pop points, innermost last). Only object-rest bindings appear
+   * here — keyed by binding name, each entry carries the PARENT accessor
+   * (same value as `loopBindingStack`'s entry for that name) plus the sibling
+   * keys the destructure pattern already pulled out. `emitSpread` consults
+   * this for a `{...rest}` spread onto an intrinsic element, so the residual
+   * omits exactly the keys the pattern destructured — member reads
+   * (`rest.flag`) don't need it and keep resolving through `loopBindingStack`
+   * alone (#2087 Phase B).
+   */
+  private loopRestExcludeStack: Array<Map<string, { parent: string; excludeKeys: string[] }>> = []
 
   /**
    * Cross-component child shapes, keyed by child component name. Populated via
@@ -591,16 +608,23 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * analyzer's structured properties (no definition-string parsing). Both the
    * struct emitter and the object-literal baker consume it, so a baked literal
    * can't name a field the struct lacks. A non-Go-identifier source key
-   * (`"data-id"`, a numeric key) is dropped here, so the baker bails to nil for
-   * any literal using such a key.
+   * (`"data-priority"`, a numeric key) still gets a field via
+   * `goFieldNameForKey`'s segment-splitting PascalCase (#2087 Phase B —
+   * `rest-destructure-object-spread-in-map`'s `'data-priority'` residual key
+   * needs a real field to bake into, or the whole literal defers to nil); a
+   * dedup guard drops a later key that sanitizes to a Go name already taken
+   * (rare, but two fields can't share one Go identifier).
    */
   private structFieldsFor(td: TypeDefinition): Array<{ tsName: string; goName: string; goType: string }> {
     const fields: Array<{ tsName: string; goName: string; goType: string }> = []
+    const seenGoNames = new Set<string>()
     for (const prop of td.properties ?? []) {
-      if (!GO_IDENTIFIER.test(prop.name)) continue
+      const goName = goFieldNameForKey(prop.name)
+      if (seenGoNames.has(goName)) continue
+      seenGoNames.add(goName)
       fields.push({
         tsName: prop.name,
-        goName: capitalizeFieldName(prop.name),
+        goName,
         goType: typeInfoToGo(this.emitCtx, prop.type),
       })
     }
@@ -4414,20 +4438,78 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Map each destructure binding to its Go accessor on the range var: a named
-   * binding → `$<rangeVar>.<Field>`, an object-rest binding → the bare
-   * `$<rangeVar>` so the member emitter renders `rest.flag` → `$<rangeVar>.Flag`.
+   * Walk a destructure binding's structured `segments` path (#2087 Phase A) into
+   * a Go accessor over `base`. A `field` step appends `.<GoFieldName>` — dot
+   * access resolves against a struct field OR a map key (Go template's
+   * `evalField` supports both), and `goFieldNameForKey` produces a valid Go
+   * identifier regardless of whether the SOURCE key was one (`cells` → `Cells`,
+   * `data-priority` → `DataPriority`) — Go dot-syntax only requires the EMITTED
+   * name to be a legal identifier, not the original JS key. An `index` step
+   * has no dot-notation form, so it wraps in Go's `index` builtin
+   * (`(index <acc> N)`); the wrap also parenthesises the whole accessor so a
+   * following step or an outer composition (`len (...)`) can't swallow it as
+   * extra call arguments.
    */
-  private buildDestructureBindingMap(loop: IRLoop, rangeVar: string): Map<string, string> {
-    const m = new Map<string, string>()
+  private buildSegmentAccessor(base: string, segments: readonly LoopBindingPathSegment[]): string {
+    let acc = base
+    for (const seg of segments) {
+      acc = seg.kind === 'field' ? `${acc}.${goFieldNameForKey(seg.key)}` : `(index ${acc} ${seg.index})`
+    }
+    return acc
+  }
+
+  /**
+   * Map each destructure binding to its Go accessor on the range var (#2087
+   * Phase B — `isLowerableLoopDestructure` admits every shape below):
+   *
+   *   - fixed binding (any depth): the FULL `segments` path over the range var
+   *     (`id` → `$item.Id`, `head` in `cells: [head]` → `(index $item.Cells 0)`,
+   *     `k` in `[k, v]` → `(index $item 0)`).
+   *   - array-rest (`[first, ...tail]`): the PARENT `segments` prefix wrapped in
+   *     `bf_slice` (`tail` → `(bf_slice $item 1)`) — this IS the binding's whole
+   *     value, so it composes correctly both bare and under `.length` (`len
+   *     (bf_slice $item 1)`, via the `member()` emitter's generic `len <obj>`
+   *     arm).
+   *   - object-rest (`{ id, ...rest }`): the bare PARENT accessor, so a member
+   *     read (`rest.flag`) renders `$item.Flag` — the simplest lowering that
+   *     keeps the already-green `rest-destructure-object-in-map` fixture byte-
+   *     exact. A `{...rest}` SPREAD needs the residual (item minus the
+   *     destructured siblings), which this map alone can't express; that case
+   *     is tracked separately in the returned `restExcludes` map and consumed
+   *     by `emitSpread`'s `bf_omit` lowering, not through this binding value.
+   */
+  private buildDestructureBindingMap(
+    loop: IRLoop,
+    rangeVar: string,
+  ): {
+    bindings: Map<string, string>
+    restExcludes: Map<string, { parent: string; excludeKeys: string[] }>
+  } {
+    const bindings = new Map<string, string>()
+    const restExcludes = new Map<string, { parent: string; excludeKeys: string[] }>()
+    const base = `$${rangeVar}`
     for (const b of loop.paramBindings ?? []) {
-      if (b.rest) {
-        m.set(b.name, `$${rangeVar}`)
+      const parent = this.buildSegmentAccessor(base, b.segments ?? [])
+      if (!b.rest) {
+        bindings.set(b.name, parent)
+      } else if (b.rest.kind === 'array') {
+        bindings.set(b.name, `(bf_slice ${parent} ${b.rest.from})`)
       } else {
-        m.set(b.name, `$${rangeVar}.${capitalizeFieldName(b.path.slice(1))}`)
+        bindings.set(b.name, parent)
+        restExcludes.set(b.name, { parent, excludeKeys: b.rest.exclude.map(k => k.key) })
       }
     }
-    return m
+    return { bindings, restExcludes }
+  }
+
+  /** Innermost-first lookup mirroring `loopBindingStack`'s search in
+   * `identifier()`, but over the object-rest exclude-key side table. */
+  private lookupRestExclude(name: string): { parent: string; excludeKeys: string[] } | undefined {
+    for (let i = this.loopRestExcludeStack.length - 1; i >= 0; i--) {
+      const info = this.loopRestExcludeStack[i].get(name)
+      if (info) return info
+    }
+    return undefined
   }
 
   renderLoop(loop: IRLoop): string {
@@ -4446,15 +4528,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     //
     // Check the IR's structured `paramBindings` field rather than string-matching
     // `loop.param`: Phase 1 populates it iff the param is a destructure pattern,
-    // and the structured check is robust to formatting variants. A destructure
-    // param is lowerable only for the object-rest / simple-field shape
-    // (`.map(({ id, title, ...rest }) => …)`, `rest` read via member access):
-    // each binding resolves to a field on a named range var (`$__bf_item0.Id`,
-    // `rest.flag` → `$__bf_item0.Flag`). Array-index / nested / rest-spread
-    // shapes (`[a, ...t]`, `{ cells: [h] }`, `{...rest}`) still need machinery
-    // Go's `{{range}}` can't express inline → BF104.
+    // and the structured check is robust to formatting variants. `isLowerableLoopDestructure`
+    // (#2087 Phase A/B) admits fixed bindings at ANY depth (`.field`, array-index,
+    // nested combinations of either — `buildSegmentAccessor` walks the structured
+    // `segments` path), array-rest (`[a, ...t]` → `bf_slice`), and object-rest
+    // whose every use is a member read (`rest.flag`) or a `{...rest}` spread onto
+    // an intrinsic element (→ `bf_omit`, see `emitSpread`). Still refused (BF104):
+    // a bare-value object-rest use (`String(rest)`, `{rest}`, spread onto a
+    // component), and a `.filter().map(destructure)` chain — those need either the
+    // actual residual object or a filter-param retarget this lowering doesn't do.
     const destructure = !!(loop.paramBindings && loop.paramBindings.length > 0)
-    const supportableDestructure = destructure && isLowerableObjectRestDestructure(loop)
+    const supportableDestructure = destructure && isLowerableLoopDestructure(loop)
     if (destructure && !supportableDestructure) {
       this.state.errors.push({
         code: 'BF104',
@@ -4469,6 +4553,42 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             `  3. Move the loop into a primitive that the adapter registers explicitly.`,
         },
       })
+    }
+
+    // A loop array that's a bare reference to a FUNCTION-SCOPE local const with
+    // a computed initializer (`const entries = Object.entries(props.x ??
+    // {}).filter(...)`) can't be bound as a Go template value: module-scope
+    // consts (`isModule`) are a different, already-working case (statically
+    // evaluated and seeded into the render context elsewhere), but a
+    // function-scope local only reaches the template at all via
+    // `computeDerivedConstFields`'s STRING-typed derived-const lowering
+    // (`isStringExpr`) — an array-typed initializer like this one never
+    // qualifies, so `identifier()` would still emit `.Entries` (the naive
+    // `rootFieldRef` fallback) while `generateTypes` emits no such field.
+    // `html/template` resolves struct fields dynamically at EXECUTE time, not
+    // at Go compile time, so left unchecked this fails loudly only when the
+    // template actually runs (`can't evaluate field Entries in type
+    // ...Props`) instead of at build time. Pre-existing, general limitation,
+    // orthogonal to #2087's destructure-binding work — newly reachable in this
+    // adapter's test corpus only because the widened destructure gate (#2087
+    // Phase A/B) no longer refuses `static-array-from-props`'s `([emoji,
+    // users]) => ...` param first. Cross-adapter policy: Jinja / ERB apply the
+    // same narrow check in their own `renderLoop` (see `jinja-adapter.ts`).
+    const arrayName = loop.array.trim()
+    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+      const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
+      if (arrayConst && !arrayConst.isModule && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop array \`${arrayName}\` is a local computed value (\`${arrayConst.value}\`) that the Go template adapter cannot bind as a template variable — only a string-derived local resolves to a generated struct field.`,
+          loc: loop.loc ?? this.makeLoc(),
+          suggestion: {
+            message:
+              'Pre-compute the array server-side and pass it as a prop, or mark the loop position as @client-only so it runs in JS on the client.',
+          },
+        })
+      }
     }
 
     let goArray = this.convertExpressionToGo(loop.array)
@@ -4513,7 +4633,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (supportableDestructure) {
       // Bindings resolve against the synthetic `$__bf_item` range var; don't push
       // a loop param (the param is a pattern, not a name).
-      this.loopBindingStack.push(this.buildDestructureBindingMap(loop, rangeValue))
+      const built = this.buildDestructureBindingMap(loop, rangeValue)
+      this.loopBindingStack.push(built.bindings)
+      this.loopRestExcludeStack.push(built.restExcludes)
       pushedBindingMap = true
       this.loopParamStack.push('')
       if (rangeIndex !== '_') {
@@ -4551,7 +4673,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       else this.loopVarRefCount.set(v, rc)
     }
     this.loopParamStack.pop()
-    if (pushedBindingMap) this.loopBindingStack.pop()
+    if (pushedBindingMap) {
+      this.loopBindingStack.pop()
+      this.loopRestExcludeStack.pop()
+    }
     this.inLoop = false
 
     // Apply sort if present: wrap the array in a sort pipeline before `range`.
@@ -4896,15 +5021,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // Property access through the loop param (`t.attrs`) is already handled
         // by the member-expression path that returns `.Attrs`.
         //
-        // The emit path is wired up but end-to-end fixture coverage is gated on
-        // two harness gaps: (a) `buildGoPropsInit` in `test-render.ts` can't pass
-        // nested-object arrays from JS into the Go input struct, and (b)
-        // `convertInitialValue` returns `nil` for complex literal arrays so
-        // signal-init arrays of objects don't reach the SSR template.
+        // A per-item spread whose operand is a plain object/array field read
+        // (not a destructure-rest binding) is otherwise gated on whether the
+        // enclosing signal's literal initial value bakes at all — see
+        // `parsed-literal-to-go.ts`'s nested object/array property support
+        // (#2087), which lifted the flat-object-only restriction for the
+        // destructure-residual fixtures below.
         const trimmed = value.expr.trim()
         const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
         if (currentLoopParam && trimmed === currentLoopParam) {
           return `{{bf_spread_attrs .}}`
+        }
+        // Destructure object-rest spread onto an element (`{...rest}`, #2087
+        // Phase B): `rest` alone would spread the WHOLE item (every field,
+        // including the ones the pattern already destructured out as `id` /
+        // `title`) — route through `bf_omit` instead so the residual excludes
+        // exactly those sibling keys. Only a spread whose expr is the BARE
+        // rest name matches (`isLowerableLoopDestructure`'s admitted shape);
+        // anything else (`{...fn(rest)}`) already refused at the IR gate.
+        const restInfo = this.lookupRestExclude(trimmed)
+        if (restInfo) {
+          const excludeArgs = restInfo.excludeKeys.map(k => JSON.stringify(k)).join(' ')
+          const omitArgs = excludeArgs ? `${restInfo.parent} ${excludeArgs}` : restInfo.parent
+          return `{{bf_spread_attrs (bf_omit ${omitArgs})}}`
         }
         const goExpr = this.convertExpressionToGo(value.expr)
         // `convertExpressionToGo` already pushes BF101 for unsupported

@@ -13,10 +13,8 @@ import { createFixture } from '../src/types'
  * accessor without string-parsing `path`.
  *
  * Hono / CSR already lowered nested fixed-path destructure pre-#2087 (the
- * client-JS emit path is unchanged by this PR). Text-template adapters
- * refuse the shape with BF104 until each grows a `segments`-based emitter
- * in Phase B — no `expectedDiagnostics` pins are added here for that; this
- * fixture is expected to fail on those adapters' suites until then.
+ * client-JS emit path is unchanged). All seven template adapters lower it
+ * via their `segments`-based accessor emitters; none pin a diagnostic.
  */
 export const fixture = createFixture({
   id: 'destructure-nested-object-in-map',

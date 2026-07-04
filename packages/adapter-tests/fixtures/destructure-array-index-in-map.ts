@@ -14,13 +14,11 @@ import { createFixture } from '../src/types'
  * `destructure-nested-object-in-map`.
  *
  * Hono / CSR already lowered this pre-#2087 (the client-JS emit path is
- * unchanged by this PR — see `wrapLoopParamAsAccessor` /
- * `renderLoopBindingAccess`). Text-template adapters (Go, Mojo, Xslate,
- * Twig, Jinja, ERB, Rust/MiniJinja) gain the ability to admit this shape
- * only once each grows a `segments`-based accessor emitter in Phase B —
- * until then they still refuse it with BF104. Do not add
- * `expectedDiagnostics` pins for this fixture in any adapter's suite
- * (Phase B owns that).
+ * unchanged — see `wrapLoopParamAsAccessor` / `renderLoopBindingAccess`).
+ * All seven template adapters (Go, Mojo, Xslate, Twig, Jinja, ERB,
+ * Rust/MiniJinja) lower it via their `segments`-based accessor emitters;
+ * the loop item is an ARRAY here, so the fixed bindings start with an
+ * index segment (`[0]` / `[1]`) rather than a field step.
  */
 export const fixture = createFixture({
   id: 'destructure-array-index-in-map',

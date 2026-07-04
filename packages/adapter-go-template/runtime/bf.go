@@ -152,6 +152,10 @@ func FuncMap() template.FuncMap {
 
 		// JSX intrinsic-element spread lowering (#1407)
 		"bf_spread_attrs": SpreadAttrs,
+
+		// Destructure object-rest spread-onto-element residual (#2087):
+		// "every field except these" for a struct/map, keyed by json tag.
+		"bf_omit": Omit,
 	}
 }
 
@@ -535,6 +539,85 @@ func SpreadAttrs(bag any) template.HTMLAttr {
 		return ""
 	}
 	return template.HTMLAttr(strings.Join(parts, " "))
+}
+
+// Omit builds a `map[string]any` residual bag from a struct or map value,
+// excluding the given keys — powers the `{...rest}` spread-onto-element
+// lowering for a destructured `.map()` loop-item's object-rest binding
+// (#2087): `.map(({ id, title, ...rest }) => <li {...rest}>)` needs "every
+// field EXCEPT the ones the pattern already destructured out", and a static
+// Go struct type has no way to express "minus a field" — the exclude set is
+// known at COMPILE TIME (the sibling keys the destructure pattern names), so
+// the compiler passes them here and this does the per-item field-vs-key
+// matching a static type can't. The result feeds `bf_spread_attrs`
+// (`SpreadAttrs`), same as a top-level `{...attrs()}` bag.
+//
+// Struct receiver: iterates exported fields via reflection, keyed by each
+// field's `json` struct tag (falling back to the Go field name when absent)
+// — the generated struct's json tag is always the ORIGINAL source property
+// name (see `structFieldsFor` / `typeDefinitionToGo` in the Go adapter), so
+// this reproduces the exact JS key `SpreadAttrs`'s `toAttrName` expects
+// (`"data-priority"`, not a re-derived `"DataPriority"`). A tag of `"-"`
+// (opt-out) is skipped like `encoding/json` does.
+//
+// Map receiver: copies string keys through directly, same exclude/skip
+// rules.
+//
+// Anything else (nil, a non-struct/non-map interface) returns an empty map.
+func Omit(item any, excludeKeys ...string) map[string]any {
+	exclude := make(map[string]struct{}, len(excludeKeys))
+	for _, k := range excludeKeys {
+		exclude[k] = struct{}{}
+	}
+	out := map[string]any{}
+	rv := reflect.ValueOf(item)
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return out
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Struct:
+		rt := rv.Type()
+		for i := 0; i < rt.NumField(); i++ {
+			field := rt.Field(i)
+			if !field.IsExported() {
+				continue
+			}
+			key := field.Name
+			if tag, ok := field.Tag.Lookup("json"); ok {
+				if comma := strings.Index(tag, ","); comma >= 0 {
+					tag = tag[:comma]
+				}
+				if tag == "-" {
+					continue
+				}
+				if tag != "" {
+					key = tag
+				}
+			}
+			if _, skip := exclude[key]; skip {
+				continue
+			}
+			out[key] = rv.Field(i).Interface()
+		}
+	case reflect.Map:
+		for _, k := range rv.MapKeys() {
+			if k.Kind() != reflect.String {
+				continue
+			}
+			key := k.String()
+			if _, skip := exclude[key]; skip {
+				continue
+			}
+			val := rv.MapIndex(k)
+			if val.IsValid() {
+				out[key] = val.Interface()
+			}
+		}
+	}
+	return out
 }
 
 // BfPropsAttr returns the bf-p attribute with the JSON-serialized

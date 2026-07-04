@@ -20,11 +20,12 @@ import { createFixture } from '../src/types'
  * destructured `title` sibling key is identifier-named; the rest
  * residual carries `data-priority` through to the spread).
  *
- * Text-template adapters (Go, Mojo) refuse the whole destructure shape
- * with BF104 regardless of whether the rest is spread or read; the
- * per-adapter `expectedDiagnostics` declarations pin that contract.
- * When either adapter grows a native lowering, dropping the diagnostic
- * here is the single edit that flips the contract on.
+ * Since #2087 the template adapters lower this shape natively: the rest
+ * local binds a TRUE residual bag (an `omit`-style runtime helper / Ruby
+ * `Hash#except`, subtracting the `RestExcludeKey` siblings) and the
+ * existing spread-attrs pipeline emits it, so the non-identifier
+ * `data-priority` key flows through each engine's quoted/attribute
+ * access form. Previously refused with BF104 and pinned per adapter.
  *
  * SSR / CSR attribute-order divergence (surfaced limitation):
  * Hono SSR serializes the residual-object attributes BEFORE the

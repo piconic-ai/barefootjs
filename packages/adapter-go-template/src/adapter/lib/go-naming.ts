@@ -50,6 +50,29 @@ export function capitalizeFieldName(name: string): string {
 }
 
 /**
+ * Resolve ANY source property key — identifier or not (`data-priority`,
+ * `aria-label`, a numeric key) — to a valid Go struct field name. Splits on
+ * runs of non-alphanumeric characters and PascalCases each segment through
+ * `capitalizeFieldName`, so a plain identifier key round-trips to the exact
+ * same name `capitalizeFieldName` alone would produce (single segment, no
+ * separator) while a hyphenated key gets a real field instead of being
+ * silently dropped (`data-priority` → `DataPriority`). Falls back to
+ * `Field` for a key with no alphanumeric characters at all (not expected
+ * from real TS property names, but keeps the function total).
+ *
+ * Used for struct-field generation (#2087 Phase B — `structFieldsFor`) so a
+ * TS object type with a quoted non-identifier key (`'data-priority':
+ * string`) still gets a real field the destructure-rest lowering can bake
+ * into and read back, instead of the value being silently deferred out of
+ * the baked literal.
+ */
+export function goFieldNameForKey(key: string): string {
+  const parts = key.split(/[^A-Za-z0-9]+/).filter(Boolean)
+  if (parts.length === 0) return 'Field'
+  return parts.map(capitalizeFieldName).join('')
+}
+
+/**
  * Convert a slot ID (e.g., 's6') to a Go struct field suffix (e.g., 'Slot6').
  * Keeps field names human-readable regardless of the internal slot ID format.
  */
