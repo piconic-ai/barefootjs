@@ -249,4 +249,78 @@ class EvaluatorTest < Minitest::Test
     mj = Ev.map_json(users, JSON.generate(field), 'u')
     assert_equal %w[Ada Grace], mj
   end
+
+  # #2094: a callback body can itself contain a nested `.map`/`.filter` --
+  # e.g. the `.flatMap(p => p.tags.map(t => '#' + t))` blog-showcase shape
+  # (#1938). The nested call is a `call` node whose callee is
+  # `{kind: 'member', object, property: 'map'|'filter', computed: false}`
+  # and whose first arg is an `arrow` node -- recognized BEFORE the
+  # builtin-callee check, mirroring Go's `evalArrayCallbackCall`.
+  def narrow(params, body)
+    { kind: 'arrow', params: params, body: body }
+  end
+
+  def ncall_method(object, prop, args)
+    { kind: 'call', callee: nmem(object, prop), args: args }
+  end
+
+  def test_nested_map_string_prefix_projection
+    body = ncall_method(nmem(nid('item'), 'tags'), 'map', [narrow(['t'], nbin('+', nstr('#'), nid('t')))])
+    env = { item: { tags: %w[go perl] } }
+    assert_equal %w[#go #perl], Ev.evaluate(body, env)
+  end
+
+  def test_nested_map_two_param_arrow_value_and_index
+    body = ncall_method(
+      nid('arr'), 'map',
+      [narrow(%w[v i], nbin('+', nid('v'), nid('i')))],
+    )
+    assert_equal [10, 21, 32], Ev.evaluate(body, { arr: [10, 20, 30] })
+  end
+
+  def test_nested_filter_predicate_with_comparison
+    body = ncall_method(
+      nid('arr'), 'filter',
+      [narrow(['x'], nbin('>', nid('x'), nnum(1)))],
+    )
+    assert_equal [2, 3], Ev.evaluate(body, { arr: [1, 2, 3] })
+  end
+
+  def test_nested_filter_composed_with_length
+    # `arr.filter(x => x > 1).length > 0`
+    filter_call = ncall_method(nid('arr'), 'filter', [narrow(['x'], nbin('>', nid('x'), nnum(1)))])
+    body = nbin('>', nmem(filter_call, 'length'), nnum(0))
+    assert_equal true, Ev.evaluate(body, { arr: [1, 2, 3] })
+    assert_equal false, Ev.evaluate(body, { arr: [1] })
+  end
+
+  # #2094: `.join(sep?)` as a plain `array-method` node. Default separator
+  # ",", and a `nil` element joins as "" (not the string "null").
+  def test_array_method_join
+    join_node = ->(object, args = []) { { kind: 'array-method', method: 'join', object: object, args: args } }
+    assert_equal 'a,b,c', Ev.evaluate(join_node.call(nid('arr')), { arr: %w[a b c] })
+    assert_equal 'a-b-c', Ev.evaluate(join_node.call(nid('arr'), [nstr('-')]), { arr: %w[a b c] })
+    assert_equal '', Ev.evaluate(join_node.call(nid('arr')), { arr: [] })
+    assert_equal 'a,,b', Ev.evaluate(join_node.call(nid('arr')), { arr: ['a', nil, 'b'] })
+  end
+
+  # Doubly-nested: `.flatMap(p => p.tags.map(t => '#'+t)).join(', ')` (the
+  # #1938 blog-showcase shape) composes flat_map (the outer higher-order
+  # fold) with a nested `.map` inside the projection body, then `.join` on
+  # the flattened result.
+  def test_doubly_nested_map_then_join
+    proj = ncall_method(nmem(nid('p'), 'tags'), 'map', [narrow(['t'], nbin('+', nstr('#'), nid('t')))])
+    posts = [{ tags: %w[go perl] }, { tags: ['rust'] }]
+    flattened = Ev.flat_map(posts, proj, 'p')
+    assert_equal %w[#go #perl #rust], flattened
+
+    join_node = { kind: 'array-method', method: 'join', object: nid('flattened'), args: [nstr(', ')] }
+    assert_equal '#go, #perl, #rust', Ev.evaluate(join_node, { flattened: flattened })
+  end
+
+  # `.length` on arrays AND strings resolves via a plain `member` read.
+  def test_length_on_array_and_string
+    assert_equal 3, Ev.evaluate(nmem(nid('arr'), 'length'), { arr: [1, 2, 3] })
+    assert_equal 5, Ev.evaluate(nmem(nid('s'), 'length'), { s: 'hello' })
+  end
 end

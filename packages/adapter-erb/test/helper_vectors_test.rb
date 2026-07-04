@@ -99,6 +99,7 @@ class HelperVectorsTest < Minitest::Test
     'slice' => ->(recv, s, e = nil) { BF.slice(recv, s, e) },
     'reverse' => ->(v) { BF.reverse(v) },
     'flat' => ->(*a) { BF.flat(*a) },
+    'flat_dynamic' => ->(*a) { BF.flat_dynamic(*a) },
     'join' => ->(*a) { BF.join(*a) },
     # Array literals are native Arrays on the ERB backend.
     'arr' => ->(*a) { a },

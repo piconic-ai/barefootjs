@@ -602,6 +602,28 @@ module BarefootJS
       out
     end
 
+    # `Array.prototype.flat(depth)` where `depth` is a DYNAMIC value (#2094)
+    # -- e.g. `items.flat(props.depth)` -- rather than a compile-time
+    # literal. Coerces `depth` via JS `ToIntegerOrInfinity` (truncate toward
+    # zero; NaN/non-numeric -> 0; negative -> 0; +Infinity or a huge finite
+    # value -> flatten fully) and delegates to `flat`.
+    #
+    # This is a SEPARATE method from `flat`, not a smarter overload of it:
+    # `flat`'s `depth` parameter treats `-1` as a compile-time SENTINEL
+    # meaning "the source literally wrote `Infinity`" (the parser's own
+    # normalisation, baked into the emitted template). A genuinely dynamic
+    # depth value that happens to be `-1` at render time means the
+    # JS-correct OPPOSITE: `.flat(-1)` never recurses (same as `.flat(0)`,
+    # a shallow copy), because real JS only recurses when depth > 0.
+    # Reusing `flat`'s int contract for a raw dynamic value would silently
+    # invert that case, so this coerces FIRST -- mapping a real `+Infinity`
+    # / huge finite value to `flat`'s own `-1` sentinel, and a real negative
+    # value to `0` -- and only then delegates to `flat`'s recursion. Mirrors
+    # Go's `FlatDynamicDepth`/`coerceFlatDepth` (adapter-go-template/runtime/bf.go).
+    def flat_dynamic(recv, depth)
+      flat(recv, coerce_flat_depth(depth))
+    end
+
     # `Array.prototype.flatMap(fn)` value-returning field projection: map
     # each element through a self/field projection, then flatten one level.
     def flat_map(recv, key_kind, key)
@@ -1034,6 +1056,47 @@ module BarefootJS
 
     def numeric_or_zero(v)
       numeric_like?(v) ? numeric_value(v) : 0
+    end
+
+    # ToIntegerOrInfinity-ish coercion for a dynamic `.flat(depth)` argument
+    # (#2094), returning an int in `flat`'s own contract (`-1` = unbounded,
+    # `>= 0` = that many levels). Mirrors Go's `coerceFlatDepth`.
+    def coerce_flat_depth(depth)
+      f = flat_depth_to_float(depth)
+      return 0 if f.nil? || f.nan?
+      return -1 if f.infinite? == 1
+      return 0 if f.infinite? == -1
+
+      trunc = f.truncate
+      return 0 if trunc.negative?
+      # A huge finite depth behaves identically to "flatten fully" in
+      # practice -- capping it here avoids an absurd countdown without
+      # needing a second sentinel (mirrors Go's `coerceFlatDepth`).
+      return -1 if trunc > 1_000_000
+
+      trunc
+    end
+
+    # ToNumber-ish coercion feeding `coerce_flat_depth`, mirroring JS across
+    # the value shapes a dynamic `.flat(depth)` argument can carry: nil ->
+    # not coercible (signalled as `nil`, treated as NaN by the caller);
+    # Numeric -> its float value; bool -> 1/0; a numeric string -> its
+    # value, INCLUDING the "Infinity"/"-Infinity" spellings (unlike Go's
+    # `strconv.ParseFloat`, Ruby's own `Float()` does not parse those, so
+    # they are special-cased here first); any other string -> not coercible.
+    def flat_depth_to_float(v)
+      return nil if v.nil?
+      return v.to_f if v.is_a?(Numeric)
+      return v ? 1.0 : 0.0 if v.is_a?(TrueClass) || v.is_a?(FalseClass)
+      return nil unless v.is_a?(String)
+
+      s = v.strip
+      return 0.0 if s.empty?
+      return Float::INFINITY if s == 'Infinity' || s == '+Infinity'
+      return -Float::INFINITY if s == '-Infinity'
+      return Float(s) if s =~ NUMERIC_STRING_RE
+
+      nil
     end
 
     # Compare two projected sort keys, ascending orientation (-1/0/1); the
