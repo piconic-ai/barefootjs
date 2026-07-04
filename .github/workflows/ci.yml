@@ -23,6 +23,7 @@ on:
       # Central divergence validation in adapter-tests re-checks every
       # adapter's declarations, so it must re-run when any adapter edits its.
       - 'packages/**/vector-divergences.json'
+      - 'scripts/ci/shard-test-files.ts'
   pull_request:
     paths:
       - 'packages/client/**'
@@ -44,6 +45,7 @@ on:
       # Central divergence validation in adapter-tests re-checks every
       # adapter's declarations, so it must re-run when any adapter edits its.
       - 'packages/**/vector-divergences.json'
+      - 'scripts/ci/shard-test-files.ts'
 
 permissions:
   contents: read
@@ -51,6 +53,21 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    name: test (${{ matrix.group }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # jsx-1/jsx-2 split packages/jsx's 178 test files into two
+          # size-balanced shards (see scripts/ci/shard-test-files.ts) since
+          # jsx dominates unit test wall time (~300-440s vs ~25-180s for the
+          # other packages). `rest` covers everything else in one runner.
+          - group: jsx-1
+            run: bun test $(bun scripts/ci/shard-test-files.ts packages/jsx 1 2)
+          - group: jsx-2
+            run: bun test $(bun scripts/ci/shard-test-files.ts packages/jsx 2 2)
+          - group: rest
+            run: bun test packages/client packages/test packages/adapter-tests
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -67,7 +84,7 @@ jobs:
           bun run --filter '@barefootjs/client' build
 
       - name: Run unit tests
-        run: bun test packages/client packages/jsx packages/test packages/adapter-tests
+        run: ${{ matrix.run }}
 
   test-ui:
     runs-on: ubuntu-latest
