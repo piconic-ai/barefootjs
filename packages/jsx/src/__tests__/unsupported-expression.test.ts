@@ -136,12 +136,14 @@ describe('Unsupported Expression Error (BF021)', () => {
 })
 
 describe('Unsupported Sort Comparator (BF021)', () => {
-  test('emits BF021 for function-reference comparator — outside accepted catalogue', () => {
+  test('function-reference comparator resolves through scope — no BF021 (#2090)', () => {
     // #1448 Tier B follow-up widened the catalogue to include
     // multi-key (`a.x - b.x || a.y - b.y`), relational ternary, and
-    // single-`return` block bodies. Function-reference comparators
-    // (`arr.sort(cmp)` where `cmp` is a named function) are still out
-    // of scope — they need scope resolution and refuse here.
+    // single-`return` block bodies. #2090 closes the remaining gap:
+    // a bare identifier callback (`arr.sort(cmp)`) is now resolved
+    // through the analyzer's scope machinery (one hop, same-file
+    // only) to the const-bound arrow, then fed through the same
+    // catalogue as an inline comparator.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -152,7 +154,73 @@ describe('Unsupported Sort Comparator (BF021)', () => {
         return (
           <ul>
             {items().sort(cmp).map(t => (
-              <li>{t.name}</li>
+              <li key={t.name}>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { ir, errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(0)
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      expect(loop).toBeDefined()
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        expect(loop.sortComparator!.raw).toBe('a.priority - b.priority')
+      }
+    }
+  })
+
+  test('function-declaration comparator reference resolves — no BF021 (#2090)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function cmp(a, b) { return a.priority - b.priority }
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().toSorted(cmp).map(t => (
+              <li key={t.name}>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { ir, errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(0)
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        expect(loop.sortComparator!.raw).toBe('a.priority - b.priority')
+      }
+    }
+  })
+
+  test('identifier resolving to a non-function const emits BF021 (#2090)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        const cmp = 5
+        return (
+          <ul>
+            {items().sort(cmp).map(t => (
+              <li key={t.name}>{t.name}</li>
             ))}
           </ul>
         )
@@ -163,16 +231,135 @@ describe('Unsupported Sort Comparator (BF021)', () => {
     const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
 
     expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('could not be resolved')
   })
 
-  test('@client suppresses BF021 for unsupported sort comparator', () => {
+  test('cross-kind shadowing (component const over module function) emits BF021, not the shadowed function (#2090)', () => {
+    // A name bound both as a const and as a `function` declaration can
+    // only happen across scopes, and FunctionInfo does not carry lexical
+    // scope (component-body functions are hoisted for client emission).
+    // Resolution refuses the ambiguity rather than guessing — pre-fix
+    // this wrongly compiled against the shadowed module function
+    // (Copilot review on #2091).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function cmp(a, b) { return a.priority - b.priority }
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        const cmp = 5
+        return (
+          <ul>
+            {items().sort(cmp).map(t => (
+              <li key={t.name}>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('could not be resolved')
+  })
+
+  test('cross-kind shadowing (component function over module const) also refuses with BF021 (#2090)', () => {
+    // The safe half of the same ambiguity: JS would use the component
+    // function here, but resolution cannot prove which binding the call
+    // site sees, so it refuses loudly instead of risking the WRONG
+    // (opposite-direction) comparator.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      const byPrice = (a, b) => a.price - b.price
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        function byPrice(a, b) { return b.price - a.price }
+        return (
+          <ul>
+            {products().sort(byPrice).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('could not be resolved')
+  })
+
+  test('unresolved (imported) identifier comparator emits BF021 (#2090)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { cmp } from './cmp'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        return (
+          <ul>
+            {items().sort(cmp).map(t => (
+              <li key={t.name}>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('could not be resolved')
+  })
+
+  test('resolved-but-off-catalogue comparator body emits BF021 naming the comparator (#2090)', () => {
+    // `a.deep.x - b.deep.x` has operand depth > 1 — `classifySortOperand`
+    // only accepts the param itself or a single-level field access, so this
+    // stays refused even once the identifier resolves to the arrow.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
 
       export function TodoList() {
         const [items, setItems] = createSignal<any[]>([])
-        const cmp = (a, b) => a.priority - b.priority
+        const cmp = (a, b) => a.deep.x - b.deep.x
+        return (
+          <ul>
+            {items().sort(cmp).map(t => (
+              <li key={t.name}>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain("'cmp'")
+    expect(bf021[0].message).toContain('not a supported shape')
+  })
+
+  test('@client suppresses BF021 for an unresolved sort comparator identifier', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { cmp } from './cmp'
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
         return (
           <ul>
             {/* @client */ items().sort(cmp).map(t => (

@@ -3544,7 +3544,6 @@ export { C }
 
   // Tier B `.sort` / `.toSorted` follow-ups still refused with BF021.
   const unsupportedSort: Array<[string, string]> = [
-    ['function-reference comparator', `items().toSorted(myCmp).map(x => <li key={x.name}>{x.name}</li>)`],
     ['localeCompare locale/options arg', `items().toSorted((a, b) => a.name.localeCompare(b.name, "ja", { numeric: true })).map(x => <li key={x.name}>{x.name}</li>)`],
   ]
   for (const [label, chain] of unsupportedSort) {
@@ -3566,6 +3565,17 @@ export function C() {
       expect(guarded.template).toMatch(/bfComment "loop:l\d+"/)
     })
   }
+
+  // #2090: a function-reference comparator (`.toSorted(myCmp)`, `myCmp` a
+  // same-file const arrow) now resolves through the analyzer's scope
+  // machinery and compiles — no BF021, and the sort lowers exactly like an
+  // inline comparator (`bf_sort` / `bf_sort_eval` group in the template).
+  test('sort follow-up (function-reference comparator): resolves and compiles without BF021', () => {
+    const chain = `items().toSorted(myCmp).map(x => <li key={x.name}>{x.name}</li>)`
+    const result = emitLoop(chain, false)
+    expect(result.errors).toEqual([])
+    expect(result.template).toMatch(/bf_sort/)
+  })
 
   // End-to-end proof via `go run`: the `@client` form renders a
   // `<!--bf-client:sN-->` placeholder. The bare form is now caught at

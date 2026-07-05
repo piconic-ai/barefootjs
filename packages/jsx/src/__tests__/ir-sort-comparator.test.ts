@@ -382,3 +382,264 @@ describe('sort().map() / toSorted().map()', () => {
     }
   })
 })
+
+// #2090: `.sort(cb)` / `.toSorted(cb)` where `cb` is a bare identifier
+// reference to a same-file arrow/function-declaration comparator, resolved
+// through the analyzer's scope machinery (`findLocalConst` /
+// `findLocalFunction` in jsx-to-ir.ts) one hop, then fed through the SAME
+// `sortComparatorFromArrow` catalogue as an inline comparator — no new
+// comparator shapes, no IR schema change.
+describe('function-reference sort comparator (#2090)', () => {
+  test('const arrow reference, ascending', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        const byPrice = (a, b) => a.price - b.price
+        return (
+          <ul>
+            {products().sort(byPrice).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'ProductList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      expect(loop).toBeDefined()
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'asc' },
+        ])
+        expect(loop.sortComparator!.paramA).toBe('a')
+        expect(loop.sortComparator!.paramB).toBe('b')
+        expect(loop.sortComparator!.raw).toBe('a.price - b.price')
+        expect(loop.array).toBe('products()')
+      }
+    }
+  })
+
+  test('const arrow reference, descending multi-key (||-chain)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        const byPriceThenName = (a, b) => b.price - a.price || a.name.localeCompare(b.name)
+        return (
+          <ul>
+            {products().sort(byPriceThenName).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'ProductList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'desc' },
+          { key: { kind: 'field', field: 'name' }, type: 'string', direction: 'asc' },
+        ])
+        expect(loop.sortComparator!.raw).toBe('b.price - a.price || a.name.localeCompare(b.name)')
+      }
+    }
+  })
+
+  test('function-declaration reference with return-block body', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function byPrice(a, b) {
+        return a.price - b.price
+      }
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        return (
+          <ul>
+            {products().sort(byPrice).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'ProductList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'asc' },
+        ])
+        expect(loop.sortComparator!.paramA).toBe('a')
+        expect(loop.sortComparator!.paramB).toBe('b')
+        expect(loop.sortComparator!.raw).toBe('a.price - b.price')
+      }
+    }
+  })
+
+  test('.toSorted(ref) resolves the same way as .sort(ref)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        const byPrice = (a, b) => a.price - b.price
+        return (
+          <ul>
+            {products().toSorted(byPrice).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'ProductList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'asc' },
+        ])
+      }
+    }
+  })
+
+  test('component-scope const shadows a module-scope const of the same name', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      const byPrice = (a, b) => a.price - b.price
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        const byPrice = (a, b) => b.price - a.price
+        return (
+          <ul>
+            {products().sort(byPrice).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'ProductList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.sortComparator).toBeDefined()
+        // The component-scope binding (descending) wins over the
+        // module-scope one (ascending) — distinguishable via `direction`.
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'price' }, type: 'numeric', direction: 'desc' },
+        ])
+        expect(loop.sortComparator!.raw).toBe('b.price - a.price')
+      }
+    }
+  })
+
+  test('filter().sort(ref).map() resolves the reference in a chain', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [todos, setTodos] = createSignal<any[]>([])
+        const byPriority = (a, b) => a.priority - b.priority
+        return (
+          <ul>
+            {todos().filter(t => !t.done).sort(byPriority).map(t => (
+              <li key={t.text}>{t.text}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'TodoList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.filterPredicate).toBeDefined()
+        expect(loop.sortComparator).toBeDefined()
+        expect(loop.chainOrder).toBe('filter-sort')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'priority' }, type: 'numeric', direction: 'asc' },
+        ])
+      }
+    }
+  })
+
+  test('sort(ref).filter().map() resolves the reference in a chain', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      export function TodoList() {
+        const [todos, setTodos] = createSignal<any[]>([])
+        const byPriority = (a, b) => a.priority - b.priority
+        return (
+          <ul>
+            {todos().sort(byPriority).filter(t => !t.done).map(t => (
+              <li key={t.text}>{t.text}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'TodoList.tsx')
+    const ir = jsxToIR(ctx)
+
+    expect(ir).not.toBeNull()
+    if (ir!.type === 'element') {
+      const loop = ir!.children.find(c => c.type === 'loop')
+      if (loop?.type === 'loop') {
+        expect(loop.filterPredicate).toBeDefined()
+        expect(loop.sortComparator).toBeDefined()
+        expect(loop.chainOrder).toBe('sort-filter')
+        expect(sortComparatorFromArrow(loop.sortComparator!.arrow)!.keys).toEqual([
+          { key: { kind: 'field', field: 'priority' }, type: 'numeric', direction: 'asc' },
+        ])
+      }
+    }
+  })
+})

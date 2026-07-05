@@ -263,6 +263,7 @@ import { fixture as arraySortLocale } from './methods/array-sort-locale'
 import { fixture as arraySortMultiKey } from './methods/array-sort-multikey'
 import { fixture as arraySortTernary } from './methods/array-sort-ternary'
 import { fixture as arrayToSorted } from './methods/array-toSorted'
+import { fixture as arraySortFnRef } from './methods/array-sort-fnref'
 // #1448 Tier C — `.reduce(fn, init)` arithmetic-fold catalogue. Numeric
 // sum / product over a field or primitive `self`, plus string concat.
 // Lowers via the `array-method` + `ReduceOp` IR and the `bf_reduce`
@@ -479,6 +480,7 @@ export const jsxFixtures: JSXFixture[] = [
   arraySortMultiKey,
   arraySortTernary,
   arrayToSorted,
+  arraySortFnRef,
   arrayEntries,
   arrayKeys,
   arrayValues,
