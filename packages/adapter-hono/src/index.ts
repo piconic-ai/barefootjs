@@ -7,6 +7,7 @@
 // Hono Adapter for JSX compilation
 export { HonoAdapter, honoAdapter } from './adapter/index.ts'
 export type { HonoAdapterOptions } from './adapter/index.ts'
+export { conformancePins } from './conformance-pins.ts'
 
 // BfScripts is exported from a separate entry point to avoid JSX runtime issues in tests
 // Usage: import { BfScripts } from '@barefootjs/hono/scripts'
