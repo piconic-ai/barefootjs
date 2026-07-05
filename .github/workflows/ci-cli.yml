@@ -41,5 +41,24 @@ jobs:
       - name: Embed adapter runtime sources
         run: bun run --filter '@barefootjs/cli' embed-runtimes
 
+      # TEMPORARY diagnostic (#2099): observe why @barefootjs adapter
+      # workspace devDeps fail to resolve from packages/cli in CI only.
+      # Remove once the resolution failure is understood.
+      - name: Debug workspace linking
+        run: |
+          bun --version && bun --revision
+          echo "--- packages/cli/node_modules/@barefootjs:"
+          ls -la packages/cli/node_modules/@barefootjs/ || true
+          echo "--- root node_modules/@barefootjs:"
+          ls -la node_modules/@barefootjs/ || true
+          echo "--- root node_modules top:"
+          ls node_modules | head -30 || true
+          echo "--- .bun store sample:"
+          ls node_modules/.bun 2>/dev/null | head -10 || true
+          echo "--- cli package.json devDependencies:"
+          cat packages/cli/package.json
+          echo "--- resolve probe:"
+          cd packages/cli && bun -e "for (const p of ['@barefootjs/erb','@barefootjs/hono','@barefootjs/jsx']) { try { console.log(p, '→', require.resolve(p)) } catch (e) { console.log(p, 'FAIL', e.message) } }" || true
+
       - name: Run unit tests
         run: cd packages/cli && bun test
