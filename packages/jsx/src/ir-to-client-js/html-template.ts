@@ -1435,10 +1435,14 @@ export function generateCsrTemplate(
  */
 function mergeCsrNullUnsafe(ctx: ClientJsContext, unsafeLocalNames: Set<string> | undefined): Set<string> | undefined {
   let merged: Set<string> | null = null
+  // Built lazily on the first null verdict, so the common all-inlinable
+  // component pays nothing; a Set keeps the merge linear in the number
+  // of local constants instead of a per-name `.find()` scan.
+  let exemptNames: Set<string> | null = null
   for (const [name, entry] of ctx.csrInlinable) {
     if (entry !== null || unsafeLocalNames?.has(name)) continue
-    const info = ctx.localConstants.find((c) => c.name === name)
-    if (info && (info.isJsx || info.systemConstructKind)) continue
+    exemptNames ??= new Set(ctx.localConstants.filter((c) => c.isJsx || c.systemConstructKind).map((c) => c.name))
+    if (exemptNames.has(name)) continue
     if (!merged) merged = new Set(unsafeLocalNames ?? [])
     merged.add(name)
   }
