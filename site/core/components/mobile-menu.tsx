@@ -289,6 +289,7 @@ export function MobileMenu() {
                   <a href="/docs/advanced/ir-schema" className={menuLinkClass}>IR Schema</a>
                   <a href="/docs/advanced/error-codes" className={menuLinkClass}>Error Codes</a>
                   <a href="/docs/advanced/performance" className={menuLinkClass}>Performance</a>
+                  <a href="/docs/advanced/compatibility-matrix" className={menuLinkClass}>Compatibility Matrix</a>
                 </div>
               </details>
             </div>
