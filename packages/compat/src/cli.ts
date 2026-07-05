@@ -1,49 +1,57 @@
-// bf compat — compile every requested ui/ component against every
-// workspace TemplateAdapter (compileJSX + adapter.generate(), all
-// in-process, no language runtimes) and report a
-// component × adapter → ✓ / BF10x matrix. `bf compat --all --json`
-// is the generator behind the committed `ui/compat.lock.json`
-// (see the root `compat:lock` script) — CI regenerates it and diffs.
+#!/usr/bin/env node
+// @barefootjs/compat CLI entry — compile every requested ui/ component
+// against every workspace TemplateAdapter (compileJSX + adapter.generate(),
+// all in-process, no language runtimes) and report a
+// component × adapter → ✓ / BF10x matrix.
+//
+// Invocation: `bun run packages/compat/src/cli.ts [component…|--all] [--md] [--json] [--out <path>]`
+// (or via the root scripts `bun run compat` / `bun run compat:lock`).
+// `--all --json --out ui/compat.lock.json` is the generator behind the
+// committed `ui/compat.lock.json` (see the root `compat:lock` script) —
+// CI regenerates it and diffs.
 //
 // This measures COMPILE-time compatibility only, not render identity;
 // rendered-output parity is owned by the adapter conformance suite
 // (packages/adapter-tests) and the eval vector corpus.
+//
+// This package is repo-internal (`private: true`, never published) —
+// unlike the removed `bf compat` command, there is no `CliContext` /
+// project-config resolution here. Components are always enumerated from
+// THIS repo's `ui/components/ui/`, whose location is resolved relative to
+// this file's own path rather than a project config.
 
-import { readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { glob as fsGlob } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import path from 'path'
-import type { CliContext } from '../context'
-import { globFiles } from '../lib/runtime'
-import { resolveComponentSource } from '../lib/resolve-source'
-import { loadCompatAdapters } from '../lib/compat/adapter-registry'
-import { compileForCompat, buildCompatCell, type CompatCell } from '../lib/compat/engine'
-import { buildCompatReport, formatCompatJson, formatCompatMarkdown, type CompatReport } from '../lib/compat/report'
+import { loadCompatAdapters } from './adapter-registry'
+import { buildCompatCell, compileForCompat, type CompatCell } from './engine'
+import { buildCompatReport, formatCompatJson, formatCompatMarkdown, type CompatReport } from './report'
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+const COMPONENTS_DIR = path.join(REPO_ROOT, 'ui/components/ui')
 
 interface CompatTarget {
   name: string
   filePath: string
 }
 
-/** Mirrors `bf meta extract`'s enumeration (packages/cli/src/commands/meta-extract.ts). */
-async function enumerateAllComponents(ctx: CliContext): Promise<CompatTarget[]> {
-  const inProject = ctx.config !== null && ctx.projectDir !== null
-  const componentsDir = inProject
-    ? path.resolve(ctx.projectDir!, ctx.config!.paths.components)
-    : path.join(ctx.root, 'ui/components/ui')
-
-  const matched = await globFiles('*/index.tsx', { cwd: componentsDir })
+// Enumerate every `ui/components/ui/<name>/index.tsx` component (glob: `*/index.tsx`).
+async function enumerateAllComponents(): Promise<CompatTarget[]> {
+  const matched: string[] = []
+  for await (const entry of fsGlob('*/index.tsx', { cwd: COMPONENTS_DIR })) {
+    matched.push(entry as string)
+  }
   return matched
-    .map(f => path.join(componentsDir, f))
+    .map(f => path.join(COMPONENTS_DIR, f))
     .sort()
     .map(filePath => ({ name: path.basename(path.dirname(filePath)), filePath }))
 }
 
-/** Same canonical-name derivation `bf docs` uses for source-derived components (commands/docs.ts). */
-function resolveNamedTarget(query: string, ctx: CliContext): CompatTarget | null {
-  const resolved = resolveComponentSource(query, ctx)
-  if (!resolved) return null
-  const base = path.basename(resolved.filePath, path.extname(resolved.filePath))
-  const name = base === 'index' ? path.basename(path.dirname(resolved.filePath)) : base
-  return { name, filePath: resolved.filePath }
+/** Resolve a named component to `ui/components/ui/<name>/index.tsx`, or null when missing. */
+function resolveNamedTarget(name: string): CompatTarget | null {
+  const filePath = path.join(COMPONENTS_DIR, name, 'index.tsx')
+  return existsSync(filePath) ? { name, filePath } : null
 }
 
 function summarize(report: CompatReport): string {
@@ -59,23 +67,30 @@ function summarize(report: CompatReport): string {
   return `${componentCount} component(s) × ${report.adapters.length} adapter(s) = ${total} cell(s) (${ok} ok, ${total - ok} with diagnostics)`
 }
 
-export async function run(args: string[], ctx: CliContext): Promise<void> {
+async function main(): Promise<void> {
+  const args = process.argv.slice(2)
+  const jsonFlag = args.includes('--json')
   const all = args.includes('--all')
   // `--md` is accepted for explicitness/documentation purposes — Markdown
   // is already the non-`--json` default (report.ts only defines JSON and
   // Markdown formatters), so the flag doesn't change any branching below,
   // it's just excluded from the positional `names` list.
   const outIdx = args.indexOf('--out')
+  if (outIdx !== -1 && (outIdx + 1 >= args.length || args[outIdx + 1].startsWith('--'))) {
+    console.error('Error: --out requires a path argument')
+    process.exit(1)
+    return
+  }
   const outPath = outIdx !== -1 ? args[outIdx + 1] : undefined
 
   const names = args.filter((arg, i) => {
-    if (arg === '--all' || arg === '--md' || arg === '--out') return false
+    if (arg === '--all' || arg === '--md' || arg === '--json' || arg === '--out') return false
     if (outIdx !== -1 && i === outIdx + 1) return false
     return !arg.startsWith('--')
   })
 
   if (!all && names.length === 0) {
-    console.error('Usage: bf compat <component...>|--all [--md] [--out <path>]')
+    console.error('Usage: bun run compat <component...>|--all [--md] [--json] [--out <path>]')
     process.exit(1)
     return
   }
@@ -84,14 +99,14 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   // fails the whole run before any (potentially slow) compiling starts.
   const targets = new Map<string, CompatTarget>()
   if (all) {
-    for (const target of await enumerateAllComponents(ctx)) {
+    for (const target of await enumerateAllComponents()) {
       targets.set(target.name, target)
     }
   }
 
   const unresolved: string[] = []
   for (const query of names) {
-    const target = resolveNamedTarget(query, ctx)
+    const target = resolveNamedTarget(query)
     if (!target) {
       unresolved.push(query)
       continue
@@ -131,7 +146,7 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   }
 
   const report = buildCompatReport(cells)
-  const text = ctx.jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report)
+  const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report)
 
   if (outPath) {
     const resolved = path.isAbsolute(outPath) ? outPath : path.resolve(process.cwd(), outPath)
@@ -143,3 +158,5 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 
   console.error(summarize(report))
 }
+
+await main()

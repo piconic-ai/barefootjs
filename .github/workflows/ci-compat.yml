@@ -9,6 +9,7 @@ on:
       - 'packages/jsx/**'
       - 'packages/client/**'
       - 'packages/cli/**'
+      - 'packages/compat/**'
       - 'packages/adapter-erb/**'
       - 'packages/adapter-go-template/**'
       - 'packages/adapter-hono/**'
@@ -25,6 +26,7 @@ on:
       - 'packages/jsx/**'
       - 'packages/client/**'
       - 'packages/cli/**'
+      - 'packages/compat/**'
       - 'packages/adapter-erb/**'
       - 'packages/adapter-go-template/**'
       - 'packages/adapter-hono/**'
@@ -55,11 +57,11 @@ jobs:
         run: |
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
-          # bf compat imports every workspace adapter. These 7 have
-          # `main`/`exports` pointing at `./dist/index.js` (unlike
-          # @barefootjs/hono and @barefootjs/jsx, which resolve via
-          # `./src/index.ts`), so they MUST be built before anything
-          # imports them (see #2099).
+          # packages/compat (the compat engine + `bun run compat:lock`)
+          # imports every workspace adapter. These 7 have `main`/`exports`
+          # pointing at `./dist/index.js` (unlike @barefootjs/hono and
+          # @barefootjs/jsx, which resolve via `./src/index.ts`), so they
+          # MUST be built before anything imports them (see #2099).
           bun run --filter '@barefootjs/erb' build
           bun run --filter '@barefootjs/go-template' build
           bun run --filter '@barefootjs/jinja' build
@@ -67,6 +69,12 @@ jobs:
           bun run --filter '@barefootjs/rust' build
           bun run --filter '@barefootjs/twig' build
           bun run --filter '@barefootjs/xslate' build
+
+      # Tests first: a broken compat engine (or a stale conformancePins
+      # entry) should fail loudly here rather than surface as a confusing
+      # lockfile diff in the next step.
+      - name: Test compat engine
+        run: bun test packages/compat
 
       - name: Regenerate compat lockfile
         run: bun run compat:lock

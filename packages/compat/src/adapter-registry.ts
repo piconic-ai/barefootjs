@@ -1,18 +1,19 @@
-// bf compat — the ONE place TemplateAdapter packages are enumerated.
+// @barefootjs/compat — the ONE place TemplateAdapter packages are enumerated.
 //
 // packages/adapter-tests deliberately does not import any adapter (its
 // conformance runner is fed a `createAdapter` factory by each adapter's
-// own test file) — that inversion stays intact. `bf compat` needs the
+// own test file) — that inversion stays intact. This package needs the
 // opposite: a single place that knows about every adapter so it can
-// compile the same component through all of them. The CLI owns that
-// list instead of adapter-tests.
+// compile the same component through all of them. @barefootjs/compat owns
+// that list instead of adapter-tests.
 //
-// Adapters are dynamic-imported so a consumer of the published
-// `@barefootjs/cli` package (which only depends on these as
-// `devDependencies`, never `dependencies` — see packages/cli/package.json)
-// degrades to a skip instead of a hard crash when a package isn't
-// installed. The monorepo always has all 8 installed, so `bf compat`
-// run from this repo loads every adapter.
+// This package is repo-internal (`private: true`, never published) and
+// declares all 8 adapters as `devDependencies` — see
+// packages/compat/package.json. Adapters are still dynamic-imported
+// rather than statically imported, so a package that fails to resolve
+// (e.g. unbuilt dist) degrades to a reported skip instead of a hard
+// crash, keeping the loader total. The monorepo always has all 8
+// installed, so a run from this repo loads every adapter.
 
 import type { ConformancePins, TemplateAdapter } from '@barefootjs/jsx'
 

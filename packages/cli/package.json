@@ -34,14 +34,6 @@
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
-    "@barefootjs/erb": "workspace:*",
-    "@barefootjs/go-template": "workspace:*",
-    "@barefootjs/hono": "workspace:*",
-    "@barefootjs/jinja": "workspace:*",
-    "@barefootjs/mojolicious": "workspace:*",
-    "@barefootjs/rust": "workspace:*",
-    "@barefootjs/twig": "workspace:*",
-    "@barefootjs/xslate": "workspace:*",
     "@types/node": "^22.0.0",
     "@happy-dom/global-registrator": "^20.0.11",
     "happy-dom": "^20.0.11"

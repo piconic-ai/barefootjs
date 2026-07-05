@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { GoTemplateAdapter, conformancePins as goTemplatePins } from '@barefootjs/go-template'
-import { compileForCompat, buildCompatCell, COMPILE_THREW_CODE } from '../lib/compat/engine'
-import { buildCompatReport, formatCompatJson } from '../lib/compat/report'
+import { compileForCompat, buildCompatCell, COMPILE_THREW_CODE } from '../engine'
+import { buildCompatReport, formatCompatJson, formatCompatMarkdown } from '../report'
 
 // #2038 repro shape — a filter predicate with a NESTED higher-order
 // callback call. The Go template adapter has no faithful lowering and
@@ -134,6 +134,27 @@ describe('buildCompatCell', () => {
     expect(cell.diagnostics).toEqual([
       { code: 'BF101', severity: 'error', issues: ['https://example.com/1', 'https://example.com/2'] },
     ])
+  })
+})
+
+describe('formatCompatMarkdown', () => {
+  test('a component missing a cell for an adapter renders `?`, never `✓`', () => {
+    // `beta` ran against both adapters; `alpha` only ran against
+    // `adapter-a` (e.g. a partial run), so `cells.alpha['adapter-b']` is
+    // absent. buildCompatReport derives the adapter column list from the
+    // union of columns actually present, so `adapter-b` still appears as
+    // a column even though alpha has no cell for it.
+    const report = buildCompatReport({
+      alpha: { 'adapter-a': { ok: true, diagnostics: [] } },
+      beta: {
+        'adapter-a': { ok: true, diagnostics: [] },
+        'adapter-b': { ok: true, diagnostics: [] },
+      },
+    })
+
+    const md = formatCompatMarkdown(report)
+    const alphaLine = md.split('\n').find(line => line.startsWith('| alpha |'))
+    expect(alphaLine).toBe('| alpha | ✓ | ? |')
   })
 })
 

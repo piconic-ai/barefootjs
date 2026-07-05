@@ -37,19 +37,6 @@ jobs:
         run: |
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
-          # packages/cli's compat tests (compat-engine, compat-pins) import
-          # every workspace adapter. These 7 have `main`/`exports` pointing
-          # at `./dist/index.js` (unlike @barefootjs/hono and @barefootjs/jsx,
-          # which resolve via `./src/index.ts`), so they MUST be built before
-          # anything imports them — an unbuilt dist surfaces here as
-          # "Cannot find module '@barefootjs/erb'" (see #2099).
-          bun run --filter '@barefootjs/erb' build
-          bun run --filter '@barefootjs/go-template' build
-          bun run --filter '@barefootjs/jinja' build
-          bun run --filter '@barefootjs/mojolicious' build
-          bun run --filter '@barefootjs/rust' build
-          bun run --filter '@barefootjs/twig' build
-          bun run --filter '@barefootjs/xslate' build
 
       - name: Embed adapter runtime sources
         run: bun run --filter '@barefootjs/cli' embed-runtimes

@@ -1,4 +1,4 @@
-// bf compat — report formatters. Every function here is deterministic:
+// @barefootjs/compat — report formatters. Every function here is deterministic:
 // sorted component rows, sorted adapter columns, sorted codes, LF line
 // endings, trailing newline, and no timestamps / durations / absolute
 // paths — the JSON form is committed as ui/compat.lock.json and CI
@@ -64,9 +64,10 @@ export function formatCompatJson(report: CompatReport): string {
 
 /**
  * Markdown matrix: boundary note, `component × adapter` table (✓ for a
- * clean cell, comma-joined codes otherwise — warnings prefixed `⚠`), and
- * a legend mapping every code that appears to its known-limitation issue
- * URLs (falling back to the label URL when a code has none).
+ * clean cell, `?` for a missing cell — never rendered as success, comma-
+ * joined codes otherwise — warnings prefixed `⚠`), and a legend mapping
+ * every code that appears to its known-limitation issue URLs (falling
+ * back to the label URL when a code has none).
  */
 export function formatCompatMarkdown(report: CompatReport): string {
   const lines: string[] = []
@@ -79,7 +80,9 @@ export function formatCompatMarkdown(report: CompatReport): string {
   for (const name of Object.keys(report.components).sort()) {
     const row = report.components[name]
     const cellText = report.adapters.map(id => {
-      const diagnostics = row[id]?.diagnostics ?? []
+      const cell = row[id]
+      if (!cell) return '?'
+      const diagnostics = cell.diagnostics ?? []
       if (diagnostics.length === 0) return '✓'
       return diagnostics
         .map(d => {

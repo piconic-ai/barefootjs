@@ -12,6 +12,7 @@
   },
   "ignore": [
     "@barefootjs/adapter-tests",
+    "@barefootjs/compat",
     "@barefootjs/site-shared",
     "@barefootjs/ui",
     "barefootjs-components",

@@ -9,15 +9,18 @@
 // not re-exported from the package's public index — a relative
 // cross-package import from a test file is the existing repo precedent,
 // see packages/adapter-mojolicious/src/__tests__/mojo-adapter.test.ts.
-// This file deliberately does NOT add `@barefootjs/adapter-tests` to
-// packages/cli's own dependencies and does not modify adapter-tests —
-// its adapter-import inversion (adapter-tests never imports an adapter)
-// stays intact; only the CLI's own registry does that.
+// packages/compat declares `@barefootjs/adapter-tests` as a devDependency
+// (see packages/compat/package.json — this package is repo-internal, so
+// depending on the harness package is fine), but `jsxFixtures` still
+// isn't part of adapter-tests' public export map, so the relative import
+// stays. This file does not modify adapter-tests — its adapter-import
+// inversion (adapter-tests never imports an adapter) stays intact; only
+// this package's own registry does that.
 
 import { describe, test, expect } from 'bun:test'
 import { jsxFixtures } from '../../../adapter-tests/fixtures'
-import { loadCompatAdapters } from '../lib/compat/adapter-registry'
-import { compileForCompat, buildCompatCell } from '../lib/compat/engine'
+import { loadCompatAdapters } from '../adapter-registry'
+import { compileForCompat, buildCompatCell } from '../engine'
 
 const { loaded, skipped } = await loadCompatAdapters()
 
