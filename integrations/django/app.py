@@ -819,11 +819,20 @@ def root_redirect(request):
 # `BASE.lstrip('/')` (mirrors Flask's Blueprint `url_prefix=BASE`).
 # ROOT_URLCONF (set above, in the Django-setup section) points straight at
 # this module, so this list is the whole "app".
+#
+# The bare prefix (no trailing slash, e.g. `/integrations/django`) needs its
+# own explicit redirect to `home_route`'s `{_prefix}/` route: Flask's
+# Blueprint and FastAPI's APIRouter both redirect a missing trailing slash to
+# the matching slashed route automatically (Werkzeug's `strict_slashes` /
+# Starlette's `redirect_slashes`), but Django's equivalent (`CommonMiddleware`
+# + `APPEND_SLASH`) is unused here since MIDDLEWARE is empty, so without this
+# entry the bare prefix 404s instead of reaching home_route.
 # ---------------------------------------------------------------------------
 _prefix = BASE.lstrip("/")
 
 urlpatterns = [
     path("", root_redirect),
+    path(_prefix, root_redirect),
     path(f"{_prefix}/", home_route),
     path(f"{_prefix}/counter", counter_route),
     path(f"{_prefix}/toggle", toggle_route),
