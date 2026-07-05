@@ -4678,14 +4678,22 @@ function tryDesugarInterleaveTaggedTemplate(
  */
 function resolveInterleaveTagIdentifier(name: string, ctx: TransformContext): ts.Expression | null {
   const constInfo = findLocalConst(name, ctx)
+  const fnInfo = findLocalFunction(name, ctx)
+  // A name bound BOTH as a const and as a `function` declaration is the
+  // same cross-kind ambiguity `resolveSortComparatorIdentifier` refuses:
+  // it can only occur across scopes, and `FunctionInfo.isModule` reflects
+  // emission placement rather than lexical position, so picking either
+  // binding could desugar a tag the call site can't actually see. Refuse —
+  // the node stays opaque and keeps today's adapter BF101 (Copilot review
+  // on #2093).
+  if (constInfo && fnInfo) return null
   if (constInfo) {
     const ast = parseConstInitializer(constInfo)
-    if (ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast))) return ast
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
   }
-  const fnInfo = findLocalFunction(name, ctx)
   if (fnInfo) {
     const ast = parseFunctionInfoAsExpr(fnInfo)
-    if (ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast))) return ast
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
   }
   return null
 }
@@ -4816,12 +4824,18 @@ function buildUntaggedTemplateLiteral(
   }
 
   const wrapped = `const __bf_resolve_tagged__ = (${text})`
+  // ScriptKind.TSX (unlike the const/function-resolution re-parses above,
+  // which parse comparator/tag FUNCTION BODIES): the span expressions are
+  // verbatim attribute-position text from a .tsx component, so they were
+  // originally parsed under TSX rules — re-parsing them as plain TS can
+  // mis-parse or reject valid TSX span syntax and silently skip the
+  // rewrite (Copilot review on #2093).
   const sf = ts.createSourceFile(
-    '__bf_resolve_tagged.ts',
+    '__bf_resolve_tagged.tsx',
     wrapped,
     ts.ScriptTarget.Latest,
     /* setParentNodes */ true,
-    ts.ScriptKind.TS,
+    ts.ScriptKind.TSX,
   )
   const stmt = sf.statements[0]
   if (!stmt || !ts.isVariableStatement(stmt)) return null
