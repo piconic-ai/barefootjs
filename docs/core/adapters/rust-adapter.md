@@ -43,22 +43,21 @@ time (a Rust `minijinja::Environment` instead of Python's
 
 ## The minijinja Environment contract
 
-This adapter's output assumes an `Environment` constructed exactly as
-follows:
+This adapter's output assumes an `Environment` built with a specific set of
+options — `ChainableUndefined`, `trim_blocks`/`lstrip_blocks`, HTML
+auto-escaping forced on, and a custom formatter. Rather than assembling
+these yourself, call the crate's `build_environment`, which constructs the
+`Environment` per that contract:
 
 ```rust
-let mut env = Environment::new();
-env.set_loader(minijinja::path_loader(templates_dir)); // .j2 files
-env.set_undefined_behavior(UndefinedBehavior::Chainable); // == Jinja2's ChainableUndefined
-env.set_trim_blocks(true);
-env.set_lstrip_blocks(true);
-env.set_auto_escape_callback(|_| AutoEscape::Html); // REQUIRED: .j2 is not auto-escaped by default
-env.set_formatter(barefootjs::formatter); // absorbs the remaining JS/minijinja semantic differences
+use barefootjs::backend_minijinja::build_environment;
+
+let env = build_environment(templates_dir); // .j2 files
 ```
 
 `trim_blocks`/`lstrip_blocks` are required because `{% … %}` control tags
 sit on their own source line; without them every such line leaks a stray
-newline/indentation into the rendered HTML. The custom formatter escapes
+newline/indentation into the rendered HTML. The internal formatter escapes
 strings with MarkupSafe-compatible entities (`&#39;`, not minijinja's
 default `&#x27;`) and formats numbers with JS `String(n)` semantics
 (`1.0` → `1`), matching every other adapter's byte-for-byte output.
@@ -91,33 +90,44 @@ export default createConfig({
 ```
 
 `bf build` emits `.j2` templates plus client JS under `outDir`. On the Rust
-side, depend on the `barefootjs` crate and construct a
-`minijinja::Environment` (per the contract above) over
-`minijinja::path_loader` pointed at the emitted templates, wiring in
-`backend_minijinja` as the render backend:
+side, depend on the `barefootjs` crate, build the `Environment` via
+`build_environment` (per the contract above), and render a component
+through a `RenderSession` + root `BfInstance`:
 
 ```rust
 use axum::{routing::get, Router};
-use barefootjs::{backend_minijinja::render_named, BarefootJS};
+use barefootjs::{backend_minijinja, BfInstance, JsValue, RenderSession};
+use minijinja::Environment;
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::sync::Arc;
 
-async fn user_card() -> axum::response::Html<String> {
-    let mut bf = BarefootJS::new();
-    let html = render_named("user_card", &mut bf, Default::default());
+async fn user_card(env: Arc<Environment<'static>>) -> axum::response::Html<String> {
+    let session = RenderSession::new();
+    let root = BfInstance::root(Arc::clone(&session), "UserCard_0");
+    let vars = JsValue::Object(BTreeMap::from([("name".to_string(), JsValue::String("Ada".into()))]));
+
+    let html = backend_minijinja::render_named(&env, "user_card", root.as_mj_value(), &vars).unwrap();
     axum::response::Html(html)
 }
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/", get(user_card));
+    let env = Arc::new(backend_minijinja::build_environment(&PathBuf::from("dist/templates")));
+    let app = Router::new().route("/", get(move || user_card(env.clone())));
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 ```
 
-The crate also ships a `bf-render` binary, a conformance renderer used by
-the adapter's own test suite (`cargo build --bin bf-render`); a production
-host links the `barefootjs` library crate directly, as above, rather than
-shelling out to the binary.
+A full runnable app wiring this up with manifest-driven child-component
+registration lives at
+[`integrations/axum`](https://github.com/piconic-ai/barefootjs/tree/main/integrations/axum)
+(see `src/render.rs`'s `render_component` for the production-shaped version
+of the snippet above). The crate also ships a `bf-render` binary, a
+conformance renderer used by the adapter's own test suite (`cargo build
+--bin bf-render`) — most hosts should link the `barefootjs` library crate
+directly, as above, rather than shelling out to the binary.
 
 ## See also
 

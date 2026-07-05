@@ -77,7 +77,9 @@ html = backend.render_named('Counter', bf, { count: 0 })
 Each compiled `.erb` template receives exactly two locals: `bf` (the
 `BarefootJS::Context` for this render) and `v` (a symbol-keyed Hash holding
 every prop/signal/memo the template references) — e.g.
-`<%= bf.h(v[:count]) %>`, `<%== bf.spread_attrs(bag) %>`.
+`<%= bf.h(v[:count]) %>`, `<%= bf.spread_attrs(bag) %>` — stdlib ERB's
+`<%=` never auto-escapes, so both plain and already-safe-HTML helpers use
+the same tag; there is no separate raw-output tag like Mojolicious's `<%==`.
 
 ## See also
 
