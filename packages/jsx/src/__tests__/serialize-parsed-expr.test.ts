@@ -121,8 +121,10 @@ describe('serializeParsedExpr', () => {
   test('purity gate: a folded method call in the body → null', () => {
     // `.toUpperCase()` folds to `array-method`, outside the evaluator surface.
     expect(serializeParsedExpr(parseExpression('item.name.toUpperCase()'))).toBeNull()
-    // A higher-order call (`.filter`) likewise.
-    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => t)'))).toBeNull()
+    // A higher-order call OTHER than `.map`/`.filter` (#2094 widens only
+    // those two) still folds — `.some` returns a boolean-from-search, not a
+    // per-element transform, so it has no evaluator lowering.
+    expect(serializeParsedExpr(parseExpression('item.tags.some(t => t)'))).toBeNull()
     // An unsupported shape.
     expect(serializeParsedExpr(parseExpression('a instanceof B'))).toBeNull()
   })
@@ -159,8 +161,73 @@ describe('serializeParsedExpr', () => {
   })
 
   test('every other array-method still folds outside the evaluator surface', () => {
-    expect(serializeParsedExpr(parseExpression('item.tags.join(",")'))).toBeNull()
+    // `.join` is now serializable (#2094) — see the `.join` describe block
+    // below. `.slice` / `.flat` are not.
     expect(serializeParsedExpr(parseExpression('item.tags.slice(0, 1)'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.flat()'))).toBeNull()
+  })
+
+  // ----- #2094: nested `.map` / `.filter` / `.join` inside a callback body --
+  test('`.join(sep?)` array-method serializes', () => {
+    expect(evalJSON('item.tags.join(",")')).toEqual({
+      kind: 'array-method',
+      method: 'join',
+      object: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'tags' },
+      args: [{ kind: 'literal', value: ',' }],
+    })
+    // No-arg form keeps an empty `args` (the evaluator defaults the separator).
+    expect(evalJSON('item.tags.join()')).toEqual({
+      kind: 'array-method',
+      method: 'join',
+      object: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'tags' },
+      args: [],
+    })
+  })
+
+  test('nested `.map(cb)` serializes as an ordinary call/member/arrow — NOT a bespoke wrapper', () => {
+    // Deliberately the SAME shape a top-level `.filter(t => t)` parses to —
+    // this is what lets the `eval-vectors.json` corpus (which carries the
+    // genuine `ParsedExpr`, unfiltered by `toEvalNode`) exercise the exact
+    // encoding the compiled-template embedded body uses.
+    expect(evalJSON("item.tags.map(t => '#' + t)")).toEqual({
+      kind: 'call',
+      callee: {
+        kind: 'member',
+        object: { kind: 'member', object: { kind: 'identifier', name: 'item' }, property: 'tags' },
+        property: 'map',
+        computed: false,
+      },
+      args: [
+        {
+          kind: 'arrow',
+          params: ['t'],
+          body: {
+            kind: 'binary',
+            op: '+',
+            left: { kind: 'literal', value: '#' },
+            right: { kind: 'identifier', name: 't' },
+          },
+        },
+      ],
+    })
+  })
+
+  test('nested `.filter(cb)` composed with `.length` and a comparison (the doc/#2038 shape) serializes', () => {
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => t.active).length > 0'))).not.toBeNull()
+  })
+
+  test('a 2-param nested arrow `(item, index)` serializes', () => {
+    expect(serializeParsedExpr(parseExpression('item.tags.map((t, i) => t.n + i)'))).not.toBeNull()
+  })
+
+  test('nested `.some`/`.find`/`.every`/`.sort`/`.reduce`/`.flat`/`.flatMap` still fold to null', () => {
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.some(p => p === t))'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.find(p => p === t))'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.every(p => p === t))'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.sort((a, b) => a - b).length > 0)'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.reduce((a, b) => a + b, 0) > 0)'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.flat().length > 0)'))).toBeNull()
+    expect(serializeParsedExpr(parseExpression('item.tags.filter(t => picked.flatMap(p => p).length > 0)'))).toBeNull()
   })
 
   test('a computed member value carries `computed: true` (plain access omits it)', () => {

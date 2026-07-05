@@ -114,6 +114,7 @@ my %bindings = (
     slice   => sub { $bf->slice($_[0], $_[1], $_[2]) },
     reverse => sub { $bf->reverse($_[0]) },
     flat    => sub { $bf->flat(@_) },
+    flat_dynamic => sub { $bf->flat_dynamic(@_) },
     join    => sub { $bf->join(@_) },
     # Array literals are native arrayrefs on the Perl backends.
     arr => sub { [@_] },

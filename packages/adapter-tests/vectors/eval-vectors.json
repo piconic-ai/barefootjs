@@ -1975,6 +1975,701 @@
       },
       "expect": true,
       "note": "filter body: length guard plus boolean field"
+    },
+    {
+      "src": "item.tags.join(',')",
+      "expr": {
+        "kind": "array-method",
+        "method": "join",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": ",",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "a",
+            "b",
+            "c"
+          ]
+        }
+      },
+      "expect": "a,b,c",
+      "note": ".join with a custom separator"
+    },
+    {
+      "src": "item.tags.join()",
+      "expr": {
+        "kind": "array-method",
+        "method": "join",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": []
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "a",
+            "b"
+          ]
+        }
+      },
+      "expect": "a,b",
+      "note": ".join with no separator defaults to a comma"
+    },
+    {
+      "src": "item.tags.join('-')",
+      "expr": {
+        "kind": "array-method",
+        "method": "join",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": "-",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": []
+        }
+      },
+      "expect": "",
+      "note": ".join on an empty array is the empty string"
+    },
+    {
+      "src": "item.tags.join(',')",
+      "expr": {
+        "kind": "array-method",
+        "method": "join",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": ",",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "a",
+            null,
+            "b"
+          ]
+        }
+      },
+      "expect": "a,,b",
+      "note": ".join renders a null element as empty (not the string \"null\")"
+    },
+    {
+      "src": "item.tags.map(t => '#' + t)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "tags",
+            "computed": false
+          },
+          "property": "map",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "arrow",
+            "params": [
+              "t"
+            ],
+            "body": {
+              "kind": "binary",
+              "op": "+",
+              "left": {
+                "kind": "literal",
+                "value": "#",
+                "literalType": "string"
+              },
+              "right": {
+                "kind": "identifier",
+                "name": "t"
+              }
+            }
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "go",
+            "perl"
+          ]
+        }
+      },
+      "expect": [
+        "#go",
+        "#perl"
+      ],
+      "note": "nested .map: string-prefix projection (the #1938 blog-showcase shape)"
+    },
+    {
+      "src": "item.tags.map(t => `#${t}`)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "tags",
+            "computed": false
+          },
+          "property": "map",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "arrow",
+            "params": [
+              "t"
+            ],
+            "body": {
+              "kind": "template-literal",
+              "parts": [
+                {
+                  "type": "string",
+                  "value": "#"
+                },
+                {
+                  "type": "expression",
+                  "expr": {
+                    "kind": "identifier",
+                    "name": "t"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "go",
+            "perl"
+          ]
+        }
+      },
+      "expect": [
+        "#go",
+        "#perl"
+      ],
+      "note": "nested .map: template-literal projection"
+    },
+    {
+      "src": "item.tags.map(t => t.n * 2)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "tags",
+            "computed": false
+          },
+          "property": "map",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "arrow",
+            "params": [
+              "t"
+            ],
+            "body": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "member",
+                "object": {
+                  "kind": "identifier",
+                  "name": "t"
+                },
+                "property": "n",
+                "computed": false
+              },
+              "right": {
+                "kind": "literal",
+                "value": 2,
+                "literalType": "number",
+                "raw": "2"
+              }
+            }
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            {
+              "n": 1
+            },
+            {
+              "n": 2
+            },
+            {
+              "n": 3
+            }
+          ]
+        }
+      },
+      "expect": [
+        2,
+        4,
+        6
+      ],
+      "note": "nested .map: arithmetic field projection"
+    },
+    {
+      "src": "item.tags.filter(t => t.active && t.n > 1)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "tags",
+            "computed": false
+          },
+          "property": "filter",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "arrow",
+            "params": [
+              "t"
+            ],
+            "body": {
+              "kind": "logical",
+              "op": "&&",
+              "left": {
+                "kind": "member",
+                "object": {
+                  "kind": "identifier",
+                  "name": "t"
+                },
+                "property": "active",
+                "computed": false
+              },
+              "right": {
+                "kind": "binary",
+                "op": ">",
+                "left": {
+                  "kind": "member",
+                  "object": {
+                    "kind": "identifier",
+                    "name": "t"
+                  },
+                  "property": "n",
+                  "computed": false
+                },
+                "right": {
+                  "kind": "literal",
+                  "value": 1,
+                  "literalType": "number",
+                  "raw": "1"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            {
+              "active": true,
+              "n": 1
+            },
+            {
+              "active": true,
+              "n": 2
+            },
+            {
+              "active": false,
+              "n": 3
+            }
+          ]
+        }
+      },
+      "expect": [
+        {
+          "active": true,
+          "n": 2
+        }
+      ],
+      "note": "nested .filter: predicate with comparison + logical operators"
+    },
+    {
+      "src": "item.tags.filter(t => t.active).length > 0",
+      "expr": {
+        "kind": "binary",
+        "op": ">",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "call",
+            "callee": {
+              "kind": "member",
+              "object": {
+                "kind": "member",
+                "object": {
+                  "kind": "identifier",
+                  "name": "item"
+                },
+                "property": "tags",
+                "computed": false
+              },
+              "property": "filter",
+              "computed": false
+            },
+            "args": [
+              {
+                "kind": "arrow",
+                "params": [
+                  "t"
+                ],
+                "body": {
+                  "kind": "member",
+                  "object": {
+                    "kind": "identifier",
+                    "name": "t"
+                  },
+                  "property": "active",
+                  "computed": false
+                }
+              }
+            ]
+          },
+          "property": "length",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 0,
+          "literalType": "number",
+          "raw": "0"
+        }
+      },
+      "env": {
+        "item": {
+          "tags": [
+            {
+              "active": false
+            },
+            {
+              "active": true
+            }
+          ]
+        }
+      },
+      "expect": true,
+      "note": "nested .filter composed with .length and a relational comparison (the doc/#2038 motivating shape)"
+    },
+    {
+      "src": "item.tags.filter(t => t.active).length > 0",
+      "expr": {
+        "kind": "binary",
+        "op": ">",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "call",
+            "callee": {
+              "kind": "member",
+              "object": {
+                "kind": "member",
+                "object": {
+                  "kind": "identifier",
+                  "name": "item"
+                },
+                "property": "tags",
+                "computed": false
+              },
+              "property": "filter",
+              "computed": false
+            },
+            "args": [
+              {
+                "kind": "arrow",
+                "params": [
+                  "t"
+                ],
+                "body": {
+                  "kind": "member",
+                  "object": {
+                    "kind": "identifier",
+                    "name": "t"
+                  },
+                  "property": "active",
+                  "computed": false
+                }
+              }
+            ]
+          },
+          "property": "length",
+          "computed": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 0,
+          "literalType": "number",
+          "raw": "0"
+        }
+      },
+      "env": {
+        "item": {
+          "tags": [
+            {
+              "active": false
+            },
+            {
+              "active": false
+            }
+          ]
+        }
+      },
+      "expect": false,
+      "note": "nested .filter composed with .length: no match is falsy"
+    },
+    {
+      "src": "item.posts.map(p => p.tags.map(t => '#' + t).join(' ')).join(', ')",
+      "expr": {
+        "kind": "array-method",
+        "method": "join",
+        "object": {
+          "kind": "call",
+          "callee": {
+            "kind": "member",
+            "object": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "posts",
+              "computed": false
+            },
+            "property": "map",
+            "computed": false
+          },
+          "args": [
+            {
+              "kind": "arrow",
+              "params": [
+                "p"
+              ],
+              "body": {
+                "kind": "array-method",
+                "method": "join",
+                "object": {
+                  "kind": "call",
+                  "callee": {
+                    "kind": "member",
+                    "object": {
+                      "kind": "member",
+                      "object": {
+                        "kind": "identifier",
+                        "name": "p"
+                      },
+                      "property": "tags",
+                      "computed": false
+                    },
+                    "property": "map",
+                    "computed": false
+                  },
+                  "args": [
+                    {
+                      "kind": "arrow",
+                      "params": [
+                        "t"
+                      ],
+                      "body": {
+                        "kind": "binary",
+                        "op": "+",
+                        "left": {
+                          "kind": "literal",
+                          "value": "#",
+                          "literalType": "string"
+                        },
+                        "right": {
+                          "kind": "identifier",
+                          "name": "t"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "args": [
+                  {
+                    "kind": "literal",
+                    "value": " ",
+                    "literalType": "string"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": ", ",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "posts": [
+            {
+              "tags": [
+                "a",
+                "b"
+              ]
+            },
+            {
+              "tags": [
+                "c"
+              ]
+            }
+          ]
+        }
+      },
+      "expect": "#a #b, #c",
+      "note": "doubly-nested .map + .join (the #1938 blog-showcase posts.flatMap(p => p.tags.map(...)) shape, one level flattened by the outer .map/.join composition)"
+    },
+    {
+      "src": "item.tags.map((t, i) => t.n + i)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "member",
+          "object": {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "tags",
+            "computed": false
+          },
+          "property": "map",
+          "computed": false
+        },
+        "args": [
+          {
+            "kind": "arrow",
+            "params": [
+              "t",
+              "i"
+            ],
+            "body": {
+              "kind": "binary",
+              "op": "+",
+              "left": {
+                "kind": "member",
+                "object": {
+                  "kind": "identifier",
+                  "name": "t"
+                },
+                "property": "n",
+                "computed": false
+              },
+              "right": {
+                "kind": "identifier",
+                "name": "i"
+              }
+            }
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            {
+              "n": 10
+            },
+            {
+              "n": 20
+            },
+            {
+              "n": 30
+            }
+          ]
+        }
+      },
+      "expect": [
+        10,
+        21,
+        32
+      ],
+      "note": "nested .map: 2-param arrow (value, index)"
     }
   ]
 }

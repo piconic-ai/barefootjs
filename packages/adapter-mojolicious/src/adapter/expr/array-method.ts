@@ -423,7 +423,28 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
 // `.flat(depth?)` → `bf->flat($recv, $depth)`. The `Infinity` form lowers
 // to the `-1` sentinel (flatten fully); a finite depth flattens that many
 // levels (`0` = shallow copy). See `sub flat` in BarefootJS.pm. (#1448)
-export function renderFlatMethod(recv: string, depth: FlatDepth): string {
+export function renderFlatMethod(
+  recv: string,
+  depth: FlatDepth | { expr: ParsedExpr },
+  emit: (e: ParsedExpr) => string,
+): string {
+  if (typeof depth === 'object') {
+    // Dynamic depth (#2094): routed to a SEPARATE runtime helper
+    // (`bf->flat_dynamic`), not `bf->flat`. The literal-depth path below
+    // already uses `-1` as a compile-time SENTINEL baked into the template
+    // source meaning "the source literally said `Infinity`". A genuinely
+    // dynamic depth that happens to evaluate to `-1` at render time means
+    // the OPPOSITE in real JS (`[1,[2]].flat(-1)` never recurses — same as
+    // `.flat(0)`). Since both paths would otherwise hand the same
+    // literal-looking argument to one shared helper, that helper couldn't
+    // tell which case it's in — so `flat_dynamic` performs its own
+    // `ToIntegerOrInfinity`-style coercion (truncate toward zero; negative
+    // -> 0; NaN/non-numeric -> 0; +Infinity or a huge finite value ->
+    // flatten fully) and then delegates to `flat`. See `sub flat_dynamic`
+    // in BarefootJS.pm and the Go reference (`FlatDynamicDepth`/
+    // `coerceFlatDepth` in bf.go).
+    return `bf->flat_dynamic(${recv}, ${emit(depth.expr)})`
+  }
   const d = depth === 'infinity' ? -1 : depth
   return `bf->flat(${recv}, ${d})`
 }

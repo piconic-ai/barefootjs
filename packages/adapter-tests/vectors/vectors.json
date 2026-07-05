@@ -1605,6 +1605,152 @@
       "note": "depth 0 is a shallow copy"
     },
     {
+      "fn": "flat_dynamic",
+      "args": [
+        [
+          1,
+          [
+            2,
+            [
+              3
+            ]
+          ]
+        ],
+        2.7
+      ],
+      "expect": [
+        1,
+        2,
+        3
+      ],
+      "note": "float depth truncates toward zero (2.7 -> 2)"
+    },
+    {
+      "fn": "flat_dynamic",
+      "args": [
+        [
+          1,
+          [
+            2,
+            [
+              3
+            ]
+          ]
+        ],
+        -1
+      ],
+      "expect": [
+        1,
+        [
+          2,
+          [
+            3
+          ]
+        ]
+      ],
+      "note": "negative depth never recurses (shallow copy, NOT the literal-path Infinity sentinel)"
+    },
+    {
+      "fn": "flat_dynamic",
+      "args": [
+        [
+          1,
+          [
+            2,
+            [
+              3
+            ]
+          ]
+        ],
+        0
+      ],
+      "expect": [
+        1,
+        [
+          2,
+          [
+            3
+          ]
+        ]
+      ],
+      "note": "depth 0 is a shallow copy (no-op)"
+    },
+    {
+      "fn": "flat_dynamic",
+      "args": [
+        [
+          1,
+          [
+            2,
+            [
+              3,
+              [
+                4
+              ]
+            ]
+          ]
+        ],
+        1000000000
+      ],
+      "expect": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "huge finite depth flattens fully"
+    },
+    {
+      "fn": "flat_dynamic",
+      "args": [
+        [
+          1,
+          [
+            2,
+            [
+              3,
+              [
+                4
+              ]
+            ]
+          ]
+        ],
+        "Infinity"
+      ],
+      "expect": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "a value that coerces to Infinity flattens fully"
+    },
+    {
+      "fn": "flat_dynamic",
+      "args": [
+        [
+          1,
+          [
+            2,
+            [
+              3
+            ]
+          ]
+        ],
+        "not-a-number"
+      ],
+      "expect": [
+        1,
+        [
+          2,
+          [
+            3
+          ]
+        ]
+      ],
+      "note": "a non-numeric value coerces via NaN to depth 0"
+    },
+    {
       "fn": "join",
       "args": [
         [

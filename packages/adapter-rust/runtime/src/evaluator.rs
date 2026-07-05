@@ -105,6 +105,15 @@ pub fn evaluate(node: &JsonValue, env: &Env) -> JsValue {
             read_index(&obj, &idx)
         }
         "call" => {
+            // Nested `.map(cb)` / `.filter(cb)` (#2094) -- e.g. a
+            // `.flatMap(p => p.tags.map(t => '#'+t))` projection body that
+            // itself contains a `.map` call. Checked BEFORE builtin-name
+            // resolution since a `member` callee here is a receiver method,
+            // not an allowlisted builtin reference. Mirrors Go's
+            // `evalArrayCallbackCall` / `evalArrayCallback`.
+            if let Some((method, object, arrow)) = array_callback_call(node) {
+                return eval_array_callback(method, object, arrow, env);
+            }
             let name = builtin_name(node.get("callee").unwrap_or(&JsonValue::Null));
             if name.is_empty() {
                 return JsValue::Null;
@@ -174,11 +183,102 @@ pub fn evaluate(node: &JsonValue, env: &Env) -> JsValue {
                 JsValue::Null
             }
         }
+        "array-method" if node.get("method").and_then(|v| v.as_str()) == Some("join") => {
+            // `.join(sep?)` (#2094), a plain `array-method` node (not a
+            // `call`): default separator `,`, a `null`/`undefined` element
+            // joins as `''` (NOT the string "null" -- `to_string` below
+            // intentionally renders `Null` as `"null"` for general ToString
+            // purposes, so this special-cases it first). Mirrors Go's
+            // `evalJoin`.
+            let obj = evaluate(node.get("object").unwrap_or(&JsonValue::Null), env);
+            let args = node.get("args").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+            let sep = if args.is_empty() { ",".to_string() } else { to_string(&evaluate(&args[0], env)) };
+            eval_join(&obj, &sep)
+        }
         // arrow-fn / higher-order / unsupported array-method: a callback
         // body containing these is refused upstream (BF101); never reached
         // here.
         _ => JsValue::Null,
     }
+}
+
+/// Recognize a nested `.map(cb)` / `.filter(cb)` call: the callee is
+/// `{kind:'member', object, property:'map'|'filter', computed:false}` and
+/// the first argument is `{kind:'arrow', params, body}`. Returns the method
+/// name, the receiver node, and the arrow node. Mirrors Go's
+/// `evalArrayCallbackCall`.
+fn array_callback_call(node: &JsonValue) -> Option<(&str, &JsonValue, &JsonValue)> {
+    let callee = node.get("callee")?;
+    if callee.get("kind").and_then(|v| v.as_str()) != Some("member") {
+        return None;
+    }
+    if callee.get("computed").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return None;
+    }
+    let prop = callee.get("property").and_then(|v| v.as_str())?;
+    if prop != "map" && prop != "filter" {
+        return None;
+    }
+    let arrow = node.get("args").and_then(|v| v.as_array())?.first()?;
+    if arrow.get("kind").and_then(|v| v.as_str()) != Some("arrow") {
+        return None;
+    }
+    let object = callee.get("object")?;
+    Some((prop, object, arrow))
+}
+
+/// Evaluate a nested `.map(cb)` / `.filter(cb)` call recognized by
+/// [`array_callback_call`]. `arrow`'s params: 1 (element) or 2 (element,
+/// index -- bound as a `JsValue::Number`). The callback's env is a COPY of
+/// the parent env (child scope) per invocation, never mutated in place
+/// across sibling iterations. A non-array receiver yields `Null` for both
+/// methods (matches Go, whose `toAnySlice(nil)` short-circuit fires before
+/// the method dispatch). Mirrors Go's `evalArrayCallback`.
+fn eval_array_callback(method: &str, object: &JsonValue, arrow: &JsonValue, env: &Env) -> JsValue {
+    let arr: Vec<JsValue> = match evaluate(object, env) {
+        JsValue::Array(a) => a,
+        _ => return JsValue::Null,
+    };
+    let params: Vec<String> = arrow
+        .get("params")
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|p| p.as_str().map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+    let body = arrow.get("body").unwrap_or(&JsonValue::Null);
+    let call_cb = |item: JsValue, index: usize| -> JsValue {
+        let mut inner = env.clone();
+        if let Some(p0) = params.first() {
+            inner.insert(p0.clone(), item);
+        }
+        if let Some(p1) = params.get(1) {
+            inner.insert(p1.clone(), JsValue::Number(index as f64));
+        }
+        evaluate(body, &inner)
+    };
+    if method == "map" {
+        JsValue::Array(arr.into_iter().enumerate().map(|(i, item)| call_cb(item, i)).collect())
+    } else {
+        let mut out = Vec::new();
+        for (i, item) in arr.into_iter().enumerate() {
+            if truthy(&call_cb(item.clone(), i)) {
+                out.push(item);
+            }
+        }
+        JsValue::Array(out)
+    }
+}
+
+/// `.join(sep)` (#2094): default separator `,` when `sep` is empty/absent
+/// upstream (the caller passes the already-resolved separator string); a
+/// `null`/`undefined` element joins as `''`, not the literal string
+/// `"null"`. A non-array receiver joins as `''`. Mirrors Go's `evalJoin`.
+fn eval_join(obj: &JsValue, sep: &str) -> JsValue {
+    let arr = match obj.as_array() {
+        Some(a) => a,
+        None => return JsValue::String(String::new()),
+    };
+    let parts: Vec<String> = arr.iter().map(|el| if matches!(el, JsValue::Null) { String::new() } else { to_string(el) }).collect();
+    JsValue::String(parts.join(sep))
 }
 
 pub fn eval_json(json_str: &str, env: &Env) -> Result<JsValue, serde_json::Error> {

@@ -186,6 +186,36 @@ def js_number(value: Any) -> float:
     return float("nan")  # list / dict
 
 
+def _coerce_flat_depth(depth: Any) -> int:
+    """JS `ToIntegerOrInfinity` for a dynamic `.flat(depth)` argument
+    (#2094), returning an int in `flat`'s own contract (`-1` = unbounded,
+    `>= 0` = that many levels). Mirrors Go's `coerceFlatDepth` /
+    `flatDepthToFloat`: reuses `js_number` (the module's existing JS
+    `Number(v)` mirror -- `None` and non-numeric strings already yield NaN
+    there, and `bool` is already checked before the numeric branch, which is
+    exactly right here too since Python's `bool` is a subclass of `int`) and
+    then applies `ToIntegerOrInfinity`'s NaN/Infinity/truncation rules on
+    top: NaN (incl. `None` / non-numeric strings) -> 0; truncate toward
+    zero; negative -> 0; +Infinity or a huge finite value -> `-1` (`flat`'s
+    "flatten fully" sentinel, matching the golden `flat_dynamic` vectors)."""
+    f = js_number(depth)
+    if f != f:  # NaN
+        return 0
+    if f == float("inf"):
+        return -1  # flat's "flatten fully" sentinel
+    if f == float("-inf"):
+        return 0
+    trunc = math.trunc(f)
+    if trunc < 0:
+        return 0
+    # A huge finite depth behaves identically to "flatten fully" in
+    # practice -- real data bottoms out at its actual nesting depth long
+    # before a counter this large would ever reach zero (mirrors Go's cap).
+    if trunc > 1_000_000:
+        return -1
+    return int(trunc)
+
+
 def js_truthy(value: Any) -> bool:
     """JS truthiness: `[]` / `{}` are truthy; only `None`, `False`, `0`,
     `0.0`, `''`, and NaN are falsy.
@@ -939,6 +969,22 @@ class BarefootJS:
             else:
                 out.append(el)
         return out
+
+    def flat_dynamic(self, recv: Any, depth: Any) -> list:
+        """`.flat(depth)` where `depth` is itself an arbitrary expression
+        (#2094), e.g. a prop -- as opposed to `flat`'s compile-time-literal
+        `depth` (whose `-1` is a SENTINEL baked into the template source
+        meaning "the source literally said `Infinity`"). A dynamic `depth`
+        value that happens to evaluate to `-1` at render time means the
+        OPPOSITE in real JS (`[1,[2]].flat(-1)` never recurses -- same as
+        `.flat(0)`), so this is deliberately a separate entry point rather
+        than a smarter overload of `flat`: coerce `depth` via JS
+        `ToIntegerOrInfinity` (truncate toward zero; negative -> 0; NaN /
+        non-numeric -> 0; +Infinity or a huge finite value -> flatten fully,
+        represented as `flat`'s `-1` sentinel) and delegate to `flat` with
+        the now-unambiguous coerced int. Mirrors Go's
+        `FlatDynamicDepth`/`coerceFlatDepth`."""
+        return self.flat(recv, _coerce_flat_depth(depth))
 
     def flat_map(self, recv: Any, key_kind: str, key: str) -> list:
         if not isinstance(recv, list):

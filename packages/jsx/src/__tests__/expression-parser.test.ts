@@ -1700,14 +1700,30 @@ describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
     })
   }
 
-  test('non-literal depth refuses (must be resolvable at template time)', () => {
+  test('a non-literal depth that itself resolves becomes a DYNAMIC depth (#2094)', () => {
+    // `n` parses to a supported `identifier` — the depth isn't known until
+    // render time, but it's still an EXPRESSIBLE one, so it's accepted as a
+    // dynamic depth (`depthExpr`) instead of refusing.
     const result = parseExpression('arr.flat(n)')
+    expect(result.kind).toBe('array-method')
+    if (result.kind === 'array-method' && result.method === 'flat') {
+      expect(result.depthExpr).toEqual({ kind: 'identifier', name: 'n' })
+    } else {
+      throw new Error(`expected a flat array-method, got ${result.kind}`)
+    }
+    // An arithmetic / member-access depth resolves too.
+    expect(parseExpression('arr.flat(depth + 1)').kind).toBe('array-method')
+    expect(parseExpression('arr.flat(props.depth)').kind).toBe('array-method')
+  })
+
+  test('a non-literal depth that itself does NOT resolve still refuses', () => {
+    const result = parseExpression('arr.flat(a instanceof B)')
     expect(result.kind).toBe('unsupported')
     if (result.kind === 'unsupported') {
       // Wrong remedy `@client` must not be suggested (doesn't work in
       // attribute / condition position).
       expect(result.reason).not.toContain('@client')
-      expect(result.reason).toContain('literal')
+      expect(result.reason).toContain('resolved')
     }
   })
 
@@ -1718,6 +1734,12 @@ describe('expression-parser — .flat(depth?) lowering (#1448 Tier C)', () => {
     expect(exprToString(parseExpression('arr.flat(2)'))).toBe('arr.flat(2)')
     expect(exprToString(parseExpression('arr.flat(Infinity)'))).toBe('arr.flat(Infinity)')
     expect(exprToString(parseExpression('arr.flat(0)'))).toBe('arr.flat(0)')
+  })
+
+  test('exprToString / stringifyParsedExpr round-trip a dynamic depth (#2094)', () => {
+    expect(exprToString(parseExpression('arr.flat(n)'))).toBe('arr.flat(n)')
+    expect(stringifyParsedExpr(parseExpression('arr.flat(n)'))).toBe('arr.flat(n)')
+    expect(stringifyParsedExpr(parseExpression('arr.flat(depth + 1)'))).toBe('arr.flat(depth + 1)')
   })
 })
 

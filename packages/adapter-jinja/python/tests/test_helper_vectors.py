@@ -139,6 +139,7 @@ BINDINGS = {
     "slice": lambda recv, start, end=None: bf.slice(recv, start, end),
     "reverse": bf.reverse,
     "flat": lambda *a: bf.flat(*a),
+    "flat_dynamic": lambda *a: bf.flat_dynamic(*a),
     "join": lambda *a: bf.join(*a),
     "arr": lambda *a: list(a),
     # Mirrors the JS `arr.filter(Boolean)` lowering, using JS truthiness.

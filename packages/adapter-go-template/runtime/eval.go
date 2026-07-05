@@ -119,6 +119,17 @@ func EvalNode(node any, env map[string]any) any {
 		return evalReadIndex(EvalNode(n["object"], env), EvalNode(n["index"], env))
 
 	case "call":
+		// A nested `.map(cb)` / `.filter(cb)` callback call (#2094): syntactically
+		// a `call` whose callee is `<recv>.map`/`<recv>.filter` and whose first
+		// argument is an `arrow` — the SAME shape `asCallbackMethodCall`
+		// recognizes at compile time, and the shape the `eval-vectors.json`
+		// golden corpus itself carries (it stores the genuine `ParsedExpr`, not
+		// a bespoke wrapper). Checked BEFORE the builtin-callee gate below,
+		// since `<recv>.map` would otherwise resolve to a non-builtin member
+		// callee and refuse.
+		if method, objNode, arrowNode, ok := evalArrayCallbackCall(n); ok {
+			return evalArrayCallback(method, objNode, arrowNode, env)
+		}
 		name := evalBuiltinName(n["callee"])
 		if name == "" {
 			return nil
@@ -163,20 +174,127 @@ func EvalNode(node any, env map[string]any) any {
 		return out
 
 	case "array-method":
-		// `.includes(x)` is the one `array-method` the evaluator executes (the
-		// JS reference's `evaluate` "array-method" arm, eval-reference.ts):
-		// every other array/string method (`join`, `slice`, `flat`, …) is
-		// refused upstream (BF101) and never reaches here.
+		// `.includes(x)` / `.join(sep?)` are the `array-method` shapes the
+		// evaluator executes (the JS reference's `evaluate` "array-method" arm,
+		// eval-reference.ts). A nested `.map`/`.filter` is NOT an
+		// `array-method` node — it reaches the `call` case above (it carries
+		// an `arrow` callback, not a plain `args` list). Every other
+		// array/string method (`slice`, `flat`, …) is refused upstream
+		// (BF101) and never reaches here.
 		method, _ := n["method"].(string)
 		rawArgs, _ := n["args"].([]any)
-		if method != "includes" || len(rawArgs) != 1 {
-			return nil
+		if method == "includes" && len(rawArgs) == 1 {
+			return evalIncludes(EvalNode(n["object"], env), EvalNode(rawArgs[0], env))
 		}
-		return evalIncludes(EvalNode(n["object"], env), EvalNode(rawArgs[0], env))
+		if method == "join" && len(rawArgs) <= 1 {
+			sep := ","
+			if len(rawArgs) == 1 {
+				sep = evalToString(EvalNode(rawArgs[0], env))
+			}
+			return evalJoin(EvalNode(n["object"], env), sep)
+		}
+		return nil
 	}
 	// arrow-fn / higher-order / unsupported: a callback body containing these
 	// is refused upstream (BF101); never reached here.
 	return nil
+}
+
+// evalArrayCallbackCall reports whether the decoded `call` node `n` is a
+// nested `.map(cb)` / `.filter(cb)` callback call (#2094): its callee is a
+// non-computed member `<recv>.map`/`<recv>.filter` and its first argument is
+// an `arrow` node. Returns the method name, the (still-encoded) receiver
+// object node, and the (still-encoded) arrow node.
+func evalArrayCallbackCall(n map[string]any) (method string, object any, arrow map[string]any, ok bool) {
+	callee, _ := n["callee"].(map[string]any)
+	if callee == nil || callee["kind"] != "member" {
+		return "", nil, nil, false
+	}
+	if computed, _ := callee["computed"].(bool); computed {
+		return "", nil, nil, false
+	}
+	prop, _ := callee["property"].(string)
+	if prop != "map" && prop != "filter" {
+		return "", nil, nil, false
+	}
+	rawArgs, _ := n["args"].([]any)
+	if len(rawArgs) == 0 {
+		return "", nil, nil, false
+	}
+	arrowNode, _ := rawArgs[0].(map[string]any)
+	if arrowNode == nil || arrowNode["kind"] != "arrow" {
+		return "", nil, nil, false
+	}
+	return prop, callee["object"], arrowNode, true
+}
+
+// evalArrayCallback executes a nested `.map`/`.filter` callback call: evaluates
+// the receiver, then evaluates the arrow body per element in a CHILD env that
+// binds the arrow's first param to the element and (when the arrow declares a
+// second param) the second to the integer index — both 1- and 2-param arrows
+// are supported. `map` keeps one result per element (order-preserving);
+// `filter` keeps the elements whose body evaluates truthy. A non-array
+// receiver degrades to nil (unreachable for a body the compiler validated,
+// since the receiver of a nested `.map`/`.filter` is itself gated upstream).
+func evalArrayCallback(method string, objectNode any, arrowNode map[string]any, env map[string]any) any {
+	arr := toAnySlice(EvalNode(objectNode, env))
+	if arr == nil {
+		return nil
+	}
+	rawParams, _ := arrowNode["params"].([]any)
+	params := make([]string, len(rawParams))
+	for i, p := range rawParams {
+		params[i], _ = p.(string)
+	}
+	body := arrowNode["body"]
+	callCb := func(item any, index int) any {
+		inner := make(map[string]any, len(env)+2)
+		for k, v := range env {
+			inner[k] = v
+		}
+		if len(params) > 0 {
+			inner[params[0]] = item
+		}
+		if len(params) > 1 {
+			inner[params[1]] = index
+		}
+		return EvalNode(body, inner)
+	}
+	if method == "map" {
+		out := make([]any, len(arr))
+		for i, item := range arr {
+			out[i] = callCb(item, i)
+		}
+		return out
+	}
+	out := []any{}
+	for i, item := range arr {
+		if evalTruthy(callCb(item, i)) {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+// evalJoin implements `.join(sep)`: elements ToString'd and joined; a
+// null/undefined element ToStrings to the empty string (matching JS
+// `Array.prototype.join`, which skips null/undefined rather than rendering
+// the literal string "null"/"undefined"). A non-array receiver degrades to
+// the empty string (unreachable for a validated body).
+func evalJoin(obj any, sep string) string {
+	arr := toAnySlice(obj)
+	if arr == nil {
+		return ""
+	}
+	parts := make([]string, len(arr))
+	for i, el := range arr {
+		if el == nil {
+			parts[i] = ""
+			continue
+		}
+		parts[i] = evalToString(el)
+	}
+	return strings.Join(parts, sep)
 }
 
 // ---------------------------------------------------------------------------

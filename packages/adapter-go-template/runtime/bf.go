@@ -73,6 +73,7 @@ func FuncMap() template.FuncMap {
 		"bf_slice":          Slice,
 		"bf_reverse":        Reverse,
 		"bf_flat":           Flat,
+		"bf_flat_dynamic":   FlatDynamicDepth,
 		"bf_flat_map":       FlatMap,
 		"bf_flat_map_tuple": FlatMapTuple,
 		"bf_first":          First,
@@ -1311,6 +1312,119 @@ func Flat(items any, depth int) []any {
 		}
 	}
 	return out
+}
+
+// FlatDynamicDepth coerces `depth` via JS's `ToIntegerOrInfinity` and
+// flattens `items` that many levels. Lowers a DYNAMIC `.flat(depth)`
+// (#2094) — one whose depth isn't a compile-time literal, so (unlike
+// `Flat` above) the coercion happens here at render time instead of in the
+// parser.
+//
+// This is a SEPARATE helper from `Flat`/`bf_flat` — NOT a drop-in
+// replacement — because `Flat`'s `depth int` parameter treats `-1` as a
+// compile-time SENTINEL meaning "flatten fully" (the parser's own
+// normalisation of a literal `Infinity`). A genuinely dynamic depth value
+// of `-1` means the JS-correct OPPOSITE: `Array.prototype.flat(-1)` never
+// recurses (same as `.flat(0)`, a shallow copy), because
+// `FlattenIntoArray` only recurses when `depth > 0`. Reusing `Flat`'s int
+// contract for a raw dynamic value would silently invert that case, so
+// this function coerces FIRST — mapping a real `+Infinity` / huge finite
+// value to `Flat`'s own `-1` sentinel, and a real negative value to `0` —
+// and only then delegates to `Flat`'s recursion.
+//
+// Coercion rules (JS `ToIntegerOrInfinity`, mirrored exactly; pinned by the
+// `flat_dynamic` golden-vector cases in
+// packages/adapter-tests/vectors/cases.ts):
+//   - the value converts via `ToNumber` first (numeric string / bool /
+//     number all coerce; see `flatDepthToFloat`);
+//   - a NaN result (including a non-numeric string) → `0`;
+//   - truncates toward zero (`2.7` → `2`);
+//   - negative → `0`;
+//   - `+Infinity` / a huge finite value → flattens fully.
+func FlatDynamicDepth(items any, depth any) []any {
+	return Flat(items, coerceFlatDepth(depth))
+}
+
+// coerceFlatDepth implements JS's `ToIntegerOrInfinity` for a dynamic
+// `.flat(depth)` argument, returning an int in `Flat`'s own contract (`-1`
+// = unbounded, `>= 0` = that many levels).
+func coerceFlatDepth(depth any) int {
+	f, ok := flatDepthToFloat(depth)
+	if !ok || math.IsNaN(f) {
+		return 0
+	}
+	if math.IsInf(f, 1) {
+		return -1 // Flat's "flatten fully" sentinel
+	}
+	if math.IsInf(f, -1) {
+		return 0
+	}
+	trunc := math.Trunc(f)
+	if trunc < 0 {
+		return 0
+	}
+	// A huge finite depth behaves identically to "flatten fully" in
+	// practice — real data bottoms out at its actual nesting depth long
+	// before a counter this large would ever reach zero. Capping it here
+	// avoids an absurd countdown without needing a second sentinel.
+	if trunc > 1_000_000 {
+		return -1
+	}
+	return int(trunc)
+}
+
+// flatDepthToFloat converts a dynamic `.flat(depth)` argument to a float64,
+// mirroring JS's `ToNumber` across the value shapes a Go template data
+// model can carry (every numeric kind, bool, numeric string). `ok` is
+// false for a shape `ToNumber` can't coerce meaningfully (`nil`, or a
+// non-numeric string) — `coerceFlatDepth` treats that the same as NaN
+// (→ depth `0`), matching JS.
+func flatDepthToFloat(v any) (float64, bool) {
+	switch n := v.(type) {
+	case nil:
+		return 0, false
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int8:
+		return float64(n), true
+	case int16:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case uint:
+		return float64(n), true
+	case uint8:
+		return float64(n), true
+	case uint16:
+		return float64(n), true
+	case uint32:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case bool:
+		if n {
+			return 1, true
+		}
+		return 0, true
+	case string:
+		s := strings.TrimSpace(n)
+		if s == "" {
+			return 0, true // JS: Number("") is 0
+		}
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return 0, false // not numeric → NaN path
+		}
+		return f, true
+	default:
+		return 0, false
+	}
 }
 
 // FlatMap projects each element through a `self` / `field` projection and

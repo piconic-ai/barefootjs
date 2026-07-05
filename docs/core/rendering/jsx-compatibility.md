@@ -106,7 +106,8 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 | `.filter()` with destructured param (`({done}) => done`) | works (runs as JS) | **BF101** |
 | `.filter()` with `function` keyword callback | works | **BF101** |
 | `.reduce()`, `.forEach()`, `.flatMap()` | works | **BF101** |
-| Nested higher-order in filter predicate (`x => x.tags.filter(...).length > 0`) | works | **BF101** |
+| Nested `.filter()` / `.map()` in a filter predicate (`x => x.tags.filter(...).length > 0`) | works | works |
+| Nested `.some()` / `.find()` / `.reduce()` in a filter predicate | works | **BF101** |
 | Sort comparator that's a multi-statement block body or `localeCompare(b, locale, opts)` | **BF021** (all adapters) | **BF021** |
 | Sort comparator that's a function reference to an imported/prop identifier, or an alias chain (`const c2 = c1`) | **BF021** (all adapters) | **BF021** |
 | `typeof` in a filter predicate | **BF021** (all adapters) | **BF021** |
@@ -117,12 +118,21 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 
 **Nested higher-order methods:**
 
+A nested `.filter()` / `.map()` inside a filter predicate's callback body lowers on every adapter — the runtime evaluator serializes the nested call (the callback arrow travels with it) instead of refusing it:
+
+```tsx
+// ✅ Nested `.filter()` / `.map()` now compiles everywhere
+{items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name)}
+```
+
+A nested `.some()` / `.find()` / `.reduce()` still has no faithful Go/Mojo lowering (they return a boolean-from-search / element / fold, not a per-element projection), so they still refuse:
+
 ```tsx
 // ❌ BF101 on Go/Mojo; works on Hono
-{items().filter(x => x.tags.filter(t => t.active).length > 0).map(...)}
+{items().filter(x => x.tags.some(t => t.active)).map(t => t.name)}
 
 // ✅ Add /* @client */ to evaluate on the client
-{/* @client */ items().filter(x => x.tags.filter(t => t.active).length > 0).map(...)}
+{/* @client */ items().filter(x => x.tags.some(t => t.active)).map(t => t.name)}
 ```
 
 **`.reduce()` / `.forEach()` / `.flatMap()`:**

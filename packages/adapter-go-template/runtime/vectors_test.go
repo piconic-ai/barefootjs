@@ -118,6 +118,7 @@ var vectorBindings = map[string]func(args []any) any{
 	},
 	"reverse":       func(args []any) any { return Reverse(args[0]) },
 	"flat":          func(args []any) any { return Flat(args[0], args[1].(int)) },
+	"flat_dynamic":  func(args []any) any { return FlatDynamicDepth(args[0], args[1]) },
 	"join":          func(args []any) any { return Join(args[0], args[1].(string)) },
 	"arr":           func(args []any) any { return Arr(args...) },
 	"filter_truthy": func(args []any) any { return FilterTruthy(args[0]) },

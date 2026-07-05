@@ -81,6 +81,16 @@ sub evaluate ($node, $env) {
         return _read_index(evaluate($node->{object}, $env), evaluate($node->{index}, $env));
     }
     if ($kind eq 'call') {
+        # Nested `.map(cb)` / `.filter(cb)` (#2094) — e.g. a `.flatMap(p =>
+        # p.tags.map(t => '#'+t))` projection body that itself contains a
+        # `.map`/`.filter` call. Checked BEFORE builtin-name resolution
+        # (the callee is a `member` node, never a bare/dotted builtin
+        # identifier, so the two can't collide). Mirrors Go's
+        # evalArrayCallbackCall / evalArrayCallback.
+        my ($method, $object_node, $arrow_node) = _array_callback_call($node);
+        if (defined $method) {
+            return _array_callback($method, $object_node, $arrow_node, $env);
+        }
         my $name = _builtin_name($node->{callee});
         return undef unless defined $name && $name ne '';
         my @args = map { evaluate($_, $env) } @{ $node->{args} // [] };
@@ -132,10 +142,102 @@ sub evaluate ($node, $env) {
         # false rather than throwing, mirroring the reference.
         return _bool(0);
     }
+    if ($kind eq 'array-method' && ($node->{method} // '') eq 'join'
+        && @{ $node->{args} // [] } <= 1)
+    {
+        # `.join(sep?)` (#2094), a sibling of `.includes` above in the
+        # `array-method` node kind — needed for a composed case like
+        # `.flatMap(p => p.tags.map(...).join(' ')).join(', ')`. JS
+        # semantics: default separator is `,`; a `null`/`undefined`
+        # element joins as `''` (NOT the string "null"). Mirrors the Go
+        # evaluator's evalJoin.
+        my $obj  = evaluate($node->{object}, $env);
+        my $args = $node->{args} // [];
+        my $sep  = @$args == 1 ? _to_string(evaluate($args->[0], $env)) : ',';
+        return _join_array($obj, $sep);
+    }
 
     # arrow-fn / higher-order / unsupported array-method: a callback body
     # containing these is refused upstream (BF101); never reached here.
     return undef;
+}
+
+# ---------------------------------------------------------------------------
+# Nested `.map` / `.filter` callback recognition (#2094) — the evaluator
+# widening that lets a callback body (already evaluated here for reduce /
+# sort / filter / find / …) itself contain a `.map(cb)` or `.filter(cb)`
+# call, e.g. the #1938 blog-showcase `.flatMap(p => p.tags.map(t => '#'+t))`
+# projection. Everything else nested (`.some`/`.find`/`.every`/`.sort`/
+# `.reduce`/`.flat`/`.flatMap`, standalone arrows) stays refused upstream —
+# only `.map`/`.filter` are recognized here, mirroring Go's
+# evalArrayCallbackCall / evalArrayCallback exactly.
+# ---------------------------------------------------------------------------
+
+# _array_callback_call($node): if $node (a `call` node) is a `.map(arrow)` /
+# `.filter(arrow)` call — i.e. its callee is an uncomputed `member` node
+# whose property is "map"/"filter", and its first argument is an `arrow`
+# node — returns `(method, object_node, arrow_node)`. Otherwise returns the
+# empty list (so `if (my (...) = _array_callback_call($node))` is false).
+sub _array_callback_call ($node) {
+    my $callee = $node->{callee};
+    return () unless ref $callee eq 'HASH' && ($callee->{kind} // '') eq 'member';
+    return () if $callee->{computed};
+    my $prop = $callee->{property} // '';
+    return () unless $prop eq 'map' || $prop eq 'filter';
+    my $args = $node->{args} // [];
+    return () unless @$args;
+    my $arrow = $args->[0];
+    return () unless ref $arrow eq 'HASH' && ($arrow->{kind} // '') eq 'arrow';
+    return ($prop, $callee->{object}, $arrow);
+}
+
+# _array_callback($method, $object_node, $arrow_node, $env): evaluate the
+# receiver (`$object_node`) against $env, then map/filter it through the
+# arrow's body. `params` in the decoded JSON is an array ref of plain
+# strings (e.g. `["t"]` or `["t","i"]`) — 1 param binds the element, 2
+# params bind (element, index). The child env is a COPY of the parent env
+# (never mutated in place across sibling iterations), with the param
+# name(s) bound per call — matches Go's per-call `inner` env copy.
+sub _array_callback ($method, $object_node, $arrow_node, $env) {
+    my $arr = evaluate($object_node, $env);
+    return undef unless ref $arr eq 'ARRAY';
+    my @params = @{ $arrow_node->{params} // [] };
+    my $body   = $arrow_node->{body};
+    my $call_cb = sub {
+        my ($item, $index) = @_;
+        my %inner = %$env;
+        $inner{ $params[0] } = $item  if @params >= 1;
+        $inner{ $params[1] } = $index if @params >= 2;
+        return evaluate($body, \%inner);
+    };
+    if ($method eq 'map') {
+        my @out;
+        my $i = 0;
+        for my $item (@$arr) {
+            push @out, $call_cb->($item, $i);
+            $i++;
+        }
+        return \@out;
+    }
+    # filter
+    my @out;
+    my $i = 0;
+    for my $item (@$arr) {
+        push @out, $item if _truthy($call_cb->($item, $i));
+        $i++;
+    }
+    return \@out;
+}
+
+# _join_array($obj, $sep): `Array.prototype.join` semantics — non-ARRAY
+# receiver -> '' (the evaluator's degrade-rather-than-die convention,
+# matching `.includes` above); a `null`/`undefined` (Perl `undef`) element
+# joins as '' (not the string "null"); every other element goes through
+# `_to_string` (JS `String(x)` — a JS boolean stringifies "true"/"false", a
+# number "42"/"NaN"/"Infinity", etc.). Mirrors Go's evalJoin.
+sub _join_array ($obj, $sep) {
+    return '' unless ref $obj eq 'ARRAY';
+    return join($sep, map { defined $_ ? _to_string($_) : '' } @$obj);
 }
 
 # eval_json($json, $env): decode a ParsedExpr JSON string and evaluate it.

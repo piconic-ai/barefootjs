@@ -320,7 +320,27 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
 }
 
 // `.flat(depth?)` → `bf.flat(recv, depth)`.
-export function renderFlatMethod(recv: string, depth: FlatDepth): string {
+export function renderFlatMethod(
+  recv: string,
+  depth: FlatDepth | { expr: ParsedExpr },
+  emit: (e: ParsedExpr) => string,
+): string {
+  if (typeof depth === 'object') {
+    // Dynamic depth (#2094): routed to a DISTINCT runtime helper
+    // (`bf.flat_dynamic`), not `bf.flat`. `bf.flat`'s literal-depth path
+    // bakes `-1` in as a compile-time SENTINEL meaning "the source
+    // literally said `Infinity`". A genuinely dynamic depth expression that
+    // happens to evaluate to `-1` at render time means the OPPOSITE in real
+    // JS (`[1,[2]].flat(-1)` never recurses — same as `.flat(0)`). Since
+    // both paths would otherwise hand the same literal-looking argument to
+    // one shared function, that function can't tell which case it's in —
+    // so `bf.flat_dynamic` coerces the raw expression value via JS
+    // `ToIntegerOrInfinity` (truncate toward zero; negative → 0; NaN/non-
+    // numeric → 0; +Infinity or a huge finite value → flatten fully) before
+    // delegating to the same recursive flatten as `bf.flat` (mirrors the
+    // Go adapter's `bf_flat_dynamic` / `coerceFlatDepth`).
+    return `bf.flat_dynamic(${recv}, ${emit(depth.expr)})`
+  }
   const d = depth === 'infinity' ? -1 : depth
   return `bf.flat(${recv}, ${d})`
 }

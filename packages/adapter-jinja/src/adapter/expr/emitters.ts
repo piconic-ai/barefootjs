@@ -239,8 +239,12 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return renderArrayMethod(method, object, args, emit)
   }
 
-  flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
-    return renderFlatMethod(emit(object), depth)
+  flatMethod(
+    object: ParsedExpr,
+    depth: FlatDepth | { expr: ParsedExpr },
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    return renderFlatMethod(emit(object), depth, emit)
   }
 
   conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
@@ -529,8 +533,12 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return renderArrayMethod(method, object, args, emit)
   }
 
-  flatMethod(object: ParsedExpr, depth: FlatDepth, emit: (e: ParsedExpr) => string): string {
-    return renderFlatMethod(emit(object), depth)
+  flatMethod(
+    object: ParsedExpr,
+    depth: FlatDepth | { expr: ParsedExpr },
+    emit: (e: ParsedExpr) => string,
+  ): string {
+    return renderFlatMethod(emit(object), depth, emit)
   }
 
   conditional(

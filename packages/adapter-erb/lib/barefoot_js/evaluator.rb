@@ -71,10 +71,22 @@ module BarefootJS
       when 'index-access'
         read_index(evaluate(node[:object], env), evaluate(node[:index], env))
       when 'call'
-        name = builtin_name(node[:callee])
-        raise EvalUnsupported, 'only built-in calls (Math.*, String/Number/Boolean) are in the subset' if name.nil?
-        args = (node[:args] || []).map { |a| evaluate(a, env) }
-        call_builtin(name, args)
+        # A nested `.map(cb)` / `.filter(cb)` callback call (#2094):
+        # syntactically a `call` whose callee is `<recv>.map`/`<recv>.filter`
+        # and whose first argument is an `arrow` node -- the same shape
+        # `asCallbackMethodCall` recognizes at compile time, and the shape
+        # the `eval-vectors.json` golden corpus itself carries. Checked
+        # BEFORE the builtin-name check below, since `<recv>.map` would
+        # otherwise resolve to a non-builtin member callee and raise.
+        method, object_node, arrow_node = array_callback_call(node)
+        if method
+          array_callback(method, object_node, arrow_node, env)
+        else
+          name = builtin_name(node[:callee])
+          raise EvalUnsupported, 'only built-in calls (Math.*, String/Number/Boolean) are in the subset' if name.nil?
+          args = (node[:args] || []).map { |a| evaluate(a, env) }
+          call_builtin(name, args)
+        end
       when 'template-literal'
         out = +''
         (node[:parts] || []).each do |p|
@@ -101,12 +113,20 @@ module BarefootJS
           # template lowering does at runtime (`bf.includes`). Mirrors the
           # JS reference's `includes()` (eval-reference.ts).
           includes_value(evaluate(node[:object], env), evaluate(args[0], env))
+        elsif node[:method] == 'join' && args.length <= 1
+          # `.join(sep?)` (#2094) -- a nested `.flatMap(p => p.tags.map(...))
+          # .join(...)` projection composes a `.join` on top of a nested
+          # `.map`, so it must be executable in the same evaluator subset as
+          # `.includes`. Default separator "," (JS); a `nil` element joins
+          # as "" (not the string "null"). Mirrors Go's `evalJoin`.
+          sep = args.empty? ? ',' : to_string(evaluate(args[0], env))
+          array_join(evaluate(node[:object], env), sep)
         else
-          # Every other array/string method (`join`, `slice`, `flat`, ...)
-          # is outside the subset; a callback body containing one is
-          # refused upstream (BF101) and should never reach here, but the
-          # evaluator refuses explicitly rather than falling through
-          # silently, matching the JS reference.
+          # Every other array/string method (`slice`, `flat`, ...) is
+          # outside the subset; a callback body containing one is refused
+          # upstream (BF101) and should never reach here, but the evaluator
+          # refuses explicitly rather than falling through silently,
+          # matching the JS reference.
           raise EvalUnsupported, "array-method '#{node[:method]}' is not in the evaluator subset"
         end
       else
@@ -319,6 +339,21 @@ module BarefootJS
       false
     end
 
+    # array_join(obj, sep): `.join(sep)` (#2094) -- elements ToString'd and
+    # joined; a `nil` element ToStrings to the empty string (matching JS
+    # `Array.prototype.join`, which skips null/undefined rather than
+    # rendering the literal string "null"/"undefined"). A non-array receiver
+    # degrades to the empty string (unreachable for a validated body).
+    # Mirrors Go's `evalJoin`. Private -- unlike `includes_value`, no
+    # runtime helper outside the evaluator needs this JS-strict variant
+    # (`Context#join` in barefoot_js.rb has its own SSR-oriented coercion).
+    def array_join(obj, sep)
+      return '' unless obj.is_a?(Array)
+
+      obj.map { |el| el.nil? ? '' : to_string(el) }.join(sep)
+    end
+    private_class_method :array_join
+
     def boolean?(v)
       v.is_a?(TrueClass) || v.is_a?(FalseClass)
     end
@@ -333,6 +368,67 @@ module BarefootJS
       end
     end
     private_class_method :unary
+
+    # ---------------------------------------------------------------------
+    # Nested `.map`/`.filter` callback calls (#2094) -- the evaluator
+    # widening that lets a callback body itself contain a `.map`/`.filter`
+    # over another array (e.g. `.flatMap(p => p.tags.map(...))`).
+    # ---------------------------------------------------------------------
+
+    # array_callback_call(node) -- reports whether the decoded `call` node
+    # is a nested `.map(cb)` / `.filter(cb)` callback call (#2094): its
+    # callee is a non-computed member `<recv>.map`/`<recv>.filter` and its
+    # first argument is an `arrow` node. Returns
+    # `[method, object_node, arrow_node]` (the still-encoded receiver and
+    # arrow), or `[nil, nil, nil]` when the node doesn't match the shape.
+    # Mirrors Go's `evalArrayCallbackCall`.
+    def array_callback_call(node)
+      callee = node[:callee]
+      return [nil, nil, nil] unless callee.is_a?(Hash) && callee[:kind] == 'member'
+      return [nil, nil, nil] if callee[:computed]
+
+      prop = callee[:property]
+      return [nil, nil, nil] unless %w[map filter].include?(prop)
+
+      raw_args = node[:args] || []
+      return [nil, nil, nil] if raw_args.empty?
+
+      arrow_node = raw_args[0]
+      return [nil, nil, nil] unless arrow_node.is_a?(Hash) && arrow_node[:kind] == 'arrow'
+
+      [prop, callee[:object], arrow_node]
+    end
+    private_class_method :array_callback_call
+
+    # array_callback(method, object_node, arrow_node, env) -- executes a
+    # nested `.map`/`.filter` callback call: evaluates the receiver, then
+    # evaluates the arrow body per element in a CHILD env (a COPY of the
+    # parent, never mutated in place across iterations) that binds the
+    # arrow's first param to the element and, when the arrow declares a
+    # second param, the second to the integer index. `map` keeps one result
+    # per element (order-preserving); `filter` keeps the elements whose body
+    # evaluates truthy. A non-array receiver degrades to `nil` (unreachable
+    # for a body the compiler validated). Mirrors Go's `evalArrayCallback`.
+    def array_callback(method, object_node, arrow_node, env)
+      arr = evaluate(object_node, env)
+      return nil unless arr.is_a?(Array)
+
+      params = arrow_node[:params] || []
+      body = arrow_node[:body]
+      call_cb = lambda do |item, index|
+        inner = env.dup
+        inner[params[0].to_sym] = item if params[0]
+        inner[params[1].to_sym] = index if params[1]
+        evaluate(body, inner)
+      end
+
+      if method == 'map'
+        arr.each_with_index.map { |item, i| call_cb.call(item, i) }
+      else
+        arr.each_with_index.select { |item, i| truthy?(call_cb.call(item, i)) }.map { |item, _| item }
+      end
+    end
+    private_class_method :array_callback
 
     # ---------------------------------------------------------------------
     # Built-in calls (the deterministic allowlist). Locale-sensitive

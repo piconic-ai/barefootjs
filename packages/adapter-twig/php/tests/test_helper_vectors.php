@@ -166,6 +166,7 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'slice': return $bf->slice($args[0], $args[1], $args[2] ?? null);
         case 'reverse': return $bf->reverse($args[0]);
         case 'flat': return $bf->flat(...$args);
+        case 'flat_dynamic': return $bf->flat_dynamic(...$args);
         case 'join': return $bf->join(...$args);
         case 'arr': return $args; // variadic array-literal elements, in order
         case 'filter_truthy': return array_values(array_filter($args[0], fn ($x) => $bf->truthy($x)));

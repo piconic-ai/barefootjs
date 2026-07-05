@@ -214,6 +214,16 @@ import { fixture as arrayMapValueField } from './methods/array-map-value-field'
 import { fixture as arrayMapFunctionReference } from './methods/array-map-function-reference'
 import { fixture as arrayFlatMapSelf } from './methods/array-flatmap-self'
 import { fixture as arrayFlatMapTuple } from './methods/array-flatmap-tuple'
+// #2094 — dynamic `.flat(depth)` + evaluator nested-callback widening
+// (`.map`/`.filter`/`.join` inside a flatMap projection or filter
+// predicate) + the 2-arg `flatMap(fn, thisArg)` pin. All six runtime
+// evaluators implement the widened surface (Go is the reference; parity
+// is pinned by the `flat_dynamic` helper vectors and the #2094 eval
+// vectors), so these run on every adapter.
+import { fixture as arrayFlatDynamicDepth } from './methods/array-flat-dynamic-depth'
+import { fixture as arrayFlatMapNestedMap } from './methods/array-flatmap-nested-map'
+import { fixture as arrayFlatMapNestedFilterJoin } from './methods/array-flatmap-nested-filter-join'
+import { fixture as arrayFlatMapThisArg } from './methods/array-flatmap-thisarg'
 import { fixture as stringToLowerCase } from './methods/string-toLowerCase'
 import { fixture as stringToUpperCase } from './methods/string-toUpperCase'
 import { fixture as stringTrim } from './methods/string-trim'
@@ -443,6 +453,11 @@ export const jsxFixtures: JSXFixture[] = [
   arrayMapFunctionReference,
   arrayFlatMapSelf,
   arrayFlatMapTuple,
+  // #2094
+  arrayFlatDynamicDepth,
+  arrayFlatMapNestedMap,
+  arrayFlatMapNestedFilterJoin,
+  arrayFlatMapThisArg,
   // #1448 Tier A — String methods.
   stringToLowerCase,
   stringToUpperCase,

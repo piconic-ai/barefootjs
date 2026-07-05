@@ -396,7 +396,29 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
 // `.flat(depth?)` → `bf.flat(recv, depth)`. The `Infinity` form lowers
 // to the `-1` sentinel (flatten fully); a finite depth flattens that many
 // levels (`0` = shallow copy).
-export function renderFlatMethod(recv: string, depth: FlatDepth): string {
+export function renderFlatMethod(
+  recv: string,
+  depth: FlatDepth | { expr: ParsedExpr },
+  emit: (e: ParsedExpr) => string,
+): string {
+  if (typeof depth === 'object') {
+    // Dynamic depth (#2094): routed to a SEPARATE runtime helper
+    // (`bf.flat_dynamic`), not `bf.flat` — `bf.flat`'s `depth` parameter
+    // treats `-1` as a compile-time SENTINEL meaning "the source literally
+    // wrote `Infinity`" (the parser's own normalisation of a literal
+    // depth). A genuinely dynamic depth value that happens to evaluate to
+    // `-1` at render time means the JS-correct OPPOSITE: `.flat(-1)` never
+    // recurses (same as `.flat(0)`, a shallow copy). Since both paths would
+    // otherwise hand the same literal-looking argument to one shared
+    // function, that function couldn't tell which case it's in — so
+    // `bf.flat_dynamic` coerces the raw value via JS `ToIntegerOrInfinity`
+    // FIRST (truncate toward zero; negative → 0; NaN/non-numeric → 0;
+    // +Infinity or a huge finite value → flatten fully) and only then
+    // delegates to the same recursion `bf.flat` uses. Mirrors the Go
+    // adapter's `bf_flat_dynamic` (go-template-adapter.ts) and runtime
+    // `FlatDynamicDepth`/`coerceFlatDepth` (adapter-go-template/runtime/bf.go).
+    return `bf.flat_dynamic(${recv}, ${emit(depth.expr)})`
+  }
   const d = depth === 'infinity' ? -1 : depth
   return `bf.flat(${recv}, ${d})`
 }

@@ -320,7 +320,27 @@ export function renderSortMethod(recv: string, c: SortComparator): string {
 }
 
 // `.flat(depth?)` → `bf.flat(recv, depth)`.
-export function renderFlatMethod(recv: string, depth: FlatDepth): string {
+export function renderFlatMethod(
+  recv: string,
+  depth: FlatDepth | { expr: ParsedExpr },
+  emit: (e: ParsedExpr) => string,
+): string {
+  if (typeof depth === 'object') {
+    // Dynamic depth (#2094): routed to a DISTINCT runtime entry point,
+    // `bf.flat_dynamic`, rather than reusing `bf.flat`. `bf.flat`'s `depth`
+    // is a compile-time int baked directly into the template source, where
+    // `-1` is a SENTINEL meaning "the source literally wrote `Infinity`".
+    // A genuinely dynamic depth value that happens to evaluate to `-1` at
+    // render time means the OPPOSITE in real JS (`[1,[2]].flat(-1)` never
+    // recurses — same as `.flat(0)`). Since both call sites would otherwise
+    // hand the same literal-looking argument to one shared function, that
+    // function couldn't tell which case it's in — so it's two functions.
+    // `bf.flat_dynamic` coerces its depth argument at RENDER time via JS
+    // `ToIntegerOrInfinity` (truncate toward zero; negative → 0; NaN → 0;
+    // +Infinity / a huge finite value → flatten fully) and delegates to the
+    // same underlying flatten routine as `bf.flat`.
+    return `bf.flat_dynamic(${recv}, ${emit(depth.expr)})`
+  }
   const d = depth === 'infinity' ? -1 : depth
   return `bf.flat(${recv}, ${d})`
 }

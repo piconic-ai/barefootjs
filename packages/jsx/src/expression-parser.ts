@@ -99,18 +99,40 @@ export type ParsedExpr =
       object: ParsedExpr
       args: ParsedExpr[]
     }
-  // `.flat(depth?)` (#1448 Tier C). The flatten depth is validated and
-  // normalised into a structured `FlatDepth` at parse time — the literal
-  // never reaches `args`, so adapters fold via a runtime helper instead of
-  // re-inspecting the depth argument. A non-literal depth refuses with
-  // BF101 (the depth must be known at template time). See the `.flat` arm
-  // in `convertNode`.
+  // `.flat(depth?)` (#1448 Tier C, dynamic depth #2094). The flatten depth
+  // is validated at parse time — a literal integer / `Infinity` /
+  // unary-minus-literal normalises into a structured `FlatDepth` and the
+  // literal never reaches `args`, so adapters fold via a runtime helper
+  // instead of re-inspecting the depth argument. A non-literal depth that
+  // itself parses to a SUPPORTED `ParsedExpr` (a numeric prop, signal read,
+  // arithmetic, …) becomes a DYNAMIC depth: `depthExpr` carries that
+  // expression and `flatDepth` is a meaningless placeholder (`1`) — every
+  // consumer must check `depthExpr` first. A depth expression that itself
+  // doesn't resolve (an `unsupported` shape) still refuses with BF101 (the
+  // depth must be *expressible*, even if not known until render time). See
+  // the `.flat` arm in `convertNode`.
+  //
+  // Runtime coercion contract for a dynamic depth (JS `ToIntegerOrInfinity`,
+  // pinned by the `flat_dynamic` golden-vector cases): truncate toward
+  // zero; a NaN-producing value coerces to `0`; negative coerces to `0`
+  // (JS: negative depth never recurses, same as `0` — a shallow copy);
+  // `Infinity` / a huge finite value flattens fully. This is intentionally
+  // NOT the same runtime helper as the literal-depth path: the literal path
+  // pre-normalises `Infinity` to a `-1` *sentinel* meaning "flatten fully"
+  // (see `FlatDepth`'s doc), and a genuinely dynamic value of `-1` means
+  // the OPPOSITE (JS: no flatten) — reusing one helper for both would
+  // silently invert that case. Each adapter therefore routes a dynamic
+  // depth through a SEPARATE runtime helper (Go: `bf_flat_dynamic` /
+  // `FlatDynamicDepth`, distinct from the literal path's `bf_flat` / `Flat`)
+  // that performs the coercion above from scratch, never reusing the
+  // literal path's `-1`-means-infinite convention.
   | {
       kind: 'array-method'
       method: 'flat'
       object: ParsedExpr
       args: []
       flatDepth: FlatDepth
+      depthExpr?: ParsedExpr
     }
   | { kind: 'unsupported'; raw: string; reason: string }
 
@@ -795,6 +817,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       if (callee.property === 'flat') {
         const depthNode = node.arguments[0]
         let flatDepth: FlatDepth
+        let depthExpr: ParsedExpr | undefined
         if (depthNode === undefined) {
           flatDepth = 1
         } else if (ts.isIdentifier(depthNode) && depthNode.text === 'Infinity') {
@@ -811,16 +834,34 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
             n = -Number(depthNode.operand.text)
           }
           if (n === undefined || Number.isNaN(n)) {
-            return {
-              kind: 'unsupported',
-              raw,
-              reason: `\`.flat(depth)\` needs a literal integer or \`Infinity\` depth — a computed depth can't be resolved at template time. Use a literal depth, or pre-compute the value before the template.`,
+            // Not a literal — try a DYNAMIC depth: an expression that
+            // itself resolves to a supported `ParsedExpr` (a numeric prop,
+            // signal read, arithmetic, …) can be lowered through a runtime
+            // helper that coerces it at render time (JS
+            // `ToIntegerOrInfinity`; see the `depthExpr` doc on the
+            // `array-method`/`flat` type). Still refuse with BF101 when
+            // the depth expression itself is outside the supported
+            // surface — the depth must be *expressible*, even if not
+            // known until render time.
+            const parsedDepth = convertNode(depthNode, raw)
+            if (checkSupport(parsedDepth).supported) {
+              depthExpr = parsedDepth
+              flatDepth = 1 // unused placeholder — consumers must check `depthExpr` first
+            } else {
+              return {
+                kind: 'unsupported',
+                raw,
+                reason: `\`.flat(depth)\` needs a literal integer, \`Infinity\`, or a supported dynamic depth expression — this depth can't be resolved. Use a literal depth, a supported expression (prop/signal/arithmetic), or pre-compute the value before the template.`,
+              }
             }
+          } else {
+            const truncated = Math.trunc(n)
+            flatDepth = truncated < 0 ? 0 : truncated
           }
-          const truncated = Math.trunc(n)
-          flatDepth = truncated < 0 ? 0 : truncated
         }
-        return { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth }
+        return depthExpr !== undefined
+          ? { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth, depthExpr }
+          : { kind: 'array-method', method: 'flat', object: callee.object, args: [], flatDepth }
       }
       // `.toLowerCase()` — string-only (the IR carries a value-builtin
       // tag, not a receiver-type discriminator, so the `array-method`
@@ -1869,6 +1910,7 @@ function validateRestUsage(
       case 'array-method':
         walk(e.object)
         for (const a of e.args) walk(a)
+        if (e.method === 'flat' && e.depthExpr) walk(e.depthExpr)
         return
       case 'literal':
       case 'unsupported':
@@ -1981,6 +2023,7 @@ function collectIdentifiers(expr: ParsedExpr, out: Set<string>): void {
     case 'array-method':
       collectIdentifiers(expr.object, out)
       expr.args.forEach(e => collectIdentifiers(e, out))
+      if (expr.method === 'flat' && expr.depthExpr) collectIdentifiers(expr.depthExpr, out)
       return
     case 'literal':
     case 'regex':
@@ -2078,8 +2121,16 @@ function substituteDestructuredFields(
       case 'array-method':
         if (e.method === 'flat') {
           // `flatDepth` is a normalised literal — no destructure refs to
-          // substitute. Preserve verbatim.
-          return { kind: 'array-method', method: 'flat', object: walk(e.object), args: [], flatDepth: e.flatDepth }
+          // substitute. `depthExpr` (a dynamic depth) DOES need the same
+          // substitution as any other value position.
+          return {
+            kind: 'array-method',
+            method: 'flat',
+            object: walk(e.object),
+            args: [],
+            flatDepth: e.flatDepth,
+            ...(e.depthExpr ? { depthExpr: walk(e.depthExpr) } : {}),
+          }
         }
         return { kind: 'array-method', method: e.method, object: walk(e.object), args: e.args.map(walk) }
       case 'literal':
@@ -2201,6 +2252,16 @@ function checkSupport(expr: ParsedExpr): SupportResult {
       for (const arg of expr.args) {
         const argSupport = checkSupport(arg)
         if (!argSupport.supported) return argSupport
+      }
+      // A dynamic `.flat(depth)` carries its depth expression outside
+      // `args` (see the `depthExpr` doc) — check it too. The parser
+      // already gated this at parse time (only a SUPPORTED depth
+      // expression becomes `depthExpr`), so this re-check is defensive:
+      // it keeps `isSupported` total for any `array-method`/`flat` node
+      // regardless of how it was constructed (e.g. by a rewrite walker).
+      if (expr.method === 'flat' && expr.depthExpr) {
+        const depthSupport = checkSupport(expr.depthExpr)
+        if (!depthSupport.supported) return depthSupport
       }
       return { supported: true, level: 'L2' }
     }
@@ -2397,7 +2458,11 @@ export function containsHigherOrder(expr: ParsedExpr): boolean {
     case 'array-literal':
       return expr.elements.some(containsHigherOrder)
     case 'array-method':
-      return containsHigherOrder(expr.object) || expr.args.some(containsHigherOrder)
+      return (
+        containsHigherOrder(expr.object) ||
+        expr.args.some(containsHigherOrder) ||
+        (expr.method === 'flat' && expr.depthExpr !== undefined && containsHigherOrder(expr.depthExpr))
+      )
     default:
       return false
   }
@@ -2750,7 +2815,10 @@ function usesPerPath(name: string, expr: ParsedExpr): { min: number; max: number
       case 'array-literal':
         return sum(e.elements)
       case 'array-method':
-        return add(walk(e.object), e.method === 'flat' ? { min: 0, max: 0 } : sum(e.args))
+        if (e.method === 'flat') {
+          return add(walk(e.object), e.depthExpr ? walk(e.depthExpr) : { min: 0, max: 0 })
+        }
+        return add(walk(e.object), sum(e.args))
       case 'object-literal':
         return sum(e.properties.map(p => p.value))
       case 'arrow':
@@ -2826,7 +2894,14 @@ function inlineBinding(
         return { kind: 'array-literal', elements: e.elements.map(el => walk(el, enclosing)) }
       case 'array-method':
         if (e.method === 'flat') {
-          return { kind: 'array-method', method: 'flat', object: walk(e.object, enclosing), args: [], flatDepth: e.flatDepth }
+          return {
+            kind: 'array-method',
+            method: 'flat',
+            object: walk(e.object, enclosing),
+            args: [],
+            flatDepth: e.flatDepth,
+            ...(e.depthExpr ? { depthExpr: walk(e.depthExpr, enclosing) } : {}),
+          }
         }
         return { kind: 'array-method', method: e.method, object: walk(e.object, enclosing), args: e.args.map(a => walk(a, enclosing)) }
       case 'object-literal':
@@ -3042,8 +3117,12 @@ export function exprToString(expr: ParsedExpr): string {
       return `[${expr.elements.map(exprToString).join(', ')}]`
     case 'array-method':
       if (expr.method === 'flat') {
-        // Preserve the normalised depth so diagnostics don't misleadingly
-        // print `.flat()` for a `.flat(2)` / `.flat(Infinity)` source.
+        // Preserve the normalised / dynamic depth so diagnostics don't
+        // misleadingly print `.flat()` for a `.flat(2)` / `.flat(Infinity)`
+        // / `.flat(depthProp)` source.
+        if (expr.depthExpr) {
+          return `${exprToString(expr.object)}.flat(${exprToString(expr.depthExpr)})`
+        }
         const d = expr.flatDepth
         const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
         return `${exprToString(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
@@ -3115,8 +3194,12 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
       return `[${expr.elements.map(stringifyParsedExpr).join(', ')}]`
     case 'array-method':
       if (expr.method === 'flat') {
-        // Round-trip the normalised depth back to JS for the CSR / Hono
-        // path: `'infinity'` → `Infinity`, `1` is left implicit (`.flat()`).
+        // Round-trip the normalised / dynamic depth back to JS for the
+        // CSR / Hono path: `'infinity'` → `Infinity`, `1` is left implicit
+        // (`.flat()`), a dynamic depth round-trips its own expression.
+        if (expr.depthExpr) {
+          return `${stringifyParsedExpr(expr.object)}.flat(${stringifyParsedExpr(expr.depthExpr)})`
+        }
         const d = expr.flatDepth
         const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
         return `${stringifyParsedExpr(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
@@ -3185,9 +3268,12 @@ export function materializeGetterCalls(expr: ParsedExpr, names: ReadonlySet<stri
       return { kind: 'array-literal', elements: expr.elements.map(rw) }
     case 'array-method':
       // `flat`'s `args` is always `[]` (the depth is carried structurally in
-      // `flatDepth`, not `args`) — still rewrite `object`, just skip the
-      // `args.map` that every other method needs.
-      if (expr.method === 'flat') return { ...expr, object: rw(expr.object) }
+      // `flatDepth` / `depthExpr`, not `args`) — still rewrite `object` (and
+      // `depthExpr`, when dynamic), just skip the `args.map` that every
+      // other method needs.
+      if (expr.method === 'flat') {
+        return { ...expr, object: rw(expr.object), ...(expr.depthExpr ? { depthExpr: rw(expr.depthExpr) } : {}) }
+      }
       return { ...expr, object: rw(expr.object), args: expr.args.map(rw) }
     case 'object-literal':
       return {
@@ -3240,30 +3326,36 @@ export function serializeParsedExpr(expr: ParsedExpr): string | null {
  */
 export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): string[] {
   const found = new Set<string>()
-  const visit = (e: ParsedExpr): void => {
+  // `bound` starts as the outer callback's own `params` and grows when the
+  // walk descends into a nested `map`/`filter` callback arrow (#2094) — a
+  // NESTED arrow's own params shadow the outer ones for its body only,
+  // mirroring {@link freeIdentifiers}'s lexical scoping. Before #2094 a
+  // serializable body never contained a nested arrow, so this parameter
+  // didn't need to change per call; it does now.
+  const visit = (e: ParsedExpr, bound: ReadonlySet<string>): void => {
     switch (e.kind) {
       case 'identifier':
-        if (!params.has(e.name)) found.add(e.name)
+        if (!bound.has(e.name)) found.add(e.name)
         return
       case 'binary':
       case 'logical':
-        visit(e.left)
-        visit(e.right)
+        visit(e.left, bound)
+        visit(e.right, bound)
         return
       case 'unary':
-        visit(e.argument)
+        visit(e.argument, bound)
         return
       case 'conditional':
-        visit(e.test)
-        visit(e.consequent)
-        visit(e.alternate)
+        visit(e.test, bound)
+        visit(e.consequent, bound)
+        visit(e.alternate, bound)
         return
       case 'member':
-        visit(e.object)
+        visit(e.object, bound)
         return
       case 'index-access':
-        visit(e.object)
-        visit(e.index)
+        visit(e.object, bound)
+        visit(e.index, bound)
         return
       case 'call':
         // A builtin callee (`String`/`Number`/`Boolean`, or `Math.<fn>`) is
@@ -3271,42 +3363,52 @@ export function freeVarsInBody(body: ParsedExpr, params: ReadonlySet<string>): s
         // captured free var. Visiting it would add `Math` / `String` to the
         // env, making the adapter emit an undefined `$Math` / `.Math` base_env
         // entry (Copilot review #2031). Skip the callee identifier in that
-        // case; the arguments are still real references and are visited.
-        if (evalBuiltinCalleeName(e.callee) === null) visit(e.callee)
-        e.args.forEach(visit)
+        // case; the arguments are still real references and are visited
+        // (a nested `.map(cb)` / `.filter(cb)` callback call's `args[0]` is
+        // the callback `arrow`, visited below with its own params bound).
+        if (evalBuiltinCalleeName(e.callee) === null) visit(e.callee, bound)
+        e.args.forEach((a) => visit(a, bound))
         return
       case 'template-literal':
-        for (const p of e.parts) if (p.type === 'expression') visit(p.expr)
+        for (const p of e.parts) if (p.type === 'expression') visit(p.expr, bound)
         return
       case 'array-literal':
-        e.elements.forEach(visit)
+        e.elements.forEach((el) => visit(el, bound))
         return
       case 'object-literal':
         // Object *values* are references; keys are not. (Shorthand `{ x }`
         // carries the ref on its `value` identifier, which is visited here.)
-        for (const p of e.properties) visit(p.value)
+        for (const p of e.properties) visit(p.value, bound)
         return
       case 'array-method':
-        // Only `.includes(x)` is serializable ({@link toEvalNode}); its
-        // `object` (the receiver) and `args` (the needle) are the value
-        // positions serialized, so visit both when the tree reaches here
-        // with that method. Every other `array-method` is non-serializable
-        // and doesn't occur in a serializable body.
-        if (e.method === 'includes') {
-          visit(e.object)
-          e.args.forEach(visit)
+        // `.includes(x)` / `.join(sep?)` are serializable ({@link
+        // toEvalNode}); their `object` (the receiver) and `args` (needle /
+        // separator) are the value positions serialized, so visit both when
+        // the tree reaches here with either method. A nested `.map`/`.filter`
+        // reaches this walk as a `call` (above), not an `array-method` — see
+        // {@link asCallbackMethodCall}. Every other `array-method` is
+        // non-serializable and doesn't occur in a serializable body.
+        if (e.method === 'includes' || e.method === 'join') {
+          visit(e.object, bound)
+          e.args.forEach((a) => visit(a, bound))
         }
         return
+      // A nested callback arrow (the `.map`/`.filter` callback argument,
+      // #2094): its own params shadow the outer bound set for its body only.
+      case 'arrow': {
+        const inner = e.params.length === 0 ? bound : new Set([...bound, ...e.params])
+        visit(e.body, inner)
+        return
+      }
       // Non-serializable kinds don't occur in a serializable body
       // (serializeParsedExpr returns null for them); nothing to collect.
       case 'literal':
-      case 'arrow':
       case 'regex':
       case 'unsupported':
         return
     }
   }
-  visit(body)
+  visit(body, params)
   return [...found].sort()
 }
 
@@ -3374,6 +3476,7 @@ export function freeIdentifiers(expr: ParsedExpr): Set<string> | null {
       case 'array-method':
         if (!visit(e.object, bound)) return false
         for (const a of e.args) if (!visit(a, bound)) return false
+        if (e.method === 'flat' && e.depthExpr && !visit(e.depthExpr, bound)) return false
         return true
       case 'object-literal':
         for (const p of e.properties) if (!visit(p.value, bound)) return false
@@ -3478,6 +3581,44 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
       return object && index ? { kind: 'index-access', object, index } : null
     }
     case 'call': {
+      // A nested `.map(cb)` / `.filter(cb)` callback call (#2094) — the
+      // SAME recognition `callbackMethod()` dispatch uses. Only these two
+      // widen into the evaluator's surface: they are order-preserving,
+      // per-element, and produce a bounded result, so the pure gate can
+      // still reason about them structurally. `sort` / `reduce` /
+      // `reduceRight` / `flat` / `flatMap` / `every` / `some` / `find*`
+      // nested INSIDE an eval body stay refused — `asCallbackMethodCall`
+      // recognizes them too, but they fall through to the generic
+      // non-builtin-callee refusal below because `cb.method` doesn't match
+      // either case here.
+      const cb = asCallbackMethodCall(e)
+      if (cb && (cb.method === 'map' || cb.method === 'filter')) {
+        const object = toEvalNode(cb.object)
+        if (!object) return null
+        const body = toEvalNode(cb.arrow.body)
+        if (!body) return null
+        // `cb.arrow.params` is always plain identifier names (the `ParsedExpr`
+        // `arrow` variant only carries destructure-rewritten / plain params —
+        // an array-binding-pattern param stays `unsupported` upstream and
+        // never reaches here). 1- and 2-param arrows are both supported for
+        // `map`/`filter` (element, and index when declared); the Go/eval-cases
+        // reference pins the 2-param contract.
+        //
+        // Re-serialized in the SAME `call` / `member` / `arrow` shape
+        // `asCallbackMethodCall` recognizes — NOT a bespoke wrapper — because
+        // the `eval-vectors.json` golden corpus carries the genuine
+        // `ParsedExpr` `parseExpression` produces (unfiltered by
+        // `toEvalNode`; see `eval-generate.ts`), which is exactly this
+        // shape. Using the same shape here means the compiled-template
+        // embedded body and the golden-vector corpus reach the evaluator in
+        // one encoding, so a single `EvalNode`/`evaluate` recognition path
+        // (Go `eval.go`, `eval-reference.ts`) covers both.
+        return {
+          kind: 'call',
+          callee: { kind: 'member', object, property: cb.method, computed: false },
+          args: [{ kind: 'arrow', params: cb.arrow.params, body }],
+        }
+      }
       // The evaluator executes only the builtin allowlist; a non-builtin callee
       // would evaluate to nil at runtime, so refuse it here (the purity gate).
       if (evalBuiltinCalleeName(e.callee) === null) return null
@@ -3523,18 +3664,33 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
       return { kind: 'object-literal', properties }
     }
     case 'array-method': {
-      // `.includes(x)` is the one `array-method` the evaluator executes
+      // `.includes(x)` is one `array-method` the evaluator executes
       // (Go `eval.go` / Perl `Evaluator.pm`, includes support): the
       // receiver-type dispatch (array SameValueZero membership vs string
       // substring) happens at evaluator runtime, same as the SSR template
-      // lowering's `bf_includes` / `$bf->includes`. Every other
-      // `array-method` (`join`, `slice`, `flat`, …) is outside the
-      // evaluator's surface and refuses below.
+      // lowering's `bf_includes` / `$bf->includes`.
       if (e.method === 'includes' && e.args.length === 1) {
         const object = toEvalNode(e.object)
         const arg = toEvalNode(e.args[0])
         return object && arg ? { kind: 'array-method', method: 'includes', object, args: [arg] } : null
       }
+      // `.join(sep?)` (#2094) — 0 or 1 serializable separator arg. Lets a
+      // nested `.map`/`.filter` chain feed straight into `.join(' ')` inside
+      // an eval body (the #1938 blog-showcase shape:
+      // `p.tags.map(t => '#' + t)` is joined by the OUTER `.join`, which is
+      // already the caller-visible template expression, not inside the eval
+      // body — this arm is for a `.join` that itself appears NESTED inside
+      // an eval body, e.g. a `.map(p => p.tags.join(','))` projection).
+      if (e.method === 'join' && e.args.length <= 1) {
+        const object = toEvalNode(e.object)
+        if (!object) return null
+        if (e.args.length === 0) return { kind: 'array-method', method: 'join', object, args: [] }
+        const sep = toEvalNode(e.args[0])
+        return sep ? { kind: 'array-method', method: 'join', object, args: [sep] } : null
+      }
+      // Every other `array-method` (`slice`, `flat`, `flatMap` [handled as
+      // its own `call` shape when it has an arrow, so not reached here],
+      // …) is outside the evaluator's surface and refuses.
       return null
     }
     // Outside the evaluator's pure-expression surface — refuse so the caller
