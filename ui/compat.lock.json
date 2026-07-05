@@ -2,9 +2,9 @@
   "note": "Compile-time compatibility (compileJSX + adapter generate() diagnostics). NOT render identity — rendered-output parity is owned by the adapter conformance suite and the eval vector corpus (spec/testing.md Layer 3).",
   "knownLimitationLabel": "https://github.com/piconic-ai/barefootjs/labels/known-limitation",
   "adapters": [
+    "hono",
     "erb",
     "go-template",
-    "hono",
     "jinja",
     "minijinja",
     "mojolicious",
@@ -13,13 +13,13 @@
   ],
   "components": {
     "accordion": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -39,13 +39,13 @@
       }
     },
     "alert": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -65,13 +65,13 @@
       }
     },
     "alert-dialog": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -91,13 +91,13 @@
       }
     },
     "aspect-ratio": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -117,13 +117,13 @@
       }
     },
     "avatar": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -143,13 +143,13 @@
       }
     },
     "badge": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -207,13 +207,13 @@
       }
     },
     "breadcrumb": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -271,13 +271,13 @@
       }
     },
     "button": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -335,13 +335,13 @@
       }
     },
     "button-group": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -399,13 +399,13 @@
       }
     },
     "calendar": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -425,13 +425,13 @@
       }
     },
     "card": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -451,13 +451,13 @@
       }
     },
     "carousel": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -477,6 +477,9 @@
       }
     },
     "chart": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": false,
         "diagnostics": [
@@ -491,9 +494,6 @@
         ]
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -560,13 +560,13 @@
       }
     },
     "checkbox": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -586,13 +586,13 @@
       }
     },
     "collapsible": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -612,13 +612,13 @@
       }
     },
     "combobox": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -638,13 +638,13 @@
       }
     },
     "command": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -664,13 +664,13 @@
       }
     },
     "context-menu": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -690,13 +690,13 @@
       }
     },
     "data-table": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -716,13 +716,13 @@
       }
     },
     "date-picker": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -742,13 +742,13 @@
       }
     },
     "dialog": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -768,13 +768,13 @@
       }
     },
     "direction": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -794,13 +794,13 @@
       }
     },
     "drawer": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -820,13 +820,13 @@
       }
     },
     "dropdown-menu": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -846,13 +846,13 @@
       }
     },
     "empty": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -872,13 +872,13 @@
       }
     },
     "field": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -898,13 +898,13 @@
       }
     },
     "hover-card": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -924,13 +924,13 @@
       }
     },
     "icon": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -988,13 +988,13 @@
       }
     },
     "input": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1014,13 +1014,13 @@
       }
     },
     "input-group": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1040,13 +1040,13 @@
       }
     },
     "input-otp": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1066,13 +1066,13 @@
       }
     },
     "item": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1130,13 +1130,13 @@
       }
     },
     "kbd": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1194,13 +1194,13 @@
       }
     },
     "label": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1220,13 +1220,13 @@
       }
     },
     "menubar": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1246,13 +1246,13 @@
       }
     },
     "native-select": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1272,13 +1272,13 @@
       }
     },
     "navigation-menu": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1298,13 +1298,13 @@
       }
     },
     "pagination": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1324,13 +1324,13 @@
       }
     },
     "popover": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1350,13 +1350,13 @@
       }
     },
     "portal": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1376,13 +1376,13 @@
       }
     },
     "progress": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1402,13 +1402,13 @@
       }
     },
     "radio-group": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1428,13 +1428,13 @@
       }
     },
     "resizable": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1454,13 +1454,13 @@
       }
     },
     "scroll-area": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1480,13 +1480,13 @@
       }
     },
     "select": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1506,13 +1506,13 @@
       }
     },
     "separator": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1532,13 +1532,13 @@
       }
     },
     "sheet": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1558,13 +1558,13 @@
       }
     },
     "sidebar": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1584,13 +1584,13 @@
       }
     },
     "skeleton": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1610,13 +1610,13 @@
       }
     },
     "slider": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1636,13 +1636,13 @@
       }
     },
     "slot": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1700,13 +1700,13 @@
       }
     },
     "spinner": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1726,13 +1726,13 @@
       }
     },
     "switch": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1752,13 +1752,13 @@
       }
     },
     "table": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1778,13 +1778,13 @@
       }
     },
     "tabs": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1804,13 +1804,13 @@
       }
     },
     "textarea": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1830,13 +1830,13 @@
       }
     },
     "toast": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1856,13 +1856,13 @@
       }
     },
     "toggle": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1882,13 +1882,13 @@
       }
     },
     "toggle-group": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1908,13 +1908,13 @@
       }
     },
     "tooltip": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1934,13 +1934,13 @@
       }
     },
     "typography": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {
@@ -1960,13 +1960,13 @@
       }
     },
     "xyflow": {
+      "hono": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
       "go-template": {
-        "ok": true
-      },
-      "hono": {
         "ok": true
       },
       "jinja": {

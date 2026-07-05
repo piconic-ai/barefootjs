@@ -137,6 +137,34 @@ describe('buildCompatCell', () => {
   })
 })
 
+describe('buildCompatReport adapter ordering', () => {
+  test('hono sorts first when present; the remainder stays alphabetical', () => {
+    const report = buildCompatReport({
+      widget: {
+        twig: { ok: true, diagnostics: [] },
+        'go-template': { ok: true, diagnostics: [] },
+        hono: { ok: true, diagnostics: [] },
+        erb: { ok: true, diagnostics: [] },
+      },
+    })
+    expect(report.adapters).toEqual(['hono', 'erb', 'go-template', 'twig'])
+    // Row key order (from `for (const id of adapters)` in buildCompatReport)
+    // mirrors the column order — hono leads each component's row too.
+    expect(Object.keys(report.components.widget)).toEqual(['hono', 'erb', 'go-template', 'twig'])
+  })
+
+  test('a report without hono is purely alphabetical', () => {
+    const report = buildCompatReport({
+      widget: {
+        twig: { ok: true, diagnostics: [] },
+        'go-template': { ok: true, diagnostics: [] },
+        erb: { ok: true, diagnostics: [] },
+      },
+    })
+    expect(report.adapters).toEqual(['erb', 'go-template', 'twig'])
+  })
+})
+
 describe('formatCompatMarkdown', () => {
   test('a component missing a cell for an adapter renders `?`, never `✓`', () => {
     // `beta` ran against both adapters; `alpha` only ran against

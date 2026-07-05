@@ -23,7 +23,7 @@ export interface CompatReportCell {
 export interface CompatReport {
   note: string
   knownLimitationLabel: string
-  /** Adapter ids (matrix columns), sorted. */
+  /** Adapter ids (matrix columns): `hono` first (reference adapter), then alphabetical. */
   adapters: string[]
   /** Component name → adapter id → cell. */
   components: Record<string, Record<string, CompatReportCell>>
@@ -32,16 +32,23 @@ export interface CompatReport {
 /**
  * Assemble the deterministic report shape from raw compile cells.
  * `cells` may be built in any order — this sorts component names and
- * derives the adapter column list (sorted) from the union of columns
- * actually present, so a caller that only ran a subset of adapters still
- * gets a valid, sorted report.
+ * derives the adapter column list (hono first, then alphabetical) from
+ * the union of columns actually present, so a caller that only ran a
+ * subset of adapters still gets a valid, ordered report.
  */
 export function buildCompatReport(cells: Record<string, Record<string, CompatCell>>): CompatReport {
   const adapterIds = new Set<string>()
   for (const row of Object.values(cells)) {
     for (const id of Object.keys(row)) adapterIds.add(id)
   }
-  const adapters = [...adapterIds].sort()
+  // `hono` is the reference adapter — the conformance suite compares every
+  // other adapter's render against it — so it always leads the columns;
+  // the remainder stays alphabetical.
+  const adapters = [...adapterIds].sort((a, b) => {
+    if (a === 'hono') return b === 'hono' ? 0 : -1
+    if (b === 'hono') return 1
+    return a < b ? -1 : a > b ? 1 : 0
+  })
 
   const components: CompatReport['components'] = {}
   for (const name of Object.keys(cells).sort()) {
