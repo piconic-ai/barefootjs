@@ -153,30 +153,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -185,16 +165,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "breadcrumb": {
@@ -208,30 +179,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -240,16 +191,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "button": {
@@ -263,30 +205,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -295,16 +217,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "button-group": {
@@ -318,30 +231,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -350,16 +243,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "calendar": {
@@ -898,30 +782,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -930,16 +794,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "input": {
@@ -1031,30 +886,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -1063,16 +898,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "kbd": {
@@ -1086,30 +912,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -1118,16 +924,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "label": {
@@ -1583,30 +1380,10 @@
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
         "ok": true
@@ -1615,16 +1392,7 @@
         "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "spinner": {

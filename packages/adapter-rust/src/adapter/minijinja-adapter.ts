@@ -939,11 +939,12 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     },
     emitSpread: (value) => {
       // Jinja dicts can't be splatted into the entry list the way `**`
-      // flattens Python kwargs into a call. The propsObject case is handled
-      // in `renderComponent` (it enumerates the analyzer's props params);
-      // any other spread shape is refused there via the unsupported gate.
-      // Emit the lowered expression so a downstream consumer sees something
-      // coherent, but renderComponent only routes the enumerated case here.
+      // flattens Python kwargs into a call literal. `renderComponent`
+      // handles EVERY spread shape itself (both the enumerated propsObject
+      // case and the general nested `dict(base, **spread)` fold — see its
+      // own docstring), so this callback is never reached for `kind:
+      // 'spread'` props; it only exists to satisfy the `AttrValueEmitter`
+      // interface.
       return this.convertExpressionToJinja(value.expr)
     },
     emitTemplate: (value, name) =>
@@ -955,41 +956,109 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     emitJsxChildren: () => '',
   }
 
+  /**
+   * A `renderComponent` props dict, built as an ORDERED sequence of
+   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
+   * (later entries win) survive the trip through Jinja, which has no
+   * dict-splat syntax for anything past a SINGLE `**` per `dict(...)`
+   * call. Each `'entries'` segment is a literal Jinja dict `{'k': v, ...}`;
+   * each `'spread'` segment is an arbitrary expression lowered from a
+   * `{...expr}` prop. `combineComponentPropSegments` folds the sequence
+   * into ONE expression via nested `dict(base, **top)` calls (later
+   * segment wins on key conflict, matching `Object.assign`/JSX order).
+   */
+  private componentPropSegmentEntries(
+    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
+  ): string[] {
+    const last = segments[segments.length - 1]
+    if (last && last.kind === 'entries') return last.parts
+    const seg = { kind: 'entries' as const, parts: [] as string[] }
+    segments.push(seg)
+    return seg.parts
+  }
+
+  /**
+   * Fold ordered prop segments into a single Jinja expression via nested
+   * `dict(base, **top)` calls — matching the CPython Jinja2 adapter's
+   * emitted syntax exactly (though minijinja itself tolerates more than
+   * one `**` per call, this adapter emits the SAME single-`**`-per-call
+   * nested form so the two engines stay syntax-identical): each
+   * successive segment wraps the accumulator as the positional `base`
+   * with the new segment `**`-unpacked on top, later argument wins on key
+   * conflict — exactly like `{...a, ...b}`. A spread segment's expression
+   * is wrapped `(EXPR or {})` before unpacking: minijinja's
+   * `UndefinedBehavior::Chainable` lets a missing bag (e.g.
+   * `children.props` when `children` was never passed) chain through
+   * member access without raising, but `**`-unpacking an undefined/none
+   * value still needs a concrete dict, so the `or {}` guard normalises it
+   * first (verified against the real minijinja crate v2 `bf-render`
+   * binary). Empty `'entries'` segments are dropped so a leading/trailing
+   * spread doesn't drag in a needless `dict({}, **...)`. Returns `'{}'`
+   * when every segment is empty (no props at all).
+   */
+  private combineComponentPropSegments(
+    segments: ReadonlyArray<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
+  ): string {
+    let acc: string | null = null
+    for (const seg of segments) {
+      if (seg.kind === 'entries') {
+        if (seg.parts.length === 0) continue
+        const text = `{${seg.parts.join(', ')}}`
+        acc = acc === null ? text : `dict(${acc}, **${text})`
+      } else {
+        const text = `(${seg.expr} or {})`
+        acc = acc === null ? text : `dict(${acc}, **${text})`
+      }
+    }
+    return acc ?? '{}'
+  }
+
   renderComponent(comp: IRComponent): string {
-    const propParts: string[] = []
+    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
+    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
+    const currentEntries = () => this.componentPropSegmentEntries(segments)
+
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      // Spread props: enumerate the analyzer's props params into dict
-      // entries (the propsObject case) — Jinja can't flatten a dict into
-      // the entry list. Other spread shapes are refused with BF101.
       if (p.value.kind === 'spread') {
         const trimmed = p.value.expr.trim()
+        // SolidJS-style props identifier (`function(props: P)`) has no
+        // matching runtime dict in Jinja scope — props arrive as a flat
+        // set of top-level template vars, so enumerate the
+        // analyzer-extracted props params into dict entries instead of
+        // treating it as a runtime spread expression.
         if (this.propsObjectName && this.propsObjectName === trimmed) {
           for (const pp of this.propsParams) {
-            propParts.push(`${minijinjaHashKey(pp.name)}: ${minijinjaIdent(pp.name)}`)
+            currentEntries().push(`${minijinjaHashKey(pp.name)}: ${minijinjaIdent(pp.name)}`)
           }
           continue
         }
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Spread props (\`{...${trimmed}}\`) on a child component cannot be lowered to Jinja — Jinja dict literals can't splat a runtime dict into named entries at a call site.`,
-          loc: comp.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message: 'Pass the child component its props explicitly rather than spreading a runtime object.',
-          },
-        })
+        // Every other spread shape (a destructure rest-bag `props`, a
+        // member-access bag like `children.props`, an intrinsic-element
+        // spread helper's own operand, …) — Jinja dict literals can't
+        // splat a runtime dict into named entries at a call site, but a
+        // nested `dict(base, **top)` call can fold it into the
+        // accumulated dict at the right ordinal position (kept
+        // single-`**`-per-call, matching Jinja/CPython's stricter grammar
+        // — see `combineComponentPropSegments`). No compile-time
+        // filtering of onXxx/ref keys out of the runtime bag (the render
+        // contract tolerates them, same as the other spread-lowering
+        // adapters).
+        segments.push({ kind: 'spread', expr: this.convertExpressionToJinja(p.value.expr) })
         continue
       }
       const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) propParts.push(lowered)
+      if (lowered) currentEntries().push(lowered)
     }
     // Pass slot ID so the child renderer can set correct scope ID for
     // hydration. Skip for loop children — they use ComponentName_random.
+    // Appended to whatever the trailing entries segment is so a spread's
+    // own `_bf_slot`/`children` keys (if any) never win over these
+    // compiler-controlled entries.
     if (comp.slotId && !this.inLoop) {
-      propParts.push(`${minijinjaHashKey('_bf_slot')}: '${comp.slotId}'`)
+      currentEntries().push(`${minijinjaHashKey('_bf_slot')}: '${comp.slotId}'`)
     }
     const tplName = this.toTemplateName(comp.name)
 
@@ -1014,12 +1083,13 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
       const childrenBody = this.renderChildren(effectiveChildren)
       this.inLoop = prevInLoop
       const captureName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      const childrenEntry = `${minijinjaHashKey('children')}: ${captureName}`
-      const allParts = [...propParts, childrenEntry]
-      return `{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', {${allParts.join(', ')}}) | safe }}`
+      currentEntries().push(`${minijinjaHashKey('children')}: ${captureName}`)
+      const dict = this.combineComponentPropSegments(segments)
+      return `{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | safe }}`
     }
 
-    const dictEntries = propParts.length > 0 ? `, {${propParts.join(', ')}}` : ''
+    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
+    const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `{{ bf.render_child('${tplName}'${dictEntries}) | safe }}`
   }
 

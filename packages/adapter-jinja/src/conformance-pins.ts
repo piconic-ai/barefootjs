@@ -61,19 +61,11 @@ export const conformancePins: ConformancePins = {
   // `rest-destructure-array-in-map`, `rest-destructure-nested-in-map`,
   // `destructure-array-index-in-map`, and `destructure-nested-object-in-map`
   // all render clean now — none of them are pinned here.
-  // The site/ui Button auto-infers a `<Slot>` sibling that spreads
-  // `{...props}` / `{...children.props}` onto its root element. Jinja
-  // dict literals can't splat a runtime dict into named call-site
-  // entries either (same engine limitation as Kolon's hashref method
-  // args), so the adapter refuses the spread with BF101 rather than
-  // emit a broken render_child call. Same genuine engine divergence as
-  // xslate, pinned declaratively here.
-  'button': [{ code: 'BF101', severity: 'error' }],
-  // `kbd` auto-infers the same `<Slot>` `{...props}` spread as `button`
-  // above — refused with BF101 for the identical Jinja dict-splat
-  // reason, not a render-mismatch (so it's pinned here, not in
-  // `skipJsx`).
-  'kbd': [{ code: 'BF101', severity: 'error' }],
+  // (button/kbd graduated: the site/ui Button/Kbd `<Slot>` `{...props}` /
+  // `{...children.props}` component-spread now lowers via nested
+  // `dict(base, **top)` calls — see `jinja-adapter.ts`'s `renderComponent`
+  // — instead of refusing with BF101, so these two no longer need a pin
+  // here.)
   // (`tagged-template-classname` graduated by #2092 — the tag resolves
   // through the interleave-tag catalogue and desugars to an untagged
   // template literal, so it lowers like any other className template.)

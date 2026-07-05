@@ -52,19 +52,11 @@ export const conformancePins: ConformancePins = {
   //     the parent-prefix accessor (`$__bf_item.cells`) feeds the same
   //     `$bf.slice(...)` call.
   // None of these are pinned here anymore.
-  // XSLATE-SPECIFIC (mojo passes this): the site/ui Button auto-infers a
-  // `<Slot>` sibling that spreads `{...props}` / `{...children.props}`
-  // onto its root element. Kolon hashref method args can't splat a
-  // runtime hash into named entries (no `%$h`-into-call-args form), so
-  // the adapter refuses the spread with BF101 rather than emit a broken
-  // render_child call. Mojo's EP `%= include` accepts a flat stash, so it
-  // lowers the same shape; this is a genuine engine divergence, pinned
-  // declaratively here.
-  'button': [{ code: 'BF101', severity: 'error' }],
-  // `kbd` auto-infers the same `<Slot>` `{...props}` spread as `button`
-  // above — refused with BF101 for the identical Kolon engine reason, not a
-  // render-mismatch (so it's pinned here, not in `skipJsx`).
-  'kbd': [{ code: 'BF101', severity: 'error' }],
+  // (button/kbd graduated: the site/ui Button/Kbd `<Slot>` `{...props}` /
+  // `{...children.props}` component-spread now lowers via Kolon's builtin
+  // `.merge(...)` method chain — see `xslate-adapter.ts`'s
+  // `renderComponent` — instead of refusing with BF101, so these two no
+  // longer need a pin here.)
   // #1467 demo-corpus context providers (`radio-group`, `select`,
   // `dropdown-menu`, `combobox`, `command`) are no longer pinned — an
   // object-literal provider value (`{ value: currentValue,
