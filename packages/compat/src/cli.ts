@@ -10,6 +10,12 @@
 // committed `ui/compat.lock.json` (see the root `compat:lock` script) —
 // CI regenerates it and diffs.
 //
+// `--render <path>` is a separate, compile-free mode: it reads an existing
+// lock JSON file and prints `formatCompatMarkdown` of it to stdout — no
+// component/adapter compiling happens. Mutually exclusive with component
+// names / `--all`. Used by CI to publish the freshly regenerated matrix to
+// the job summary (see `.github/workflows/ci-compat.yml`).
+//
 // This measures COMPILE-time compatibility only, not render identity;
 // rendered-output parity is owned by the adapter conformance suite
 // (packages/adapter-tests) and the eval vector corpus.
@@ -67,6 +73,46 @@ function summarize(report: CompatReport): string {
   return `${componentCount} component(s) × ${report.adapters.length} adapter(s) = ${total} cell(s) (${ok} ok, ${total - ok} with diagnostics)`
 }
 
+/**
+ * Structural check that a parsed JSON value is at least shaped like a
+ * `CompatReport` before handing it to `formatCompatMarkdown` — catches a
+ * stale/foreign JSON file with a clear error instead of a confusing
+ * formatter crash. Not a full schema validation.
+ */
+function looksLikeCompatReport(value: unknown): value is CompatReport {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<string, unknown>
+  return Array.isArray(candidate.adapters) && typeof candidate.components === 'object' && candidate.components !== null
+}
+
+/**
+ * Render an existing lock JSON file (the `CompatReport` shape produced by
+ * `formatCompatJson`) as Markdown — no compiling, just read + parse +
+ * format. Used by `--render` and by CI to publish the freshly regenerated
+ * matrix to the job summary before the drift gate runs.
+ */
+export function renderLockToMarkdown(lockPath: string): string {
+  let raw: string
+  try {
+    raw = readFileSync(lockPath, 'utf-8')
+  } catch {
+    throw new Error(`could not read ${lockPath}`)
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error(`could not parse ${lockPath} as JSON`)
+  }
+
+  if (!looksLikeCompatReport(parsed)) {
+    throw new Error(`${lockPath} does not look like a CompatReport (expected an \`adapters\` array and a \`components\` object)`)
+  }
+
+  return formatCompatMarkdown(parsed)
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const jsonFlag = args.includes('--json')
@@ -83,6 +129,34 @@ async function main(): Promise<void> {
   }
   const outPath = outIdx !== -1 ? args[outIdx + 1] : undefined
 
+  const renderIdx = args.indexOf('--render')
+  if (renderIdx !== -1) {
+    if (renderIdx + 1 >= args.length || args[renderIdx + 1].startsWith('--')) {
+      console.error('Error: --render requires a path argument')
+      process.exit(1)
+      return
+    }
+    const renderPath = args[renderIdx + 1]
+    const rest = args.filter((_, i) => i !== renderIdx && i !== renderIdx + 1)
+    const hasNames = rest.some(arg => !arg.startsWith('--'))
+    if (all || hasNames) {
+      console.error('Error: --render is mutually exclusive with component names and --all')
+      process.exit(1)
+      return
+    }
+    try {
+      // formatCompatMarkdown already ends with a trailing newline — write
+      // directly rather than console.log (which would add a second one)
+      // so stdout is byte-identical to the formatter's output.
+      process.stdout.write(renderLockToMarkdown(renderPath))
+    } catch (err) {
+      console.error(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+      return
+    }
+    return
+  }
+
   const names = args.filter((arg, i) => {
     if (arg === '--all' || arg === '--md' || arg === '--json' || arg === '--out') return false
     if (outIdx !== -1 && i === outIdx + 1) return false
@@ -90,7 +164,7 @@ async function main(): Promise<void> {
   })
 
   if (!all && names.length === 0) {
-    console.error('Usage: bun run compat <component...>|--all [--md] [--json] [--out <path>]')
+    console.error('Usage: bun run compat <component...>|--all [--md] [--json] [--out <path>]  |  bun run compat --render <path>')
     process.exit(1)
     return
   }
@@ -159,4 +233,9 @@ async function main(): Promise<void> {
   console.error(summarize(report))
 }
 
-await main()
+// Only run as a script — importing this module (the cli-render test pulls
+// in `renderLockToMarkdown`) must not execute `main()`, which would read
+// the importer's argv and `process.exit(1)`, killing the whole test process.
+if (import.meta.main) {
+  await main()
+}

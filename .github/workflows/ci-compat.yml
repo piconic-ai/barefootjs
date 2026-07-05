@@ -79,6 +79,12 @@ jobs:
       - name: Regenerate compat lockfile
         run: bun run compat:lock
 
+      # Renders the freshly regenerated matrix on the run's Summary page —
+      # runs before the drift gate so the matrix is visible even when the
+      # gate below then fails.
+      - name: Publish matrix to job summary
+        run: bun run compat --render ui/compat.lock.json >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check for drift
         run: |
           if ! git diff --exit-code -- ui/compat.lock.json; then
