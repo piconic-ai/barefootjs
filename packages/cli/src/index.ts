@@ -31,6 +31,7 @@ Daily:
   search <query> [--dir <path>] [--registry <url>]  Search components and docs
   preview [component]                         Open visual preview (no arg lists previewable)
   build [--minify] [--force] [--watch]        Compile components using barefoot.config.ts
+  compat <comp...>|--all [--md] [--out <path>]  Component × adapter compile-compatibility matrix
 
 Create:
   gen component <name> [comp...]              Generate a new component skeleton + IR test
@@ -174,6 +175,12 @@ switch (command) {
       console.error('Usage: bf debug <graph|trace|fallbacks|signals|events|loops|why-update|summary|profile> ...')
       process.exit(1)
     }
+    break
+  }
+
+  case 'compat': {
+    const { run } = await import('./commands/compat')
+    await run(filteredArgs.slice(1), ctx)
     break
   }
 
