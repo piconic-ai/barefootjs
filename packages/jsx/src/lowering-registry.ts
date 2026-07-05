@@ -142,6 +142,22 @@ export function matchLoweringCall(
 }
 
 /**
+ * Whether a `LoweringNode.helper` id is safe to splice directly into an
+ * adapter's runtime-helper naming convention (`bf_${helper}` in Go,
+ * `bf->${helper}` in Perl/Mojolicious, `$bf.${helper}` in Xslate/Kolon,
+ * `bf.${helper}` in Ruby/ERB and the Jinja-family adapters — Jinja,
+ * MiniJinja/Rust, Twig). Every adapter derives its helper's target-language
+ * name FROM the helper id (#2069) rather than keeping a per-id lookup
+ * table, so a plugin author could otherwise inject arbitrary syntax via a
+ * malformed id. A valid id is a plain identifier fragment —
+ * letters/digits/underscore, not starting with a digit — which is the only
+ * shape every target language's function/method-name grammar accepts.
+ */
+export function isValidHelperId(helper: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(helper)
+}
+
+/**
  * Test-only: replace the registry contents wholesale. The double-underscore
  * prefix marks it as an internal seam — tests use it to restore global state in
  * `afterEach` so a sample plugin can't leak into other suites. Never call from

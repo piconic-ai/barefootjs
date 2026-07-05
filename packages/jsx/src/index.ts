@@ -92,6 +92,7 @@ export {
   getLoweringPlugins,
   prepareLoweringMatchers,
   matchLoweringCall,
+  isValidHelperId,
   __resetLoweringPluginsForTest,
   type LoweringPlugin,
   type LoweringNode,

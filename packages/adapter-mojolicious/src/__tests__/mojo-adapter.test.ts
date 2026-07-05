@@ -6,10 +6,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import { MojoAdapter } from '../adapter/mojo-adapter'
-import {
-  runAdapterConformanceTests,
-  TemplatePrimitiveCaseId,
-} from '@barefootjs/adapter-tests'
+import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { renderMojoComponent, PerlNotAvailableError } from '../test-render'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 
@@ -154,22 +151,17 @@ runAdapterConformanceTests({
     // a broken template.
     'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
-  // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` now pass
-  // via `MojoAdapter.templatePrimitives` (#1189). The two remaining
-  // cases stay skipped because the V1 registry is identifier-path-
-  // only and explicit:
-  //   - `USER_IMPORT_VIA_CONST` — a bespoke user import isn't in
-  //     the registry and can't be rendered server-side without
-  //     user-supplied helper mappings.
-  //   - `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` — uses `customSerialize`
-  //     too, same reason.
-  // Adding new entries to `templatePrimitives` should narrow this
-  // skip set; see `MOJO_TEMPLATE_PRIMITIVES` in `mojo-adapter.ts`
-  // for the full V1 surface.
-  skipTemplatePrimitives: new Set([
-    TemplatePrimitiveCaseId.USER_IMPORT_VIA_CONST,
-    TemplatePrimitiveCaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
-  ]),
+  // `JSON_STRINGIFY_VIA_CONST` and `MATH_FLOOR_VIA_CONST` pass via
+  // `MojoAdapter.templatePrimitives` (#1189) — the identifier-path
+  // registry for well-known JS builtins. `USER_IMPORT_VIA_CONST` and
+  // `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` now ALSO pass (#2069): a bespoke
+  // user import can never be added to the string-keyed registry, but the
+  // shared `RelocateEnv.loweringMatchers` acceptance path recognises it
+  // via a `LoweringPlugin` the case setup registers around the compile
+  // (see `packages/adapter-tests/src/cases/template-primitives.ts`) — the
+  // same seam a real userland plugin author would use. No skips left, so
+  // `skipTemplatePrimitives` is omitted entirely (defaults to "skip
+  // nothing").
   // `client-only` / `client-only-loop-with-sibling-cond` /
   // `filter-nested-callback-predicate-client` are no longer skipped —
   // `renderLoop` now emits the `bf->comment("loop:<id>")` boundary pair

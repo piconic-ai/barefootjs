@@ -21,10 +21,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import {
-  runAdapterConformanceTests,
-  TemplatePrimitiveCaseId,
-} from '@barefootjs/adapter-tests'
+import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { ErbAdapter } from '../adapter'
 import { renderErbComponent, ErbNotAvailableError } from '../test-render'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
@@ -129,17 +126,13 @@ runAdapterConformanceTests({
     // mojo/xslate.
     'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
-  // Template-primitive registry parity: same V1 surface as mojo/xslate, so
-  // the same two cases stay skipped:
-  //   - `USER_IMPORT_VIA_CONST` — a bespoke user import isn't in the
-  //     registry and can't be rendered server-side without user-supplied
-  //     helper mappings.
-  //   - `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` — uses `customSerialize` too,
-  //     same reason.
-  skipTemplatePrimitives: new Set([
-    TemplatePrimitiveCaseId.USER_IMPORT_VIA_CONST,
-    TemplatePrimitiveCaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
-  ]),
+  // Template-primitive registry: `USER_IMPORT_VIA_CONST` and
+  // `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` now pass (#2069) — a bespoke user
+  // import can never be added to the string-keyed registry, but the
+  // shared `RelocateEnv.loweringMatchers` acceptance path recognises it
+  // via a `LoweringPlugin` the case setup registers around the compile
+  // (see `packages/adapter-tests/src/cases/template-primitives.ts`). No
+  // skips left, so `skipTemplatePrimitives` is omitted entirely.
   skipMarkerConformance: new Set([
     // Same as Hono / Mojo / Xslate: `/* @client */` markers on TodoApp's
     // keyed `.map` intentionally elide a slot id from the SSR template
