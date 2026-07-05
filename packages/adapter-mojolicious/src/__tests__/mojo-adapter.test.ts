@@ -76,10 +76,9 @@ runAdapterConformanceTests({
     // `style={{ … }}` object literal now lowers to a CSS string with dynamic
     // values interpolated (`background-color:<%= $color %>;padding:8px`) via
     // `tryLowerStyleObject` (#1322).
-    // #1244 stress catalog #12 (#1323): tagged-template-literal call
-    // (`cn\`base \${tone()}\``) — same family as #1322 above and refused
-    // via the same gate.
-    'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // (`tagged-template-classname` graduated by #2092 — the tag resolves
+    // through the interleave-tag catalogue and desugars to an untagged
+    // template literal, so it lowers like any other className template.)
     // #2038: a filter predicate containing a nested `.find(...)` callback.
     // `find*` returns an element, not a boolean — there is no inline grep
     // form, and the emitter used to degrade the call to its receiver.

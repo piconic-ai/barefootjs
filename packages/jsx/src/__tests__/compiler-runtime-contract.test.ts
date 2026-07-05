@@ -261,11 +261,21 @@ describe('Compiler-Runtime Contract', () => {
     })
 
     test('issue #1321: rest spread on typed module-level function param survives emit', () => {
+      // The tag body joins with a `-` separator between `p` and the
+      // interleaved arg — deliberately OFF the #2092 interleave-tag
+      // catalogue (which requires the exact `(acc + p) + X` two-term
+      // chain), so `cn` stays an opaque tagged-template callee that must
+      // still be shipped to the client. This keeps the #1321 regression
+      // (rest token survives type-strip + module-level emission) pinned
+      // against a real "helper still needed" case; #2092's own desugar
+      // coverage lives in `tagged-template-interleave.test.ts` and the
+      // `compiler-stress-1244.test.ts` "tagged template literal for
+      // className" describe block.
       const js = compileClient(`
         "use client"
         import { createSignal } from '@barefootjs/client'
         function cn(parts: TemplateStringsArray, ...args: unknown[]): string {
-          return parts.reduce<string>((acc, p, i) => acc + p + (args[i] ?? ''), '')
+          return parts.reduce<string>((acc, p, i) => acc + p + '-' + (args[i] ?? ''), '')
         }
         export function TagDemo() {
           const [tone, setTone] = createSignal('primary')

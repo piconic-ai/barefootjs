@@ -268,6 +268,26 @@ export function createAnalyzerContext(
     checker: null,
     componentBodyBlock: null,
     getJS(node: ts.Node): string {
+      // A node whose owning source file differs from this component's
+      // `sourceFile` comes from a synthetic re-parse — e.g. #2090's
+      // resolved sort-comparator functions, or #2092's desugared
+      // tagged-template-literal callee — rather than a live position in
+      // this file. `reconstructWithoutTypes` slices `sourceFile.text` by
+      // the node's start/end, so feeding it a foreign node's positions
+      // would silently slice the WRONG bytes (not throw). These synthetic
+      // subtrees are already built from plain re-parsed source text with
+      // no straggling TS type syntax to strip, so the node's own text is
+      // correct as-is — mirrors the `astText()` workaround already used
+      // for synthetic const/function re-parses elsewhere in the compiler.
+      let ownSourceFile: ts.SourceFile | undefined
+      try {
+        ownSourceFile = node.getSourceFile()
+      } catch {
+        ownSourceFile = undefined
+      }
+      if (ownSourceFile && ownSourceFile !== sourceFile) {
+        return node.getText(ownSourceFile)
+      }
       return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
     },
   }

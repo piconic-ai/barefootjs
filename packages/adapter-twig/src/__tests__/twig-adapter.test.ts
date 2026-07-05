@@ -74,10 +74,9 @@ runAdapterConformanceTests({
     // reason, not a render-mismatch (so it's pinned here, not in
     // `skipJsx`).
     'kbd': [{ code: 'BF101', severity: 'error' }],
-    // Tagged-template-literal call in a className — same family, same
-    // refusal (BF101) as Jinja: the lowering pipeline can't represent a
-    // tagged-template-literal call expression in Twig.
-    'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
+    // (`tagged-template-classname` graduated by #2092 — the tag resolves
+    // through the interleave-tag catalogue and desugars to an untagged
+    // template literal, so it lowers like any other className template.)
     // #2038: a filter predicate whose body contains a NESTED callback call
     // (`t => !picked().some(p => …)` / `t => picked().find(p => …)`). Twig
     // has no inline comprehension-with-nested-callback form usable from the

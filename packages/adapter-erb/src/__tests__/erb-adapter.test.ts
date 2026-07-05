@@ -93,10 +93,6 @@ runAdapterConformanceTests({
     // pinned here any more; all render to Hono parity. See
     // `rubyAccessorFromSegments` / the object-rest-in-loop branch in
     // `erb-adapter.ts`'s `renderLoop`.
-    // #1244 stress catalog #12 (#1323): tagged-template-literal call
-    // (`cn\`base \${tone()}\``) has no idiomatic ERB template form — refused
-    // via `refuseUnsupportedAttrExpression`, same gate mojo/xslate share.
-    'tagged-template-classname': [{ code: 'BF101', severity: 'error' }],
     // #2038: a filter predicate containing a nested `.find(...)` callback.
     // `find*` returns an element, not a boolean — there is no inline
     // predicate form, and the emitter used to silently degrade the call to

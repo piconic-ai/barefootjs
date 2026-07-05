@@ -1570,6 +1570,12 @@ function transformExpressionInner(
   node: ts.JsxExpression,
   isClientOnly: boolean,
 ): IRNode | null {
+  // #2092: `{cn\`base ${tone()}\`}` in JSX-child position — same desugar
+  // as the attribute path (`getAttributeValue`), applied first so every
+  // check below (JSX-constant inlining, the shared dispatcher, the
+  // scalar fallback's `ctx.getJS`) sees the untagged template literal.
+  expr = tryDesugarInterleaveTaggedTemplate(expr, ctx)
+
   // Check for bare signal/memo identifier (BF044)
   checkBareSignalOrMemoIdentifier(expr, ctx)
 
@@ -4117,6 +4123,13 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
       }
     }
 
+    // #2092: `className={cn\`base ${tone()}\`}` — a tagged template whose
+    // tag resolves to a recognized interleave function desugars to the
+    // equivalent untagged template literal, so every check below (static
+    // style object, template-literal parts, ternary, generic expression)
+    // sees it exactly as if the user had written the untagged form.
+    expr = tryDesugarInterleaveTaggedTemplate(expr, ctx)
+
     // BF062: AwaitExpression in attribute position
     if (ts.isAwaitExpression(expr)) {
       ctx.analyzer.errors.push(
@@ -4604,6 +4617,235 @@ function parseFunctionInfoAsExprImpl(fn: FunctionInfo): ts.Expression | null {
   const decl = stmt.declarationList.declarations[0]
   if (!decl?.initializer) return null
   return decl.initializer
+}
+
+// =============================================================================
+// Tagged-Template Interleave-Tag Desugaring (#2092, Refs #2069)
+// =============================================================================
+
+/**
+ * Recognize + desugar the classname-tag idiom:
+ *
+ *   function cn(parts: TemplateStringsArray, ...args: unknown[]): string {
+ *     return parts.reduce<string>((acc, p, i) => acc + p + (args[i] ?? ''), '')
+ *   }
+ *   className={cn`base ${tone()}`}
+ *
+ * When `expr` is a top-level `ts.TaggedTemplateExpression` whose tag is an
+ * identifier resolving ONE HOP through same-file scope (`findLocalConst` /
+ * `findLocalFunction`, same shadowing preference as #2090's sort-comparator
+ * resolution) to a function structurally proven to be an "interleave tag"
+ * (see {@link isInterleaveTagFunction}), this rewrites the tagged template
+ * to the equivalent UNTAGGED template literal — each span wrapped in
+ * `(span) ?? ''` — and returns the new node. The entire existing pipeline
+ * (dep analysis, template-literal parts, adapter emit, client-JS binding)
+ * then processes the rewritten node exactly as if the user had written an
+ * untagged template literal directly; no adapter changes, no new IR node.
+ *
+ * Returns `expr` UNCHANGED when the tag doesn't resolve, resolves to
+ * something other than an arrow/function expression, or resolves but its
+ * body isn't the exact interleave-reduce shape (imported tags, computed
+ * tags like `obj.cn`, non-rest signatures, a tag that joins with `-`,
+ * etc.) — today's opaque-leaf behavior (adapter BF101) is preserved
+ * byte-for-byte for every other case.
+ *
+ * Top-level only (#2092 scope): a tagged template nested inside a ternary
+ * or map callback is not rewritten by this call — only the two call sites
+ * that receive an attribute value / JSX-child expression directly.
+ */
+function tryDesugarInterleaveTaggedTemplate(
+  expr: ts.Expression,
+  ctx: TransformContext,
+): ts.Expression {
+  if (!ts.isTaggedTemplateExpression(expr)) return expr
+  if (!ts.isIdentifier(expr.tag)) return expr
+
+  const resolvedTag = resolveInterleaveTagIdentifier(expr.tag.text, ctx)
+  if (!resolvedTag) return expr
+  if (!isInterleaveTagFunction(resolvedTag)) return expr
+
+  const rewritten = buildUntaggedTemplateLiteral(expr, ctx)
+  return rewritten ?? expr
+}
+
+/**
+ * Resolve a bare-identifier tag reference one hop through same-file scope
+ * — a `const cn = (parts, ...args) => …` or `function cn(parts, ...args)
+ * {…}` — reusing the exact `findLocalConst` / `findLocalFunction` lookup
+ * (and its shadowing preference) that #2090 established for sort
+ * comparators. Alias chains and imported/prop identifiers are NOT
+ * followed, matching that precedent. Returns null when nothing resolves.
+ */
+function resolveInterleaveTagIdentifier(name: string, ctx: TransformContext): ts.Expression | null {
+  const constInfo = findLocalConst(name, ctx)
+  const fnInfo = findLocalFunction(name, ctx)
+  // A name bound BOTH as a const and as a `function` declaration is the
+  // same cross-kind ambiguity `resolveSortComparatorIdentifier` refuses:
+  // it can only occur across scopes, and `FunctionInfo.isModule` reflects
+  // emission placement rather than lexical position, so picking either
+  // binding could desugar a tag the call site can't actually see. Refuse —
+  // the node stays opaque and keeps today's adapter BF101 (Copilot review
+  // on #2093).
+  if (constInfo && fnInfo) return null
+  if (constInfo) {
+    const ast = parseConstInitializer(constInfo)
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
+  }
+  if (fnInfo) {
+    const ast = parseFunctionInfoAsExpr(fnInfo)
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
+  }
+  return null
+}
+
+/**
+ * Structural catalogue gate for an "interleave tag" — the classname-cn
+ * idiom's tag function. Kept tight per #2092: a resolved tag that doesn't
+ * match EXACTLY this shape is left unrecognized (caller leaves the node
+ * untouched).
+ *
+ * Signature: exactly 2 params, first a plain (non-rest) identifier
+ * (`parts`), second a REST identifier param (`...args`). Type annotations
+ * are irrelevant — only the parsed structure is matched.
+ *
+ * Body (after the existing block-body → single-`return` folding that
+ * `tsNodeToParsedExpr` already performs):
+ *
+ *   parts.reduce((acc, p, i) => acc + p + (args[i] ?? ''), '')
+ *
+ * — receiver is the first param; the reduce callback has 3 plain
+ * identifier params; the callback body is a left-assoc `+` chain
+ * `(acc + p) + X` (any parenthesization — `tsNodeToParsedExpr` already
+ * discards parens) with `acc`/`p` the callback's first two params in
+ * that order; `X` is `args[i] ?? ''`, optionally wrapped in `String(...)`,
+ * with `args` the rest param and `i` the callback's third param; the
+ * reduce init arg is the empty string literal.
+ */
+function isInterleaveTagFunction(fn: ts.Expression): boolean {
+  if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return false
+  if (fn.parameters.length !== 2) return false
+  const [partsParam, argsParam] = fn.parameters
+  if (!ts.isIdentifier(partsParam.name) || partsParam.dotDotDotToken) return false
+  if (!ts.isIdentifier(argsParam.name) || !argsParam.dotDotDotToken) return false
+
+  const parsed = tsNodeToParsedExpr(fn)
+  if (parsed.kind !== 'arrow') return false
+  return isInterleaveReduceCall(parsed.body, partsParam.name.text, argsParam.name.text)
+}
+
+/** Match `<partsName>.reduce((acc, p, i) => …, '')`. */
+function isInterleaveReduceCall(body: ParsedExpr, partsName: string, argsName: string): boolean {
+  if (body.kind !== 'call' || body.args.length !== 2) return false
+  const { callee, args } = body
+  if (callee.kind !== 'member' || callee.computed || callee.property !== 'reduce') return false
+  if (callee.object.kind !== 'identifier' || callee.object.name !== partsName) return false
+
+  const [callback, init] = args
+  if (init.kind !== 'literal' || init.literalType !== 'string' || init.value !== '') return false
+  if (callback.kind !== 'arrow' || callback.params.length !== 3) return false
+
+  const [acc, p, i] = callback.params
+  return isInterleaveReduceCallbackBody(callback.body, acc, p, i, argsName)
+}
+
+/** Match `(acc + p) + X` where X is the per-span interleave expression. */
+function isInterleaveReduceCallbackBody(
+  body: ParsedExpr,
+  acc: string,
+  p: string,
+  i: string,
+  argsName: string,
+): boolean {
+  if (body.kind !== 'binary' || body.op !== '+') return false
+  const { left, right } = body
+  if (left.kind !== 'binary' || left.op !== '+') return false
+  if (left.left.kind !== 'identifier' || left.left.name !== acc) return false
+  if (left.right.kind !== 'identifier' || left.right.name !== p) return false
+  return isInterleaveSpanExpr(right, i, argsName)
+}
+
+/** Match `args[i] ?? ''`, optionally wrapped in `String(...)`. */
+function isInterleaveSpanExpr(expr: ParsedExpr, i: string, argsName: string): boolean {
+  let inner = expr
+  if (
+    inner.kind === 'call' &&
+    inner.args.length === 1 &&
+    inner.callee.kind === 'identifier' &&
+    inner.callee.name === 'String'
+  ) {
+    inner = inner.args[0]
+  }
+  if (inner.kind !== 'logical' || inner.op !== '??') return false
+  if (inner.right.kind !== 'literal' || inner.right.literalType !== 'string' || inner.right.value !== '') {
+    return false
+  }
+  const idx = inner.left
+  if (idx.kind !== 'index-access') return false
+  if (idx.object.kind !== 'identifier' || idx.object.name !== argsName) return false
+  if (idx.index.kind !== 'identifier' || idx.index.name !== i) return false
+  return true
+}
+
+/**
+ * Build the untagged template literal equivalent to a recognized
+ * interleave-tag call: `cn\`base ${tone()}\`` → `` `base ${(tone()) ?? ''}` ``.
+ *
+ * Each literal chunk uses its RAW source text (`rawText`, falling back to
+ * the cooked `text` only if `rawText` is unexpectedly absent) so escapes
+ * (a literal backtick, `${`, or backslash inside a chunk) survive
+ * verbatim — pasting the COOKED text back into new template source would
+ * mis-parse or silently change meaning. Each span expression uses
+ * `ctx.getJS` (type-stripped, matching every other raw-text extraction in
+ * this file) wrapped as `${(<expr>) ?? ''}`.
+ *
+ * The assembled text is re-parsed the same way `parseConstInitializer`
+ * re-parses a const initializer (wrapped in `const __bf_… = (…)` so the
+ * result lands in expression position). Returns null if the reparse
+ * doesn't produce a clean template-literal expression (defensive; should
+ * not happen for well-formed input).
+ */
+function buildUntaggedTemplateLiteral(
+  node: ts.TaggedTemplateExpression,
+  ctx: TransformContext,
+): ts.Expression | null {
+  const template = node.template
+
+  let text: string
+  if (ts.isNoSubstitutionTemplateLiteral(template)) {
+    text = '`' + (template.rawText ?? template.text) + '`'
+  } else {
+    let body = template.head.rawText ?? template.head.text
+    for (const span of template.templateSpans) {
+      const spanText = ctx.getJS(span.expression)
+      body += '${(' + spanText + ') ?? \'\'}'
+      body += span.literal.rawText ?? span.literal.text
+    }
+    text = '`' + body + '`'
+  }
+
+  const wrapped = `const __bf_resolve_tagged__ = (${text})`
+  // ScriptKind.TSX (unlike the const/function-resolution re-parses above,
+  // which parse comparator/tag FUNCTION BODIES): the span expressions are
+  // verbatim attribute-position text from a .tsx component, so they were
+  // originally parsed under TSX rules — re-parsing them as plain TS can
+  // mis-parse or reject valid TSX span syntax and silently skip the
+  // rewrite (Copilot review on #2093).
+  const sf = ts.createSourceFile(
+    '__bf_resolve_tagged.tsx',
+    wrapped,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TSX,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isVariableStatement(stmt)) return null
+  const decl = stmt.declarationList.declarations[0]
+  if (!decl?.initializer) return null
+  const result = ts.isParenthesizedExpression(decl.initializer)
+    ? decl.initializer.expression
+    : decl.initializer
+  if (!ts.isTemplateExpression(result) && !ts.isNoSubstitutionTemplateLiteral(result)) return null
+  return result
 }
 
 /**
