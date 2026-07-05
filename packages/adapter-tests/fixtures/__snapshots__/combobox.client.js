@@ -2714,7 +2714,7 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `$
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(linecap) != null ? 'stroke-linecap="' + escapeAttr(linecap) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${_p.className}`) != null ? 'class="' + escapeAttr(`shrink-0 ${_p.className}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${((({
+})[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${_p.className}`) != null ? 'class="' + escapeAttr(`shrink-0 ${_p.className}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${((({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
