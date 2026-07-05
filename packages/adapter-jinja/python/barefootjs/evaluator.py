@@ -428,7 +428,12 @@ def _array_callback(method: str, object_node: Any, arrow_node: dict, env: dict) 
     per call -- never mutating the parent dict in place across sibling
     iterations, the classic Python gotcha)."""
     obj = evaluate(object_node, env)
-    arr = obj if isinstance(obj, list) else []
+    # Non-list receiver -> None, matching every other runtime evaluator
+    # (Go nil / Perl undef / Rust Null / PHP null / Ruby nil) so "missing"
+    # stays distinguishable from "empty array" downstream.
+    if not isinstance(obj, list):
+        return None
+    arr = obj
     params = [p for p in (arrow_node.get("params") or [])]
     body = arrow_node.get("body")
 

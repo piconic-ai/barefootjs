@@ -186,12 +186,10 @@ export interface ParsedExprEmitter {
   // see the `depthExpr` doc on `ParsedExpr`'s `array-method`/`flat` variant
   // for why this must NOT be the same helper as the literal path — the
   // literal path's `-1` sentinel means "flatten fully", but a genuinely
-  // dynamic `-1` means the opposite per JS). Only the Go adapter implements
-  // the dynamic runtime coercion in this phase; the other adapters still
-  // must emit SOMETHING for the dynamic form (their existing
-  // `bf_flat`-family helper, called with the rendered expression) so the
-  // interface compiles everywhere — their coercion catches up in a later
-  // phase.
+  // dynamic `-1` means the opposite per JS). Every adapter emits its
+  // `flat_dynamic`-family helper for the dynamic form, and every runtime
+  // implements the coercion; parity is pinned by the `flat_dynamic`
+  // golden helper vectors.
   flatMethod(
     object: ParsedExpr,
     depth: FlatDepth | { expr: ParsedExpr },
