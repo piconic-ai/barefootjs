@@ -2519,25 +2519,37 @@ function extractSortComparator(
  * — no alias chains (`const c2 = c1` is not followed; `c2` resolves to the
  * identifier `c1`, not a function, and is left unresolved).
  *
- * Tries a `const` binding first (`findLocalConst`, shadowing-aware: inner
- * component-scope wins over module scope), then a `function` declaration
- * (`ctx.analyzer.localFunctions`, same shadowing preference via
- * `findLocalFunction`). Returns null when the name doesn't resolve to a
- * local arrow / function-expression — covers a non-function const, an
- * import, a prop, or a name with no local binding at all. The caller
- * surfaces BF021 either way; the specific message (off-catalogue vs.
- * unresolved) is decided by the caller, not here.
+ * A name bound BOTH as a const and as a `function` declaration is refused
+ * outright. In valid JS that collision only occurs across scopes (a
+ * same-scope redeclaration is a syntax error), and `FunctionInfo` does not
+ * carry the source scope — component-body `function` declarations are
+ * hoisted to module scope for client emission, so its `isModule` reflects
+ * EMISSION placement, not lexical position. Picking either binding would
+ * risk compiling the comparator the call site can't actually see (Copilot
+ * review on #2091), so the ambiguity resolves to the loud unresolved
+ * BF021 instead of a guess. Within a single kind, the existing
+ * shadowing-aware lookups apply (`findLocalConst` / `findLocalFunction`:
+ * component scope beats module scope, last in source order); a binding
+ * that isn't an arrow / function expression fails resolution without any
+ * cross-kind fallback.
+ *
+ * Returns null when the name doesn't resolve to a local arrow /
+ * function-expression — covers the cross-kind ambiguity, a non-function
+ * const, an import, a prop, or a name with no local binding at all. The
+ * caller surfaces BF021 either way; the specific message (off-catalogue
+ * vs. unresolved) is decided by the caller, not here.
  */
 function resolveSortComparatorIdentifier(name: string, ctx: TransformContext): ts.Expression | null {
   const constInfo = findLocalConst(name, ctx)
+  const fnInfo = findLocalFunction(name, ctx)
+  if (constInfo && fnInfo) return null
   if (constInfo) {
     const ast = parseConstInitializer(constInfo)
-    if (ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast))) return ast
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
   }
-  const fnInfo = findLocalFunction(name, ctx)
   if (fnInfo) {
     const ast = parseFunctionInfoAsExpr(fnInfo)
-    if (ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast))) return ast
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
   }
   return null
 }

@@ -234,6 +234,70 @@ describe('Unsupported Sort Comparator (BF021)', () => {
     expect(bf021[0].message).toContain('could not be resolved')
   })
 
+  test('cross-kind shadowing (component const over module function) emits BF021, not the shadowed function (#2090)', () => {
+    // A name bound both as a const and as a `function` declaration can
+    // only happen across scopes, and FunctionInfo does not carry lexical
+    // scope (component-body functions are hoisted for client emission).
+    // Resolution refuses the ambiguity rather than guessing — pre-fix
+    // this wrongly compiled against the shadowed module function
+    // (Copilot review on #2091).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function cmp(a, b) { return a.priority - b.priority }
+
+      export function TodoList() {
+        const [items, setItems] = createSignal<any[]>([])
+        const cmp = 5
+        return (
+          <ul>
+            {items().sort(cmp).map(t => (
+              <li key={t.name}>{t.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('could not be resolved')
+  })
+
+  test('cross-kind shadowing (component function over module const) also refuses with BF021 (#2090)', () => {
+    // The safe half of the same ambiguity: JS would use the component
+    // function here, but resolution cannot prove which binding the call
+    // site sees, so it refuses loudly instead of risking the WRONG
+    // (opposite-direction) comparator.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      const byPrice = (a, b) => a.price - b.price
+
+      export function ProductList() {
+        const [products, setProducts] = createSignal<any[]>([])
+        function byPrice(a, b) { return b.price - a.price }
+        return (
+          <ul>
+            {products().sort(byPrice).map(p => (
+              <li key={p.name}>{p.name}</li>
+            ))}
+          </ul>
+        )
+      }
+    `
+
+    const { errors } = compileToIR(source)
+    const bf021 = errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].message).toContain('could not be resolved')
+  })
+
   test('unresolved (imported) identifier comparator emits BF021 (#2090)', () => {
     const source = `
       'use client'
