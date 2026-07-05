@@ -311,6 +311,21 @@ class EvaluatorTest(unittest.TestCase):
         }
         self.assertEqual(evaluator.flat_map(posts, proj, "p"), ["#a, #b", "#c"])
 
+    def test_nested_callback_non_list_receiver_evaluates_to_none(self):
+        # Cross-runtime contract (Copilot review on #2095): a nested
+        # `.map`/`.filter` whose receiver is not an array evaluates to
+        # None, matching Go nil / Perl undef / Rust Null / PHP null /
+        # Ruby nil -- never an empty list, so "missing" stays
+        # distinguishable from "empty array".
+        inner_map = {
+            "kind": "call",
+            "callee": nmem(nmem(nid("p"), "tags"), "map"),
+            "args": [{"kind": "arrow", "params": ["t"], "body": nid("t")}],
+        }
+        self.assertIsNone(evaluator.evaluate(inner_map, {"p": {}}))
+        self.assertIsNone(evaluator.evaluate(inner_map, {"p": {"tags": "not-a-list"}}))
+        self.assertEqual(evaluator.evaluate(inner_map, {"p": {"tags": []}}), [])
+
     def test_nested_filter_call_inside_a_callback_body(self):
         # #2094: a `.filter(cb)` call nested inside a callback body,
         # composed with `.length` and a relational comparison (the doc /

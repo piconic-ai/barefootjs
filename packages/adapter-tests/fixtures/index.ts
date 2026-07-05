@@ -216,9 +216,10 @@ import { fixture as arrayFlatMapSelf } from './methods/array-flatmap-self'
 import { fixture as arrayFlatMapTuple } from './methods/array-flatmap-tuple'
 // #2094 — dynamic `.flat(depth)` + evaluator nested-callback widening
 // (`.map`/`.filter`/`.join` inside a flatMap projection or filter
-// predicate) + the 2-arg `flatMap(fn, thisArg)` pin. Go + CSR + Hono only
-// this phase — the other 5 template adapters go red until their runtime
-// evaluators are ported (Phase 2).
+// predicate) + the 2-arg `flatMap(fn, thisArg)` pin. All six runtime
+// evaluators implement the widened surface (Go is the reference; parity
+// is pinned by the `flat_dynamic` helper vectors and the #2094 eval
+// vectors), so these run on every adapter.
 import { fixture as arrayFlatDynamicDepth } from './methods/array-flat-dynamic-depth'
 import { fixture as arrayFlatMapNestedMap } from './methods/array-flatmap-nested-map'
 import { fixture as arrayFlatMapNestedFilterJoin } from './methods/array-flatmap-nested-filter-join'
