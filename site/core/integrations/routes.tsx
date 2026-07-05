@@ -28,6 +28,7 @@ const ADAPTERS: Adapter[] = [
   { slug: 'nethttp',     name: 'net/http',    language: 'Go' },
   { slug: 'flask',       name: 'Flask',       language: 'Python' },
   { slug: 'fastapi',     name: 'FastAPI',     language: 'Python' },
+  { slug: 'django',      name: 'Django',      language: 'Python' },
   { slug: 'sinatra',     name: 'Sinatra',     language: 'Ruby' },
   { slug: 'rails',       name: 'Rails',       language: 'Ruby' },
   { slug: 'mojolicious', name: 'Mojolicious', language: 'Perl' },
