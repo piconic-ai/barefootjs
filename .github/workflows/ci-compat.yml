@@ -1,0 +1,79 @@
+name: CI — Compat lockfile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ui/components/**'
+      - 'ui/compat.lock.json'
+      - 'packages/jsx/**'
+      - 'packages/client/**'
+      - 'packages/cli/**'
+      - 'packages/adapter-erb/**'
+      - 'packages/adapter-go-template/**'
+      - 'packages/adapter-hono/**'
+      - 'packages/adapter-jinja/**'
+      - 'packages/adapter-mojolicious/**'
+      - 'packages/adapter-rust/**'
+      - 'packages/adapter-twig/**'
+      - 'packages/adapter-xslate/**'
+      - '.github/workflows/ci-compat.yml'
+  pull_request:
+    paths:
+      - 'ui/components/**'
+      - 'ui/compat.lock.json'
+      - 'packages/jsx/**'
+      - 'packages/client/**'
+      - 'packages/cli/**'
+      - 'packages/adapter-erb/**'
+      - 'packages/adapter-go-template/**'
+      - 'packages/adapter-hono/**'
+      - 'packages/adapter-jinja/**'
+      - 'packages/adapter-mojolicious/**'
+      - 'packages/adapter-rust/**'
+      - 'packages/adapter-twig/**'
+      - 'packages/adapter-xslate/**'
+      - '.github/workflows/ci-compat.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          # bf compat imports every workspace adapter. These 7 have
+          # `main`/`exports` pointing at `./dist/index.js` (unlike
+          # @barefootjs/hono and @barefootjs/jsx, which resolve via
+          # `./src/index.ts`), so they MUST be built before anything
+          # imports them (see #2099).
+          bun run --filter '@barefootjs/erb' build
+          bun run --filter '@barefootjs/go-template' build
+          bun run --filter '@barefootjs/jinja' build
+          bun run --filter '@barefootjs/mojolicious' build
+          bun run --filter '@barefootjs/rust' build
+          bun run --filter '@barefootjs/twig' build
+          bun run --filter '@barefootjs/xslate' build
+
+      - name: Regenerate compat lockfile
+        run: bun run compat:lock
+
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code -- ui/compat.lock.json; then
+            echo "::error::ui/compat.lock.json is out of date. Run 'bun run compat:lock' locally and commit the result."
+            exit 1
+          fi

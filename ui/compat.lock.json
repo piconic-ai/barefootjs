@@ -1,0 +1,1989 @@
+{
+  "note": "Compile-time compatibility (compileJSX + adapter generate() diagnostics). NOT render identity — rendered-output parity is owned by the adapter conformance suite and the eval vector corpus (spec/testing.md Layer 3).",
+  "knownLimitationLabel": "https://github.com/piconic-ai/barefootjs/labels/known-limitation",
+  "adapters": [
+    "erb",
+    "go-template",
+    "hono",
+    "jinja",
+    "minijinja",
+    "mojolicious",
+    "twig",
+    "xslate"
+  ],
+  "components": {
+    "accordion": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "alert": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "alert-dialog": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "aspect-ratio": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "avatar": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "badge": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "breadcrumb": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "button": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "button-group": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "calendar": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "card": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "carousel": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "chart": {
+      "erb": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "checkbox": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "collapsible": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "combobox": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "command": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "context-menu": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "data-table": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "date-picker": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "dialog": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "direction": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "drawer": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "dropdown-menu": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "empty": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "field": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "hover-card": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "icon": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "input": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "input-group": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "input-otp": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "item": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "kbd": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "label": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "menubar": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "native-select": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "navigation-menu": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "pagination": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "popover": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "portal": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "progress": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "radio-group": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "resizable": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "scroll-area": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "select": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "separator": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "sheet": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "sidebar": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "skeleton": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "slider": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "slot": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "minijinja": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038",
+              "https://github.com/piconic-ai/barefootjs/issues/2087"
+            ]
+          }
+        ]
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      },
+      "xslate": {
+        "ok": false,
+        "diagnostics": [
+          {
+            "code": "BF101",
+            "severity": "error",
+            "issues": [
+              "https://github.com/piconic-ai/barefootjs/issues/2038"
+            ]
+          }
+        ]
+      }
+    },
+    "spinner": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "switch": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "table": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "tabs": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "textarea": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "toast": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "toggle": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "toggle-group": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "tooltip": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "typography": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "xyflow": {
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "hono": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    }
+  }
+}
