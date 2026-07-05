@@ -194,6 +194,7 @@ import {
   prepareLoweringMatchers,
   queryHrefArgs,
   sortComparatorFromArrow,
+  isValidHelperId,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -1545,6 +1546,17 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const qArgs = queryHrefArgs(node, n => this.renderParsedExprToTwig(n))
           return `bf.query(${qArgs.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
+        // hatch for a userland `LoweringPlugin` that lowers to a single
+        // runtime-helper invocation. `bf.<helper>(args…)` mirrors the
+        // `query` helper's own naming convention exactly: the framework
+        // renders the call, the plugin author registers `<helper>` as a
+        // Twig-callable function/filter in their own runtime — same
+        // contract as `bf.query` itself, just not built in.
+        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          const argsX = node.args.map(a => this.renderParsedExprToTwig(a))
+          return `bf.${node.helper}(${argsX.join(', ')})`
         }
       }
     }

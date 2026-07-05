@@ -138,6 +138,7 @@ import {
   searchParamsLocalNames,
   prepareLoweringMatchers,
   queryHrefArgs,
+  isValidHelperId,
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
@@ -1493,6 +1494,17 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const qArgs = queryHrefArgs(node, n => this.renderParsedExprToJinja(n))
           return `bf.query(${qArgs.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
+        // hatch for a userland `LoweringPlugin` that lowers to a single
+        // runtime-helper invocation. `bf.<helper>(args…)` mirrors the
+        // `query` helper's own naming convention exactly: the framework
+        // renders the call, the plugin author registers `<helper>` as a
+        // Jinja-callable function/filter in their own runtime — same
+        // contract as `bf.query` itself, just not built in.
+        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          const argsX = node.args.map(a => this.renderParsedExprToJinja(a))
+          return `bf.${node.helper}(${argsX.join(', ')})`
         }
       }
     }

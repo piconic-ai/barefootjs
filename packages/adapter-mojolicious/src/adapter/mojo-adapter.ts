@@ -56,6 +56,7 @@ import {
   searchParamsLocalNames,
   prepareLoweringMatchers,
   queryHrefArgs,
+  isValidHelperId,
   sortComparatorFromArrow,
   isLowerableLoopDestructure,
 } from '@barefootjs/jsx'
@@ -1702,6 +1703,17 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const argsGo = queryHrefArgs(node, n => this.renderParsedExprToPerl(n))
           return `bf->query(${argsGo.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
+        // hatch for a userland `LoweringPlugin` that lowers to a single
+        // runtime-helper invocation. `bf-><helper>(args…)` mirrors the
+        // `query` helper's own naming convention exactly: the framework
+        // renders the call, the plugin author registers `<helper>` as a
+        // method on their own Mojolicious `bf` helper object — same
+        // contract as `bf->query` itself, just not built in.
+        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          const argsX = node.args.map(a => this.renderParsedExprToPerl(a))
+          return `bf->${node.helper}(${argsX.join(', ')})`
         }
       }
     }

@@ -19,6 +19,7 @@ import type {
   ConstantInfo,
   ParamInfo,
   CompilerError,
+  ImportInfo,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 
@@ -53,6 +54,15 @@ export interface ClientJsContext {
   initStatements: InitStatementInfo[]
   localFunctions: FunctionInfo[]
   localConstants: ConstantInfo[]
+  /**
+   * Component-file import list, threaded through so `buildEnvFromCtx`'s
+   * reconstructed `IRMetadata`-shaped object carries REAL imports (#2069)
+   * — `prepareLoweringMatchers` needs the real list to resolve a
+   * `LoweringPlugin`'s local import names (e.g. `queryHrefLocalNames`);
+   * an empty `imports: []` would silently disable every import-aware
+   * plugin for the client-JS inline-safety gate.
+   */
+  imports: ImportInfo[]
   propsParams: ParamInfo[]
   propsObjectName: string | null
   restPropsName: string | null

@@ -86,6 +86,7 @@ import {
   searchParamsLocalNames,
   prepareLoweringMatchers,
   queryHrefArgs,
+  isValidHelperId,
   sortComparatorFromArrow,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
@@ -1692,6 +1693,17 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const argsRuby = queryHrefArgs(node, n => this.renderParsedExprToRuby(n))
           return `bf.query(${argsRuby.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
+        // hatch for a userland `LoweringPlugin` that lowers to a single
+        // runtime-helper invocation. `bf.<helper>(args…)` mirrors the
+        // `query` helper's own naming convention exactly: the framework
+        // renders the call, the plugin author registers `<helper>` as a
+        // Ruby-callable method on their own `bf` helper object — same
+        // contract as `bf.query` itself, just not built in.
+        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          const argsX = node.args.map(a => this.renderParsedExprToRuby(a))
+          return `bf.${node.helper}(${argsX.join(', ')})`
         }
       }
     }

@@ -70,6 +70,7 @@ import {
   searchParamsLocalNames,
   prepareLoweringMatchers,
   queryHrefArgs,
+  isValidHelperId,
   sortComparatorFromArrow,
   isLowerableLoopDestructure,
 } from '@barefootjs/jsx'
@@ -1432,6 +1433,17 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         if (node?.kind === 'guard-list' && node.helper === 'query') {
           const qArgs = queryHrefArgs(node, n => this.renderParsedExprToKolon(n))
           return `$bf.query(${qArgs.join(', ')})`
+        }
+        // Generic `helper-call` (#2069) — the neutral vocabulary's escape
+        // hatch for a userland `LoweringPlugin` that lowers to a single
+        // runtime-helper invocation. `$bf.<helper>(args…)` mirrors the
+        // `query` helper's own naming convention exactly: the framework
+        // renders the call, the plugin author registers `<helper>` as a
+        // Kolon-callable method on the `$bf` vars entry in their own
+        // runtime — same contract as `$bf.query` itself, just not built in.
+        if (node?.kind === 'helper-call' && isValidHelperId(node.helper)) {
+          const argsX = node.args.map(a => this.renderParsedExprToKolon(a))
+          return `$bf.${node.helper}(${argsX.join(', ')})`
         }
       }
     }

@@ -5,14 +5,25 @@
  * rejections for callees the adapter promises it can render in template
  * scope.
  *
+ * #2069 extends this with two more acceptance mechanisms, tested in the
+ * two `describe` blocks at the bottom of this file:
+ *   - `RelocateEnv.loweringMatchers` — a THIRD acceptance path alongside
+ *     `templatePrimitives` / `acceptsTemplateCall`, for calls a
+ *     `LoweringPlugin` recognises structurally (never string-keyed).
+ *   - `RelocateEnv.aliasTargets` — one-hop alias resolution, so
+ *     `const fmt = customSerialize; fmt(x)` keys/matches as
+ *     `customSerialize`, not `fmt`.
+ *
  * No adapter populates the registry yet — the wiring is exercised here
- * via hand-built env objects. Phase 3 will fill the Hono predicate.
+ * via hand-built env objects. Phase 3 filled the Hono predicate; #2069
+ * adds the plugin-matcher and alias seams.
  */
 
 import { describe, test, expect } from 'bun:test'
 import type { RelocateEnv } from '../../relocate'
 import { isInlinableInTemplate } from '../../relocate'
 import type { BindingKind } from '../../types'
+import type { LoweringMatcher } from '../../lowering-registry'
 
 function envWith(
   bindings: Array<[string, BindingKind]>,
@@ -28,6 +39,8 @@ function envWith(
     allowFallback: options?.allowFallback ?? true,
     templatePrimitives: options?.templatePrimitives,
     acceptsTemplateCall: options?.acceptsTemplateCall,
+    loweringMatchers: options?.loweringMatchers,
+    aliasTargets: options?.aliasTargets,
   }
 }
 
@@ -254,5 +267,200 @@ describe('isInlinableInTemplate — adapter-aware acceptance (#1187 phase 2)', (
       const r = isInlinableInTemplate('(getX())()', env)
       expect(r.ok).toBe(false) // outer call has no identifier path → unaccepted, zero-arg fires
     })
+  })
+})
+
+/** A `LoweringMatcher` that recognises a bare-identifier call to `name`. */
+function matcherFor(name: string): LoweringMatcher {
+  return (callee, args) => {
+    if (callee.kind !== 'identifier' || callee.name !== name) return null
+    return { kind: 'helper-call', helper: 'test_helper', args }
+  }
+}
+
+describe('isInlinableInTemplate — loweringMatchers acceptance (#2069)', () => {
+  test('a call recognised by a registered matcher is accepted', () => {
+    const env = envWith(
+      [
+        ['customSerialize', 'module-import'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        loweringMatchers: [matcherFor('customSerialize')],
+      },
+    )
+    const r = isInlinableInTemplate('customSerialize(config)', env)
+    expect(r.ok).toBe(true)
+    expect(r.rewrittenValue).toContain('customSerialize')
+  })
+
+  test('without a matching matcher, the call is still rejected', () => {
+    const env = envWith(
+      [
+        ['customSerialize', 'module-import'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        loweringMatchers: [matcherFor('someOtherHelper')],
+      },
+    )
+    const r = isInlinableInTemplate('customSerialize(config)', env)
+    expect(r.ok).toBe(false)
+  })
+
+  test('templatePrimitives / acceptsTemplateCall / loweringMatchers are all independent acceptance paths', () => {
+    // Only the matcher accepts here — no string-keyed entry exists at all.
+    const env = envWith(
+      [
+        ['customSerialize', 'module-import'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        templatePrimitives: {},
+        acceptsTemplateCall: () => false,
+        loweringMatchers: [matcherFor('customSerialize')],
+      },
+    )
+    const r = isInlinableInTemplate('customSerialize(config)', env)
+    expect(r.ok).toBe(true)
+  })
+
+  describe('shadow guard applies to matcher acceptance too', () => {
+    test('a local binding shadowing the recognised name is refused', () => {
+      // `customSerialize` here is a component-local (e.g. reassigned from
+      // a prop), NOT the module import the plugin's `prepare()` resolved
+      // against. The matcher itself has no way to know this — the shadow
+      // guard in `isCallAcceptedByAdapter` is what keeps it from firing.
+      const env = envWith(
+        [
+          ['customSerialize', 'init-local'], // shadows the import
+          ['config', 'prop'],
+        ],
+        {
+          propsObjectName: null,
+          loweringMatchers: [matcherFor('customSerialize')],
+        },
+      )
+      const r = isInlinableInTemplate('customSerialize(config)', env)
+      expect(r.ok).toBe(false)
+    })
+
+    test('module-import / module-local bindings still activate the matcher', () => {
+      const env = envWith(
+        [
+          ['customSerialize', 'module-local'],
+          ['config', 'prop'],
+        ],
+        {
+          propsObjectName: null,
+          loweringMatchers: [matcherFor('customSerialize')],
+        },
+      )
+      const r = isInlinableInTemplate('customSerialize(config)', env)
+      expect(r.ok).toBe(true)
+    })
+  })
+})
+
+describe('isInlinableInTemplate — one-hop alias resolution (#2069 R2)', () => {
+  test('alias → registered builtin (templatePrimitives) is accepted', () => {
+    // const fmt = Math.floor; fmt(score)
+    const env = envWith(
+      [
+        ['fmt', 'init-local'],
+        ['Math', 'global'],
+        ['score', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        aliasTargets: new Map([['fmt', 'Math.floor']]),
+        templatePrimitives: {
+          'Math.floor': (args) => `Math.floor(${args[0]})`,
+        },
+      },
+    )
+    const r = isInlinableInTemplate('fmt(score)', env)
+    expect(r.ok).toBe(true)
+    expect(r.rewrittenValue).toContain('Math.floor')
+  })
+
+  test('alias → a loweringMatchers-recognised import is accepted', () => {
+    // const serialize = customSerialize; serialize(config)
+    const env = envWith(
+      [
+        ['serialize', 'init-local'],
+        ['customSerialize', 'module-import'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        aliasTargets: new Map([['serialize', 'customSerialize']]),
+        loweringMatchers: [matcherFor('customSerialize')],
+      },
+    )
+    const r = isInlinableInTemplate('serialize(config)', env)
+    expect(r.ok).toBe(true)
+    expect(r.rewrittenValue).toContain('customSerialize')
+  })
+
+  test('alias → alias chain is refused — only ONE hop is resolved', () => {
+    // const g = f (f is itself just another local, never resolved further)
+    const env = envWith(
+      [
+        ['g', 'init-local'],
+        ['f', 'init-local'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        aliasTargets: new Map([['g', 'f']]),
+        // Maximally permissive predicate — even this can't help, because
+        // the shadow guard rejects on `f`'s own (unsafe) binding kind
+        // before the predicate is ever consulted.
+        acceptsTemplateCall: () => true,
+      },
+    )
+    const r = isInlinableInTemplate('g(config)', env)
+    expect(r.ok).toBe(false)
+  })
+
+  test('alias → a non-import component-local helper is refused', () => {
+    // const h = helper (helper is a local function/const, not module-scope)
+    const env = envWith(
+      [
+        ['h', 'init-local'],
+        ['helper', 'init-local'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        aliasTargets: new Map([['h', 'helper']]),
+        acceptsTemplateCall: () => true,
+      },
+    )
+    const r = isInlinableInTemplate('h(config)', env)
+    expect(r.ok).toBe(false)
+  })
+
+  test('a plain non-alias init-local is unaffected by aliasTargets being present', () => {
+    // Baseline: aliasTargets has entries for OTHER names, but this
+    // reference isn't one of them — falls through to the ordinary
+    // init-local fallback, same as if aliasTargets were absent.
+    const env = envWith(
+      [
+        ['count', 'init-local'],
+        ['config', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        aliasTargets: new Map([['fmt', 'Math.floor']]),
+      },
+    )
+    const r = isInlinableInTemplate('count', env)
+    expect(r.ok).toBe(true) // fallback to 'undefined', not a rejection
+    expect(r.rewrittenValue).toBe('undefined')
   })
 })

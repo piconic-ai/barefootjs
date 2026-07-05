@@ -12,13 +12,24 @@ import {
   type ParsedExpr,
   parseExpression,
   stringifyParsedExpr,
+  isValidHelperId,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { wrapIfMultiToken } from '../lib/go-emit.ts'
 
-/** Logical helper id → Go template helper name. */
-const GO_HELPER_NAMES: Record<string, string> = { query: 'bf_query' }
+/**
+ * Logical helper id → Go template helper name. `bf_<helper>` is a formula,
+ * not a lookup table (#2069) — the built-in `query` helper (`bf_query`)
+ * already follows the exact same convention every userland-registered
+ * `helper-call` id gets for free. `isValidHelperId` guards against a
+ * malformed id (e.g. containing a space or backtick) producing invalid Go
+ * template source; a plugin author's helper id is otherwise untrusted
+ * input reaching generated code.
+ */
+function goHelperName(helper: string): string | null {
+  return isValidHelperId(helper) ? `bf_${helper}` : null
+}
 
 const BOOL_COMPARISON_OPS: ReadonlySet<string> = new Set([
   '==', '===', '!=', '!==', '<', '>', '<=', '>=',
@@ -98,7 +109,7 @@ export function lowerRegisteredCall(
  * rendered.
  */
 function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | null {
-  const helper = GO_HELPER_NAMES[node.helper]
+  const helper = goHelperName(node.helper)
   if (!helper) return null
   const lowerExpr = (n: ParsedExpr): string =>
     ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)

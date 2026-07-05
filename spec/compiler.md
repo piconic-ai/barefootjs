@@ -587,7 +587,22 @@ is type-visible:
   `templatePrimitives` map.
 - `templatePrimitives?: TemplatePrimitiveRegistry` — identifier-path
   callees the adapter promises to render in template scope
-  (`JSON.stringify`, `Math.floor`, …).
+  (`JSON.stringify`, `Math.floor`, …). V1 scope (#1187): fixed at
+  adapter-construction time, so it can only ever list well-known JS
+  builtins the adapter author anticipated — never a component's own
+  (unknown in advance) imports. #2069 adds a separate, orthogonal
+  acceptance path for that case instead of widening this map:
+  `relocate.ts`'s `isCallAcceptedByAdapter` also consults
+  `RelocateEnv.loweringMatchers` — every `LoweringPlugin` registered via
+  `registerLoweringPlugin` (`packages/jsx/src/lowering-registry.ts`, #2057),
+  bound once per component from its real import list
+  (`prepareLoweringMatchers`). A plugin recognises a bespoke user-imported
+  helper structurally (by import + call shape), so `const serialized =
+  customSerialize(props.config)` inlines into the client template even
+  though `customSerialize` was never in any adapter's `templatePrimitives`.
+  One-hop alias resolution (`const fmt = customSerialize; fmt(x)`) is part
+  of the same #2069 change — see `RelocateEnv.aliasTargets` in
+  `relocate.ts`.
 - `generateSignalInitializers?(ir, body): string` — SSR declaration
   block for the user's reactive bindings (signals, memos,
   locally-declared functions/constants). Implemented by JS-runtime

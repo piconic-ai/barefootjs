@@ -64,7 +64,12 @@ export function buildEnvFromCtx(ctx: ClientJsContext): RelocateEnv {
       effects: ctx.effects,
       onMounts: ctx.onMounts,
       initStatements: ctx.initStatements,
-      imports: [],
+      // Real component imports (#2069) — `buildRelocateEnvFromIR` calls
+      // `prepareLoweringMatchers(metadata)` on this reconstructed object,
+      // and plugin `prepare()` resolves local import names from
+      // `metadata.imports`. `[]` here would silently disable every
+      // import-aware LoweringPlugin for the client-JS inline-safety gate.
+      imports: ctx.imports,
       templateImports: [],
       namedExports: [],
       localFunctions: ctx.localFunctions,

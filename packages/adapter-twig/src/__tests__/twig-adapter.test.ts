@@ -11,7 +11,7 @@
  * engine genuinely differs. Every divergence carries a one-line rationale.
  */
 
-import { runAdapterConformanceTests, TemplatePrimitiveCaseId } from '@barefootjs/adapter-tests'
+import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { TwigAdapter } from '../adapter'
 import { renderTwigComponent, TwigNotAvailableError } from '../test-render'
 
@@ -103,13 +103,13 @@ runAdapterConformanceTests({
     // template.
     'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
   },
-  // Template-primitive registry parity: same V1 surface as Jinja, so the
-  // same two cases stay skipped (bespoke user import + customSerialize
-  // can't render server-side without user-supplied helper mappings).
-  skipTemplatePrimitives: new Set([
-    TemplatePrimitiveCaseId.USER_IMPORT_VIA_CONST,
-    TemplatePrimitiveCaseId.NO_DOUBLE_REWRITE_OF_PROPS_OBJECT,
-  ]),
+  // Template-primitive registry: `USER_IMPORT_VIA_CONST` and
+  // `NO_DOUBLE_REWRITE_OF_PROPS_OBJECT` now pass (#2069) — a bespoke user
+  // import can never be added to the string-keyed registry, but the
+  // shared `RelocateEnv.loweringMatchers` acceptance path recognises it
+  // via a `LoweringPlugin` the case setup registers around the compile
+  // (see `packages/adapter-tests/src/cases/template-primitives.ts`). No
+  // skips left, so `skipTemplatePrimitives` is omitted entirely.
   skipMarkerConformance: new Set([
     // Same as Hono / Jinja: `/* @client */` markers on TodoApp's keyed
     // `.map` intentionally elide a slot id from the SSR template that

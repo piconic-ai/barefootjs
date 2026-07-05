@@ -107,3 +107,59 @@ export function P(props: { base: string; tag: string }) {
     expect(template).toContain('bf_query .Base (true) "tag" .Tag')
   })
 })
+
+// A second sample plugin exercising the OTHER neutral-node variant,
+// `helper-call` (#2069) — the general single-invocation escape hatch that
+// was "unused today" before this change. Recognises a bespoke user import
+// (`customSerialize` from `./lib`, matching the shared conformance case)
+// and lowers its one-arg call to a `custom_serialize` helper.
+const customSerializePlugin: LoweringPlugin = {
+  name: 'sample-custom-serialize',
+  prepare(metadata) {
+    const spec = metadata.imports
+      .filter(i => i.source === './lib' && !i.isTypeOnly)
+      .flatMap(i => i.specifiers)
+      .filter(s => !s.isTypeOnly && !s.isNamespace && !s.isDefault)
+      .find(s => s.name === 'customSerialize')
+    if (!spec) return null
+    const local = spec.alias ?? spec.name
+    return (callee, args) => {
+      if (callee.kind !== 'identifier' || callee.name !== local) return null
+      return { kind: 'helper-call', helper: 'custom_serialize', args }
+    }
+  },
+}
+
+afterEach(() => {
+  __resetLoweringPluginsForTest(getLoweringPlugins().filter(p => p.name !== 'sample-custom-serialize'))
+})
+
+describe('lowering-plugin registry → Go adapter: helper-call (#2069)', () => {
+  test('a helper-call node renders as bf_<helper> with the args following, Go-func-call style', () => {
+    registerLoweringPlugin(customSerializePlugin)
+    const src = `
+'use client'
+import { customSerialize } from './lib'
+export function P(props: { config: object }) {
+  return <div data-config={customSerialize(props.config)}>x</div>
+}
+`
+    const { template } = generate(src)
+    // `bf_<helper>` mirrors the built-in `query` helper's own `bf_query`
+    // naming exactly — the formula generalises, it isn't a lookup table
+    // limited to `query`.
+    expect(template).toContain('bf_custom_serialize .Config')
+  })
+
+  test('without the plugin registered, the call falls back to the generic (unsupported) lowering', () => {
+    const src = `
+'use client'
+import { customSerialize } from './lib'
+export function P(props: { config: object }) {
+  return <div data-config={customSerialize(props.config)}>x</div>
+}
+`
+    const { template } = generate(src)
+    expect(template).not.toContain('bf_custom_serialize')
+  })
+})

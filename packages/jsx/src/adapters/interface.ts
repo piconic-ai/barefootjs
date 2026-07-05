@@ -96,9 +96,23 @@ export type TemplatePrimitiveEmit = (args: string[]) => string
  * Keys are the textual callee path as it appears in the JSX expression
  * (`JSON.stringify`, `Math.floor`, `String`).
  *
- * V1 scope: identifier-path callees only. Method calls on values whose type
- * the analyzer must resolve (`props.name.toUpperCase()`) are out of scope —
- * see #1187 R1. Users can fall back to `/* @client *\/` for those.
+ * V1 scope (#1187): identifier-path callees only, and only names the adapter
+ * knows about AHEAD OF TIME — this map is fixed at adapter-construction
+ * time, so it can never contain a name from a component's own (unknown in
+ * advance) imports. Method calls on values whose type the analyzer must
+ * resolve (`props.name.toUpperCase()`) are ALSO out of scope — see #1187 R1.
+ * Users can fall back to `/* @client *\/` for either limitation.
+ *
+ * V2 (#2069) does not widen this map — it adds a separate, orthogonal
+ * acceptance path instead: `RelocateEnv.loweringMatchers`, bound once per
+ * component from the global `LoweringPlugin` registry
+ * (`prepareLoweringMatchers`, `packages/jsx/src/lowering-registry.ts`). A
+ * plugin's `prepare(metadata)` resolves the component's ACTUAL import list,
+ * so it can recognise a call this string-keyed map structurally never could
+ * (a bespoke user import, unknown until compile time). `templatePrimitives`
+ * remains the right home for well-known JS builtins (`JSON.stringify`,
+ * `Math.floor`) that every component might reasonably use, with no import
+ * to key a plugin against.
  */
 export type TemplatePrimitiveRegistry = Record<string, TemplatePrimitiveEmit>
 
@@ -110,7 +124,9 @@ export type TemplatePrimitiveRegistry = Record<string, TemplatePrimitiveEmit>
  *
  * Adapters whose template runtime can't execute arbitrary JS (Go, Perl,
  * other server-side template languages) should leave this undefined and
- * rely on the explicit `templatePrimitives` map alone.
+ * rely on the explicit `templatePrimitives` map alone (plus, since #2069,
+ * whatever `LoweringPlugin`s are registered — see `TemplatePrimitiveRegistry`
+ * above).
  */
 export type TemplateCallAcceptor = (calleeName: string) => boolean
 

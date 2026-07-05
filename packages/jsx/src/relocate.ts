@@ -19,6 +19,8 @@ import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
 } from './adapters/interface.ts'
+import { tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
+import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 
 export interface RelocateEnv {
   /**
@@ -65,6 +67,33 @@ export interface RelocateEnv {
    * in `templatePrimitives`. Returning true marks the call as accepted.
    */
   acceptsTemplateCall?: TemplateCallAcceptor
+  /**
+   * Lowering-registry matchers (#2057) bound to this component's metadata
+   * (`prepareLoweringMatchers`), consulted by `isCallAcceptedByAdapter` as a
+   * third acceptance path alongside `templatePrimitives` /
+   * `acceptsTemplateCall`. A call recognised by ANY matcher (returns a
+   * non-null `LoweringNode`) is treated as adapter-accepted — the matcher
+   * result itself isn't used here (relocate only needs a boolean; the
+   * adapter's own render pass re-runs the matcher to get the node). Bound
+   * once per component (`buildRelocateEnvFromIR`), so checking it per call
+   * site is cheap. Undefined/empty behaves like pre-#2069 (no matcher path).
+   */
+  loweringMatchers?: readonly LoweringMatcher[]
+  /**
+   * One-hop alias resolution table (#2069 R2): name → the bare identifier
+   * or dotted identifier-path text of its initializer, for local constants
+   * whose value is itself just another identifier/path reference
+   * (`const fmt = customSerialize`, `const f = Math.floor`) — NOT a call,
+   * object, or any other expression shape. `isCallAcceptedByAdapter` uses
+   * this to resolve a call's callee ONE hop before keying
+   * `templatePrimitives` / dispatching matchers, so a locally-aliased
+   * import or global still resolves to a registrable name. Deliberately
+   * shallow — an alias-to-alias chain (`const g = f` where `f` is itself
+   * an alias) is NOT resolved transitively; the shadow guard naturally
+   * rejects it because the one-hop target's own binding kind is
+   * `init-local`/`module-local` with no further resolution.
+   */
+  aliasTargets?: ReadonlyMap<string, string>
 }
 
 export interface RelocateResult {
@@ -155,6 +184,34 @@ function decideAction(
   }
 
   if ((kind === 'init-local' || kind === 'sub-init-local') && toScope === 'template') {
+    // One-hop alias resolution (#2069 R2): `const fmt = customSerialize`
+    // is a pure identifier/path alias — its bare reference is
+    // interchangeable with the target text (checked BEFORE `env.inlinable`,
+    // which isn't populated yet when this runs from inside
+    // `computeInlinability`'s own Stage-1 classification loop; the alias
+    // table is built once at env-construction time so it's always ready).
+    // This resolves the CALLEE identifier itself (`fmt` → `customSerialize`
+    // wherever it's referenced) — a separate concern from
+    // `isCallAcceptedByAdapter`'s own one-hop resolution, which only
+    // decides whether a *call* is safe to inline, not how its callee text
+    // renders.
+    //
+    // Only substitute when the alias TARGET's own leftmost identifier is
+    // itself bare-visible at `toScope` (module-import / module-local /
+    // global) — this is what keeps the resolution to exactly one hop: an
+    // alias-of-an-alias (`const g = f` where `f` is itself just another
+    // local) has a target whose kind is `init-local`, which fails the
+    // visibility check below, so `g` falls through to the normal
+    // `env.inlinable` / fallback path instead of being blindly rewritten
+    // to the still-unreachable `f`.
+    const aliasTarget = env.aliasTargets?.get(name)
+    if (aliasTarget !== undefined) {
+      const targetLeftmost = aliasTarget.includes('.') ? aliasTarget.split('.')[0]! : aliasTarget
+      const targetKind = classify(targetLeftmost, env)
+      if (isVisibleIn(toScope, targetKind)) {
+        return { action: 'inline', rewrittenAs: aliasTarget }
+      }
+    }
     // Try inline; fall back if not eligible.
     const inlineForm = env.inlinable.get(name)
     if (inlineForm !== undefined) {
@@ -341,10 +398,31 @@ export function isInlinableInTemplate(
  * `obj` is a value of a particular TypeScript type, so method calls on
  * arbitrary receivers (`props.name.toUpperCase()`) cannot be matched
  * against type-anchored registry keys like `String.prototype.toUpperCase`.
- * This is the V1 limitation #1187 R1 records — users fall back to
+ * This remains out of scope in V2 (#1187 R1) — users fall back to
  * `/* @client *\/` for those cases.
+ *
+ * V2 (#2069): the registry is still identifier-path-only, but two things
+ * widen it beyond the raw path this function returns:
+ *   1. One-hop alias resolution (`isCallAcceptedByAdapter`) — a callee whose
+ *      leftmost identifier is a local const aliasing another identifier/path
+ *      (`const fmt = customSerialize`) resolves through that one hop before
+ *      the path returned here is keyed against `templatePrimitives`.
+ *   2. A THIRD acceptance path alongside `templatePrimitives` /
+ *      `acceptsTemplateCall`: `RelocateEnv.loweringMatchers` (#2057). A
+ *      user-imported helper is never added to the string-keyed registry —
+ *      it's recognised structurally by a `LoweringPlugin` (import-aware via
+ *      `prepare(metadata)`), which accepts calls this function's textual
+ *      path can't key at all (the plugin matches on the parsed callee/args
+ *      shape, not a string).
  */
 function getCalleeIdentifierPath(callee: ts.Expression): string | null {
+  // Unwrap `(expr)` — `csrSubstitute`'s AST splicer wraps every identifier
+  // substitution in parens (`(customSerialize)(x)` after a one-hop alias
+  // resolves `fmt` → `customSerialize`), so a callee that started as a bare
+  // identifier can arrive here re-parsed as a `ParenthesizedExpression`.
+  // Unwrapping is always safe: a paren never changes *which* identifier
+  // path a callee resolves to, only re-parse shape.
+  if (ts.isParenthesizedExpression(callee)) return getCalleeIdentifierPath(callee.expression)
   if (ts.isIdentifier(callee)) return callee.text
   if (ts.isPropertyAccessExpression(callee)) {
     const left = getCalleeIdentifierPath(callee.expression)
@@ -363,6 +441,7 @@ function getCalleeIdentifierPath(callee: ts.Expression): string | null {
  * (the shadowing case — the registry must not fire then).
  */
 function getCalleeLeftmostIdentifier(callee: ts.Expression): string | null {
+  if (ts.isParenthesizedExpression(callee)) return getCalleeLeftmostIdentifier(callee.expression)
   if (ts.isIdentifier(callee)) return callee.text
   if (ts.isPropertyAccessExpression(callee)) {
     return getCalleeLeftmostIdentifier(callee.expression)
@@ -386,33 +465,90 @@ const REGISTRY_SAFE_BINDING_KINDS: ReadonlySet<BindingKind> = new Set([
 
 /**
  * Whether `env`'s adapter promises it can render this call in template
- * scope. Resolves the callee path and consults `templatePrimitives` first,
- * then `acceptsTemplateCall`. Either match returns true.
+ * scope. Three independent acceptance paths, any of which is sufficient:
  *
- * Shadow guard: rejects when the leftmost identifier of the callee
- * resolves to a local-ish binding kind. This prevents a local variable
- * named after a registered primitive (e.g. `const JSON = props.config`)
- * from accidentally activating the registry.
+ *   1. `templatePrimitives` — string-keyed identifier-path registry
+ *      (`JSON.stringify`, `Math.floor`).
+ *   2. `acceptsTemplateCall` — broad predicate for full-JS-runtime adapters.
+ *   3. `loweringMatchers` (#2057/#2069) — structural `LoweringPlugin`
+ *      recognition, for user-imported helpers that were never (and can
+ *      never be) added to the string-keyed registry.
+ *
+ * Before any of the three checks, the callee path is resolved through
+ * `aliasTargets` ONE hop (#2069 R2): `const fmt = customSerialize; fmt(x)`
+ * keys/matches as `customSerialize`, not `fmt`. Resolution only replaces a
+ * BARE-identifier leftmost segment with a bare-identifier target — a
+ * dotted alias target (`Math.floor`) only feeds the string-keyed path
+ * (matchers structurally expect a real callee shape, not a synthesised
+ * dotted identifier).
+ *
+ * Shadow guard: rejects when the leftmost identifier of the (possibly
+ * alias-resolved) callee resolves to a local-ish binding kind. This
+ * prevents a local variable named after a registered primitive (e.g.
+ * `const JSON = props.config`) from accidentally activating the registry,
+ * and — because the guard runs AFTER alias resolution — also rejects an
+ * alias-to-alias chain (`const g = f` where `f` is itself an unresolved
+ * local) without needing special-case transitive-chain detection: the
+ * one-hop target `f` is still `init-local`/`module-local`-shadowed.
  */
 function isCallAcceptedByAdapter(
   call: ts.CallExpression,
   env: RelocateEnv,
 ): boolean {
-  const name = getCalleeIdentifierPath(call.expression)
-  if (name === null) return false
+  const originalPath = getCalleeIdentifierPath(call.expression)
+  if (originalPath === null) return false
 
-  // Shadow guard. `undefined` (not in bindings) means truly global —
-  // safe; we let it through. A tracked binding must be in the safe set.
   const leftmost = getCalleeLeftmostIdentifier(call.expression)
+
+  // One-hop alias resolution: replace the callee's leftmost segment with
+  // its alias target when eligible. Only a BARE-identifier callee (no
+  // property-access chain of its own) is resolved this way — the target
+  // text is spliced in place of the whole leftmost segment.
+  let resolvedPath = originalPath
+  let resolvedLeftmost = leftmost
   if (leftmost !== null) {
-    const kind = env.bindings.get(leftmost)
+    const aliasTarget = env.aliasTargets?.get(leftmost)
+    if (aliasTarget !== undefined) {
+      resolvedPath =
+        originalPath === leftmost
+          ? aliasTarget
+          : `${aliasTarget}${originalPath.slice(leftmost.length)}`
+      resolvedLeftmost = aliasTarget.includes('.') ? aliasTarget.split('.')[0] : aliasTarget
+    }
+  }
+
+  // Shadow guard, applied to the RESOLVED leftmost identifier. `undefined`
+  // (not in bindings) means truly global — safe; we let it through. A
+  // tracked binding must be in the safe set.
+  if (resolvedLeftmost !== null) {
+    const kind = env.bindings.get(resolvedLeftmost)
     if (kind !== undefined && !REGISTRY_SAFE_BINDING_KINDS.has(kind)) {
       return false
     }
   }
 
-  if (env.templatePrimitives && env.templatePrimitives[name]) return true
-  if (env.acceptsTemplateCall && env.acceptsTemplateCall(name)) return true
+  if (env.templatePrimitives && env.templatePrimitives[resolvedPath]) return true
+  if (env.acceptsTemplateCall && env.acceptsTemplateCall(resolvedPath)) return true
+
+  if (env.loweringMatchers && env.loweringMatchers.length > 0) {
+    const parsed = tsNodeToParsedExpr(call)
+    if (parsed.kind === 'call') {
+      // Only substitute the callee for matcher dispatch when the alias
+      // target is itself a bare identifier (no dots) — matchers expect a
+      // real parsed callee shape (`kind: 'identifier'`), not a synthesised
+      // dotted path.
+      const calleeForMatch =
+        resolvedPath !== originalPath &&
+        !resolvedPath.includes('.') &&
+        parsed.callee.kind === 'identifier'
+          ? { kind: 'identifier' as const, name: resolvedPath }
+          : parsed.callee
+      for (const matcher of env.loweringMatchers) {
+        if (matcher(calleeForMatch, parsed.args)) return true
+      }
+    }
+  }
+
   return false
 }
 
@@ -626,6 +762,15 @@ export function buildRelocateEnvFromIR(
   const env = buildRelocateEnvFromFields(metadata)
   if (options?.templatePrimitives) env.templatePrimitives = options.templatePrimitives
   if (options?.acceptsTemplateCall) env.acceptsTemplateCall = options.acceptsTemplateCall
+  // Bind every registered LoweringPlugin (built-in + userland, #2057) to
+  // THIS component's metadata once here, so `isCallAcceptedByAdapter`'s
+  // per-call check is just an array iteration + matcher call — no
+  // per-call import resolution (#2069). `metadata.imports` must be the
+  // REAL import list for plugin `prepare()` to resolve local names
+  // correctly; callers that reconstruct a synthetic `IRMetadata` (e.g.
+  // `compute-inlinability.ts`'s `buildEnvFromCtx`) must populate `imports`
+  // from the real component, not `[]`.
+  env.loweringMatchers = prepareLoweringMatchers(metadata)
   return env
 }
 
@@ -711,11 +856,49 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
     if (kind === 'prop') propsForLift.add(name)
   }
 
+  // aliasTargets (#2069 R2): one-hop alias resolution table for
+  // `isCallAcceptedByAdapter`. A const whose FINAL resolved binding kind
+  // is `init-local` or `module-local` (i.e. not a signal/memo/prop-alias
+  // override) AND whose initializer is nothing but a bare identifier or
+  // dotted identifier path (`customSerialize`, `Math.floor` — no calls,
+  // no operators, no literals) is eligible. Eligibility is decided on the
+  // analyzer's structured `ConstantInfo.parsed` tree (never on the raw
+  // source text — see CLAUDE.md's no-regex-parsing rule); a const whose
+  // initializer didn't parse is simply not an alias. Built AFTER
+  // `bindings` is fully resolved (signals/memos have already overridden
+  // same-named consts) so eligibility reflects the FINAL kind, not a
+  // shadowed one.
+  const aliasTargets = new Map<string, string>()
+  for (const c of src.localConstants) {
+    const kind = bindings.get(c.name)
+    if (kind !== 'init-local' && kind !== 'module-local') continue
+    const target = identifierPathFromParsed(c.parsed)
+    if (target !== null) aliasTargets.set(c.name, target)
+  }
+
   return {
     bindings,
     inlinable: new Map(), // populated by compute-inlinability after analyzer runs
     propsForLift,
     propsObjectName,
     allowFallback: true,
+    aliasTargets,
   }
+}
+
+/**
+ * The dotted identifier-path text of a parsed expression that is nothing
+ * but a bare identifier or a chain of non-computed member accesses on one
+ * (`foo`, `foo.bar`, `Math.floor`) — or null for every other shape
+ * (calls, literals, computed access, operators…). The structured
+ * counterpart of `getCalleeIdentifierPath` for `ParsedExpr` trees.
+ */
+function identifierPathFromParsed(expr: ParsedExpr | undefined): string | null {
+  if (!expr) return null
+  if (expr.kind === 'identifier') return expr.name
+  if (expr.kind === 'member' && !expr.computed) {
+    const object = identifierPathFromParsed(expr.object)
+    return object === null ? null : `${object}.${expr.property}`
+  }
+  return null
 }

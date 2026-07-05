@@ -171,6 +171,7 @@ function createContext(
     initStatements: ir.metadata.initStatements ?? [],
     localFunctions: ir.metadata.localFunctions,
     localConstants: ir.metadata.localConstants,
+    imports: ir.metadata.imports,
     propsParams: ir.metadata.propsParams,
     propsObjectName: ir.metadata.propsObjectName,
     restPropsName: ir.metadata.restPropsName,
