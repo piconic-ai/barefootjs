@@ -53,6 +53,8 @@ export type {
   TypeDefinition,
   SourceLocation,
   CompilerError,
+  ConformancePin,
+  ConformancePins,
 } from './types.ts'
 
 // Analyzer
