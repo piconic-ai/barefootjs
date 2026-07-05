@@ -32,8 +32,9 @@ import { analyzeComponent } from '../analyzer'
 import { jsxToIR } from '../jsx-to-ir'
 import type { IRElement, ExpressionAttr } from '../types'
 
-/** Compile `source` and return the className attribute's IR value for the
- *  root element's `className` (compiled to `class`) attribute. */
+/** Compile `source` and return the root element's `className` attribute
+ *  value from the IR (the IR keeps the JSX name `className`; adapters
+ *  render it as `class` later). */
 function classAttrValue(source: string, filename = 'TagDemo.tsx') {
   const ctx = analyzeComponent(source, filename)
   const ir = jsxToIR(ctx)
@@ -156,6 +157,30 @@ describe('tagged-template interleave-tag recognition (#2092)', () => {
     const value = classAttrValue(source)
     expect(value.kind).toBe('expression')
     // Unresolved (no same-file binding) — the tag call is preserved verbatim.
+    expect((value as ExpressionAttr).expr).toContain('cn`base')
+  })
+
+  test('cross-kind name collision (const + function binding) is NOT resolved', () => {
+    // Same ambiguity rule as resolveSortComparatorIdentifier (#2091 review):
+    // a name bound both as a const and as a `function` declaration can only
+    // occur across scopes, and FunctionInfo carries emission placement (not
+    // lexical position), so resolution refuses rather than guessing which
+    // tag the call site actually sees. The node stays opaque (BF101 path).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function cn(parts: TemplateStringsArray, ...args: unknown[]): string {
+        return parts.reduce<string>((acc, p, i) => acc + p + (args[i] ?? ''), '')
+      }
+      export function TagDemo() {
+        const [tone] = createSignal('primary')
+        const cn = (parts: TemplateStringsArray, ...args: unknown[]) =>
+          parts.reduce<string>((acc, p, i) => acc + p + '-' + (args[i] ?? ''), '')
+        return <div className={cn\`base \${tone()}\`}>x</div>
+      }
+    `
+    const value = classAttrValue(source)
+    expect(value.kind).toBe('expression')
     expect((value as ExpressionAttr).expr).toContain('cn`base')
   })
 
