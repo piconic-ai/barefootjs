@@ -500,10 +500,14 @@ function isCallAcceptedByAdapter(
 
   const leftmost = getCalleeLeftmostIdentifier(call.expression)
 
-  // One-hop alias resolution: replace the callee's leftmost segment with
-  // its alias target when eligible. Only a BARE-identifier callee (no
-  // property-access chain of its own) is resolved this way — the target
-  // text is spliced in place of the whole leftmost segment.
+  // One-hop alias resolution: replace the callee's LEFTMOST SEGMENT with
+  // its alias target when eligible. This resolves both a bare-identifier
+  // callee (`fmt(x)` → `customSerialize(x)`) and an aliased-namespace
+  // member callee (`m.floor(x)` → `Math.floor(x)` when `const m = Math`)
+  // — the target text is spliced in place of the leftmost segment and any
+  // remaining `.path` tail is carried over. Matcher dispatch below is
+  // narrower (bare identifiers only); the string-keyed registry path uses
+  // the full spliced text.
   let resolvedPath = originalPath
   let resolvedLeftmost = leftmost
   if (leftmost !== null) {

@@ -387,6 +387,28 @@ describe('isInlinableInTemplate — one-hop alias resolution (#2069 R2)', () => 
     expect(r.rewrittenValue).toContain('Math.floor')
   })
 
+  test('aliased-namespace MEMBER callee resolves too (const m = Math; m.floor)', () => {
+    // The leftmost segment is spliced and the `.path` tail carried over —
+    // `m.floor(score)` keys the registry as `Math.floor` (Copilot review
+    // on #2097 pinned that this is intended, not bare-identifier-only).
+    const env = envWith(
+      [
+        ['m', 'init-local'],
+        ['Math', 'global'],
+        ['score', 'prop'],
+      ],
+      {
+        propsObjectName: null,
+        aliasTargets: new Map([['m', 'Math']]),
+        templatePrimitives: {
+          'Math.floor': (args) => `Math.floor(${args[0]})`,
+        },
+      },
+    )
+    const r = isInlinableInTemplate('m.floor(score)', env)
+    expect(r.ok).toBe(true)
+  })
+
   test('alias → a loweringMatchers-recognised import is accepted', () => {
     // const serialize = customSerialize; serialize(config)
     const env = envWith(
