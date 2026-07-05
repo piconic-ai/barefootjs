@@ -45,6 +45,10 @@
 - [Go Template Adapter](https://barefootjs.dev/docs/adapters/go-template-adapter.md): Generate Go html/template files and type definitions from the compiler's IR.
 - [Hono Adapter](https://barefootjs.dev/docs/adapters/hono-adapter.md): Generate Hono JSX templates from the compiler's IR for Hono-based servers.
 - [Perl Adapter](https://barefootjs.dev/docs/adapters/perl-adapter.md): Render BarefootJS components from Perl — one engine-agnostic runtime with Mojolicious and Text::Xslate (PSGI/Plack) backends.
+- [PHP Adapter](https://barefootjs.dev/docs/adapters/php-adapter.md): Render BarefootJS components from PHP via Twig — no framework required (Slim, plain PHP).
+- [Python Adapter](https://barefootjs.dev/docs/adapters/python-adapter.md): Render BarefootJS components from Python via Jinja2 — no framework required (Flask, Django, bare WSGI).
+- [Ruby Adapter](https://barefootjs.dev/docs/adapters/ruby-adapter.md): Render BarefootJS components from Ruby via ERB — runs under any Rack app (Sinatra, Rails).
+- [Rust Adapter](https://barefootjs.dev/docs/adapters/rust-adapter.md): Render BarefootJS components from Rust via minijinja — no framework required (axum, actix-web, warp).
 
 ## Advanced
 
