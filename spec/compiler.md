@@ -872,7 +872,7 @@ error[BF021]: Expression cannot be compiled to marked template: Sort comparator 
    = help: Add /* @client */ to evaluate this expression on the client only
 ```
 
-— `myCmp` is imported, a prop, or otherwise has no local `const`/`function` binding in the file (alias chains like `const c2 = c1` are also NOT followed — only one hop is resolved); or the identifier resolves to a local binding whose body is off-catalogue, in which case the message names the comparator and matches the inline-comparator refusal:
+— `myCmp` is imported, a prop, or otherwise has no local `const`/`function` binding in the file (alias chains like `const c2 = c1` are also NOT followed — only one hop is resolved); or the name is bound BOTH as a const and as a `function` declaration (only possible across scopes; `FunctionInfo` carries emission placement, not lexical scope, so the ambiguity refuses loudly rather than guessing which binding the call site sees); or the identifier resolves to a local binding whose body is off-catalogue, in which case the message names the comparator and matches the inline-comparator refusal:
 
 ```
 error[BF021]: Expression cannot be compiled to marked template: Sort comparator 'myCmp' is not a supported shape.
