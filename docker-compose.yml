@@ -181,6 +181,21 @@ services:
       # fallback) so local dev works without running assemble-deps first.
       - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
 
+  django:
+    build:
+      context: .
+      dockerfile: integrations/django/Dockerfile.dev
+    working_dir: /workspace/integrations/django
+    environment:
+      BASE_PATH: /integrations/django
+      DJANGO_ENV: development
+    volumes:
+      - ./integrations/django:/workspace/integrations/django
+      # app.py's sys.path fallback resolves `barefootjs` from the workspace
+      # source dir directly (mirrors xslate's `use lib '../../packages/...'`
+      # fallback) so local dev works without running assemble-deps first.
+      - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
+
   sinatra:
     build:
       context: .
