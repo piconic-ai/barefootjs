@@ -946,11 +946,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     },
     emitSpread: (value) => {
       // Twig hashes can't be splatted into the entry list the way `**`
-      // flattens Python kwargs into a call. The propsObject case is handled
-      // in `renderComponent` (it enumerates the analyzer's props params);
-      // any other spread shape is refused there via the unsupported gate.
-      // Emit the lowered expression so a downstream consumer sees something
-      // coherent, but renderComponent only routes the enumerated case here.
+      // flattens Ruby/Python kwargs into a call literal. `renderComponent`
+      // handles EVERY spread shape itself (both the enumerated propsObject
+      // case and the general `|merge(...)` chain — see its own docstring),
+      // so this callback is never reached for `kind: 'spread'` props; it
+      // only exists to satisfy the `AttrValueEmitter` interface.
       return this.convertExpressionToTwig(value.expr)
     },
     emitTemplate: (value, name) =>
@@ -962,41 +962,105 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     emitJsxChildren: () => '',
   }
 
+  /**
+   * A `renderComponent` props dict, built as an ORDERED sequence of
+   * segments so `{...before, ...spread, after: 1}` JSX spread semantics
+   * (later entries win) survive the trip through Twig, which has no
+   * hash-splat syntax. Each `'entries'` segment is a literal Twig hash
+   * `{k: v, ...}`; each `'spread'` segment is an arbitrary expression
+   * lowered from a `{...expr}` prop. `combineComponentPropSegments` folds
+   * the sequence into ONE expression via Twig's `merge` filter (later
+   * segment wins on key conflict, matching `Object.assign`/JSX order).
+   */
+  private componentPropSegmentEntries(
+    segments: Array<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
+  ): string[] {
+    const last = segments[segments.length - 1]
+    if (last && last.kind === 'entries') return last.parts
+    const seg = { kind: 'entries' as const, parts: [] as string[] }
+    segments.push(seg)
+    return seg.parts
+  }
+
+  /**
+   * Fold ordered prop segments into a single Twig expression via chained
+   * `|merge(...)` calls — Twig's array/hash union filter, later argument
+   * wins on key conflict, exactly like `{...a, ...b}`. Empty `'entries'`
+   * segments are dropped so a leading/trailing spread doesn't drag in a
+   * needless `{}|merge(...)`. Returns `'{}'` when every segment is empty
+   * (no props at all).
+   */
+  private combineComponentPropSegments(
+    segments: ReadonlyArray<{ kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }>,
+  ): string {
+    let acc: string | null = null
+    for (const seg of segments) {
+      const text = seg.kind === 'entries'
+        ? (seg.parts.length > 0 ? `{${seg.parts.join(', ')}}` : null)
+        : seg.expr
+      if (text === null) continue
+      acc = acc === null ? text : `${acc}|merge(${text})`
+    }
+    return acc ?? '{}'
+  }
+
   renderComponent(comp: IRComponent): string {
-    const propParts: string[] = []
+    type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
+    const segments: Segment[] = [{ kind: 'entries', parts: [] }]
+    const currentEntries = () => this.componentPropSegmentEntries(segments)
+
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
-      // Spread props: enumerate the analyzer's props params into hash
-      // entries (the propsObject case) — Twig can't flatten a hash into
-      // the entry list. Other spread shapes are refused with BF101.
       if (p.value.kind === 'spread') {
         const trimmed = p.value.expr.trim()
+        // SolidJS-style props identifier (`function(props: P)`) has no
+        // matching runtime hash in Twig scope — props arrive as a flat
+        // set of top-level template vars, so enumerate the
+        // analyzer-extracted props params into hash entries instead of
+        // treating it as a runtime spread expression.
         if (this.propsObjectName && this.propsObjectName === trimmed) {
           for (const pp of this.propsParams) {
-            propParts.push(`${twigHashKey(pp.name)}: ${twigIdent(pp.name)}`)
+            currentEntries().push(`${twigHashKey(pp.name)}: ${twigIdent(pp.name)}`)
           }
           continue
         }
-        this.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `Spread props (\`{...${trimmed}}\`) on a child component cannot be lowered to Twig — Twig hash literals can't splat a runtime hash into named entries at a call site.`,
-          loc: comp.loc ?? { file: this.componentName + '.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-          suggestion: {
-            message: 'Pass the child component its props explicitly rather than spreading a runtime object.',
-          },
-        })
+        // Every other spread shape (a destructure rest-bag `props`, a
+        // member-access bag like `children.props`, an intrinsic-element
+        // spread helper's own operand, …) — Twig hash literals can't
+        // splat a runtime hash into named entries at a call site, but
+        // `|merge` can fold it into the accumulated dict at the right
+        // ordinal position, mirroring ERB's `**hash` / Mojolicious's
+        // `%{$props}` blind splat: no compile-time filtering of onXxx/ref
+        // keys out of the runtime bag (the render contract tolerates
+        // them, same as the other two adapters). The operand is routed
+        // through `bf.omit(expr, [])` (the #2087 object-rest residual
+        // helper, called with an empty exclude list) rather than a bare
+        // `?? {}` guard: a request-scoped bag round-trips through
+        // `json_decode` as a `stdClass`, and Twig's `merge` filter throws
+        // `RuntimeError` on anything that isn't an array/Traversable
+        // (verified empirically — `stdClass` is rejected even though
+        // dot-access accepts it). `bf.omit` already normalises BOTH
+        // shapes (`stdClass` → assoc array, `null`/non-object → `[]`)
+        // into a plain PHP array `merge` accepts, exactly like the
+        // `bf.spread_attrs(...)` runtime helper the intrinsic-element
+        // spread path uses (that one tolerates any bag shape itself,
+        // since it's a plain function call rather than a Twig filter).
+        const spreadExpr = this.convertExpressionToTwig(p.value.expr)
+        segments.push({ kind: 'spread', expr: `bf.omit(${spreadExpr}, [])` })
         continue
       }
       const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
-      if (lowered) propParts.push(lowered)
+      if (lowered) currentEntries().push(lowered)
     }
     // Pass slot ID so the child renderer can set correct scope ID for
     // hydration. Skip for loop children — they use ComponentName_random.
+    // Appended to whatever the trailing entries segment is so a spread's
+    // own `_bf_slot`/`children` keys (if any) never win over these
+    // compiler-controlled entries.
     if (comp.slotId && !this.inLoop) {
-      propParts.push(`${twigHashKey('_bf_slot')}: '${comp.slotId}'`)
+      currentEntries().push(`${twigHashKey('_bf_slot')}: '${comp.slotId}'`)
     }
     const tplName = this.toTemplateName(comp.name)
 
@@ -1021,12 +1085,13 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       const childrenBody = this.renderChildren(effectiveChildren)
       this.inLoop = prevInLoop
       const captureName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      const childrenEntry = `${twigHashKey('children')}: ${captureName}`
-      const allParts = [...propParts, childrenEntry]
-      return `{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', {${allParts.join(', ')}}) | raw }}`
+      currentEntries().push(`${twigHashKey('children')}: ${captureName}`)
+      const dict = this.combineComponentPropSegments(segments)
+      return `{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | raw }}`
     }
 
-    const dictEntries = propParts.length > 0 ? `, {${propParts.join(', ')}}` : ''
+    const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
+    const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `{{ bf.render_child('${tplName}'${dictEntries}) | raw }}`
   }
 
