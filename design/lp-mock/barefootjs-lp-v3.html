@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BarefootJS — TSX in. Your stack out.</title>
+<meta name="description" content="Components without the Node server. BarefootJS compiles TSX components into your backend's native templates — Go, Rails, Django, Perl, PHP, Rust. No Node in production.">
+<style>
+  :root{
+    --ink:#111;--muted:#555;--line:#E4E4E4;
+    --green:#177245;--green-cell:#2E9663;
+    --code-bg:#F6F6F4;--code-line:#E4E4E0;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:#fff;color:var(--ink);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--ink)}
+  :focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+  code,pre{font-family:var(--mono)}
+
+  header{border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:56px}
+  .logo{font-family:var(--mono);font-weight:600;font-size:15px;text-decoration:none}
+  .logo b{color:var(--green);font-weight:600}
+  .nav-links{display:flex;gap:22px;font-size:14px}
+  .nav-links a{text-decoration:none;color:var(--muted)}
+  .nav-links a:hover{color:var(--ink)}
+
+  /* ---- 1. hero ---- */
+  .hero{padding:72px 0 36px;text-align:left}
+  h1{font-size:clamp(34px,5.4vw,52px);line-height:1.1;font-weight:700;letter-spacing:-.02em;margin-bottom:16px}
+  h1 em{font-style:normal;color:var(--green)}
+  .hero-sub{font-size:18px;color:var(--muted);max-width:58ch}
+  .hero-sub strong{color:var(--ink)}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+  .btn{display:inline-block;font-size:15px;font-weight:600;text-decoration:none;padding:10px 20px;border-radius:6px;border:1px solid var(--ink)}
+  .btn-primary{background:var(--ink);color:#fff}
+  .btn-ghost{background:#fff;color:var(--ink)}
+  .btn:hover{opacity:.85}
+
+  /* ---- demo ---- */
+  .demo{padding:28px 0 64px}
+  .demo-frame{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .pane{min-width:0;background:var(--code-bg)}
+  .pane+.pane{border-left:1px solid var(--code-line)}
+  .pane-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;border-bottom:1px solid var(--code-line);font-family:var(--mono);font-size:12px;color:var(--muted);background:#fff}
+  pre{font-size:13px;line-height:1.7;padding:16px 18px;overflow-x:auto}
+  .cm{color:#8a8a86}.kw{color:var(--green);font-weight:500}
+  .tabs{display:flex;gap:4px}
+  .tab{font-family:var(--mono);font-size:12px;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:4px;padding:3px 10px;cursor:pointer}
+  .tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .out-panel{display:none}.out-panel.active{display:block}
+  .demo-note{font-size:13.5px;color:var(--muted);margin-top:12px;max-width:70ch}
+  .demo-note code{background:var(--code-bg);border:1px solid var(--code-line);padding:1px 5px;border-radius:3px;font-size:12.5px}
+
+  section{padding:56px 0;border-top:1px solid var(--line)}
+  h2{font-size:26px;font-weight:700;letter-spacing:-.015em;margin-bottom:10px}
+  .lead{color:var(--muted);max-width:62ch}
+
+  /* ---- 2. the fork ---- */
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
+  .option{border:1px solid var(--line);border-radius:8px;padding:20px 22px}
+  .option .opt-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .option h3{font-size:17px;font-weight:600;margin:6px 0 8px}
+  .option p{font-size:14.5px;color:var(--muted)}
+  .third{
+    grid-column:1 / -1;border:2px solid var(--green);border-radius:8px;
+    padding:24px 26px;
+  }
+  .third .opt-label{color:var(--green)}
+  .third h3{font-size:19px}
+  .third p{font-size:15px;color:var(--ink);max-width:70ch}
+  .third p b{color:var(--green)}
+
+  /* ---- 3. proof ---- */
+  .matrix{margin-top:26px}
+  .matrix-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .matrix-row .rlabel{font-family:var(--mono);font-size:11.5px;color:var(--muted);width:104px;flex-shrink:0;text-align:right}
+  .cells{display:flex;gap:2px;flex:1;min-width:0}
+  .cell{flex:1;aspect-ratio:1;max-width:11px;border-radius:2px;background:var(--green-cell)}
+  .matrix-foot{display:flex;gap:16px;align-items:baseline;margin-top:16px;flex-wrap:wrap}
+  .matrix-count{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--green)}
+  .matrix-foot a{font-size:14px;color:var(--muted)}
+
+  /* ---- 4. for / not for ---- */
+  .fit{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:26px}
+  .fit-col{border:1px solid var(--line);border-radius:8px;padding:20px 22px}
+  .fit-col h3{font-size:16px;font-weight:600;margin-bottom:10px}
+  .fit-col ul{list-style:none}
+  .fit-col li{font-size:14.5px;color:var(--muted);padding-left:20px;position:relative;margin-bottom:8px}
+  .fit-col.yes li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:600}
+  .fit-col.no li::before{content:"—";position:absolute;left:0;color:var(--muted)}
+
+  /* ---- 5. quickstart ---- */
+  .term{margin-top:22px;background:var(--code-bg);border:1px solid var(--code-line);border-radius:6px;font-family:var(--mono);font-size:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:600px}
+  .term .p{color:var(--green)}
+  .copy-btn{font-family:var(--mono);font-size:12px;background:#fff;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+  .copy-btn:hover{color:var(--ink)}
+
+  footer{border-top:1px solid var(--line);padding:26px 0 40px;font-size:13.5px;color:var(--muted)}
+  .foot-row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .foot-row a{color:var(--muted);text-decoration:none;margin-right:16px}
+  .foot-row a:hover{color:var(--ink)}
+
+  @media (max-width:760px){
+    .demo-frame,.fork,.fit{grid-template-columns:1fr}
+    .pane+.pane{border-left:none;border-top:1px solid var(--code-line)}
+    .matrix-row .rlabel{width:80px;font-size:10.5px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="/"><b>bare</b>footjs</a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="/docs">Docs</a>
+      <a href="https://ui.barefootjs.dev">Components</a>
+      <a href="/integrations">Integrations</a>
+      <a href="https://github.com/piconic-ai/barefootjs">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ============ 1. hero ============ -->
+  <div class="hero">
+    <div class="wrap">
+      <h1>TSX in. <em>Your stack</em> out.</h1>
+      <p class="hero-sub">
+        BarefootJS compiles TSX components into your backend's own templates —
+        <strong>Go, Rails, Django, Perl, PHP, Rust</strong>. Your server renders them.
+        A ~2KB script makes them interactive. Node never ships.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="/docs/getting-started">Get started</a>
+        <a class="btn btn-ghost" href="https://ui.barefootjs.dev">Browse 62 components</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ demo ============ -->
+  <div class="demo" id="how">
+    <div class="wrap">
+      <div class="demo-frame">
+        <div class="pane">
+          <div class="pane-head"><span>what you write</span></div>
+          <pre><code><span class="kw">import</span> { signal } <span class="kw">from</span> 'barefootjs'
+
+<span class="kw">export function</span> Counter() {
+  <span class="kw">const</span> count = signal(0)
+  <span class="kw">return</span> (
+    &lt;button onClick={() =&gt; count.set(count() + 1)}&gt;
+      Count: {count()}
+    &lt;/button&gt;
+  )
+}</code></pre>
+        </div>
+        <div class="pane">
+          <div class="pane-head">
+            <span>what your server renders</span>
+            <div class="tabs" role="tablist" aria-label="Compiled output">
+              <button class="tab" role="tab" aria-selected="true" data-out="go">go</button>
+              <button class="tab" role="tab" aria-selected="false" data-out="erb">rails</button>
+              <button class="tab" role="tab" aria-selected="false" data-out="jinja">django</button>
+              <button class="tab" role="tab" aria-selected="false" data-out="ep">perl</button>
+            </div>
+          </div>
+          <div class="out-panel active" data-panel="go">
+<pre><code><span class="cm">{{/* counter.tmpl — html/template */}}</span>
+&lt;button data-bf="counter"&gt;
+  Count: {{ .Count }}
+&lt;/button&gt;</code></pre>
+          </div>
+          <div class="out-panel" data-panel="erb">
+<pre><code><span class="cm">&lt;%# counter.html.erb %&gt;</span>
+&lt;button data-bf="counter"&gt;
+  Count: &lt;%= count %&gt;
+&lt;/button&gt;</code></pre>
+          </div>
+          <div class="out-panel" data-panel="jinja">
+<pre><code><span class="cm">{# counter.html.j2 #}</span>
+&lt;button data-bf="counter"&gt;
+  Count: {{ count }}
+&lt;/button&gt;</code></pre>
+          </div>
+          <div class="out-panel" data-panel="ep">
+<pre><code><span class="cm">%# counter.html.ep — Mojolicious</span>
+&lt;button data-bf="counter"&gt;
+  Count: &lt;%= $count %&gt;
+&lt;/button&gt;</code></pre>
+          </div>
+        </div>
+      </div>
+      <p class="demo-note">
+        It's a compiler, not a framework. TSX and type-checking exist at build time,
+        like a Sass compiler. At runtime there is only your template engine and one
+        <code>~2KB</code> hydration script.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ 2. the fork ============ -->
+  <section>
+    <div class="wrap">
+      <h2>Two good answers. Now a third.</h2>
+      <p class="lead">For interactive UI on a non-Node backend, two approaches serve teams well today. BarefootJS adds a third — for one specific situation: you want a component model, and you want to keep the backend you have.</p>
+      <div class="fork">
+        <div class="option">
+          <span class="opt-label">Option 1</span>
+          <h3>Server templates + Alpine or Stimulus</h3>
+          <p>A great fit for light interactivity — simple, close to HTML, easy to adopt. As client state grows and needs to be shared, typed, and tested, keeping it organized takes more and more care.</p>
+        </div>
+        <div class="option">
+          <span class="opt-label">Option 2</span>
+          <h3>Adopt a JS meta-framework</h3>
+          <p>Next.js and Remix offer an excellent component model, and they shine when a team runs JavaScript end to end. If your current backend is serving you well, though, getting there means a migration and a new runtime to operate.</p>
+        </div>
+        <div class="third">
+          <span class="opt-label">With BarefootJS</span>
+          <h3>Compile components into your templates</h3>
+          <p>Typed props, signals, and composition when you write. Your own template engine when you serve. <b>Build-time type errors instead of runtime bug reports — and nothing new to operate.</b></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. proof ============ -->
+  <section>
+    <div class="wrap">
+      <h2>62 components × 8 adapters, verified in CI</h2>
+      <p class="lead">Every cell below is a real check that runs on every commit — not an illustration.</p>
+      <div class="matrix" id="matrixGrid" aria-label="62 components by 8 adapters, all passing"></div>
+      <div class="matrix-foot">
+        <span class="matrix-count">✓ 496 / 496 passing</span>
+        <a href="https://ui.barefootjs.dev">Browse all 62 components →</a>
+        <a href="/docs/advanced/compatibility-matrix">Full matrix →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. for / not for ============ -->
+  <section>
+    <div class="wrap">
+      <h2>Is this for you?</h2>
+      <div class="fit">
+        <div class="fit-col yes">
+          <h3>Probably yes, if</h3>
+          <ul>
+            <li>Your backend is Go, Rails, Django, Perl, PHP, or Rust — and it's serving you well</li>
+            <li>Your UI has outgrown sprinkles, but a Node migration isn't worth it</li>
+            <li>You want UI that agents and CI can verify — structural tests in milliseconds, every CLI command speaks <code>--json</code></li>
+          </ul>
+        </div>
+        <div class="fit-col no">
+          <h3>Probably no, if</h3>
+          <ul>
+            <li>Next.js or Remix is working well for you — you already have a great component model</li>
+            <li>You're building an app-like SPA: client routing, offline state, canvas editors</li>
+            <li>Your pages have no interactivity — plain templates are already right</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. quickstart ============ -->
+  <section>
+    <div class="wrap">
+      <h2>Try it in one command</h2>
+      <p class="lead">Scaffolds a working project — pick your language and framework in the prompt.</p>
+      <div class="term">
+        <span><span class="p">$</span> npm create barefoot@latest</span>
+        <button class="copy-btn" type="button" data-copy="npm create barefoot@latest">copy</button>
+      </div>
+      <div class="cta-row" style="margin-top:22px">
+        <a class="btn btn-primary" href="/docs/getting-started">Read the quickstart</a>
+        <a class="btn btn-ghost" href="https://github.com/piconic-ai/barefootjs">Source on GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>
+      <a href="/docs">Docs</a>
+      <a href="https://ui.barefootjs.dev">Components</a>
+      <a href="/integrations">Integrations</a>
+      <a href="/docs/advanced/compatibility-matrix">Compatibility</a>
+      <a href="https://github.com/piconic-ai/barefootjs">GitHub</a>
+    </div>
+    <div>© 2026 Piconic — open source (MIT).</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.out-panel'));
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x){ x.setAttribute('aria-selected', String(x === t)); });
+      panels.forEach(function(p){ p.classList.toggle('active', p.dataset.panel === t.dataset.out); });
+    });
+  });
+
+  var adapters = ['hono','go-template','erb','ep','jinja','minijinja','twig','xslate'];
+  var grid = document.getElementById('matrixGrid');
+  adapters.forEach(function(name){
+    var row = document.createElement('div');
+    row.className = 'matrix-row';
+    var label = document.createElement('span');
+    label.className = 'rlabel';
+    label.textContent = name;
+    var cells = document.createElement('div');
+    cells.className = 'cells';
+    for (var i = 0; i < 62; i++) {
+      var c = document.createElement('span');
+      c.className = 'cell';
+      cells.appendChild(c);
+    }
+    row.appendChild(label);
+    row.appendChild(cells);
+    grid.appendChild(row);
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      navigator.clipboard.writeText(btn.dataset.copy).then(function(){
+        var prev = btn.textContent;
+        btn.textContent = 'copied';
+        setTimeout(function(){ btn.textContent = prev; }, 1400);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
