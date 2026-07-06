@@ -40,16 +40,10 @@ main :focus-visible,
 }
 
 .lp-logo {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 15px;
+  display: flex;
+  align-items: center;
   text-decoration: none;
   color: var(--foreground);
-}
-
-.lp-logo b {
-  color: var(--gradient-start);
-  font-weight: 600;
 }
 
 .lp-nav-links {
@@ -201,6 +195,7 @@ main :focus-visible,
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -221,10 +216,12 @@ main :focus-visible,
   color: var(--background);
 }
 
+.src-panel,
 .out-panel {
   display: none;
 }
 
+.src-panel.active,
 .out-panel.active {
   display: block;
 }

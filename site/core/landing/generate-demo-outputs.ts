@@ -20,12 +20,32 @@ import { GoTemplateAdapter } from '@barefootjs/go-template/adapter'
 import { ErbAdapter } from '@barefootjs/erb/adapter'
 import { JinjaAdapter } from '@barefootjs/jinja/adapter'
 import { MojoAdapter } from '@barefootjs/mojolicious/adapter'
+import { TwigAdapter } from '@barefootjs/twig/adapter'
+import { MinijinjaAdapter } from '@barefootjs/rust/adapter'
+import { XslateAdapter } from '@barefootjs/xslate/adapter'
+import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { resolve, dirname } from 'node:path'
 
 const OUT_FILE = resolve(dirname(import.meta.path), 'components/shared/demo-outputs.ts')
 
-/** The exact source shown in the left panel. Compiled as Counter.tsx. */
-const SOURCE = `"use client"
+interface DemoExample {
+  /** Tab id used in the LP markup. */
+  id: string
+  /** Source filename shown in the left pane (also the compile filename). */
+  file: string
+  /** The exact source shown in the left panel. */
+  source: string
+}
+
+/**
+ * Demo sources. Every example must compile clean on every adapter below
+ * (the generator fails the build otherwise).
+ */
+const EXAMPLES: DemoExample[] = [
+  {
+    id: 'counter',
+    file: 'Counter.tsx',
+    source: `"use client"
 
 import { createSignal } from '@barefootjs/client'
 
@@ -37,25 +57,62 @@ export function Counter() {
     </button>
   )
 }
-`
+`,
+  },
+  {
+    id: 'toggle',
+    file: 'Toggle.tsx',
+    source: `"use client"
+
+import { createSignal } from '@barefootjs/client'
+
+export function Toggle() {
+  const [on, setOn] = createSignal(false)
+  return (
+    <button aria-pressed={on()} onClick={() => setOn(v => !v)}>
+      {on() ? 'On' : 'Off'}
+    </button>
+  )
+}
+`,
+  },
+  {
+    id: 'items',
+    file: 'Items.tsx',
+    source: `export function Items({ items }: { items: string[] }) {
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  )
+}
+`,
+  },
+]
 
 interface DemoTarget {
   /** Tab id used in the LP markup. */
   id: string
-  /** Tab label (the backend the visitor recognizes, per the mock). */
+  /** Tab label (the backend the visitor recognizes). */
   label: string
-  /** Filename comment shown above the output. */
-  file: string
+  /** Template filename extension (the adapter's own `extension`). */
+  extension: string
   /** Shiki language for highlighting. */
   lang: string
   adapter: () => TemplateAdapter
 }
 
 const TARGETS: DemoTarget[] = [
-  { id: 'go', label: 'go', file: 'counter.tmpl', lang: 'go-html-template', adapter: () => new GoTemplateAdapter() },
-  { id: 'erb', label: 'rails', file: 'counter.html.erb', lang: 'erb', adapter: () => new ErbAdapter() },
-  { id: 'jinja', label: 'django', file: 'counter.html.j2', lang: 'jinja', adapter: () => new JinjaAdapter() },
-  { id: 'ep', label: 'perl', file: 'counter.html.ep', lang: 'perl', adapter: () => new MojoAdapter() },
+  { id: 'go', label: 'go', extension: '.tmpl', lang: 'go-html-template', adapter: () => new GoTemplateAdapter() },
+  { id: 'erb', label: 'rails', extension: '.erb', lang: 'erb', adapter: () => new ErbAdapter() },
+  { id: 'jinja', label: 'django', extension: '.jinja', lang: 'jinja', adapter: () => new JinjaAdapter() },
+  { id: 'ep', label: 'perl', extension: '.html.ep', lang: 'perl', adapter: () => new MojoAdapter() },
+  { id: 'twig', label: 'php', extension: '.twig', lang: 'twig', adapter: () => new TwigAdapter() },
+  { id: 'minijinja', label: 'rust', extension: '.j2', lang: 'jinja', adapter: () => new MinijinjaAdapter() },
+  { id: 'xslate', label: 'xslate', extension: '.tx', lang: 'perl', adapter: () => new XslateAdapter() },
+  { id: 'hono', label: 'hono', extension: '.tsx', lang: 'tsx', adapter: () => new HonoAdapter() },
 ]
 
 interface DemoOutput {
@@ -66,36 +123,52 @@ interface DemoOutput {
   code: string
 }
 
-const outputs: DemoOutput[] = []
-let clientJs = ''
+interface CompiledExample {
+  id: string
+  file: string
+  source: string
+  outputs: DemoOutput[]
+}
 
-for (const target of TARGETS) {
-  const adapter = target.adapter()
-  const result = compileJSX(SOURCE, 'Counter.tsx', { adapter })
+const examples: CompiledExample[] = []
 
-  const errors = result.errors.filter((e) => e.severity === 'error')
-  if (errors.length > 0) {
-    console.error(`Errors compiling for ${target.id}:`)
-    for (const e of errors) console.error(`  ${e.code}: ${e.message}`)
-    process.exit(1)
+for (const example of EXAMPLES) {
+  const outputs: DemoOutput[] = []
+  const baseName = example.file.replace('.tsx', '').toLowerCase()
+
+  for (const target of TARGETS) {
+    const adapter = target.adapter()
+    const result = compileJSX(example.source, example.file, { adapter })
+
+    const errors = result.errors.filter((e) => e.severity === 'error')
+    if (errors.length > 0) {
+      console.error(`Errors compiling ${example.file} for ${target.id}:`)
+      for (const e of errors) console.error(`  ${e.code}: ${e.message}`)
+      process.exit(1)
+    }
+
+    const template = result.files.find((f) => f.type === 'markedTemplate')
+    if (!template) {
+      console.error(`No markedTemplate produced for ${example.file} × ${target.id}`)
+      process.exit(1)
+    }
+
+    const file = target.id === 'hono' ? example.file : `${baseName}${target.extension}`
+    outputs.push({
+      id: target.id,
+      label: target.label,
+      file,
+      lang: target.lang,
+      code: template.content.trimEnd(),
+    })
   }
 
-  const template = result.files.find((f) => f.type === 'markedTemplate')
-  if (!template) {
-    console.error(`No markedTemplate produced for ${target.id}`)
-    process.exit(1)
-  }
-
-  outputs.push({
-    id: target.id,
-    label: target.label,
-    file: target.file,
-    lang: target.lang,
-    code: template.content.trimEnd(),
+  examples.push({
+    id: example.id,
+    file: example.file,
+    source: example.source.trimEnd(),
+    outputs,
   })
-
-  const client = result.files.find((f) => f.type === 'clientJs')
-  if (client) clientJs = client.content.trimEnd()
 }
 
 const banner = `/**
@@ -107,14 +180,11 @@ const banner = `/**
  *   bun run landing/generate-demo-outputs.ts   (from site/core)
  *
  * The LP's honesty guarantee: these panels are the compiler's actual
- * output for DEMO_SOURCE, not hand-written approximations.
+ * output for each example source, not hand-written approximations.
  */
 `
 
 const module_ = `${banner}
-/** The exact Counter.tsx source the panels were compiled from. */
-export const DEMO_SOURCE = ${JSON.stringify(SOURCE.trimEnd())}
-
 export interface DemoOutput {
   id: string
   label: string
@@ -123,17 +193,21 @@ export interface DemoOutput {
   code: string
 }
 
-export const DEMO_OUTPUTS: DemoOutput[] = ${JSON.stringify(outputs, null, 2)}
+export interface DemoExample {
+  id: string
+  file: string
+  source: string
+  outputs: DemoOutput[]
+}
 
-/** The client JS the compiler emits alongside the templates (same for every adapter). */
-export const DEMO_CLIENT_JS = ${JSON.stringify(clientJs)}
+export const DEMO_EXAMPLES: DemoExample[] = ${JSON.stringify(examples, null, 2)}
 `
 
 await Bun.write(OUT_FILE, module_)
 console.log(`Wrote ${OUT_FILE}`)
-for (const o of outputs) {
-  console.log(`--- ${o.id} (${o.code.split('\n').length} lines) ---`)
-  console.log(o.code)
+for (const ex of examples) {
+  console.log(`\n=== ${ex.file} ===`)
+  for (const o of ex.outputs) {
+    console.log(`--- ${o.id} (${o.code.split('\n').length} lines) ---`)
+  }
 }
-console.log(`--- client JS (${clientJs.split('\n').length} lines) ---`)
-console.log(clientJs)

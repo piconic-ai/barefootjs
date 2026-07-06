@@ -1,18 +1,21 @@
 /**
  * Landing-page header and footer, following the mock's minimal chrome
- * (design/lp-mock/barefootjs-lp-v3.html): logotype + four nav links, and
- * a flat link footer. The lowercase `barefootjs` logotype is intentional
- * (design/LP-RENEWAL.md, 決定事項 5); the display name everywhere else
- * is BarefootJS.
+ * (design/lp-mock/barefootjs-lp-v3.html): the official wordmark logo +
+ * four nav links, and a flat link footer. The logotype asset is the
+ * brand's own (design/LP-RENEWAL.md, 決定事項 5); the display name
+ * everywhere else is BarefootJS.
  */
 
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { Logo } from '../../../shared/components/logo'
 
 export function LpHeader({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
   return (
     <header className="lp-header">
       <div className="lp-wrap lp-nav">
-        <a className="lp-logo" href="/"><b>bare</b>footjs</a>
+        <a className="lp-logo" href="/" aria-label="BarefootJS home">
+          <Logo />
+        </a>
         <nav className="lp-nav-links" aria-label="Main">
           <a href="/docs">Docs</a>
           <a href={uiHref}>Components</a>

@@ -10,26 +10,36 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('landing page demo', () => {
-  test('first output panel is visible by default', async ({ page }) => {
+  test('first example and output panel are visible by default', async ({ page }) => {
     await page.goto('/')
-    const panels = page.locator('.out-panel')
-    await expect(panels.first()).toBeVisible()
-    await expect(page.locator('.tab[aria-selected="true"]')).toHaveAttribute('data-out', 'go')
+    await expect(page.locator('.src-panel.active')).toHaveAttribute('data-example', 'counter')
+    await expect(page.locator('.out-panel.active')).toHaveAttribute('data-panel', 'counter-go')
+    // All 8 adapters are offered.
+    await expect(page.locator('.tab[data-out]')).toHaveCount(8)
   })
 
-  test('clicking a tab switches the visible panel', async ({ page }) => {
+  test('clicking an adapter tab switches the visible output panel', async ({ page }) => {
     await page.goto('/')
     await page.locator('.tab[data-out="erb"]').click()
-    await expect(page.locator('.out-panel[data-panel="erb"]')).toBeVisible()
-    await expect(page.locator('.out-panel[data-panel="go"]')).toBeHidden()
+    await expect(page.locator('.out-panel[data-panel="counter-erb"]')).toBeVisible()
+    await expect(page.locator('.out-panel[data-panel="counter-go"]')).toBeHidden()
     await expect(page.locator('.tab[data-out="erb"]')).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.tab[data-out="go"]')).toHaveAttribute('aria-selected', 'false')
+  })
+
+  test('clicking an example tab switches source and keeps the adapter', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.tab[data-out="twig"]').click()
+    await page.locator('.tab[data-example="items"]').click()
+    await expect(page.locator('.src-panel[data-example="items"]')).toBeVisible()
+    await expect(page.locator('.out-panel[data-panel="items-twig"]')).toBeVisible()
   })
 
   test('tabs never rotate on their own', async ({ page }) => {
     await page.goto('/')
     await page.waitForTimeout(2500)
-    await expect(page.locator('.tab[aria-selected="true"]')).toHaveAttribute('data-out', 'go')
+    await expect(page.locator('.tab[data-out][aria-selected="true"]')).toHaveAttribute('data-out', 'go')
+    await expect(page.locator('.tab[data-example][aria-selected="true"]')).toHaveAttribute('data-example', 'counter')
   })
 
   test('matrix renders one cell per component × adapter from real data', async ({ page }) => {

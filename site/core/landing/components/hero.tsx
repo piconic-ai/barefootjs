@@ -4,23 +4,39 @@
  * Layout and copy follow design/lp-mock/barefootjs-lp-v3.html. The demo
  * panels come from shared/demo-outputs.ts so the right-hand side always
  * shows what the compiler actually produces (see design/LP-RENEWAL.md,
- * 決定事項 6). Tab switching is manual only — no auto-rotation
- * (決定事項 7).
+ * 決定事項 6). Two manual tab rows — example (left pane) × adapter
+ * (right pane) — and no auto-rotation (決定事項 7).
  */
 
 import { highlight, initHighlighter } from './shared/highlighter'
-import { DEMO_SOURCE, DEMO_OUTPUTS } from './shared/demo-outputs'
+import { DEMO_EXAMPLES } from './shared/demo-outputs'
 
-// Manual tab switching for the compiled-output panels. Progressive
-// enhancement: without JS the first panel stays visible.
+// Manual tab switching for the demo. Two dimensions: the active example
+// (left source pane) and the active adapter (right output pane); the
+// visible output panel is always example × adapter. Progressive
+// enhancement: without JS the first example/adapter stays visible.
 const DEMO_TABS_SCRIPT = `(function(){
-  var tabs = Array.prototype.slice.call(document.querySelectorAll('.demo-frame .tab'));
-  var panels = Array.prototype.slice.call(document.querySelectorAll('.demo-frame .out-panel'));
-  tabs.forEach(function(t){
-    t.addEventListener('click', function(){
-      tabs.forEach(function(x){ x.setAttribute('aria-selected', String(x === t)); });
-      panels.forEach(function(p){ p.classList.toggle('active', p.dataset.panel === t.dataset.out); });
-    });
+  var frame = document.querySelector('.demo-frame');
+  if (!frame) return;
+  var exTabs = Array.prototype.slice.call(frame.querySelectorAll('.tab[data-example]'));
+  var adTabs = Array.prototype.slice.call(frame.querySelectorAll('.tab[data-out]'));
+  var srcPanels = Array.prototype.slice.call(frame.querySelectorAll('.src-panel'));
+  var outPanels = Array.prototype.slice.call(frame.querySelectorAll('.out-panel'));
+  var example = exTabs.length ? exTabs[0].dataset.example : '';
+  var adapter = adTabs.length ? adTabs[0].dataset.out : '';
+
+  function apply() {
+    exTabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.example === example)); });
+    adTabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.out === adapter)); });
+    srcPanels.forEach(function(p){ p.classList.toggle('active', p.dataset.example === example); });
+    outPanels.forEach(function(p){ p.classList.toggle('active', p.dataset.panel === example + '-' + adapter); });
+  }
+
+  exTabs.forEach(function(t){
+    t.addEventListener('click', function(){ example = t.dataset.example; apply(); });
+  });
+  adTabs.forEach(function(t){
+    t.addEventListener('click', function(){ adapter = t.dataset.out; apply(); });
   });
 })();`
 
@@ -47,7 +63,6 @@ export function Hero({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string
 
 export async function DemoSection() {
   await initHighlighter()
-  const sourceHtml = highlight(DEMO_SOURCE, 'tsx')
 
   return (
     <div className="lp-demo" id="how">
@@ -56,19 +71,35 @@ export async function DemoSection() {
           <div className="pane">
             <div className="pane-head">
               <span>what you write</span>
-              <span className="pane-file">Counter.tsx</span>
+              <div className="tabs" role="tablist" aria-label="Example source">
+                {DEMO_EXAMPLES.map((ex, i) => (
+                  <button
+                    className="tab"
+                    role="tab"
+                    aria-selected={i === 0 ? 'true' : 'false'}
+                    data-example={ex.id}
+                    type="button"
+                  >
+                    {ex.file}
+                  </button>
+                ))}
+              </div>
             </div>
-            <pre
-              className="shiki shiki-themes github-light github-dark"
-              tabindex={0}
-              dangerouslySetInnerHTML={{ __html: `<code>${sourceHtml}</code>` }}
-            />
+            {DEMO_EXAMPLES.map((ex, i) => (
+              <div className={`src-panel${i === 0 ? ' active' : ''}`} data-example={ex.id}>
+                <pre
+                  className="shiki shiki-themes github-light github-dark"
+                  tabindex={0}
+                  dangerouslySetInnerHTML={{ __html: `<code>${highlight(ex.source, 'tsx')}</code>` }}
+                />
+              </div>
+            ))}
           </div>
           <div className="pane">
             <div className="pane-head">
               <span>what your server renders</span>
               <div className="tabs" role="tablist" aria-label="Compiled output">
-                {DEMO_OUTPUTS.map((out, i) => (
+                {DEMO_EXAMPLES[0].outputs.map((out, i) => (
                   <button
                     className="tab"
                     role="tab"
@@ -81,12 +112,17 @@ export async function DemoSection() {
                 ))}
               </div>
             </div>
-            {DEMO_OUTPUTS.map((out, i) => (
-              <div className={`out-panel${i === 0 ? ' active' : ''}`} data-panel={out.id}>
-                <div className="pane-file-row">{out.file}</div>
-                <pre tabindex={0}><code>{out.code}</code></pre>
-              </div>
-            ))}
+            {DEMO_EXAMPLES.map((ex, i) =>
+              ex.outputs.map((out, j) => (
+                <div
+                  className={`out-panel${i === 0 && j === 0 ? ' active' : ''}`}
+                  data-panel={`${ex.id}-${out.id}`}
+                >
+                  <div className="pane-file-row">{out.file}</div>
+                  <pre tabindex={0}><code>{out.code}</code></pre>
+                </div>
+              ))
+            )}
           </div>
         </div>
         <p className="demo-note">
