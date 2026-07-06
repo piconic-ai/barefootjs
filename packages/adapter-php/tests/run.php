@@ -3,13 +3,17 @@
 declare(strict_types=1);
 
 /**
- * Zero-dependency test runner for the BarefootJS PHP (Twig) runtime -- NO
- * PHPUnit. Requires each `test_*.php` file (every one is also independently
- * runnable via `php test_foo.php`), aggregates each file's tiny TAP-ish
- * summary, prints a final report, and exits 1 on any failure.
+ * Zero-dependency test runner for the engine-agnostic BarefootJS PHP
+ * runtime -- NO PHPUnit. Requires each `test_*.php` file (every one is also
+ * independently runnable via `php test_foo.php`), aggregates each file's
+ * tiny TAP-ish summary, prints a final report, and exits 1 on any failure.
  *
- * Usage: `php php/tests/run.php` from the package root, or
- * `php packages/adapter-twig/php/tests/run.php` from the repo root.
+ * Usage: `php tests/run.php` from the package root, or
+ * `php packages/adapter-php/tests/run.php` from the repo root.
+ *
+ * `test_render.php` (a real, live Twig render) is NOT in this list -- it's
+ * engine-specific and lives (and runs standalone) in
+ * `packages/adapter-twig/php/tests/test_render.php`.
  */
 
 define('BF_RUNNER', true);
@@ -28,7 +32,6 @@ $testFiles = [
     'test_omit.php',
     'test_props_attr.php',
     'test_render_child.php',
-    'test_render.php',
 ];
 
 $results = [];

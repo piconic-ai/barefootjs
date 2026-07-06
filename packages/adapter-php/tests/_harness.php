@@ -141,25 +141,24 @@ function bf_finish(): array
     exit($fail > 0 ? 1 : 0);
 }
 
-/** Require the runtime source files directly (no composer autoload needed
- * for the pure-PHP, Twig-independent surface). Idempotent.
+/** Require the engine-agnostic runtime source files directly (no composer
+ * autoload needed). Idempotent.
  *
- * `TwigBackend.php` is included too: it only ever references
- * `Twig\Environment`/`FilesystemLoader`/`Markup` as TYPE HINTS and inside
- * method bodies, never at file-parse time, so simply loading the class
- * declaration (to reach its Twig-independent static helpers --
- * `defaultJsonEncoder()` -- used by the pure-logic vector tests below) does
- * not require `twig/twig` to be installed. Actually *instantiating*
- * `TwigBackend` (which happens only in `test_render.php`) does require it,
- * and that file guards on `vendor/autoload.php` first. */
+ * This package (`packages/adapter-php`) carries no engine-specific code --
+ * no `naming.php` (Twig's reserved-word set) and no `TwigBackend.php` -- so
+ * every test in this directory either needs no backend at all, or supplies
+ * its own small stub implementing the five-method backend contract
+ * (`encode_json`, `mark_raw`, `materialize`, `render_named`, `ident`). The
+ * one test that needs a REAL engine backend (a live Twig render) is
+ * `packages/adapter-twig/php/tests/test_render.php`, which lives in that
+ * engine adapter's own package and requires this file via a relative path. */
 function bf_require_runtime(): void
 {
     if (class_exists(\Barefoot\BarefootJS::class)) {
         return;
     }
-    require_once __DIR__ . '/../src/naming.php';
     require_once __DIR__ . '/../src/Evaluator.php';
     require_once __DIR__ . '/../src/SearchParams.php';
+    require_once __DIR__ . '/../src/Json.php';
     require_once __DIR__ . '/../src/BarefootJS.php';
-    require_once __DIR__ . '/../src/TwigBackend.php';
 }

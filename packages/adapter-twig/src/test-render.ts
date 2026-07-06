@@ -2,10 +2,12 @@
  * Twig template test renderer
  *
  * Compiles JSX source with `TwigAdapter` and renders the resulting `.twig`
- * templates to HTML via `php` + `twig/twig` driven through the bundled
- * PHP runtime (`packages/adapter-twig/php/src/`: `Barefoot\BarefootJS` +
- * `Barefoot\TwigBackend`). Used by the adapter-tests conformance runner
- * (`runAdapterConformanceTests`).
+ * templates to HTML via `php` + `twig/twig` driven through the PHP runtime:
+ * `Barefoot\BarefootJS` (engine-agnostic, `packages/adapter-php/src/`) +
+ * `Barefoot\TwigBackend` (`packages/adapter-twig/php/src/`), wired together
+ * via the `barefootjs/runtime` path-repo dependency declared in
+ * `packages/adapter-twig/php/composer.json`. Used by the adapter-tests
+ * conformance runner (`runAdapterConformanceTests`).
  *
  * Near-mechanical port of the sibling Jinja harness
  * (`packages/adapter-jinja/src/test-render.ts`) — same `RenderOptions`
@@ -17,7 +19,8 @@
  *
  *  1. Target language: the generated render script is PHP, not Python, and
  *     its runtime is invoked via `Barefoot\`-namespaced classes / snake_case
- *     methods (see `packages/adapter-twig/php/src/`).
+ *     methods (see `packages/adapter-php/src/` for the runtime,
+ *     `packages/adapter-twig/php/src/` for the Twig backend).
  *  2. Prop transport: request-scoped caller PROPS (everything the harness's
  *     `RenderOptions.props` supplies, plus statically-resolved defaults/
  *     signal/memo seeds derived from them) are written to a `props.json`

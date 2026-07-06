@@ -1,0 +1,32 @@
+{
+    "name": "barefootjs/blade",
+    "description": "Laravel Blade rendering backend for the BarefootJS PHP runtime (barefootjs/runtime) -- BladeBackend implements the engine backend contract on illuminate/view standalone (Filesystem + Dispatcher + EngineResolver/BladeCompiler + FileViewFinder + Factory), ported from packages/adapter-twig/php/src/TwigBackend.php (see also the packages/adapter-jinja/python port's JinjaBackend).",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kobaken",
+            "email": "kentafly88@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "illuminate/view": "^12.0",
+        "barefootjs/runtime": "@dev"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../adapter-php"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Barefoot\\": "src/"
+        },
+        "files": [
+            "src/naming.php"
+        ]
+    },
+    "minimum-stability": "stable"
+}

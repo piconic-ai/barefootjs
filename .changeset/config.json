@@ -16,6 +16,7 @@
     "@barefootjs/site-shared",
     "@barefootjs/ui",
     "barefootjs-axum-example",
+    "barefootjs-blade-example",
     "barefootjs-components",
     "barefootjs-csr-example",
     "barefootjs-django-example",

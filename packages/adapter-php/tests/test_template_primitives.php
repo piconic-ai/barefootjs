@@ -25,7 +25,7 @@ use Barefoot\BarefootJS;
 $backend = new class {
     public function encode_json($data): string
     {
-        return \Barefoot\TwigBackend::defaultJsonEncoder($data);
+        return \Barefoot\Json::canonicalEncode($data);
     }
 
     public function mark_raw($s)

@@ -9,7 +9,7 @@ declare(strict_types=1);
  *
  * Renderer contract (#1897): the renderer is invoked with `(props,
  * invoking_bf)` so nested renders can chain scope/slot identity off the
- * caller, not the registrant. Uses a StubBackend (no Twig dependency).
+ * caller, not the registrant. Uses a StubBackend (no engine dependency).
  */
 
 require_once __DIR__ . '/_harness.php';
@@ -22,6 +22,15 @@ $stubBackend = new class {
     public function materialize($value)
     {
         return is_callable($value) ? $value() : $value;
+    }
+
+    /** Identity -- this stub is engine-agnostic (no reserved-word set of its
+     * own). The Twig-specific reserved-word mangling behaviour (`for` ->
+     * `for_`) is exercised end-to-end via the real `TwigBackend` in
+     * `packages/adapter-twig/php/tests/test_render.php`. */
+    public function ident(string $name): string
+    {
+        return $name;
     }
 };
 
@@ -92,11 +101,14 @@ bf_test('missing renderer raises', function () {
     }
 });
 
-bf_test('reserved-word prop is mangled', function () {
-    // Twig's reserved-word set (naming.php's TWIG_RESERVED_WORDS, frozen per
-    // the design doc) differs from Jinja/Python's -- `for` is reserved in
-    // Twig (the `{% for %}` tag) but `class` is not, unlike Python's `class`
-    // keyword. Use `for`, the Twig-specific reserved word, here.
+bf_test('prop keys are routed through backend->ident (identity in this stub)', function () {
+    // `render_child` delegates key-mangling to the backend's `ident()` (the
+    // fifth backend-contract method) rather than hard-coding an
+    // engine-specific reserved-word set here. This stub's `ident()` is the
+    // identity function, so keys pass through unchanged -- the Twig-specific
+    // mangling behaviour (`for` -> `for_`) is exercised end-to-end via the
+    // real `TwigBackend` in
+    // packages/adapter-twig/php/tests/test_render.php.
     $bf = bfrc_new_bf();
     $seen = [];
     $bf->register_child_renderer('probe', function ($props, $caller) use (&$seen) {
@@ -104,9 +116,8 @@ bf_test('reserved-word prop is mangled', function () {
         return 'ok';
     });
     $bf->render_child('probe', ['for' => 'x', 'id' => 'y']);
-    bf_assert_eq($seen['props']['for_'], 'x');
+    bf_assert_eq($seen['props']['for'], 'x');
     bf_assert_eq($seen['props']['id'], 'y');
-    bf_assert(!array_key_exists('for', $seen['props']), 'expected the raw "for" key to be gone after mangling');
 });
 
 return bf_finish();

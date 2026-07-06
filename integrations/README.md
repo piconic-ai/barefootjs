@@ -21,6 +21,7 @@ same JSX components on a different stack:
 | `axum` | Rust / Axum (minijinja) | 3012 | container |
 | `php` | PHP / built-in server (Twig) | 3013 | container |
 | `django` | Python / Django (Jinja2) | 3014 | container |
+| `blade` | PHP / built-in server (Blade) | 3015 | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
 
 Plus `site/core` (the docs / landing / catalog site) on internal port 4001
@@ -57,6 +58,7 @@ host:                                  containers (docker compose):
                                          - axum         (rust + cargo-watch)
                                          - php          (php built-in server)
                                          - django       (python + runserver autoreload)
+                                         - blade        (php built-in server)
                                          - site-core    (bun + Hono)
 ```
 
@@ -79,6 +81,7 @@ The proxy routes by path prefix:
 :4000/integrations/axum/*        → axum service
 :4000/integrations/php/*         → php service
 :4000/integrations/django/*      → django service
+:4000/integrations/blade/*       → blade service
 :4000/*                          → site-core (landing / docs / catalog)
 ```
 
@@ -137,7 +140,7 @@ The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
 `ECHO_TARGET`, `GIN_TARGET`, `CHI_TARGET`, `NETHTTP_TARGET`,
 `MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, `FLASK_TARGET`, `FASTAPI_TARGET`,
 `SINATRA_TARGET`, `RAILS_TARGET`, `AXUM_TARGET`, `PHP_TARGET`,
-`DJANGO_TARGET`, and `SITE_CORE_TARGET`.
+`DJANGO_TARGET`, `BLADE_TARGET`, and `SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
 

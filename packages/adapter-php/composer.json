@@ -1,0 +1,21 @@
+{
+    "name": "barefootjs/runtime",
+    "description": "Engine-agnostic PHP runtime for BarefootJS -- the shared BarefootJS.php runtime the Twig, Blade, and other PHP engine adapters bind as a pluggable backend.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kobaken",
+            "email": "kentafly88@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Barefoot\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}

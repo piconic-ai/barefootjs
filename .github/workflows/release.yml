@@ -30,6 +30,9 @@
 #     @barefootjs/erb          RubyGems barefoot_js
 #     @barefootjs/rust         crates.io barefootjs
 #     @barefootjs/twig         Packagist barefootjs/twig (via split mirror)
+#     @barefootjs/php          Packagist barefootjs/runtime (via split mirror,
+#                              packages/adapter-php -- the engine-agnostic
+#                              runtime shared by the Twig/Blade/... backends)
 
 name: Release
 
@@ -257,8 +260,14 @@ jobs:
 
       - name: Validate PHP runtime
         working-directory: packages/adapter-twig/php
+        # NOT --strict: this package intentionally requires barefootjs/runtime
+        # as an unbound `@dev` constraint (resolved via the `path` repository
+        # pointing at ../../adapter-php, see composer.json) so the in-monorepo
+        # dependency doesn't need a manually-maintained semver range kept in
+        # lock-step with packages/adapter-php's own version -- `--strict`
+        # flags that as an "unbound version constraint" warning-as-error.
         run: |
-          composer validate --strict
+          composer validate
           composer install --no-interaction --prefer-dist
           if jq -e '.scripts.test' composer.json > /dev/null 2>&1; then
             composer test
@@ -281,4 +290,53 @@ jobs:
           remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_SPLIT_REPOSITORY}.git"
           git push --force "$remote" php-runtime-release:main
           git tag -f "v${version}" php-runtime-release
+          git push --force "$remote" "v${version}"
+
+  # Mirrors packagist-release's shape for the engine-agnostic PHP runtime
+  # package (packages/adapter-php, Composer name barefootjs/runtime) --
+  # gated on @barefootjs/php (not @barefootjs/twig) being the package
+  # Changesets just published, since the runtime and the Twig backend are
+  # versioned/published independently.
+  packagist-runtime-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/php"')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Validate PHP runtime
+        working-directory: packages/adapter-php
+        run: |
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          if composer run-script --list | grep -q '^  test'; then
+            composer test
+          fi
+
+      - name: Push PHP runtime split to Packagist mirror
+        env:
+          PHP_RUNTIME_SPLIT_REPOSITORY: ${{ vars.PHP_RUNTIME_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-runtime' }}
+          PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
+        run: |
+          version=$(jq -r '.version' packages/adapter-php/package.json)
+          test -n "$version"
+          test "$version" != "null"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git branch -D php-runtime-release-shared 2>/dev/null || true
+          git subtree split --prefix=packages/adapter-php -b php-runtime-release-shared
+
+          remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_RUNTIME_SPLIT_REPOSITORY}.git"
+          git push --force "$remote" php-runtime-release-shared:main
+          git tag -f "v${version}" php-runtime-release-shared
           git push --force "$remote" "v${version}"

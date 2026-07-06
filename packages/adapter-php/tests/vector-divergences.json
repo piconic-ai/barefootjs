@@ -1,7 +1,7 @@
 {
   "version": 1,
   "backend": "php",
-  "runner": "packages/adapter-twig/php/tests/test_helper_vectors.php",
+  "runner": "packages/adapter-php/tests/test_helper_vectors.php",
   "spec": "spec/template-helpers.md",
   "divergences": {
     "add/beyond the safe-integer edge rounds as a double": {
