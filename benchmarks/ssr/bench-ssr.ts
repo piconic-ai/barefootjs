@@ -333,9 +333,27 @@ async function main() {
   for (const framework of frameworks) {
     const distExists = await Bun.file(join(appsRoot, framework, 'dist', 'index.html')).exists()
     if (!distExists) {
-      console.error(`Missing dist/ for "${framework}". Run its build.ts first:`)
-      console.error(`  bun benchmarks/ssr/apps/${framework}/build.ts`)
-      process.exit(1)
+      // Build in a CHILD process, not via `import(build.ts)`: the barefoot
+      // build recreates local node_modules symlinks on a fresh checkout, and
+      // Bun caches module resolution per process — links created mid-process
+      // would not be seen by this process's later render-server import.
+      log(`Missing dist/ for "${framework}" — building...`)
+      const proc = Bun.spawn({
+        cmd: ['bun', join(appsRoot, framework, 'build.ts')],
+        stdout: 'pipe',
+        stderr: 'pipe',
+      })
+      const [stdout, stderr, exitCode] = await Promise.all([
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+        proc.exited,
+      ])
+      if (exitCode !== 0) {
+        console.error(stdout)
+        console.error(stderr)
+        console.error(`Build failed for "${framework}" (exit ${exitCode}).`)
+        process.exit(1)
+      }
     }
   }
 

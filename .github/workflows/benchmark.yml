@@ -35,25 +35,43 @@ jobs:
           bun run --filter '@barefootjs/client' build
 
       - name: Build benchmark apps
-        run: bun benchmarks/runner/build.ts
+        run: |
+          bun benchmarks/runner/build.ts
+          for f in react solid barefoot; do
+            bun "benchmarks/ssr/apps/$f/build.ts"
+          done
 
+      # Write the result into GITHUB_OUTPUT even when the bench itself
+      # fails: `bash -e` would otherwise abort mid-heredoc, truncating the
+      # multiline block ("Matching delimiter not found") and masking the
+      # real error.
       - name: Run DOM benchmark (quick)
         id: bench
         run: |
+          set +e
+          bun benchmarks/runner/bench-dom.ts --quick --md > /tmp/bench-dom.out 2>&1
+          status=$?
           {
-            echo 'result<<EOF'
-            bun benchmarks/runner/bench-dom.ts --quick --md 2>&1
-            echo 'EOF'
+            echo 'result<<BENCH_EOF'
+            cat /tmp/bench-dom.out
+            echo 'BENCH_EOF'
           } >> "$GITHUB_OUTPUT"
+          cat /tmp/bench-dom.out
+          exit $status
 
       - name: Run SSR benchmark
         id: bench_ssr
         run: |
+          set +e
+          bun benchmarks/ssr/bench-ssr.ts --md > /tmp/bench-ssr.out 2>&1
+          status=$?
           {
-            echo 'result<<EOF'
-            bun benchmarks/ssr/bench-ssr.ts --md 2>&1
-            echo 'EOF'
+            echo 'result<<BENCH_EOF'
+            cat /tmp/bench-ssr.out
+            echo 'BENCH_EOF'
           } >> "$GITHUB_OUTPUT"
+          cat /tmp/bench-ssr.out
+          exit $status
 
       - name: Find existing benchmark comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
