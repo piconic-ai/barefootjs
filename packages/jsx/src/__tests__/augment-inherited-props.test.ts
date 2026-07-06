@@ -105,11 +105,19 @@ describe('augmentInheritedPropAccesses', () => {
             param: 'it',
             children: [{ type: 'expression', expr: 'it' }],
           },
-          // component prop value → same AttrValue scan as element attrs
+          // component prop values → scanned, but NOT as HTML attributes:
+          // no boolean-attr-by-name inference; nillable unless a
+          // `?? <literal>` pins a concrete type
           {
             type: 'component',
             name: 'Child',
-            props: [{ name: 'value', value: { kind: 'expression', expr: 'props.childValue ?? 1' } }],
+            props: [
+              { name: 'value', value: { kind: 'expression', expr: 'props.childValue ?? 1' } },
+              { name: 'ref', value: { kind: 'expression', expr: 'props.childRef' } },
+              // `disabled` is a boolean HTML attr name, but on a component
+              // prop that inference must not fire — stays nillable.
+              { name: 'disabled', value: { kind: 'expression', expr: 'props.childFlag' } },
+            ],
             children: [],
           },
         ],
@@ -122,10 +130,46 @@ describe('augmentInheritedPropAccesses', () => {
     expect(byName.get('label')?.type).toMatchObject({ kind: 'primitive', primitive: 'string' })
     expect(byName.get('show')?.type).toMatchObject({ kind: 'unknown' })
     expect(byName.get('items')?.type).toMatchObject({ kind: 'unknown' })
-    expect(byName.get('childValue')).toBeDefined()
-    for (const name of ['label', 'show', 'items', 'childValue']) {
+    // Component-prop reads: `?? 1` pins number; bare reads stay nillable,
+    // including on boolean-HTML-attr names (`disabled`).
+    expect(byName.get('childValue')?.type).toMatchObject({ kind: 'primitive', primitive: 'number' })
+    expect(byName.get('childRef')?.type).toMatchObject({ kind: 'unknown' })
+    expect(byName.get('childFlag')?.type).toMatchObject({ kind: 'unknown' })
+    for (const name of ['label', 'show', 'items', 'childValue', 'childRef', 'childFlag']) {
       expect(byName.get(name)?.optional).toBe(true)
     }
+  })
+
+  test('pins a synthetic param to the `?? <literal>` fallback type', () => {
+    // The Go adapter seeds a prop-derived signal from the synthetic field
+    // (`Count: in.Initial` where `Count int` came from evaluating
+    // `props.initial ?? 0`), so the field type must match the literal —
+    // the old string default produced `cannot use in.Initial (variable
+    // of type string) as int value`.
+    const ir = makeIR({
+      propsObjectName: 'props',
+      propsParams: [],
+      memos: [{ computation: 'props.step ?? 1' }],
+      root: {
+        type: 'element',
+        tag: 'div',
+        attrs: [],
+        children: [{ type: 'expression', expr: 'props.title ?? "untitled"' }],
+      },
+    })
+    ir.metadata.signals = [
+      { getter: 'count', initialValue: 'props.initial ?? 0' },
+      { getter: 'on', initialValue: 'props.defaultOn ?? false' },
+    ] as never
+
+    augmentInheritedPropAccesses(ir)
+
+    const byName = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+    expect(byName.get('initial')?.type).toMatchObject({ kind: 'primitive', primitive: 'number' })
+    expect(byName.get('defaultOn')?.type).toMatchObject({ kind: 'primitive', primitive: 'boolean' })
+    expect(byName.get('step')?.type).toMatchObject({ kind: 'primitive', primitive: 'number' })
+    // Text-expression coalesce reads keep their string classification.
+    expect(byName.get('title')?.type).toMatchObject({ kind: 'primitive', primitive: 'string' })
   })
 
   test('is idempotent — re-running adds nothing', () => {

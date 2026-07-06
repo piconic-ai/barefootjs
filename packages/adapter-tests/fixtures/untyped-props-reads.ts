@@ -10,6 +10,14 @@ import { createFixture } from '../src/types'
 // adapter must produce Hono's zero-props output (empty label, false
 // condition, empty list, seeded signal default) purely from the compiler's
 // own seeding — nothing is supplied at the call site.
+//
+// The label read carries a `?? ''` fallback: the strict-var coverage is
+// identical (the template still references the bare `$label` scalar —
+// existence, not value, is what strict mode checks), but a BARE
+// `{props.label}` diverges on the CSR runtime, which stringifies the raw
+// `undefined` into literal "undefined" text where Hono renders ''. That
+// divergence is a separate client-runtime semantic, not this fixture's
+// subject.
 export const fixture = createFixture({
   id: 'untyped-props-reads',
   description:
@@ -21,7 +29,7 @@ export function UntypedReads(props) {
   const [count, setCount] = createSignal(props.initial ?? 0)
   return (
     <div>
-      <p>{props.label}</p>
+      <p>{props.label ?? ''}</p>
       {props.show && <span>visible</span>}
       <ul>{(props.items ?? []).map((it) => <li key={it}>{it}</li>)}</ul>
       <button onClick={() => setCount(count() + 1)}>count: {count()}</button>

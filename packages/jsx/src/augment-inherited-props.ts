@@ -181,9 +181,57 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
     }
   }
 
+  // Coalesce-literal type pins: a read of the form `props.X ?? <literal>`
+  // (or `|| <literal>`) fixes X's type to the literal's. The Go adapter
+  // seeds a prop-derived signal/memo constructor from the synthetic field
+  // (`Count: in.Initial` where `Count int` came from evaluating
+  // `props.initial ?? 0`), so classifying `initial` with the string
+  // default produces a Go type mismatch the compiler rejects.
+  const coalesceLiteralTypes = new Map<string, 'number' | 'boolean' | 'string'>()
+  const pinCoalesceLiterals = (s: string | undefined): void => {
+    if (!s || !s.includes(propsObj)) return
+    const sf = ts.createSourceFile('__aug.ts', `(${s})`, ts.ScriptTarget.Latest, false)
+    const visit = (n: ts.Node): void => {
+      if (
+        ts.isBinaryExpression(n) &&
+        (n.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+          n.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+      ) {
+        let left: ts.Expression = n.left
+        while (ts.isParenthesizedExpression(left)) left = left.expression
+        if (
+          ts.isPropertyAccessExpression(left) &&
+          ts.isIdentifier(left.expression) &&
+          left.expression.text === propsObj
+        ) {
+          const name = left.name.text
+          let right: ts.Expression = n.right
+          while (ts.isParenthesizedExpression(right)) right = right.expression
+          if (ts.isPrefixUnaryExpression(right)) right = right.operand
+          const kind = ts.isNumericLiteral(right)
+            ? 'number'
+            : right.kind === ts.SyntaxKind.TrueKeyword || right.kind === ts.SyntaxKind.FalseKeyword
+              ? 'boolean'
+              : ts.isStringLiteralLike(right)
+                ? 'string'
+                : null
+          if (kind && !coalesceLiteralTypes.has(name)) coalesceLiteralTypes.set(name, kind)
+        }
+      }
+      ts.forEachChild(n, visit)
+    }
+    visit(sf)
+  }
+
   // Memos, signals, init statements, effects: any `props.X` read.
-  for (const memo of ir.metadata.memos) scan(memo.computation)
-  for (const signal of ir.metadata.signals) scan(signal.initialValue)
+  for (const memo of ir.metadata.memos) {
+    scan(memo.computation)
+    pinCoalesceLiterals(memo.computation)
+  }
+  for (const signal of ir.metadata.signals) {
+    scan(signal.initialValue)
+    pinCoalesceLiterals(signal.initialValue)
+  }
   for (const stmt of ir.metadata.initStatements ?? []) scan(stmt.body)
   for (const eff of ir.metadata.effects ?? []) scan((eff as { body?: string }).body)
 
@@ -194,6 +242,7 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   for (const c of ir.metadata.localConstants ?? []) {
     if (c.isModule) continue
     scan(c.value)
+    pinCoalesceLiterals(c.value)
   }
 
   // Template attribute exprs — also note bare-ref / boolean usage.
@@ -213,18 +262,39 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
     // bucket (`unknown` → omittable/interface-typed) since their values
     // are only ever truth-tested or iterated.
     const carrier = node as unknown as { type?: string; expr?: string; condition?: string; array?: string }
-    if (carrier.type === 'expression') scan(carrier.expr)
+    if (carrier.type === 'expression') {
+      scan(carrier.expr)
+      pinCoalesceLiterals(carrier.expr)
+    }
     scan(carrier.condition, bareRefProps)
+    pinCoalesceLiterals(carrier.condition)
     scan(carrier.array, bareRefProps)
     const el = node as unknown as IRElement
-    const attrLists = [
-      ...(el.attrs ?? []),
-      // Component nodes carry the same AttrValue shapes under `props`
-      // (`<Child value={props.foo} />` reads `$foo` at child-props
-      // construction time in the SSR template).
-      ...((node as unknown as { props?: IRElement['attrs'] }).props ?? []),
-    ]
-    for (const attr of attrLists) {
+    // Component nodes carry the same AttrValue shapes under `props`
+    // (`<Child value={props.foo} />` reads `$foo` at child-props
+    // construction time in the SSR template) — but they are NOT HTML
+    // attributes: boolean-attr inference by name doesn't apply, and the
+    // value's type belongs to the child's contract, not to how this
+    // component renders it. Classify these reads as nillable (`unknown`)
+    // unless a `?? <literal>` pins a concrete type.
+    for (const prop of (node as unknown as { props?: IRElement['attrs'] }).props ?? []) {
+      const v = prop.value as { kind?: string; expr?: string; parts?: Array<{ type: string } & Record<string, string>> }
+      if (v?.parts) {
+        for (const part of v.parts) {
+          if (part.type === 'string') scan(part.value)
+          else if (part.type === 'ternary') {
+            scan(part.condition)
+            scan(part.whenTrue)
+            scan(part.whenFalse)
+          } else if (part.type === 'lookup') scan(part.key)
+        }
+      }
+      if (v?.kind === 'expression' && typeof v.expr === 'string') {
+        scan(v.expr, bareRefProps)
+        pinCoalesceLiterals(v.expr)
+      }
+    }
+    for (const attr of el.attrs ?? []) {
       const v = attr.value as {
         kind?: string
         expr?: string
@@ -292,14 +362,13 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
     if (existing.has(name)) continue
     let raw: string
     if (booleanAttrProps.has(name)) raw = 'boolean'
+    else if (coalesceLiteralTypes.has(name)) raw = coalesceLiteralTypes.get(name)!
     else if (bareRefProps.has(name)) raw = 'unknown' // → interface{} (nillable, omittable)
     else raw = 'string' // read in a memo / string context (e.g. className)
     const type: TypeInfo =
-      raw === 'boolean'
-        ? { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
-        : raw === 'string'
-          ? { kind: 'primitive', raw: 'string', primitive: 'string' }
-          : { kind: 'unknown', raw: 'unknown' }
+      raw === 'unknown'
+        ? { kind: 'unknown', raw: 'unknown' }
+        : { kind: 'primitive', raw, primitive: raw as 'string' | 'number' | 'boolean' }
     ir.metadata.propsParams.push({ name, type, optional: true })
     existing.add(name)
   }
