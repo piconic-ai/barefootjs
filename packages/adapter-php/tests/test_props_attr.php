@@ -18,12 +18,12 @@ bf_require_runtime();
 bf_reset();
 
 use Barefoot\BarefootJS;
-use Barefoot\TwigBackend;
+use Barefoot\Json;
 
 $backend = new class {
     public function encode_json($value): string
     {
-        return TwigBackend::defaultJsonEncoder($value);
+        return Json::canonicalEncode($value);
     }
 };
 

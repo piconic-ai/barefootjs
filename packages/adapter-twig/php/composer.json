@@ -1,6 +1,6 @@
 {
     "name": "barefootjs/twig",
-    "description": "PHP runtime for the @barefootjs/twig adapter -- engine-agnostic BarefootJS server runtime targeting Twig, ported from packages/adapter-perl/lib/BarefootJS.pm (see also the packages/adapter-jinja/python port).",
+    "description": "Twig rendering backend for the BarefootJS PHP runtime (barefootjs/runtime) -- TwigBackend implements the engine backend contract on an autoescaping Twig\\Environment, ported from packages/adapter-perl/lib/BarefootJS/Backend/*.pm (see also the packages/adapter-jinja/python port's JinjaBackend).",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -11,8 +11,15 @@
     ],
     "require": {
         "php": ">=8.2",
-        "twig/twig": "^3.10"
+        "twig/twig": "^3.10",
+        "barefootjs/runtime": "@dev"
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../adapter-php"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "Barefoot\\": "src/"

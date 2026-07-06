@@ -9,12 +9,15 @@ namespace Barefoot;
  * packages/adapter-jinja/python/barefootjs/runtime.py).
  *
  * Engine- and framework-agnostic server runtime for BarefootJS marked
- * templates. This class is the server-side runtime the compiled `.twig`
+ * templates. This class is the server-side runtime the compiled marked
  * templates call into at render time (as the `bf` object:
- * `{{ bf.scope_attr() }}`, `{{ bf.json(data) }}`, `{{ bf.spread_attrs(bag) }}`).
+ * `{{ bf.scope_attr() }}`, `{{ bf.json(data) }}`, `{{ bf.spread_attrs(bag) }}`
+ * for the Twig syntax the `@barefootjs/twig` adapter emits -- other PHP
+ * engine adapters bind the same methods in their own template syntax).
  * Every operation that depends on *how* a template is rendered -- JSON
- * marshalling, raw-string marking, JSX-children materialisation, and
- * named-template rendering -- is delegated to a pluggable `backend` (see
+ * marshalling, raw-string marking, JSX-children materialisation,
+ * named-template rendering, and template-variable-name mangling -- is
+ * delegated to a pluggable `backend` (see e.g. `packages/adapter-twig`'s
  * `TwigBackend`), mirroring the Perl runtime's `BarefootJS::Backend::*` seam
  * and the Python port's `JinjaBackend` seam.
  *
@@ -27,9 +30,11 @@ namespace Barefoot;
  * divergences where the same reasoning applies):
  *
  *   - `new`/`__construct` does not lazily fall back to a default framework
- *     backend (Perl falls back to `BarefootJS::Backend::Mojo`). This PHP
- *     distribution ships exactly one backend (`TwigBackend`); a host MUST
- *     inject one via `new BarefootJS($c, ['backend' => $backend])`.
+ *     backend (Perl falls back to `BarefootJS::Backend::Mojo`). This
+ *     engine-agnostic runtime package ships NO backend implementations --
+ *     each PHP engine adapter package (e.g. `packages/adapter-twig`'s
+ *     `TwigBackend`) supplies exactly one; a host MUST inject it via
+ *     `new BarefootJS($c, ['backend' => $backend])`.
  *   - The per-render mutable state Perl mutates through dual get/set
  *     accessors (`_scope_id`, `_bf_parent`, `_bf_mount`, `_props`,
  *     `_data_key`, `_is_child`, `_scripts`, `_script_seen`,
@@ -327,10 +332,13 @@ final class BarefootJS
             $props['children'] = $this->backend->materialize($props['children']);
         }
         // Keyword mangling applied wherever a props array becomes template
-        // variables -- see naming.php's docstring.
+        // variables -- delegated to the backend's `ident()` (the fifth
+        // engine-specific operation in the backend contract) so this
+        // engine-agnostic runtime carries no engine-specific reserved-word
+        // set of its own (e.g. Twig's, in `packages/adapter-twig/php/src/naming.php`).
         $mangled = [];
         foreach ($props as $k => $v) {
-            $mangled[twig_ident((string) $k)] = $v;
+            $mangled[$this->backend->ident((string) $k)] = $v;
         }
         return $renderer($mangled, $this);
     }

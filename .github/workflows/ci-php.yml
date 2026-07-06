@@ -7,6 +7,7 @@ on:
       - 'packages/client/**'
       - 'packages/shared/**'
       - 'packages/jsx/**'
+      - 'packages/adapter-php/**'
       - 'packages/adapter-twig/**'
       - 'packages/adapter-tests/**'
       - 'integrations/php/**'
@@ -16,6 +17,7 @@ on:
       - 'packages/client/**'
       - 'packages/shared/**'
       - 'packages/jsx/**'
+      - 'packages/adapter-php/**'
       - 'packages/adapter-twig/**'
       - 'packages/adapter-tests/**'
       - 'integrations/php/**'
@@ -31,18 +33,27 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      # ubuntu-latest ships PHP 8.3+ and Composer; the runtime requires
-      # php >= 8.2 and its only dependency is twig/twig (test_render.php
-      # skips gracefully without it — installed here so it runs for real).
-      - name: Install Twig (Composer)
+      # The engine-agnostic runtime (packages/adapter-php) has no
+      # dependencies -- this just generates its autoloader. ubuntu-latest
+      # ships PHP 8.3+ and Composer.
+      - name: Install PHP runtime (Composer)
+        run: composer install --no-interaction --working-dir=packages/adapter-php
+
+      # The Twig backend requires php >= 8.2, twig/twig, and
+      # barefootjs/runtime (resolved via a composer path repository pointing
+      # at packages/adapter-php -- test_render.php skips gracefully without
+      # twig/twig installed, so this is run so it runs for real).
+      - name: Install Twig backend (Composer)
         run: composer install --no-interaction --working-dir=packages/adapter-twig/php
 
       - name: Run PHP runtime unit tests
-        # Includes the golden-vector conformance harness
-        # (test_helper_vectors.php, test_eval_vectors.php; see
-        # spec/template-helpers.md) plus the live Twig render test
-        # (test_render.php).
-        run: php packages/adapter-twig/php/tests/run.php
+        # Golden-vector conformance harness (test_helper_vectors.php,
+        # test_eval_vectors.php; see spec/template-helpers.md) plus the rest
+        # of the engine-agnostic suite (spread_attrs, omit, render_child, ...).
+        run: php packages/adapter-php/tests/run.php
+
+      - name: Run live Twig render test
+        run: php packages/adapter-twig/php/tests/test_render.php
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun

@@ -39,7 +39,7 @@ bf_reset();
 use Barefoot\BarefootJS;
 use Barefoot\Evaluator;
 
-$VECTORS_PATH = __DIR__ . '/../../../adapter-tests/vectors/vectors.json';
+$VECTORS_PATH = __DIR__ . '/../../adapter-tests/vectors/vectors.json';
 $DIVERGENCES_PATH = __DIR__ . '/vector-divergences.json';
 
 if (!is_file($VECTORS_PATH)) {
@@ -59,7 +59,7 @@ if (!is_file($DIVERGENCES_PATH)) {
 $backend = new class {
     public function encode_json($data): string
     {
-        return \Barefoot\TwigBackend::defaultJsonEncoder($data);
+        return \Barefoot\Json::canonicalEncode($data);
     }
 
     public function mark_raw($s)

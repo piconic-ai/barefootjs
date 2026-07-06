@@ -24,7 +24,7 @@ bf_reset();
 
 use Barefoot\Evaluator;
 
-$VECTORS_PATH = __DIR__ . '/../../../adapter-tests/vectors/eval-vectors.json';
+$VECTORS_PATH = __DIR__ . '/../../adapter-tests/vectors/eval-vectors.json';
 
 if (!is_file($VECTORS_PATH)) {
     bf_test('golden eval-vectors corpus is present', function () use ($VECTORS_PATH) {

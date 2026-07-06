@@ -28,9 +28,13 @@ declare(strict_types=1);
  * comment): `./lib` is populated by `scripts/assemble-deps.ts` at build time
  * (used in the container / CI, via `composer install` against THIS
  * directory's composer.json, see that file's docstring); the workspace
- * package's own already-`composer install`-ed vendor dir is tried as a
- * fallback so local dev resolves without the assemble/build step. Either
- * location provides BOTH the `Barefoot\*` runtime classes and `twig/twig`.
+ * package's own already-`composer install`-ed vendor dir
+ * (`packages/adapter-twig/php/vendor`) is tried as a fallback so local dev
+ * resolves without the assemble/build step -- it resolves the engine-
+ * agnostic runtime (`packages/adapter-php`) via its `barefootjs/runtime`
+ * composer path-repo dependency (see that package's composer.json). Either
+ * location provides the `Barefoot\*` runtime classes, `Barefoot\TwigBackend`,
+ * and `twig/twig`.
  */
 
 $HERE = __DIR__;
