@@ -2186,10 +2186,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *     named Go struct — see `typeInfoToGo`'s `interface` case — so it can't
    *     be typed `map[string]interface{}` without risking an unrelated
    *     `ui/compat.lock.json` diff across every other `interface{}`-typed
-   *     prop), so recovering the caller-supplied map needs a type
-   *     ASSERTION, not a nil check — defaulting to a real, empty map when
-   *     the prop is nil or holds any other dynamic type, matching JS `??`'s
-   *     "assign the real value when present, else `{}`" semantics.
+   *     prop). Recovering the caller-supplied map goes through the runtime's
+   *     `bf.AsMap` normalizer rather than a bare
+   *     `.(map[string]interface{})` type assertion: an `interface{}` field
+   *     can legally hold ANY string-keyed map kind — a Go handler modelling
+   *     `Record<string, string>` naturally passes `map[string]string` — and
+   *     the single-type assertion would silently drop those values (#2111
+   *     review). `bf.AsMap` returns nil for nil / typed-nil / non-map
+   *     values, so the emitted fallback still lands on a real, empty map,
+   *     matching JS `??`'s "assign the real value when present, else `{}`"
+   *     semantics.
    * Anything else (a getter/callback member, an unresolvable expression)
    * returns `null`, failing the WHOLE containing object (see
    * `providerObjectValueToGoMap`).
@@ -2219,7 +2225,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const fieldRef = `in.${capitalizeFieldName(propName)}`
         return (
           `func() map[string]interface{} { ` +
-          `if m, ok := ${fieldRef}.(map[string]interface{}); ok { return m }; ` +
+          `if m := bf.AsMap(${fieldRef}); m != nil { return m }; ` +
           `return map[string]interface{}{} }()`
         )
       }

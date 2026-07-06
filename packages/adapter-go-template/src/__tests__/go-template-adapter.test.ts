@@ -3712,10 +3712,14 @@ export function Root(props: Props) {
     expect(consumerTypes).toContain('Ctx map[string]interface{}')
 
     // The Provider's `{ config: props.config ?? {} }` bakes into a
-    // `map[string]interface{}` Go expression, type-asserting the parent's
-    // `interface{}`-typed `Config` field and falling back to a real empty map.
+    // `map[string]interface{}` Go expression, normalising the parent's
+    // `interface{}`-typed `Config` field through `bf.AsMap` — NOT a bare
+    // `.(map[string]interface{})` type assertion, which would silently drop
+    // a caller-supplied typed map like `map[string]string` (the natural Go
+    // shape for a `Record<string, string>` prop — #2111 review) — and
+    // falling back to a real empty map when the value is nil/absent.
     expect(rootTypes).toContain('ConsumerSlot0: NewConsumerProps(ConsumerInput{')
-    expect(rootTypes).toContain('Ctx: map[string]interface{}{"config": func() map[string]interface{} { if m, ok := in.Config.(map[string]interface{}); ok { return m }; return map[string]interface{}{} }()},')
+    expect(rootTypes).toContain('Ctx: map[string]interface{}{"config": func() map[string]interface{} { if m := bf.AsMap(in.Config); m != nil { return m }; return map[string]interface{}{} }()},')
 
     // The consumer's `ctx.config.label ?? 'none'` reads through `bf_get`
     // (case-tolerant `getFieldValue`), not a plain `.Ctx.Config.Label` dot
