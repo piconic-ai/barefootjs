@@ -29,6 +29,7 @@ const repoRoot = resolve(cliPkg, '../..')
 // dependencies in a `cpanfile` instead of vendoring `.pm` copies.
 const sources = {
   bfGoSource: 'packages/adapter-go-template/runtime/bf.go',
+  evalGoSource: 'packages/adapter-go-template/runtime/eval.go',
   streamingGoSource: 'packages/adapter-go-template/runtime/streaming.go',
   bfdevGoSource: 'packages/adapter-go-template/runtime/bfdev/bfdev.go',
 }

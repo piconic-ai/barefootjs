@@ -1,6 +1,6 @@
 // `bf add <component...>` — Add components to a BarefootJS project.
 
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, readdirSync } from 'fs'
+import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, readdirSync, utimesSync } from 'fs'
 import path from 'path'
 import type { CliContext } from '../context'
 import type { BarefootConfig } from '../context'
@@ -8,6 +8,21 @@ import { resolveDependenciesFromSource } from '../lib/dependency-resolver'
 import { extractMetaForFile } from './meta-extract'
 import { commandsFor, detectPackageManager } from '../lib/pm'
 import type { MetaIndex, MetaIndexEntry, ComponentMeta, RegistryItem } from '../lib/types'
+
+/**
+ * Touch `uno.config.ts` so a running `unocss --watch` re-scans its
+ * globs and picks up files in newly-created component directories.
+ * chokidar (used by the UnoCSS CLI) resolves `**` globs to the set of
+ * directories that exist at startup; directories created later by
+ * `bf add` are invisible until the watcher restarts or the config
+ * file's mtime changes.
+ */
+function kickCssWatcher(projectDir: string): void {
+  const unoConfig = path.resolve(projectDir, 'uno.config.ts')
+  if (!existsSync(unoConfig)) return
+  const now = new Date()
+  try { utimesSync(unoConfig, now, now) } catch { /* best-effort */ }
+}
 
 export async function run(args: string[], ctx: CliContext): Promise<void> {
   const force = args.includes('--force')
@@ -267,6 +282,10 @@ export async function addFromRegistry(
     rebuildMetaIndex(destMetaDir)
   }
 
+  if (added.length > 0) {
+    kickCssWatcher(projectDir)
+  }
+
   // Summary
   if (silent) return
   if (added.length > 0) {
@@ -370,6 +389,10 @@ function addFromLocal(
 
   // Rebuild meta/index.json from meta/*.json files
   rebuildMetaIndex(destMetaDir)
+
+  if (added.length > 0) {
+    kickCssWatcher(projectDir)
+  }
 
   // Summary
   if (added.length > 0) {

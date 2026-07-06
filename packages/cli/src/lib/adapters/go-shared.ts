@@ -41,6 +41,7 @@ import {
 import {
   bfdevGoSource,
   bfGoSource,
+  evalGoSource,
   streamingGoSource,
 } from './runtimes.generated'
 import type { AdapterTemplate, AdapterScriptValue } from '../templates'
@@ -200,6 +201,7 @@ export const GO_RENDER_SHARED_FNS = `// loadTemplates walks dist/templates/ recu
 // inside Slot that's only reachable when AsChild=true.
 func loadTemplates() (*template.Template, error) {
 	root := template.New("").Funcs(bf.FuncMap())
+	root = root.Funcs(bf.TemplateFuncMap(root))
 	if _, err := root.New("Tag").Parse(""); err != nil {
 		return nil, err
 	}
@@ -266,6 +268,7 @@ export function goCommonFiles(): Record<string, string> {
     'renderer.go': GO_RENDERER_GO,
     'env.go': GO_ENV_GO,
     'bf-runtime/bf.go': bfGoSource,
+    'bf-runtime/eval.go': evalGoSource,
     'bf-runtime/streaming.go': streamingGoSource,
     'bf-runtime/bfdev/bfdev.go': bfdevGoSource,
     'bf-runtime/go.mod': GO_BF_RUNTIME_GO_MOD,
