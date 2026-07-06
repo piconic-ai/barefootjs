@@ -234,6 +234,46 @@ final class BarefootJS
     }
 
     // -----------------------------------------------------------------
+    // Async streaming boundary (#2100)
+    // -----------------------------------------------------------------
+
+    /**
+     * Wrap a synchronously-resolved async boundary's fallback markup in a
+     * `<div bf-async="ID">` placeholder. Ported from the Python/Perl/Ruby
+     * runtimes' `async_boundary` (`packages/adapter-jinja/python/barefootjs/
+     * runtime.py`, `packages/adapter-perl/lib/BarefootJS.pm`,
+     * `packages/adapter-erb/lib/barefoot_js.rb`) -- was previously missing
+     * from this PHP port entirely; Twig's dot-attribute call resolution
+     * silently no-ops an unresolvable method under `strict_variables:
+     * false`, masking the gap, but Blade's `$bf->async_boundary(...)` is a
+     * direct PHP method call with no such fallback, surfacing it as a hard
+     * `BadMethodCallException` (#2100 Phase 2). `$fallbackHtml` is
+     * materialized through the backend first (mirrors `render_child`'s
+     * `children` handling) so a captured-but-not-yet-stringified value
+     * (e.g. a closure, on backends that model capture that way) renders as
+     * its resolved HTML rather than a PHP value dump.
+     */
+    public function async_boundary(string $id, $fallbackHtml): string
+    {
+        $fallbackHtml = $this->backend->materialize($fallbackHtml);
+        return "<div bf-async=\"{$id}\">{$fallbackHtml}</div>";
+    }
+
+    /**
+     * Wrap resolved async content in a `<template bf-async-resolve="ID">`
+     * swap target plus the inline swap-trigger script. Ported from the same
+     * sibling runtimes as `async_boundary` above; not currently invoked by
+     * any first-party adapter template emitter (both Twig's and Blade's
+     * `renderAsync` only emit the synchronous `async_boundary` fallback
+     * wrapper), but included for parity with the engine-agnostic contract
+     * every other PHP-runtime-consuming adapter can rely on.
+     */
+    public function async_resolve(string $id, $contentHtml): string
+    {
+        return "<template bf-async-resolve=\"{$id}\">{$contentHtml}</template><script>__bf_swap(\"{$id}\")</script>";
+    }
+
+    // -----------------------------------------------------------------
     // JS-equivalent value stringification
     // -----------------------------------------------------------------
 
@@ -522,19 +562,32 @@ final class BarefootJS
      * in user-facing HTML (documented divergence, matches the Perl/Python
      * ports).
      *
-     * `\Twig\Markup` passes through UNCHANGED (object identity, not its
-     * string content): captured children / `render_child` output arrive at
-     * `{{ bf.string(...) }}` interpolation positions as Markup, and only the
-     * Markup instance survives Twig's autoescaper un-escaped. The Python
-     * port gets this for free (`markupsafe.Markup` is a `str` subclass, so
+     * A per-engine "already-safe markup" wrapper (`\Twig\Markup` for the
+     * Twig backend, `\Illuminate\Support\HtmlString` for the Blade backend —
+     * see #2100) passes through UNCHANGED (object identity, not its string
+     * content): captured children / `render_child` output arrive at a
+     * text-interpolation position wrapped in the engine's own markup type,
+     * and only that wrapped instance survives the ENGINE's own autoescaper
+     * un-escaped (Twig's `{{ }}`, Blade's `{!! e(...) !!}` — see each
+     * backend's file header). Rather than hard-coding each engine's concrete
+     * class here (which would make this engine-agnostic runtime depend on
+     * knowing every backend that will ever exist), this checks the built-in
+     * `\Stringable` interface: EVERY value this runtime's own `mark_raw`
+     * implementations ever produce declares (or auto-implements, PHP 8's
+     * behavior for any class with `__toString()`) `\Stringable` — verified
+     * for both `Twig\Markup` and `Illuminate\Support\HtmlString` — while the
+     * OTHER object shapes this method ever receives (JSON-decoded
+     * `stdClass`, plain assoc arrays) never do. The Python port gets the
+     * Twig case for free (`markupsafe.Markup` is a `str` subclass, so
      * `js_string` returns it via the string arm, safety intact); PHP's
-     * Markup is not a string, so the pass-through must be explicit here.
+     * markup wrappers are not strings, so the pass-through must be explicit
+     * here.
      *
-     * @return string|\Twig\Markup
+     * @return string|\Stringable
      */
     public function string($value)
     {
-        if ($value instanceof \Twig\Markup) {
+        if ($value instanceof \Stringable) {
             return $value;
         }
         if ($value === null) {
