@@ -79,7 +79,7 @@ func (r *EchoRenderer) Render(w io.Writer, name string, data interface{}, c echo
 // so all three adapters look identical.
 const siteHeaderHTML = `<header class="bf-header">
     <div class="bf-header-inner">
-        <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="Barefoot.js">
+        <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="BarefootJS">
             <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
         </a>
         <div class="bf-header-sep"></div>

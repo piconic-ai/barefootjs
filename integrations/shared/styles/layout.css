@@ -84,7 +84,7 @@ a {
 }
 
 /*
- * Render the "Barefoot.js" wordmark as a CSS mask so the logo tracks the
+ * Render the "BarefootJS" wordmark as a CSS mask so the logo tracks the
  * current foreground color automatically — the host page controls the
  * fill instead of the SVG, and the external SVG file stays framework-free.
  */
