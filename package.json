@@ -36,6 +36,8 @@
     "pre-commit": "bunx biome check --staged --no-errors-on-unmatched"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
     "@biomejs/biome": "2.4.16",
     "@changesets/cli": "^2.31.0",
     "@happy-dom/global-registrator": "^20.0.11",
@@ -45,6 +47,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "beta",
+    "babel-preset-solid": "^1.9.12",
     "concurrently": "^9.1.0",
     "happy-dom": "^20.0.11",
     "pkg-pr-new": "^0.0.67",

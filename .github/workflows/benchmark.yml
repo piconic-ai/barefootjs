@@ -27,12 +27,31 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Run benchmark
+      - name: Build packages (benchmark apps bundle from published dists)
+        run: |
+          bun run --filter '@barefootjs/shared' build
+          bun run --filter '@barefootjs/streaming' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Build benchmark apps
+        run: bun benchmarks/runner/build.ts
+
+      - name: Run DOM benchmark (quick)
         id: bench
         run: |
           {
             echo 'result<<EOF'
-            bun run benchmarks/run-browser.ts --md 2>&1
+            bun benchmarks/runner/bench-dom.ts --quick --md 2>&1
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run SSR benchmark
+        id: bench_ssr
+        run: |
+          {
+            echo 'result<<EOF'
+            bun benchmarks/ssr/bench-ssr.ts --md 2>&1
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
@@ -53,6 +72,16 @@ jobs:
           body: |
             ## Benchmark Results
 
+            > Quick mode (reduced iterations) on shared CI hardware — treat as a
+            > smoke check for regressions, not as publishable numbers. Run the
+            > full suite locally per `benchmarks/README.md` for real comparisons.
+
+            ### DOM update suite
+
             ${{ steps.bench.outputs.result }}
+
+            ### SSR + hydration
+
+            ${{ steps.bench_ssr.outputs.result }}
 
             [Job log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · `${{ github.event.pull_request.head.sha }}`
