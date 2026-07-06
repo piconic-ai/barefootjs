@@ -46,6 +46,16 @@ main :focus-visible,
   color: var(--foreground);
 }
 
+.lp-logo-full,
+.lp-logo-icon {
+  display: flex;
+  align-items: center;
+}
+
+.lp-logo-icon {
+  display: none;
+}
+
 .lp-nav-links {
   display: flex;
   align-items: center;
@@ -193,27 +203,16 @@ main :focus-visible,
   padding: 16px 18px;
 }
 
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.tab {
+.demo-select {
   font-family: var(--font-mono);
   font-size: 12px;
   border: 1px solid var(--border);
   background: var(--background);
-  color: var(--muted-foreground);
+  color: var(--foreground);
   border-radius: 4px;
-  padding: 3px 10px;
+  padding: 3px 8px;
   cursor: pointer;
-}
-
-.tab[aria-selected="true"] {
-  background: var(--foreground);
-  border-color: var(--foreground);
-  color: var(--background);
+  max-width: 55%;
 }
 
 .src-panel,
@@ -502,6 +501,16 @@ main :focus-visible,
   flex-wrap: wrap;
 }
 
+/* min-width:auto on flex items otherwise forces the link row to its
+ * max-content width, overflowing narrow viewports. */
+.lp-foot-row > div {
+  min-width: 0;
+}
+
+.lp-foot-row a {
+  display: inline-block;
+}
+
 .lp-foot-row a {
   color: var(--muted-foreground);
   text-decoration: none;
@@ -516,12 +525,20 @@ main :focus-visible,
 
 @media (max-width: 760px) {
   .lp-nav {
-    gap: 12px;
+    gap: 10px;
   }
 
   .lp-nav-links {
-    gap: 12px;
+    gap: 10px;
     font-size: 13px;
+  }
+
+  .lp-logo-full {
+    display: none;
+  }
+
+  .lp-logo-icon {
+    display: flex;
   }
 
   .demo-frame,

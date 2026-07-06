@@ -11,33 +11,28 @@
 import { highlight, initHighlighter } from './shared/highlighter'
 import { DEMO_EXAMPLES } from './shared/demo-outputs'
 
-// Manual tab switching for the demo. Two dimensions: the active example
-// (left source pane) and the active adapter (right output pane); the
-// visible output panel is always example × adapter. Progressive
-// enhancement: without JS the first example/adapter stays visible.
+// Manual switching for the demo via two native <select>s: the active
+// example (left source pane) and the active adapter (right output
+// pane); the visible output panel is always example × adapter.
+// Progressive enhancement: without JS the first example/adapter stays
+// visible. No auto-rotation.
 const DEMO_TABS_SCRIPT = `(function(){
   var frame = document.querySelector('.demo-frame');
   if (!frame) return;
-  var exTabs = Array.prototype.slice.call(frame.querySelectorAll('.tab[data-example]'));
-  var adTabs = Array.prototype.slice.call(frame.querySelectorAll('.tab[data-out]'));
+  var exSelect = frame.querySelector('select[data-select="example"]');
+  var adSelect = frame.querySelector('select[data-select="adapter"]');
   var srcPanels = Array.prototype.slice.call(frame.querySelectorAll('.src-panel'));
   var outPanels = Array.prototype.slice.call(frame.querySelectorAll('.out-panel'));
-  var example = exTabs.length ? exTabs[0].dataset.example : '';
-  var adapter = adTabs.length ? adTabs[0].dataset.out : '';
 
   function apply() {
-    exTabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.example === example)); });
-    adTabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.out === adapter)); });
+    var example = exSelect.value;
+    var adapter = adSelect.value;
     srcPanels.forEach(function(p){ p.classList.toggle('active', p.dataset.example === example); });
     outPanels.forEach(function(p){ p.classList.toggle('active', p.dataset.panel === example + '-' + adapter); });
   }
 
-  exTabs.forEach(function(t){
-    t.addEventListener('click', function(){ example = t.dataset.example; apply(); });
-  });
-  adTabs.forEach(function(t){
-    t.addEventListener('click', function(){ adapter = t.dataset.out; apply(); });
-  });
+  if (exSelect) exSelect.addEventListener('change', apply);
+  if (adSelect) adSelect.addEventListener('change', apply);
 })();`
 
 export function Hero({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
@@ -71,19 +66,11 @@ export async function DemoSection() {
           <div className="pane">
             <div className="pane-head">
               <span>what you write</span>
-              <div className="tabs" role="tablist" aria-label="Example source">
+              <select className="demo-select" data-select="example" aria-label="Example source">
                 {DEMO_EXAMPLES.map((ex, i) => (
-                  <button
-                    className="tab"
-                    role="tab"
-                    aria-selected={i === 0 ? 'true' : 'false'}
-                    data-example={ex.id}
-                    type="button"
-                  >
-                    {ex.file}
-                  </button>
+                  <option value={ex.id} selected={i === 0}>{ex.file}</option>
                 ))}
-              </div>
+              </select>
             </div>
             {DEMO_EXAMPLES.map((ex, i) => (
               <div className={`src-panel${i === 0 ? ' active' : ''}`} data-example={ex.id}>
@@ -98,19 +85,11 @@ export async function DemoSection() {
           <div className="pane">
             <div className="pane-head">
               <span>what your server renders</span>
-              <div className="tabs" role="tablist" aria-label="Compiled output">
+              <select className="demo-select" data-select="adapter" aria-label="Compiled output language">
                 {DEMO_EXAMPLES[0].outputs.map((out, i) => (
-                  <button
-                    className="tab"
-                    role="tab"
-                    aria-selected={i === 0 ? 'true' : 'false'}
-                    data-out={out.id}
-                    type="button"
-                  >
-                    {out.label}
-                  </button>
+                  <option value={out.id} selected={i === 0}>{out.label}</option>
                 ))}
-              </div>
+              </select>
             </div>
             {DEMO_EXAMPLES.map((ex, i) =>
               ex.outputs.map((out, j) => (

@@ -7,14 +7,17 @@
  */
 
 import { ThemeSwitcher } from '@/components/theme-switcher'
-import { Logo } from '../../../shared/components/logo'
+import { Logo, LogoIcon } from '../../../shared/components/logo'
 
 export function LpHeader({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
   return (
     <header className="lp-header">
       <div className="lp-wrap lp-nav">
         <a className="lp-logo" href="/" aria-label="BarefootJS home">
-          <Logo />
+          {/* Full wordmark on desktop, footprint icon on narrow screens
+              (the wordmark + four nav links overflow a 375px viewport). */}
+          <span className="lp-logo-full"><Logo /></span>
+          <span className="lp-logo-icon"><LogoIcon /></span>
         </a>
         <nav className="lp-nav-links" aria-label="Main">
           <a href="/docs">Docs</a>
