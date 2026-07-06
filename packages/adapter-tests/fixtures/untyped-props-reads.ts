@@ -29,4 +29,13 @@ export function UntypedReads(props) {
   )
 }
 `,
+  expectedHtml: `
+    <div bf-s="test" bf="s7">
+      <p bf="s1"><!--bf:s0--><!--/--></p>
+      <!--bf-cond-start:s2-->
+      <!--bf-cond-end:s2-->
+      <ul bf="s4"></ul>
+      <button bf="s6">count: <!--bf:s5-->0<!--/--></button>
+    </div>
+  `,
 })
