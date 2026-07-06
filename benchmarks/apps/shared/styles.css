@@ -1,0 +1,31 @@
+/* Minimal shared styles — identical for every app. */
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 8px;
+}
+.jumbotron {
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.jumbotron button {
+  margin-right: 4px;
+  padding: 6px 12px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table td {
+  padding: 4px 8px;
+  border-top: 1px solid #ddd;
+}
+.table a {
+  cursor: pointer;
+}
+tr.danger {
+  background-color: #f2dede;
+}
+.col-md-1 { width: 8%; }
+.col-md-4 { width: 33%; }
+.col-md-6 { width: 50%; }
