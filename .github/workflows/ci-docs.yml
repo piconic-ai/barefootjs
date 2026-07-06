@@ -27,9 +27,11 @@ on:
 permissions:
   contents: read
 
+# VALE_SHA256 is the vale_3.15.1_Linux_64-bit.tar.gz line from the
+# release's official vale_3.15.1_checksums.txt.
 env:
   VALE_VERSION: 3.15.1
-  VALE_SHA256: 797b23b1a4b7cbba3ffd7d4bca663200fed9362630d0aa340e8480a3ba8f8052
+  VALE_SHA256: c024d9c157874fb043d4f24a055d60050d1bb18755251f590593eed5bace1857
 
 jobs:
   naming:
