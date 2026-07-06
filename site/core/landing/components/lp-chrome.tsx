@@ -1,9 +1,8 @@
 /**
- * Landing-page header and footer, following the mock's minimal chrome
- * (design/lp-mock/barefootjs-lp-v3.html): the official wordmark logo +
- * four nav links, and a flat link footer. The logotype asset is the
- * brand's own (design/LP-RENEWAL.md, 決定事項 5); the display name
- * everywhere else is BarefootJS.
+ * Landing-page header and footer: minimal chrome — the official
+ * wordmark logo + four nav links, and a flat link footer. The logotype
+ * asset is the brand's own; the display name everywhere else is
+ * BarefootJS (enforced by styles/Barefoot/Naming.yml).
  */
 
 import { ThemeSwitcher } from '@/components/theme-switcher'

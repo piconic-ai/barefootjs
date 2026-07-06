@@ -1,16 +1,15 @@
 /* BarefootJS Landing Page — landing.css
  *
- * LP-specific styles following design/lp-mock/barefootjs-lp-v3.html.
- * The mock's fixed palette is mapped onto the site tokens (tokens.css)
- * so the LP respects light/dark themes:
+ * LP-specific styles. The design's fixed palette is mapped onto the
+ * site tokens (tokens.css) so the LP respects light/dark themes:
  *
  *   --ink   → --foreground        --muted → --muted-foreground
  *   --line  → --border            --code-bg → --muted
  *   --green → --gradient-start (brand green)
  *
- * No decorative animation, no auto-rotation: tabs are manual and the
- * matrix is static (design/LP-RENEWAL.md, 決定事項 7).
- * prefers-reduced-motion is honored globally in globals.css.
+ * No decorative animation, no auto-rotation: the demo pickers are
+ * manual and the matrix is static. prefers-reduced-motion is honored
+ * globally in globals.css.
  */
 
 .lp-wrap {

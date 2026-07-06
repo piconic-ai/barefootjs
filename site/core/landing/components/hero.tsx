@@ -1,11 +1,10 @@
 /**
  * Hero section — "TSX in. Your stack out." + the input/output demo.
  *
- * Layout and copy follow design/lp-mock/barefootjs-lp-v3.html. The demo
- * panels come from shared/demo-outputs.ts so the right-hand side always
- * shows what the compiler actually produces (see design/LP-RENEWAL.md,
- * 決定事項 6). Two manual tab rows — example (left pane) × adapter
- * (right pane) — and no auto-rotation (決定事項 7).
+ * The demo panels come from shared/demo-outputs.ts so the right-hand
+ * side always shows what the compiler actually produces — never
+ * hand-written approximations. Two manual pickers — example (left
+ * pane) × adapter (right pane) — and never any auto-rotation.
  */
 
 import { highlight, initHighlighter } from './shared/highlighter'

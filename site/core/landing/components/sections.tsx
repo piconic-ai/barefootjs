@@ -1,5 +1,5 @@
 /**
- * Landing page sections 2–5, following design/lp-mock/barefootjs-lp-v3.html:
+ * Landing page sections 2–5 of the compiler-positioning LP (PR #2112):
  *
  *   2. The fork — "Two good answers. Now a third."
  *   3. Proof — component × adapter matrix rendered from ui/compat.lock.json

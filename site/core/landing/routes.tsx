@@ -1,10 +1,9 @@
 /**
  * Landing page routes
  *
- * Renders the landing page at GET /. Page structure follows
- * design/lp-mock/barefootjs-lp-v3.html: five blocks only —
- * hero + input/output demo, the fork, CI matrix, for/not-for,
- * and quickstart (see design/LP-RENEWAL.md).
+ * Renders the landing page at GET /. Five blocks only — hero +
+ * input/output demo, the fork, CI matrix, for/not-for, and
+ * quickstart; no feature-tour sections (PR #2112).
  */
 
 import { Hono } from 'hono'

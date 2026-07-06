@@ -9,8 +9,7 @@
 #      case-sensitive.
 #   2. A repo-wide grep for the same wrong variants in source files
 #      (titles, aria-labels, template strings), where Vale's prose
-#      scoping doesn't reach. design/ is excluded — the LP renewal
-#      handbook quotes the forbidden spellings on purpose.
+#      scoping doesn't reach.
 name: CI — Docs
 
 on:
@@ -51,11 +50,10 @@ jobs:
         run: ./vale README.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md AGENTS.md docs
 
       - name: Naming grep (source files)
-        # Same rule for non-prose files. design/ intentionally quotes the
-        # wrong spellings (it is the renewal spec), so it is excluded.
+        # Same rule for non-prose files.
         run: |
           if git grep -nE 'BareFootJS|Barefoot\.js|BarefootJs([^A-Za-z]|$)' -- \
-            ':!design' ':!styles' ':!.github/workflows/ci-docs.yml'; then
+            ':!styles' ':!.github/workflows/ci-docs.yml'; then
             echo "::error::Use the display name 'BarefootJS' (npm package: barefootjs)."
             exit 1
           fi

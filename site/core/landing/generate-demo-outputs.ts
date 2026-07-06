@@ -3,8 +3,7 @@
  *
  * The LP promises "what your server renders" — so the right-hand panels
  * must be the actual `compileJSX` (bf build) output for the source shown
- * in the left-hand panel, never hand-written approximations
- * (see design/LP-RENEWAL.md, 決定事項 6).
+ * in the left-hand panel, never hand-written approximations.
  *
  * Run from site/core:
  *   bun run landing/generate-demo-outputs.ts
