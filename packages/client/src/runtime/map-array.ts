@@ -72,7 +72,11 @@ function findLoopMarkers(
   if (markerId) {
     const startVal = loopStartMarker(markerId)
     const endVal = loopEndMarker(markerId)
-    for (const node of Array.from(container.childNodes)) {
+    // Walk via firstChild/nextSibling rather than Array.from(childNodes) —
+    // this runs on every un-cached lookup (see `resolveMarkers` in
+    // `mapArray`), so avoiding the intermediate array allocation matters
+    // for large sibling counts.
+    for (let node = container.firstChild; node; node = node.nextSibling) {
       if (node.nodeType !== Node.COMMENT_NODE) continue
       const value = (node as Comment).nodeValue
       if (value === startVal) start = node as Comment
@@ -81,7 +85,7 @@ function findLoopMarkers(
   } else {
     const startPrefix = `${BF_LOOP_START}:`
     const endPrefix = `${BF_LOOP_END}:`
-    for (const node of Array.from(container.childNodes)) {
+    for (let node = container.firstChild; node; node = node.nextSibling) {
       if (node.nodeType !== Node.COMMENT_NODE) continue
       const value = (node as Comment).nodeValue ?? ''
       if (!start && (value === BF_LOOP_START || value.startsWith(startPrefix))) {
@@ -140,14 +144,61 @@ function findItemRanges(start: Comment, end: Comment): Array<{
 }
 
 /**
- * Insert a scope's nodes into the container in their canonical order
+ * Insert a scope's nodes into `target` in their canonical order
  * (startMarker → primaryEl → extras). Idempotent — `insertBefore` on a
  * node already at the target position is a no-op.
+ *
+ * `target` is typed as `Node` (not `HTMLElement`) so callers can pass a
+ * `DocumentFragment` to batch several scopes into one subsequent
+ * `container.insertBefore(fragment, anchor)` call — see the minimal-move
+ * reorder in `mapArray`.
  */
-function insertScope<T>(scope: ItemScope<T>, container: HTMLElement, anchor: Node | null): void {
-  if (scope.startMarker) container.insertBefore(scope.startMarker, anchor)
-  container.insertBefore(scope.primaryEl, anchor)
-  for (const ex of scope.extras) container.insertBefore(ex, anchor)
+function insertScope<T>(scope: ItemScope<T>, target: Node, anchor: Node | null): void {
+  if (scope.startMarker) target.insertBefore(scope.startMarker, anchor)
+  target.insertBefore(scope.primaryEl, anchor)
+  for (const ex of scope.extras) target.insertBefore(ex, anchor)
+}
+
+/**
+ * Longest increasing subsequence, returned as ascending indices into `arr`.
+ * O(n log n) patience sorting with predecessor backtracking.
+ *
+ * Used by `mapArray`'s reorder step: `arr` holds, for each already-attached
+ * scope encountered while walking the live DOM in its current order, the
+ * scope's index in the *desired* order. The LIS of that array is the
+ * largest set of scopes whose relative order already matches the desired
+ * order — those scopes can stay exactly where they are; every other scope
+ * (plus any brand-new one) needs to move. This is the same strategy
+ * keyed-diff reconcilers in the udomdiff/Solid family use to turn an
+ * arbitrary reorder into a minimal set of DOM moves.
+ */
+function longestIncreasingSubsequenceIndices(arr: number[]): number[] {
+  const n = arr.length
+  if (n === 0) return []
+  // tails[k] = index into `arr` of the smallest possible tail value for an
+  // increasing subsequence of length k + 1.
+  const tails: number[] = []
+  const predecessors: number[] = new Array(n).fill(-1)
+  for (let i = 0; i < n; i++) {
+    const value = arr[i]
+    let lo = 0
+    let hi = tails.length
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1
+      if (arr[tails[mid]] < value) lo = mid + 1
+      else hi = mid
+    }
+    if (lo > 0) predecessors[i] = tails[lo - 1]
+    if (lo === tails.length) tails.push(i)
+    else tails[lo] = i
+  }
+  const result: number[] = new Array(tails.length)
+  let k = tails[tails.length - 1]
+  for (let i = tails.length - 1; i >= 0; i--) {
+    result[i] = k
+    k = predecessors[k]
+  }
+  return result
 }
 
 /** Detach all of a scope's nodes from the DOM. */
@@ -229,11 +280,29 @@ export function mapArray<T>(
   const scopes = new Map<string, ItemScope<T>>()
   let hydrated = false
 
+  // Loop boundary markers are structural — this module never removes or
+  // re-inserts them — so they can be found once and reused across every
+  // effect run instead of rescanning `container.childNodes` on every
+  // reconcile. `isConnected` guards against the (unusual) case of the
+  // container itself being torn down and rebuilt out from under this
+  // closure; in that case we fall back to a fresh lookup.
+  let cachedStart: Comment | null = null
+  let cachedEnd: Comment | null = null
+  const resolveMarkers = (): { start: Comment | null; end: Comment | null } => {
+    if (cachedStart && cachedEnd && cachedStart.isConnected && cachedEnd.isConnected) {
+      return { start: cachedStart, end: cachedEnd }
+    }
+    const found = findLoopMarkers(container, markerId)
+    cachedStart = found.start
+    cachedEnd = found.end
+    return found
+  }
+
   createEffect(() => {
     const items = accessor()
     if (!items) return
 
-    const { start: startMarker, end: endMarker } = findLoopMarkers(container, markerId)
+    const { start: startMarker, end: endMarker } = resolveMarkers()
     const anchor = endMarker ?? null
 
     // --- First run: hydrate SSR-rendered children ---
@@ -315,6 +384,43 @@ export function mapArray<T>(
       }
     }
 
+    // --- Fast path: clearing the whole list ---
+    // When every existing scope is being removed, dispose them all and then
+    // remove their DOM in one bulk operation instead of one `.remove()` per
+    // scope. Loop markers (and their bracketing range) are always preserved.
+    if (items.length === 0) {
+      if (scopes.size > 0) {
+        for (const scope of scopes.values()) scope.dispose()
+        if (startMarker && endMarker) {
+          // Scoped (or per-item-marker) range: the space between the
+          // markers is owned entirely by this list, so a single Range
+          // delete clears it without touching the markers themselves.
+          const range = document.createRange()
+          range.setStartAfter(startMarker)
+          range.setEndBefore(endMarker)
+          range.deleteContents()
+        } else {
+          // Unscoped: the list owns the container's children directly.
+          // Verify no foreign siblings snuck in before nuking everything —
+          // counting is O(n), same order as the disposal loop above, so it
+          // doesn't add an asymptotically new cost.
+          let expectedNodeCount = 0
+          for (const scope of scopes.values()) {
+            expectedNodeCount += 1 + scope.extras.length + (scope.startMarker ? 1 : 0)
+          }
+          let actualNodeCount = 0
+          for (let node = container.firstChild; node; node = node.nextSibling) actualNodeCount++
+          if (actualNodeCount === expectedNodeCount) {
+            container.textContent = ''
+          } else {
+            for (const scope of scopes.values()) removeScope(scope)
+          }
+        }
+        scopes.clear()
+      }
+      return
+    }
+
     // --- Key-based diff ---
     const newKeys = new Set<string>()
     // Distinct from `newKeys`: tracks which keys have ALREADY emitted a
@@ -365,30 +471,67 @@ export function mapArray<T>(
       }
     }
 
-    // Reconcile DOM order: skip insertBefore entirely when order is unchanged.
+    // --- Reconcile DOM order: minimal-move, LIS-based ---
+    //
+    // Rather than "any mismatch reinserts every scope", find the longest
+    // run of already-attached scopes that are already in the right
+    // relative order — the longest increasing subsequence of their desired
+    // positions, walking the live DOM once — and never touch those. Every
+    // other scope (scopes that need to move, plus brand-new scopes not yet
+    // in the DOM at all) is grouped into contiguous runs and inserted with
+    // ONE insertBefore per run (a DocumentFragment when a run has more than
+    // one scope). A swap of two rows becomes exactly two single-scope
+    // moves; a bulk append becomes one fragment insert that never touches
+    // the existing rows; an unchanged order performs zero DOM mutations.
+    //
     // Moving elements via insertBefore causes detach/reattach which makes
-    // focused inputs lose focus (controlled input flicker). Each scope can
-    // span multiple nodes (startMarker + primaryEl + extras), so the walk
-    // consumes the full range when a primaryEl matches.
-    let inOrder = true
-    let checkNode: Node | null = startMarker ? startMarker.nextSibling : container.firstChild
-    for (const scope of desiredOrder) {
-      // Skip non-element nodes (comments, text) when looking for the primary element.
-      while (checkNode && checkNode.nodeType !== Node.ELEMENT_NODE) checkNode = checkNode.nextSibling
-      if (checkNode !== scope.primaryEl) { inOrder = false; break }
-      // Advance past the rest of the scope's extras.
-      checkNode = checkNode.nextSibling
-      for (let i = 0; i < scope.extras.length; i++) {
-        while (checkNode && checkNode.nodeType !== Node.ELEMENT_NODE) checkNode = checkNode.nextSibling
-        if (checkNode !== scope.extras[i]) { inOrder = false; break }
-        checkNode = checkNode.nextSibling
-      }
-      if (!inOrder) break
+    // focused inputs lose focus (controlled input flicker) — scopes kept
+    // stationary by the LIS are provably never detached, so that guarantee
+    // still holds for them.
+    const primaryElToDesiredIndex = new Map<HTMLElement, number>()
+    for (let i = 0; i < desiredOrder.length; i++) {
+      primaryElToDesiredIndex.set(desiredOrder[i].primaryEl, i)
     }
-    if (!inOrder) {
-      for (const scope of desiredOrder) {
-        insertScope(scope, container, anchor)
+
+    // Old DOM order of currently-attached scopes, expressed as desired-order
+    // indices. Brand-new scopes aren't attached yet, so they simply never
+    // appear here — which is exactly what marks them for insertion below.
+    // Single O(n) walk, no Array.from allocation.
+    const domOrderIndices: number[] = []
+    for (
+      let node: Node | null = startMarker ? startMarker.nextSibling : container.firstChild;
+      node && node !== anchor;
+      node = node.nextSibling
+    ) {
+      if (node.nodeType !== Node.ELEMENT_NODE) continue
+      const idx = primaryElToDesiredIndex.get(node as HTMLElement)
+      if (idx !== undefined) domOrderIndices.push(idx)
+    }
+
+    const stationary = new Array<boolean>(desiredOrder.length).fill(false)
+    for (const pos of longestIncreasingSubsequenceIndices(domOrderIndices)) {
+      stationary[domOrderIndices[pos]] = true
+    }
+
+    let i = 0
+    while (i < desiredOrder.length) {
+      if (stationary[i]) { i++; continue }
+      let j = i
+      while (j < desiredOrder.length && !stationary[j]) j++
+      // Insert this run immediately before the next stationary scope (which
+      // is already exactly where it needs to be), or before the loop's
+      // trailing anchor when the run reaches the end of the list.
+      const before = j < desiredOrder.length
+        ? (desiredOrder[j].startMarker ?? desiredOrder[j].primaryEl)
+        : anchor
+      if (j - i === 1) {
+        insertScope(desiredOrder[i], container, before)
+      } else {
+        const runFragment = document.createDocumentFragment()
+        for (let k = i; k < j; k++) insertScope(desiredOrder[k], runFragment, null)
+        container.insertBefore(runFragment, before)
       }
+      i = j
     }
   }, bfId)
 }

@@ -144,7 +144,17 @@ type EffectContext = {
   cleanup: CleanupFn | null
   dependencies: Set<SubscriberSet>
   owner: EffectContext | null   // Parent scope for hierarchical disposal
-  children: EffectContext[]     // Owned child effects/roots
+  // Owned child effects/roots. A `Set` (not an array) so a single child's
+  // detach in `disposeEffect` is O(1) — `mapArray` disposes large sibling
+  // groups one scope at a time (list clear/replace), and an array would need
+  // an `indexOf` scan per removal, making that O(n²) in the sibling count
+  // (bulk-disposal perf). Insertion order is preserved (Set iterates in
+  // insertion order), so cascade disposal in `disposeSubtree` still walks
+  // children in the same order they were created. Lazily allocated — most
+  // effects never gain a child (leaf effects/memos), so `null` until the
+  // first `owner.children.add(...)` avoids a per-effect Set allocation on
+  // the common path (perf).
+  children: Set<EffectContext> | null
   disposed: boolean
   runCount: number              // Per-effect re-entry counter for circular dependency detection
   id: string                    // Dev instrumentation id ('' when profiling is off)
@@ -160,6 +170,16 @@ type EffectContext = {
 let Owner: EffectContext | null = null
 let Listener: EffectContext | null = null
 const MAX_EFFECT_RUNS = 100
+
+/**
+ * Register `child` under `owner`, lazily allocating `owner.children` on the
+ * first registration (perf: most effects never gain a child, so this keeps
+ * the common leaf-effect path allocation-free).
+ */
+function registerChild(owner: EffectContext, child: EffectContext): void {
+  if (!owner.children) owner.children = new Set()
+  owner.children.add(child)
+}
 
 let BatchDepth = 0
 const PendingEffects = new Set<EffectContext>()
@@ -243,7 +263,7 @@ export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: Subscriber
     cleanup: null,
     dependencies: new Set(),
     owner: Owner,
-    children: [],
+    children: null,
     disposed: false,
     runCount: 0,
     id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
@@ -255,7 +275,7 @@ export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: Subscriber
   if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
 
   // Register with parent owner for hierarchical disposal
-  if (Owner) Owner.children.push(effect)
+  if (Owner) registerChild(Owner, effect)
 
   runEffect(effect)
 }
@@ -327,10 +347,12 @@ function disposeSubtree(effect: EffectContext): void {
   if (effect.disposed) return
   effect.disposed = true
 
-  for (const child of effect.children) {
-    disposeSubtree(child)
+  if (effect.children) {
+    for (const child of effect.children) {
+      disposeSubtree(child)
+    }
+    effect.children.clear()
   }
-  effect.children.length = 0
 
   if (effect.cleanup) {
     effect.cleanup()
@@ -350,19 +372,23 @@ function disposeSubtree(effect: EffectContext): void {
 
 /**
  * Public dispose entry point: detach `effect` from its parent's `children`
- * list, then dispose the subtree rooted at `effect`. The detach step lives
+ * set, then dispose the subtree rooted at `effect`. The detach step lives
  * only here so the recursion (which doesn't need it — the parent clears
- * `children.length = 0` itself) cannot splice entries out of the array
- * it is iterating. The splice-during-iter shape was the root cause of
+ * the whole set itself via `children.clear()`) cannot mutate the set
+ * it is iterating. The mutate-during-iterate shape was the root cause of
  * #1366; separating the two responsibilities makes it structurally
  * unreachable.
+ *
+ * `Set.delete` is O(1), so detaching one child from a parent that owns many
+ * siblings (e.g. `mapArray` disposing a cleared/replaced keyed list one
+ * `createRoot` scope at a time) no longer costs an `indexOf` scan over the
+ * remaining siblings — that scan was O(n) per disposal, O(n²) for the batch.
  */
 function disposeEffect(effect: EffectContext): void {
   if (effect.disposed) return
 
   if (effect.owner) {
-    const idx = effect.owner.children.indexOf(effect)
-    if (idx >= 0) effect.owner.children.splice(idx, 1)
+    effect.owner.children?.delete(effect)
   }
 
   disposeSubtree(effect)
@@ -384,7 +410,7 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
     cleanup: null,
     dependencies: new Set(),
     owner: Owner,
-    children: [],
+    children: null,
     disposed: false,
     runCount: 0,
     id: profilerSink ? `r${++subscriberSeq}` : '',
@@ -395,7 +421,7 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
 
   if (profilerSink) profilerSink.effectCreate(root.id, 'root')
 
-  if (Owner) Owner.children.push(root)
+  if (Owner) registerChild(Owner, root)
 
   const prevOwner = Owner
   const prevListener = Listener
@@ -427,7 +453,7 @@ export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => voi
     cleanup: null,
     dependencies: new Set(),
     owner: Owner,
-    children: [],
+    children: null,
     disposed: false,
     runCount: 0,
     id: __bfId ?? (profilerSink ? `e${++subscriberSeq}` : ''),
@@ -438,7 +464,7 @@ export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => voi
 
   if (profilerSink) profilerSink.effectCreate(effect.id, effect.kind)
 
-  if (Owner) Owner.children.push(effect)
+  if (Owner) registerChild(Owner, effect)
 
   runEffect(effect)
 
