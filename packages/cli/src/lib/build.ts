@@ -33,6 +33,13 @@ import {
 } from './assets-ignore'
 import { fileExists, hashBytes, readBytes, readText, transpile } from './runtime'
 import { build as esbuildBuild } from 'esbuild'
+import {
+  ALWAYS_KEEP_RUNTIME_EXPORTS,
+  buildRuntimeBundle,
+  collectUsedRuntimeExports,
+  mergeRuntimeImportCollections,
+  type RuntimeImportCollection,
+} from './runtime-treeshake'
 
 export { resolveRelativeImports } from './resolve-imports'
 
@@ -71,6 +78,31 @@ export interface BuildConfig {
    * tsconfig `paths` aliases). Forwarded to `compileJSX`.
    */
   localImportPrefixes?: string[]
+  /**
+   * How to produce `barefoot.js`:
+   *   - `'treeshake'` (default) — bundle only the `@barefootjs/client*`
+   *     exports this project's compiled client JS (plus `bundleEntries` and
+   *     rebundled `externals` chunks) actually imports, plus the
+   *     always-kept public mount API (`ALWAYS_KEEP_RUNTIME_EXPORTS` in
+   *     `./runtime-treeshake.ts`). Falls back to `'full'` for this build,
+   *     with a console warning, if collection hits an import shape it can't
+   *     safely narrow (namespace import, default import, or dynamic
+   *     `import()` of the runtime) or if no prebuilt runtime dist file can
+   *     be found to bundle from.
+   *   - `'full'` — copy the entire prebuilt runtime bundle verbatim, as
+   *     `bf build` always did before per-project tree-shaking.
+   */
+  runtimeBundle?: 'treeshake' | 'full'
+  /**
+   * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
+   * under `runtimeBundle: 'treeshake'`, on top of whatever the collector
+   * finds and the always-kept public mount API. Use this for names only
+   * ever referenced from hand-written page scripts the CLI never compiles
+   * (an inline `<script type="module">` calling `hydrate()` directly, a
+   * hand-rolled router bootstrap, etc.) that aren't already covered by
+   * `ALWAYS_KEEP_RUNTIME_EXPORTS`.
+   */
+  runtimeKeep?: string[]
 }
 
 export interface BuildResult {
@@ -240,7 +272,7 @@ export function generateHash(content: string): string {
  */
 export function resolveBuildConfigFromTs(
   projectDir: string,
-  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void; externals?: Record<string, ExternalSpec>; externalsBasePath?: string; bundleEntries?: BundleEntry[]; localImportPrefixes?: string[] },
+  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void; externals?: Record<string, ExternalSpec>; externalsBasePath?: string; bundleEntries?: BundleEntry[]; localImportPrefixes?: string[]; runtimeBundle?: 'treeshake' | 'full'; runtimeKeep?: string[] },
   overrides?: { minify?: boolean }
 ): BuildConfig {
   const componentDirs = (tsConfig.components ?? ['components']).map(
@@ -267,6 +299,8 @@ export function resolveBuildConfigFromTs(
       externals: e.externals,
     })),
     localImportPrefixes: tsConfig.localImportPrefixes,
+    runtimeBundle: tsConfig.runtimeBundle,
+    runtimeKeep: tsConfig.runtimeKeep,
   }
 }
 
@@ -422,11 +456,14 @@ export async function build(
   const previousEmitEntries: Record<string, string[]> =
     loadedLedger?.entries ?? extractLedgerFromCache(onDiskCache)
 
-  // 1. Runtime file — copy the standalone runtime bundle (reactive inlined)
-  //    to barefoot.js. The sibling `./runtime` entry keeps
-  //    `@barefootjs/client/reactive` as an external import so downstream
-  //    bundlers can dedupe it against the main entry; when we ship a file
-  //    for the browser to load directly, we need the self-contained build.
+  // 1. Locate the prebuilt runtime dist file (reactive inlined) that
+  //    `barefoot.js` gets produced from — either copied verbatim
+  //    (`runtimeBundle: 'full'`) or bundled down to only the exports this
+  //    project uses (`runtimeBundle: 'treeshake'`, the default; see step 6d).
+  //    The sibling `./runtime` entry keeps `@barefootjs/client/reactive` as
+  //    an external import so downstream bundlers can dedupe it against the
+  //    main entry; when we ship a file for the browser to load directly, we
+  //    need the self-contained build.
   const domPkgDir = resolve(config.projectDir, 'node_modules/@barefootjs/client')
   const domDistCandidates = [
     resolve(config.projectDir, '../../packages/client/dist/runtime/standalone.js'),
@@ -447,33 +484,44 @@ export async function build(
     }
   }
 
-  if (domDistFile) {
-    const runtimeOutPath = resolve(runtimeOutDir, 'barefoot.js')
-    let runtimeContent: string | Uint8Array
-    if (config.minify) {
-      // Minify at copy time so the minify pass below doesn't need to touch
-      // barefoot.js (keeping it out of the per-build write loop).
-      runtimeContent = transpile(await readText(domDistFile), { loader: 'js', minify: true })
+  const runtimeMode: 'treeshake' | 'full' = config.runtimeBundle ?? 'treeshake'
+
+  if (runtimeMode === 'full') {
+    if (domDistFile) {
+      const runtimeOutPath = resolve(runtimeOutDir, 'barefoot.js')
+      let runtimeContent: string | Uint8Array
+      if (config.minify) {
+        // Minify at copy time so the minify pass below doesn't need to touch
+        // barefoot.js (keeping it out of the per-build write loop).
+        runtimeContent = transpile(await readText(domDistFile), { loader: 'js', minify: true })
+      } else {
+        runtimeContent = await readBytes(domDistFile)
+      }
+      const wrote = await writeIfChanged(runtimeOutPath, runtimeContent)
+      if (wrote) {
+        anyOutputChanged = true
+        console.log(`Generated: ${runtimeSubdir}/barefoot.js`)
+      }
     } else {
-      runtimeContent = await readBytes(domDistFile)
+      console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js copy.')
     }
-    const wrote = await writeIfChanged(runtimeOutPath, runtimeContent)
-    if (wrote) {
-      anyOutputChanged = true
-      console.log(`Generated: ${runtimeSubdir}/barefoot.js`)
-    }
-  } else {
-    console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js copy.')
   }
+  // `runtimeMode === 'treeshake'`: barefoot.js is produced at step 6d, once
+  // every component's (and bundleEntries'/externals') final client JS is
+  // known, so the used-export collection sees everything.
 
   // 1b. Externals — copy vendor chunks, emit importmap + barefoot-externals.json
-  const { changed: externalsChanged, allExternals } = await processExternals(config, runtimeSubdir, runtimeOutDir)
+  const { changed: externalsChanged, allExternals, outfiles: externalOutfiles } =
+    await processExternals(config, runtimeSubdir, runtimeOutDir)
   if (externalsChanged) anyOutputChanged = true
 
-  // 1c. bundleEntries entries — bundle with esbuild using auto-applied externals
-  if (await processBundleEntries(config, clientJsOutDir, clientJsSubdir, allExternals, cache, nextEntries, force)) {
-    anyOutputChanged = true
-  }
+  // 1c. bundleEntries entries — bundle with esbuild using auto-applied externals.
+  // (Its outputs land in `nextEntries` via the cache row below, same as
+  // component entries — step 6d's scan picks them up from there, so the
+  // return value here only needs `changed`.)
+  const { changed: bundleEntriesChanged } =
+    await processBundleEntries(config, clientJsOutDir, clientJsSubdir, allExternals, cache, nextEntries, force)
+  if (bundleEntriesChanged) anyOutputChanged = true
 
   // 2. Discover component files
   const allFiles: string[] = []
@@ -890,6 +938,121 @@ export async function build(
     }
   }
 
+  // 6d. Runtime bundle — collect the `@barefootjs/client*` exports actually
+  //     used across every emitted client JS file (components, bundleEntries,
+  //     rebundled externals chunks) and bundle `barefoot.js` down to just
+  //     those names plus the always-kept public mount API
+  //     (`ALWAYS_KEEP_RUNTIME_EXPORTS`). Must run BEFORE step 6c below: 6c
+  //     rewrites `@barefootjs/client*` specifiers to a relative
+  //     `./barefoot.js` path, and the collector's AST walk matches on the
+  //     original bare specifier.
+  //
+  //     Scans `nextEntries` (every current-build source's recorded
+  //     `outputs`) rather than `manifest`: in `clientOnly` (CSR) projects —
+  //     the primary target of tree-shaking, since there's no SSR template to
+  //     pair a component's client JS with — `compileEntry` never populates
+  //     `manifestKey`/`manifestEntry` (see its `!config.clientOnly &&
+  //     markedTemplates.length > 0` gate), so `manifest` only ever has the
+  //     `__barefoot__` sentinel row. `outputs` is recorded unconditionally
+  //     whenever a source produced client JS, cache-hit or freshly compiled,
+  //     so filtering it to `.js` paths (marked templates use the adapter's
+  //     own extension, never `.js`) finds every component's compiled output
+  //     in both modes. `bundleEntries` outputs are included via this same
+  //     path (`processBundleEntries` records them in `nextEntries` too); only
+  //     `externals` chunks need adding separately, since those aren't
+  //     source-driven cache entries.
+  let runtimeKeepHash: string | undefined = cache.runtimeKeepHash
+  if (runtimeMode === 'treeshake') {
+    if (!domDistFile) {
+      console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js generation.')
+      runtimeKeepHash = undefined
+    } else {
+      const scanTargets: string[] = [...externalOutfiles]
+      for (const entry of Object.values(nextEntries)) {
+        for (const rel of entry.outputs) {
+          if (rel.endsWith('.js')) scanTargets.push(resolve(config.outDir, rel))
+        }
+      }
+      const collections: RuntimeImportCollection[] = []
+      for (const filePath of scanTargets) {
+        try {
+          collections.push(collectUsedRuntimeExports(await readText(filePath), relative(config.outDir, filePath)))
+        } catch {
+          // File may not exist (e.g. a manifest entry whose write failed
+          // this run) — nothing to scan, not a tree-shake safety concern.
+        }
+      }
+      const merged = mergeRuntimeImportCollections(collections)
+      const runtimeOutPath = resolve(runtimeOutDir, 'barefoot.js')
+
+      if (merged.unsafe) {
+        // Fallback safety: an import shape the collector can't safely
+        // narrow (namespace import, default import, or a dynamic
+        // `import()`) was seen somewhere. Ship the full runtime rather than
+        // risk stripping an export that's actually reachable through it.
+        for (const reason of merged.reasons) {
+          console.warn(`Warning: runtime tree-shake — falling back to full runtime copy (${reason})`)
+        }
+        let runtimeContent: string | Uint8Array
+        if (config.minify) {
+          runtimeContent = transpile(await readText(domDistFile), { loader: 'js', minify: true })
+        } else {
+          runtimeContent = await readBytes(domDistFile)
+        }
+        if (await writeIfChanged(runtimeOutPath, runtimeContent)) {
+          anyOutputChanged = true
+          console.log(`Generated: ${runtimeSubdir}/barefoot.js (full copy — see warning above)`)
+        }
+        runtimeKeepHash = undefined
+      } else {
+        const keepNames = new Set<string>([
+          ...ALWAYS_KEEP_RUNTIME_EXPORTS,
+          ...(config.runtimeKeep ?? []),
+          ...merged.names,
+        ])
+        const distBytes = await readBytes(domDistFile)
+        const nextKeepHash = hashContent(JSON.stringify({
+          mode: runtimeMode,
+          minify: config.minify,
+          distHash: hashBytes(distBytes),
+          keep: [...keepNames].sort(),
+        }))
+
+        if (nextKeepHash === cache.runtimeKeepHash && await fileExists(runtimeOutPath)) {
+          // Nothing that would change barefoot.js's contents has changed —
+          // skip re-invoking esbuild.
+          runtimeKeepHash = nextKeepHash
+        } else {
+          try {
+            const bundled = await buildRuntimeBundle({
+              entrySource: domDistFile,
+              workingDir: runtimeOutDir,
+              keepNames,
+              minify: config.minify,
+            })
+            if (await writeIfChanged(runtimeOutPath, bundled)) {
+              anyOutputChanged = true
+              console.log(`Generated: ${runtimeSubdir}/barefoot.js (tree-shaken: ${keepNames.size} exports kept)`)
+            }
+            runtimeKeepHash = nextKeepHash
+          } catch (err) {
+            console.warn(
+              `Warning: runtime tree-shake bundling failed (${(err as Error).message}); falling back to full runtime copy.`
+            )
+            const runtimeContent: string | Uint8Array = config.minify
+              ? transpile(new TextDecoder().decode(distBytes), { loader: 'js', minify: true })
+              : distBytes
+            if (await writeIfChanged(runtimeOutPath, runtimeContent)) {
+              anyOutputChanged = true
+              console.log(`Generated: ${runtimeSubdir}/barefoot.js (full copy — see warning above)`)
+            }
+            runtimeKeepHash = undefined
+          }
+        }
+      }
+    }
+  }
+
   // 6c. Normalize @barefootjs/client* specifiers to the relative barefoot.js
   //     path so the per-source dedup below can collapse multiple specifiers
   //     pointing at the same runtime (watch-rebuild remnants, #1148-hoisted
@@ -971,6 +1134,7 @@ export async function build(
   const nextCache: BuildCache = {
     globalHash,
     entries: nextEntries,
+    runtimeKeepHash,
   }
   const nextLedger: EmitLedger = emptyLedger()
   for (const [key, entry] of Object.entries(nextEntries)) {
@@ -1413,20 +1577,28 @@ export type { ExternalsManifest } from '@barefootjs/jsx'
 /**
  * Process the `externals` config: copy vendor chunks to outDir, build the
  * importmap JSON, and write `barefoot-externals.json`.
- * Returns whether any output file changed and the full list of external package names.
+ * Returns whether any output file changed, the full list of external package
+ * names, and the local chunk file paths written (for the runtime tree-shake
+ * collector at step 6d — a vendor package that itself imports
+ * `@barefootjs/client*` keeps that import as a literal specifier in its
+ * emitted chunk, since `rebundleExternalsFor`/the plain-copy path both leave
+ * `@barefootjs/client*` unbundled).
  */
 export async function processExternals(
   config: BuildConfig,
   runtimeSubdir: string,
   runtimeOutDir: string,
-): Promise<{ changed: boolean; allExternals: string[] }> {
-  if (!config.externals || Object.keys(config.externals).length === 0) return { changed: false, allExternals: [] }
+): Promise<{ changed: boolean; allExternals: string[]; outfiles: string[] }> {
+  if (!config.externals || Object.keys(config.externals).length === 0) {
+    return { changed: false, allExternals: [], outfiles: [] }
+  }
 
   const basePath = config.externalsBasePath ?? `/${runtimeSubdir}/`
   const base = basePath.endsWith('/') ? basePath : basePath + '/'
 
   const imports: Record<string, string> = {}
   const preloads: string[] = []
+  const outfiles: string[] = []
   let anyChanged = false
 
   for (const [pkgName, spec] of Object.entries(config.externals)) {
@@ -1454,6 +1626,7 @@ export async function processExternals(
       const srcFile = entry.path
       const filename = vendorChunkFilename(pkgName)
       const destPath = resolve(runtimeOutDir, filename)
+      outfiles.push(destPath)
 
       if (wantRebundle) {
         await esbuildBuild({
@@ -1538,7 +1711,7 @@ export async function processExternals(
     }
   }
 
-  return { changed: anyChanged, allExternals }
+  return { changed: anyChanged, allExternals, outfiles }
 }
 
 /**
@@ -1551,6 +1724,12 @@ export async function processExternals(
  * esbuild's metafile on first build (project-local files only — node_modules
  * and externals are excluded). On subsequent runs, the entry is rebuilt only
  * if the source or any dep hash has changed, or the output file is missing.
+ *
+ * `outfiles` in the return value lists every entry's output path (cache-hit
+ * or freshly built) so the runtime tree-shake collector at step 6d can scan
+ * them too — `@barefootjs/client*` is always kept external here (see below),
+ * so a bundle entry like `client/router-entry.ts` importing `setupStreaming`
+ * from `@barefootjs/client/runtime` keeps that import verbatim in its output.
  */
 export async function processBundleEntries(
   config: BuildConfig,
@@ -1560,10 +1739,11 @@ export async function processBundleEntries(
   cache: BuildCache,
   nextEntries: Record<string, CacheEntry>,
   force: boolean,
-): Promise<boolean> {
-  if (!config.bundleEntries || config.bundleEntries.length === 0) return false
+): Promise<{ changed: boolean; outfiles: string[] }> {
+  if (!config.bundleEntries || config.bundleEntries.length === 0) return { changed: false, outfiles: [] }
 
   let anyChanged = false
+  const outfiles: string[] = []
   for (const entry of config.bundleEntries) {
     // `@barefootjs/client*` is always external for bundled entries: in a
     // BarefootJS app it resolves through the page's import map to the same
@@ -1575,6 +1755,7 @@ export async function processBundleEntries(
       ...new Set([...BF_CLIENT_DEDUP_KEYS, ...allExternals, ...(entry.externals ?? [])]),
     ]
     const outfilePath = resolve(clientJsOutDir, entry.outfile)
+    outfiles.push(outfilePath)
     const absEntry = resolve(entry.entry)
     const cacheKey = `${BUNDLE_KEY_PREFIX}${absEntry}`
 
@@ -1641,7 +1822,7 @@ export async function processBundleEntries(
       manifestKey: null,
     }
   }
-  return anyChanged
+  return { changed: anyChanged, outfiles }
 }
 
 // ── Cross-file child-shape pre-pass ──────────────────────────────────────
