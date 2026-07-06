@@ -276,6 +276,7 @@ function compileMultipleComponents(
         path: dir + output.componentName + adapter.extension,
         content: output.rawTemplate,
         type: 'markedTemplate',
+        componentName: output.componentName,
       })
       // SSR defaults, paired with the per-component template file via
       // the matching basename (the build pipeline pairs them in
@@ -287,6 +288,7 @@ function compileMultipleComponents(
           path: dir + output.componentName + '.ssr-defaults.json',
           content: JSON.stringify(ssrDefaults),
           type: 'ssrDefaults',
+          componentName: output.componentName,
         })
       }
     }
@@ -672,6 +674,7 @@ export function compileJSX(
     path: filePath.replace(/\.tsx?$/, adapter.extension),
     content,
     type: 'markedTemplate',
+    componentName: componentIR.metadata.componentName,
   })
 
   // SSR defaults — JSON-encoded seed values for the template's
@@ -686,6 +689,7 @@ export function compileJSX(
         path: filePath.replace(/\.tsx?$/, '.ssr-defaults.json'),
         content: JSON.stringify(ssrDefaults),
         type: 'ssrDefaults',
+        componentName: componentIR.metadata.componentName,
       })
     }
   }

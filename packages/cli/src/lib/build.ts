@@ -15,6 +15,8 @@ import {
   saveCache,
   type BuildCache,
   type CacheEntry,
+  type ManifestComponentEntry,
+  type ManifestEntry,
 } from './build-cache'
 import {
   BUNDLE_KEY_PREFIX,
@@ -83,7 +85,7 @@ export interface BuildResult {
   /** Number of compilation errors */
   errorCount: number
   /** Manifest entries */
-  manifest: Record<string, { clientJs?: string; markedTemplate: string; stubDeps?: string[] }>
+  manifest: Record<string, ManifestEntry>
   /** True when any output file on disk was changed (write or delete) */
   changed: boolean
   /**
@@ -482,7 +484,7 @@ export async function build(
   }
 
   // 3. Manifest baseline (runtime sentinel always present)
-  const manifest: Record<string, { clientJs?: string; markedTemplate: string; stubDeps?: string[] }> = {
+  const manifest: Record<string, ManifestEntry> = {
     '__barefoot__': { markedTemplate: '', clientJs: `${runtimeSubdir}/barefoot.js` },
   }
 
@@ -1757,7 +1759,7 @@ type CompileEntryOutcome =
       deps: Record<string, string>
       outputs: string[]
       manifestKey: string | null
-      manifestEntry?: { markedTemplate: string; clientJs?: string; stubDeps?: string[]; ssrDefaults?: Record<string, unknown> }
+      manifestEntry?: ManifestEntry
       wroteAny: boolean
       types?: string
       typesKey?: string
@@ -1915,33 +1917,57 @@ async function compileEntry(args: CompileEntryArgs): Promise<CompileEntryOutcome
   }
 
   let manifestKey: string | null = null
-  let manifestEntry: { markedTemplate: string; clientJs?: string; ssrDefaults?: Record<string, unknown> } | undefined
+  let manifestEntry: ManifestEntry | undefined
   if (!config.clientOnly && markedTemplates.length > 0) {
     const primaryTpl =
       markedTemplates.find(t => effectiveOutName(t.path, baseNameNoExt).startsWith(baseNameNoExt + '.'))
       ?? markedTemplates[0]
     manifestKey = baseNameNoExt
-    // Pair the SSR-defaults JSON to the primary template by basename.
-    // The jsx package emits one ssr-defaults file per generated template
-    // (multi-component-per-file adapters emit per-component pairs); pick
-    // whichever sits next to the primary template.
-    const primaryBase = primaryTpl.path.replace(/\.[^.]+$/, '').replace(/\.html$/, '')
-    const ssrDefaultsFile =
-      result.files.find(
-        f => f.type === 'ssrDefaults' && f.path === primaryBase + '.ssr-defaults.json',
-      ) ?? result.files.find(f => f.type === 'ssrDefaults')
-    let ssrDefaults: Record<string, unknown> | undefined
-    if (ssrDefaultsFile) {
+    // Pair each SSR-defaults JSON to its template by basename. The jsx
+    // package emits one ssr-defaults file per generated template
+    // (multi-component-per-file adapters emit per-component pairs).
+    const ssrDefaultsForTemplate = (tplPath: string): Record<string, unknown> | undefined => {
+      const base = tplPath.replace(/\.[^.]+$/, '').replace(/\.html$/, '')
+      const file =
+        result.files.find(f => f.type === 'ssrDefaults' && f.path === base + '.ssr-defaults.json')
+        ?? (tplPath === primaryTpl.path ? result.files.find(f => f.type === 'ssrDefaults') : undefined)
+      if (!file) return undefined
       try {
-        ssrDefaults = JSON.parse(ssrDefaultsFile.content) as Record<string, unknown>
+        return JSON.parse(file.content) as Record<string, unknown>
       } catch {
-        ssrDefaults = undefined
+        return undefined
       }
+    }
+    const ssrDefaults = ssrDefaultsForTemplate(primaryTpl.path)
+    // Per-exported-component rows (#2132). `templatesPerComponent` adapters
+    // emit one template per component, named `<ComponentName><extension>`
+    // (see compileMultipleComponents in packages/jsx/src/compiler.ts), so a
+    // multi-component module like the registry's `ui/toast/index.tsx` has
+    // several templates behind one manifest key. Server runtimes need each
+    // component's template + ssrDefaults to register one child renderer per
+    // exported component — the single `markedTemplate` above only carries
+    // the first one.
+    let components: Record<string, ManifestComponentEntry> | undefined
+    if (config.adapter.templatesPerComponent) {
+      components = {}
+      for (const tpl of markedTemplates) {
+        // The compiler stamps every markedTemplate with its component name
+        // (a single-component file's template is named after the SOURCE
+        // file, so the basename alone can't recover it).
+        if (!tpl.componentName) continue
+        const componentDefaults = ssrDefaultsForTemplate(tpl.path)
+        components[tpl.componentName] = {
+          markedTemplate: `${templatesSubdir}/${effectiveOutName(tpl.path, baseNameNoExt)}`,
+          ...(componentDefaults ? { ssrDefaults: componentDefaults } : {}),
+        }
+      }
+      if (Object.keys(components).length === 0) components = undefined
     }
     manifestEntry = {
       markedTemplate: `${templatesSubdir}/${effectiveOutName(primaryTpl.path, baseNameNoExt)}`,
       clientJs: hasClientJs ? `${clientJsSubdir}/${clientJsFilename}` : undefined,
       ...(ssrDefaults ? { ssrDefaults } : {}),
+      ...(components ? { components } : {}),
     }
   }
 
