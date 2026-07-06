@@ -2,7 +2,7 @@
 
 The engine-agnostic **PHP runtime** for [BarefootJS](https://barefootjs.dev) —
 the `BarefootJS` class (`BarefootJS.php`) that compiled marked templates call
-as the `bf` object (`bf.json(...)`, `bf.spreadAttrs(...)`, the array/string
+as the `bf` object (`bf.json(...)`, `bf.spread_attrs(...)`, the array/string
 method helpers, hydration markers, child-component rendering).
 
 This package has **no dependencies** beyond core PHP (>=8.2). Everything that
