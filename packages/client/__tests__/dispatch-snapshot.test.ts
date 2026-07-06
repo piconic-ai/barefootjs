@@ -22,7 +22,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { createSignal, createEffect, createRoot } from '../src/reactive'
+import { createSignal, createEffect, createRoot, setProfilerSink } from '../src/reactive'
 
 describe('write-dispatch snapshot', () => {
   test('a subscriber added mid-dispatch by an earlier effect does not run again in that same write', () => {
@@ -185,5 +185,45 @@ describe('write-dispatch snapshot', () => {
     expect(seen).toBe(0)
     setOther(42)
     expect(seen).toBe(42)
+  })
+
+  test('profiler-on dynamic dep drop invalidates the cached dispatch snapshot', () => {
+    // Regression (PR #2134 review): the profiler-instrumented runEffect path
+    // drops every dependency up front (`dep.delete(effect)`); a dep the run
+    // does NOT re-read must also invalidate `__bfSnapshot`. The trigger is a
+    // drop DURING a dispatch of that same signal: set() caches its subscriber
+    // snapshot first, the run then unsubscribes without re-reading, and a
+    // second set() must not reuse the stale snapshot to run the effect again.
+    const noopSink = {
+      signalSet() {}, subscribeAdd() {}, subscribeRemove() {},
+      effectCreate() {}, effectEnter() {}, effectExit() {},
+      reportOutput() {}, turnBegin() {}, turnEnd() {},
+    }
+    // biome-ignore lint: structural cast for a test-only sink
+    setProfilerSink(noopSink as never)
+    try {
+      createRoot(() => {
+        const [a, setA] = createSignal(0)
+        let phase = 0 // plain variable: flipping it does not notify the effect
+        let runs = 0
+        createEffect(() => {
+          runs++
+          if (phase === 0) a()
+        })
+        expect(runs).toBe(1)
+
+        // The run triggered by this dispatch drops `a` and does not re-read
+        // it — the dispatch-time snapshot for `a` must be invalidated.
+        phase = 1
+        setA(1)
+        expect(runs).toBe(2)
+
+        // A write to `a` must NOT re-run the now-unsubscribed effect.
+        setA(2)
+        expect(runs).toBe(2)
+      })
+    } finally {
+      setProfilerSink(null)
+    }
   })
 })

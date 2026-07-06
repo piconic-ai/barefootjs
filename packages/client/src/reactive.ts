@@ -385,6 +385,10 @@ function runEffect(effect: EffectContext): void {
     // the cheaper end-of-run sweep instead.
     for (const dep of effect.dependencies.keys()) {
       dep.delete(effect)
+      // Membership changed — a dep this run doesn't re-read would otherwise
+      // leave a stale cached dispatch snapshot that still contains this
+      // effect (re-reads re-add via `get()`, which re-invalidates anyway).
+      dep.__bfSnapshot = null
       profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
     }
     effect.dependencies.clear()
