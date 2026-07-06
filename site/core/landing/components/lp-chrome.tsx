@@ -1,0 +1,43 @@
+/**
+ * Landing-page header and footer, following the mock's minimal chrome
+ * (design/lp-mock/barefootjs-lp-v3.html): logotype + four nav links, and
+ * a flat link footer. The lowercase `barefootjs` logotype is intentional
+ * (design/LP-RENEWAL.md, 決定事項 5); the display name everywhere else
+ * is BarefootJS.
+ */
+
+import { ThemeSwitcher } from '@/components/theme-switcher'
+
+export function LpHeader({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
+  return (
+    <header className="lp-header">
+      <div className="lp-wrap lp-nav">
+        <a className="lp-logo" href="/"><b>bare</b>footjs</a>
+        <nav className="lp-nav-links" aria-label="Main">
+          <a href="/docs">Docs</a>
+          <a href={uiHref}>Components</a>
+          <a href="/integrations">Integrations</a>
+          <a href="https://github.com/piconic-ai/barefootjs">Source</a>
+          <ThemeSwitcher />
+        </nav>
+      </div>
+    </header>
+  )
+}
+
+export function LpFooter({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string }) {
+  return (
+    <footer className="lp-footer">
+      <div className="lp-wrap lp-foot-row">
+        <div>
+          <a href="/docs">Docs</a>
+          <a href={uiHref}>Components</a>
+          <a href="/integrations">Integrations</a>
+          <a href="/docs/advanced/compatibility-matrix">Compatibility</a>
+          <a href="https://github.com/piconic-ai/barefootjs">GitHub</a>
+        </div>
+        <div>© 2026 Piconic — open source (MIT).</div>
+      </div>
+    </footer>
+  )
+}

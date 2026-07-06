@@ -1,18 +1,17 @@
 /**
  * Landing page renderer
  *
- * Minimal layout for the landing page (no sidebar, no TOC).
- * Shares the same import map, theme init, and BfScripts as the docs renderer.
+ * Minimal layout for the landing page (no sidebar, no TOC), with the
+ * mock's LP-specific chrome (LpHeader / LpFooter). Shares the same
+ * import map, theme init, and BfScripts as the docs renderer.
  */
 
 import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
-import { Header } from '../../shared/components/header'
-import { SearchButton } from '@/components/search-button'
 import { CommandPalette } from '@/components/command-palette'
 import { commandGroups } from '../lib/command-items'
-import { ThemeSwitcher } from '@/components/theme-switcher'
 import { BfScripts } from '../../../packages/adapter-hono/src/scripts'
 import { themeInitScript } from '@barefootjs/site-shared/lib/theme-init'
+import { LpHeader, LpFooter } from './components/lp-chrome'
 
 /**
  * Predictable instance ID generator for consistent SSR.
@@ -46,8 +45,8 @@ export const landingRenderer = jsxRenderer(
     const hostname = new URL(c.req.url).hostname
     const uiHref = hostname === 'localhost' ? 'http://localhost:3002/' : 'https://ui.barefootjs.dev'
 
-    const pageTitle = title || 'Barefoot.js'
-    const pageDescription = description || 'TSX in. Your stack out.'
+    const pageTitle = title || 'BarefootJS — TSX in. Your stack out.'
+    const pageDescription = description || 'Components without the Node server.'
     return (
       <WithPredictableIds>
         <html lang="en">
@@ -77,11 +76,12 @@ export const landingRenderer = jsxRenderer(
             <link rel="stylesheet" href="/static/uno.css" />
           </head>
           <body>
-            <Header logoHref="/" coreHref="/docs/introduction" uiHref={uiHref} playgroundHref="/playground" integrationsHref="/integrations" searchSlot={<SearchButton />} themeSwitcher={<ThemeSwitcher />} />
+            <LpHeader uiHref={uiHref} />
             <CommandPalette groups={commandGroups} />
             <main>
               {children}
             </main>
+            <LpFooter uiHref={uiHref} />
             <BfScripts />
           </body>
         </html>
