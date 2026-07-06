@@ -51,7 +51,17 @@ describe('destructured .map() param rewriting (#951)', () => {
     // Binding references rewritten to accessor paths
     expect(js).toContain('__bfItem().label')
     expect(js).toContain('__bfItem().done')
-    expect(js).toContain('__bfItem().id')
+    // `id` is referenced ONLY via `key={id}` in this fixture. The loop's
+    // `keyFn` argument to `mapArray` evaluates against the raw destructured
+    // item (before per-item signal wrapping) — `({ id, label, done }) =>
+    // String(id)` — so `id` never needs the `__bfItem()` accessor rewrite at
+    // all; `mapArray` stamps the real `data-key` from that keyFn onto every
+    // freshly created element itself (see `map-array.ts`). The hoisted
+    // shared-template fast path (perf) therefore omits the key interpolation
+    // from the once-per-loop skeleton (`data-key=""` placeholder) rather than
+    // baking a `__bfItem().id` reference into it — no `__bfItem().id`
+    // occurrence anywhere is the CORRECT, not incomplete, output here.
+    expect(js).toContain('({ id, label, done }) => String(id)')
   })
 
   test('tuple destructure with hole: references become __bfItem()[index]', () => {

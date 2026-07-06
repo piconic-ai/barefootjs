@@ -507,6 +507,18 @@ export interface TopLevelLoop extends LoopCore {
    * that becomes `[]` in the CSR template substitution.
    */
   staticItemTemplate?: string
+  /**
+   * Shared once-per-loop skeleton template (perf), built by
+   * `buildLoopSkeletonTemplate` when the loop body is a statically-analyzable
+   * single-root element tree whose only dynamic parts are text/attribute
+   * slots already covered by a loop-child `createEffect`. Present only for
+   * dynamic (`mapArray`) top-level loops that pass the safety predicate in
+   * `collect-elements.ts`'s `loop` visitor — `undefined` means "fall back to
+   * the per-row interpolated `template` above" (conditionals, spread attrs,
+   * multi-root bodies, nested components/loops, or any dynamic attr/text not
+   * proven covered by an effect).
+   */
+  skeletonTemplate?: string
   childEventHandlers: string[] // Bare-identifier event handler names (for the reachability graph)
   childComponent?: IRLoopChildComponent // For createComponent-based rendering
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies

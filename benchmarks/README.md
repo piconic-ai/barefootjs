@@ -135,34 +135,37 @@ signal, wall-clock will differ).
 
 | Operation | vanilla | barefoot | react | solid |
 |---|---|---|---|---|
-| create1k | 72.90 ms | 110.10 ms (1.51x) | 86.45 ms (1.19x) | 77.15 ms (1.06x) |
-| replace1k | 88.25 ms | 122.60 ms (1.39x) | 104.70 ms (1.19x) | 91.15 ms (1.03x) |
-| update10th | 13.25 ms | 13.10 ms (0.99x) | 13.85 ms (1.05x) | 13.00 ms (0.98x) |
-| select | 3.80 ms | 4.30 ms (1.13x) | 4.65 ms (1.22x) | 4.10 ms (1.08x) |
-| swap | 17.05 ms | 16.45 ms (0.96x) | 82.20 ms (4.82x) | 16.55 ms (0.97x) |
-| remove | 20.30 ms | 21.70 ms (1.07x) | 19.95 ms (0.98x) | 22.00 ms (1.08x) |
-| create10k | 798.00 ms | 1132.70 ms (1.42x) | 1155.20 ms (1.45x) | 776.70 ms (0.97x) |
-| append1k | 283.70 ms | 357.20 ms (1.26x) | 303.00 ms (1.07x) | 293.20 ms (1.03x) |
-| clear10k | 59.50 ms | 85.40 ms (1.44x) | 109.20 ms (1.84x) | 71.50 ms (1.20x) |
-| startup | 30.10 ms | 39.70 ms (1.32x) | 54.60 ms (1.81x) | 34.30 ms (1.14x) |
-| memory (1k rows) | 253.2KB | 1393.3KB (5.50x) | 2092.2KB (8.26x) | 1485.9KB (5.87x) |
-| shipped JS (gzip) | 1.1KB | 19.3KB | 58.8KB | 6.8KB |
+| create1k | 71.55 ms | 79.30 ms (1.11x) | 85.30 ms (1.19x) | 72.60 ms (1.01x) |
+| replace1k | 87.30 ms | 95.75 ms (1.10x) | 104.90 ms (1.20x) | 87.95 ms (1.01x) |
+| update10th | 12.25 ms | 13.40 ms (1.09x) | 15.25 ms (1.24x) | 11.05 ms (0.90x) |
+| select | 3.65 ms | 4.05 ms (1.11x) | 4.75 ms (1.30x) | 3.95 ms (1.08x) |
+| swap | 15.35 ms | 17.50 ms (1.14x) | 83.40 ms (5.43x) | 17.65 ms (1.15x) |
+| remove | 17.55 ms | 20.75 ms (1.18x) | 20.20 ms (1.15x) | 18.80 ms (1.07x) |
+| create10k | 776.00 ms | 854.50 ms (1.10x) | 1045.00 ms (1.35x) | 699.60 ms (0.90x) |
+| append1k | 302.40 ms | 321.30 ms (1.06x) | 318.80 ms (1.05x) | 250.50 ms (0.83x) |
+| clear10k | 65.20 ms | 76.40 ms (1.17x) | 110.10 ms (1.69x) | 69.70 ms (1.07x) |
+| startup | 37.80 ms | 44.10 ms (1.17x) | 58.30 ms (1.54x) | 37.20 ms (0.98x) |
+| memory (1k rows) | 253.4KB | 1495.6KB (5.90x) | 2091.9KB (8.26x) | 1486.7KB (5.87x) |
+| shipped JS (gzip) | 1.1KB | 19.4KB | 58.8KB | 6.8KB |
 
-Reading it honestly: on the update-path operations (update / select / swap /
-remove) BarefootJS is at vanilla/Solid level. On the creation-path
-operations it sits in React's class (slower than React on create1k and
-append1k, faster on clear10k), while Solid stays essentially at vanilla
-cost — creation overhead (per-row reactive scopes) is the clearest place
-BarefootJS still has room to improve.
+Reading it honestly: BarefootJS now sits within 6-18% of the vanilla
+baseline on every operation — matching or beating React across the board
+and close to Solid everywhere. Solid keeps a real edge on bulk creation
+(create10k 0.90x, append 0.83x) and ships the smaller runtime; heap per
+1k rows is now essentially equal to Solid's. These numbers include the
+compiler's hoisted shared loop template (one HTML parse per loop, clone
+per row) and the runtime's generation-stamped dependency tracking — both
+landed after the first published run of this suite, whose creation-path
+numbers were 1.4-1.5x.
 
 ### SSR + hydration (1,000-row table)
 
 | Metric | react | solid | barefoot |
 |---|---|---|---|
-| Server render (median, n=20) | 22.07 ms | 0.36 ms | 7.25 ms |
-| Hydration time (median, n=10) | 43.55 ms | 23.70 ms | 31.20 ms |
+| Server render (median, n=20) | 24.76 ms | 0.38 ms | 9.18 ms |
+| Hydration time (median, n=10) | 43.35 ms | 25.05 ms | 31.15 ms |
 | Interactivity gate | PASS | PASS | PASS |
-| Client JS (raw / gzip) | 182.3KB / 58.1KB | 17.0KB / 6.6KB | 18.3KB / 6.9KB |
+| Client JS (raw / gzip) | 182.3KB / 58.1KB | 17.0KB / 6.6KB | 18.6KB / 7.0KB |
 | HTML document (raw / gzip) | 220.0KB / 14.9KB | 235.9KB / 18.6KB | 318.6KB / 19.5KB |
 
 Solid's sub-millisecond server render (precompiled string templates) is a
@@ -173,10 +176,12 @@ limitations).
 
 ### Reactive primitives (`bun benchmarks/reactive.ts`)
 
-BarefootJS vs SolidJS on raw signal/effect/memo operations: BarefootJS is
-ahead on signal reads, independent chains, and unbatched deep-chain
-propagation; Solid is ahead on raw writes, fan-out dispatch, and batched
-deep chains. Run it locally for the full table — neither library is
+BarefootJS vs SolidJS on raw signal/effect/memo operations: after the
+generation-stamped dependency-tracking optimization, BarefootJS leads on
+signal creation, reads, effect dispatch (single-subscriber and fan-out),
+unbatched deep chains, independent chains, and partial updates; Solid
+stays ahead on raw no-subscriber writes and batched deep-chain
+propagation. Run it locally for the full table — neither library is
 uniformly faster at the primitive level.
 
 ## Honest limitations
