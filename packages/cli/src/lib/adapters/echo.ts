@@ -30,6 +30,7 @@ import {
 } from './shared'
 import {
   bfGoSource,
+  evalGoSource,
   streamingGoSource,
 } from './runtimes.generated'
 
@@ -525,6 +526,7 @@ export const ECHO_ADAPTER: AdapterTemplate = {
     'env.go': ECHO_ENV_GO,
     'go.mod': ECHO_GO_MOD,
     'bf-runtime/bf.go': bfGoSource,
+    'bf-runtime/eval.go': evalGoSource,
     'bf-runtime/streaming.go': streamingGoSource,
     'bf-runtime/go.mod': ECHO_BF_RUNTIME_GO_MOD,
     'barefoot.config.ts': ECHO_BAREFOOT_CONFIG_TS,
