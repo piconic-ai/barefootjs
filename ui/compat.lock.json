@@ -182,16 +182,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -246,16 +237,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -310,16 +292,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -374,16 +347,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -963,16 +927,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -1105,16 +1060,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -1169,16 +1115,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
@@ -1675,16 +1612,7 @@
         "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
         "ok": false,
