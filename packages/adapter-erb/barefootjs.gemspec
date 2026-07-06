@@ -5,7 +5,7 @@ require 'json'
 pkg = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
 Gem::Specification.new do |s|
-  s.name        = 'barefoot_js'
+  s.name        = 'barefootjs'
   s.version     = pkg['version']
   s.summary     = 'Ruby runtime for the @barefootjs/erb adapter'
   s.description = 'Engine-agnostic BarefootJS server runtime targeting ERB, ' \
