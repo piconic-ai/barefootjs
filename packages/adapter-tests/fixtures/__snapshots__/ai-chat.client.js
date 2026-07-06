@@ -84,8 +84,10 @@ export function initAIChatInteractive(__scope, _p = {}) {
     const el = document.getElementById('chat-messages')
     if (el) el.scrollTop = el.scrollHeight
   })
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = `<div data-key="" bf="s1"><div class="chat-bubble"><p><!--bf:s0--><!--/--></p></div></div>`
   mapArray(() => messages(), _s5, (msg) => String(msg.id), (msg, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<div data-key="${msg().id}" ${(`chat-msg chat-${msg().role}`) != null ? 'class="' + escapeAttr(`chat-msg chat-${msg().role}`) + '"' : ''} bf="s1"><div class="chat-bubble"><p><!--bf:s0-->${escapeText(msg().content)}<!--/--></p></div></div>`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const __ra_s1 = qsa(__el, '[bf="s1"]')
     if (__ra_s1) {
       createEffect(() => {
