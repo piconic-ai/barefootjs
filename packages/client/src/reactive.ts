@@ -88,8 +88,16 @@ export interface ProfilerEventSink {
   turnEnd(): void
 }
 
-/** A signal's subscriber set, tagged with the signal's id for edge-removal events. */
-type SubscriberSet = Set<EffectContext> & { __bfSignalId?: string }
+/**
+ * A signal's subscriber set, tagged with the signal's id for edge-removal
+ * events. `__bfSnapshot` is a dispatch-order cache for `set()` (perf): the
+ * array `[...subscribers]` would otherwise allocate on every write, but a
+ * stable subscriber graph (the common case — see `runEffect`'s dependency
+ * sweep) never mutates this Set between writes, so the same array can be
+ * reused. `undefined`/`null` means "no valid cache, rebuild on next write";
+ * every call site that adds or removes a member sets it back to `null`.
+ */
+type SubscriberSet = Set<EffectContext> & { __bfSignalId?: string; __bfSnapshot?: EffectContext[] | null }
 
 let profilerSink: ProfilerEventSink | null = null
 let signalSeq = 0
@@ -142,7 +150,22 @@ export function __bfReportOutput(changed: boolean): void {
 type EffectContext = {
   fn: EffectFn
   cleanup: CleanupFn | null
-  dependencies: Set<SubscriberSet>
+  // Signals read by the most recently completed run, mapped to the `gen`
+  // stamp they were (re)confirmed at. A re-run that reads the SAME signal
+  // again just refreshes its stamp in `get()` (no Set.delete/add on the
+  // signal's subscriber Set); one that stops reading a signal leaves that
+  // entry stamped with a stale `gen`, which the end-of-run sweep in
+  // `runEffect` detects and removes (perf: this is what makes a stable
+  // dependency graph — the overwhelmingly common case — free of the
+  // unsubscribe/resubscribe churn a naive clear-and-rebuild pays on every
+  // single run, while keeping dynamic dependency tracking exact).
+  dependencies: Map<SubscriberSet, number>
+  // Monotonic per-effect run counter, bumped once per invocation (including
+  // reentrant/circular ones — each nested call gets its own higher value).
+  // Stamped onto `dependencies` entries in `get()`; compared against by the
+  // OUTERMOST invocation's end-of-run sweep to find entries the most recent
+  // run didn't touch. Never compared across effects.
+  gen: number
   owner: EffectContext | null   // Parent scope for hierarchical disposal
   // Owned child effects/roots. A `Set` (not an array) so a single child's
   // detach in `disposeEffect` is O(1) — `mapArray` disposes large sibling
@@ -206,9 +229,33 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
 
   const get = () => {
     if (Listener) {
-      subscribers.add(Listener)
-      Listener.dependencies.add(subscribers)
-      if (profilerSink) profilerSink.subscribeAdd(id, Listener.id)
+      if (profilerSink) {
+        // Exact historical event contract: unconditionally (re)add and fire
+        // `subscribeAdd` for every read call, even a signal read twice
+        // within the same run body — profiler consumers must see the same
+        // stream regardless of the perf path below (dev-only instrumentation,
+        // its cost doesn't matter). See profiler-instrumentation.test.ts.
+        // Always invalidates `__bfSnapshot`, even on a redundant re-add of an
+        // already-present member — cheap here (profiling is already off the
+        // fast path) and correctness-critical: a real new member (e.g. this
+        // signal previously had zero subscribers, cached an empty snapshot,
+        // and gains its first one here) must not leave a stale empty cache
+        // behind for `set()` to reuse.
+        subscribers.add(Listener)
+        subscribers.__bfSnapshot = null
+        Listener.dependencies.set(subscribers, Listener.gen)
+        profilerSink.subscribeAdd(id, Listener.id)
+      } else if (!Listener.dependencies.has(subscribers)) {
+        // New dependency for this effect (first time it's read this signal,
+        // or it stopped and started again) — the only case that needs to
+        // touch the signal's subscriber Set. An already-tracked dependency
+        // (the common case) just gets its stamp refreshed below.
+        subscribers.add(Listener)
+        subscribers.__bfSnapshot = null
+        Listener.dependencies.set(subscribers, Listener.gen)
+      } else {
+        Listener.dependencies.set(subscribers, Listener.gen)
+      }
     }
     return value
   }
@@ -231,9 +278,25 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
         PendingEffects.add(effect)
       }
     } else {
-      const effectsToRun = [...subscribers]
-      for (const effect of effectsToRun) {
-        runEffect(effect)
+      // Snapshot the subscriber list before dispatch so an effect that
+      // subscribes/unsubscribes DURING this write's dispatch (a nested
+      // re-run, or a disposal triggered from an effect body) can't change
+      // what THIS write runs — same fixed-at-dispatch-time semantics as the
+      // previous per-write `[...subscribers]` copy (pinned in
+      // reactive.test.ts's "dispatch snapshot" cases).
+      //
+      // The array is cached on the Set itself and only rebuilt when
+      // membership actually changes (`get()`'s new-dependency branch, the
+      // end-of-run sweep, and disposal all null it out) — a stable
+      // subscriber graph (effects that read the same signals every run,
+      // the common case) reuses the same array across every subsequent
+      // write instead of paying a fresh allocation + copy each time.
+      let snapshot = subscribers.__bfSnapshot
+      if (!snapshot) {
+        snapshot = subscribers.__bfSnapshot = [...subscribers]
+      }
+      for (let i = 0; i < snapshot.length; i++) {
+        runEffect(snapshot[i]!)
       }
     }
   }
@@ -261,7 +324,8 @@ export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: Subscriber
   const effect: EffectContext = {
     fn,
     cleanup: null,
-    dependencies: new Set(),
+    dependencies: new Map(),
+    gen: 0,
     owner: Owner,
     children: null,
     disposed: false,
@@ -288,6 +352,15 @@ function runEffect(effect: EffectContext): void {
     effect.runCount = 0
     throw new Error(`Circular dependency detected: effect re-entered itself ${MAX_EFFECT_RUNS} times.`)
   }
+  // Captured right after the reentrancy counter above so a nested re-entrant
+  // run of this SAME effect (the circular-dependency guard above bounds how
+  // deep that can go) doesn't run the end-of-run dependency sweep against
+  // its own, shallower run: only the outermost call sweeps, using whatever
+  // `effect.gen` the deepest/most-recently-completed nested run left behind
+  // — that run's reads are the authoritative "current dependencies" for the
+  // whole reentrant chain, exactly like the old clear-at-every-entry code's
+  // last write won.
+  const isOutermostRun = effect.runCount === 1
 
   // `effectEnter` is emitted *before* cleanup so the whole run — cleanup
   // included — is bracketed by enter/exit. A `set()` performed inside a cleanup
@@ -302,16 +375,26 @@ function runEffect(effect: EffectContext): void {
     effect.cleanup = null
   }
 
-  for (const dep of effect.dependencies) {
-    dep.delete(effect)
-    if (profilerSink) profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
+  if (profilerSink) {
+    // Dev-instrumented path only: reproduce the exact pre-optimization event
+    // contract by dropping every dependency up front, so `get()` re-adds (and
+    // re-fires `subscribeAdd` for) everything the run reads — including a
+    // signal read twice in one body. Profiling is dev-only and its cost
+    // doesn't matter; what matters is that turning it on never changes the
+    // event stream a consumer sees. The perf path below (no profiler) uses
+    // the cheaper end-of-run sweep instead.
+    for (const dep of effect.dependencies.keys()) {
+      dep.delete(effect)
+      profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
+    }
+    effect.dependencies.clear()
   }
-  effect.dependencies.clear()
 
   const prevOwner = Owner
   const prevListener = Listener
   Owner = effect
   Listener = effect
+  effect.gen++
 
   // Fresh output fingerprint for this run (§4.2.2); `__bfReportOutput` fills it.
   effect.outputReported = false
@@ -330,6 +413,25 @@ function runEffect(effect: EffectContext): void {
     Owner = prevOwner
     Listener = prevListener
     effect.runCount--
+
+    if (!profilerSink && isOutermostRun) {
+      // Sweep: a dependency whose stamp isn't the current `effect.gen`
+      // wasn't (re)read by the most recent run of this effect's body, so it
+      // must be dropped — this is what keeps dynamic dependency tracking
+      // exact (an effect that stops reading a signal stops depending on it).
+      // A dependency that IS still read every run (the overwhelmingly common
+      // case: most effects' read set never changes) never reaches this
+      // branch at all — `get()` above just refreshed its stamp, no
+      // Set.delete/add round trip on the signal's subscriber Set.
+      for (const [dep, gen] of effect.dependencies) {
+        if (gen !== effect.gen) {
+          effect.dependencies.delete(dep)
+          dep.delete(effect)
+          dep.__bfSnapshot = null
+        }
+      }
+    }
+
     if (profilerSink) {
       profilerSink.effectExit(effect.id, performance.now() - start)
       if (effect.outputReported) profilerSink.effectOutput?.(effect.id, effect.outputChanged)
@@ -359,8 +461,9 @@ function disposeSubtree(effect: EffectContext): void {
     effect.cleanup = null
   }
 
-  for (const dep of effect.dependencies) {
+  for (const dep of effect.dependencies.keys()) {
     dep.delete(effect)
+    dep.__bfSnapshot = null
     if (profilerSink) profilerSink.subscribeRemove(dep.__bfSignalId ?? '', effect.id)
   }
   effect.dependencies.clear()
@@ -408,7 +511,8 @@ export function createRoot<T>(fn: (dispose: () => void) => T): T {
   const root: EffectContext = {
     fn: () => {},
     cleanup: null,
-    dependencies: new Set(),
+    dependencies: new Map(),
+    gen: 0,
     owner: Owner,
     children: null,
     disposed: false,
@@ -451,7 +555,8 @@ export function createDisposableEffect(fn: EffectFn, __bfId?: string): () => voi
       return fn()
     },
     cleanup: null,
-    dependencies: new Set(),
+    dependencies: new Map(),
+    gen: 0,
     owner: Owner,
     children: null,
     disposed: false,
