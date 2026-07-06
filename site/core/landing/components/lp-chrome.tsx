@@ -41,7 +41,6 @@ export function LpFooter({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: st
           <a href="/docs/advanced/compatibility-matrix">Compatibility</a>
           <a href="https://github.com/piconic-ai/barefootjs">GitHub</a>
         </div>
-        <div>© 2026 Piconic — open source (MIT).</div>
       </div>
     </footer>
   )
