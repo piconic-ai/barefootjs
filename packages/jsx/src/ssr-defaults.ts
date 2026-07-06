@@ -93,27 +93,29 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   if (metadata.propsObjectName) propsLike.add(metadata.propsObjectName)
   for (const p of metadata.propsParams) propsLike.add(p.name)
 
-  // Prop destructure defaults. Only emit entries for the
-  // destructured-prop form (`function Foo({ variant = 'default' })`)
-  // where each `propsParam` name corresponds to a template-stash
-  // variable. The bare-props-arg form (`function Foo(props: Props)`)
-  // also populates `propsParams` from the type, but those names are
-  // never referenced as bare scalars in the generated template —
-  // accesses go through `$props->{X}` — so seeding them would just
-  // crowd the manifest with no-op entries.
-  if (metadata.propsObjectName === null) {
-    for (const p of metadata.propsParams) {
-      if (p.isRest) continue
-      if (p.defaultValue !== undefined) {
-        const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
-        out[p.name] = { propName: p.name, value: resultToJsonable(value) }
-      } else {
-        // No destructure default — the template will read it as-is, source
-        // from props and let Perl's `//` operator decide what `undef`
-        // becomes. We still register the entry so consumers can supply
-        // the propName even with no static fallback.
-        out[p.name] = { propName: p.name, value: null }
-      }
+  // Prop entries. Both parameter forms need one entry per prop:
+  //   - Destructured form (`function Foo({ variant = 'default' })`):
+  //     each `propsParam` is a template-stash variable; a literal
+  //     destructure default becomes the static fallback value.
+  //   - Bare-props form (`function Foo(props: Props)`): template-stash
+  //     adapters flatten `props.X` to the same bare scalar (`$X` — see
+  //     the Mojo emitter's `member()`), NOT a `$props->{X}` hash read,
+  //     so an unseeded prop the caller forgets to pass is a strict-mode
+  //     compile error, not a soft `undef` (#2126). Seed every declared
+  //     prop with a `null` fallback (→ undef; the template-side `// …`
+  //     recompute supplies the real default, and a caller-passed prop
+  //     wins via `propName`).
+  for (const p of metadata.propsParams) {
+    if (p.isRest) continue
+    if (metadata.propsObjectName === null && p.defaultValue !== undefined) {
+      const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
+      out[p.name] = { propName: p.name, value: resultToJsonable(value) }
+    } else {
+      // No destructure default — the template reads the prop as-is;
+      // Perl's `//` operator decides what `undef` becomes. The entry
+      // still matters so the template variable exists and consumers
+      // can supply the propName even with no static fallback.
+      out[p.name] = { propName: p.name, value: null }
     }
   }
   // Rest-props bag (`...props`) — tracked separately from `propsParams`
@@ -159,17 +161,17 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     bindings[memo.name] = value
   }
 
-  // Bare-props-arg form (`function Foo(props: Props)`): a signal / memo
-  // whose initializer reads `props.X` is lowered by template-stash
-  // adapters to a *bare scalar* recompute (`my $count = ($initial // 0)`,
-  // the #1297 prop-derived seeding) — not a `$props->{X}` hash read. That
-  // bare `$initial` has to exist in the stash or Perl's strict mode aborts
-  // the render with `Global symbol "$initial" requires explicit package
-  // name`. The top block skips bare-props props on the assumption they're
-  // only ever read via `$props->{X}`, which the prop-derived seeding
-  // violates — so seed every prop a signal / memo initializer references.
-  // Value is `null` (→ undef): the recompute's own `?? <literal>` supplies
-  // the real fallback, and a caller-passed prop still wins via `propName`.
+  // Bare-props-arg safety net: the prop block above covers every prop
+  // *declared* on the props type, but `propsParams` can miss props read
+  // through an untyped / inline-typed `props` object. A signal / memo
+  // initializer's `props.X` read is lowered by template-stash adapters
+  // to a *bare scalar* recompute (`my $count = ($initial // 0)`, the
+  // #1297 prop-derived seeding), and that bare `$initial` has to exist
+  // in the stash or Perl's strict mode aborts the render with `Global
+  // symbol "$initial" requires explicit package name` — so also seed
+  // every prop a signal / memo initializer references. Value is `null`
+  // (→ undef): the recompute's own `?? <literal>` supplies the real
+  // fallback, and a caller-passed prop still wins via `propName`.
   if (metadata.propsObjectName !== null) {
     const referenced = new Set<string>()
     for (const sig of metadata.signals) {

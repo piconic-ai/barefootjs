@@ -82,6 +82,26 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.initial).toEqual({ propName: 'initial', value: null })
   })
 
+  test('seeds every declared bare-props prop, including direct template reads (#2126)', () => {
+    // Template-stash adapters flatten `props.label` to the bare scalar
+    // `$label` even when no signal/memo references it (`<%= $label %>` in
+    // the body), so a prop the caller forgets to pass must still exist in
+    // the stash. Every prop declared on the props type gets an entry —
+    // not just the ones a signal / memo initializer reads.
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Greeting(props: { label?: string }) {
+        const [n, setN] = createSignal(0)
+        return <div><p>{props.label}</p><button onClick={() => setN(n() + 1)}>{n()}</button></div>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.n).toEqual({ value: 0 })
+  })
+
   test('memo derived from a signal evaluates through the chain', () => {
     const metadata = metadataFor(`
       'use client'

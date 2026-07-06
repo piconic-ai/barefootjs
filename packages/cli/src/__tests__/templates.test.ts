@@ -184,9 +184,20 @@ describe('adapter registry', () => {
       // so adding a new UI component via `bf add badge` doesn't
       // require parallel edits to `app.pl`.
       const appPl = ADAPTERS.mojo.files['app.pl']
-      expect(appPl).toMatch(/\$c->render\(template => 'Counter', layout => 'default'\)/)
+      expect(appPl).toMatch(/\$c->render\(template => 'Counter', layout => 'default', initial => 0\)/)
       expect(appPl).not.toMatch(/signal_init\s*=>/)
       expect(appPl).not.toMatch(/_scope_id\(/)
+    })
+
+    test('mojo route passes the Counter prop explicitly (#2126)', () => {
+      // The stock `/` page must never depend on the manifest being
+      // present at server boot: `npm run dev` starts `bf build --watch`
+      // and morbo concurrently, so the first request can arrive before
+      // the first build seeds the stash defaults. Passing `initial => 0`
+      // keeps the happy path self-sufficient — and doubles as the worked
+      // example of how props reach a component (they're stash values).
+      const appPl = ADAPTERS.mojo.files['app.pl']
+      expect(appPl).toContain('initial => 0')
     })
 
     test('mojo disables template cache in development mode', () => {

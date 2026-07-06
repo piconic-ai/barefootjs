@@ -165,6 +165,77 @@ subtest 'plugin before_render — caller searchParams wins over the request' => 
     is $c->stash('searchParams'), $custom, 'caller-supplied searchParams preserved (//=)';
 };
 
+subtest 'plugin loads a manifest that appears after startup (#2126)' => sub {
+    # The scaffold's dev script starts `bf build --watch` and the web
+    # server concurrently, so the app can boot before the first build
+    # writes `manifest.json`. The plugin must pick the manifest up on a
+    # later render instead of permanently disabling auto-init (which
+    # left every top-level template variable unseeded → 500 under
+    # strict).
+    my $dir = tempdir;
+    my $manifest_file = $dir->child('manifest.json');    # not written yet
+
+    my $app = Mojolicious->new;
+    $app->plugin('BarefootJS' => { manifest_path => "$manifest_file" });
+
+    my $c1 = $app->build_controller;
+    $app->plugins->emit_hook(before_render => $c1, { template => 'Counter' });
+    ok !exists $c1->stash->{count}, 'no seeding while the manifest is missing';
+
+    # First `bf build` completes → the very next render must be seeded.
+    $manifest_file->spew(encode_json({
+        Counter => {
+            markedTemplate => 'templates/Counter.html.ep',
+            ssrDefaults    => {
+                count   => { value => 0 },
+                initial => { propName => 'initial', value => undef },
+            },
+        },
+    }));
+
+    my $c2 = $app->build_controller;
+    $app->plugins->emit_hook(before_render => $c2, { template => 'Counter' });
+    is $c2->stash('count'), 0, 'signal default seeded once the manifest exists';
+    ok exists $c2->stash->{initial},
+        'null-valued prop entry still declares the template variable';
+};
+
+subtest 'plugin re-reads the manifest when the file changes' => sub {
+    # `bf build --watch` rewrites the manifest on every rebuild; a new
+    # component (`bf add`) or changed defaults must reach renders
+    # without a server restart. The cache is keyed on (mtime, size).
+    my $dir = tempdir;
+    my $manifest_file = $dir->child('manifest.json');
+    $manifest_file->spew(encode_json({
+        Counter => {
+            markedTemplate => 'templates/Counter.html.ep',
+            ssrDefaults    => { count => { value => 1 } },
+        },
+    }));
+
+    my $app = Mojolicious->new;
+    $app->plugin('BarefootJS' => { manifest_path => "$manifest_file" });
+
+    my $c1 = $app->build_controller;
+    $app->plugins->emit_hook(before_render => $c1, { template => 'Counter' });
+    is $c1->stash('count'), 1, 'initial manifest read';
+
+    # Rewrite with a different value; bump mtime past the 1s stat
+    # granularity so the (mtime, size) signature is guaranteed to change.
+    $manifest_file->spew(encode_json({
+        Counter => {
+            markedTemplate => 'templates/Counter.html.ep',
+            ssrDefaults    => { count => { value => 2 }, extra => { value => 3 } },
+        },
+    }));
+    my $future = time + 2;
+    utime $future, $future, "$manifest_file";
+
+    my $c2 = $app->build_controller;
+    $app->plugins->emit_hook(before_render => $c2, { template => 'Counter' });
+    is $c2->stash('count'), 2, 'rebuilt manifest is picked up without a restart';
+};
+
 subtest 'plugin before_render — skips child templates' => sub {
     my $dir = tempdir;
     my $manifest_file = $dir->child('manifest.json');
