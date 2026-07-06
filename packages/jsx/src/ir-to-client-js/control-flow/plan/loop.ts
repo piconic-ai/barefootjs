@@ -94,6 +94,15 @@ interface PlainLoopVariant extends DynamicLoopCommon {
   mapPreambleWrapped: string
   /** HTML template string for one item. */
   template: string
+  /**
+   * Shared once-per-loop skeleton template (perf) — see
+   * `buildLoopSkeletonTemplate` (html-template.ts). When present, the
+   * stringifier declares it once (before the `mapArray` call) and clones
+   * from it instead of re-parsing `template`'s interpolated innerHTML per
+   * row. `undefined` means the loop body wasn't proven safe to hoist; the
+   * stringifier falls back to the legacy per-row `emitTemplateCloneInline`.
+   */
+  skeletonTemplate?: string
   /** Resolved reactive-effects plan — null forces the single-line renderItem shape. */
   reactiveEffects: ReactiveEffectsPlan | null
   /**
