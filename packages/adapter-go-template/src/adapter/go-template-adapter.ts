@@ -231,6 +231,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * wrapper's synthetic scalar field) instead of `.`. Innermost last.
    */
   private loopScalarItemStack: boolean[] = []
+  /**
+   * Per-loop: true when the loop body IS a single component
+   * (`loop.childComponent`), i.e. the range iterates the `.{Name}s` wrapper
+   * slice and `.` inside the body is a wrapper struct that embeds the child's
+   * Props. False for a component merely nested inside an element item
+   * (`<li><Badge/></li>`, #2130), where `.` is the raw datum and the child's
+   * props live on the PARENT's once-per-slot instance (`$.{Name}SlotN`).
+   * Innermost last.
+   */
+  private loopWrapperStack: boolean[] = []
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
    *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`, an
@@ -493,9 +503,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Register a child component's shape (see `childComponentShapes`). Call once
-   * per known child IR before the parent's `generateTypes`. Idempotent.
+   * per known child IR before the parent's `generateTypes`. Idempotent. Takes
+   * only the IR's `metadata` so orchestrators that never build the full IR
+   * (the CLI's cross-file shape pre-pass, #2131) can register from a bare
+   * analyzer pass — a full `ComponentIR` still satisfies it structurally.
    */
-  registerChildComponentShape(ir: ComponentIR): void {
+  registerChildComponentShape(ir: Pick<ComponentIR, 'metadata'>): void {
     const name = ir.metadata.componentName
     if (!name) return
     const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.name))
@@ -2053,9 +2066,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     } else if (node.type === 'loop') {
       const loop = node as IRLoop
-      // Mark children as inside loop
+      // A loop whose body IS a single component is the nestedComponents /
+      // wrapper-slice machinery's case — mark its subtree as in-loop so the
+      // component (and its body children, which live on the wrapper struct)
+      // are skipped here. A component merely nested inside an element item
+      // (`<li><Badge/></li>`, #2130) gets NO wrapper slice: keep collecting,
+      // so it registers a normal once-per-slot instance (shared across rows,
+      // like the wrapper's `bodyChildInstances`); per-item content reaches it
+      // through the loop-body children define (see `renderComponent`).
       for (const child of loop.children) {
-        this.collectStaticChildInstancesRecursive(child, result, true, providerCtx, propsParams)
+        this.collectStaticChildInstancesRecursive(
+          child,
+          result,
+          inLoop || !!loop.childComponent,
+          providerCtx,
+          propsParams,
+        )
       }
     } else if (node.type === 'element') {
       const element = node as IRElement
@@ -4837,11 +4863,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       rangeValue = '_'
     }
 
-    // If the loop contains a component child, range over `.{ComponentName}s`,
-    // which carries a ScopeID per item (TodoItem → `.TodoItems`).
-    const childComponent = this.findChildComponent(loop.children)
-    if (childComponent) {
-      goArray = `.${childComponent.name}s`
+    // If the loop body IS a single component, range over `.{ComponentName}s`,
+    // which carries a ScopeID per item (TodoItem → `.TodoItems`). Gate on the
+    // IR's `loop.childComponent` — the SAME condition `findNestedComponents`
+    // uses to generate that slice field — not on a deep search of the body:
+    // a component merely nested inside an element item (`<li><Badge/></li>`)
+    // generates NO `.Badges` slice, so retargeting the range at it 500s at
+    // render with `can't evaluate field Badges in type *XxxProps` (#2130).
+    // Such loops keep iterating the real collection; the nested child renders
+    // through the parent's once-per-slot instance (see `renderComponent`'s
+    // non-wrapper in-loop branch).
+    if (loop.childComponent) {
+      goArray = `.${loop.childComponent.name}s`
     }
 
     this.inLoop = true
@@ -4886,7 +4919,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.loopScalarItemStack.push(
       this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null,
     )
+    this.loopWrapperStack.push(!!loop.childComponent)
     const children = this.renderChildren(loop.children)
+    this.loopWrapperStack.pop()
     this.loopScalarItemStack.pop()
     // Build the per-item anchor marker while the loop param is still on the
     // stack, so a `bodyIsItemConditional` key expression resolves against the
@@ -4956,24 +4991,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return `{{bfComment (printf "loop-i:%v" ${this.convertExpressionToGo(loop.key)})}}`
     }
     return ''
-  }
-
-  /** Find the first component child in a list of nodes. */
-  private findChildComponent(nodes: IRNode[]): IRComponent | null {
-    for (const node of nodes) {
-      if (node.type === 'component') {
-        return node as IRComponent
-      }
-      if (node.type === 'element' && (node as IRElement).children) {
-        const found = this.findChildComponent((node as IRElement).children)
-        if (found) return found
-      }
-      if (node.type === 'fragment' && (node as IRFragment).children) {
-        const found = this.findChildComponent((node as IRFragment).children)
-        if (found) return found
-      }
-    }
-    return null
   }
 
   /**
@@ -5049,13 +5066,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     // In Go templates, components are rendered via {{template "name" data}}.
     let templateCall: string
-    if (this.inLoop) {
-      // Loop body component with JSX children: render children through a
-      // companion define so `bf_with_children` injects them at template
-      // execution time. Temporarily exit loop context so nested component calls
-      // (e.g. TableCell inside TableRow) use the normal non-loop rendering path
-      // (`.TableCellSlotN` fields on the wrapper struct), while the loop param
-      // stack stays intact so datum references resolve.
+    if (this.inLoop && (this.loopWrapperStack[this.loopWrapperStack.length - 1] ?? false)) {
+      // Wrapper-slice loop (body IS this component): `.` is the wrapper struct
+      // embedding the child's Props. Loop body component with JSX children:
+      // render children through a companion define so `bf_with_children`
+      // injects them at template execution time. Temporarily exit loop context
+      // so nested component calls (e.g. TableCell inside TableRow) use the
+      // normal non-loop rendering path (`.TableCellSlotN` fields on the
+      // wrapper struct), while the loop param stack stays intact so datum
+      // references resolve.
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
       if (loopBodyDefine) {
         // Scalar-item loop: feed the body define the wrapper's `.BfLoopItem` (the
@@ -5068,6 +5087,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       } else {
         templateCall = `{{template "${comp.name}" .}}`
       }
+    } else if (this.inLoop && comp.slotId) {
+      // Non-wrapper loop (component nested inside an element item, #2130):
+      // the range iterates the REAL collection, so `.` is the raw datum and
+      // carries none of the child's props. Call through the parent's
+      // once-per-slot instance via the root context (`$` — the define's own
+      // data, i.e. the parent's Props), injecting per-item content through a
+      // loop-body children define executed with the datum (`.`). The shared
+      // instance means identical child scope IDs across rows — the same
+      // contract the wrapper machinery's `bodyChildInstances` already uses.
+      const suffix = slotIdToFieldSuffix(comp.slotId)
+      const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
+      templateCall = loopBodyDefine
+        ? `{{template "${comp.name}" (bf_with_children $.${comp.name}${suffix} (bf_tmpl "${loopBodyDefine}" .))}}`
+        : `{{template "${comp.name}" $.${comp.name}${suffix}}}`
+    } else if (this.inLoop) {
+      // Loop-nested component without a slotId: no parent field to route
+      // through — legacy passthrough of the current dot.
+      templateCall = `{{template "${comp.name}" .}}`
     } else if (comp.slotId) {
       // Static children with slotId: unique field name based on slotId.
       const suffix = slotIdToFieldSuffix(comp.slotId)

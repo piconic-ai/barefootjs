@@ -1,7 +1,7 @@
 // Core build module: shared pipeline for `bf build`.
 
-import { compileJSX, combineParentChildClientJs, createProgramForCorpus, formatError, renderImportMapHtml, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS } from '@barefootjs/jsx'
-import type { TemplateAdapter, OutputLayout, PostBuildContext, ExternalSpec, BundleEntry, ExternalsManifest } from '@barefootjs/jsx'
+import { compileJSX, combineParentChildClientJs, createProgramForCorpus, formatError, renderImportMapHtml, REACTIVE_PRIMITIVES, BROWSER_ONLY_CLIENT_APIS, listComponentFunctions, analyzeComponent, buildMetadata } from '@barefootjs/jsx'
+import type { TemplateAdapter, OutputLayout, PostBuildContext, ExternalSpec, BundleEntry, ExternalsManifest, IRMetadata } from '@barefootjs/jsx'
 import ts from 'typescript'
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises'
 import { resolve, basename, relative, dirname, isAbsolute } from 'node:path'
@@ -569,6 +569,17 @@ export async function build(
     return sharedProgram
   }
 
+  // Lazy child-shape pre-pass (#2131): must run before the FIRST entry that
+  // actually compiles (cache-fresh builds skip it entirely, keeping no-op
+  // builds free). One flag, not per-entry — `registerAdapterChildShapes`
+  // walks the whole corpus once and registration is idempotent.
+  let childShapesRegistered = false
+  const ensureChildShapesRegistered = (): void => {
+    if (childShapesRegistered) return
+    childShapesRegistered = true
+    registerAdapterChildShapes(config.adapter, allFiles, sourceContents, getSharedProgram())
+  }
+
   // 4. Compile each component (or reuse from cache)
   for (const entryPath of allFiles) {
     const sourceContent = sourceContents.get(entryPath)!
@@ -613,6 +624,7 @@ export async function build(
       continue
     }
 
+    ensureChildShapesRegistered()
     const result = await compileEntry({
       entryPath,
       sourceContent,
@@ -1630,6 +1642,49 @@ export async function processBundleEntries(
     }
   }
   return anyChanged
+}
+
+// ── Cross-file child-shape pre-pass ──────────────────────────────────────
+
+/**
+ * Register every discovered component's cross-component shape on the adapter
+ * before any entry compiles (#2131). Adapters that pre-compute child props at
+ * the call site (the Go template adapter) route an attribute that is NOT a
+ * declared child param into the child's rest bag (`Props map[string]any`) —
+ * but only when the child's shape was registered first. The adapter-tests
+ * harness always did this (`registerChildShape` in test-render.ts); the CLI
+ * never did, so `bf build` emitted rest-spread attrs as named struct fields
+ * (`Placeholder:` on `InputInput`) and the generated components.go failed
+ * `go build` with `unknown field ...`.
+ *
+ * Metadata-only: `analyzeComponent` + `buildMetadata` per exported component,
+ * no IR/codegen. Adapters without the hook (Hono, Mojo, ...) cost one method
+ * probe. Failures are non-fatal — a file that can't be analyzed contributes
+ * no shape and the affected parent keeps the pre-registration behaviour; the
+ * real compile of that file still reports its errors through `compileEntry`.
+ */
+function registerAdapterChildShapes(
+  adapter: TemplateAdapter,
+  allFiles: string[],
+  sourceContents: Map<string, string>,
+  program: ts.Program | undefined,
+): void {
+  const hook = (adapter as { registerChildComponentShape?: (ir: { metadata: IRMetadata }) => void })
+    .registerChildComponentShape
+  if (typeof hook !== 'function') return
+  for (const filePath of allFiles) {
+    const source = sourceContents.get(filePath)
+    if (!source) continue
+    try {
+      for (const componentName of listComponentFunctions(source, filePath)) {
+        const ctx = analyzeComponent(source, filePath, componentName, program)
+        if (!ctx.jsxReturn) continue
+        hook.call(adapter, { metadata: buildMetadata(ctx) })
+      }
+    } catch {
+      // Fail open (see docstring).
+    }
+  }
 }
 
 // ── Dependency scanner ───────────────────────────────────────────────────
