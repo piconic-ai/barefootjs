@@ -3729,3 +3729,131 @@ export function Root(props: Props) {
     expect(consumerTemplate).not.toContain('.Ctx.Config')
   })
 })
+
+describe('GoTemplateAdapter - #2130 loop with element-wrapped child component', () => {
+  // The `.{Name}s` wrapper-slice retarget is ONLY valid when the loop body IS
+  // a single component (`loop.childComponent`) — that's the sole condition
+  // under which `findNestedComponents` generates the slice field. A component
+  // merely nested inside an element item used to retarget the range at a
+  // slice that never exists (`{{range … := .Tags}}` with no `Tags` field →
+  // `can't evaluate field Tags in type *LoopChildProbeProps`, a 500 at
+  // render time).
+  test('element-wrapped child: range iterates the real collection, child renders via the parent slot instance', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+import { Tag } from '@ui/components/ui/tag'
+
+interface Row { id: number; label: string }
+
+export function LoopChildProbe(props: { rows?: Row[] }) {
+  const [rows] = createSignal(props.rows ?? [])
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}><Tag>{row.label}</Tag></li>
+      ))}
+    </ul>
+  )
+}
+`, adapter)
+    const { template, types } = adapter.generate(ir)
+
+    // The range targets the generated collection field, never a
+    // `.{ChildName}s` slice that no struct declares.
+    expect(template).toContain(':= .Rows}}')
+    expect(template).not.toContain('.Tags}}')
+    expect(types).not.toContain('Tags []')
+
+    // The wrapped child calls through the parent's once-per-slot instance
+    // (root context `$`), with per-item children via the loop-body define.
+    expect(template).toContain('{{template "Tag" (bf_with_children $.TagSlot1')
+    expect(types).toContain('TagSlot1 TagProps')
+    expect(types).toContain('TagSlot1: NewTagProps(TagInput{')
+  })
+
+  // End-to-end on real Go: the emitted template + structs must compile AND
+  // execute (`go run`) — the original failure mode was a request-time 500
+  // (`html/template` resolves struct fields at execute time, not at Go
+  // compile time). Cross-adapter note: this stays a Go-package test rather
+  // than a shared conformance fixture because the EP-family adapters
+  // (Mojo / ERB / Jinja / ...) render loop-nested children with per-item
+  // `ComponentName_<random>` scope ids by design (`comp.slotId &&
+  // !this.inLoop` in their renderComponent), while Hono / Go emit the
+  // parent-slot-derived id — same DOM, different id shape, so a single
+  // `expectedHtml` cannot pin both families.
+  test('element-wrapped child renders per-item content on real Go', async () => {
+    const adapter = new GoTemplateAdapter()
+    let html: string
+    try {
+      html = await renderGoTemplateComponent({
+        source: `
+'use client'
+import { createSignal } from '@barefootjs/client'
+import { Tag } from '@ui/components/ui/tag'
+
+interface Row { id: number; label: string }
+
+export function LoopChildProbe(props: { rows?: Row[] }) {
+  const [rows] = createSignal(props.rows ?? [])
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}><Tag>{row.label}</Tag></li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(),
+        adapter,
+        components: {
+          '@ui/components/ui/tag': `
+export function Tag(props: { children?: any }) {
+  return <span class="tag">{props.children}</span>
+}
+`.trimStart(),
+        },
+        props: { rows: [{ id: 1, label: 'one' }, { id: 2, label: 'two' }] },
+      })
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) return
+      throw err
+    }
+    // One <li> per row, each wrapping a rendered Tag with the row's label —
+    // not a template error and not an empty loop.
+    expect(html).toContain('data-key="1"')
+    expect(html).toContain('data-key="2"')
+    expect(html).toContain('>one<')
+    expect(html).toContain('>two<')
+    expect(html).toContain('class="tag"')
+  })
+
+  // Companion guard: the wrapper-slice path is untouched — a loop body that
+  // IS a single component still iterates `.{Name}s` (the todo-app / data-table
+  // machinery this fix must not regress).
+  test('single-component body keeps iterating the wrapper slice', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+import { TodoItem } from '@ui/components/ui/todo-item'
+
+interface Todo { id: number; text: string }
+
+export function TodoList(props: { todos?: Todo[] }) {
+  const [todos] = createSignal(props.todos ?? [])
+  return (
+    <ul>
+      {todos().map(todo => (
+        <TodoItem key={todo.id} text={todo.text} />
+      ))}
+    </ul>
+  )
+}
+`, adapter)
+    const { template, types } = adapter.generate(ir)
+    expect(template).toContain(':= .TodoItems}}')
+    expect(types).toContain('TodoItems []')
+  })
+})
