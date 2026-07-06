@@ -75,23 +75,23 @@ export default createConfig({
 ```
 
 `bf build` emits `.twig` templates plus client JS under `outDir`. On the PHP
-side, require `barefootjs/twig` via Composer and construct a
-`Twig\Environment` over a `FilesystemLoader` pointed at the emitted
-templates, wiring in the `TwigBackend` as the render backend:
+side, require `barefootjs/twig` via Composer and point a `TwigBackend` at the
+emitted templates — it builds a `FilesystemLoader`-backed `Twig\Environment`
+with the defaults the templates assume (`autoescape: 'html'`,
+`strict_variables: false`); pass a pre-built Environment via `'env'` to
+customize. Rendering goes through the shared runtime: construct a
+`Barefoot\BarefootJS` over the backend and hand it to `render_named`:
 
 ```php
-use Twig\Environment;
-use Twig\Loader\FilesystemLoader;
+use Barefoot\BarefootJS;
 use Barefoot\TwigBackend;
 
-$loader = new FilesystemLoader('dist/templates');
-$twig = new Environment($loader, [
-    'autoescape' => 'html',
-    'strict_variables' => false,
+$backend = new TwigBackend([
+    'paths' => ['dist/templates'],
 ]);
+$bf = new BarefootJS(null, ['backend' => $backend]);
 
-$backend = new TwigBackend($twig);
-$html = $backend->renderNamed('user_card', ['name' => 'Ada']);
+$html = $backend->render_named('user_card', $bf, ['name' => 'Ada']);
 ```
 
 Twig's default escaper emits `&quot;`/`&#039;` for `"`/`'`, where the
@@ -121,17 +121,20 @@ runs on `illuminate/view` used **standalone** — no Laravel application or
 service container required. Construct a `Factory` (`Filesystem` + an event
 `Dispatcher` + an `EngineResolver` registering a `blade` engine over a
 `BladeCompiler` + a `FileViewFinder`, all wired together by the `Factory` —
-see `Barefoot\BladeBackend`'s constructor) pointed at the emitted templates,
-wiring in the `BladeBackend` as the render backend:
+see `Barefoot\BladeBackend`'s constructor — `new BladeBackend(['paths' =>
+…])` wires all of that for you) pointed at the emitted templates. Rendering
+goes through the shared runtime, same as Twig:
 
 ```php
+use Barefoot\BarefootJS;
 use Barefoot\BladeBackend;
 
 $backend = new BladeBackend([
     'paths' => ['dist/templates'],
 ]);
+$bf = new BarefootJS(null, ['backend' => $backend]);
 
-$html = $backend->renderNamed('user_card', ['name' => 'Ada']);
+$html = $backend->render_named('user_card', $bf, ['name' => 'Ada']);
 ```
 
 Blade's `{{ }}` echo (`Illuminate\Support\e()`) emits named HTML entity forms
