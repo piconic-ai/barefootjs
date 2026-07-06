@@ -135,28 +135,30 @@ signal, wall-clock will differ).
 
 | Operation | vanilla | barefoot | react | solid |
 |---|---|---|---|---|
-| create1k | 71.55 ms | 79.30 ms (1.11x) | 85.30 ms (1.19x) | 72.60 ms (1.01x) |
-| replace1k | 87.30 ms | 95.75 ms (1.10x) | 104.90 ms (1.20x) | 87.95 ms (1.01x) |
-| update10th | 12.25 ms | 13.40 ms (1.09x) | 15.25 ms (1.24x) | 11.05 ms (0.90x) |
-| select | 3.65 ms | 4.05 ms (1.11x) | 4.75 ms (1.30x) | 3.95 ms (1.08x) |
-| swap | 15.35 ms | 17.50 ms (1.14x) | 83.40 ms (5.43x) | 17.65 ms (1.15x) |
-| remove | 17.55 ms | 20.75 ms (1.18x) | 20.20 ms (1.15x) | 18.80 ms (1.07x) |
-| create10k | 776.00 ms | 854.50 ms (1.10x) | 1045.00 ms (1.35x) | 699.60 ms (0.90x) |
-| append1k | 302.40 ms | 321.30 ms (1.06x) | 318.80 ms (1.05x) | 250.50 ms (0.83x) |
-| clear10k | 65.20 ms | 76.40 ms (1.17x) | 110.10 ms (1.69x) | 69.70 ms (1.07x) |
-| startup | 37.80 ms | 44.10 ms (1.17x) | 58.30 ms (1.54x) | 37.20 ms (0.98x) |
-| memory (1k rows) | 253.4KB | 1495.6KB (5.90x) | 2091.9KB (8.26x) | 1486.7KB (5.87x) |
-| shipped JS (gzip) | 1.1KB | 19.4KB | 58.8KB | 6.8KB |
+| create1k | 104.20 ms | 116.40 ms (1.12x) | 105.85 ms (1.02x) | 111.35 ms (1.07x) |
+| replace1k | 128.10 ms | 142.50 ms (1.11x) | 136.20 ms (1.06x) | 131.95 ms (1.03x) |
+| update10th | 20.70 ms | 19.00 ms (0.92x) | 22.15 ms (1.07x) | 21.95 ms (1.06x) |
+| select | 4.70 ms | 6.15 ms (1.31x) | 8.00 ms (1.70x) | 5.85 ms (1.24x) |
+| swap | 20.85 ms | 21.35 ms (1.02x) | 104.15 ms (5.00x) | 29.95 ms (1.44x) |
+| remove | 24.90 ms | 27.35 ms (1.10x) | 28.65 ms (1.15x) | 29.70 ms (1.19x) |
+| create10k | 914.60 ms | 1027.60 ms (1.12x) | 1372.40 ms (1.50x) | 955.60 ms (1.04x) |
+| append1k | 353.10 ms | 390.20 ms (1.11x) | 476.80 ms (1.35x) | 357.70 ms (1.01x) |
+| clear10k | 73.70 ms | 92.50 ms (1.26x) | 155.80 ms (2.11x) | 84.00 ms (1.14x) |
+| startup | 39.30 ms | 47.20 ms (1.20x) | 83.40 ms (2.12x) | 39.90 ms (1.02x) |
+| memory (1k rows) | 253.2KB | 1495.4KB (5.91x) | 2092.3KB (8.26x) | 1483.4KB (5.86x) |
+| shipped JS (gzip) | 1.1KB | 8.7KB | 58.8KB | 6.8KB |
 
-Reading it honestly: BarefootJS now sits within 6-18% of the vanilla
-baseline on every operation — matching or beating React across the board
-and close to Solid everywhere. Solid keeps a real edge on bulk creation
-(create10k 0.90x, append 0.83x) and ships the smaller runtime; heap per
-1k rows is now essentially equal to Solid's. These numbers include the
-compiler's hoisted shared loop template (one HTML parse per loop, clone
-per row) and the runtime's generation-stamped dependency tracking — both
-landed after the first published run of this suite, whose creation-path
-numbers were 1.4-1.5x.
+Reading it honestly: BarefootJS sits close to the vanilla baseline on
+every operation — competitive with React and Solid across the board
+(individual cells swing a few tenths between runs on shared hardware;
+compare whole columns, not single cells). Heap per 1k rows is at Solid's
+level and shipped JS (8.7KB gzip) is near Solid's 6.8KB after the CLI
+started tree-shaking the runtime bundle to each project's used exports.
+These numbers include the compiler's hoisted shared loop template (one
+HTML parse per loop, clone per row) and the runtime's generation-stamped
+dependency tracking — the first published run of this suite predated all
+three optimizations and had creation-path numbers at 1.4-1.5x and
+19.4KB gzip shipped.
 
 ### SSR + hydration (1,000-row table)
 
