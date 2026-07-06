@@ -63,7 +63,25 @@ runAdapterConformanceTests({
   // memo's field type is `[]any` and its constructor init serializes the
   // `.filter` predicate to the runtime evaluator. See the #2075 constructor
   // pins below.
-  skipJsx: [],
+  //
+  // `context-provider-nullish-object-fallback` (#2087): compiles clean — no
+  // BF101 (`extendProviderContext` silently skips the non-literal Provider
+  // value, exactly like the chart component's own
+  // `<ChartConfigContext.Provider value={{ config: props.config ?? {} }}>`,
+  // which is why `ui/compat.lock.json`'s `chart` × `go-template` cell is
+  // `ok: true`) — but the skip is orthogonal to #2087's `?? {}` fix and
+  // pre-existing: it means the descendant `useContext` consumer falls back
+  // to the `createContext` DEFAULT typing, and when that default is itself
+  // an object (`{ config: {} }`, not a string/number/boolean), the generated
+  // Go struct field ends up typed `string` rather than a struct, so the real
+  // `go run` execution fails at request time
+  // (`can't evaluate field Config in type string`) — a pre-existing gap in
+  // how Go models an object-shaped context default with no live Provider
+  // value, not something #2087 introduces or could fix (chart itself never
+  // hits it because it never reads `.config` from a bare top-level text
+  // position on the Go path). Skipped here the same way `return-map` is
+  // above: a real, orthogonal divergence, not a build-time diagnostic.
+  skipJsx: ['context-provider-nullish-object-fallback'],
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives in `../conformance-pins`
   // (not on the shared fixtures) so adding a new adapter doesn't require
@@ -3575,5 +3593,65 @@ export function C() {
     // attribute is absent from the emitted `<div>` cell.
     expect(template).toContain('range')
     expect(template).not.toContain('data-x')
+  })
+})
+
+// #2087: the shared `isSupported` gate (expression-parser.ts, `logical` case)
+// now admits an EMPTY object-literal fallback (`x ?? {}`) as `??`'s right
+// operand — needed for the chart UI component's `<ChartConfigContext.Provider
+// value={{ config: props.config ?? {} }}>`. Every other template adapter has
+// a native `{}` dict/hashref to emit for this shape; Go's `text/template` has
+// none, so `GoTemplateAdapter.objectLiteral` is the one place left to refuse
+// it — self-reporting BF101 (the shared gate no longer does, since it now
+// considers the expression supported) and falling back to the safe `""`
+// sentinel so the emitted action stays valid Go template syntax rather than
+// splicing the `[UNSUPPORTED: …]` marker into an `or`/`and` operand.
+describe('GoTemplateAdapter - #2087 empty object-literal `?? {}` fallback', () => {
+  test('a value-position `?? {}` (outside a Provider) raises BF101 and still emits a syntactically valid template', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(`
+"use client"
+type Props = { config?: Record<string, string> }
+export function C(props: Props) {
+  return <div>{props.config ?? {}}</div>
+}
+`.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // The `{}` fallback lowers to the safe `""` Go string sentinel — never the
+    // `[UNSUPPORTED: …]` marker text, which would break `text/template` parsing
+    // once spliced as an `or` operand.
+    expect(template).toContain('{{or .Config ""}}')
+    expect(template).not.toContain('UNSUPPORTED')
+  })
+
+  test('the chart shape — a Provider value member falling back to `?? {}` — still compiles clean (provider-value skip, unchanged)', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(`
+"use client"
+import { createContext, useContext } from "@barefootjs/client"
+type ChartConfig = Record<string, string>
+const Ctx = createContext<{ config: ChartConfig }>({ config: {} })
+function Consumer() {
+  const ctx = useContext(Ctx)
+  return <span>{ctx.config.label ?? "none"}</span>
+}
+type Props = { config?: ChartConfig }
+export function C(props: Props) {
+  return (
+    <div>
+      <Ctx.Provider value={{ config: props.config ?? {} }}>
+        <Consumer />
+      </Ctx.Provider>
+    </div>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter })
+    // `extendProviderContext` only lowers a string/number/boolean literal
+    // provider value and silently skips any other shape (the descendant
+    // consumer keeps its `createContext` default) — this expression never
+    // reaches `objectLiteral`, so no BF101 fires here, matching the
+    // `ui/compat.lock.json` `chart` × `go-template` `ok: true` entry.
+    expect(result.errors ?? []).toEqual([])
   })
 })

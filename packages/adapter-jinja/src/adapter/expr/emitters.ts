@@ -593,11 +593,16 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return "''"
   }
 
-  objectLiteral(_properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
-    // Mirror `unsupported`: a bare object literal reaching the dispatcher
-    // lowers to the safe empty-string literal. Object values that round-trip
-    // to a Jinja dict go through the dedicated `objectLiteralToJinjaDict`
-    // lowering in the conditional/attr paths.
-    return "''"
+  objectLiteral(properties: ObjectLiteralProperty[], _raw: string, _emit: (e: ParsedExpr) => string): string {
+    // The shared `isSupported` gate only ever lets this dispatcher see an
+    // object literal as the EMPTY (`?? {}`) fallback operand of `??`
+    // (expression-parser.ts, `logical` case) — any other object literal is
+    // refused before reaching here. Emit Jinja's real empty dict literal,
+    // matching the `'{}'` convention `objectLiteralToJinjaDict` already uses
+    // for the zero-property case in the spread path. A populated literal is
+    // structurally unreachable given the gate, but still degrades safely to
+    // the pre-existing empty-string sentinel rather than silently dropping
+    // keys.
+    return properties.length === 0 ? '{}' : "''"
   }
 }

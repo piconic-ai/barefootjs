@@ -1325,6 +1325,45 @@ describe('expression-parser', () => {
       expect(result.level).toBe('L4')
     })
 
+    // #2087: `x ?? {}` — the chart component's `<Ctx.Provider value={{
+    // config: props.config ?? {} }}>` needs an EMPTY object-literal fallback
+    // operand admitted, narrowly, as the right side of `??` only.
+    test('L4: nullish coalescing with an EMPTY object-literal fallback is supported (#2087)', () => {
+      const expr = parseExpression('props.config ?? {}')
+      expect(expr.kind).toBe('logical')
+      const result = isSupported(expr)
+      expect(result.supported).toBe(true)
+      expect(result.level).toBe('L4')
+    })
+
+    test('a NON-EMPTY object-literal fallback of `??` is still refused (#2087 scope)', () => {
+      const expr = parseExpression('props.config ?? ({ a: 1 })')
+      expect(expr.kind).toBe('logical')
+      const result = isSupported(expr)
+      expect(result.supported).toBe(false)
+    })
+
+    test('an empty object-literal fallback of `&&` / `||` is still refused — #2087 scopes the relaxation to `??` only', () => {
+      expect(isSupported(parseExpression('props.config && ({})')).supported).toBe(false)
+      expect(isSupported(parseExpression('props.config || ({})')).supported).toBe(false)
+    })
+
+    test('a standalone (non-fallback) object literal is still refused', () => {
+      const expr = parseExpression('({})')
+      const result = isSupported(expr)
+      expect(result.supported).toBe(false)
+      expect(result.reason).toBe('Unsupported syntax: ObjectLiteralExpression')
+    })
+
+    test('an empty object-literal on the LEFT of `??` does not trigger the fallback relaxation', () => {
+      // The relaxation only inspects `expr.right`; a left-hand object
+      // literal has no fallback role and stays refused via the general
+      // `checkSupport(expr.left)` refusal.
+      const expr = parseExpression('({}) ?? props.config')
+      const result = isSupported(expr)
+      expect(result.supported).toBe(false)
+    })
+
     test('L5: filter() with simple predicate IS supported', () => {
       const expr = parseExpression('items().filter(x => x.done)')
       const result = isSupported(expr)

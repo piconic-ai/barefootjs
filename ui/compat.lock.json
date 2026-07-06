@@ -329,82 +329,25 @@
         "ok": true
       },
       "erb": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "go-template": {
         "ok": true
       },
       "jinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "minijinja": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038",
-              "https://github.com/piconic-ai/barefootjs/issues/2087"
-            ]
-          }
-        ]
+        "ok": true
       },
       "mojolicious": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "twig": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       },
       "xslate": {
-        "ok": false,
-        "diagnostics": [
-          {
-            "code": "BF101",
-            "severity": "error",
-            "issues": [
-              "https://github.com/piconic-ai/barefootjs/issues/2038"
-            ]
-          }
-        ]
+        "ok": true
       }
     },
     "checkbox": {

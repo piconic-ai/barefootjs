@@ -3060,11 +3060,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   objectLiteral(_properties: ObjectLiteralProperty[], raw: string, _emit: (e: ParsedExpr) => string): string {
-    // Not yet lowered structurally from `properties`: route through the
-    // `unsupported` path (`[UNSUPPORTED: …]`). Object values that DO reach a Go
-    // map today (signal/const inits, spread bags) go through the dedicated
+    // The shared `isSupported` gate now admits an EMPTY object literal
+    // (`?? {}`) as `??`'s right operand (expression-parser.ts, `logical`
+    // case) — every other adapter has a native `{}` dict/hashref literal to
+    // emit here, but `text/template` has none, so this dispatcher is the
+    // one place left to refuse the shape. Unlike the sibling adapters, Go
+    // can't silently fall back to a safe sentinel text: `this.unsupported`'s
+    // `[UNSUPPORTED: …]` marker would be spliced into a Go template action
+    // (e.g. as an `or`/`and` operand) and break template parsing, and the
+    // shared gate no longer reports BF101 for this shape itself (it now
+    // considers `x ?? {}` supported). So self-report BF101 here — mirroring
+    // the other self-contained refusals in this file (`pushCallbackBF101`,
+    // `refuseFilterExprNode`) — and return the safe `""` string sentinel,
+    // which is always a valid Go template value in every position `??`'s
+    // result can land in. Object values that DO reach a Go map today
+    // (signal/const inits, spread bags) go through the dedicated
     // `objectLiteralToGoMap` lowering, not here.
-    return this.unsupported(raw, 'object literal')
+    // `raw` is the whole top-level expression's source text (threaded
+    // unchanged through `convertNode`, same convention every `unsupported`
+    // node relies on for its diagnostic) — e.g. `props.config ?? {}`, not
+    // just the `{}` sub-node — so it reads naturally in the message below.
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Expression not supported: ${raw}`,
+      loc: this.makeLoc(),
+      suggestion: {
+        message: `Go templates have no object/map literal syntax, so the \`?? {}\` fallback can't render server-side. ${GO_REMEDIATION_OPTIONS}`,
+      },
+    })
+    return `""`
   }
 
   /** Set of predicate (boolean-callback) higher-order methods. */
