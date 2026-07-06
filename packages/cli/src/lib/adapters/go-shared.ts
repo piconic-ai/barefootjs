@@ -201,6 +201,7 @@ export const GO_RENDER_SHARED_FNS = `// loadTemplates walks dist/templates/ recu
 // inside Slot that's only reachable when AsChild=true.
 func loadTemplates() (*template.Template, error) {
 	root := template.New("").Funcs(bf.FuncMap())
+	root = root.Funcs(bf.TemplateFuncMap(root))
 	if _, err := root.New("Tag").Parse(""); err != nil {
 		return nil, err
 	}

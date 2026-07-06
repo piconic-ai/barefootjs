@@ -221,6 +221,7 @@ import (
 // updated boilerplate).
 func loadTemplates() (*template.Template, error) {
 \troot := template.New("").Funcs(bf.FuncMap())
+\troot = root.Funcs(bf.TemplateFuncMap(root))
 \tif _, err := root.New("Tag").Parse(""); err != nil {
 \t\treturn nil, err
 \t}
