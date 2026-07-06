@@ -167,7 +167,7 @@ jobs:
           done
   pypi-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/jinja"')
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/jinja')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -185,6 +185,8 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           test -f pyproject.toml
+          version=$(jq -r '.version' ../package.json)
+          echo "$version" > VERSION
           python -m pip install --upgrade build twine pytest jinja2
           python -m pytest
           python -m build
@@ -193,7 +195,7 @@ jobs:
 
   rubygems-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/erb"')
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/erb')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -218,7 +220,7 @@ jobs:
 
   crates-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/rust"')
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/rust')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -239,7 +241,7 @@ jobs:
           cargo publish
   packagist-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/twig"')
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/twig')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -258,7 +260,7 @@ jobs:
         run: |
           composer validate --strict
           composer install --no-interaction --prefer-dist
-          if composer run-script --list | grep -q '^  test'; then
+          if jq -e '.scripts.test' composer.json > /dev/null 2>&1; then
             composer test
           fi
 
