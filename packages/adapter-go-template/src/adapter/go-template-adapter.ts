@@ -118,6 +118,7 @@ import {
   jsLiteralToGo,
   objectLiteralToGoMap,
 } from "./value/value-lowering.ts"
+import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { typeInfoToGo } from "./type/type-codegen.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
@@ -524,10 +525,37 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return capitalizeFieldName(c.localName)
   }
 
+  /**
+   * True when `node` is (or is a member access rooted in) a `useContext`
+   * local with an object-shaped `createContext` default — see `member()`'s
+   * `bf_get` branch. Recurses through non-computed member chains: once a
+   * chain is rooted in a map, every further `.property` down the chain reads
+   * off an `interface{}` value with no static struct to fall back to, so it
+   * stays map-rooted for `bf_get` too.
+   */
+  private isMapRootedContextChain(node: ParsedExpr): boolean {
+    if (node.kind === 'identifier') {
+      return this.state.contextConsumers.some(
+        c => c.localName === node.name && c.defaultKind === 'object',
+      )
+    }
+    if (node.kind === 'member' && !node.computed) {
+      return this.isMapRootedContextChain(node.object)
+    }
+    return false
+  }
+
   /** Go type for a context-consumer field, from its `createContext` default's type. */
   private contextConsumerGoType(c: ContextConsumer): string {
     if (typeof c.defaultValue === 'number') return 'int'
     if (typeof c.defaultValue === 'boolean') return 'bool'
+    // An OBJECT-shaped default (`createContext<{ config: X }>({ config: {} })`,
+    // #2087) needs a real map type, not the scalar `string` fallback below: a
+    // descendant's `ctx.config.label` read lowers through `bf_get` (see
+    // `member()`), which needs an actual `map[string]interface{}` receiver to
+    // walk — a `string` field crashes real `go run` execution with `can't
+    // evaluate field Config in type string`.
+    if (c.defaultKind === 'object') return 'map[string]interface{}'
     return 'string'
   }
 
@@ -536,6 +564,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (typeof c.defaultValue === 'number') return String(c.defaultValue)
     if (typeof c.defaultValue === 'boolean') return String(c.defaultValue)
     if (typeof c.defaultValue === 'string') return `"${escapeGoString(c.defaultValue)}"`
+    // Object-shaped default: a real (nil-safe) empty map — see
+    // `contextConsumerGoType`. The `createContext` argument's actual nested
+    // shape (`{ config: {} }`) is never baked key-for-key here: a consumer
+    // only ever reads this DEFAULT when no enclosing Provider ran, and
+    // `bf_get` (getFieldValue) already returns nil safely for any missing/
+    // absent key off an empty map, so `ctx.config.label ?? 'none'` resolves
+    // to `'none'` regardless of how deep the default's own nesting goes.
+    if (c.defaultKind === 'object') return 'map[string]interface{}{}'
     return '""'
   }
 
@@ -952,10 +988,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /** Collect static child instances from loop body children for the wrapper struct. */
-  private collectBodyChildInstances(bodyChildren: IRNode[]): StaticChildInstance[] {
+  private collectBodyChildInstances(
+    bodyChildren: IRNode[],
+    propsParams: ReadonlyArray<{ name: string }> = [],
+  ): StaticChildInstance[] {
     const result: StaticChildInstance[] = []
     for (const child of bodyChildren) {
-      this.collectStaticChildInstancesRecursive(child, result, false, new Map())
+      this.collectStaticChildInstancesRecursive(child, result, false, new Map(), propsParams)
     }
     return result
   }
@@ -1208,8 +1247,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const c of this.nonCollidingContextConsumers(takenInit)) {
       const field = this.contextFieldName(c)
       const def = this.contextConsumerGoDefault(c)
+      // A `map[string]interface{}` field's Go zero value (nil) is already a
+      // safely-readable "no value" (`bf_get` / `getFieldValue` treats a nil
+      // map exactly like an empty one, per `reflect.Value.MapIndex`'s
+      // documented nil-map behavior) — no `applyGoFallback` wrapper needed,
+      // same as the other zero-value sentinels below.
       const defaulted =
-        c.defaultValue === null || def === '""' || def === '0' || def === 'false'
+        c.defaultValue === null ||
+        def === '""' ||
+        def === '0' ||
+        def === 'false' ||
+        def === 'map[string]interface{}{}'
           ? `in.${field}`
           : applyGoFallback(`in.${field}`, def)
       lines.push(`\t\t${field}: ${defaulted},`)
@@ -1224,7 +1272,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   private emitStaticChildInstances(lines: string[], ir: ComponentIR): void {
-    const staticChildren = this.collectStaticChildInstances(ir.root)
+    const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
       lines.push(`\t\t${child.fieldName}: New${child.name}Props(${child.name}Input{`)
       lines.push(`\t\t\tScopeID: scopeID + "_${child.slotId}",`)
@@ -1431,7 +1479,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams)
 
       for (const child of bodyChildInstances) {
         const childVar = `child_${child.fieldName}`
@@ -1525,7 +1573,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams)
 
       // Child sub-component instances created once (identical scope IDs per row).
       for (const child of bodyChildInstances) {
@@ -1850,7 +1898,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    const staticChildren = this.collectStaticChildInstances(ir.root)
+    const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
       lines.push(`\t${child.fieldName} ${child.name}Props \`json:"-"\``)
     }
@@ -1874,9 +1922,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * components inside loops (handled by nestedComponents). Each instance carries
    * its component `name`, `slotId`, `props`, and Go `fieldName`.
    */
-  private collectStaticChildInstances(node: IRNode): Array<StaticChildInstance> {
+  private collectStaticChildInstances(
+    node: IRNode,
+    propsParams: ReadonlyArray<{ name: string }> = [],
+  ): Array<StaticChildInstance> {
     const result: StaticChildInstance[] = []
-    this.collectStaticChildInstancesRecursive(node, result, false, new Map())
+    this.collectStaticChildInstancesRecursive(node, result, false, new Map(), propsParams)
     return result
   }
 
@@ -1949,6 +2000,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     result: StaticChildInstance[],
     inLoop: boolean,
     providerCtx: ReadonlyMap<string, string>,
+    propsParams: ReadonlyArray<{ name: string }> = [],
   ): void {
     if (node.type === 'component') {
       const comp = node as IRComponent
@@ -1958,7 +2010,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // child components nested inside still get their slot fields.
       if (comp.dynamicTag) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
         }
         return
       }
@@ -1990,86 +2042,195 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // never contain components (any nested component renders a `{{template}}`
         // action, which the bake extractors reject), so recursing is a no-op.
         for (const child of effectiveChildren) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
         }
       }
       // Recurse into Portal's children to find nested components
       if (comp.name === 'Portal' && comp.children) {
         for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
         }
       }
     } else if (node.type === 'loop') {
       const loop = node as IRLoop
       // Mark children as inside loop
       for (const child of loop.children) {
-        this.collectStaticChildInstancesRecursive(child, result, true, providerCtx)
+        this.collectStaticChildInstancesRecursive(child, result, true, providerCtx, propsParams)
       }
     } else if (node.type === 'element') {
       const element = node as IRElement
       for (const child of element.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
       }
     } else if (node.type === 'fragment') {
       const fragment = node as IRFragment
       for (const child of fragment.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
       }
     } else if (node.type === 'conditional') {
       const cond = node as IRConditional
-      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx)
+      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx, propsParams)
       if (cond.whenFalse) {
-        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx)
+        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx, propsParams)
       }
     } else if (node.type === 'if-statement') {
       // An early-return if-statement root (e.g. an asChild split) keeps its
       // subtrees in consequent/alternate — the non-asChild branch's nested icon
       // needs its slot field like any other static child.
       const stmt = node as IRIfStatement
-      this.collectStaticChildInstancesRecursive(stmt.consequent, result, inLoop, providerCtx)
+      this.collectStaticChildInstancesRecursive(stmt.consequent, result, inLoop, providerCtx, propsParams)
       if (stmt.alternate) {
-        this.collectStaticChildInstancesRecursive(stmt.alternate, result, inLoop, providerCtx)
+        this.collectStaticChildInstancesRecursive(stmt.alternate, result, inLoop, providerCtx, propsParams)
       }
     } else if (node.type === 'provider') {
       // SSR context propagation: record the provider's value against its context
       // name and extend the active binding map for descendants. A literal value
-      // lowers to a Go literal; a non-literal is left unbound (the consumer
-      // keeps its default).
+      // lowers to a Go literal; an object-literal value lowers to a Go map when
+      // every member is a supported shape (#2087 — see `extendProviderContext`);
+      // anything else is left unbound (the consumer keeps its default).
       const p = node as IRProvider
-      const childCtx = this.extendProviderContext(providerCtx, p)
+      const childCtx = this.extendProviderContext(providerCtx, p, propsParams)
       for (const child of p.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx, propsParams)
       }
     } else if (node.type === 'async') {
       // Async fallback + children render server-side via the OOS
       // protocol; static child components inside them still need slot
       // fields on the parent struct.
       const a = node as IRAsync
-      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx)
+      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx, propsParams)
       for (const child of a.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx)
+        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams)
       }
     }
   }
 
   /**
    * Extend the active provider-context map with one `<Ctx.Provider value>`. A
-   * string/number/boolean literal value is lowered to a Go literal; any other
-   * shape is skipped (the descendant consumer keeps its `createContext` default).
+   * string/number/boolean literal value is lowered to a Go literal. An
+   * OBJECT-LITERAL value (#2087's chart shape — `value={{ config: props.config
+   * ?? {} }}`) lowers to a `map[string]interface{}` Go expression via
+   * `providerObjectValueToGoMap` when every member is a supported shape; any
+   * other shape (including a partially-supported object literal) is skipped —
+   * the descendant consumer keeps its `createContext` default, unchanged from
+   * before this method understood objects at all.
    */
   private extendProviderContext(
     current: ReadonlyMap<string, string>,
     p: IRProvider,
+    propsParams: ReadonlyArray<{ name: string }>,
   ): ReadonlyMap<string, string> {
-    const v = p.valueProp?.value as { kind?: string; value?: unknown } | undefined
-    if (!v || v.kind !== 'literal') return current
-    let goLit: string | null = null
-    if (typeof v.value === 'string') goLit = `"${escapeGoString(v.value)}"`
-    else if (typeof v.value === 'number' || typeof v.value === 'boolean') goLit = String(v.value)
-    if (goLit === null) return current
-    const next = new Map(current)
-    next.set(p.contextName, goLit)
-    return next
+    const v = p.valueProp?.value as
+      | { kind?: string; value?: unknown; parsed?: ParsedExpr }
+      | undefined
+    if (!v) return current
+    if (v.kind === 'literal') {
+      let goLit: string | null = null
+      if (typeof v.value === 'string') goLit = `"${escapeGoString(v.value)}"`
+      else if (typeof v.value === 'number' || typeof v.value === 'boolean') goLit = String(v.value)
+      if (goLit === null) return current
+      const next = new Map(current)
+      next.set(p.contextName, goLit)
+      return next
+    }
+    if (v.kind === 'expression' && v.parsed) {
+      const goMap = this.providerObjectValueToGoMap(v.parsed, propsParams)
+      if (goMap !== null) {
+        const next = new Map(current)
+        next.set(p.contextName, goMap)
+        return next
+      }
+    }
+    return current
+  }
+
+  /**
+   * Lower a `<Ctx.Provider value={{ … }}>` object literal to a Go
+   * `map[string]interface{}{…}` expression, for binding into a static child's
+   * context-consumer field (`emitStaticChildInstances`). Keys keep their
+   * SOURCE (JS-cased) names — the consumer reads them back via `bf_get`
+   * (`member()`), which is case-tolerant (`getFieldValue`, bf.go), so casing
+   * doesn't have to match a capitalized Go field.
+   *
+   * Every member must lower through `lowerProviderMapMemberValue` for the
+   * WHOLE object to lower — a single unsupported member (a getter, a
+   * function, an expression outside the narrow surface below) fails the
+   * whole value and returns `null`, exactly like the pre-#2087 refusal (the
+   * consumer then keeps its `createContext` default).
+   */
+  private providerObjectValueToGoMap(
+    parsed: ParsedExpr,
+    propsParams: ReadonlyArray<{ name: string }>,
+  ): string | null {
+    if (parsed.kind !== 'object-literal') return null
+    const entries: string[] = []
+    for (const prop of parsed.properties) {
+      if (prop.shorthand) return null
+      const goVal = this.lowerProviderMapMemberValue(prop.value, propsParams)
+      if (goVal === null) return null
+      entries.push(`${JSON.stringify(prop.key)}: ${goVal}`)
+    }
+    if (entries.length === 0) return null
+    return `map[string]interface{}{${entries.join(', ')}}`
+  }
+
+  /**
+   * Lower one member VALUE of a provider object literal to a Go expression.
+   * Supports:
+   *   - a pure literal / nested literal array-or-object (same machinery
+   *     `objectLiteralToGoMap` uses for an inline object passed to a child's
+   *     optional object prop);
+   *   - `props.<X> ?? {}` (#2087's exact chart shape) — an optional prop with
+   *     an empty-object fallback. The referenced prop's OWN Go field is
+   *     `interface{}` (a `Record<string, X>` type-alias prop never becomes a
+   *     named Go struct — see `typeInfoToGo`'s `interface` case — so it can't
+   *     be typed `map[string]interface{}` without risking an unrelated
+   *     `ui/compat.lock.json` diff across every other `interface{}`-typed
+   *     prop). Recovering the caller-supplied map goes through the runtime's
+   *     `bf.AsMap` normalizer rather than a bare
+   *     `.(map[string]interface{})` type assertion: an `interface{}` field
+   *     can legally hold ANY string-keyed map kind — a Go handler modelling
+   *     `Record<string, string>` naturally passes `map[string]string` — and
+   *     the single-type assertion would silently drop those values (#2111
+   *     review). `bf.AsMap` returns nil for nil / typed-nil / non-map
+   *     values, so the emitted fallback still lands on a real, empty map,
+   *     matching JS `??`'s "assign the real value when present, else `{}`"
+   *     semantics.
+   * Anything else (a getter/callback member, an unresolvable expression)
+   * returns `null`, failing the WHOLE containing object (see
+   * `providerObjectValueToGoMap`).
+   */
+  private lowerProviderMapMemberValue(
+    node: ParsedExpr,
+    propsParams: ReadonlyArray<{ name: string }>,
+  ): string | null {
+    if (node.kind === 'object-literal') return objectLiteralToGoMap(this.emitCtx, node)
+    const literal = parsedLiteralToGo(this.emitCtx, node)
+    if (literal !== null) return literal
+    if (
+      node.kind === 'logical' &&
+      node.op === '??' &&
+      node.right.kind === 'object-literal' &&
+      node.right.properties.length === 0 &&
+      node.left.kind === 'member' &&
+      !node.left.computed &&
+      node.left.object.kind === 'identifier' &&
+      node.left.object.name === this.state.propsObjectName
+    ) {
+      // Bound to a local so the narrowed `member` shape survives into the
+      // closure below — TS drops property-path narrowing (`node.left.kind
+      // === 'member'`) across a nested arrow function boundary.
+      const propName = node.left.property
+      if (propsParams.some(param => param.name === propName)) {
+        const fieldRef = `in.${capitalizeFieldName(propName)}`
+        return (
+          `func() map[string]interface{} { ` +
+          `if m := bf.AsMap(${fieldRef}); m != nil { return m }; ` +
+          `return map[string]interface{}{} }()`
+        )
+      }
+    }
+    return null
   }
 
   /**
@@ -2884,6 +3045,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.rootFieldRef(property)
     }
 
+    // A member chain rooted in a `useContext` local whose `createContext`
+    // default is object-shaped (#2087 — `defaultKind === 'object'`) reads off
+    // a `map[string]interface{}` field, not a struct: plain Go template dot
+    // access (`.Ctx.Config`) does an EXACT-string `MapIndex`, so it would
+    // only resolve a capitalized key the provider never bakes (see
+    // `providerObjectValueToGoMap`, which keeps SOURCE/JS-cased keys). Route
+    // through `bf_get` (the runtime's case-tolerant `getFieldValue`, bf.go)
+    // instead, recursively — once a chain is map-rooted every further
+    // `.property` is ALSO opaque (the map's value type is `interface{}`, so
+    // there's no static struct to fall back to), hence checking the object
+    // rather than just the top-level identifier.
+    if (this.isMapRootedContextChain(object)) {
+      const objGo = emit(object)
+      return `bf_get ${wrapIfMultiToken(objGo)} ${JSON.stringify(property)}`
+    }
+
     // Static property access on a module object-literal const
     // (`variantClasses.ghost` in a class template literal) resolves at compile
     // time — same lookup as the bracket-index form in
@@ -3060,11 +3237,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   objectLiteral(_properties: ObjectLiteralProperty[], raw: string, _emit: (e: ParsedExpr) => string): string {
-    // Not yet lowered structurally from `properties`: route through the
-    // `unsupported` path (`[UNSUPPORTED: …]`). Object values that DO reach a Go
-    // map today (signal/const inits, spread bags) go through the dedicated
+    // The shared `isSupported` gate now admits an EMPTY object literal
+    // (`?? {}`) as `??`'s right operand (expression-parser.ts, `logical`
+    // case) — every other adapter has a native `{}` dict/hashref literal to
+    // emit here, but `text/template` has none, so this dispatcher is the
+    // one place left to refuse the shape. Unlike the sibling adapters, Go
+    // can't silently fall back to a safe sentinel text: `this.unsupported`'s
+    // `[UNSUPPORTED: …]` marker would be spliced into a Go template action
+    // (e.g. as an `or`/`and` operand) and break template parsing, and the
+    // shared gate no longer reports BF101 for this shape itself (it now
+    // considers `x ?? {}` supported). So self-report BF101 here — mirroring
+    // the other self-contained refusals in this file (`pushCallbackBF101`,
+    // `refuseFilterExprNode`) — and return the safe `""` string sentinel,
+    // which is always a valid Go template value in every position `??`'s
+    // result can land in. Object values that DO reach a Go map today
+    // (signal/const inits, spread bags) go through the dedicated
     // `objectLiteralToGoMap` lowering, not here.
-    return this.unsupported(raw, 'object literal')
+    // `raw` is the whole top-level expression's source text (threaded
+    // unchanged through `convertNode`, same convention every `unsupported`
+    // node relies on for its diagnostic) — e.g. `props.config ?? {}`, not
+    // just the `{}` sub-node — so it reads naturally in the message below.
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `Expression not supported: ${raw}`,
+      loc: this.makeLoc(),
+      suggestion: {
+        message: `Go templates have no object/map literal syntax, so the \`?? {}\` fallback can't render server-side. ${GO_REMEDIATION_OPTIONS}`,
+      },
+    })
+    return `""`
   }
 
   /** Set of predicate (boolean-callback) higher-order methods. */

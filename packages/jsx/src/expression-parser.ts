@@ -2399,6 +2399,31 @@ function checkSupport(expr: ParsedExpr): SupportResult {
     case 'logical': {
       const leftSupport = checkSupport(expr.left)
       if (!leftSupport.supported) return leftSupport
+
+      // `x ?? {}` — admit an EMPTY object-literal fallback as the right
+      // operand of `??` only. A standalone object literal stays refused
+      // (the `object-literal` case above), and a non-empty one here still
+      // falls through to the general `checkSupport(expr.right)` refusal
+      // below. This is deliberately narrow, scoped to the one shape that
+      // needs it (chart's `<Ctx.Provider value={{ config: props.config ??
+      // {} }}>`):
+      //   - `??` only, not `&&` / `||` — a `{}` operand there plays a
+      //     different (always-truthy) role that each adapter's
+      //     boolean/filter dispatcher already handles by treating an
+      //     object-literal leaf as an unconditional-truthy sentinel; that
+      //     path doesn't need a real emitted value the way `??`'s value
+      //     position does.
+      //   - EMPTY object literal only (`properties.length === 0`) — the
+      //     one caller of this shape never needs populated fallback keys,
+      //     and restricting to empty means every adapter's `objectLiteral`
+      //     value-emitter only has to special-case the zero-property case
+      //     (emit its language's empty dict/hashref literal) rather than
+      //     also lowering arbitrary member values through the general
+      //     expression pipeline for SSR/CSR parity.
+      if (expr.op === '??' && expr.right.kind === 'object-literal' && expr.right.properties.length === 0) {
+        return { supported: true, level: 'L4' }
+      }
+
       const rightSupport = checkSupport(expr.right)
       if (!rightSupport.supported) return rightSupport
 
