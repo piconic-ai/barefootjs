@@ -27,7 +27,7 @@
 #     @barefootjs/mojolicious  CPAN Mojolicious::Plugin::BarefootJS
 #     @barefootjs/xslate       CPAN BarefootJS::Backend::Xslate
 #     @barefootjs/jinja        PyPI barefootjs
-#     @barefootjs/erb          RubyGems barefootjs
+#     @barefootjs/erb          RubyGems barefoot_js
 #     @barefootjs/rust         crates.io barefootjs
 #     @barefootjs/twig         Packagist barefootjs/twig (via split mirror)
 
