@@ -20,7 +20,14 @@
     "shiki": "^3.20.0"
   },
   "devDependencies": {
+    "@barefootjs/erb": "workspace:*",
+    "@barefootjs/go-template": "workspace:*",
+    "@barefootjs/jinja": "workspace:*",
     "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/mojolicious": "workspace:*",
+    "@barefootjs/rust": "workspace:*",
+    "@barefootjs/twig": "workspace:*",
+    "@barefootjs/xslate": "workspace:*",
     "@unocss/cli": "^66.0.0",
     "@unocss/preset-wind": "^66.0.0",
     "bun-types": "^1.1.0",

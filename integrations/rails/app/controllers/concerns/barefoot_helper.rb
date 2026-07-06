@@ -91,7 +91,7 @@ module BarefootHelper
       <body>
           <header class="bf-header">
               <div class="bf-header-inner">
-                  <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="Barefoot.js">
+                  <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="BarefootJS">
                       <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
                   </a>
                   <div class="bf-header-sep"></div>

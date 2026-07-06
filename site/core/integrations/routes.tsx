@@ -61,7 +61,7 @@ export function createIntegrationsApp() {
 
   app.get('/', (c) =>
     c.render(<IntegrationsIndex />, {
-      title: 'Integrations — Barefoot.js',
+      title: 'Integrations — BarefootJS',
       description:
         'Same JSX components running on Hono, h3 and Elysia (TypeScript), Echo, Gin, Chi and net/http (Go), Flask and FastAPI (Python), Sinatra and Rails (Ruby), Mojolicious and Text::Xslate (Perl), Axum (Rust), and Twig (PHP).',
     }),

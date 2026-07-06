@@ -36,7 +36,7 @@ export function createPlaygroundApp() {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Playground — Barefoot.js</title>
+  <title>Playground — BarefootJS</title>
   <meta name="description" content="In-browser playground for BarefootJS: edit JSX, see the compiled output, and preview live." />
   <meta name="color-scheme" content="dark" />
   <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png" />
@@ -74,7 +74,7 @@ export function createPlaygroundApp() {
 </head>
 <body>
   <header class="pg-header">
-    <a href="/" aria-label="Barefoot.js home"><img class="pg-logo" src="/static/logo-for-dark.svg" alt="Barefoot.js" /></a>
+    <a href="/" aria-label="BarefootJS home"><img class="pg-logo" src="/static/logo-for-dark.svg" alt="BarefootJS" /></a>
     <span class="pg-sep" aria-hidden="true"></span>
     <span style="color: var(--muted-foreground); font-size: 14px;">Playground</span>
     <span id="pg-status" class="pg-status" data-state="working">Loading…</span>
