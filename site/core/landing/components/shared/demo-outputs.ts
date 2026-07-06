@@ -67,6 +67,13 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Counter.client.js') %}\n<button bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | raw }} {{ bf.props_attr() | raw }} {{ bf.data_key_attr() | raw }} bf=\"s1\"> Count: {{ bf.text_start(\"s0\") | raw }}{{ bf.string(count) }}{{ bf.text_end() | raw }}</button>"
       },
       {
+        "id": "blade",
+        "label": "laravel",
+        "file": "counter.blade.php",
+        "lang": "php",
+        "code": "@php($bf->register_script('/static/components/barefoot.js'))\n@php($bf->register_script('/static/components/Counter.client.js'))\n<button bf-s=\"{!! e($bf->scope_attr()) !!}\" {!! $bf->hydration_attrs() !!} {!! $bf->props_attr() !!} {!! $bf->data_key_attr() !!} bf=\"s1\"> Count: {!! $bf->text_start(\"s0\") !!}{!! e($bf->string($count)) !!}{!! $bf->text_end() !!}</button>"
+      },
+      {
         "id": "minijinja",
         "label": "rust",
         "file": "counter.j2",
@@ -130,6 +137,13 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Toggle.client.js') %}\n<button aria-pressed=\"{{ bf.bool_str(on) }}\" bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | raw }} {{ bf.props_attr() | raw }} {{ bf.data_key_attr() | raw }} bf=\"s1\">\n{% if bf.truthy(on) %}\n{{ bf.comment(\"cond-start:s0\") | raw }}{{ bf.string('On') }}{{ bf.comment(\"cond-end:s0\") | raw }}\n{% else %}\n{{ bf.comment(\"cond-start:s0\") | raw }}{{ bf.string('Off') }}{{ bf.comment(\"cond-end:s0\") | raw }}\n{% endif %}\n</button>"
       },
       {
+        "id": "blade",
+        "label": "laravel",
+        "file": "toggle.blade.php",
+        "lang": "php",
+        "code": "@php($bf->register_script('/static/components/barefoot.js'))\n@php($bf->register_script('/static/components/Toggle.client.js'))\n<button aria-pressed=\"{!! e($bf->bool_str($on)) !!}\" bf-s=\"{!! e($bf->scope_attr()) !!}\" {!! $bf->hydration_attrs() !!} {!! $bf->props_attr() !!} {!! $bf->data_key_attr() !!} bf=\"s1\">\n@if($bf->truthy($on))\n{!! $bf->comment(\"cond-start:s0\") !!}{!! e($bf->string('On')) !!}{!! $bf->comment(\"cond-end:s0\") !!}\n@else\n{!! $bf->comment(\"cond-start:s0\") !!}{!! e($bf->string('Off')) !!}{!! $bf->comment(\"cond-end:s0\") !!}\n@endif\n</button>"
+      },
+      {
         "id": "minijinja",
         "label": "rust",
         "file": "toggle.j2",
@@ -191,6 +205,13 @@ export const DEMO_EXAMPLES: DemoExample[] = [
         "file": "items.twig",
         "lang": "twig",
         "code": "{% set _bf_reg0 = bf.register_script('/static/components/barefoot.js') %}\n{% set _bf_reg1 = bf.register_script('/static/components/Items.client.js') %}\n<ul bf-s=\"{{ bf.scope_attr() }}\" {{ bf.hydration_attrs() | raw }} {{ bf.props_attr() | raw }} {{ bf.data_key_attr() | raw }} bf=\"s1\">{{ bf.comment(\"loop:l0\") | raw }}\n{% for item in items %}\n<li data-key=\"{{ bf.string(item) }}\">{{ bf.text_start(\"s0\") | raw }}{{ bf.string(item) }}{{ bf.text_end() | raw }}</li>\n{% endfor %}\n{{ bf.comment(\"/loop:l0\") | raw }}</ul>"
+      },
+      {
+        "id": "blade",
+        "label": "laravel",
+        "file": "items.blade.php",
+        "lang": "php",
+        "code": "@php($bf->register_script('/static/components/barefoot.js'))\n@php($bf->register_script('/static/components/Items.client.js'))\n<ul bf-s=\"{!! e($bf->scope_attr()) !!}\" {!! $bf->hydration_attrs() !!} {!! $bf->props_attr() !!} {!! $bf->data_key_attr() !!} bf=\"s1\">{!! $bf->comment(\"loop:l0\") !!}\n@foreach(($items ?? []) as $item)\n<li data-key=\"{!! e($bf->string($item)) !!}\">{!! $bf->text_start(\"s0\") !!}{!! e($bf->string($item)) !!}{!! $bf->text_end() !!}</li>\n@endforeach\n{!! $bf->comment(\"/loop:l0\") !!}</ul>"
       },
       {
         "id": "minijinja",

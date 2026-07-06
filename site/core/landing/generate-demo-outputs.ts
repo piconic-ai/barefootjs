@@ -20,6 +20,7 @@ import { ErbAdapter } from '@barefootjs/erb/adapter'
 import { JinjaAdapter } from '@barefootjs/jinja/adapter'
 import { MojoAdapter } from '@barefootjs/mojolicious/adapter'
 import { TwigAdapter } from '@barefootjs/twig/adapter'
+import { BladeAdapter } from '@barefootjs/blade/adapter'
 import { MinijinjaAdapter } from '@barefootjs/rust/adapter'
 import { XslateAdapter } from '@barefootjs/xslate/adapter'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
@@ -109,6 +110,7 @@ const TARGETS: DemoTarget[] = [
   { id: 'jinja', label: 'django', extension: '.jinja', lang: 'jinja', adapter: () => new JinjaAdapter() },
   { id: 'ep', label: 'perl', extension: '.html.ep', lang: 'perl', adapter: () => new MojoAdapter() },
   { id: 'twig', label: 'php', extension: '.twig', lang: 'twig', adapter: () => new TwigAdapter() },
+  { id: 'blade', label: 'laravel', extension: '.blade.php', lang: 'php', adapter: () => new BladeAdapter() },
   { id: 'minijinja', label: 'rust', extension: '.j2', lang: 'jinja', adapter: () => new MinijinjaAdapter() },
   { id: 'xslate', label: 'xslate', extension: '.tx', lang: 'perl', adapter: () => new XslateAdapter() },
   { id: 'hono', label: 'hono', extension: '.tsx', lang: 'tsx', adapter: () => new HonoAdapter() },
