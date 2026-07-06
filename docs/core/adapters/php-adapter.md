@@ -29,7 +29,7 @@ Both compile-time packages emit per-component template files and the shared
 client JS, and both render through the same engine-agnostic PHP runtime
 (`Barefoot\BarefootJS`, shipped by `@barefootjs/php` / Composer package
 `barefootjs/runtime`). The only thing that differs is the **backend**: a tiny
-object that implements the four operations the runtime delegates to.
+object that implements the five operations the runtime delegates to.
 
 Both adapters are near-mechanical ports of `@barefootjs/jinja` (the Jinja2
 adapter — see the [Python Adapter](./python-adapter.md)) to their respective
@@ -41,8 +41,9 @@ expression) in one uniform place.
 ### The backend contract
 
 Everything that depends on *how* a template renders — JSON marshalling,
-raw-string marking, JSX-children materialisation, and named-template
-rendering — lives behind a backend object with four methods:
+raw-string marking, JSX-children materialisation, named-template
+rendering, and template-variable-name mangling — lives behind a backend
+object with five methods:
 
 | Method | Purpose |
 |--------|---------|
@@ -50,6 +51,7 @@ rendering — lives behind a backend object with four methods:
 | `mark_raw($str)` | Mark already-safe HTML so the engine won't re-escape it |
 | `materialize($value)` | Resolve captured JSX children to a string |
 | `render_named($name, $bf, $vars)` | Render a child component's template |
+| `ident($name)` | Mangle a prop name into an engine-safe template variable (Twig: grammar keywords like `for` → `for_`; Blade: render-scope collisions like `loop` → `loop_`) |
 
 Because that is the *only* engine-specific surface, the runtime
 (`Barefoot\BarefootJS` + `Barefoot\Evaluator`, in `packages/adapter-php/src/`)
@@ -169,7 +171,7 @@ array/string helpers, `spread_attrs`, `query`, `eq`/`neq`, …). `TwigBackend`
 (`packages/adapter-twig/php/`, Composer package `barefootjs/twig`) and
 `BladeBackend` (`packages/adapter-blade/php/`, Composer package
 `barefootjs/blade`) both depend on it via a composer `path` repository, so
-adding a third PHP template engine means implementing the four-method backend
+adding a third PHP template engine means implementing the five-method backend
 contract above, not re-porting the runtime.
 
 ## Examples
