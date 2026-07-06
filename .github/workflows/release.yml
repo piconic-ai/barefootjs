@@ -186,7 +186,7 @@ jobs:
         run: |
           test -f pyproject.toml
           version=$(jq -r '.version' ../package.json)
-          echo "__version__ = \"$version\"" > barefootjs/_version.py
+          echo "$version" > VERSION
           python -m pip install --upgrade build twine pytest jinja2
           python -m pytest
           python -m build
