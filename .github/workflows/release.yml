@@ -14,15 +14,22 @@
 #         Repository: piconic-ai/barefootjs
 #         Workflow:   release.yml
 #
-# CPAN (Perl dists):
-#   - cpan-release job: syncs $VERSION + Changes, commits to main, then
-#     runs Makefile.PL / make dist → cpan-upload for each Perl package
-#     that was bumped in this release. Requires PAUSE_ID and PAUSE_PASSWORD
-#     secrets (PAUSE uses Basic auth — no token available).
-#   Package → npm name mapping:
-#     BarefootJS                   @barefootjs/perl
-#     Mojolicious::Plugin::BarefootJS  @barefootjs/mojolicious
-#     BarefootJS::Backend::Xslate  @barefootjs/xslate
+# Native runtimes:
+#   - cpan-release publishes Perl dists that correspond to bumped npm packages.
+#   - pypi-release / rubygems-release / crates-release / packagist-release
+#     follow the same pattern for first-party Python, Ruby, Rust, and PHP
+#     runtimes: when the corresponding adapter package is published by
+#     Changesets, build/test the native runtime and publish it with registry
+#     secrets. These jobs depend only on the npm release job, so they run in
+#     parallel with each other and with cpan-release.
+#   Package → native registry mapping:
+#     @barefootjs/perl         CPAN BarefootJS
+#     @barefootjs/mojolicious  CPAN Mojolicious::Plugin::BarefootJS
+#     @barefootjs/xslate       CPAN BarefootJS::Backend::Xslate
+#     @barefootjs/jinja        PyPI barefootjs
+#     @barefootjs/erb          RubyGems barefoot_js
+#     @barefootjs/rust         crates.io barefootjs
+#     @barefootjs/twig         Packagist barefootjs/twig
 
 name: Release
 
@@ -158,3 +165,107 @@ jobs:
             cpan-upload -u "$PAUSE_ID" -p "$PAUSE_PASSWORD" ./*.tar.gz
             cd -
           done
+  pypi-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/jinja"')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Build, test, and publish Python runtime to PyPI
+        working-directory: packages/adapter-jinja/python
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          test -f pyproject.toml
+          python -m pip install --upgrade build twine pytest jinja2
+          python -m pytest
+          python -m build
+          python -m twine check dist/*
+          python -m twine upload --non-interactive dist/*
+
+  rubygems-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/erb"')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@0481980f17b760ef6bca5e8c55809102a0af1e5a # v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+
+      - name: Build, test, and publish Ruby runtime to RubyGems
+        working-directory: packages/adapter-erb
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          gemspec=$(find . -maxdepth 1 -name '*.gemspec' -print -quit)
+          test -n "$gemspec"
+          ruby -Ilib -Itest -e 'Dir["test/**/*_test.rb"].sort.each { |f| require_relative f }'
+          gem build "$gemspec"
+          gem push ./*.gem
+
+  crates-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/rust"')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4305c38b25d97ef35a8ad1f985ccf2d2242004f2 # stable
+        with:
+          toolchain: stable
+
+      - name: Build, test, and publish Rust runtime to crates.io
+        working-directory: packages/adapter-rust/runtime
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo test
+          cargo publish --dry-run
+          cargo publish
+
+  packagist-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/twig"')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Validate PHP runtime and update Packagist
+        working-directory: packages/adapter-twig/php
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+        run: |
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          if composer run-script --list | grep -q '^  test'; then
+            composer test
+          fi
+          payload=$(jq -n --arg url "https://github.com/${GITHUB_REPOSITORY}" '{repository:{url:$url}}')
+          curl --fail-with-body \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data "$payload" \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_API_TOKEN}"
