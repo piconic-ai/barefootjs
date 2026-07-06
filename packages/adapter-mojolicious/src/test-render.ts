@@ -213,6 +213,14 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
       await Bun.write(resolve(tempDir, `${toSnakeCase(childName)}.html.ep`), patchTemplate(template))
     }
 
+    // Surface every `props.<x>` access as a propsParam before building
+    // the top-level stash (idempotent; the same shared pass the adapter's
+    // `generate` applies to its own IR instance — this round-tripped IR
+    // hasn't been augmented). Without it, a read reachable only through a
+    // dynamic text child / condition / loop array (#2126 follow-up) has
+    // no param entry, `buildPerlProps` seeds nothing, and the template's
+    // bare `$var` aborts under Mojo::Template's strict vars.
+    augmentInheritedPropAccesses(ir)
     // Build props hash for Perl
     const propsPerl = buildPerlProps(componentName, props, ir)
 

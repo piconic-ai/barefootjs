@@ -173,9 +173,12 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   const booleanAttrProps = new Set<string>()
   const accessed = new Set<string>()
   const accessRe = new RegExp(`(?:^|[^\\w$.])${propsObj}\\.([A-Za-z_$][\\w$]*)`, 'g')
-  const scan = (s: string | undefined): void => {
+  const scan = (s: string | undefined, also?: Set<string>): void => {
     if (!s) return
-    for (const m of s.matchAll(accessRe)) accessed.add(m[1])
+    for (const m of s.matchAll(accessRe)) {
+      accessed.add(m[1])
+      also?.add(m[1])
+    }
   }
 
   // Memos, signals, init statements, effects: any `props.X` read.
@@ -196,8 +199,32 @@ export function augmentInheritedPropAccesses(ir: ComponentIR): void {
   // Template attribute exprs — also note bare-ref / boolean usage.
   const walk = (node: IRNode | undefined): void => {
     if (!node) return
+    // Non-attribute expression carriers (#2126 follow-up): a `props.X`
+    // read can reach the template as a bare scalar through a dynamic
+    // text child (`<p>{props.label}</p>`), a conditional / if-statement
+    // condition (`{props.show && …}`), or a loop's array expression
+    // (`(props.items ?? []).map(…)`). With a typed props object those
+    // names are already in `propsParams`; with an untyped `props`
+    // parameter these reads were invisible to this pass, so the emitted
+    // template referenced a var the props type / ssrDefaults never
+    // declared (a strict-mode 500 on Perl-family adapters, a missing
+    // struct field on Go). Text reads keep the default `string`
+    // classification; condition / loop-array reads land in the nillable
+    // bucket (`unknown` → omittable/interface-typed) since their values
+    // are only ever truth-tested or iterated.
+    const carrier = node as unknown as { type?: string; expr?: string; condition?: string; array?: string }
+    if (carrier.type === 'expression') scan(carrier.expr)
+    scan(carrier.condition, bareRefProps)
+    scan(carrier.array, bareRefProps)
     const el = node as unknown as IRElement
-    for (const attr of el.attrs ?? []) {
+    const attrLists = [
+      ...(el.attrs ?? []),
+      // Component nodes carry the same AttrValue shapes under `props`
+      // (`<Child value={props.foo} />` reads `$foo` at child-props
+      // construction time in the SSR template).
+      ...((node as unknown as { props?: IRElement['attrs'] }).props ?? []),
+    ]
+    for (const attr of attrLists) {
       const v = attr.value as {
         kind?: string
         expr?: string

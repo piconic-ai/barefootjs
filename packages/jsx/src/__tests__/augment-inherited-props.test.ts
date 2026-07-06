@@ -76,6 +76,58 @@ describe('augmentInheritedPropAccesses', () => {
     }
   })
 
+  test('sees text-expression, condition, loop-array, and component-prop reads (#2126)', () => {
+    // These carriers all lower `props.X` to a bare template scalar, so a
+    // missed read means the emitted template references a var the props
+    // type / ssrDefaults never declared — a strict-mode 500 on the
+    // Perl-family adapters, a missing struct field on Go.
+    const ir = makeIR({
+      propsObjectName: 'props',
+      propsParams: [],
+      root: {
+        type: 'element',
+        tag: 'div',
+        attrs: [],
+        children: [
+          // dynamic text child → string (default classification)
+          { type: 'expression', expr: 'props.label' },
+          // conditional condition → nillable (truth-tested only)
+          {
+            type: 'conditional',
+            condition: 'props.show',
+            whenTrue: { type: 'element', tag: 'span', attrs: [], children: [] },
+            whenFalse: { type: 'text', value: '' },
+          },
+          // loop array → nillable (iterated only)
+          {
+            type: 'loop',
+            array: '(props.items ?? [])',
+            param: 'it',
+            children: [{ type: 'expression', expr: 'it' }],
+          },
+          // component prop value → same AttrValue scan as element attrs
+          {
+            type: 'component',
+            name: 'Child',
+            props: [{ name: 'value', value: { kind: 'expression', expr: 'props.childValue ?? 1' } }],
+            children: [],
+          },
+        ],
+      },
+    })
+
+    augmentInheritedPropAccesses(ir)
+
+    const byName = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
+    expect(byName.get('label')?.type).toMatchObject({ kind: 'primitive', primitive: 'string' })
+    expect(byName.get('show')?.type).toMatchObject({ kind: 'unknown' })
+    expect(byName.get('items')?.type).toMatchObject({ kind: 'unknown' })
+    expect(byName.get('childValue')).toBeDefined()
+    for (const name of ['label', 'show', 'items', 'childValue']) {
+      expect(byName.get(name)?.optional).toBe(true)
+    }
+  })
+
   test('is idempotent — re-running adds nothing', () => {
     const ir = makeIR({
       propsObjectName: 'props',
