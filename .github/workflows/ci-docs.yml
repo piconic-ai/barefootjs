@@ -1,0 +1,59 @@
+# CI — Docs
+#
+# Prose checks for the documentation surface. Two gates:
+#
+#   1. Vale (styles/Barefoot/Naming.yml) — the display name is
+#      "BarefootJS"; `BareFootJS` / `Barefoot.js` / `BarefootJs` are
+#      errors in Markdown/MDX prose. The npm package name `barefootjs`
+#      (lowercase) and the logotype are unaffected: the swaps are
+#      case-sensitive.
+#   2. A repo-wide grep for the same wrong variants in source files
+#      (titles, aria-labels, template strings), where Vale's prose
+#      scoping doesn't reach. design/ is excluded — the LP renewal
+#      handbook quotes the forbidden spellings on purpose.
+name: CI — Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - '**/*.mdx'
+      - '.vale.ini'
+      - 'styles/**'
+      - '.github/workflows/ci-docs.yml'
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  VALE_VERSION: 3.15.1
+  VALE_SHA256: 797b23b1a4b7cbba3ffd7d4bca663200fed9362630d0aa340e8480a3ba8f8052
+
+jobs:
+  naming:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Install Vale
+        run: |
+          curl -sSL -o vale.tar.gz "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          echo "${VALE_SHA256}  vale.tar.gz" | sha256sum --check
+          tar -xzf vale.tar.gz vale
+          rm vale.tar.gz
+
+      - name: Vale (prose naming)
+        run: ./vale README.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md AGENTS.md docs
+
+      - name: Naming grep (source files)
+        # Same rule for non-prose files. design/ intentionally quotes the
+        # wrong spellings (it is the renewal spec), so it is excluded.
+        run: |
+          if git grep -nE 'BareFootJS|Barefoot\.js|BarefootJs([^A-Za-z]|$)' -- \
+            ':!design' ':!styles' ':!.github/workflows/ci-docs.yml'; then
+            echo "::error::Use the display name 'BarefootJS' (npm package: barefootjs)."
+            exit 1
+          fi
