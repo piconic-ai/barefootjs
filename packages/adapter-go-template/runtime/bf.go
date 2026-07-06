@@ -157,6 +157,20 @@ func FuncMap() template.FuncMap {
 		// Destructure object-rest spread-onto-element residual (#2087):
 		// "every field except these" for a struct/map, keyed by json tag.
 		"bf_omit": Omit,
+
+		// Case-tolerant single-field read off a map or struct (#2087): a
+		// `useContext` local whose `createContext` default is object-shaped
+		// (e.g. `createContext<{ config: X }>({ config: {} })`) is typed
+		// `map[string]interface{}`, and its keys are the SOURCE (JS-cased)
+		// property names a `<Ctx.Provider value={{ … }}>` bakes
+		// (`providerObjectValueToGoMap`, go-template-adapter.ts) — plain
+		// `text/template` dot access does an exact-string `MapIndex`, so
+		// `ctx.config.label` lowers to nested `bf_get` calls instead of
+		// `.Ctx.Config.Label`. Reuses the same `getFieldValue` the
+		// project/sort helpers already use for a dynamic field-name lookup;
+		// safe on a nil map/interface (returns nil) so a missing Provider or
+		// an absent key falls through to `??`'s fallback.
+		"bf_get": getFieldValue,
 	}
 }
 

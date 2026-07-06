@@ -8,7 +8,14 @@ import { describe, test, expect } from 'bun:test'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
 import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { renderGoTemplateComponent, GoNotAvailableError } from '@barefootjs/go-template/test-render'
-import { compileJSX, type ComponentIR, type IRExpression } from '@barefootjs/jsx'
+import {
+  compileJSX,
+  analyzeComponent,
+  buildMetadata,
+  jsxToIR,
+  type ComponentIR,
+  type IRExpression,
+} from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
 
 runAdapterConformanceTests({
@@ -64,24 +71,19 @@ runAdapterConformanceTests({
   // `.filter` predicate to the runtime evaluator. See the #2075 constructor
   // pins below.
   //
-  // `context-provider-nullish-object-fallback` (#2087): compiles clean — no
-  // BF101 (`extendProviderContext` silently skips the non-literal Provider
-  // value, exactly like the chart component's own
-  // `<ChartConfigContext.Provider value={{ config: props.config ?? {} }}>`,
-  // which is why `ui/compat.lock.json`'s `chart` × `go-template` cell is
-  // `ok: true`) — but the skip is orthogonal to #2087's `?? {}` fix and
-  // pre-existing: it means the descendant `useContext` consumer falls back
-  // to the `createContext` DEFAULT typing, and when that default is itself
-  // an object (`{ config: {} }`, not a string/number/boolean), the generated
-  // Go struct field ends up typed `string` rather than a struct, so the real
-  // `go run` execution fails at request time
-  // (`can't evaluate field Config in type string`) — a pre-existing gap in
-  // how Go models an object-shaped context default with no live Provider
-  // value, not something #2087 introduces or could fix (chart itself never
-  // hits it because it never reads `.config` from a bare top-level text
-  // position on the Go path). Skipped here the same way `return-map` is
-  // above: a real, orthogonal divergence, not a build-time diagnostic.
-  skipJsx: ['context-provider-nullish-object-fallback'],
+  // `context-provider-nullish-object-fallback` (#2087) is no longer skipped:
+  // the Go adapter now models an OBJECT-shaped `createContext` default
+  // (`ContextConsumer.defaultKind === 'object'`, `augment-inherited-props.ts`)
+  // as a real `map[string]interface{}` consumer field instead of falling
+  // through to the scalar `string` default, and `extendProviderContext`
+  // lowers the chart shape's `<Ctx.Provider value={{ config: props.config ??
+  // {} }}>` into a `map[string]interface{}` Go expression bound into the
+  // descendant's constructor call (`providerObjectValueToGoMap` /
+  // `lowerProviderMapMemberValue`). The consumer's `ctx.config.label` read
+  // lowers through the runtime's case-tolerant `bf_get` (`getFieldValue`,
+  // bf.go) instead of a plain `.Ctx.Config.Label` dot-chain, which would
+  // require an exact-cased struct/map field that never exists. See
+  // go-template-adapter.ts's `member()` `isMapRootedContextChain` branch.
   // Per-fixture build-time contracts for shapes the Go template
   // adapter intentionally refuses to lower. Lives in `../conformance-pins`
   // (not on the shared fixtures) so adding a new adapter doesn't require
@@ -3625,7 +3627,7 @@ export function C(props: Props) {
     expect(template).not.toContain('UNSUPPORTED')
   })
 
-  test('the chart shape — a Provider value member falling back to `?? {}` — still compiles clean (provider-value skip, unchanged)', () => {
+  test('the chart shape — a Provider value member falling back to `?? {}` — compiles clean with no BF101', () => {
     const adapter = new GoTemplateAdapter()
     const result = compileJSX(`
 "use client"
@@ -3647,11 +3649,79 @@ export function C(props: Props) {
   )
 }
 `.trimStart(), 'test.tsx', { adapter })
-    // `extendProviderContext` only lowers a string/number/boolean literal
-    // provider value and silently skips any other shape (the descendant
-    // consumer keeps its `createContext` default) — this expression never
-    // reaches `objectLiteral`, so no BF101 fires here, matching the
-    // `ui/compat.lock.json` `chart` × `go-template` `ok: true` entry.
+    // The object-literal provider value never reaches `objectLiteral` (it's
+    // handled structurally by `extendProviderContext` /
+    // `providerObjectValueToGoMap` instead), so no BF101 fires here — matching
+    // the `ui/compat.lock.json` `chart` × `go-template` `ok: true` entry.
     expect(result.errors ?? []).toEqual([])
+  })
+
+  test('#2087: an object-shaped createContext default lowers the consumer field to a map, and the Provider bakes a matching Go map into the child constructor call', () => {
+    // Mirrors the real cross-component wiring `renderGoTemplateComponent` does
+    // (`registerChildComponentShape` for every sibling before the parent's
+    // types/template are generated) — a bare `compileJSX` multi-component
+    // compile never calls that hook, so it can't show the Provider→consumer
+    // binding this test pins.
+    const source = `
+"use client"
+import { createContext, useContext } from "@barefootjs/client"
+type ChartConfig = Record<string, string>
+const Ctx = createContext<{ config: ChartConfig }>({ config: {} })
+function Consumer() {
+  const ctx = useContext(Ctx)
+  return <span>{ctx.config.label ?? "none"}</span>
+}
+type Props = { config?: ChartConfig }
+export function Root(props: Props) {
+  return (
+    <div>
+      <Ctx.Provider value={{ config: props.config ?? {} }}>
+        <Consumer />
+      </Ctx.Provider>
+    </div>
+  )
+}
+`.trimStart()
+
+    const consumerCtx = analyzeComponent(source, 'test.tsx', 'Consumer')
+    const consumerIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(consumerCtx),
+      root: jsxToIR(consumerCtx)!,
+      errors: [],
+    }
+    const rootCtx = analyzeComponent(source, 'test.tsx', 'Root')
+    const rootIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(rootCtx),
+      root: jsxToIR(rootCtx)!,
+      errors: [],
+    }
+
+    const adapter = new GoTemplateAdapter()
+    // Order matters: the child's shape (incl. its context consumers) must be
+    // known before the parent's types/constructor are generated.
+    adapter.registerChildComponentShape(consumerIR)
+    const consumerTypes = adapter.generateTypes(consumerIR)!
+    const rootTypes = adapter.generateTypes(rootIR)!
+    const consumerTemplate = adapter.generate(consumerIR, { skipScriptRegistration: true }).template
+    const rootTemplate = adapter.generate(rootIR, { skipScriptRegistration: true }).template
+
+    // Consumer's `Ctx` field is a real map, not the scalar `string` fallback
+    // every other non-literal default used to produce.
+    expect(consumerTypes).toContain('Ctx map[string]interface{}')
+
+    // The Provider's `{ config: props.config ?? {} }` bakes into a
+    // `map[string]interface{}` Go expression, type-asserting the parent's
+    // `interface{}`-typed `Config` field and falling back to a real empty map.
+    expect(rootTypes).toContain('ConsumerSlot0: NewConsumerProps(ConsumerInput{')
+    expect(rootTypes).toContain('Ctx: map[string]interface{}{"config": func() map[string]interface{} { if m, ok := in.Config.(map[string]interface{}); ok { return m }; return map[string]interface{}{} }()},')
+
+    // The consumer's `ctx.config.label ?? 'none'` reads through `bf_get`
+    // (case-tolerant `getFieldValue`), not a plain `.Ctx.Config.Label` dot
+    // chain — the latter would require an exact-cased struct/map field that
+    // never exists and crashes real `go run` execution.
+    expect(consumerTemplate).toContain('{{or (bf_get (bf_get .Ctx "config") "label") "none"}}')
+    expect(consumerTemplate).not.toContain('.Ctx.Config')
   })
 })
