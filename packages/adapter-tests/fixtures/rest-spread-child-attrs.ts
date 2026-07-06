@@ -47,8 +47,6 @@ export function TextInput({ className = '', type, ...props }: TextInputProps) {
 `,
   },
   expectedHtml: `
-    <div bf-s="test">
-      <input bf-s="test_s0" bf="s0" class="" placeholder="type here" value="seed">
-    </div>
+    <div bf-s="test"><input bf-s="test_s0" bf="s0" class="" placeholder="type here" value="seed"></div>
   `,
 })
