@@ -987,10 +987,10 @@ function Box({ label }: { label: string }) {
 `
       const { types } = compileAndGenerate(source)
       // The condition prop and the value reference resolve to `in.<Field>`,
-      // the static key is preserved. (The analyzer surfaces these
-      // destructured props as `unknown`/`interface{}`, so the condition
-      // routes through `bf.Truthy` for a faithful JS truthiness test.)
-      expect(types).toContain('if bf.Truthy(in.Label) {')
+      // the static key is preserved. `label` is a required primitive, so the
+      // analyzer resolves it to `string` (issue #2150) and the field-typed
+      // condition is a faithful `!= ""` truthiness test rather than reflection.
+      expect(types).toContain('if in.Label != "" {')
       expect(types).toContain('return map[string]any{"data-label": in.Label}')
     })
 

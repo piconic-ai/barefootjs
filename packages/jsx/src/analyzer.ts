@@ -3011,6 +3011,12 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
       hasIgnoreDirective: ignored,
     }
 
+    // Resolve each destructured binding's declared type from the param's type
+    // annotation, so `{ value }: Props` keeps the same per-prop TypeInfo as the
+    // `props: Props` path instead of degrading to `unknown` (which typed
+    // adapters emit as `interface{}` + an unchecked assertion). See issue #2150.
+    const memberTypes = param.type ? collectMemberTypes(param.type, ctx) : null
+
     for (const element of param.name.elements) {
       if (ts.isBindingElement(element) && ts.isIdentifier(element.name)) {
         const localName = element.name.text
@@ -3022,10 +3028,19 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
           continue
         }
 
+        // Aliased bindings (`{ value: v }`) take their type from the source
+        // property name, not the local alias.
+        const sourcePropName =
+          element.propertyName && ts.isIdentifier(element.propertyName)
+            ? element.propertyName.text
+            : localName
+        const resolvedType: TypeInfo =
+          memberTypes?.get(sourcePropName) ?? { kind: 'unknown', raw: 'unknown' }
+
         const defaultContainsArrow = element.initializer ? nodeContainsArrow(element.initializer) : false
         ctx.propsParams.push({
           name: localName,
-          type: { kind: 'unknown', raw: 'unknown' },
+          type: resolvedType,
           optional: !!element.initializer,
           defaultValue,
           defaultContainsArrow: defaultContainsArrow || undefined,
@@ -3106,6 +3121,64 @@ function collectKeysFromMembers(
     }
   }
   return keys
+}
+
+/**
+ * Build a property-name -> resolved TypeInfo map from a props type annotation,
+ * for destructured params (`{ value }: Props`) so they carry the same per-prop
+ * types the props-object path (`props: Props`) already resolves. Returns null
+ * for external/unresolvable types.
+ *
+ * Scope (deliberately narrow — targets the panic in issue #2150):
+ * - Only REQUIRED members are resolved. Optional members (`value?: T`) are left
+ *   out so they keep degrading to `unknown` -> `interface{}`: typed adapters
+ *   rely on that nillable field to omit an unset optional attribute
+ *   (`{{if ne .X nil}}` in Go), which a concrete zero value could not express.
+ * - Only PRIMITIVE members (string/number/boolean) are resolved. Those are the
+ *   types that otherwise produce an unchecked scalar assertion (`in.X.(int)`)
+ *   that panics. Arrays/objects/functions are left as `unknown` because typed
+ *   adapters lower them through interface{}-based helpers (`bf_flat`, spread,
+ *   `bf_json`); giving them concrete types would break that lowering and is a
+ *   larger, separate change.
+ */
+function collectMemberTypes(
+  typeNode: ts.TypeNode,
+  ctx: AnalyzerContext
+): Map<string, TypeInfo> | null {
+  const isResolvablePrimitive = (info: TypeInfo): boolean =>
+    info.kind === 'primitive' &&
+    (info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean')
+
+  const fromMembers = (members: ts.NodeArray<ts.TypeElement>): Map<string, TypeInfo> => {
+    const map = new Map<string, TypeInfo>()
+    for (const member of members) {
+      if (ts.isPropertySignature(member) && member.name && member.type && !member.questionToken) {
+        const info = typeNodeToTypeInfo(member.type, ctx.sourceFile)
+        if (info && isResolvablePrimitive(info)) {
+          map.set(member.name.getText(ctx.sourceFile), info)
+        }
+      }
+    }
+    return map
+  }
+
+  if (ts.isTypeLiteralNode(typeNode)) {
+    return fromMembers(typeNode.members)
+  }
+
+  if (ts.isTypeReferenceNode(typeNode)) {
+    const typeName = typeNode.typeName.getText(ctx.sourceFile)
+    const typeDecl = findTypeDeclaration(typeName, ctx.sourceFile)
+    if (!typeDecl) return null
+    if (ts.isInterfaceDeclaration(typeDecl)) {
+      return fromMembers(typeDecl.members)
+    }
+    if (ts.isTypeAliasDeclaration(typeDecl) && ts.isTypeLiteralNode(typeDecl.type)) {
+      return fromMembers(typeDecl.type.members)
+    }
+  }
+
+  return null
 }
 
 /**

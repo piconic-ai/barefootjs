@@ -278,3 +278,113 @@ describe('Props Destructuring Warning (BF043)', () => {
     expect(propsWarnings).toHaveLength(0)
   })
 })
+
+describe('Destructured props keep their declared types (BF043 fixture #2150)', () => {
+  const typeOf = (ctx: ReturnType<typeof analyzeComponent>, name: string) =>
+    ctx.propsParams.find((p) => p.name === name)?.type
+
+  test('resolves scalar member types from a type-alias annotation', () => {
+    const source = `
+      type Props = {
+        value: number
+        label: string
+      }
+
+      export function Component({ value, label }: Props) {
+        return <div>{label}: {value}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'value')).toEqual({ kind: 'primitive', primitive: 'number', raw: 'number' })
+    expect(typeOf(ctx, 'label')).toEqual({ kind: 'primitive', primitive: 'string', raw: 'string' })
+  })
+
+  test('resolves member types from an inline type literal', () => {
+    const source = `
+      export function Component({ value }: { value: number }) {
+        return <div>{value}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'value')).toEqual({ kind: 'primitive', primitive: 'number', raw: 'number' })
+  })
+
+  test('resolves member types from an interface annotation', () => {
+    const source = `
+      interface Props {
+        value: number
+      }
+
+      export function Component({ value }: Props) {
+        return <div>{value}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'value')).toEqual({ kind: 'primitive', primitive: 'number', raw: 'number' })
+  })
+
+  test('keys the lookup on the source property name for aliased bindings', () => {
+    const source = `
+      type Props = { value: number }
+
+      export function Component({ value: v }: Props) {
+        return <div>{v}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    // The local binding is 'v', but its type comes from the 'value' member.
+    expect(typeOf(ctx, 'v')).toEqual({ kind: 'primitive', primitive: 'number', raw: 'number' })
+  })
+
+  test('falls back to unknown when the param has no type annotation', () => {
+    const source = `
+      export function Component({ value }) {
+        return <div>{value}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'value')).toEqual({ kind: 'unknown', raw: 'unknown' })
+  })
+
+  // Deliberate scope: only required primitives are resolved. Optional and
+  // non-primitive members stay `unknown` so typed adapters keep their existing
+  // interface{}-based lowering (attribute omission, bf_flat/spread/bf_json).
+  test('leaves OPTIONAL members as unknown (preserves nillable omission)', () => {
+    const source = `
+      type Props = { value?: number }
+
+      export function Component({ value }: Props) {
+        return <div>{value}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'value')).toEqual({ kind: 'unknown', raw: 'unknown' })
+  })
+
+  test('leaves NON-primitive members (arrays/objects) as unknown', () => {
+    const source = `
+      type Props = { rows: number[][]; meta: { id: string } }
+
+      export function Component({ rows, meta }: Props) {
+        return <div>{rows.length}{meta.id}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'rows')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    expect(typeOf(ctx, 'meta')).toEqual({ kind: 'unknown', raw: 'unknown' })
+  })
+})
