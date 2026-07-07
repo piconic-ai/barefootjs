@@ -195,7 +195,7 @@ type PropsStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value int `json:"value"`
 	Label string `json:"label"`
-	DisplayValue interface{} `json:"displayValue"`
+	DisplayValue int `json:"displayValue"`
 }
 
 // DestructuredStyleChildInput is the user-facing input type.
@@ -218,7 +218,7 @@ type DestructuredStyleChildProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Value interface{} `json:"value"`
 	Label interface{} `json:"label"`
-	DisplayValue interface{} `json:"displayValue"`
+	DisplayValue int `json:"displayValue"`
 }
 
 // PropsReactivityComparisonInput is the user-facing input type.
@@ -449,7 +449,7 @@ type PageShellProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Children interface{} `json:"children"`
+	Children interface{} `json:"-"`
 	ReaderToolbarSlot0 ReaderToolbarProps `json:"-"`
 }
 
@@ -535,7 +535,7 @@ type PostListProps struct {
 	Tags []string `json:"tags"`
 	Base string `json:"base"`
 	Params map[string]interface{} `json:"params"`
-	Visible map[string]interface{} `json:"visible"`
+	Visible []Item `json:"visible"`
 	Root string `json:"-"`
 	PostListItems []PostListItemProps `json:"-"`
 }
