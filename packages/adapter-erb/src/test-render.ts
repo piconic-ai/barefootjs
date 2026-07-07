@@ -22,7 +22,18 @@
  * Child components are wired through the production
  * `BarefootJS::Context#register_child_renderer` so the child's `bf-s` scope
  * id derives from `<parentScope>_<slotId>` exactly as a real `bf build`
- * page would.
+ * page would. As of #2158, the child-vars seeding step also runs the exact
+ * production sequence — `BarefootJS::Context.derive_vars_from_defaults`,
+ * the same call `register_components_from_manifest` makes
+ * (`lib/barefoot_js.rb` ~lines 283-292) — instead of a harness-local
+ * `defaults.merge(child_props)` shortcut. That shortcut is why the #2157
+ * bug (a manifest `propName` riding in as a JSON String, looked up against
+ * symbol-keyed runtime prop Hashes, so `children` silently fell back to
+ * the static default and rendered empty) was invisible to this whole
+ * conformance corpus: the harness never exercised the code path the bug
+ * lived in. Now it does, so the same class of regression is caught by
+ * every fixture that renders a child component, not just a dedicated
+ * regression test.
  */
 
 import { compileJSX, extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
@@ -255,12 +266,21 @@ export async function renderErbComponent(options: RenderOptions): Promise<string
     const rootScopeIdRaw = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
     const rootScopeId = rubyStringLiteral(rootScopeIdRaw)
 
-    // Static ssrDefaults per child, simplified to bare values (the
-    // caller's props always win — see `buildChildRenderersRuby`) and
-    // written as one JSON file keyed by snake_case template name.
-    const childDefaults: Record<string, Record<string, unknown>> = {}
+    // Static ssrDefaults per child, written VERBATIM — `propName` /
+    // `isRestProps` / `value` intact, exactly the shape the production
+    // build manifest embeds — and written as one JSON file keyed by
+    // snake_case template name. `buildChildRenderersRuby` below feeds this
+    // straight into `BarefootJS::Context.derive_vars_from_defaults`, the
+    // same call `register_components_from_manifest` makes in the published
+    // gem (#2158). A prior version of this harness simplified each entry
+    // to its bare `value` and did `defaults.merge(child_props)` directly —
+    // that sidestepped `derive_vars_from_defaults`'s `propName` lookup
+    // entirely, which is exactly why the #2157 String-vs-symbol `propName`
+    // bug (children rendering empty) was invisible to this whole
+    // conformance corpus.
+    const childDefaults: Record<string, Record<string, SsrDefault>> = {}
     for (const [childName, { ir: childIR }] of childTemplates) {
-      childDefaults[toSnakeCase(childName)] = simplifySsrDefaults(extractSsrDefaults(childIR.metadata) ?? {})
+      childDefaults[toSnakeCase(childName)] = extractSsrDefaults(childIR.metadata) ?? {}
     }
     if (childTemplates.size > 0) {
       await Bun.write(resolve(tempDir, 'child_defaults.json'), JSON.stringify(childDefaults))
@@ -343,10 +363,19 @@ function collectImportedComponentNames(ir: ComponentIR): string[] {
  * derives the child scope id from `<parentScope>_<slotId>` (the parent's
  * `bf.render_child('<name>', { …, _bf_slot: '<slotId>' })` passes
  * `_bf_slot`), seeds signal / memo / prop defaults from the child IR's
- * `ssrDefaults` (loaded once from `child_defaults.json`, caller props win
- * via `Hash#merge`), shares the parent's script list, and renders the
- * child `.erb` through the same backend. Loop children (no `_bf_slot`)
- * fall back to `<ComponentName>_<rand>` like the Perl harnesses.
+ * `ssrDefaults` (loaded once from `child_defaults.json`) THROUGH THE SAME
+ * `BarefootJS::Context.derive_vars_from_defaults` call
+ * `register_components_from_manifest` makes (lib/barefoot_js.rb ~lines
+ * 283-292) — not a harness-local re-derivation — so the propName /
+ * isRestProps resolution the published gem actually runs is exactly what
+ * this harness exercises (#2158; this is the fix for the #2157 class of
+ * bug, where a harness-local `defaults.merge(child_props)` shortcut never
+ * touched that code path and so never caught the String-vs-symbol
+ * `propName` mismatch). Caller props still win over static defaults —
+ * that's `derive_vars_from_defaults`'s own contract — shares the parent's
+ * script list, and renders the child `.erb` through the same backend.
+ * Loop children (no `_bf_slot`) fall back to `<ComponentName>_<rand>`
+ * like the Perl harnesses.
  */
 function buildChildRenderersRuby(
   childTemplates: Map<string, { template: string; ir: ComponentIR }>,
@@ -411,8 +440,16 @@ function buildChildRenderersRuby(
     lines.push(`  child_bf._child_renderers(bf._child_renderers)`)
     lines.push(`  child_bf._scripts(bf._scripts)`)
     lines.push(`  child_bf._script_seen(bf._script_seen)`)
-    // Seed template vars: static ssrDefaults first, caller's props win.
-    lines.push(`  vars = defaults_${snakeName}.merge(child_props)`)
+    // Seed template vars through the production sequence — the exact
+    // call `register_components_from_manifest` makes in the published gem
+    // (lib/barefoot_js.rb ~lines 283-292) — instead of a harness-local
+    // `defaults.merge(child_props)` shortcut. `derive_vars_from_defaults`
+    // resolves each entry's `propName` (symbolized) against the live
+    // `child_props`, falling back to the static `value`; `isRestProps`
+    // entries pass the rest bag through. Caller props still win overall
+    // via the final `merge`.
+    lines.push(`  extra = BarefootJS::Context.derive_vars_from_defaults(defaults_${snakeName}, child_props)`)
+    lines.push(`  vars = child_props.merge(extra)`)
     lines.push(`  rendered = backend.render_named(${rubyStringLiteral(snakeName)}, child_bf, vars)`)
     lines.push(`  rendered.chomp`)
     lines.push(`end)`)
@@ -428,23 +465,6 @@ function buildChildRenderersRuby(
  *  adapter internals for a three-line string helper). */
 function rubySymbol(name: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*[?!]?$/.test(name) ? `:${name}` : `:"${name.replace(/"/g, '\\"')}"`
-}
-
-/**
- * Simplify an `extractSsrDefaults` map to bare values for the child
- * defaults JSON file. Each entry is either a bare value or
- * `{ value, propName?, isRestProps? }`; the child renderer always merges
- * the caller's live `child_props` OVER these defaults (`Hash#merge`), so
- * only the static fallback `value` is needed here — the `propName`-aware
- * resolution the production manifest path does is redundant with that
- * merge.
- */
-function simplifySsrDefaults(defaults: Record<string, SsrDefault>): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const [name, d] of Object.entries(defaults)) {
-    out[name] = d.value
-  }
-  return out
 }
 
 /**

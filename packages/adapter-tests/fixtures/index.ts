@@ -146,6 +146,11 @@ import { fixture as childComponent } from './child-component'
 import { fixture as multiComponentModule } from './multi-component-module'
 import { fixture as restSpreadChildAttrs } from './rest-spread-child-attrs'
 import { fixture as componentWithJsxChildren } from './component-with-jsx-children'
+// #2158: Counter + a children-forwarding Button child — the render-stage
+// contract's anchor fixture (see `../src/render.contract.ts`), rendered
+// through every adapter's real backend and also joining this HTML
+// conformance corpus like any other multi-file fixture.
+import { fixture as counterButtons } from './counter-buttons'
 import { fixture as nativeSelectSpreadChildren } from './native-select-spread-children'
 import { fixture as multipleInstances } from './multiple-instances'
 import { fixture as staticArrayChildren } from './static-array-children'
@@ -397,6 +402,7 @@ export const jsxFixtures: JSXFixture[] = [
   multiComponentModule,
   restSpreadChildAttrs,
   componentWithJsxChildren,
+  counterButtons,
   nativeSelectSpreadChildren,
   multipleInstances,
   staticArrayChildren,
