@@ -12,7 +12,7 @@
 //      flags. `--yes` short-circuits all prompts by forcing the
 //      adapter / css defaults too.
 
-import { existsSync, mkdirSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
@@ -55,10 +55,12 @@ be prompted for one (defaults to "${DEFAULT_PROJECT_NAME}").
 Options:
   -y, --yes           Accept all defaults (project name "${DEFAULT_PROJECT_NAME}", adapter hono, css unocss).
                       Skips every prompt — useful for CI and dotfiles.
+  --list-adapters     Print every adapter id + CSS library option, then exit.
   -h, --help          Show this message.
 
 Forwarded to \`bf init\`:
-  --adapter <name>    Adapter to use (default: hono)
+  --adapter <name>    Adapter to use (default: hono). Run --list-adapters
+                      to see every adapter id.
   --css <name>        CSS setup to use: "unocss" (default) or "none"
                       ("none" = bring your own CSS: no UnoCSS, no UI
                       components, just the compiler output)
@@ -76,9 +78,39 @@ function fail(msg: string): never {
   process.exit(1)
 }
 
+// `require.resolve` is Node-specific. `create-barefootjs` is invoked
+// via `npm create barefootjs@latest` / `npx`, both of which are Node
+// processes today; the package is not designed to run on Workers,
+// Deno, or Bun-as-edge. Bun's Node-compat layer also supplies
+// `createRequire`, so this works there too.
+function resolveCliBin(): string {
+  try {
+    return require.resolve('@barefootjs/cli/dist/index.js')
+  } catch {
+    fail(
+      'unable to resolve @barefootjs/cli. ' +
+        'Reinstall create-barefootjs or report this if it persists.',
+    )
+  }
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2)
   if (args.includes('--help') || args.includes('-h')) usage()
+
+  // `--list-adapters` is a read-only lookup — handled before we prompt
+  // for (or create) anything so it never touches the filesystem. `bf
+  // init` owns the actual id list (single source of truth); we just
+  // spawn it with the sentinel env var and forward its output/exit
+  // code, same as the real scaffold path below.
+  if (args.includes('--list-adapters')) {
+    const cliBin = resolveCliBin()
+    const result = spawnSync('node', [cliBin, 'init', '--list-adapters'], {
+      stdio: 'inherit',
+      env: { ...process.env, BAREFOOT_INIT_VIA_CREATE: '1' },
+    })
+    process.exit(result.status ?? 1)
+  }
 
   // Banner + a blank padding line. The padding stays in place across
   // the prompt → confirmation transition: the interactive prompt fills
@@ -120,6 +152,10 @@ async function main(): Promise<void> {
   console.log(`✔ Target directory ${highlight(projectName)}`)
 
   const targetDir = resolve(process.cwd(), projectName)
+  // Tracked so a failed init below can clean up after itself — we only
+  // ever remove a directory *this run* created, never one that
+  // pre-existed (even if it was empty going in).
+  let createdTargetDir = false
   if (existsSync(targetDir)) {
     const entries = readdirSync(targetDir).filter((e) => !e.startsWith('.'))
     if (entries.length > 0) {
@@ -127,22 +163,10 @@ async function main(): Promise<void> {
     }
   } else {
     mkdirSync(targetDir, { recursive: true })
+    createdTargetDir = true
   }
 
-  // `require.resolve` is Node-specific. `create-barefootjs` is invoked
-  // via `npm create barefootjs@latest` / `npx`, both of which are Node
-  // processes today; the package is not designed to run on Workers,
-  // Deno, or Bun-as-edge. Bun's Node-compat layer also supplies
-  // `createRequire`, so this works there too.
-  let cliBin: string
-  try {
-    cliBin = require.resolve('@barefootjs/cli/dist/index.js')
-  } catch {
-    fail(
-      'unable to resolve @barefootjs/cli. ' +
-        'Reinstall create-barefootjs or report this if it persists.',
-    )
-  }
+  const cliBin = resolveCliBin()
 
   // `--name` gets the last path segment, sanitized later by init —
   // multi-segment inputs like "foo/bar/bazz" would otherwise leak
@@ -178,7 +202,24 @@ async function main(): Promise<void> {
     },
   })
 
-  process.exit(result.status ?? 1)
+  const status = result.status ?? 1
+  // A failed init otherwise leaves an empty directory behind — the
+  // user has to notice and `rmdir` it themselves before retrying.
+  // Clean it up automatically, but only when we're sure it's safe:
+  // this run created the directory (never one that pre-existed) and
+  // init didn't get far enough to write anything into it.
+  if (status !== 0 && createdTargetDir) {
+    try {
+      if (existsSync(targetDir) && readdirSync(targetDir).length === 0) {
+        rmSync(targetDir, { recursive: true })
+      }
+    } catch {
+      // Best-effort cleanup — never mask the original init failure
+      // with a secondary cleanup error.
+    }
+  }
+
+  process.exit(status)
 }
 
 main().catch((err) => {

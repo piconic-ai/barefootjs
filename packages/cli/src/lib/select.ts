@@ -40,6 +40,20 @@ export interface SelectOption<T extends string = string> {
   shortLabel?: string
 }
 
+/**
+ * Confirmation-line label for a picked option — prefers an explicit
+ * `shortLabel`, else strips a trailing parenthetical description
+ * ("Hono (Cloudflare Workers, ...)" → "Hono"). Exported so callers
+ * that resolve a choice *without* going through the interactive
+ * `select()` prompt (an explicit `--adapter`/`--css` flag, or `--yes`'s
+ * forwarded defaults) can still print the exact same
+ * "✔ <message> <label>" confirmation the interactive picker renders —
+ * keeping the interactive and non-interactive transcripts consistent.
+ */
+export function confirmationLabel(opt: { label: string; shortLabel?: string }): string {
+  return opt.shortLabel ?? opt.label.replace(/\s*\(.*\)$/, '')
+}
+
 export interface SelectArgs<T extends string = string> {
   message: string
   options: SelectOption<T>[]
@@ -145,7 +159,7 @@ export async function select<T extends string = string>(args: SelectArgs<T>): Pr
         // distinguishable ("Hono / Cloudflare Workers" vs.
         // "Hono / Node").
         const picked = args.options[cursor]
-        const shortLabel = picked.shortLabel ?? picked.label.replace(/\s*\(.*\)$/, '')
+        const shortLabel = confirmationLabel(picked)
         const totalLines = args.options.length + 1
         output.write(`\x1b[${totalLines}A`)
         for (let i = 0; i < totalLines; i++) {
