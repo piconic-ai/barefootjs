@@ -9,7 +9,7 @@
  */
 
 /**
- * Full logo with icon and "Barefoot.js" text
+ * Full logo with icon and "BarefootJS" text
  */
 export function Logo() {
   return (

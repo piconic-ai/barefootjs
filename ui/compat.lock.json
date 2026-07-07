@@ -1,0 +1,1628 @@
+{
+  "note": "Compile-time compatibility (compileJSX + adapter generate() diagnostics). NOT render identity — rendered-output parity is owned by the adapter conformance suite and the eval vector corpus (spec/testing.md Layer 3).",
+  "knownLimitationLabel": "https://github.com/piconic-ai/barefootjs/labels/known-limitation",
+  "adapters": [
+    "hono",
+    "erb",
+    "go-template",
+    "jinja",
+    "minijinja",
+    "mojolicious",
+    "twig",
+    "xslate"
+  ],
+  "components": {
+    "accordion": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "alert": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "alert-dialog": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "aspect-ratio": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "avatar": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "badge": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "breadcrumb": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "button": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "button-group": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "calendar": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "card": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "carousel": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "chart": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "checkbox": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "collapsible": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "combobox": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "command": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "context-menu": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "data-table": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "date-picker": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "dialog": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "direction": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "drawer": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "dropdown-menu": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "empty": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "field": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "hover-card": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "icon": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "input": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "input-group": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "input-otp": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "item": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "kbd": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "label": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "menubar": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "native-select": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "navigation-menu": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "pagination": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "popover": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "portal": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "progress": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "radio-group": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "resizable": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "scroll-area": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "select": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "separator": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "sheet": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "sidebar": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "skeleton": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "slider": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "slot": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "spinner": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "switch": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "table": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "tabs": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "textarea": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "toast": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "toggle": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "toggle-group": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "tooltip": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "typography": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    },
+    "xyflow": {
+      "hono": {
+        "ok": true
+      },
+      "erb": {
+        "ok": true
+      },
+      "go-template": {
+        "ok": true
+      },
+      "jinja": {
+        "ok": true
+      },
+      "minijinja": {
+        "ok": true
+      },
+      "mojolicious": {
+        "ok": true
+      },
+      "twig": {
+        "ok": true
+      },
+      "xslate": {
+        "ok": true
+      }
+    }
+  }
+}

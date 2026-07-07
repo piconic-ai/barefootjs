@@ -1,6 +1,6 @@
 {
     "name": "barefootjs/php-example",
-    "description": "BarefootJS + plain PHP example (Twig adapter). See scripts/assemble-deps.ts for how the Barefoot\\ runtime autoload below is staged.",
+    "description": "BarefootJS + plain PHP example (Twig adapter). See scripts/assemble-deps.ts for how the Barefoot\\ runtime + Twig backend autoload below is staged.",
     "type": "project",
     "private": true,
     "license": "MIT",
@@ -10,10 +10,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Barefoot\\": "lib/barefootjs-php/src/"
+            "Barefoot\\": [
+                "lib/barefootjs-php/src/",
+                "lib/barefootjs-twig/src/"
+            ]
         },
         "files": [
-            "lib/barefootjs-php/src/naming.php"
+            "lib/barefootjs-twig/src/naming.php"
         ]
     },
     "minimum-stability": "stable",

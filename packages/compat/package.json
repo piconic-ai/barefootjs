@@ -1,0 +1,28 @@
+{
+  "name": "@barefootjs/compat",
+  "version": "0.1.0",
+  "description": "Repo-internal component × adapter compile-compatibility matrix (generates ui/compat.lock.json)",
+  "private": true,
+  "type": "module",
+  "main": "./src/cli.ts",
+  "exports": {
+    ".": {
+      "bun": "./src/cli.ts"
+    }
+  },
+  "dependencies": {
+    "@barefootjs/jsx": "workspace:*"
+  },
+  "devDependencies": {
+    "@barefootjs/adapter-tests": "workspace:*",
+    "@barefootjs/erb": "workspace:*",
+    "@barefootjs/go-template": "workspace:*",
+    "@barefootjs/hono": "workspace:*",
+    "@barefootjs/jinja": "workspace:*",
+    "@barefootjs/mojolicious": "workspace:*",
+    "@barefootjs/rust": "workspace:*",
+    "@barefootjs/twig": "workspace:*",
+    "@barefootjs/xslate": "workspace:*",
+    "typescript": "^5.0.0"
+  }
+}

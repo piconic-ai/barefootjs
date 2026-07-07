@@ -26,6 +26,8 @@
     "dev:all": "bun run dev:clean && concurrently -k -n proxy,site,hono,echo,mojo -c blue,yellow,cyan,green,magenta 'bun run scripts/dev-all.ts' 'bun run --filter barefootjs-site dev' 'bun run --filter barefootjs-hono-jsx-example dev' 'bun run --filter barefootjs-echo-example dev' 'bun run --filter barefootjs-mojolicious-example dev'",
     "dev:clean": "bun run scripts/dev-clean.ts",
     "meta:extract": "bun run packages/cli/src/index.ts meta extract",
+    "compat": "bun run packages/compat/src/cli.ts",
+    "compat:lock": "bun run packages/compat/src/cli.ts --all --json --out ui/compat.lock.json",
     "bf": "bun run packages/cli/src/index.ts",
     "lint": "biome check",
     "prepare": "simple-git-hooks"
@@ -34,6 +36,8 @@
     "pre-commit": "bunx biome check --staged --no-errors-on-unmatched"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
     "@biomejs/biome": "2.4.16",
     "@changesets/cli": "^2.31.0",
     "@happy-dom/global-registrator": "^20.0.11",
@@ -43,6 +47,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "beta",
+    "babel-preset-solid": "^1.9.12",
     "concurrently": "^9.1.0",
     "happy-dom": "^20.0.11",
     "pkg-pr-new": "^0.0.67",

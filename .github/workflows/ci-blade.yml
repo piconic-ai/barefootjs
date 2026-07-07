@@ -1,0 +1,117 @@
+name: CI — PHP (Blade) Adapter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-php/**'
+      - 'packages/adapter-blade/**'
+      - 'packages/adapter-tests/**'
+      - 'integrations/blade/**'
+      - '.github/workflows/ci-blade.yml'
+  pull_request:
+    paths:
+      - 'packages/client/**'
+      - 'packages/shared/**'
+      - 'packages/jsx/**'
+      - 'packages/adapter-php/**'
+      - 'packages/adapter-blade/**'
+      - 'packages/adapter-tests/**'
+      - 'integrations/blade/**'
+      - '.github/workflows/ci-blade.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      # The engine-agnostic runtime (packages/adapter-php) has no
+      # dependencies -- this just generates its autoloader. ubuntu-latest
+      # ships PHP 8.3+ and Composer. (The golden-vector conformance harness,
+      # packages/adapter-php/tests/run.php, is engine-agnostic and already
+      # runs in ci-php.yml -- it isn't duplicated here.)
+      - name: Install PHP runtime (Composer)
+        run: composer install --no-interaction --working-dir=packages/adapter-php
+
+      # The Blade backend requires php >= 8.2, illuminate/view, and
+      # barefootjs/runtime (resolved via a composer path repository pointing
+      # at packages/adapter-php -- test_render.php skips gracefully without
+      # illuminate/view installed, so this is run so it runs for real).
+      - name: Install Blade backend (Composer)
+        run: composer install --no-interaction --working-dir=packages/adapter-blade/php
+
+      - name: Run live Blade render test
+        run: php packages/adapter-blade/php/tests/test_render.php
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/blade' build
+
+      # The conformance suite compiles the shared IR fixtures, then renders
+      # the emitted Blade templates through real illuminate/view + the PHP
+      # BarefootJS runtime (it skips gracefully when `php` or illuminate/view
+      # is absent — installed above so it runs for real).
+      - name: Run unit tests (incl. live Blade render + conformance)
+        run: bun test packages/adapter-blade
+
+  e2e-blade:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build packages
+        run: |
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+          bun run --filter '@barefootjs/blade' build
+
+      - name: Build integrations/blade
+        run: cd integrations/blade && bun run build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          # Key on package.json (committed, deterministic) — not bun.lock
+          # which is gitignored and re-solved per run.
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
+      - name: Install Playwright browser binaries
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+
+      - name: Run integrations/blade E2E tests
+        run: cd integrations/blade && bun run test:e2e
+
+      - name: Upload Playwright report (integrations/blade)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-integrations-blade
+          path: integrations/blade/playwright-report/
+          retention-days: 30

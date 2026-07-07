@@ -74,7 +74,7 @@ export function Header({
               <a
                 href={logoHref}
                 className="inline-flex items-center text-foreground transition-colors no-underline"
-                aria-label="Barefoot.js"
+                aria-label="BarefootJS"
               >
                 <LogoIcon />
               </a>
@@ -89,7 +89,7 @@ export function Header({
             <a
               href={logoHref}
               className="sm:hidden text-foreground transition-colors no-underline"
-              aria-label="Barefoot.js"
+              aria-label="BarefootJS"
             >
               <LogoIcon />
             </a>

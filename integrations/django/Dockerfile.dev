@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Django integration. app.py and the host-built
+# dist/ are bind-mounted in; Django's own dev-server autoreloader (enabled
+# by app.py's DJANGO_DEBUG check) restarts the process on app.py / lib
+# changes. Templates re-render on each request in dev because the
+# JinjaBackend Environment is built with `cache_size=0` (see app.py's `DEV`
+# flag).
+
+FROM python:3.12-slim
+
+WORKDIR /workspace/integrations/django
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 3014
+
+ENV DJANGO_DEBUG=1
+ENV PORT=3014
+
+# Django's `runserver` autoreloader (enabled by app.py's DJANGO_DEBUG check)
+# watches app.py + every imported module (including the bind-mounted
+# `lib/`) and restarts the process on change.
+CMD ["python3", "app.py"]

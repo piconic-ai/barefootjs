@@ -28,9 +28,13 @@ declare(strict_types=1);
  * comment): `./lib` is populated by `scripts/assemble-deps.ts` at build time
  * (used in the container / CI, via `composer install` against THIS
  * directory's composer.json, see that file's docstring); the workspace
- * package's own already-`composer install`-ed vendor dir is tried as a
- * fallback so local dev resolves without the assemble/build step. Either
- * location provides BOTH the `Barefoot\*` runtime classes and `twig/twig`.
+ * package's own already-`composer install`-ed vendor dir
+ * (`packages/adapter-twig/php/vendor`) is tried as a fallback so local dev
+ * resolves without the assemble/build step -- it resolves the engine-
+ * agnostic runtime (`packages/adapter-php`) via its `barefootjs/runtime`
+ * composer path-repo dependency (see that package's composer.json). Either
+ * location provides the `Barefoot\*` runtime classes, `Barefoot\TwigBackend`,
+ * and `twig/twig`.
  */
 
 $HERE = __DIR__;
@@ -389,7 +393,7 @@ function layout(string $title, string $heading, string $body, string $scripts, s
 <body>
     <header class="bf-header">
         <div class="bf-header-inner">
-            <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="Barefoot.js">
+            <a href="https://barefootjs.dev" class="bf-header-logo" aria-label="BarefootJS">
                 <span class="bf-header-logo-img" role="img" aria-hidden="true"></span>
             </a>
             <div class="bf-header-sep"></div>

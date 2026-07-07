@@ -703,6 +703,139 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
 }
 
 /**
+ * Slots a top-level (`mapArray`-driven) loop body proves safe to hoist into a
+ * shared, once-per-loop template (perf: avoid per-row `document.createElement
+ * ('template')` + innerHTML parse + escapeText/escapeAttr, see
+ * `buildLoopSkeletonTemplate`).
+ */
+export interface LoopSkeletonSafeSlots {
+  /** `"<childSlotId>::<attrName>"` pairs already covered by a loop-child reactive-attribute `createEffect`. */
+  reactiveAttrKeys: ReadonlySet<string>
+  /** Text-marker slot ids already covered by a loop-child reactive-text `createEffect`. */
+  reactiveTextSlotIds: ReadonlySet<string>
+}
+
+/**
+ * Build the STATIC skeleton of a top-level loop body — the shared template
+ * cloned once per row instead of re-parsed from a per-row interpolated
+ * `innerHTML` string (perf: create-heavy `.map()` loops, see
+ * spec/compiler.md "Loop emission shapes").
+ *
+ * The skeleton keeps every static element / attr / text verbatim, keeps `bf="sN"`
+ * marker attributes (needed for `qsa` / `$t` lookups), and keeps text-marker
+ * comments (`<!--bf:sN--><!--/-->`) but EMPTIES the interpolation between them.
+ * Every dynamic attribute is DROPPED entirely rather than interpolated — both
+ * forms rely on the loop-child `createEffect`s (already emitted alongside the
+ * clone, see `stringifyReactiveEffects`) to fill in the real value on their
+ * eager first run, so nothing is lost — UNLESS a dynamic attr/text isn't
+ * proven covered by one of those effects, in which case this function refuses
+ * (returns `null`) and the caller falls back to the per-row interpolated
+ * template (`irToHtmlTemplate`). `key` is special-cased to an always-empty
+ * `data-key=""` placeholder — `mapArray` stamps the real key onto freshly
+ * created elements itself (see `map-array.ts`), so the clone path never needs
+ * to bake one in.
+ *
+ * Refuses (returns `null`) on anything not proven safe: spread attrs,
+ * `dangerouslySetInnerHTML`, a dynamic attribute/text not present in `safe`,
+ * a bare (unslotted) dynamic expression (no DOM anchor to backfill later),
+ * conditionals, child components, nested loops, and provider/async/if-statement
+ * boundaries. Callers additionally gate on the loop shape itself (single-root,
+ * non-static, no `useElementReconciliation`) before invoking this — see
+ * `collect-elements.ts`'s `loop` visitor.
+ */
+export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSlots): string | null {
+  switch (node.type) {
+    case 'element': {
+      const attrParts: string[] = []
+      for (const a of node.attrs) {
+        if (a.name === '...') return null
+        if (a.name === 'dangerouslySetInnerHTML') return null
+        if (a.name === 'key') {
+          attrParts.push(`${keyAttrName(0)}=""`)
+          continue
+        }
+        const v = a.value
+        switch (v.kind) {
+          case 'literal':
+            attrParts.push(`${toHtmlAttrName(a.name)}="${v.value}"`)
+            break
+          case 'boolean-attr':
+            attrParts.push(toHtmlAttrName(a.name))
+            break
+          case 'boolean-shorthand':
+          case 'jsx-children':
+            // Never legal on an intrinsic element in well-formed IR — emit nothing.
+            break
+          case 'expression':
+          case 'template': {
+            const attrKey = node.slotId ? `${node.slotId}::${a.name}` : null
+            if (!attrKey || !safe.reactiveAttrKeys.has(attrKey)) return null
+            // Covered by a loop-child createEffect — omit from the skeleton
+            // entirely; the effect's eager first run fills it in.
+            break
+          }
+          case 'spread':
+            return null
+        }
+      }
+
+      if (node.slotId) attrParts.push(`bf="${node.slotId}"`)
+
+      const attrs = attrParts.join(' ')
+      let children = ''
+      for (const child of node.children) {
+        const rendered = buildLoopSkeletonTemplate(child, safe)
+        if (rendered === null) return null
+        children += rendered
+      }
+
+      if (children || !VOID_ELEMENTS.has(node.tag)) {
+        return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`
+      }
+      return `<${node.tag}${attrs ? ' ' + attrs : ''} />`
+    }
+
+    case 'text':
+      return node.value
+
+    case 'expression':
+      if (node.expr === 'null' || node.expr === 'undefined') return ''
+      if (!node.slotId) {
+        // No DOM anchor to backfill later — this is a one-time SSR-baked
+        // value with no corresponding createEffect. Can't safely omit.
+        return null
+      }
+      if (!safe.reactiveTextSlotIds.has(node.slotId)) return null
+      return `<!--bf:${node.slotId}--><!--/-->`
+
+    case 'fragment': {
+      let out = ''
+      for (const child of node.children) {
+        const rendered = buildLoopSkeletonTemplate(child, safe)
+        if (rendered === null) return null
+        out += rendered
+      }
+      return out
+    }
+
+    // Conditionals, child components, nested loops, and provider/async/
+    // if-statement/slot boundaries are all out of scope for the hoisted
+    // fast path — the caller falls back to `irToHtmlTemplate`.
+    case 'conditional':
+    case 'component':
+    case 'loop':
+    case 'if-statement':
+    case 'provider':
+    case 'async':
+    case 'slot':
+      return null
+
+    default:
+      return assertNever(node)
+  }
+}
+
+/**
  * Generate an HTML template for composite element reconciliation.
  * Identical to irToHtmlTemplate except component nodes become placeholder
  * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
@@ -1382,7 +1515,71 @@ export function generateCsrTemplate(
       }
     }
   }
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames, deferredChildSlots, loopDepth: -1 })
+  const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1 })
+}
+
+/**
+ * Fold `ctx.csrInlinable`'s null verdicts into `unsafeLocalNames`, so
+ * `generateCsrTemplate`'s callers can't independently drift out of sync
+ * with `ctx.csrInlinable` (#2106).
+ *
+ * The two "is this constant's value safe to inline into a module-scope
+ * template" checks in `compute-inlinability.ts` can legitimately disagree:
+ *
+ *   - Stage-2 classification (`classifyConstantInitial`) runs
+ *     `isInlinableInTemplate` on the RAW initializer text — deliberately,
+ *     so it can still see bridged prop args (`useYjs(props.X)`) for the
+ *     #1138 rejection. A call whose raw receiver is an identifier path
+ *     (`someModuleArray.includes(name)`) can pass this check (e.g. an
+ *     adapter with a broad `acceptsTemplateCall` accepts any
+ *     identifier-path callee) even though `name` is a bridged prop arg.
+ *   - `populateCsrInlinable` re-runs the same check on the
+ *     CSR-*substituted* form, where `someModuleArray` has already been
+ *     literal-inlined (`['a','b'].includes(name)`). The callee is no
+ *     longer an identifier path at all, so the adapter can't vouch for
+ *     it, and the bridged-arg rejection correctly fires — recorded as
+ *     `ctx.csrInlinable.get(name) === null`.
+ *
+ * `unsafeLocalNames` (passed in from the Stage-2-derived
+ * `toLegacyInlinability` result) only reflects the first, looser verdict,
+ * so a name `populateCsrInlinable` refused could still be missing from
+ * it. Left alone, `transformExpr` below finds no CSR substitution for the
+ * name (`inlinableConstants` — built from `ctx.csrInlinable` by the
+ * caller — excludes null entries) AND no unsafe flag, so the bare,
+ * module-scope-invisible identifier leaks straight into the emitted
+ * template text (`ReferenceError` at template evaluation, #2106).
+ *
+ * `ctx.csrInlinable` is the ground truth for the CSR path — this makes it
+ * the single source added to (never subtracted from) the effective
+ * unsafe set used below: any post-substitution refusal is unsafe here,
+ * full stop, regardless of what the looser Stage-2 check concluded.
+ * Doing this once, inside `generateCsrTemplate` itself, means every
+ * caller (the full-init path in `emit-registration.ts` AND the
+ * template-only path in `index.ts`) gets the correction for free instead
+ * of each needing to remember to fold `ctx.csrInlinable` in themselves.
+ *
+ * System-construct (`createContext()`, `new WeakMap()`) and JSX-inline
+ * constants are exempted even though `populateCsrInlinable` also marks
+ * them `null` — that's "not applicable" routing (module-scope singleton
+ * referenced by name at runtime / already inlined at IR level), not an
+ * unsafe reference, and `toLegacyInlinability` never treated them as
+ * unsafe either.
+ */
+function mergeCsrNullUnsafe(ctx: ClientJsContext, unsafeLocalNames: Set<string> | undefined): Set<string> | undefined {
+  let merged: Set<string> | null = null
+  // Built lazily on the first null verdict, so the common all-inlinable
+  // component pays nothing; a Set keeps the merge linear in the number
+  // of local constants instead of a per-name `.find()` scan.
+  let exemptNames: Set<string> | null = null
+  for (const [name, entry] of ctx.csrInlinable) {
+    if (entry !== null || unsafeLocalNames?.has(name)) continue
+    exemptNames ??= new Set(ctx.localConstants.filter((c) => c.isJsx || c.systemConstructKind).map((c) => c.name))
+    if (exemptNames.has(name)) continue
+    if (!merged) merged = new Set(unsafeLocalNames ?? [])
+    merged.add(name)
+  }
+  return merged ?? unsafeLocalNames
 }
 
 /**

@@ -14,14 +14,15 @@ use Twig\Markup;
  * (itself the Python analogue of packages/adapter-xslate/lib/BarefootJS/Backend/Xslate.pm).
  *
  * The engine-agnostic runtime logic (JS-compat value helpers, array/string
- * methods, hydration markers, child rendering) lives in `BarefootJS`. This
- * backend supplies the four engine-specific operations the runtime
- * delegates to, targeting Twig syntax:
+ * methods, hydration markers, child rendering) lives in `BarefootJS`
+ * (`packages/adapter-php`). This backend supplies the five engine-specific
+ * operations the runtime delegates to, targeting Twig syntax:
  *
  *   encode_json(data)            -> JSON string (injectable encoder)
  *   mark_raw(str)                -> a value Twig emits verbatim (no re-escaping)
  *   materialize(value)           -> resolve a captured-children value to a string
  *   render_named(name, bf, vars) -> render `<name>.twig` with `bf` + vars bound
+ *   ident(name)                  -> mangle a template-variable name for this engine
  *
  * Pair it with the `@barefootjs/twig` compile-time adapter, which emits
  * `.twig` templates that call the runtime as a `bf` object:
@@ -91,55 +92,14 @@ final class TwigBackend
     }
 
     /**
-     * `sort_keys` parity with the Python backend's `default_json_encoder`
-     * (`sort_keys=True`) / the Xslate backend's `JSON::PP->canonical`: keys
-     * are recursively sorted so output is deterministic. `JSON_UNESCAPED_SLASHES`
-     * matches `JSON.stringify`'s un-escaped `/`. Non-ASCII is `\uXXXX`-escaped
-     * (PHP's default, matching Python's default `ensure_ascii`).
+     * Thin delegation to the shared canonical encoder (`packages/adapter-php`'s
+     * `Barefoot\Json::canonicalEncode`) -- kept as a static method on this
+     * class (rather than removed outright) because tests/integrations
+     * reference `TwigBackend::defaultJsonEncoder` directly.
      */
     public static function defaultJsonEncoder($data): string
     {
-        $prepared = self::prepareForJson($data);
-        $json = json_encode($prepared, JSON_UNESCAPED_SLASHES);
-        if ($json === false) {
-            throw new \RuntimeException('encode_json failed: ' . json_last_error_msg());
-        }
-        return $json;
-    }
-
-    /**
-     * Recursively replace non-finite floats with `null` (JSON has no
-     * NaN/Infinity -- matches `JSON.stringify(NaN)` at any depth) and sort
-     * object keys (stdClass or a non-list/assoc array) for canonical,
-     * deterministic output. List arrays are recursed element-wise without
-     * reordering.
-     */
-    private static function prepareForJson($value)
-    {
-        if (is_float($value)) {
-            return (is_nan($value) || is_infinite($value)) ? null : $value;
-        }
-        if ($value instanceof \stdClass) {
-            $vars = get_object_vars($value);
-            ksort($vars, SORT_STRING);
-            $out = new \stdClass();
-            foreach ($vars as $k => $v) {
-                $out->$k = self::prepareForJson($v);
-            }
-            return $out;
-        }
-        if (is_array($value)) {
-            if (array_is_list($value)) {
-                return array_map([self::class, 'prepareForJson'], $value);
-            }
-            $out = [];
-            foreach ($value as $k => $v) {
-                $out[$k] = self::prepareForJson($v);
-            }
-            ksort($out, SORT_STRING);
-            return $out;
-        }
-        return $value;
+        return Json::canonicalEncode($data);
     }
 
     public function encode_json($data): string
@@ -182,5 +142,18 @@ final class TwigBackend
         }
         $mangled['bf'] = $childBf;
         return $template->render($mangled);
+    }
+
+    /**
+     * Mangle a template-variable name for Twig -- delegates to `twig_ident`
+     * (`naming.php`, engine-specific, frozen reserved-word set). Called by
+     * `BarefootJS::render_child` (the runtime, `packages/adapter-php`) so the
+     * ONE mangling point for props turned into `render_child` template
+     * variables stays engine-pluggable rather than hard-coding Twig's
+     * reserved-word set into the engine-agnostic runtime.
+     */
+    public function ident(string $name): string
+    {
+        return twig_ident($name);
     }
 }

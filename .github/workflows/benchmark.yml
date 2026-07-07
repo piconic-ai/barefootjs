@@ -27,14 +27,51 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Run benchmark
+      - name: Build packages (benchmark apps bundle from published dists)
+        run: |
+          bun run --filter '@barefootjs/shared' build
+          bun run --filter '@barefootjs/streaming' build
+          bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/client' build
+
+      - name: Build benchmark apps
+        run: |
+          bun benchmarks/runner/build.ts
+          for f in react solid barefoot; do
+            bun "benchmarks/ssr/apps/$f/build.ts"
+          done
+
+      # Write the result into GITHUB_OUTPUT even when the bench itself
+      # fails: `bash -e` would otherwise abort mid-heredoc, truncating the
+      # multiline block ("Matching delimiter not found") and masking the
+      # real error.
+      - name: Run DOM benchmark (quick)
         id: bench
         run: |
+          set +e
+          bun benchmarks/runner/bench-dom.ts --quick --md > /tmp/bench-dom.out 2>&1
+          status=$?
           {
-            echo 'result<<EOF'
-            bun run benchmarks/run-browser.ts --md 2>&1
-            echo 'EOF'
+            echo 'result<<BENCH_EOF'
+            cat /tmp/bench-dom.out
+            echo 'BENCH_EOF'
           } >> "$GITHUB_OUTPUT"
+          cat /tmp/bench-dom.out
+          exit $status
+
+      - name: Run SSR benchmark
+        id: bench_ssr
+        run: |
+          set +e
+          bun benchmarks/ssr/bench-ssr.ts --md > /tmp/bench-ssr.out 2>&1
+          status=$?
+          {
+            echo 'result<<BENCH_EOF'
+            cat /tmp/bench-ssr.out
+            echo 'BENCH_EOF'
+          } >> "$GITHUB_OUTPUT"
+          cat /tmp/bench-ssr.out
+          exit $status
 
       - name: Find existing benchmark comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
@@ -53,6 +90,16 @@ jobs:
           body: |
             ## Benchmark Results
 
+            > Quick mode (reduced iterations) on shared CI hardware — treat as a
+            > smoke check for regressions, not as publishable numbers. Run the
+            > full suite locally per `benchmarks/README.md` for real comparisons.
+
+            ### DOM update suite
+
             ${{ steps.bench.outputs.result }}
+
+            ### SSR + hydration
+
+            ${{ steps.bench_ssr.outputs.result }}
 
             [Job log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · `${{ github.event.pull_request.head.sha }}`

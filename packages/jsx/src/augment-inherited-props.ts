@@ -32,6 +32,25 @@ export interface ContextConsumer {
    * absent / not a literal (the consumer then defaults to the empty value).
    */
   defaultValue: string | number | boolean | null
+  /**
+   * Set to `'object'` when the `createContext(<default>)` argument is an
+   * OBJECT LITERAL (`createContext<{ config: X }>({ config: {} })`) — a shape
+   * `defaultValue` alone can't distinguish from "no default at all" (both
+   * collapse to `null`). Adapters with a live SSR context stack (twig, jinja,
+   * erb, minijinja, xslate, mojolicious) never read this: their consumer seed
+   * (`bf.use_context(name, default)`) only matters when NO enclosing Provider
+   * ran, and every existing fixture exercising an object-shaped default keeps
+   * its consumer nested inside a Provider that supplies a live value at
+   * render time — see each adapter's `memo/seed.ts` (or equivalent). Go has no
+   * such runtime stack: it bakes the Provider's value into the descendant's
+   * constructor call at COMPILE time (`extendProviderContext` /
+   * `emitStaticChildInstances`, go-template-adapter.ts), so an object-shaped
+   * default needs its own Go type (`map[string]interface{}`, not the scalar
+   * `string` fallback `contextConsumerGoType` used to pick for every
+   * non-literal default) — `defaultKind` is what lets it tell "object" apart
+   * from "no default" (#2087).
+   */
+  defaultKind?: 'object'
 }
 
 /**
@@ -44,9 +63,15 @@ export function collectContextConsumers(metadata: IRMetadata): ContextConsumer[]
   const constants = metadata.localConstants ?? []
   // Map each createContext const name → its default-arg literal value.
   const contextDefaults = new Map<string, string | number | boolean | null>()
+  // Map each createContext const name → 'object' when its default is an
+  // object-literal (a shape `contextDefaults` alone can't distinguish from
+  // "no default" — both parse to `null`). Only Go consults this (see
+  // `ContextConsumer.defaultKind`'s docstring).
+  const contextDefaultKinds = new Map<string, 'object'>()
   for (const c of constants) {
     if (c.systemConstructKind !== 'createContext' || c.value === undefined) continue
     contextDefaults.set(c.name, parseCreateContextDefault(c.value))
+    if (isObjectLiteralCreateContextDefault(c.value)) contextDefaultKinds.set(c.name, 'object')
   }
   if (contextDefaults.size === 0) return []
 
@@ -59,6 +84,7 @@ export function collectContextConsumers(metadata: IRMetadata): ContextConsumer[]
       localName: c.name,
       contextName: ctxName,
       defaultValue: contextDefaults.get(ctxName) ?? null,
+      defaultKind: contextDefaultKinds.get(ctxName),
     })
   }
   return consumers
@@ -85,6 +111,14 @@ function parseCreateContextDefault(source: string): string | number | boolean | 
   if (arg.kind === ts.SyntaxKind.TrueKeyword) return true
   if (arg.kind === ts.SyntaxKind.FalseKeyword) return false
   return null
+}
+
+/** True when `createContext(<arg>)`'s argument is an object-literal (`{ config: {} }`). */
+function isObjectLiteralCreateContextDefault(source: string): boolean {
+  const expr = parseSingleExpression(source)
+  if (!expr || !ts.isCallExpression(expr)) return false
+  if (expr.arguments.length === 0) return false
+  return ts.isObjectLiteralExpression(expr.arguments[0])
 }
 
 function parseSingleExpression(source: string): ts.Expression | null {

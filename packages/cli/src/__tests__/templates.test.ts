@@ -29,15 +29,18 @@ describe('adapter registry', () => {
       expect(adapter.files['renderer.go']).toContain('func defaultLayout')
       expect(adapter.files['env.go']).toContain('func IsDev')
       // Vendored runtime, including the bfdev subpackage the dev
-      // auto-reload handler lives in.
+      // auto-reload handler lives in and eval.go (ParsedExpr evaluator).
       expect(adapter.files['bf-runtime/bf.go']).toContain('package bf')
+      expect(adapter.files['bf-runtime/eval.go']).toContain('package bf')
       expect(adapter.files['bf-runtime/bfdev/bfdev.go']).toContain('package bfdev')
       expect(adapter.files['go.mod']).toContain(
         'replace github.com/barefootjs/runtime/bf => ./bf-runtime',
       )
-      // The render bridge wires the dev auto-reload endpoint + snippet.
+      // The render bridge wires the dev auto-reload endpoint + snippet,
+      // and registers TemplateFuncMap so bf_tmpl calls resolve (#2120).
       expect(adapter.files['bf_render.go']).toContain('/_bf/reload')
       expect(adapter.files['bf_render.go']).toContain('bfdev.Snippet')
+      expect(adapter.files['bf_render.go']).toContain('bf.TemplateFuncMap(root)')
       // Client JS and public assets are served from disjoint prefixes
       // (so Gin's router tree doesn't panic on nested catch-alls).
       expect(adapter.files['barefoot.config.ts']).toContain("clientJsBasePath: '/client/'")
@@ -181,9 +184,20 @@ describe('adapter registry', () => {
       // so adding a new UI component via `bf add badge` doesn't
       // require parallel edits to `app.pl`.
       const appPl = ADAPTERS.mojo.files['app.pl']
-      expect(appPl).toMatch(/\$c->render\(template => 'Counter', layout => 'default'\)/)
+      expect(appPl).toMatch(/\$c->render\(template => 'Counter', layout => 'default', initial => 0\)/)
       expect(appPl).not.toMatch(/signal_init\s*=>/)
       expect(appPl).not.toMatch(/_scope_id\(/)
+    })
+
+    test('mojo route passes the Counter prop explicitly (#2126)', () => {
+      // The stock `/` page must never depend on the manifest being
+      // present at server boot: `npm run dev` starts `bf build --watch`
+      // and morbo concurrently, so the first request can arrive before
+      // the first build seeds the stash defaults. Passing `initial => 0`
+      // keeps the happy path self-sufficient — and doubles as the worked
+      // example of how props reach a component (they're stash values).
+      const appPl = ADAPTERS.mojo.files['app.pl']
+      expect(appPl).toContain('initial => 0')
     })
 
     test('mojo disables template cache in development mode', () => {
@@ -284,9 +298,11 @@ describe('adapter registry', () => {
   test('echo bundles the vendored Go runtime', () => {
     const echo = ADAPTERS.echo
     expect(echo.files['bf-runtime/bf.go']).toMatch(/package bf/)
+    expect(echo.files['bf-runtime/eval.go']).toMatch(/package bf/)
     expect(echo.files['bf-runtime/streaming.go']).toBeTruthy()
     expect(echo.files['bf-runtime/go.mod']).toMatch(/^module github\.com\/barefootjs\/runtime\/bf/m)
     expect(echo.files['go.mod']).toMatch(/replace github\.com\/barefootjs\/runtime\/bf => \.\/bf-runtime/)
+    expect(echo.files['bf_render.go']).toContain('bf.TemplateFuncMap(root)')
   })
 
   test('mojo declares its BarefootJS Perl deps via cpanfile (not vendored lib/)', () => {
