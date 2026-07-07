@@ -1,5 +1,16 @@
 # @barefootjs/erb
 
+## 0.18.1
+
+### Patch Changes
+
+- 3ed0e5d: Fix `BarefootJS::Context.derive_vars_from_defaults` in the published Ruby runtime looking up caller props with a String `propName` (as JSON manifests parse it) against symbol-keyed runtime prop hashes (`JSON.parse(..., symbolize_names: true)`; compiled templates pass `{ children: ... }` literals) -- `props.key?("children")` was always false, so `register_components_from_manifest` silently fell back to the static `ssrDefaults` value for every manifest-registered child component, e.g. a Counter's three `<Button>` slots rendering with empty `children`. `propName` is now symbolized before the lookup (#2157).
+- 3f077fb: Add a RENDER-stage conformance contract (`assertRenderContract` in `@barefootjs/adapter-tests`) to the shared adapter-conformance runner, anchored by the `counter-buttons` corpus fixture (a stock Counter plus a children-forwarding Button child) -- every adapter bug found in the 0.17-0.18 review was invisible at the compile layer (the compile matrix read 496/496 clean) and only surfaced when a real backend executed the template, e.g. #2157's Ruby `derive_vars_from_defaults` silently dropping a manifest-registered child's `children` prop. Every adapter package's existing `runAdapterConformanceTests` call site picks up the new suite automatically -- no per-adapter wiring needed (#2158).
+
+  The ERB test harness (`packages/adapter-erb/src/test-render.ts`) also now exercises the exact production `BarefootJS::Context.derive_vars_from_defaults` sequence `register_components_from_manifest` runs in the published gem, instead of a harness-local `defaults.merge(child_props)` shortcut that never touched the code path the #2157 bug lived in -- so the whole ERB conformance corpus, not just a dedicated regression test, now catches this class of regression.
+
+  - @barefootjs/shared@0.18.1
+
 ## 0.18.0
 
 ### Minor Changes
