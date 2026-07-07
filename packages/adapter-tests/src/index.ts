@@ -30,3 +30,4 @@ export { assertImportMapInjectionContract } from './import-map-injection.contrac
 export type { ImportMapInjectionFacts } from './import-map-injection.contract'
 export { assertScaffoldContract, ensureCreateCli } from './scaffold.contract'
 export type { ScaffoldFacts } from './scaffold.contract'
+export { assertRenderContract, decodeHtmlEntities, renderContractFixture } from './render.contract'
