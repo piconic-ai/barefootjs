@@ -203,8 +203,8 @@ type DestructuredStyleChildInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Value interface{}
-	Label interface{}
+	Value int
+	Label string
 }
 
 // DestructuredStyleChildProps is the props type for the DestructuredStyleChild component.
@@ -216,8 +216,8 @@ type DestructuredStyleChildProps struct {
 	BfMount string `json:"-"`
 	BfDataKey string `json:"-"`
 	Scripts *bf.ScriptCollector `json:"-"`
-	Value interface{} `json:"value"`
-	Label interface{} `json:"label"`
+	Value int `json:"value"`
+	Label string `json:"label"`
 	DisplayValue int `json:"displayValue"`
 }
 
@@ -801,7 +801,7 @@ func NewDestructuredStyleChildProps(in DestructuredStyleChildInput) Destructured
 		BfMount: in.BfMount,
 		Value: in.Value,
 		Label: in.Label,
-		DisplayValue: in.Value.(int) * 10,
+		DisplayValue: in.Value * 10,
 	}
 }
 
