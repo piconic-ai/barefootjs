@@ -16,7 +16,7 @@
 #
 # Native runtimes:
 #   - cpan-release publishes Perl dists that correspond to bumped npm packages.
-#   - pypi-release / rubygems-release / crates-release / packagist-release
+#   - pypi-release / rubygems-release / crates-release / packagist-*-release
 #     follow the same pattern for first-party Python, Ruby, Rust, and PHP
 #     runtimes: when the corresponding adapter package is published by
 #     Changesets, build/test the native runtime and publish it with registry
@@ -243,7 +243,7 @@ jobs:
           cargo test
           cargo publish --dry-run
           cargo publish
-  packagist-release:
+  packagist-twig-release:
     needs: release
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/twig')
     runs-on: ubuntu-latest
@@ -384,12 +384,12 @@ jobs:
             "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}" \
             -d '{"repository":{"url":"https://packagist.org/packages/barefootjs/blade"}}'
 
-  # Mirrors packagist-release's shape for the engine-agnostic PHP runtime
+  # Mirrors packagist-twig-release's shape for the engine-agnostic PHP runtime
   # package (packages/adapter-php, Composer name barefootjs/php) --
   # gated on @barefootjs/php (not @barefootjs/twig) being the package
   # Changesets just published, since the runtime and the Twig backend are
   # versioned/published independently.
-  packagist-runtime-release:
+  packagist-php-release:
     needs: release
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/php')
     runs-on: ubuntu-latest
