@@ -210,7 +210,6 @@ describe('buildRuntimeBundle', () => {
       const entrySource = writeFixtureRuntime(dir)
       const bundled = await buildRuntimeBundle({
         entrySource,
-        workingDir: dir,
         keepNames: ['keepMe', 'alsoKeepMe'],
         minify: false,
       })
@@ -229,13 +228,11 @@ describe('buildRuntimeBundle', () => {
       const entrySource = writeFixtureRuntime(dir)
       const unminified = await buildRuntimeBundle({
         entrySource,
-        workingDir: dir,
         keepNames: ['keepMe'],
         minify: false,
       })
       const bundled = await buildRuntimeBundle({
         entrySource,
-        workingDir: dir,
         keepNames: ['keepMe'],
         minify: true,
       })
@@ -253,14 +250,17 @@ describe('buildRuntimeBundle', () => {
     }
   })
 
-  test('cleans up its temp entry file after bundling', async () => {
+  test('writes no temp entry file at all (stdin-fed entry)', async () => {
+    // The entry is fed to esbuild via stdin + resolveDir (also the
+    // cross-platform fix: no absolute path inside a module specifier), so
+    // the dist directory must stay untouched apart from the fixture itself.
     const dir = makeTmpDir('cleanup')
     try {
       const entrySource = writeFixtureRuntime(dir)
-      await buildRuntimeBundle({ entrySource, workingDir: dir, keepNames: ['keepMe'], minify: false })
+      await buildRuntimeBundle({ entrySource, keepNames: ['keepMe'], minify: false })
       const { readdirSync } = await import('fs')
-      const leftover = readdirSync(dir).filter(f => f.startsWith('.bf-runtime-entry-'))
-      expect(leftover).toEqual([])
+      const entries = readdirSync(dir)
+      expect(entries).toEqual([entrySource.split('/').pop()])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -271,7 +271,7 @@ describe('buildRuntimeBundle', () => {
     try {
       const entrySource = writeFixtureRuntime(dir)
       await expect(
-        buildRuntimeBundle({ entrySource, workingDir: dir, keepNames: [], minify: false })
+        buildRuntimeBundle({ entrySource, keepNames: [], minify: false })
       ).rejects.toThrow()
     } finally {
       rmSync(dir, { recursive: true, force: true })

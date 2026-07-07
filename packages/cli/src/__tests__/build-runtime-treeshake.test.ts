@@ -27,9 +27,26 @@ function makeTmpDir(label: string) {
 // asserts tree-shaking against real, un-minified `function <name>` bodies.
 const REAL_DIST = resolve(__dirname, '../../../client/dist/runtime/standalone.js')
 
+// Self-sufficient on a clean checkout: build @barefootjs/client's dist once
+// if it isn't there yet (CI jobs and fresh clones may run this suite before
+// any package build). One-time cost, skipped entirely when dist exists.
+if (!existsSync(REAL_DIST)) {
+  const proc = Bun.spawnSync({
+    cmd: ['bun', 'run', 'build'],
+    cwd: resolve(__dirname, '../../../client'),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+  if (proc.exitCode !== 0 || !existsSync(REAL_DIST)) {
+    throw new Error(
+      `failed to build packages/client for the runtime-treeshake integration tests:\n${proc.stderr.toString()}`,
+    )
+  }
+}
+
 function writeFixtureDist(projectDir: string): void {
   if (!existsSync(REAL_DIST)) {
-    throw new Error(`${REAL_DIST} not found — run \`bun run build\` in packages/client first`)
+    throw new Error(`${REAL_DIST} not found even after building packages/client`)
   }
   const runtimeDir = resolve(projectDir, 'node_modules/@barefootjs/client/dist/runtime')
   mkdirSync(runtimeDir, { recursive: true })

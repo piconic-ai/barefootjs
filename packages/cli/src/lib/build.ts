@@ -1026,7 +1026,6 @@ export async function build(
           try {
             const bundled = await buildRuntimeBundle({
               entrySource: domDistFile,
-              workingDir: runtimeOutDir,
               keepNames,
               minify: config.minify,
             })

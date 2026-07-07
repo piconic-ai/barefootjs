@@ -22,10 +22,8 @@
 // Node runtime (see its docstring), and `Bun.build` is Bun-only.
 
 import ts from 'typescript'
-import { unlink } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { basename, dirname } from 'node:path'
 import { build as esbuildBuild } from 'esbuild'
-import { writeText } from './runtime'
 
 /** True for `@barefootjs/client`, `@barefootjs/client/runtime`, `@barefootjs/client/reactive`, and any other `@barefootjs/client/*` subpath. */
 export function isBarefootClientSpecifier(spec: string): boolean {
@@ -162,8 +160,6 @@ export const ALWAYS_KEEP_RUNTIME_EXPORTS: readonly string[] = [
 export interface BuildRuntimeBundleOptions {
   /** Absolute path to the prebuilt runtime dist file to re-export from. */
   entrySource: string
-  /** Directory the temp entry file is written into (also esbuild's working dir). */
-  workingDir: string
   /** Names to re-export from `entrySource`. */
   keepNames: Iterable<string>
   minify: boolean
@@ -175,47 +171,46 @@ export interface BuildRuntimeBundleOptions {
  * dead-code elimination. Returns the bundled source text; does not write it
  * anywhere — the caller decides the output path and whether to
  * `writeIfChanged`.
+ *
+ * The re-export entry is fed to esbuild via `stdin` with `resolveDir` set to
+ * the dist file's directory and a plain `./<basename>` specifier — no temp
+ * file, and no absolute path embedded in a module specifier (a Windows
+ * absolute path inside `from "..."` is not portable across resolvers).
  */
 export async function buildRuntimeBundle(opts: BuildRuntimeBundleOptions): Promise<string> {
-  const { entrySource, workingDir, keepNames, minify } = opts
+  const { entrySource, keepNames, minify } = opts
   const sorted = [...new Set(keepNames)].sort()
   if (sorted.length === 0) {
     throw new Error('buildRuntimeBundle: keepNames is empty')
   }
-  const entryContents = `export { ${sorted.join(', ')} } from ${JSON.stringify(entrySource)}\n`
-  const entryPath = resolve(workingDir, `.bf-runtime-entry-${process.pid}-${Date.now()}.mjs`)
-  await writeText(entryPath, entryContents)
-  try {
-    const result = await esbuildBuild({
-      entryPoints: [entryPath],
-      format: 'esm',
-      bundle: true,
-      // Unlike `transpile()`'s policy for per-component client JS
-      // (packages/cli/src/lib/runtime.ts — identifiers preserved there so
-      // e.g. `hydrate('ComponentName', ...)` call-site names and combine.ts's
-      // cross-file lookups stay intact), `barefoot.js` is a self-contained
-      // leaf artifact loaded only via the importmap: nothing parses its
-      // source for internal identifier names, and esbuild always keeps
-      // *exported* binding names stable regardless of `minifyIdentifiers`
-      // (verified: a re-export entry's `export { keepMe } from '...'` still
-      // exports as `keepMe` even when the internal implementation is renamed).
-      // So full minification is safe here and meaningfully smaller.
-      minify,
-      treeShaking: true,
-      platform: 'browser',
-      write: false,
-    })
-    const out = result.outputFiles?.[0]
-    if (!out) {
-      throw new Error('esbuild produced no output for the runtime bundle')
-    }
-    return out.text
-  } finally {
-    try {
-      await unlink(entryPath)
-    } catch {
-      // best-effort cleanup; a leftover temp file next to barefoot.js is
-      // harmless and gets overwritten/ignored on the next build
-    }
+  const entryContents = `export { ${sorted.join(', ')} } from ${JSON.stringify(`./${basename(entrySource)}`)}\n`
+  const result = await esbuildBuild({
+    stdin: {
+      contents: entryContents,
+      resolveDir: dirname(entrySource),
+      sourcefile: 'bf-runtime-entry.mjs',
+      loader: 'js',
+    },
+    format: 'esm',
+    bundle: true,
+    // Unlike `transpile()`'s policy for per-component client JS
+    // (packages/cli/src/lib/runtime.ts — identifiers preserved there so
+    // e.g. `hydrate('ComponentName', ...)` call-site names and combine.ts's
+    // cross-file lookups stay intact), `barefoot.js` is a self-contained
+    // leaf artifact loaded only via the importmap: nothing parses its
+    // source for internal identifier names, and esbuild always keeps
+    // *exported* binding names stable regardless of `minifyIdentifiers`
+    // (verified: a re-export entry's `export { keepMe } from '...'` still
+    // exports as `keepMe` even when the internal implementation is renamed).
+    // So full minification is safe here and meaningfully smaller.
+    minify,
+    treeShaking: true,
+    platform: 'browser',
+    write: false,
+  })
+  const out = result.outputFiles?.[0]
+  if (!out) {
+    throw new Error('esbuild produced no output for the runtime bundle')
   }
+  return out.text
 }
