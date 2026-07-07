@@ -1,0 +1,27 @@
+{
+    "name": "barefootjs/laravel-example",
+    "description": "BarefootJS + Laravel example (Blade adapter). See scripts/assemble-deps.ts for how the Barefoot\\ runtime + Blade backend autoload below is staged.",
+    "type": "project",
+    "private": true,
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2",
+        "laravel/framework": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Barefoot\\": [
+                "lib/barefootjs-php/src/",
+                "lib/barefootjs-blade/src/"
+            ]
+        },
+        "files": [
+            "lib/barefootjs-blade/src/naming.php"
+        ]
+    },
+    "minimum-stability": "stable",
+    "config": {
+        "sort-packages": true
+    }
+}

@@ -274,6 +274,23 @@ services:
       # its vendor/ dir) -- that target must exist in the container too.
       - ./packages/adapter-php:/workspace/packages/adapter-php
 
+  laravel:
+    build:
+      context: .
+      dockerfile: integrations/laravel/Dockerfile.dev
+    working_dir: /workspace/integrations/laravel
+    environment:
+      BASE_PATH: /integrations/laravel
+      APP_ENV: development
+      PORT: "3016"
+    volumes:
+      # vendor/ (laravel/framework + the composer autoloader over the staged
+      # lib/ runtime copies) is bind-mounted from the host build -- run
+      # `bun run build` in integrations/laravel first. Unlike blade there is
+      # no workspace-package autoload fallback: laravel/framework exists only
+      # in this integration's own vendor/.
+      - ./integrations/laravel:/workspace/integrations/laravel
+
   site-core:
     build:
       context: .
