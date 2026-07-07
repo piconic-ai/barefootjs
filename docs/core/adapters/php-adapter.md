@@ -15,7 +15,7 @@ JSX → IR → marked template (.twig / .blade.php) + Component.client.js
                  │
                  ▼
    BarefootJS runtime  ──delegates──▶  pluggable backend
-   (@barefootjs/php, `barefootjs/runtime`)   (Twig | Laravel Blade)
+   (@barefootjs/php, `barefootjs/php`)       (Twig | Laravel Blade)
 ```
 
 ## Two backends, one runtime
@@ -28,7 +28,7 @@ JSX → IR → marked template (.twig / .blade.php) + Component.client.js
 Both compile-time packages emit per-component template files and the shared
 client JS, and both render through the same engine-agnostic PHP runtime
 (`Barefoot\BarefootJS`, shipped by `@barefootjs/php` / Composer package
-`barefootjs/runtime`). The only thing that differs is the **backend**: a tiny
+`barefootjs/php`). The only thing that differs is the **backend**: a tiny
 object that implements the five operations the runtime delegates to.
 
 Both adapters are near-mechanical ports of `@barefootjs/jinja` (the Jinja2
@@ -163,7 +163,7 @@ Both backends share the same hydration-marker contract:
 
 ## PHP runtime
 
-`packages/adapter-php` (Composer package `barefootjs/runtime`, npm package
+`packages/adapter-php` (Composer package `barefootjs/php`, npm package
 `@barefootjs/php`) is a self-contained, engine-agnostic PHP package with no
 template-engine dependency. It implements the `bf` object every emitted
 template calls into: hydration markers, context propagation
