@@ -1826,6 +1826,15 @@ export interface FileOutput {
   path: string
   content: string
   type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap' | 'types' | 'ssrDefaults'
+  /**
+   * The exported component this file was generated for. Set on
+   * `markedTemplate` / `ssrDefaults` outputs so the build pipeline can pair
+   * them per component without guessing from file basenames — a
+   * single-component file's template is named after the SOURCE file
+   * (`index.html.ep`), not the component, so the basename alone can't
+   * recover the component name (#2132).
+   */
+  componentName?: string
 }
 
 export interface CompileResult {

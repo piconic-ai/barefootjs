@@ -143,6 +143,7 @@ import { fixture as returnNullishCoalescing } from './return-nullish-coalescing'
 import { fixture as returnMap } from './return-map'
 // Priority 7: Multi-file composition
 import { fixture as childComponent } from './child-component'
+import { fixture as multiComponentModule } from './multi-component-module'
 import { fixture as restSpreadChildAttrs } from './rest-spread-child-attrs'
 import { fixture as componentWithJsxChildren } from './component-with-jsx-children'
 import { fixture as nativeSelectSpreadChildren } from './native-select-spread-children'
@@ -393,6 +394,7 @@ export const jsxFixtures: JSXFixture[] = [
   returnMap,
   // Priority 7: Multi-file composition
   childComponent,
+  multiComponentModule,
   restSpreadChildAttrs,
   componentWithJsxChildren,
   nativeSelectSpreadChildren,

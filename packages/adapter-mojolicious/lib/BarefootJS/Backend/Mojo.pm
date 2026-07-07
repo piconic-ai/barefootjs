@@ -78,13 +78,22 @@ sub materialize ($self, $value) {
 # instance for that render. The Mojo `bf` helper resolves the current
 # instance off `$c->stash->{'bf.instance'}`; swap it for the duration of
 # the nested render and restore it afterwards so sibling renders are
-# unaffected.
+# unaffected. `local` (rather than a manual swap) keeps the restore
+# exception-safe: a die inside the nested render — e.g. a grandchild with
+# no registered renderer — propagates without leaving the child instance
+# bound as the request's active one.
 sub render_named ($self, $template_name, $child_bf, $vars) {
     my $c = $self->c;
-    my $prev = $c->stash->{'bf.instance'};
-    $c->stash->{'bf.instance'} = $child_bf;
+    local $c->stash->{'bf.instance'} = $child_bf;
     my $html = $c->render_to_string(template => $template_name, %$vars);
-    $c->stash->{'bf.instance'} = $prev;
+    # `render_to_string` returns undef — it does NOT die — when the named
+    # template can't be rendered (typically: the template file is missing
+    # from the renderer paths). The calling template's `<%==` would emit
+    # that as an empty string, silently dropping the whole child subtree
+    # from the page (#2132). Fail the render loudly instead.
+    die qq{BarefootJS: child template "$template_name" rendered no output }
+      . qq{(is the template missing from the renderer paths?)\n}
+        unless defined $html;
     return $html;
 }
 
