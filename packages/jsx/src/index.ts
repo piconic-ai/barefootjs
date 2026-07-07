@@ -55,6 +55,7 @@ export type {
   CompilerError,
   ConformancePin,
   ConformancePins,
+  RenderDivergences,
 } from './types.ts'
 
 // Analyzer

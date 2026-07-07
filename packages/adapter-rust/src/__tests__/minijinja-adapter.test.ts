@@ -20,55 +20,19 @@ import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { MinijinjaAdapter } from '../adapter'
 import { renderMinijinjaComponent, RustNotAvailableError } from '../test-render'
 import { conformancePins } from '../conformance-pins'
+import { renderDivergences } from '../render-divergences'
 
 runAdapterConformanceTests({
   name: 'minijinja',
   factory: () => new MinijinjaAdapter(),
   render: renderMinijinjaComponent,
-  // Priority-12 edge-case sweep (炙り出し): fixtures below RENDER through
-  // the real `bf-render` minijinja binary but diverge from the Hono
-  // reference byte comparison. Each entry names its divergence;
-  // graduating one means fixing the adapter (or shared compiler layer)
-  // and deleting the line. (`string-concat-plus` is NOT skipped here —
-  // minijinja's `+` concatenates strings, unlike Perl/PHP/Twig.)
-  skipJsx: [
-    // `(count() + 2) * 3` renders 10 instead of 18 — the parenthesised
-    // sub-expression loses its grouping in the lowering (silent wrong
-    // arithmetic; same finding as mojo/jinja/blade/twig).
-    'arithmetic-text',
-    // `{false}` renders "false" (Hono drops it); `{null}`/`{undefined}`
-    // render empty (Hono renders "null"). Neither matches JSX semantics.
-    'falsy-text-values',
-    // `&copy;` in JSX literal text: Hono decodes to `©`, minijinja
-    // re-emits the raw entity — same DOM, different bytes.
-    'html-entity-text',
-    // Math.min/max/abs over a signal render EMPTY (only Math.floor is
-    // in the template-primitive registry).
-    'math-methods',
-    // camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`,
-    // minijinja emits bare presence.
-    'boolean-attr-literals',
-    // `htmlFor` is not lowered to `for` (Hono maps it).
-    'camelcase-attributes',
-    // Static attribute values are NOT HTML-escaped (`title="Fish &
-    // Chips"` raw vs Hono's `Fish &amp; Chips`).
-    'static-attr-escape',
-    // SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`)
-    // pass through unmapped; Hono lowers to kebab-case.
-    'svg-icon',
-    // `Object.entries(prop).map(([k, v]) => …)` renders an EMPTY <ul>.
-    'object-entries-map',
-    // Nested-loop inner items carry `data-key` where the reference
-    // emits the depth-suffixed `data-key-1`.
-    'nested-loop-outer-binding',
-    // JSX element as a NON-children prop renders an empty slot (the
-    // element value is silently dropped).
-    'jsx-element-prop',
-    // `.slice()` on a STRING misfires through the array slice helper.
-    'string-slice',
-    // `.trimStart()` / `.trimEnd()` render empty (no lowering).
-    'string-trim-sided',
-  ],
+  // Priority-12 edge-case sweep (炙り出し, #2168): render-level
+  // divergences are declared in `../render-divergences` (exported from the
+  // package index and published to `ui/compat.lock.json` / the docs
+  // compatibility-matrix page by `packages/compat`). Deriving the skip
+  // list from that object keeps the public declaration and these test
+  // skips from drifting; each entry's rationale lives there.
+  skipJsx: Object.keys(renderDivergences),
   // Per-fixture build-time contracts for shapes the adapter intentionally
   // refuses to lower. Lives in `../conformance-pins` — mirrors
   // adapter-jinja's set (itself mirroring xslate's); the lowering gates

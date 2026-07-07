@@ -15,7 +15,7 @@
 // crash, keeping the loader total. The monorepo always has all 9
 // installed, so a run from this repo loads every adapter.
 
-import type { ConformancePins, TemplateAdapter } from '@barefootjs/jsx'
+import type { ConformancePins, RenderDivergences, TemplateAdapter } from '@barefootjs/jsx'
 
 interface CompatAdapterSpec {
   pkg: string
@@ -48,6 +48,13 @@ export interface LoadedCompatAdapter {
   factory: () => TemplateAdapter
   /** The package's exported `conformancePins`, or `{}` when it exports none. */
   pins: ConformancePins
+  /**
+   * The package's exported `renderDivergences` (fixtures that compile
+   * clean but render differently from the Hono reference on the
+   * adapter's real backend — see the type's docstring in
+   * `@barefootjs/jsx`), or `{}` when it exports none.
+   */
+  renderDivergences: RenderDivergences
 }
 
 export interface SkippedCompatAdapter {
@@ -85,6 +92,7 @@ export async function loadCompatAdapters(): Promise<{
     }
 
     const pins = (mod.conformancePins as ConformancePins | undefined) ?? {}
+    const renderDivergences = (mod.renderDivergences as RenderDivergences | undefined) ?? {}
     // One throwaway instance just to read `.name` — the real per-compile
     // instances always come from `factory()` below.
     const probe = new AdapterClass()
@@ -93,6 +101,7 @@ export async function loadCompatAdapters(): Promise<{
       pkg: spec.pkg,
       factory: () => new AdapterClass(),
       pins,
+      renderDivergences,
     })
   }
 

@@ -7,3 +7,4 @@
 export { ErbAdapter, erbAdapter } from './adapter/index.ts'
 export type { ErbAdapterOptions } from './adapter/index.ts'
 export { conformancePins } from './conformance-pins.ts'
+export { renderDivergences } from './render-divergences.ts'

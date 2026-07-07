@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'path'
 import { loadCompatAdapters } from './adapter-registry'
 import { buildCompatCell, compileForCompat, type CompatCell } from './engine'
-import { buildCompatReport, formatCompatJson, formatCompatMarkdown, type CompatReport } from './report'
+import { buildCompatReport, buildFixtureDivergences, formatCompatJson, formatCompatMarkdown, type CompatReport } from './report'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const COMPONENTS_DIR = path.join(REPO_ROOT, 'ui/components/ui')
@@ -219,7 +219,18 @@ async function main(): Promise<void> {
     cells[target.name] = row
   }
 
-  const report = buildCompatReport(cells)
+  // Fixture-level divergences (render honesty section, #2168): every
+  // adapter's declared `conformancePins` (build-time refusals) +
+  // `renderDivergences` (renders but diverges from the Hono reference),
+  // published alongside the component matrix so the docs
+  // compatibility-matrix page reports render-level gaps instead of
+  // showing only the all-green compile story. `jsxFixtures` is imported
+  // relatively (same precedent as `compat-pins.test.ts` — it isn't part
+  // of adapter-tests' public export map) purely for the corpus total.
+  const { jsxFixtures } = await import('../../adapter-tests/fixtures')
+  const fixtureDivergences = buildFixtureDivergences(loaded, jsxFixtures.length)
+
+  const report = buildCompatReport(cells, fixtureDivergences)
   const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report)
 
   if (outPath) {

@@ -1811,5 +1811,1073 @@
         "ok": true
       }
     }
+  },
+  "fixtureDivergences": {
+    "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
+    "totalFixtures": 236,
+    "fixtures": {
+      "arithmetic-text": {
+        "blade": {
+          "kind": "render",
+          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
+        }
+      },
+      "array-map-function-reference": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "boolean-attr-literals": {
+        "blade": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
+        }
+      },
+      "camelcase-attributes": {
+        "blade": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
+        }
+      },
+      "child-primitive-props": {
+        "go-template": {
+          "kind": "render",
+          "reason": "numeric/boolean LITERAL props on a child (`count={5}` `active={true}`) render as Go zero values (0 / false)"
+        }
+      },
+      "dangerous-inner-html": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "falsy-text-values": {
+        "blade": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
+        }
+      },
+      "filter-nested-callback-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        }
+      },
+      "filter-nested-find-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2038"
+          ]
+        }
+      },
+      "grandchild-composition": {
+        "go-template": {
+          "kind": "render",
+          "reason": "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value"
+        }
+      },
+      "html-entity-text": {
+        "blade": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
+        }
+      },
+      "jsx-element-prop": {
+        "blade": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
+        }
+      },
+      "math-methods": {
+        "blade": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+        }
+      },
+      "memo-chain": {
+        "go-template": {
+          "kind": "render",
+          "reason": "a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level"
+        }
+      },
+      "nested-loop-outer-binding": {
+        "blade": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
+        }
+      },
+      "number-tofixed": {
+        "go-template": {
+          "kind": "render",
+          "reason": "`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "the literal `¥` in template text reaches the output as U+FFFD — a UTF-8 encoding gap for non-ASCII literal text adjacent to a dynamic slot"
+        }
+      },
+      "object-entries-map": {
+        "blade": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders but its loop item keys diverge from the reference serialisation"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
+        }
+      },
+      "optional-chaining-prop": {
+        "erb": {
+          "kind": "render",
+          "reason": "`user?.name ?? …` on an object prop: the Ruby render exits 1 (optional chaining into a Hash prop has no lowering)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`user?.name ?? …` on an object prop: generated Go fails to run (exit 1) — optional chaining into a struct/map prop has no lowering"
+        }
+      },
+      "signal-object-field": {
+        "go-template": {
+          "kind": "render",
+          "reason": "object-valued signal (`user().name`): generated Go fails to run (exit 1) — no struct synthesis outside loops"
+        }
+      },
+      "static-array-children": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        }
+      },
+      "static-array-from-props": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2087"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2087"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2087"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "static-array-from-props-with-component": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2087"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2087"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2087"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101",
+            "BF103"
+          ]
+        }
+      },
+      "static-attr-escape": {
+        "blade": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
+        }
+      },
+      "string-concat-plus": {
+        "blade": {
+          "kind": "render",
+          "reason": "`'Hello, ' + name` is emitted as PHP `+`, which fatals with \"Unsupported operand types: string + string\" — needs PHP's `.` concat"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`'Hello, ' + name` renders \"0\" — Perl's numeric `+` coerces the strings; JS string-concat `+` needs Perl's `.`"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`'Hello, ' + name` lowers through Twig's numeric `+` instead of `~` string concat"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`'Hello, ' + name` numeric-coerces through Perl's `+` (needs `.`/`~` concat)"
+        }
+      },
+      "string-length-text": {
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)"
+        }
+      },
+      "string-replaceall": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "string-slice": {
+        "blade": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING renders empty (array-slice helper misfires on strings)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING lowers through the array slice helper and renders \"[]\" instead of the substring"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING routes through the array `bf_slice` helper and renders \"[]\" instead of the substring"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING renders empty (array-slice helper misfires on strings)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING renders empty (array-slice helper misfires on strings)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING misfires through the array slice helper"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING misfires through the array slice helper"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`.slice()` on a STRING misfires through the array slice helper"
+        }
+      },
+      "string-trim-sided": {
+        "blade": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering; only both-sides `.trim` is wired)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()`: generated Go fails to run (exit 1) — only both-sides `bf_trim` exists"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
+        }
+      },
+      "svg-icon": {
+        "blade": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
+        }
+      },
+      "todo-app": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        }
+      },
+      "todo-app-ssr": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF103"
+          ]
+        }
+      }
+    }
   }
 }

@@ -32,11 +32,26 @@ interface CompatCell {
   diagnostics?: CompatDiagnostic[]
 }
 
+interface FixtureDivergenceCell {
+  kind: 'refusal' | 'render'
+  codes?: string[]
+  issues?: string[]
+  reason?: string
+}
+
+interface FixtureDivergences {
+  note: string
+  totalFixtures: number
+  fixtures: Record<string, Record<string, FixtureDivergenceCell>>
+}
+
 interface CompatLock {
   note: string
   knownLimitationLabel: string
   adapters: string[]
   components: Record<string, Record<string, CompatCell>>
+  /** Optional: locks generated before #2168's render-honesty section lack it. */
+  fixtureDivergences?: FixtureDivergences
 }
 
 const compat = lock as CompatLock
@@ -122,11 +137,90 @@ function buildLegend(): string {
     .join('\n')
 }
 
+/**
+ * Render one fixture-divergence cell: refusal cells show their diagnostic
+ * codes (linked to the tracking issue when one exists), render-divergence
+ * cells show a `≠` marker (detail lives in the per-fixture list below the
+ * table — 9 columns of prose would be unreadable).
+ */
+function fixtureCellMarkdown(cell: FixtureDivergenceCell | undefined): string {
+  if (!cell) return '✓'
+  if (cell.kind === 'refusal') {
+    const codes = cell.codes ?? []
+    const firstIssue = cell.issues?.[0]
+    const label = codes.join(', ') || 'refused'
+    return firstIssue ? `[${label}](${firstIssue})` : label
+  }
+  return '≠'
+}
+
+/**
+ * Per-fixture detail list: adapters sharing an identical reason string are
+ * grouped onto one line, so the common "same divergence everywhere" case
+ * reads as a single sentence instead of nine copies.
+ */
+function buildFixtureDetails(fd: FixtureDivergences): string {
+  const blocks: string[] = []
+  for (const fixtureId of Object.keys(fd.fixtures).sort()) {
+    const row = fd.fixtures[fixtureId]
+    const byText = new Map<string, string[]>()
+    for (const adapterId of Object.keys(row).sort()) {
+      const cell = row[adapterId]
+      const text =
+        cell.kind === 'refusal'
+          ? `refused at build time with ${(cell.codes ?? []).map((c) => `\`${c}\``).join(', ')}`
+          : (cell.reason ?? 'rendered output diverges from the Hono reference')
+      const adapters = byText.get(text) ?? []
+      adapters.push(adapterId)
+      byText.set(text, adapters)
+    }
+    const lines = [...byText.entries()].map(
+      ([text, adapters]) => `  - ${adapters.map((a) => `\`${a}\``).join(', ')} — ${escapeCell(text)}`,
+    )
+    blocks.push(`- **\`${fixtureId}\`**\n${lines.join('\n')}`)
+  }
+  return blocks.join('\n')
+}
+
+/** The render-honesty section: fixture × adapter divergence table + detail list. */
+function buildFixtureSection(): string {
+  const fd = compat.fixtureDivergences
+  if (!fd || Object.keys(fd.fixtures).length === 0) return ''
+
+  const fixtureIds = Object.keys(fd.fixtures).sort()
+  const adapters = compat.adapters
+  const cleanCount = fd.totalFixtures - fixtureIds.length
+
+  const header = `| Fixture | ${adapters.join(' | ')} |`
+  const divider = `| --- | ${adapters.map(() => '---').join(' | ')} |`
+  const rows = fixtureIds.map((id) => {
+    const cells = adapters.map((adapter) => fixtureCellMarkdown(fd.fixtures[id]?.[adapter]))
+    return `| \`${escapeCell(id)}\` | ${cells.join(' | ')} |`
+  })
+
+  return `
+## Render Conformance (fixture corpus)
+
+The component matrix above is **compile-time only**. This section reports the **render-level** state honestly: the shared conformance corpus (\`packages/adapter-tests\`) is rendered through every adapter's real backend (Go, Ruby, Perl, PHP, Python, Rust) and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (\`conformancePins\`) or rendering differently from the reference (\`renderDivergences\`, skipped in that adapter's conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.
+
+**${cleanCount} / ${fd.totalFixtures} fixtures render to reference parity on every adapter.** The ${fixtureIds.length} below diverge on at least one:
+
+${[header, divider, ...rows].join('\n')}
+
+\`✓\` renders to reference parity · \`≠\` compiles clean but the rendered output diverges (skipped in that adapter's conformance suite until fixed) · a diagnostic code means the adapter refuses the shape loudly at build time.
+
+### Divergence details
+
+${buildFixtureDetails(fd)}
+`
+}
+
 function buildMarkdown(): string {
   const componentNames = Object.keys(compat.components).sort()
   const summary = buildSummary(componentNames)
   const table = buildTable(componentNames)
   const legend = buildLegend()
+  const fixtureSection = buildFixtureSection()
 
   return `# ${TITLE}
 
@@ -143,10 +237,10 @@ ${table}
 Each diagnostic code below links to the known-limitation issue(s) tracking it. Codes with no linked issue fall back to the repo-wide [\`known-limitation\`](${compat.knownLimitationLabel}) label.
 
 ${legend}
-
+${fixtureSection}
 ## Data Source
 
-This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
+This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
 `
 }
 
