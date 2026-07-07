@@ -1,5 +1,23 @@
 # @barefootjs/client
 
+## 0.18.0
+
+### Patch Changes
+
+- 0636582: `bf build` now tree-shakes the client runtime bundle (`barefoot.js`) down to only the `@barefootjs/client*` exports a project's compiled client JS (components, `bundleEntries`, rebundled `externals` chunks) actually imports, plus a small always-kept public mount API (`render`, `hydrate`, `flushHydration`, `rehydrateAll`, `rehydrateScope`, `disposeScope`, `setupStreaming`, `createSearchParams`) for hand-written page scripts the compiler never sees. Previously `barefoot.js` was always a byte-for-byte copy of the entire prebuilt runtime regardless of what the project used — on the CSR benchmark app this shipped ~72KB raw / ~19.4KB gzip; the same app now ships ~24KB raw / ~8.8KB gzip.
+
+  New config surface (`createConfig()` in `@barefootjs/client/build`, or any `barefoot.config.ts`):
+
+  - `runtimeBundle?: 'treeshake' | 'full'` — defaults to `'treeshake'`. Set to `'full'` to restore the previous verbatim-copy behavior.
+  - `runtimeKeep?: string[]` — extra runtime export names to force-keep, for names only ever referenced from hand-written page scripts beyond the always-kept set.
+
+  Safety: if the collector sees an import shape it can't safely narrow (a namespace import, a default import, or a dynamic `import()` of the runtime — reachable only through `bundleEntries`/rebundled `externals`, since the compiler's own component codegen never emits these shapes), the build falls back to a full runtime copy for that build and logs why, rather than risk shipping a `barefoot.js` missing something that's actually used.
+
+- 99cae9d: Performance: `mapArray` now reorders keyed lists with minimal DOM moves (LIS-based — a two-row swap moves two scopes instead of re-inserting every row), batches contiguous new rows through a `DocumentFragment`, clears emptied lists in bulk via `Range.deleteContents()`/`textContent`, and caches its loop boundary markers between updates. Effect disposal bookkeeping is now O(1) per child (lazily-allocated insertion-ordered `Set` instead of `indexOf`+`splice`), removing an O(n²) cost when disposing large lists. No behavioral changes: keyed reconciliation semantics, cascade-disposal order, hydration, multi-root items, and focus preservation are unchanged and covered by new regression tests.
+- d05cc49: Performance: signal→effect dispatch is significantly faster. Effect dependency tracking now uses generation-stamped diffing, so an effect whose read set is unchanged between runs no longer unsubscribes/resubscribes on every run, and unbatched `set()` reuses a cached subscriber snapshot instead of allocating a new array per write (invalidated only when membership actually changes). Observable semantics are unchanged — synchronous dispatch order, snapshot-at-dispatch behavior for mid-dispatch subscribe/unsubscribe, dynamic dependency drop, `Object.is` bail, `batch()`, `untrack`, cleanup timing, and the circular-run guard are all preserved and pinned by new tests; the profiler-instrumented path emits a byte-identical event stream.
+- 435d996: `escapeText` — the runtime helper that escapes interpolated text content for the initial client render (`<!--bf:sN-->${escapeText(expr)}<!--/-->` slots) — now renders a nullish value as empty text instead of stringifying it into literal `"undefined"` / `"null"`. This matches the JSX/Solid semantics the Hono SSR reference follows (`{undefined}` / `{null}` produce no text) and the reactive text-update path, which already coerces via `String(value ?? '')` (`dynamic-text.ts`, `client-marker.ts`). Previously a bare `{props.x}` reading an absent prop diverged from the server-rendered output at first paint — empty on SSR, literal `"undefined"` on CSR (#2137). Non-nullish values (including `0` and `false`) keep their `String()` form, matching the reactive path.
+  - @barefootjs/shared@0.18.0
+
 ## 0.17.1
 
 ### Patch Changes
