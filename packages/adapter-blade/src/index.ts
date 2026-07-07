@@ -7,3 +7,4 @@
 export { BladeAdapter, bladeAdapter } from './adapter/index.ts'
 export type { BladeAdapterOptions } from './adapter/index.ts'
 export { conformancePins } from './conformance-pins.ts'
+export { renderDivergences } from './render-divergences.ts'

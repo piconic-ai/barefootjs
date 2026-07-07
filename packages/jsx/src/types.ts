@@ -1766,6 +1766,21 @@ export interface ConformancePin {
 /** Keyed by shared-fixture id (`JSXFixture.id`). */
 export type ConformancePins = Record<string, ReadonlyArray<ConformancePin>>
 
+/**
+ * Render-level divergences an adapter declares against the shared
+ * conformance corpus (packages/adapter-tests): fixtures that COMPILE
+ * clean but whose rendered output diverges from the Hono reference on
+ * the adapter's real backend. The machine-readable sibling of
+ * `ConformancePins` (which covers compile-time refusals): consumed by
+ * the adapter's own conformance test (as its `skipJsx` set — the test
+ * file derives the skip list from this object so the two can't drift)
+ * and by `packages/compat` (the fixture-divergences section of
+ * `ui/compat.lock.json`, rendered on the docs compatibility-matrix
+ * page). Keyed by shared-fixture id; the value is a one-line
+ * human-readable description of the divergence.
+ */
+export type RenderDivergences = Record<string, string>
+
 // =============================================================================
 // Compile Options & Results
 // =============================================================================

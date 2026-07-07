@@ -18,56 +18,19 @@ import { XslateAdapter } from '../adapter'
 import { renderXslateComponent, XslateNotAvailableError } from '../test-render'
 import { compileJSX, type ComponentIR } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
+import { renderDivergences } from '../render-divergences'
 
 runAdapterConformanceTests({
   name: 'xslate',
   factory: () => new XslateAdapter(),
   render: renderXslateComponent,
-  // Priority-12 edge-case sweep (炙り出し): fixtures below RENDER on real
-  // Text::Xslate but diverge from the Hono reference byte comparison.
-  // Each entry names its divergence; graduating one means fixing the
-  // adapter (or shared compiler layer) and deleting the line.
-  skipJsx: [
-    // `(count() + 2) * 3` renders 10 instead of 18 — the parenthesised
-    // sub-expression loses its grouping in the lowering (silent wrong
-    // arithmetic; same finding as mojo/jinja/blade).
-    'arithmetic-text',
-    // `'Hello, ' + name + '!'` numeric-coerces through Perl's `+`
-    // (needs `.` / `~` concat) — same finding as mojo.
-    'string-concat-plus',
-    // `{false}` renders "false" (Hono drops it); `{null}`/`{undefined}`
-    // render empty (Hono renders "null"). Neither matches JSX semantics.
-    'falsy-text-values',
-    // `&copy;` in JSX literal text: Hono decodes to `©`, Kolon re-emits
-    // the raw entity — same DOM, different bytes.
-    'html-entity-text',
-    // Math.min/max/abs over a signal render EMPTY (only Math.floor is
-    // in the template-primitive registry).
-    'math-methods',
-    // camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`,
-    // Kolon emits bare presence.
-    'boolean-attr-literals',
-    // `htmlFor` is not lowered to `for` (Hono maps it).
-    'camelcase-attributes',
-    // Static attribute values are NOT HTML-escaped (`title="Fish &
-    // Chips"` raw vs Hono's `Fish &amp; Chips`).
-    'static-attr-escape',
-    // SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`)
-    // pass through unmapped; Hono lowers to kebab-case.
-    'svg-icon',
-    // `Object.entries(prop).map(([k, v]) => …)` renders an EMPTY <ul>.
-    'object-entries-map',
-    // Nested-loop inner items carry `data-key` where the reference
-    // emits the depth-suffixed `data-key-1`.
-    'nested-loop-outer-binding',
-    // JSX element as a NON-children prop renders an empty slot (the
-    // element value is silently dropped).
-    'jsx-element-prop',
-    // `.slice()` on a STRING misfires through the array slice helper.
-    'string-slice',
-    // `.trimStart()` / `.trimEnd()` render empty (no lowering).
-    'string-trim-sided',
-  ],
+  // Priority-12 edge-case sweep (炙り出し, #2168): render-level
+  // divergences are declared in `../render-divergences` (exported from the
+  // package index and published to `ui/compat.lock.json` / the docs
+  // compatibility-matrix page by `packages/compat`). Deriving the skip
+  // list from that object keeps the public declaration and these test
+  // skips from drifting; each entry's rationale lives there.
+  skipJsx: Object.keys(renderDivergences),
   // (Pre-sweep note) Otherwise no JSX-render skips: every shared conformance fixture — including
   // the composed `site/ui` demo corpus (#1467 / #1897) — renders to
   // Hono parity on real Text::Xslate. `data-table` came off via the

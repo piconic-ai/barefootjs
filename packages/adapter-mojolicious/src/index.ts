@@ -7,3 +7,4 @@
 export { MojoAdapter, mojoAdapter } from './adapter/index.ts'
 export type { MojoAdapterOptions } from './adapter/index.ts'
 export { conformancePins } from './conformance-pins.ts'
+export { renderDivergences } from './render-divergences.ts'

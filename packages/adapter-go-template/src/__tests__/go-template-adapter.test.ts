@@ -17,80 +17,19 @@ import {
   type IRExpression,
 } from '@barefootjs/jsx'
 import { conformancePins } from '../conformance-pins'
+import { renderDivergences } from '../render-divergences'
 
 runAdapterConformanceTests({
   name: 'go-template',
   factory: () => new GoTemplateAdapter(),
   render: renderGoTemplateComponent,
-  // Priority-12 edge-case sweep (炙り出し): fixtures below compile but
-  // diverge from the Hono reference on real Go — or generate Go that
-  // fails `go run` outright (marked "exit 1" below; those should
-  // eventually become loud BF101 refusals instead of broken codegen).
-  // Each entry names its divergence; graduating one means fixing the
-  // adapter (or shared compiler layer) and deleting the line.
-  skipJsx: [
-    // `{false}` renders "false" (Hono drops it); `{null}`/`{undefined}`
-    // render empty (Hono renders "null"). Neither matches JSX semantics.
-    'falsy-text-values',
-    // `&copy;` in JSX literal text: Hono decodes to `©`, Go re-emits
-    // the raw entity — same DOM, different bytes.
-    'html-entity-text',
-    // `'Hello, ' + name + '!'` renders "0" — string concat lowered
-    // through numeric addition.
-    'string-concat-plus',
-    // `user?.name ?? '…'` on an object prop: generated Go fails to
-    // compile/run (exit 1) — optional chaining into a struct/map prop
-    // has no lowering.
-    'optional-chaining-prop',
-    // `.toFixed(2)`: generated Go fails to run (exit 1) on a number
-    // PROP (the memo-side `bf_to_fixed` path doesn't cover this shape).
-    'number-tofixed',
-    // Math.min/max/abs over a signal: generated Go fails to run
-    // (exit 1) — only Math.floor is registered.
-    'math-methods',
-    // camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`,
-    // Go emits bare presence.
-    'boolean-attr-literals',
-    // `htmlFor` is not lowered to `for` (Hono maps it).
-    'camelcase-attributes',
-    // Static attribute values are NOT HTML-escaped (`title="Fish &
-    // Chips"` raw vs Hono's `Fish &amp; Chips`).
-    'static-attr-escape',
-    // SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`)
-    // pass through unmapped; Hono lowers to kebab-case.
-    'svg-icon',
-    // `Object.entries(prop).map(([k, v]) => …)`: generated Go fails to
-    // run (exit 1) — no object-iteration loop lowering.
-    'object-entries-map',
-    // Nested-loop inner items carry `data-key` where the reference
-    // emits the depth-suffixed `data-key-1`.
-    'nested-loop-outer-binding',
-    // JSX element as a NON-children prop renders an empty slot (the
-    // element value is silently dropped).
-    'jsx-element-prop',
-    // Three-level composition: the grandchild's threaded prop renders
-    // EMPTY (`<span>…</span>` with no text) — prop forwarding through
-    // two template-render layers loses the value.
-    'grandchild-composition',
-    // Numeric/boolean LITERAL props on a child (`count={5}`
-    // `active={true}`) render as Go zero values (0 / false) — literal
-    // primitive props aren't bound into the child's Input struct.
-    'child-primitive-props',
-    // A memo derived from another memo renders EMPTY for the second
-    // layer — the constructor folds `doubled` from `count` but not
-    // `label` from `doubled`.
-    'memo-chain',
-    // Object-valued signal (`user().name`): generated Go fails to run
-    // (exit 1) — no struct synthesis for object signal initial values
-    // outside loops.
-    'signal-object-field',
-    // `.slice()` on a STRING routes through the array `bf_slice` helper
-    // and renders "[]" instead of the substring.
-    'string-slice',
-    // `.trimStart()` / `.trimEnd()`: generated Go fails to run (exit 1)
-    // — only both-sides `bf_trim` exists.
-    'string-trim-sided',
-  ],
+  // Priority-12 edge-case sweep (炙り出し, #2168): render-level
+  // divergences are declared in `../render-divergences` (exported from the
+  // package index and published to `ui/compat.lock.json` / the docs
+  // compatibility-matrix page by `packages/compat`). Deriving the skip
+  // list from that object keeps the public declaration and these test
+  // skips from drifting; each entry's rationale lives there.
+  skipJsx: Object.keys(renderDivergences),
   // `branch-self-closing` no longer needs a skip — the conditional-
   // marker divergence (Hono `bf-c="sN"` attribute vs Go
   // `<!--bf-cond-start:sN-->` / `<!--bf-cond-end:sN-->` comment pairs)

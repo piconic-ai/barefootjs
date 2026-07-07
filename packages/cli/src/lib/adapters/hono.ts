@@ -231,7 +231,14 @@ export const HONO_ADAPTER: AdapterTemplate = {
   devDependencies: {
     ...UNOCSS_DEV_DEPENDENCIES,
     '@barefootjs/cli': 'latest',
-    '@cloudflare/workers-types': '^4.20250101.0',
+    // Must track wrangler's `peerOptional @cloudflare/workers-types`
+    // MAJOR: wrangler 4.108.0 moved it to `^5.20260706.1`, and with the
+    // v4 pin every fresh scaffold's `npm install` fails with ERESOLVE
+    // (bun tolerates the mismatch; npm does not — CI's smoke-publish
+    // caught it). v5 still ships a root `index.d.ts`, so the generated
+    // tsconfig's `"types": ["@cloudflare/workers-types", ...]` entry
+    // resolves unchanged.
+    '@cloudflare/workers-types': '^5.20260706.1',
     // `@barefootjs/test` powers `renderToTest()` — the canonical
     // millisecond IR test the docs (and `bf gen test`) point new users
     // at. Without it the scaffold's `test` script is a no-op and any
