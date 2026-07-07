@@ -12,8 +12,9 @@
 // carrying both `paths` (consumed by registry tooling) and the build
 // options.
 
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'node:url'
 import type { CliContext } from '../context'
 import { addFromRegistry } from './add'
 import {
@@ -32,6 +33,65 @@ import {
   SHARED_COUNTER_BARE_TEST_TSX,
   UNOCSS_DEV_DEPENDENCIES,
 } from '../lib/adapters/shared'
+
+const thisFile = fileURLToPath(import.meta.url)
+
+// The CLI's own version — used to pin `@barefootjs/*` scaffold deps to
+// a real version instead of the `'latest'` sentinel every adapter
+// template carries (see `pinBarefootDeps` below). All `@barefootjs/*`
+// packages publish in lockstep with `@barefootjs/cli`, so its own
+// version is authoritative for the whole set.
+//
+// Two candidate locations, tried in order — the same bundled/dev split
+// used by `../lib/tokens.ts` and `../commands/guide.ts`:
+//   1. Bundled (published CLI): esbuild inlines every module into a
+//      single `dist/index.js` (see scripts/build.mjs), which sits
+//      directly under the package root, so package.json is one `..` up.
+//   2. Dev/unbundled (e.g. tests spawning `bun src/index.ts` directly,
+//      per `../__tests__/init-gate.test.ts`): this file is
+//      `src/commands/init.ts`, two levels under the package root.
+function readCliVersion(): string {
+  const bundledPkgJsonPath = path.resolve(path.dirname(thisFile), '../package.json')
+  const devPkgJsonPath = path.resolve(path.dirname(thisFile), '../../package.json')
+  const pkgJsonPath = existsSync(bundledPkgJsonPath) ? bundledPkgJsonPath : devPkgJsonPath
+  const { version } = JSON.parse(readFileSync(pkgJsonPath, 'utf-8')) as { version?: unknown }
+  // Validate before use: a missing/empty `version` would otherwise
+  // silently scaffold `"@barefootjs/*": "^undefined"`. Fail loudly and
+  // name the file read so a broken CLI package is diagnosable.
+  if (typeof version !== 'string' || version.length === 0) {
+    throw new Error(
+      `Could not read the CLI's own version from ${pkgJsonPath} — ` +
+        'cannot pin @barefootjs/* scaffold dependencies.',
+    )
+  }
+  return version
+}
+
+const CLI_VERSION = readCliVersion()
+
+// Substitutes the `'latest'` sentinel every adapter template's
+// `dependencies` / `devDependencies` map carries for `@barefootjs/*`
+// packages (see e.g. `../lib/adapters/hono.ts`) with `^<CLI_VERSION>`.
+// Adapter templates keep the sentinel — rather than hardcoding a
+// version per adapter — so this one substitution point is the only
+// place that has to change when the version-pinning strategy changes.
+//
+// Without this, two teammates scaffolding a week apart would get
+// different `@barefootjs/*` versions (no lockfile exists yet at
+// scaffold time), and a bad publish — like the accidental
+// `@barefootjs/cli@1.0.0` release — would propagate into every new
+// scaffold instantly instead of only when a maintainer deliberately
+// bumps the pin. Non-`@barefootjs/*` deps (hono, wrangler, typescript,
+// ...) are returned unchanged.
+function pinBarefootDeps(deps: Record<string, string>): Record<string, string> {
+  const pinned: Record<string, string> = {}
+  for (const [name, version] of Object.entries(deps)) {
+    pinned[name] = name.startsWith('@barefootjs/') && version === 'latest'
+      ? `^${CLI_VERSION}`
+      : version
+  }
+  return pinned
+}
 
 interface InitFlags {
   name?: string
@@ -331,8 +391,10 @@ async function scaffoldApp(
   // package.json — merge adapter scripts/deps with a sensible default.
   const pkgJsonPath = path.join(projectDir, 'package.json')
   // Resolve adapter scripts. Function values render against the
-  // detected PM so `dev` / `deploy` quote the right dlx form
-  // (`bunx wrangler` vs. `npx wrangler` vs. `pnpm dlx wrangler` etc.).
+  // detected PM for the rare command that genuinely differs per PM
+  // (e.g. `<pm> install`) — see the `AdapterScriptValue` doc in
+  // `../lib/templates.ts`. Most adapter tools (e.g. Hono's `wrangler`)
+  // are devDependencies invoked bare instead, so they don't need this.
   // (`pm` was resolved earlier so the file-substitution loop and
   // tsconfig's bun-types entry both see the same value.)
   const resolvedAdapterScripts: Record<string, string> = {}
@@ -380,8 +442,10 @@ async function scaffoldApp(
       // without manual migration. See `testRunnerFor` in `../lib/pm.ts`.
       test: runner.scriptValue,
     },
-    dependencies: { ...adapter.dependencies },
-    devDependencies: { ...adapterDevDeps, ...pmDevDeps },
+    // `@barefootjs/*` entries are pinned from the `'latest'` sentinel to
+    // `^<CLI_VERSION>` here — see `pinBarefootDeps` above.
+    dependencies: pinBarefootDeps({ ...adapter.dependencies }),
+    devDependencies: pinBarefootDeps({ ...adapterDevDeps, ...pmDevDeps }),
   }
   if (!existsSync(pkgJsonPath)) {
     writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')

@@ -544,6 +544,50 @@ describe('adapter registry', () => {
     // PM-specific entries (today: `@types/bun` when bun) onto this.
     expect(hono.devDependencies['@types/bun']).toBeUndefined()
   })
+
+  test('hono adapter pins wrangler as a devDependency and invokes it bare (#2123)', () => {
+    // Before #2123, `dev`/`deploy` wrapped wrangler in
+    // `commandsFor(pm).exec(...)` (`npx wrangler` / `bunx wrangler` /
+    // `pnpm dlx wrangler`) and wrangler was absent from
+    // devDependencies — so the very first `<pm> run dev` paused to
+    // download an unpinned wrangler. Now it's a real devDependency
+    // and the scripts call it directly; package.json scripts resolve
+    // `node_modules/.bin` automatically, so no dlx wrapper is needed.
+    const hono = ADAPTERS.hono
+    expect(hono.devDependencies.wrangler).toBeTruthy()
+    expect(hono.devDependencies.wrangler).not.toBe('latest')
+
+    // Scripts are now plain strings (no PM-specific dlx rendering
+    // needed), and call `wrangler` bare.
+    expect(typeof hono.scripts.dev).toBe('string')
+    expect(typeof hono.scripts.deploy).toBe('string')
+    expect(hono.scripts.dev).toContain('wrangler dev --live-reload')
+    expect(hono.scripts.deploy).toContain('wrangler deploy')
+    for (const script of [hono.scripts.dev, hono.scripts.deploy]) {
+      expect(script as string).not.toContain('npx wrangler')
+      expect(script as string).not.toContain('bunx wrangler')
+      expect(script as string).not.toContain('dlx wrangler')
+    }
+  })
+
+  test('every adapter keeps the \'latest\' sentinel on @barefootjs/* deps in the static template', () => {
+    // The adapter map is the *unsubstituted* template — `bf init`
+    // (`pinBarefootDeps` in `../commands/init.ts`) is what swaps
+    // `'latest'` for `^<CLI_VERSION>` at scaffold time (#2123). This
+    // pins the other half of that contract: every adapter still
+    // carries the sentinel here, so a future edit that accidentally
+    // hardcodes a version in one adapter's template silently
+    // reintroduces the version-skew bug the central substitution
+    // fixes.
+    for (const adapter of Object.values(ADAPTERS)) {
+      const allDeps = { ...adapter.dependencies, ...adapter.devDependencies }
+      const barefootDeps = Object.entries(allDeps).filter(([name]) => name.startsWith('@barefootjs/'))
+      expect(barefootDeps.length).toBeGreaterThan(0)
+      for (const [, value] of barefootDeps) {
+        expect(value).toBe('latest')
+      }
+    }
+  })
 })
 
 describe('CSS library registry', () => {

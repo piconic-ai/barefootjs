@@ -8,7 +8,6 @@
 // "instantly deployable" first impression.
 
 import type { AdapterTemplate } from '../templates'
-import { commandsFor } from '../pm'
 import {
   buildGitignore,
   COMPONENTS_MANIFEST_SEED,
@@ -202,12 +201,13 @@ export const HONO_ADAPTER: AdapterTemplate = {
     '.gitignore': HONO_GITIGNORE,
   },
   scripts: {
-    dev: (pm) =>
-      `concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "${commandsFor(pm).exec(
-        'wrangler dev --live-reload',
-      )}"`,
+    // `wrangler` is a devDependency below, so package.json scripts
+    // resolve it straight from `node_modules/.bin` — no `npx`/`bunx`/
+    // `pnpm dlx` wrapper needed (and no unpinned download on first
+    // `<pm> run dev`, since the version is pinned in devDependencies).
+    dev: 'concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "wrangler dev --live-reload"',
     build: 'bf build && unocss',
-    deploy: (pm) => `bf build && unocss && ${commandsFor(pm).exec('wrangler deploy')}`,
+    deploy: 'bf build && unocss && wrangler deploy',
   },
   deploy: {
     target: 'Cloudflare Workers',
@@ -237,6 +237,11 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // type package.
     concurrently: '^9.0.0',
     typescript: '^5.6.0',
+    // Pinned so `<pm> run dev` / `<pm> run deploy` resolve a known
+    // `wrangler` from `node_modules/.bin` instead of pausing on an
+    // unpinned download the first time they run (see the `scripts`
+    // comment above — this is what makes the bare invocation safe).
+    wrangler: '^4.0.0',
   },
   prereqWarnings: () => [],
 }
