@@ -8,11 +8,11 @@
 // that list instead of adapter-tests.
 //
 // This package is repo-internal (`private: true`, never published) and
-// declares all 8 adapters as `devDependencies` — see
+// declares all 9 adapters as `devDependencies` — see
 // packages/compat/package.json. Adapters are still dynamic-imported
 // rather than statically imported, so a package that fails to resolve
 // (e.g. unbuilt dist) degrades to a reported skip instead of a hard
-// crash, keeping the loader total. The monorepo always has all 8
+// crash, keeping the loader total. The monorepo always has all 9
 // installed, so a run from this repo loads every adapter.
 
 import type { ConformancePins, TemplateAdapter } from '@barefootjs/jsx'
@@ -24,6 +24,7 @@ interface CompatAdapterSpec {
 
 // Sorted by package name.
 const COMPAT_ADAPTERS: CompatAdapterSpec[] = [
+  { pkg: '@barefootjs/blade', className: 'BladeAdapter' },
   { pkg: '@barefootjs/erb', className: 'ErbAdapter' },
   { pkg: '@barefootjs/go-template', className: 'GoTemplateAdapter' },
   { pkg: '@barefootjs/hono', className: 'HonoAdapter' },

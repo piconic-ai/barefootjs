@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@barefootjs/adapter-tests": "workspace:*",
+    "@barefootjs/blade": "workspace:*",
     "@barefootjs/erb": "workspace:*",
     "@barefootjs/go-template": "workspace:*",
     "@barefootjs/hono": "workspace:*",

@@ -3,6 +3,7 @@
   "knownLimitationLabel": "https://github.com/piconic-ai/barefootjs/labels/known-limitation",
   "adapters": [
     "hono",
+    "blade",
     "erb",
     "go-template",
     "jinja",
@@ -14,6 +15,9 @@
   "components": {
     "accordion": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -42,6 +46,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -66,6 +73,9 @@
     },
     "alert-dialog": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -94,6 +104,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -118,6 +131,9 @@
     },
     "avatar": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -146,6 +162,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -170,6 +189,9 @@
     },
     "breadcrumb": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -198,6 +220,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -222,6 +247,9 @@
     },
     "button-group": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -250,6 +278,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -274,6 +305,9 @@
     },
     "card": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -302,6 +336,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -326,6 +363,9 @@
     },
     "chart": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -354,6 +394,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -378,6 +421,9 @@
     },
     "collapsible": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -406,6 +452,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -430,6 +479,9 @@
     },
     "command": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -458,6 +510,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -482,6 +537,9 @@
     },
     "data-table": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -510,6 +568,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -534,6 +595,9 @@
     },
     "dialog": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -562,6 +626,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -586,6 +653,9 @@
     },
     "drawer": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -614,6 +684,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -638,6 +711,9 @@
     },
     "empty": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -666,6 +742,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -690,6 +769,9 @@
     },
     "hover-card": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -718,6 +800,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -742,6 +827,9 @@
     },
     "input": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -770,6 +858,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -794,6 +885,9 @@
     },
     "input-otp": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -822,6 +916,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -846,6 +943,9 @@
     },
     "kbd": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -874,6 +974,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -898,6 +1001,9 @@
     },
     "menubar": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -926,6 +1032,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -950,6 +1059,9 @@
     },
     "navigation-menu": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -978,6 +1090,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1002,6 +1117,9 @@
     },
     "popover": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1030,6 +1148,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1054,6 +1175,9 @@
     },
     "progress": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1082,6 +1206,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1106,6 +1233,9 @@
     },
     "resizable": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1134,6 +1264,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1158,6 +1291,9 @@
     },
     "select": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1186,6 +1322,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1210,6 +1349,9 @@
     },
     "sheet": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1238,6 +1380,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1262,6 +1407,9 @@
     },
     "skeleton": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1290,6 +1438,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1314,6 +1465,9 @@
     },
     "slot": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1342,6 +1496,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1366,6 +1523,9 @@
     },
     "switch": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1394,6 +1554,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1418,6 +1581,9 @@
     },
     "tabs": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1446,6 +1612,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1470,6 +1639,9 @@
     },
     "toast": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1498,6 +1670,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1522,6 +1697,9 @@
     },
     "toggle-group": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
@@ -1550,6 +1728,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1576,6 +1757,9 @@
       "hono": {
         "ok": true
       },
+      "blade": {
+        "ok": true
+      },
       "erb": {
         "ok": true
       },
@@ -1600,6 +1784,9 @@
     },
     "xyflow": {
       "hono": {
+        "ok": true
+      },
+      "blade": {
         "ok": true
       },
       "erb": {
