@@ -33,8 +33,8 @@
  *
  * @example Styled trigger (asChild)
  * ```tsx
- * // asChild adopts the child element directly (no wrapping span styling) —
- * // useful when the trigger needs to be an existing styled component, e.g. Avatar.
+ * // asChild swaps the styled trigger wrapper for a neutral display:contents span,
+ * // so the child keeps its own layout/styling — e.g. an existing Avatar component.
  * <HoverCardTrigger asChild>
  *   <Avatar>
  *     <AvatarImage src="/user.png" alt="@username" />
@@ -128,9 +128,10 @@ function HoverCard(props: HoverCardProps) {
  */
 interface HoverCardTriggerProps extends HTMLBaseAttributes {
   /**
-   * Render the child element as the trigger instead of wrapping it in
-   * HoverCardTrigger's own `<span>`. Use this when the child already carries its
-   * own semantics/styling (e.g. an `<a>` or `<Avatar>`) so no extra wrapper is added.
+   * Render the wrapper as a neutral `display:contents` span instead of
+   * HoverCardTrigger's styled inline-flex `<span>`, so the child renders with its
+   * own layout/styling untouched. Use this when the child already carries its own
+   * semantics/styling (e.g. an `<a>` or `<Avatar>`).
    */
   asChild?: boolean
   /** Trigger content */
