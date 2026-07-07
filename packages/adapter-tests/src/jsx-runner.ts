@@ -213,6 +213,12 @@ export function normalizeHTML(html: string): string {
     .replace(/&#0*60;|&#[xX]0*3[cC];/g, '&lt;')
     .replace(/&#0*62;|&#[xX]0*3[eE];/g, '&gt;')
     .replace(/&#0*39;|&#[xX]0*27;/g, '&#39;')
+    // `+` never needs escaping in HTML, but Go's html/template still emits
+    // it as `&#43;` in text nodes while every other adapter emits the
+    // literal — the exact divergence #2158 calls out ("decode HTML
+    // entities first"). Decode to the literal on both sides; first
+    // surfaced by the counter-buttons fixture's `+1` button label.
+    .replace(/&#0*43;|&#[xX]0*2[bB];/g, '+')
     // Raw apostrophes too (#1896 / #1897): Hono escapes `'` in text nodes
     // as `&#39;`, Go's html/template (and Xslate) leave it raw — both
     // decode to the same DOM text, so canonicalise to the entity form on

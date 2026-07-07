@@ -104,3 +104,20 @@ describe('normalizeHTML — boolean-attribute canonicalisation (#1466)', () => {
     expect(normalizeHTML(html)).toBe('<div data-active="" data-state="">x</div>')
   })
 })
+
+describe('normalizeHTML — `&#43;` (`+`) canonicalisation (#2158)', () => {
+  // Go's html/template emits `+` in text nodes as the numeric reference
+  // `&#43;`; every other adapter emits the literal. `+` never needs
+  // escaping in HTML, so both sides decode to the literal — the exact
+  // "decode HTML entities first" divergence #2158 calls out, first
+  // surfaced by the counter-buttons fixture's `+1` button label.
+  test('decodes decimal and hex numeric references for `+` to the literal', () => {
+    expect(normalizeHTML('<button>&#43;1</button>')).toBe('<button>+1</button>')
+    expect(normalizeHTML('<button>&#x2B;1</button>')).toBe('<button>+1</button>')
+    expect(normalizeHTML('<button>&#x2b;1</button>')).toBe('<button>+1</button>')
+  })
+
+  test('a literal `+` is left untouched (both sides land on the same form)', () => {
+    expect(normalizeHTML('<button>+1</button>')).toBe('<button>+1</button>')
+  })
+})
