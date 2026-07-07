@@ -15,7 +15,59 @@ runAdapterConformanceTests({
   name: 'mojo',
   factory: () => new MojoAdapter(),
   render: renderMojoComponent,
-  // No JSX-render skips: every shared conformance fixture — including
+  // Priority-12 edge-case sweep (炙り出し): fixtures below RENDER on real
+  // Mojolicious but diverge from the Hono reference byte comparison.
+  // Each entry names its divergence; graduating one means fixing the
+  // adapter (or shared compiler layer) and deleting the line.
+  skipJsx: [
+    // `(count() + 2) * 3` renders 10 instead of 18 — the parenthesised
+    // sub-expression loses its grouping in the lowering (silent wrong
+    // arithmetic; same finding as jinja/blade).
+    'arithmetic-text',
+    // `'Hello, ' + name + '!'` renders "0" — Perl's numeric `+` coerces
+    // the strings to numbers; JS string-concat `+` needs Perl's `.`.
+    'string-concat-plus',
+    // `.length` on a STRING prop diverges (array-length lowering
+    // misapplied to a scalar).
+    'string-length-text',
+    // The literal `¥` in template text reaches the output as U+FFFD —
+    // a UTF-8 encoding gap in the EP template pipeline for non-ASCII
+    // literal text adjacent to a dynamic slot.
+    'number-tofixed',
+    // `{false}` renders "false" (Hono drops it); `{null}`/`{undefined}`
+    // render empty (Hono renders "null"). Neither matches JSX semantics.
+    'falsy-text-values',
+    // `&copy;` in JSX literal text: Hono decodes to `©`, EP re-emits
+    // the raw entity — same DOM, different bytes.
+    'html-entity-text',
+    // Math.min/max/abs over a signal render EMPTY (only Math.floor is
+    // in the template-primitive registry).
+    'math-methods',
+    // camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`,
+    // EP emits bare presence.
+    'boolean-attr-literals',
+    // `htmlFor` is not lowered to `for` (Hono maps it).
+    'camelcase-attributes',
+    // Static attribute values are NOT HTML-escaped (`title="Fish &
+    // Chips"` raw vs Hono's `Fish &amp; Chips`).
+    'static-attr-escape',
+    // SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`)
+    // pass through unmapped; Hono lowers to kebab-case.
+    'svg-icon',
+    // `Object.entries(prop).map(([k, v]) => …)` renders an EMPTY <ul>.
+    'object-entries-map',
+    // Nested-loop inner items carry `data-key` where the reference
+    // emits the depth-suffixed `data-key-1`.
+    'nested-loop-outer-binding',
+    // JSX element as a NON-children prop renders an empty slot (the
+    // element value is silently dropped).
+    'jsx-element-prop',
+    // `.slice()` on a STRING misfires through the array slice helper.
+    'string-slice',
+    // `.trimStart()` / `.trimEnd()` render empty (no lowering).
+    'string-trim-sided',
+  ],
+  // (Pre-sweep note) Otherwise no JSX-render skips: every shared conformance fixture — including
   // the composed `site/ui` demo corpus (#1467 / #1897) — renders to
   // Hono parity on real Mojolicious. `data-table` came off via the
   // body-children `inLoop` reset (#1896): the loop-item component

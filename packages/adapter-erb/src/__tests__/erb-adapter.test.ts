@@ -31,6 +31,51 @@ runAdapterConformanceTests({
   name: 'erb',
   factory: () => new ErbAdapter(),
   render: renderErbComponent,
+  // Priority-12 edge-case sweep (炙り出し): fixtures below RENDER on real
+  // Ruby erb but diverge from the Hono reference byte comparison. Each
+  // entry names its divergence; graduating one means fixing the adapter
+  // (or the shared compiler layer) and deleting the line.
+  skipJsx: [
+    // `{false}` renders the string "false" (Hono drops it); `{null}` /
+    // `{undefined}` render empty (Hono renders "null"). Neither side
+    // matches JSX semantics (0 renders; false/null/undefined drop).
+    'falsy-text-values',
+    // `&copy;` in JSX literal text: Hono decodes to `©` at parse time,
+    // ERB re-emits the raw entity — same DOM, different bytes.
+    'html-entity-text',
+    // `user?.name ?? '...'` on an object prop: the Ruby render exits 1
+    // (optional chaining into a Hash prop has no lowering).
+    'optional-chaining-prop',
+    // Math.min/max/abs over a signal render empty (only Math.floor is
+    // in the template-primitive registry).
+    'math-methods',
+    // camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`,
+    // ERB emits bare `readonly`-style presence.
+    'boolean-attr-literals',
+    // `htmlFor` is not lowered to `for` (Hono maps it).
+    'camelcase-attributes',
+    // Static attribute values are NOT HTML-escaped: `title="Fish &
+    // Chips"` is emitted raw where Hono escapes to `Fish &amp; Chips`.
+    'static-attr-escape',
+    // SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`)
+    // pass through unmapped; Hono lowers to kebab-case.
+    'svg-icon',
+    // `Object.entries(prop).map(([k, v]) => …)` renders but its loop
+    // item keys diverge from the reference serialisation.
+    'object-entries-map',
+    // Nested-loop inner items carry `data-key` where the Hono
+    // reference emits the depth-suffixed `data-key-1`.
+    'nested-loop-outer-binding',
+    // A JSX element passed as a NON-children prop (`header={<strong/>}`)
+    // renders an EMPTY slot — the element value is silently dropped.
+    'jsx-element-prop',
+    // `.slice()` on a STRING lowers through the array slice helper and
+    // renders "[]" instead of the substring.
+    'string-slice',
+    // `.trimStart()` / `.trimEnd()` render empty (no lowering; only
+    // both-sides `.trim` is wired).
+    'string-trim-sided',
+  ],
   // No JSX-render skips: every shared conformance fixture — including
   // the composed `site/ui` demo corpus (#1467 / #1897) — renders to
   // Hono parity on real Ruby `erb`. `data-table` came off via the

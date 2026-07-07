@@ -23,7 +23,12 @@ interface Token {
  */
 function tokenize(html: string): Token[] {
   const tokens: Token[] = []
-  const re = /<!--[\s\S]*?-->|<\/([a-zA-Z][a-zA-Z0-9]*)>|<([a-zA-Z][a-zA-Z0-9]*)(\s[^>]*)?>|[^<]+/g
+  // Tag names allow interior hyphens (custom elements: `<my-widget>`).
+  // Without `-` in the name class the open/close alternatives fail to
+  // match a hyphenated tag, the unmatched `<` is silently dropped by the
+  // scanner, and the tag body re-tokenizes as TEXT — corrupting the
+  // emitted fixture HTML (surfaced by the `custom-element-tag` fixture).
+  const re = /<!--[\s\S]*?-->|<\/([a-zA-Z][a-zA-Z0-9-]*)>|<([a-zA-Z][a-zA-Z0-9-]*)(\s[^>]*)?>|[^<]+/g
   let match: RegExpExecArray | null
 
   while ((match = re.exec(html)) !== null) {

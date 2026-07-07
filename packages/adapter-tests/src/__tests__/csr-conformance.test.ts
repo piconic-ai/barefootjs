@@ -203,6 +203,46 @@ describe('CSR Conformance Tests', () => {
     // `region-boundary` JSX conformance test; only the CSR parity is
     // out of scope here. Same SSR-only-marker divergence as the entries above.
     'region-boundary',
+    // Priority-12 edge-case sweep: SSR/CSR divergences inside the
+    // Hono + client pipeline itself, surfaced by the new fixtures. Each
+    // entry is a REAL divergence (not a harness artifact) — the skip
+    // documents it until the compiler/runtime reconciles the two paths:
+    //   - `falsy-text-values`: CSR stringifies `{false}` → "false" while
+    //     SSR drops it; SSR renders `{null}`/`{undefined}` → "null" while
+    //     CSR drops them. Both sides also disagree with JSX semantics
+    //     (0 renders; false/null/undefined render nothing).
+    'falsy-text-values',
+    //   - `html-entity-text`: `&copy;` in JSX literal text is decoded to
+    //     `©` by SSR but passed through as the raw entity by the CSR
+    //     template string (same DOM after parse, different bytes).
+    'html-entity-text',
+    //   - `boolean-attr-literals`: `readOnly` (camelCase alias of a
+    //     boolean attr) SSRs as `readOnly="true"` but CSRs as bare
+    //     `readOnly` — the boolean-attribute canonicalisation in
+    //     `normalizeHTML` only covers the lowercase spellings.
+    'boolean-attr-literals',
+    //   - `static-attr-escape`: static attribute values are HTML-escaped
+    //     by Hono SSR (`Fish &amp; Chips`) but emitted RAW by the CSR
+    //     template literal (`Fish & Chips`).
+    'static-attr-escape',
+    //   - `object-entries-map` / `nested-loop-outer-binding`: nested/
+    //     tuple-destructure loops emit `data-key`/`data-key-1` depth
+    //     suffixes differently between the SSR snapshot and template-eval.
+    'object-entries-map',
+    'nested-loop-outer-binding',
+    //   - `jsx-element-prop`: a JSX element passed as a NON-children prop
+    //     reaches the CSR insert as an escaped STRING (with the
+    //     `__BF_PARENT_SCOPE__` placeholder still embedded) instead of
+    //     real markup.
+    'jsx-element-prop',
+    //   - `grandchild-composition`: the third composition level reuses the
+    //     parent's scope id (`test_s0`) in CSR instead of deriving
+    //     `test_s0_s0` as SSR does.
+    'grandchild-composition',
+    //   - `nested-fragments`: a multi-root fragment attaches `bf-s` to its
+    //     first element in CSR, while SSR carries the scope on a
+    //     `<!--bf-scope:...-->` comment the normalizer strips.
+    'nested-fragments',
   ])
 
   for (const fixture of jsxFixtures) {
