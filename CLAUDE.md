@@ -2,6 +2,8 @@
 
 JSX → Marked Template + client JS compiler. Signal-based reactivity for any backend.
 
+> **AI sessions:** after this file, read `docs/agent-handoff.md` — the operating playbook (task workflow, subagent delegation, ambiguity handling) handed off from prior sessions.
+
 ## Project Setup / Tech Stack
 
 This project primarily uses TypeScript with Go template adapters. Use `bun` instead of `npm` for package management. For CSS, use UnoCSS — note that UnoCSS alpha modifiers do not work with CSS variables, and files must be explicitly included in UnoCSS scanning config.
