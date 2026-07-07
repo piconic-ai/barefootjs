@@ -252,6 +252,13 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+          # The split push authenticates via PHP_SPLIT_REPO_TOKEN embedded in
+          # the remote URL. checkout's persisted GITHUB_TOKEN is injected as an
+          # http.extraheader Authorization header on every github.com request,
+          # which preempts the 401 challenge that URL credentials answer — so
+          # the push would authenticate as github-actions[bot] (no access to
+          # the split repos) and fail with 403.
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
@@ -324,6 +331,13 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+          # The split push authenticates via PHP_SPLIT_REPO_TOKEN embedded in
+          # the remote URL. checkout's persisted GITHUB_TOKEN is injected as an
+          # http.extraheader Authorization header on every github.com request,
+          # which preempts the 401 challenge that URL credentials answer — so
+          # the push would authenticate as github-actions[bot] (no access to
+          # the split repos) and fail with 403.
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
@@ -398,6 +412,13 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+          # The split push authenticates via PHP_SPLIT_REPO_TOKEN embedded in
+          # the remote URL. checkout's persisted GITHUB_TOKEN is injected as an
+          # http.extraheader Authorization header on every github.com request,
+          # which preempts the 401 challenge that URL credentials answer — so
+          # the push would authenticate as github-actions[bot] (no access to
+          # the split repos) and fail with 403.
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
