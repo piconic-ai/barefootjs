@@ -18,8 +18,13 @@ import type { PackageManager } from './pm'
 /**
  * A package-manager-aware script value. Plain strings are emitted
  * verbatim; functions are evaluated against the detected PM so the
- * generated `package.json` quotes the right command (`bunx wrangler`
- * vs. `npx wrangler` vs. `pnpm dlx wrangler` vs. `yarn dlx wrangler`).
+ * generated `package.json` quotes the right PM-specific command. Tools
+ * an adapter depends on directly (e.g. Hono's `wrangler`) should be
+ * added to `devDependencies` and invoked bare in the script string —
+ * package.json scripts resolve `node_modules/.bin` automatically, so
+ * no `npx`/`bunx`/`pnpm dlx`/`yarn dlx` wrapper (and no unpinned
+ * first-run download) is needed. Reach for a function value only when
+ * the command genuinely differs per PM (e.g. `<pm> install`).
  */
 export type AdapterScriptValue = string | ((pm: PackageManager) => string)
 
