@@ -43,6 +43,12 @@ const PUBLISHABLE = [
   'packages/adapter-perl',
   'packages/adapter-xslate',
   'packages/adapter-mojolicious',
+  'packages/adapter-erb',
+  'packages/adapter-jinja',
+  'packages/adapter-php',
+  'packages/adapter-twig',
+  'packages/adapter-blade',
+  'packages/adapter-rust',
   'packages/cli',
   'packages/create-barefootjs',
 ]
