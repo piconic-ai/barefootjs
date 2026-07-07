@@ -35,6 +35,17 @@ export interface BuildCache {
    *  ships with it) implicitly discards the old cache. */
   globalHash: string
   entries: Record<string, CacheEntry>
+  /**
+   * Hash of the tree-shaken runtime's inputs (the collected used-export set,
+   * `runtimeBundle` mode, `minify`, and the source runtime dist file's own
+   * content hash) from the last build that actually regenerated
+   * `barefoot.js`. Lets an incremental build skip re-bundling the runtime
+   * when nothing that would change its contents has changed, while still
+   * regenerating it the moment a component starts (or stops) importing
+   * something — even though that component's own recompile doesn't bump
+   * `globalHash`. See `packages/cli/src/lib/runtime-treeshake.ts`.
+   */
+  runtimeKeepHash?: string
 }
 
 /** Hash a string for cache-equality checks. Short hex is plenty. */

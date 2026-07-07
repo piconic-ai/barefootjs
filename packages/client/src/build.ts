@@ -58,6 +58,20 @@ export interface CSRBuildOptions {
   adapter?: TemplateAdapter
   /** Options forwarded to the default `CSRAdapter`. Ignored when `adapter` is set. */
   adapterOptions?: CSRAdapterOptions
+  /**
+   * How the CLI produces `barefoot.js`. Defaults to `'treeshake'`, which
+   * bundles only the runtime exports this project's compiled client JS
+   * actually imports (plus the always-kept public mount API). Set to
+   * `'full'` to copy the entire prebuilt runtime bundle verbatim, matching
+   * pre-tree-shaking behavior.
+   */
+  runtimeBundle?: 'treeshake' | 'full'
+  /**
+   * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
+   * under `runtimeBundle: 'treeshake'` — for names only ever referenced
+   * from hand-written page scripts the CLI never compiles.
+   */
+  runtimeKeep?: string[]
 }
 
 /**
@@ -85,6 +99,8 @@ export function createConfig(options: CSRBuildOptions = {}) {
     bundleEntries: options.bundleEntries,
     outputLayout: options.outputLayout,
     postBuild: options.postBuild,
+    runtimeBundle: options.runtimeBundle,
+    runtimeKeep: options.runtimeKeep,
   }
 }
 
