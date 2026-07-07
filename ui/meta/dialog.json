@@ -171,7 +171,7 @@
     },
     {
       "title": "Styled trigger (asChild)",
-      "code": "// Wrapping a <Button> (or any element) inside DialogTrigger requires asChild.\n// Without it, DialogTrigger renders its OWN <button>, the HTML parser auto-closes\n// the nested <button>, and the dialog silently never opens.\n<DialogTrigger asChild>\n  <Button variant=\"outline\">Open Dialog</Button>\n</DialogTrigger>"
+      "code": "// Wrapping a <Button> (or any interactive element) inside DialogTrigger requires asChild.\n// Without it, DialogTrigger renders its OWN <button>, the HTML parser auto-closes\n// the nested <button>, and the dialog silently never opens.\n<DialogTrigger asChild>\n  <Button variant=\"outline\">Open Dialog</Button>\n</DialogTrigger>"
     }
   ],
   "accessibility": {

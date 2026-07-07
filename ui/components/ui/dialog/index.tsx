@@ -37,7 +37,7 @@
  *
  * @example Styled trigger (asChild)
  * ```tsx
- * // Wrapping a <Button> (or any element) inside DialogTrigger requires asChild.
+ * // Wrapping a <Button> (or any interactive element) inside DialogTrigger requires asChild.
  * // Without it, DialogTrigger renders its OWN <button>, the HTML parser auto-closes
  * // the nested <button>, and the dialog silently never opens.
  * <DialogTrigger asChild>
@@ -152,9 +152,13 @@ function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
   )
   const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
 
-  if (hasNestedInteractive || siblingIsInteractive) {
+  if (hasNestedInteractive) {
     console.warn(
-      `[barefootjs] ${componentName} rendered an empty trigger next to an interactive element — did you nest a <button>/<Button> inside it? Use <${componentName} asChild> to adopt your own element.`
+      `[barefootjs] ${componentName} contains a nested interactive element (<button>, <a href>, or [role="button"]) inside the trigger's own <button> — nested interactive elements don't work reliably. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  } else if (siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger followed by an interactive element — this is what the HTML parser produces from a <button>/<Button> nested inside the trigger. Use <${componentName} asChild> to adopt your element instead.`
     )
   }
 }
