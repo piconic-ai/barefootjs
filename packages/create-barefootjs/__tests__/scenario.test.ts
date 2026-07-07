@@ -113,6 +113,9 @@ describe('Scenario: bun create barefootjs@latest --help', () => {
     expect(r.stdout).toContain('--adapter')
     // Both top-level flags are documented.
     expect(r.stdout).toMatch(/-y, --yes/)
+    // Points users at --list-adapters instead of hardcoding the id
+    // list (which would drift as adapters are added/removed).
+    expect(r.stdout).toContain('--list-adapters')
     expect(readdirSync(cwd)).toHaveLength(0)
   })
 
@@ -120,5 +123,47 @@ describe('Scenario: bun create barefootjs@latest --help', () => {
     const r = runCreate(['-h'], { cwd: mktmp() })
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('Usage:')
+  })
+})
+
+describe('Scenario: --list-adapters (#2122)', () => {
+  test('prints adapter ids and the CSS library options, exits 0, and creates nothing', () => {
+    const cwd = mktmp()
+    const r = runCreate(['--list-adapters'], { cwd })
+    expect(r.exitCode).toBe(0)
+    for (const id of ['hono', 'hono-node', 'echo', 'gin', 'chi', 'nethttp', 'mojo', 'xslate', 'csr']) {
+      expect(r.stdout).toContain(id)
+    }
+    expect(r.stdout).toContain('unocss')
+    expect(r.stdout).toContain('none')
+    // Handled before the directory/prompt flow — no "Target directory"
+    // confirmation, no project name prompt, nothing written to cwd.
+    expect(r.stdout).not.toContain('Target directory')
+    expect(readdirSync(cwd)).toHaveLength(0)
+  })
+})
+
+describe('Scenario: a failed init leaves no directory behind (#2122)', () => {
+  test('an unrecognized --adapter (e.g. a bare language name) removes the directory it created', () => {
+    const cwd = mktmp()
+    const r = runCreate(['go-app', '--', '--adapter', 'go'], { cwd })
+    expect(r.exitCode).not.toBe(0)
+    // The Go-specific alias hint from `bf init` reaches the user.
+    expect(r.stderr).toContain('unknown adapter "go"')
+    expect(r.stderr).toContain('echo, gin, chi, nethttp')
+    // No leftover empty "go-app" directory for the user to clean up.
+    expect(readdirSync(cwd)).toHaveLength(0)
+  })
+
+  test('a pre-existing empty directory is left alone (not removed) on failure', () => {
+    const cwd = mktmp()
+    const projectDir = path.join(cwd, 'go-app')
+    mkdirSync(projectDir)
+
+    const r = runCreate(['go-app', '--', '--adapter', 'go'], { cwd })
+    expect(r.exitCode).not.toBe(0)
+    // Directory pre-existed before this run, so it's never removed —
+    // only directories *created by this run* are cleaned up.
+    expect(existsSync(projectDir)).toBe(true)
   })
 })

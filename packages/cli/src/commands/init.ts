@@ -25,7 +25,7 @@ import {
   type AdapterTemplate,
 } from '../lib/templates'
 import { detectPackageManager, commandsFor, testRunnerFor, type PackageManager } from '../lib/pm'
-import { select, SelectCancelled } from '../lib/select'
+import { select, SelectCancelled, confirmationLabel } from '../lib/select'
 import { startSpinner } from '../lib/spinner'
 import { processCssHead, stripUnocssFromScript, stripUnoGitignore } from '../lib/css'
 import {
@@ -121,6 +121,13 @@ function parseFlags(args: string[]): InitFlags {
 // guaranteed to run, so we can't half-scaffold over a populated tree.
 const INIT_GATE_ENV = 'BAREFOOT_INIT_VIA_CREATE'
 
+// Prompt copy shared between the interactive `select()` call and the
+// non-interactive confirmation line printed when the choice is
+// resolved via flag / `--yes` default (see `printSelectConfirmation`
+// below) — keeping both paths' transcripts word-for-word identical.
+const ADAPTER_SELECT_MESSAGE = 'Choose a framework or runtime'
+const CSS_SELECT_MESSAGE = 'Choose a CSS library'
+
 export async function run(args: string[], ctx: CliContext): Promise<void> {
   if (process.env[INIT_GATE_ENV] !== '1') {
     console.error('`bf init` is internal — invoke it via `npm create barefootjs@latest`.')
@@ -130,6 +137,15 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
     console.error('  # or: bun create barefootjs')
     console.error('  # or: pnpm create barefootjs')
     process.exit(1)
+  }
+
+  // `--list-adapters` is a read-only lookup — handled before the
+  // config-exists guard below so it works anywhere (including inside
+  // an already-initialized project directory), but after the gate
+  // above so `bf init` stays strictly internal either way.
+  if (args.includes('--list-adapters')) {
+    printAdapterList()
+    process.exit(0)
   }
 
   const projectDir = process.cwd()
@@ -211,6 +227,18 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
   printAppNextSteps(projectDir, adapter)
 }
 
+// Targeted hints for common language-name inputs that aren't adapter
+// ids themselves — `--adapter go` / `--adapter perl` are the most
+// frequent "papercut" from docs/landing copy that talks about
+// language support ("Go", "Perl") without spelling out which
+// concrete adapter id to pass. Keyed lowercase; looked up
+// case-insensitively so `--adapter Go` / `--adapter GO` also hit.
+const LANGUAGE_ADAPTER_HINTS: Record<string, string> = {
+  go: 'Go apps use one of the Go web-framework adapters: echo, gin, chi, nethttp (e.g. --adapter chi)',
+  golang: 'Go apps use one of the Go web-framework adapters: echo, gin, chi, nethttp (e.g. --adapter chi)',
+  perl: 'Perl apps use one of the Perl adapters: mojo, xslate (e.g. --adapter mojo)',
+}
+
 // Resolve the adapter by precedence: explicit `--adapter` flag (validated)
 // > interactive selector when stdin is a TTY and 2+ adapters are
 // registered > the registry default. The selector itself short-circuits
@@ -219,10 +247,19 @@ export async function run(args: string[], ctx: CliContext): Promise<void> {
 async function resolveAdapter(flag: string | undefined): Promise<string> {
   if (flag) {
     if (!ADAPTERS[flag]) {
-      const known = Object.keys(ADAPTERS).join(', ')
-      console.error(`Error: unknown adapter "${flag}". Available: ${known}`)
+      const hint = LANGUAGE_ADAPTER_HINTS[flag.toLowerCase()]
+      if (hint) {
+        console.error(`Error: unknown adapter "${flag}". ${hint}`)
+      } else {
+        const known = Object.keys(ADAPTERS).join(', ')
+        console.error(`Error: unknown adapter "${flag}". Available: ${known}`)
+      }
       process.exit(1)
     }
+    // Non-interactive resolution (explicit flag, or `--yes`'s forwarded
+    // default) still gets a "✔ ..." confirmation line so the transcript
+    // shows what was chosen — same wording the interactive picker uses.
+    printSelectConfirmation(ADAPTER_SELECT_MESSAGE, ADAPTERS[flag])
     return flag
   }
   const options = Object.entries(ADAPTERS).map(([value, t]) => ({
@@ -234,7 +271,7 @@ async function resolveAdapter(flag: string | undefined): Promise<string> {
     // The internal term is "adapter" (matches `--adapter` and the
     // architecture docs), but new users don't have that vocabulary
     // yet — the prompt phrases the choice in user-facing terms.
-    return await select({ message: 'Choose a framework or runtime', options, defaultValue: DEFAULT_ADAPTER })
+    return await select({ message: ADAPTER_SELECT_MESSAGE, options, defaultValue: DEFAULT_ADAPTER })
   } catch (err) {
     bailOnSelectError(err)
   }
@@ -247,13 +284,46 @@ async function resolveCssLibrary(flag: string | undefined): Promise<string> {
       console.error(`Error: unknown CSS library "${flag}". Available: ${known}`)
       process.exit(1)
     }
+    printSelectConfirmation(CSS_SELECT_MESSAGE, CSS_LIBRARIES[flag])
     return flag
   }
   const options = Object.entries(CSS_LIBRARIES).map(([value, t]) => ({ value, label: t.label }))
   try {
-    return await select({ message: 'Choose a CSS library', options, defaultValue: DEFAULT_CSS_LIBRARY })
+    return await select({ message: CSS_SELECT_MESSAGE, options, defaultValue: DEFAULT_CSS_LIBRARY })
   } catch (err) {
     bailOnSelectError(err)
+  }
+}
+
+// Prints the same "✔ <message> <label>" confirmation `select()` renders
+// after an interactive pick (see select.ts), for choices resolved
+// without ever going through the prompt (an explicit flag, or `--yes`'s
+// forwarded defaults). Keeps the interactive and non-interactive
+// transcripts read identically. Colorized only in a TTY, matching the
+// rest of init's/create-barefootjs's output conventions.
+function printSelectConfirmation(message: string, opt: { label: string; shortLabel?: string }): void {
+  const label = confirmationLabel(opt)
+  const highlighted = process.stdout.isTTY ? `\x1b[1;32m${label}\x1b[0m` : label
+  console.log(`✔ ${message} ${highlighted}`)
+}
+
+// `--list-adapters` — a quick, offline way to discover valid `--adapter`
+// ids (and the CSS library options) without stumbling into the generic
+// "unknown adapter" error first. One line per entry, ids left-aligned
+// so labels line up in a column.
+function printAdapterList(): void {
+  const adapterIds = Object.keys(ADAPTERS)
+  const idWidth = Math.max(...adapterIds.map((id) => id.length))
+  console.log('Adapters (--adapter <id>):')
+  for (const id of adapterIds) {
+    console.log(`  ${id.padEnd(idWidth)}  ${ADAPTERS[id].label}`)
+  }
+  console.log('')
+  const cssIds = Object.keys(CSS_LIBRARIES)
+  const cssWidth = Math.max(...cssIds.map((id) => id.length))
+  console.log('CSS libraries (--css <id>):')
+  for (const id of cssIds) {
+    console.log(`  ${id.padEnd(cssWidth)}  ${CSS_LIBRARIES[id].label}`)
   }
 }
 
