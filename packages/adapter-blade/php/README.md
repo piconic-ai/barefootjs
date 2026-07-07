@@ -11,7 +11,7 @@ runtime as a `$bf` object (`{{ $bf->scope_attr() }}`, `{{ $bf->json($x) }}`,
 
 The engine-agnostic runtime itself (`Barefoot\BarefootJS`, `Evaluator`,
 `SearchParams`, `Json`) lives in a separate package,
-[`packages/adapter-php`](../../adapter-php) (`barefootjs/runtime` on
+[`packages/adapter-php`](../../adapter-php) (`barefootjs/php` on
 Composer) -- see that package's README for the backend contract every PHP
 engine adapter (Twig, Blade, ...) implements.
 
@@ -21,7 +21,7 @@ Packagist-facing repository only for Composer distribution.
 - Source of truth: <https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-blade/php>
 - Monorepo: <https://github.com/piconic-ai/barefootjs>
 - npm adapter: `@barefootjs/blade`
-- Runtime dependency: `barefootjs/runtime` (`packages/adapter-php`)
+- Runtime dependency: `barefootjs/php` (`packages/adapter-php`)
 
 Do not send implementation pull requests to the Packagist mirror. Send changes to
 the monorepo path above; the release workflow splits this directory and pushes the

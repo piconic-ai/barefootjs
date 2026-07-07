@@ -30,7 +30,8 @@
 #     @barefootjs/erb          RubyGems barefoot_js
 #     @barefootjs/rust         crates.io barefootjs
 #     @barefootjs/twig         Packagist barefootjs/twig (via split mirror)
-#     @barefootjs/php          Packagist barefootjs/runtime (via split mirror,
+#     @barefootjs/blade        Packagist barefootjs/blade (via split mirror)
+#     @barefootjs/php          Packagist barefootjs/php (via split mirror,
 #                              packages/adapter-php -- the engine-agnostic
 #                              runtime shared by the Twig/Blade/... backends)
 
@@ -258,9 +259,9 @@ jobs:
           php-version: '8.2'
           tools: composer
 
-      - name: Validate PHP runtime
+      - name: Validate Twig backend package
         working-directory: packages/adapter-twig/php
-        # NOT --strict: this package intentionally requires barefootjs/runtime
+        # NOT --strict: this package intentionally requires barefootjs/php
         # as an unbound `@dev` constraint (resolved via the `path` repository
         # pointing at ../../adapter-php, see composer.json) so the in-monorepo
         # dependency doesn't need a manually-maintained semver range kept in
@@ -273,7 +274,7 @@ jobs:
             composer test
           fi
 
-      - name: Push PHP runtime split to Packagist mirror
+      - name: Push Twig backend split to Packagist mirror
         env:
           PHP_SPLIT_REPOSITORY: ${{ vars.PHP_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-twig' }}
           PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
@@ -284,22 +285,92 @@ jobs:
 
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git branch -D php-runtime-release 2>/dev/null || true
-          git subtree split --prefix=packages/adapter-twig/php -b php-runtime-release
+          git branch -D php-twig-release 2>/dev/null || true
+          git subtree split --prefix=packages/adapter-twig/php -b php-twig-release
+
+          split_dir=$(mktemp -d)
+          git worktree add "$split_dir" php-twig-release
+          jq --arg version "$version" 'del(.repositories) | .require["barefootjs/php"] = $version' \
+            "$split_dir/composer.json" > "$split_dir/composer.json.tmp"
+          mv "$split_dir/composer.json.tmp" "$split_dir/composer.json"
+          composer validate --working-dir="$split_dir" --strict
+          git -C "$split_dir" add composer.json
+          git -C "$split_dir" commit -m "chore: prepare barefootjs/twig ${version} for Packagist"
+          split_ref=$(git -C "$split_dir" rev-parse HEAD)
 
           remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_SPLIT_REPOSITORY}.git"
-          git push --force "$remote" php-runtime-release:main
-          git tag -f "v${version}" php-runtime-release
+          git push --force "$remote" "${split_ref}:main"
+          git tag -f "v${version}" "$split_ref"
           git push --force "$remote" "v${version}"
+          git worktree remove "$split_dir" --force
+
+  packagist-blade-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/blade')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Validate Blade backend package
+        working-directory: packages/adapter-blade/php
+        # NOT --strict: this package intentionally requires barefootjs/php
+        # as an unbound `@dev` constraint resolved through the monorepo path
+        # repository, matching the Twig backend package.
+        run: |
+          composer validate
+          composer install --no-interaction --prefer-dist
+          if jq -e '.scripts.test' composer.json > /dev/null 2>&1; then
+            composer test
+          fi
+
+      - name: Push Blade backend split to Packagist mirror
+        env:
+          PHP_BLADE_SPLIT_REPOSITORY: ${{ vars.PHP_BLADE_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-blade' }}
+          PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
+        run: |
+          version=$(jq -r '.version' packages/adapter-blade/package.json)
+          test -n "$version"
+          test "$version" != "null"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git branch -D php-blade-release 2>/dev/null || true
+          git subtree split --prefix=packages/adapter-blade/php -b php-blade-release
+
+          split_dir=$(mktemp -d)
+          git worktree add "$split_dir" php-blade-release
+          jq --arg version "$version" 'del(.repositories) | .require["barefootjs/php"] = $version' \
+            "$split_dir/composer.json" > "$split_dir/composer.json.tmp"
+          mv "$split_dir/composer.json.tmp" "$split_dir/composer.json"
+          composer validate --working-dir="$split_dir" --strict
+          git -C "$split_dir" add composer.json
+          git -C "$split_dir" commit -m "chore: prepare barefootjs/blade ${version} for Packagist"
+          split_ref=$(git -C "$split_dir" rev-parse HEAD)
+
+          remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_BLADE_SPLIT_REPOSITORY}.git"
+          git push --force "$remote" "${split_ref}:main"
+          git tag -f "v${version}" "$split_ref"
+          git push --force "$remote" "v${version}"
+          git worktree remove "$split_dir" --force
+
 
   # Mirrors packagist-release's shape for the engine-agnostic PHP runtime
-  # package (packages/adapter-php, Composer name barefootjs/runtime) --
+  # package (packages/adapter-php, Composer name barefootjs/php) --
   # gated on @barefootjs/php (not @barefootjs/twig) being the package
   # Changesets just published, since the runtime and the Twig backend are
   # versioned/published independently.
   packagist-runtime-release:
     needs: release
-    if: needs.release.outputs.published == 'true' && contains(needs.release.outputs.publishedPackages, '"name":"@barefootjs/php"')
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/php')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -324,7 +395,7 @@ jobs:
 
       - name: Push PHP runtime split to Packagist mirror
         env:
-          PHP_RUNTIME_SPLIT_REPOSITORY: ${{ vars.PHP_RUNTIME_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-runtime' }}
+          PHP_RUNTIME_SPLIT_REPOSITORY: ${{ vars.PHP_RUNTIME_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-php' }}
           PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
         run: |
           version=$(jq -r '.version' packages/adapter-php/package.json)

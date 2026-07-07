@@ -39,9 +39,22 @@ templates (`.twig`).
 
 ## Composer
 
-The Packagist distribution name is `barefootjs/runtime`. The npm package
+The Packagist distribution name is `barefootjs/php`. The npm package
 ships the same `src/` so the monorepo integrations can consume it without a
 separate install.
+
+
+This package is maintained in the BarefootJS monorepo and is mirrored to a
+Packagist-facing repository only for Composer distribution.
+
+- Source of truth: <https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-php>
+- Monorepo: <https://github.com/piconic-ai/barefootjs>
+- npm package: `@barefootjs/php`
+- Composer package: `barefootjs/php`
+
+Do not send implementation pull requests to the Packagist mirror. Send changes to
+the monorepo path above; the release workflow splits this directory and pushes the
+mirror automatically.
 
 ## Tests
 

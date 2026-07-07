@@ -1,5 +1,5 @@
 {
-    "name": "barefootjs/runtime",
+    "name": "barefootjs/php",
     "description": "Engine-agnostic PHP runtime for BarefootJS -- the shared BarefootJS.php runtime the Twig, Blade, and other PHP engine adapters bind as a pluggable backend.",
     "type": "library",
     "license": "MIT",
