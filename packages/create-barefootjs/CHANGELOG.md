@@ -1,5 +1,22 @@
 # create-barefootjs
 
+## 0.18.0
+
+### Patch Changes
+
+- d6eb672: Adapter discovery: `--list-adapters` prints every adapter id + CSS library option; `--adapter go`/`golang`/`perl` now get a targeted hint naming the concrete adapter ids instead of the generic unknown-adapter error; a failed init no longer leaves an empty target directory behind; adapter/css choices resolved via flags or `--yes` print the same "✔" confirmation lines as the interactive picker.
+- Updated dependencies [d6eb672]
+- Updated dependencies [ee52d11]
+- Updated dependencies [0636582]
+- Updated dependencies [f20a0a3]
+- Updated dependencies [abde658]
+- Updated dependencies [693b6cc]
+- Updated dependencies [fa03384]
+- Updated dependencies [e76405d]
+- Updated dependencies [9a9fb09]
+- Updated dependencies [f126fdf]
+  - @barefootjs/cli@0.18.0
+
 ## 0.17.1
 
 ### Patch Changes

@@ -1,25 +1,9 @@
-# @barefootjs/rust
+# @barefootjs/erb
 
 ## 0.18.0
 
 ### Minor Changes
 
-- 0e6aeeb: New Rust backend adapter targeting minijinja. `MinijinjaAdapter` is a
-  near-verbatim port of the Jinja2 adapter's (`@barefootjs/jinja`) IR
-  lowering — the emitted template syntax is IDENTICAL (`{{ … }}` / `{% if %}`
-  / `{% for %}` / `{% set %}` / `{'k': v}` dict literals), since minijinja
-  2.x is Jinja2-compatible for everything this adapter emits. The package
-  bundles a Rust runtime (`packages/adapter-rust/runtime/`, crate
-  `barefootjs`) — a port of the Python `barefootjs` runtime with a
-  `backend_minijinja` module implementing the engine backend contract
-  (`encode_json`, `mark_raw`, `materialize`, `render_named`) on a
-  `minijinja::Environment` configured with `ChainableUndefined`,
-  `trim_blocks`/`lstrip_blocks`, HTML autoescape, and a custom formatter
-  (MarkupSafe-compatible `&#39;` escaping, JS-shaped number formatting).
-  Templates call the same snake_case `bf.<helper>` surface as every other
-  adapter, with `bf.truthy` / `bf.string` covering JS-vs-template-engine
-  semantic divergences. Runs under any Rust web framework (axum,
-  actix-web, warp, bare `hyper`, etc.) — no framework-specific glue required.
 - 99cfd04: Support `x ?? {}` (an empty object-literal `??` fallback) on every SSR template adapter (#2087), fixing the `chart` UI component's `<ChartConfigContext.Provider value={{ config: props.config ?? {} }}>`, the last remaining `ui/compat.lock.json` failures (erb, jinja, minijinja, mojolicious, twig, xslate all now `ok: true` — 496/496).
 
   The shared `isSupported` gate (`packages/jsx/src/expression-parser.ts`) previously refused any expression containing a standalone object literal, including one used only as `??`'s fallback operand. `logical` now narrowly admits an EMPTY object-literal right operand of `??` specifically — not `&&`/`||`, and not a non-empty object literal, both of which still refuse. Every template adapter's `??` lowering already had a correct definedness test; only the right-operand VALUE emit needed to change: erb/jinja/minijinja/twig/xslate/mojolicious's `objectLiteral` dispatcher now emits the language's real empty dict/hashref literal (`{}`) for the zero-property case, matching the `'{}'` convention their spread-codegen (`objectLiteralToXxx`) already used, instead of the filter-context truthy sentinel leaking into value position.
@@ -30,6 +14,7 @@
 
   New conformance fixture `context-provider-nullish-object-fallback` pins the exact chart shape (a context-provider value member falling back to `?? {}`, consumed by a child reading a missing key off it) across all seven template adapters, including go-template — no adapter skips it; `go run` executes the generated component for real.
 
+- e0a56e3: Add `@barefootjs/erb` — an ERB (Embedded Ruby) adapter that compiles BarefootJS IR to `.erb` templates and ships a stdlib-only Ruby rendering runtime (Ruby 3.3). Because the rendering backend is framework-agnostic, it runs under any Rack app (Sinatra, Rails, plain Rack) — no framework-specific plugin required. The full conformance corpus is green (compiler unit tests, adapter conformance fixtures, CSR conformance, and a live-render Ruby minitest suite), and a Sinatra integration example demonstrates end-to-end usage.
 - 477406d: Dynamic `.flat(depth)` and a widened `ParsedExpr` runtime evaluator, across all six runtime implementations (#2094, refs #2069).
 
   - **Dynamic `.flat(depth)`**: a non-literal depth expression (a numeric prop, signal read, arithmetic, …) that itself resolves to a supported `ParsedExpr` is now accepted instead of refusing with BF101 — the depth is coerced at render time per JS `ToIntegerOrInfinity` (truncate toward zero; NaN / negative → `0`; `Infinity` / a huge finite value → flatten fully). The `array-method`/`flat` IR node gains an optional `depthExpr`; the shared `flatMethod` emitter interface widens to `FlatDepth | { expr: ParsedExpr }`. Every runtime routes a dynamic depth through a NEW `flat_dynamic`-family helper (Go `bf_flat_dynamic`/`FlatDynamicDepth`, Perl `bf->flat_dynamic`, Ruby/Python/PHP `flat_dynamic`, Rust `bf.flat_dynamic`) — deliberately separate from the existing `flat` helper (whose `-1` argument is a compile-time sentinel meaning "flatten fully", the opposite of what a genuinely dynamic `-1` means per JS). Coercion parity is pinned by new `flat_dynamic` golden helper vectors run by every backend.
@@ -37,14 +22,6 @@
   - **`.flatMap(fn, thisArg)`**: the already-correct 2-arg form (the parser has always kept `thisArg`, and every adapter has always ignored it — arrows ignore `this`) is now pinned by a conformance fixture.
 
   New conformance fixtures (`array-flat-dynamic-depth`, `array-flatmap-nested-map`, `array-flatmap-nested-filter-join`, `array-flatmap-thisarg`) run on every adapter.
-
-- 2d64f28: Lower `{...props}` component-spread props on the Jinja, MiniJinja, and Xslate adapters instead of refusing them with BF101 — porting the segment-based fold the Twig adapter shipped with previously.
-
-  Jinja and MiniJinja have no dict-splat syntax that flattens past a single `**` per call (CPython's `dict()` builtin raises `TemplateSyntaxError` on more than one `**` argument), so `renderComponent` now builds each child's props dict as an ordered sequence of segments — literal `{'k': v, ...}` dict entries and spread expressions — and folds them into one expression via NESTED `dict(base, **top)` calls, later segment winning on key conflict (matching JSX's `{...a, ...b}` / `Object.assign` semantics). A spread operand is wrapped `(EXPR or {})` before unpacking: `**`-unpacking an undefined/none bag raises even though Jinja's `ChainableUndefined` (Python) / `UndefinedBehavior::Chainable` (minijinja) tolerate chained member access on it, so the `or {}` guard normalises a missing bag (e.g. `children.props` when `children` was never passed) to an empty dict first. Verified against real jinja2 3.1.6 (Python) and the minijinja crate v2 (Rust).
-
-  Xslate's Kolon dialect has no hash-splat syntax at all (`%$hash`-into-hashref-literal is a parse error), so its `renderComponent` instead folds the same ordered segments via chained `.merge(...)` calls — Kolon's builtin hash method, later argument wins. A spread operand is wrapped `(EXPR // {})`: `.merge(undef)` warns "Merging value is not a HASH reference" on real Text::Xslate 3.5.9, so the defined-or guard is required.
-
-  This unblocks the site/ui `Slot` polymorphism pattern (`<Slot className={classes} {...props}>`) used by `badge`, `breadcrumb`, `button`, `button-group`, `icon`, `item`, `kbd`, and `slot` itself, all of which previously failed to compile on these three adapters. The `button` and `kbd` pins in each package's `conformance-pins.ts` graduate from an expected-BF101 diagnostic contract to real rendered-HTML conformance.
 
 - 36fec0e: Lower array-index / nested / rest destructure `.map()` callback params on all template adapters (#2087, refs #2069).
 
@@ -69,28 +46,3 @@
 - 6c13ce7: `@barefootjs/jsx` exports `ConformancePin` / `ConformancePins` types, and each adapter package now exports its conformance `expectedDiagnostics` pin set as a structured `conformancePins` module (with `issue:` URLs) consumed by its own conformance test. These structured pins also feed a repo-internal component × adapter compile-compatibility matrix (`ui/compat.lock.json`, regenerated with `bun run compat:lock` and drift-checked in CI) that is not part of the published CLI or any published package's runtime surface.
 - 8cb982c: Fix `props_attr` truncating the `bf-p` hydration payload: the encoded props JSON is embedded in a single-quoted attribute, so a raw `'` inside any string value (e.g. a blog paragraph) terminated the attribute early and the client hydrated from broken JSON (island text bound to props rendered empty). The JSON is now attribute-escaped with each runtime's existing HTML escape (`&#34;`/`&#39;`, matching the Go and JS adapters' behavior); the browser entity-decodes the attribute, so the client's `JSON.parse` sees the original text. Same fix applied to the Perl, Python, Ruby, and Rust runtimes, each with a new `props_attr` round-trip test.
   - @barefootjs/shared@0.18.0
-
-## 0.1.0
-
-### Minor Changes
-
-- Add `@barefootjs/rust` — a minijinja adapter that compiles BarefootJS IR to
-  `.j2` templates and ships a Rust `barefootjs` rendering runtime (bundled
-  under `runtime/`). Because the rendering backend is a plain
-  `minijinja::Environment`, it runs under any Rust web framework (axum,
-  actix-web, warp, bare `hyper`, etc.) — no framework-specific glue required.
-
-  Near-verbatim port of `@barefootjs/jinja`'s Jinja2 adapter to the
-  `minijinja` Rust crate — the emitted template syntax is IDENTICAL
-  (`{{ X }}`, `{{ X | safe }}`, `bf.m(...)`, `{% if C %}...{% endif %}`,
-  `{% for x in arr %}...{% endfor %}`, `{% set x = e %}`, `{'k': v}` dict
-  literals), verified compatible against minijinja 2.21.0 (`ChainableUndefined`
-  behavior, `trim_blocks`/`lstrip_blocks`, autoescape, `{% set %}...{% endset %}`
-  capture blocks, `~` concat, `| safe`, custom `Object` method calls, and
-  Python-like truthiness all confirmed equivalent). Only identity fields
-  differ (`name: 'minijinja'`, `extension: '.j2'`, class `MinijinjaAdapter`)
-  plus the render engine that interprets the syntax (a Rust
-  `minijinja::Environment` instead of Python's `jinja2.Environment`), via a
-  custom minijinja formatter that absorbs the remaining JS-semantics
-  divergences uniformly (MarkupSafe-compatible `&#39;` escaping, JS-shaped
-  number formatting, `true`/`false` bool literals).

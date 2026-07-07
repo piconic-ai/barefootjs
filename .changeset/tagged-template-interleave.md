@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": minor
----
-
-A tagged-template classname callee (`className={cn\`base ${tone()}\`}`) now resolves the tag identifier one hop through same-file scope (reusing #2090's `findLocalConst` / `findLocalFunction`) and, when the resolved function structurally matches the "interleave tag" catalogue (`function cn(parts, ...args) { return parts.reduce((acc, p, i) => acc + p + (args[i] ?? ''), '') }`, `String(...)`-wrapped span accepted), desugars the whole tagged template to the equivalent untagged template literal before the rest of the compiler ever sees it (#2092). The rewritten node flows through the existing template-literal / dependency-analysis / client-JS-binding pipeline unchanged, so the reactive signal dependency inside the placeholder is now analysed and every adapter — not just Hono/CSR — renders and hydrates it, no adapter changes required. An unresolved tag (imported, computed, non-rest signature) or an off-catalogue resolved body is left untouched, preserving today's BF101 refusal (with the `/* @client */` workaround) byte-for-byte.
