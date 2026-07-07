@@ -463,12 +463,23 @@ export function escapeAttr(value: unknown): string {
  * slots). The HTML spec only requires `& < >` in text, but the SSR
  * adapters (Hono) escape text with the same set as attribute values
  * (`& " ' < >`), and the fixture-hydrate / CSR-conformance layer requires
- * byte-parity with the server-rendered output — so this delegates to
- * `escapeAttr`. Kept as a distinct export so generated code reads
+ * byte-parity with the server-rendered output — so the escaping delegates
+ * to `escapeAttr`. Kept as a distinct export so generated code reads
  * `escapeText(...)` at text sites (self-documenting) and so the two
- * contexts can diverge later without touching call sites.
+ * contexts can diverge (as they now do for nullish) without touching call
+ * sites.
+ *
+ * A nullish value renders as empty text — the JSX/Solid semantics the Hono
+ * SSR reference follows (`{undefined}` / `{null}` produce no text), and
+ * what the reactive text-update path already does (`dynamic-text.ts` and
+ * `client-marker.ts` both `String(value ?? '')`). Only this initial-render
+ * escape site used to stringify `undefined` / `null` into literal
+ * "undefined" / "null" text, so a bare `{props.x}` on an absent prop
+ * diverged from SSR at first paint (#2137). Non-nullish values (including
+ * `0` and `false`) keep their `String()` form, matching the reactive path.
  */
 export function escapeText(value: unknown): string {
+  if (value == null) return ''
   return escapeAttr(value)
 }
 
