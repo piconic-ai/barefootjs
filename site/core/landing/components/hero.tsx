@@ -44,7 +44,7 @@ export function Hero({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: string
         <p className="lp-hero-sub">
           BarefootJS compiles TSX components into your backend's own templates —{' '}
           <strong>Go, Rails, Django, Perl, PHP, Rust</strong>. Your server renders them.
-          A small hydration runtime (~14&nbsp;kB gzipped) makes them interactive. Node never ships.
+          A small hydration runtime (~14&nbsp;kB min+gzip) makes them interactive. Node never ships.
         </p>
         <div className="lp-cta-row">
           <a className="lp-btn lp-btn-primary" href="/docs/quick-start">Get started</a>
@@ -106,7 +106,7 @@ export async function DemoSection() {
         <p className="demo-note">
           It's a compiler, not a framework. TSX and type-checking exist at build time,
           like a Sass compiler. At runtime there is only your template engine and one
-          small <code>~14&nbsp;kB</code> hydration script.
+          small <code>~14&nbsp;kB min+gzip</code> hydration script.
         </p>
       </div>
       <script dangerouslySetInnerHTML={{ __html: DEMO_TABS_SCRIPT }} />

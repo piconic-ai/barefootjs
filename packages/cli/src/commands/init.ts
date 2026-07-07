@@ -33,6 +33,7 @@ import {
   SHARED_COUNTER_BARE_TEST_TSX,
   UNOCSS_DEV_DEPENDENCIES,
 } from '../lib/adapters/shared'
+import { generateReadmeMd } from '../lib/readme'
 
 const thisFile = fileURLToPath(import.meta.url)
 
@@ -457,6 +458,17 @@ async function scaffoldApp(
     JSON.stringify({ version: 1, generatedAt: new Date().toISOString(), components: [] }, null, 2) + '\n',
   )
   created++
+
+  // README.md — getting-started commands (using the detected PM), the
+  // adapter's build/deploy story, a `bf` CLI cheat-sheet, and a note
+  // that the compiled output directory is generated (issue #2124).
+  // Skip if the target dir already has one (e.g. re-running init into a
+  // directory with a hand-written README the user doesn't want clobbered).
+  const readmePath = path.join(projectDir, 'README.md')
+  if (!existsSync(readmePath)) {
+    writeFileSync(readmePath, generateReadmeMd(pkgName, adapter, pm))
+    created++
+  }
 
   // package.json — merge adapter scripts/deps with a sensible default.
   const pkgJsonPath = path.join(projectDir, 'package.json')
