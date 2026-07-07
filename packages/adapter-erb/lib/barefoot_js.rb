@@ -324,12 +324,14 @@ module BarefootJS
           extra[name] = props.key?(name) ? props[name] : d[:value]
           next
         end
-        # `propName` rides in from the JSON manifest as a String, but every
-        # runtime prop hash is symbol-keyed (`JSON.parse(..., symbolize_names:
-        # true)`; compiled templates pass `{ children: ... }` literals) --
-        # `props.key?(prop_name)` with a String would always miss, silently
-        # falling back to the static default for every manifest-registered
-        # child (e.g. `children` rendering empty) (#2157).
+        # `propName` rides in from the JSON manifest as a String -- JSON has
+        # no symbol type, and the manifest's `symbolize_names: true` parse
+        # only symbolizes hash KEYS, never string values. Runtime prop
+        # hashes, meanwhile, are symbol-keyed because compiled ERB templates
+        # pass `{ children: ... }` literals, so `props.key?(prop_name)` with
+        # the String would always miss, silently falling back to the static
+        # default for every manifest-registered child (e.g. `children`
+        # rendering empty) (#2157).
         prop_name = d[:propName]&.to_sym
         extra[name] =
           if !prop_name.nil? && props.key?(prop_name) && !props[prop_name].nil?

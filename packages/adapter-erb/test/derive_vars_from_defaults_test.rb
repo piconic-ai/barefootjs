@@ -2,7 +2,6 @@
 
 require 'minitest/autorun'
 require 'tmpdir'
-require 'fileutils'
 require 'barefoot_js'
 require 'barefoot_js/backend/erb'
 
