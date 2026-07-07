@@ -2016,40 +2016,6 @@
           ]
         }
       },
-      "falsy-text-values": {
-        "blade": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`{false}` renders \"false\" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders \"null\") — neither side matches JSX semantics"
-        }
-      },
       "filter-nested-callback-predicate": {
         "blade": {
           "kind": "refusal",

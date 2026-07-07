@@ -207,11 +207,8 @@ describe('CSR Conformance Tests', () => {
     // Hono + client pipeline itself, surfaced by the new fixtures. Each
     // entry is a REAL divergence (not a harness artifact) — the skip
     // documents it until the compiler/runtime reconciles the two paths:
-    //   - `falsy-text-values`: CSR stringifies `{false}` → "false" while
-    //     SSR drops it; SSR renders `{null}`/`{undefined}` → "null" while
-    //     CSR drops them. Both sides also disagree with JSX semantics
-    //     (0 renders; false/null/undefined render nothing).
-    'falsy-text-values',
+    //   (`falsy-text-values` graduated — #2171 folds the render-nothing
+    //   literals in Phase 1, so SSR and CSR now agree by construction.)
     //   - `html-entity-text`: `&copy;` in JSX literal text is decoded to
     //     `©` by SSR but passed through as the raw entity by the CSR
     //     template string (same DOM after parse, different bytes).

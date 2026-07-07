@@ -15,8 +15,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'falsy-text-values':
-    '`{false}` renders "false" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders "null") — neither side matches JSX semantics',
   'html-entity-text':
     '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'optional-chaining-prop':

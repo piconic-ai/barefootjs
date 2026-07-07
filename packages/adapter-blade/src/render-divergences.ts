@@ -19,8 +19,6 @@ export const renderDivergences: RenderDivergences = {
     '`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)',
   'string-concat-plus':
     '`\'Hello, \' + name` is emitted as PHP `+`, which fatals with "Unsupported operand types: string + string" — needs PHP\'s `.` concat',
-  'falsy-text-values':
-    '`{false}` renders "false" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders "null") — neither side matches JSX semantics',
   'html-entity-text':
     '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'math-methods':
