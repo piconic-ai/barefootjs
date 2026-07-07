@@ -1,0 +1,51 @@
+# Runtime toolchain for BarefootJS.
+#
+# Versions are kept in sync with CI so local builds/tests match what runs in
+# GitHub Actions. Update these together with the corresponding workflow pins.
+#
+# Note: TypeScript is NOT a mise tool — it ships as the `typescript` dev
+# dependency and runs on bun/node.
+
+[tools]
+bun    = "1.3.14"  # .github/actions/setup-bun (default bun-version)
+node   = "22"      # actions/setup-node node-version: '22'
+go     = "1.25.6"  # go.mod: go 1.25.6 (integrations/*, adapter-go-template)
+rust   = "stable"  # dtolnay/rust-toolchain stable (integrations/axum, adapter-rust)
+ruby   = "3.3"     # ruby/setup-ruby ruby-version: '3.3' (integrations/rails, sinatra, adapter-erb)
+python = "3.12"    # actions/setup-python python-version: '3.12' (ci-python)
+
+# Composer is distributed as a self-contained phar. The `github` backend fetches
+# composer.phar straight from the composer/composer GitHub releases (with GitHub
+# artifact attestation verification) — no plugin, no PHP needed at install time.
+# `bin = "composer"` exposes the asset as `composer` (not `composer.phar`) so the
+# build scripts' bare `composer install` resolves.
+[tools."github:composer/composer"]
+version = "latest"
+bin = "composer"
+
+# PHP is a prebuilt static binary from static-php-cli (https://static-php.dev),
+# pulled via mise's built-in `http` backend — no third-party mise plugin and no
+# source build (which on macOS needs autoconf/automake/re2c/bison + GD/iconv/...
+# system libraries and per-machine configure paths, i.e. not reproducible).
+#
+# The full patch version is pinned and every platform's checksum is pinned, so
+# the install is byte-for-byte reproducible and integrity-verified even though
+# static-php.dev serves the binaries over a plain CDN.
+#
+# CI does not use this entry: the PHP test workflows (ci-php, ci-blade) use the
+# PHP/Composer preinstalled on the ubuntu-latest runner, and the release workflow
+# uses shivammathur/setup-php. This entry is for local `bun run build` / working
+# on the PHP adapters (adapter-php, adapter-blade, adapter-twig, integrations/
+# blade, integrations/php).
+#
+# To bump: pick a version listed under https://dl.static-php.dev/static-php-cli/bulk/
+# and refresh each checksum with:
+#   curl -fsSL <url> | shasum -a 256
+[tools."http:php"]
+version = "8.2.32"
+
+[tools."http:php".platforms]
+macos-arm64 = { url = "https://dl.static-php.dev/static-php-cli/bulk/php-8.2.32-cli-macos-aarch64.tar.gz", checksum = "sha256:3c1c359fe943aaaeb1168933b8e4b1597120c106d33bd66395fac403b6ab3ace" }
+macos-x64   = { url = "https://dl.static-php.dev/static-php-cli/bulk/php-8.2.32-cli-macos-x86_64.tar.gz",  checksum = "sha256:c8a0b022baea7c853c31d6f47b9f3ddaec132771e51afa050f03a406592990bb" }
+linux-arm64 = { url = "https://dl.static-php.dev/static-php-cli/bulk/php-8.2.32-cli-linux-aarch64.tar.gz", checksum = "sha256:e94cc88f535f4e20a931093bbd36aa74b1b48f4121954aa6d7310912a8aad26e" }
+linux-x64   = { url = "https://dl.static-php.dev/static-php-cli/bulk/php-8.2.32-cli-linux-x86_64.tar.gz",  checksum = "sha256:866532d2b463ff256d063432d529e966cc53e4a039109ccbfc4ee4dc51d649f1" }
