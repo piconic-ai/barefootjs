@@ -1,9 +1,14 @@
 [package]
 name = "barefootjs"
+# Placeholder — the crates-release job stamps the @barefootjs/rust version
+# resolved by changesets over this value before `cargo publish`.
 version = "0.1.0"
 edition = "2021"
 description = "Rust runtime for BarefootJS marked templates (minijinja adapter)."
 license = "MIT"
+readme = "README.md"
+homepage = "https://barefootjs.dev"
+repository = "https://github.com/piconic-ai/barefootjs"
 
 [lib]
 name = "barefootjs"

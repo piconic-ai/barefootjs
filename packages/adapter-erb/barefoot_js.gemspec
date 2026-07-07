@@ -17,8 +17,9 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = '>= 3.1'
 
-  s.files = Dir['lib/**/*.rb']
+  s.files = Dir['lib/**/*.rb'] + %w[README.md]
 
+  s.metadata['documentation_uri'] = 'https://barefootjs.dev'
   s.metadata['source_code_uri'] = 'https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-erb'
   s.metadata['rubygems_mfa_required'] = 'true'
 end
