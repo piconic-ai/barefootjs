@@ -54,7 +54,16 @@ function readCliVersion(): string {
   const bundledPkgJsonPath = path.resolve(path.dirname(thisFile), '../package.json')
   const devPkgJsonPath = path.resolve(path.dirname(thisFile), '../../package.json')
   const pkgJsonPath = existsSync(bundledPkgJsonPath) ? bundledPkgJsonPath : devPkgJsonPath
-  const { version } = JSON.parse(readFileSync(pkgJsonPath, 'utf-8')) as { version: string }
+  const { version } = JSON.parse(readFileSync(pkgJsonPath, 'utf-8')) as { version?: unknown }
+  // Validate before use: a missing/empty `version` would otherwise
+  // silently scaffold `"@barefootjs/*": "^undefined"`. Fail loudly and
+  // name the file read so a broken CLI package is diagnosable.
+  if (typeof version !== 'string' || version.length === 0) {
+    throw new Error(
+      `Could not read the CLI's own version from ${pkgJsonPath} — ` +
+        'cannot pin @barefootjs/* scaffold dependencies.',
+    )
+  }
   return version
 }
 

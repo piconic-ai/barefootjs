@@ -20,6 +20,7 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import { ADAPTERS } from '../lib/templates'
 
 const CLI_ENTRY = path.join(
   fileURLToPath(new URL('.', import.meta.url)),
@@ -85,9 +86,13 @@ describe('scaffolded package.json pins @barefootjs/* deps to the CLI version (#2
   })
 
   test('non-@barefootjs/* deps (hono, typescript, ...) pass through untouched', () => {
+    // Assert against the adapter template's own values rather than
+    // hardcoding version strings here — a routine hono/typescript bump
+    // in the template shouldn't fail this test; only a pass-through
+    // regression (the pin rewriting deps it must not touch) should.
     const pkg = scaffold('hono')
-    expect(pkg.dependencies.hono).toBe('^4.6.0')
-    expect(pkg.devDependencies.typescript).toBe('^5.6.0')
+    expect(pkg.dependencies.hono).toBe(ADAPTERS.hono.dependencies.hono)
+    expect(pkg.devDependencies.typescript).toBe(ADAPTERS.hono.devDependencies.typescript)
   })
 })
 
