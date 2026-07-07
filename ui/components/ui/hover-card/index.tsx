@@ -30,6 +30,17 @@
  *   </HoverCardContent>
  * </HoverCard>
  * ```
+ *
+ * @example Styled trigger (asChild)
+ * ```tsx
+ * // asChild swaps the styled trigger wrapper for a neutral display:contents span,
+ * // so the child keeps its own layout/styling — e.g. an existing Avatar component.
+ * <HoverCardTrigger asChild>
+ *   <Avatar>
+ *     <AvatarImage src="/user.png" alt="@username" />
+ *   </Avatar>
+ * </HoverCardTrigger>
+ * ```
  */
 
 import { createContext, useContext, createEffect, createPortal, isSSRPortal, findSiblingSlot } from '@barefootjs/client'
@@ -116,7 +127,12 @@ function HoverCard(props: HoverCardProps) {
  * Props for HoverCardTrigger component.
  */
 interface HoverCardTriggerProps extends HTMLBaseAttributes {
-  /** Whether to render child element as trigger */
+  /**
+   * Render the wrapper as a neutral `display:contents` span instead of
+   * HoverCardTrigger's styled inline-flex `<span>`, so the child renders with its
+   * own layout/styling untouched. Use this when the child already carries its own
+   * semantics/styling (e.g. an `<a>` or `<Avatar>`).
+   */
   asChild?: boolean
   /** Trigger content */
   children?: Child

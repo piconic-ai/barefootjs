@@ -2785,6 +2785,24 @@ export function initDropdownMenuTrigger(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const dropdownMenuTriggerClasses = 'inline-flex items-center disabled:pointer-events-none disabled:opacity-50'
+  const warnIfMisusedTrigger = (el, componentName) => {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} contains a nested interactive element (<button>, <a href>, or [role="button"]) inside the trigger's own <button> — nested interactive elements don't work reliably. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  } else if (siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger followed by an interactive element — this is what the HTML parser produces from a <button>/<Button> nested inside the trigger. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  }
+}
   const handleMount = (el) => {
     const ctx = useContext(DropdownMenuContext)
 
@@ -2795,6 +2813,8 @@ export function initDropdownMenuTrigger(__scope, _p = {}) {
     el.addEventListener('click', () => {
       ctx.onOpenChange(!ctx.open())
     })
+
+    if (!_p.asChild) warnIfMisusedTrigger(el, 'DropdownMenuTrigger')
   }
 
   const [_s1, _s0] = $(__scope, 's1', 's0')

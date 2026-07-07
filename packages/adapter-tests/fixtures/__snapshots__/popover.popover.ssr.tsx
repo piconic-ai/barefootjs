@@ -16,7 +16,12 @@ interface PopoverProps extends HTMLBaseAttributes {
 interface PopoverTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of PopoverTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the popover silently never opens.
+   */
   asChild?: boolean
   /** Trigger content */
   children?: Child

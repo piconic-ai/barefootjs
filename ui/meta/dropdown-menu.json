@@ -46,7 +46,7 @@
           "name": "asChild",
           "type": "boolean",
           "required": false,
-          "description": "Render child element as trigger instead of built-in button"
+          "description": "Render the child element as the trigger instead of DropdownMenuTrigger's own `<button>`. Required whenever `children` is itself an interactive element (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the HTML parser and the menu silently never opens."
         },
         {
           "name": "children",
@@ -270,10 +270,14 @@
     {
       "title": "Basic dropdown menu",
       "code": "const [open, setOpen] = createSignal(false)\n\n<DropdownMenu open={open()} onOpenChange={setOpen}>\n  <DropdownMenuTrigger>\n    <span>Open Menu</span>\n  </DropdownMenuTrigger>\n  <DropdownMenuContent>\n    <DropdownMenuLabel>My Account</DropdownMenuLabel>\n    <DropdownMenuSeparator />\n    <DropdownMenuItem onSelect={() => {}}>Settings</DropdownMenuItem>\n    <DropdownMenuItem onSelect={() => {}}>Log out</DropdownMenuItem>\n  </DropdownMenuContent>\n</DropdownMenu>"
+    },
+    {
+      "title": "Styled trigger (asChild)",
+      "code": "// Wrapping a <Button> inside DropdownMenuTrigger requires asChild. Without it,\n// DropdownMenuTrigger renders its OWN <button>, the HTML parser auto-closes the\n// nested <button>, and the menu silently never opens.\n<DropdownMenuTrigger asChild>\n  <Button variant=\"outline\">Open Menu</Button>\n</DropdownMenuTrigger>"
     }
   ],
   "accessibility": {
-    "role": "menu, menuitem, menuitemcheckbox, group, menuitemradio, separator",
+    "role": "menu, menuitem, button, menuitemcheckbox, group, menuitemradio, separator",
     "ariaAttributes": [
       "aria-expanded",
       "aria-haspopup",

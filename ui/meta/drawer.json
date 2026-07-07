@@ -52,7 +52,7 @@
           "name": "asChild",
           "type": "boolean",
           "required": false,
-          "description": "Render child element as trigger instead of built-in button"
+          "description": "Render the child element as the trigger instead of DrawerTrigger's own `<button>`. Required whenever `children` is itself an interactive element (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the HTML parser and the drawer silently never opens."
         },
         {
           "name": "children",
@@ -167,10 +167,14 @@
     {
       "title": "Basic drawer",
       "code": "const [open, setOpen] = createSignal(false)\n\n<Drawer open={open()} onOpenChange={setOpen}>\n  <DrawerTrigger>Open Drawer</DrawerTrigger>\n  <DrawerOverlay />\n  <DrawerContent direction=\"bottom\" ariaLabelledby=\"drawer-title\">\n    <DrawerHandle />\n    <DrawerHeader>\n      <DrawerTitle id=\"drawer-title\">Drawer Title</DrawerTitle>\n      <DrawerDescription>Drawer description here.</DrawerDescription>\n    </DrawerHeader>\n    <DrawerFooter>\n      <DrawerClose>Close</DrawerClose>\n    </DrawerFooter>\n  </DrawerContent>\n</Drawer>"
+    },
+    {
+      "title": "Styled trigger (asChild)",
+      "code": "// Wrapping a <Button> inside DrawerTrigger requires asChild. Without it,\n// DrawerTrigger renders its OWN <button>, the HTML parser auto-closes the\n// nested <button>, and the drawer silently never opens.\n<DrawerTrigger asChild>\n  <Button variant=\"outline\">Open Drawer</Button>\n</DrawerTrigger>"
     }
   ],
   "accessibility": {
-    "role": "dialog",
+    "role": "dialog, button",
     "ariaAttributes": [
       "aria-modal",
       "aria-labelledby",

@@ -20,7 +20,12 @@ interface DropdownMenuProps extends HTMLBaseAttributes {
 interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DropdownMenuTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the menu silently never opens.
+   */
   asChild?: boolean
   /** Trigger content (any element: button, avatar, icon, etc.) */
   children?: Child
@@ -107,7 +112,12 @@ interface DropdownMenuProps extends HTMLBaseAttributes {
 interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DropdownMenuTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the menu silently never opens.
+   */
   asChild?: boolean
   /** Trigger content (any element: button, avatar, icon, etc.) */
   children?: Child
@@ -204,7 +214,12 @@ interface DropdownMenuProps extends HTMLBaseAttributes {
 interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DropdownMenuTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the menu silently never opens.
+   */
   asChild?: boolean
   /** Trigger content (any element: button, avatar, icon, etc.) */
   children?: Child
@@ -301,7 +316,12 @@ interface DropdownMenuProps extends HTMLBaseAttributes {
 interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DropdownMenuTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the menu silently never opens.
+   */
   asChild?: boolean
   /** Trigger content (any element: button, avatar, icon, etc.) */
   children?: Child
@@ -398,7 +418,12 @@ interface DropdownMenuProps extends HTMLBaseAttributes {
 interface DropdownMenuTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DropdownMenuTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the menu silently never opens.
+   */
   asChild?: boolean
   /** Trigger content (any element: button, avatar, icon, etc.) */
   children?: Child

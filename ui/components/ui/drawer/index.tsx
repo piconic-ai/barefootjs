@@ -38,6 +38,16 @@
  *   </DrawerContent>
  * </Drawer>
  * ```
+ *
+ * @example Styled trigger (asChild)
+ * ```tsx
+ * // Wrapping a <Button> inside DrawerTrigger requires asChild. Without it,
+ * // DrawerTrigger renders its OWN <button>, the HTML parser auto-closes the
+ * // nested <button>, and the drawer silently never opens.
+ * <DrawerTrigger asChild>
+ *   <Button variant="outline">Open Drawer</Button>
+ * </DrawerTrigger>
+ * ```
  */
 
 import { createContext, useContext, createEffect, createPortal, isSSRPortal } from '@barefootjs/client'
@@ -145,12 +155,48 @@ function Drawer(props: DrawerProps) {
 }
 
 /**
+ * Detects the classic shadcn/ui migration mistake: wrapping an interactive
+ * element (e.g. `<Button>`) inside a non-asChild *Trigger. The Trigger renders
+ * its own `<button>` around it, so the HTML parser auto-closes the nested
+ * `<button>` while parsing — the outer trigger ends up EMPTY with the inner
+ * element as its next sibling instead of its child. Click wiring lands on the
+ * empty outer button, so the visible inner element does nothing.
+ * For DOM trees built without going through the HTML parser (e.g. programmatic
+ * DOM construction), the nested element can instead survive as an actual
+ * descendant, so both shapes are checked.
+ * See https://github.com/piconic-ai/barefootjs/issues/2127.
+ */
+function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} contains a nested interactive element (<button>, <a href>, or [role="button"]) inside the trigger's own <button> — nested interactive elements don't work reliably. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  } else if (siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger followed by an interactive element — this is what the HTML parser produces from a <button>/<Button> nested inside the trigger. Use <${componentName} asChild> to adopt your element instead.`
+    )
+  }
+}
+
+/**
  * Props for DrawerTrigger component.
  */
 interface DrawerTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DrawerTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the drawer silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
@@ -161,7 +207,8 @@ interface DrawerTriggerProps extends ButtonHTMLAttributes {
  * Reads open state from context and toggles via onOpenChange.
  *
  * @param props.disabled - Whether disabled
- * @param props.asChild - Render child as trigger
+ * @param props.asChild - Render child as trigger. Required when `children` is an
+ *   interactive element like `<Button>` — see DrawerTriggerProps.asChild for why.
  */
 function DrawerTrigger(props: DrawerTriggerProps) {
   const handleMount = (el: HTMLElement) => {
@@ -170,6 +217,8 @@ function DrawerTrigger(props: DrawerTriggerProps) {
     el.addEventListener('click', () => {
       ctx.onOpenChange(!ctx.open())
     })
+
+    if (!props.asChild) warnIfMisusedTrigger(el, 'DrawerTrigger')
   }
 
   if (props.asChild) {
