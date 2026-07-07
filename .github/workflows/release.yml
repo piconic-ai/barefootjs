@@ -174,6 +174,12 @@ jobs:
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/jinja')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Publishes via PyPI Trusted Publishing (OIDC): the `barefootjs` project on
+    # PyPI trusts this repo + release.yml, so no long-lived PYPI_API_TOKEN is
+    # involved. Managed at pypi.org → barefootjs → Manage → Publishing.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -182,11 +188,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Build, test, and publish Python runtime to PyPI
+      - name: Build and test Python runtime
         working-directory: packages/adapter-jinja/python
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           test -f pyproject.toml
           version=$(jq -r '.version' ../package.json)
@@ -195,13 +198,23 @@ jobs:
           python -m pytest
           python -m build
           python -m twine check dist/*
-          python -m twine upload --non-interactive dist/*
+
+      - name: Publish Python runtime to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          packages-dir: packages/adapter-jinja/python/dist
 
   rubygems-release:
     needs: release
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/erb')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Publishes via RubyGems Trusted Publishing (OIDC): the barefoot_js gem
+    # trusts this repo + release.yml, so no long-lived RUBYGEMS_API_KEY is
+    # involved. Managed at rubygems.org → barefoot_js → Trusted publishers.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -211,10 +224,13 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: false
 
+      - name: Authenticate with RubyGems
+        # No inputs → trusted-publisher mode; exports a temporary
+        # GEM_HOST_API_KEY for the `gem push` below.
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+
       - name: Build, test, and publish Ruby runtime to RubyGems
         working-directory: packages/adapter-erb
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           gemspec=$(find . -maxdepth 1 -name '*.gemspec' -print -quit)
           test -n "$gemspec"
@@ -227,6 +243,12 @@ jobs:
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/rust')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Publishes via crates.io Trusted Publishing (OIDC): the `barefootjs` crate
+    # trusts this repo + release.yml, so no long-lived CARGO_REGISTRY_TOKEN is
+    # involved. Managed at crates.io → barefootjs → Settings → Trusted Publishing.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -235,14 +257,34 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Sync crate version from @barefootjs/rust
+        working-directory: packages/adapter-rust/runtime
+        # Cargo.toml carries a placeholder version (crates.io shipped 0.1.0 on
+        # the initial release because nothing stamped it). The crate must ship
+        # at the @barefootjs/rust version resolved by changesets, so write it
+        # in before publishing. Not committed back: unlike the Perl sync (which
+        # pushes to main from the cpan-release job), a second job pushing to
+        # main would race it; `--allow-dirty` below tolerates the working-tree
+        # edit instead.
+        run: |
+          version=$(jq -r '.version' ../package.json)
+          test -n "$version"
+          test "$version" != "null"
+          sed -i "0,/^version = \".*\"/s//version = \"${version}\"/" Cargo.toml
+          grep -Fxq "version = \"${version}\"" Cargo.toml
+
+      - name: Authenticate with crates.io
+        id: crates-auth
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1
+
       - name: Build, test, and publish Rust runtime to crates.io
         working-directory: packages/adapter-rust/runtime
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
         run: |
           cargo test
-          cargo publish --dry-run
-          cargo publish
+          cargo publish --dry-run --allow-dirty
+          cargo publish --allow-dirty
   packagist-twig-release:
     needs: release
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/twig')
