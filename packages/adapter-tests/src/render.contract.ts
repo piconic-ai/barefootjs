@@ -11,11 +11,19 @@
  * a bug that only a real backend *executing* the template surfaces.
  * "compile-clean ≠ renders-correctly."
  *
- * This module is the render-stage counterpart: a fixed fixture
- * (`renderContractFixture`) and a fixed set of assertions
- * (`assertRenderContract`) that every adapter runs its OWN render pipeline
- * against — real Go binary, real Ruby `erb`, real Python `jinja2`, etc. —
- * so the same five checks catch the same class of bug on every backend.
+ * This module is the render-stage counterpart: `assertRenderContract` is
+ * a fixed set of assertions that every adapter runs against its OWN real
+ * render pipeline — real Go binary, real Ruby `erb`, real Python
+ * `jinja2`, etc. — so the same five checks catch the same class of bug
+ * on every backend.
+ *
+ * The fixture this contract asserts against lives in the regular
+ * cross-adapter HTML conformance corpus, `fixtures/counter-buttons.ts`
+ * (a stock `Counter` plus the `<Button>` children-forwarding shape from
+ * the #2157 reproduction), and executes through the single mandatory
+ * entry point `runAdapterConformanceTests` (see
+ * `run-adapter-conformance.ts`) — every adapter package picks it up
+ * automatically, with no per-adapter wiring needed.
  *
  * Contract v1 checks (see `assertRenderContract` for the authoritative
  * list): SSR of the initial signal value, non-empty child-component
@@ -55,17 +63,40 @@ import { expect } from 'bun:test'
  * `&amp;` is intentionally decoded LAST: an already-decoded `&amp;lt;`
  * (representing the literal text `&lt;`) must not be re-decoded into
  * `<` by a subsequent `&lt;` pass.
+ *
+ * Numeric references are validated before decoding: this runs on
+ * arbitrary backend HTML, including error pages a broken adapter might
+ * emit, so a malformed reference (out-of-range codepoint, e.g.
+ * `&#9999999999;`, or a lone UTF-16 surrogate, e.g. `&#xD800;` —
+ * `String.fromCodePoint` throws `RangeError` on both) must not crash the
+ * contract check. An invalid reference is left exactly as matched
+ * rather than decoded.
  */
 export function decodeHtmlEntities(s: string): string {
   return s
-    .replace(/&#[xX]([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&#[xX]([0-9a-fA-F]+);/g, (match, hex: string) => codePointToChar(parseInt(hex, 16), match))
+    .replace(/&#(\d+);/g, (match, dec: string) => codePointToChar(parseInt(dec, 10), match))
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;|&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
+    .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
+}
+
+/**
+ * Convert a numeric-reference codepoint to its character, rejecting the
+ * values `String.fromCodePoint` would throw on: above the Unicode max
+ * (`0x10FFFF`) and the surrogate-pair range (`0xD800`–`0xDFFF`), which is
+ * only valid as a UTF-16 encoding detail, never a standalone codepoint.
+ * Falls back to the original matched text (e.g. `&#9999999999;`) so a
+ * malformed reference passes through unchanged instead of crashing.
+ */
+function codePointToChar(codePoint: number, original: string): string {
+  if (!Number.isFinite(codePoint) || codePoint < 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)) {
+    return original
+  }
+  return String.fromCodePoint(codePoint)
 }
 
 /** Strip HTML comments — template-detail markers (loop boundaries, scope
@@ -83,70 +114,23 @@ function stripTags(html: string): string {
   return html.replace(/<[^>]*>/g, '')
 }
 
-/**
- * The shared fixture every adapter renders through its own real backend
- * for the render-stage contract. Mirrors the stock `Counter` fixture
- * (`fixtures/counter-shared.ts`, lifted from
- * `integrations/shared/components/Counter.tsx`) plus the `<Button>`
- * children-forwarding shape from the #2157 reproduction app — the exact
- * shape whose children rendered EMPTY on Ruby before that fix, because
- * that bug only manifests through a manifest-registered child renderer
- * exercising `derive_vars_from_defaults`, not through inline SSR.
- *
- * `props.__instanceId` pins the deterministic root scope id
- * (`Counter_test`) so `assertRenderContract`'s hydration-marker check can
- * assert an exact root scope and a family of child scopes without any
- * adapter-specific normalization.
- */
-export const renderContractFixture = {
-  componentName: 'Counter',
-  props: { __instanceId: 'Counter_test' } as Record<string, unknown>,
-  source: `
-'use client'
-import { createSignal, createMemo } from '@barefootjs/client'
-import { Button } from './button'
-
-export function Counter() {
-  const [count, setCount] = createSignal(0)
-  const doubled = createMemo(() => count() * 2)
-
-  return (
-    <div className="counter-container">
-      <p className="counter-value">{count()}</p>
-      <p className="counter-doubled">doubled: {doubled()}</p>
-      <div className="counter-buttons">
-        <Button className="btn-increment" onClick={() => setCount(n => n + 1)}>+1</Button>
-        <Button className="btn-decrement" onClick={() => setCount(n => n - 1)}>-1</Button>
-        <Button className="btn-reset" onClick={() => setCount(0)}>Reset</Button>
-      </div>
-    </div>
-  )
-}
-`,
-  components: {
-    // Class composition uses a template literal, NOT string `+`: every
-    // adapter has a dedicated template-literal concat lowering (Twig `~`,
-    // Blade `.`, both via bf.string), whereas JS binary `+` currently
-    // lowers to the target language's numeric `+` — a PHP fatal
-    // (`Unsupported operand types: string + string`) on Twig/Blade at
-    // RENDER time despite compiling clean. That divergence is a
-    // real finding of this contract's first run, tracked separately; the
-    // contract fixture deliberately stays inside every adapter's
-    // supported envelope so the five checks measure the render stage,
-    // not one known expression-lowering gap.
-    './button.tsx': `
-export function Button({ children, className = '', onClick }: { children?: unknown; className?: string; onClick?: () => void }) {
-  return <button className={\`btn \${className}\`} onClick={onClick}>{children}</button>
-}
-`,
-  },
+export interface AssertRenderContractOptions {
+  /**
+   * Root hydration scope id to assert against (`bf-s="<scopeId>"`).
+   * Defaults to `'test'` — the corpus default root scope every plain
+   * fixture renders with (see `fixtures/counter.ts`'s expectedHtml).
+   * Pass an explicit value for a caller that renders with a custom
+   * `__instanceId` prop.
+   */
+  scopeId?: string
 }
 
 /**
  * Assert that a rendered HTML string satisfies the render-stage contract
- * (Contract v1). Call from each adapter's own render call:
+ * (Contract v1). Call from each adapter's own render call, e.g. through
+ * `runAdapterConformanceTests`'s render-contract suite, or directly:
  *
- *   const html = await renderXComponent({ adapter, ...renderContractFixture })
+ *   const html = await renderXComponent({ adapter, ...counterButtonsFixture })
  *   assertRenderContract(html)
  *
  * Each check's failure message is prefixed with its id so a regression
@@ -160,12 +144,12 @@ export function Button({ children, className = '', onClick }: { children?: unkno
  *      `<button class="btn btn-increment"></button>` — compiled clean,
  *      rendered wrong.
  *   3. `hydration-markers-present`   — the root hydration scope
- *      `bf-s="Counter_test"` appears exactly once, and at least three
- *      child scopes matching `bf-s="Counter_test_s<N>"` are present (one
- *      per `<Button>` slot). Full-page script-registration checks (the
- *      `bf.register_script(...)` family) are explicitly out of scope —
- *      they belong to a future integration-server harness that boots a
- *      real app, not this single-render contract.
+ *      `bf-s="<scopeId>"` (default `test`) appears exactly once, and at
+ *      least three child scopes matching `bf-s="<scopeId>_s<N>"` are
+ *      present (one per `<Button>` slot). Full-page script-registration
+ *      checks (the `bf.register_script(...)` family) are explicitly out
+ *      of scope — they belong to a future integration-server harness
+ *      that boots a real app, not this single-render contract.
  *   4. `no-render-error-marker`      — case-insensitive absence of common
  *      backend failure signatures: "template error", "no renderer
  *      registered", "can't evaluate field", "server error", "traceback
@@ -175,7 +159,8 @@ export function Button({ children, className = '', onClick }: { children?: unkno
  *      empty-200 failure class, where a template error is swallowed and
  *      the backend returns an empty but "successful" response).
  */
-export function assertRenderContract(html: string): void {
+export function assertRenderContract(html: string, opts: AssertRenderContractOptions = {}): void {
+  const scopeId = opts.scopeId ?? 'test'
   const clean = decodeHtmlEntities(stripHtmlComments(html))
 
   // 1. counter-ssr-initial
@@ -214,16 +199,19 @@ export function assertRenderContract(html: string): void {
 
   // 3. hydration-markers-present
   // Works on the raw (undecoded, comments intact) HTML — these are
-  // attribute matches, not text comparisons.
-  const rootScopeMatches = html.match(/bf-s="Counter_test"/g) ?? []
+  // attribute matches, not text comparisons. The root scope match is
+  // exact-value (`"<scopeId>"`) so it does not also match child scopes
+  // (`bf-s="test"` vs `bf-s="test_s4"`).
+  const escapedScopeId = scopeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const rootScopeMatches = html.match(new RegExp(`bf-s="${escapedScopeId}"`, 'g')) ?? []
   expect(
     rootScopeMatches.length,
-    `[hydration-markers-present] expected exactly one root bf-s="Counter_test"; found ${rootScopeMatches.length}`,
+    `[hydration-markers-present] expected exactly one root bf-s="${scopeId}"; found ${rootScopeMatches.length}`,
   ).toBe(1)
-  const childScopeMatches = html.match(/bf-s="Counter_test_s\d+"/g) ?? []
+  const childScopeMatches = html.match(new RegExp(`bf-s="${escapedScopeId}_s\\d+"`, 'g')) ?? []
   expect(
     childScopeMatches.length,
-    `[hydration-markers-present] expected at least 3 child bf-s="Counter_test_s..." scopes (one per Button slot); found ${childScopeMatches.length}`,
+    `[hydration-markers-present] expected at least 3 child bf-s="${scopeId}_s..." scopes (one per Button slot); found ${childScopeMatches.length}`,
   ).toBeGreaterThanOrEqual(3)
   // Full-page script-registration checks (bf.register_script(...) and
   // friends) intentionally are NOT asserted here — they belong to a

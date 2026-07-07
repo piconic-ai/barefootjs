@@ -22,6 +22,7 @@
  * skip set; the next test run picks it up.
  */
 
+import { describe, test, expect } from 'bun:test'
 import type { TemplateAdapter } from '../../jsx/src/types'
 import { runJSXConformanceTests, type RenderOptions } from './jsx-runner'
 import { runConformanceSuite } from './conformance'
@@ -33,6 +34,8 @@ import {
   type TemplatePrimitiveCaseId,
   type TemplatePrimitiveInput,
 } from './cases/template-primitives'
+import { assertRenderContract } from './render.contract'
+import { fixture as counterButtonsFixture } from '../fixtures/counter-buttons'
 
 export interface RunAdapterConformanceOptions {
   /** Short lowercase label used in `describe` headings. */
@@ -73,6 +76,13 @@ export interface RunAdapterConformanceOptions {
    */
   skipMarkerConformance?: ReadonlySet<string>
   /**
+   * Skip the render-stage contract suite (#2158) for this adapter.
+   * Each skip must carry a comment naming the follow-up issue that will
+   * bring the adapter's render pipeline up to the contract. Default:
+   * run the suite.
+   */
+  skipRenderContract?: boolean
+  /**
    * Per-fixture diagnostic contracts owned by this adapter. Keyed by
    * `JSXFixture.id`; the runner compiles the fixture and asserts each
    * `{ code, severity }` appears in `ir.errors`, then skips HTML
@@ -111,5 +121,38 @@ export function runAdapterConformanceTests(
     name: opts.name,
     factory: opts.factory,
     skipFixtures: opts.skipMarkerConformance,
+  })
+
+  if (opts.skipRenderContract) return
+
+  // Render-stage conformance contract (#2158): renders the
+  // `counter-buttons` corpus fixture through this adapter's OWN real
+  // render pipeline (fresh adapter instance, no special props) and
+  // asserts the five `assertRenderContract` checks. Reuses the same
+  // `onRenderError` escape hatch as the JSX suite above — a
+  // `*NotAvailableError` (runtime not installed) skips rather than
+  // fails, matching `runJSXConformanceTests`'s render-error handling.
+  describe('render contract (#2158)', () => {
+    test(
+      'Counter+Button satisfies the render contract',
+      async () => {
+        const adapter = opts.factory()
+        let html: string
+        try {
+          html = await opts.render({
+            source: counterButtonsFixture.source,
+            adapter,
+            components: counterButtonsFixture.components,
+            componentName: counterButtonsFixture.componentName,
+          })
+        } catch (err) {
+          if (opts.onRenderError?.(err as Error, counterButtonsFixture.id)) return
+          throw err
+        }
+        expect(html).toBeTruthy()
+        assertRenderContract(html)
+      },
+      30_000,
+    )
   })
 }
