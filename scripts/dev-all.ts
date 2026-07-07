@@ -19,6 +19,7 @@
  *   :4000/integrations/php/*         → php service
  *   :4000/integrations/django/*      → django service
  *   :4000/integrations/blade/*       → blade service
+ *   :4000/integrations/laravel/*     → laravel service
  *   :4000/*                          → site-core service
  *
  * Designed to run inside the dev docker-compose network where service names
@@ -59,6 +60,7 @@ const routes: readonly Route[] = [
   { prefix: '/integrations/php',         target: process.env.PHP_TARGET         ?? 'http://php:3013',         label: 'PHP (Twig)' },
   { prefix: '/integrations/django',      target: process.env.DJANGO_TARGET      ?? 'http://django:3014',      label: 'Django (Python)' },
   { prefix: '/integrations/blade',       target: process.env.BLADE_TARGET       ?? 'http://blade:3015',       label: 'Blade (PHP)' },
+  { prefix: '/integrations/laravel',     target: process.env.LARAVEL_TARGET     ?? 'http://laravel:3016',     label: 'Laravel (PHP)' },
 ] as const
 
 const DEFAULT_TARGET = process.env.SITE_CORE_TARGET ?? 'http://site-core:4001'

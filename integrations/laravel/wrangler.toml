@@ -1,0 +1,31 @@
+name = "barefootjs-laravel-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "LaravelContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "LARAVEL_CONTAINER"
+class_name = "LaravelContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LaravelContainer"]
+
+# Two patterns: `/integrations/laravel/*` matches /integrations/laravel/...
+# but not the bare /integrations/laravel, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/laravel"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/laravel/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/laravel"

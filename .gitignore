@@ -11,6 +11,9 @@ dist
 # Cloudflare Workers artifacts
 integrations/*/public
 integrations/*/.wrangler
+# ...but Laravel's public/ is real source (the framework's HTTP entry point),
+# not a wrangler artifact
+!integrations/laravel/public
 
 # air (Go live-reload) tmp dir + the host-binary built by `go run .`
 integrations/echo/tmp/
@@ -31,6 +34,9 @@ coverage
 
 # logs
 logs
+# ...but Laravel's storage/logs must exist for the framework's file log
+# channel (only its .gitignore placeholder is tracked)
+!integrations/laravel/storage/logs
 _.log
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 

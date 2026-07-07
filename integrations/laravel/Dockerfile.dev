@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for the Laravel integration. The app source and the
+# host-built dist/ + lib/ + vendor/ are bind-mounted in. Requires a host-side
+# `bun run build` (which runs `composer install`) first: unlike
+# integrations/blade there is no workspace-package autoload fallback, because
+# laravel/framework only exists in this integration's own vendor/.
+#
+# There is no reloader to restart (unlike Rails' rerun): PHP re-executes the
+# app fresh on every request, and the framework's Blade CompilerEngine
+# recompiles a view whenever its source mtime is newer than its compiled
+# cache file (see config/view.php), so edits to PHP source or the compiled
+# templates are picked up on the very next request with no restart needed.
+
+FROM php:8.4-cli
+
+WORKDIR /workspace/integrations/laravel
+
+EXPOSE 3016
+
+ENV BASE_PATH=/integrations/laravel
+ENV PORT=3016
+
+CMD ["sh", "-c", "PHP_CLI_SERVER_WORKERS=8 php artisan serve --host=0.0.0.0 --port=${PORT}"]

@@ -22,6 +22,7 @@ same JSX components on a different stack:
 | `php` | PHP / built-in server (Twig) | 3013 | container |
 | `django` | Python / Django (Jinja2) | 3014 | container |
 | `blade` | PHP / built-in server (Blade) | 3015 | container |
+| `laravel` | PHP / Laravel (`artisan serve`, Blade) | 3016 | container |
 | `csr` | TypeScript (no SSR) | 3002 | host (manual) |
 
 Plus `site/core` (the docs / landing / catalog site) on internal port 4001
@@ -59,6 +60,7 @@ host:                                  containers (docker compose):
                                          - php          (php built-in server)
                                          - django       (python + runserver autoreload)
                                          - blade        (php built-in server)
+                                         - laravel      (php artisan serve)
                                          - site-core    (bun + Hono)
 ```
 
@@ -82,6 +84,7 @@ The proxy routes by path prefix:
 :4000/integrations/php/*         → php service
 :4000/integrations/django/*      → django service
 :4000/integrations/blade/*       → blade service
+:4000/integrations/laravel/*     → laravel service
 :4000/*                          → site-core (landing / docs / catalog)
 ```
 
@@ -140,7 +143,7 @@ The same env var pattern works for `H3_TARGET`, `ELYSIA_TARGET`,
 `ECHO_TARGET`, `GIN_TARGET`, `CHI_TARGET`, `NETHTTP_TARGET`,
 `MOJOLICIOUS_TARGET`, `XSLATE_TARGET`, `FLASK_TARGET`, `FASTAPI_TARGET`,
 `SINATRA_TARGET`, `RAILS_TARGET`, `AXUM_TARGET`, `PHP_TARGET`,
-`DJANGO_TARGET`, `BLADE_TARGET`, and `SITE_CORE_TARGET`.
+`DJANGO_TARGET`, `BLADE_TARGET`, `LARAVEL_TARGET`, and `SITE_CORE_TARGET`.
 
 ### Why dev images are separate from `Dockerfile`
 
@@ -156,7 +159,8 @@ The TypeScript adapters (`hono`, `h3`, `elysia`) have **no production
 `wrangler deploy` (Elysia uses its official Cloudflare adapter). The Go
 adapters (`echo`, `gin`, `chi`, `nethttp`), the Perl adapters
 (`mojolicious`, `xslate`), the Python adapters (`flask`, `fastapi`,
-`django`), the Ruby examples (`sinatra`, `rails`), and the Rust adapter
+`django`), the Ruby examples (`sinatra`, `rails`), the PHP examples
+(`php`, `blade`, `laravel`), and the Rust adapter
 (`axum`) ship a
 production container image (`Dockerfile`) deployed as a Cloudflare
 Container. Every adapter still has a `Dockerfile.dev` for the local
@@ -167,7 +171,11 @@ SAME `@barefootjs/erb` compiler + Ruby runtime; they differ only in the web
 framework glue around it — Sinatra's routing DSL + Rack builder vs. a
 hand-trimmed Rails app (routing + controllers, no ActiveRecord / asset
 pipeline). This mirrors the two Perl examples (`mojolicious`, `xslate`)
-coexisting on one adapter family.
+coexisting on one adapter family, and the two Blade examples (`blade`,
+`laravel`) on `@barefootjs/blade` — plain PHP's built-in server with a
+standalone `illuminate/view` stack vs. a hand-trimmed Laravel app (routing +
+controllers, no Eloquent / asset pipeline) whose own view factory the
+BarefootJS Blade backend reuses.
 
 Each Go adapter is its own Cloudflare Worker + Container, routed on the
 `barefootjs.dev` zone via its `wrangler.toml` (e.g.

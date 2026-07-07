@@ -1,0 +1,30 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Stock Laravel 12 artisan entry point, plus the same "runtime not found"
+ * guidance integrations/blade's index.php prints: unlike the plain-PHP
+ * sibling there is NO workspace-package autoload fallback here --
+ * laravel/framework itself only exists in this directory's vendor/, so a
+ * `composer install` (run as part of `bun run build`) must have happened
+ * before anything (including `php artisan serve`) can boot.
+ */
+
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+if (!is_file(__DIR__.'/vendor/autoload.php')) {
+    fwrite(STDERR, "Laravel + BarefootJS runtime not found. Run `bun run build` (or `composer install` after "
+        ."`bun run scripts/assemble-deps.ts`) in integrations/laravel first.\n");
+    exit(1);
+}
+
+// Register the Composer autoloader...
+require __DIR__.'/vendor/autoload.php';
+
+// Bootstrap Laravel and handle the command...
+$status = (require_once __DIR__.'/bootstrap/app.php')
+    ->handleCommand(new ArgvInput);
+
+exit($status);
