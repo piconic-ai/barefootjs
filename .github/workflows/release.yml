@@ -209,6 +209,12 @@ jobs:
     if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/erb')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Publishes via RubyGems Trusted Publishing (OIDC): the barefoot_js gem
+    # trusts this repo + release.yml, so no long-lived RUBYGEMS_API_KEY is
+    # involved. Managed at rubygems.org → barefoot_js → Trusted publishers.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -218,10 +224,13 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: false
 
+      - name: Authenticate with RubyGems
+        # No inputs → trusted-publisher mode; exports a temporary
+        # GEM_HOST_API_KEY for the `gem push` below.
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+
       - name: Build, test, and publish Ruby runtime to RubyGems
         working-directory: packages/adapter-erb
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           gemspec=$(find . -maxdepth 1 -name '*.gemspec' -print -quit)
           test -n "$gemspec"
