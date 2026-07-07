@@ -145,6 +145,14 @@ describe('CSR Conformance Tests', () => {
     // object`; the real-browser fixture-hydrate layer exercises the spread
     // for real (and the typed value survives hydration there).
     'input',
+    // #2131: same `applyRestAttrs`-not-modeled limitation as `input` /
+    // `jsx-spread-rest-prop` above — the child renders `placeholder` /
+    // `value` through its `{...props}` spread at init time, which the CSR
+    // template-eval harness stubs as a noop. The fixture's contract (the
+    // parent's call site routes non-param attrs into the child's rest bag
+    // and SSR renders them) is pinned by the per-adapter render
+    // conformance, where real Go compiles + executes the emitted structs.
+    'rest-spread-child-attrs',
     // #1467 demo corpus: `radio-group-demo.tsx` exports three sibling
     // demos and the CSR harness evaluates `__lastComponent` — the last
     // `hydrate()` registration (`RadioGroupCardDemo`) — rather than the

@@ -14,15 +14,26 @@
 #         Repository: piconic-ai/barefootjs
 #         Workflow:   release.yml
 #
-# CPAN (Perl dists):
-#   - cpan-release job: syncs $VERSION + Changes, commits to main, then
-#     runs Makefile.PL / make dist → cpan-upload for each Perl package
-#     that was bumped in this release. Requires PAUSE_ID and PAUSE_PASSWORD
-#     secrets (PAUSE uses Basic auth — no token available).
-#   Package → npm name mapping:
-#     BarefootJS                   @barefootjs/perl
-#     Mojolicious::Plugin::BarefootJS  @barefootjs/mojolicious
-#     BarefootJS::Backend::Xslate  @barefootjs/xslate
+# Native runtimes:
+#   - cpan-release publishes Perl dists that correspond to bumped npm packages.
+#   - pypi-release / rubygems-release / crates-release / packagist-release
+#     follow the same pattern for first-party Python, Ruby, Rust, and PHP
+#     runtimes: when the corresponding adapter package is published by
+#     Changesets, build/test the native runtime and publish it with registry
+#     secrets. These jobs depend only on the npm release job, so they run in
+#     parallel with each other and with cpan-release.
+#   Package → native registry mapping:
+#     @barefootjs/perl         CPAN BarefootJS
+#     @barefootjs/mojolicious  CPAN Mojolicious::Plugin::BarefootJS
+#     @barefootjs/xslate       CPAN BarefootJS::Backend::Xslate
+#     @barefootjs/jinja        PyPI barefootjs
+#     @barefootjs/erb          RubyGems barefoot_js
+#     @barefootjs/rust         crates.io barefootjs
+#     @barefootjs/twig         Packagist barefootjs/twig (via split mirror)
+#     @barefootjs/blade        Packagist barefootjs/blade (via split mirror)
+#     @barefootjs/php          Packagist barefootjs/php (via split mirror,
+#                              packages/adapter-php -- the engine-agnostic
+#                              runtime shared by the Twig/Blade/... backends)
 
 name: Release
 
@@ -158,3 +169,245 @@ jobs:
             cpan-upload -u "$PAUSE_ID" -p "$PAUSE_PASSWORD" ./*.tar.gz
             cd -
           done
+  pypi-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/jinja')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Build, test, and publish Python runtime to PyPI
+        working-directory: packages/adapter-jinja/python
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          test -f pyproject.toml
+          version=$(jq -r '.version' ../package.json)
+          echo "$version" > VERSION
+          python -m pip install --upgrade build twine pytest jinja2
+          python -m pytest
+          python -m build
+          python -m twine check dist/*
+          python -m twine upload --non-interactive dist/*
+
+  rubygems-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/erb')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@0481980f17b760ef6bca5e8c55809102a0af1e5a # v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+
+      - name: Build, test, and publish Ruby runtime to RubyGems
+        working-directory: packages/adapter-erb
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          gemspec=$(find . -maxdepth 1 -name '*.gemspec' -print -quit)
+          test -n "$gemspec"
+          ruby -Ilib -Itest -e 'Dir["test/**/*_test.rb"].sort.each { |f| require_relative f }'
+          gem build "$gemspec"
+          gem push ./*.gem
+
+  crates-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/rust')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4305c38b25d97ef35a8ad1f985ccf2d2242004f2 # stable
+        with:
+          toolchain: stable
+
+      - name: Build, test, and publish Rust runtime to crates.io
+        working-directory: packages/adapter-rust/runtime
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo test
+          cargo publish --dry-run
+          cargo publish
+  packagist-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/twig')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Validate PHP runtime
+        working-directory: packages/adapter-twig/php
+        # NOT --strict: this package intentionally requires barefootjs/php
+        # as an unbound `@dev` constraint (resolved via the `path` repository
+        # pointing at ../../adapter-php, see composer.json) so the in-monorepo
+        # dependency doesn't need a manually-maintained semver range kept in
+        # lock-step with packages/adapter-php's own version -- `--strict`
+        # flags that as an "unbound version constraint" warning-as-error.
+        run: |
+          composer validate
+          composer install --no-interaction --prefer-dist
+          if jq -e '.scripts.test' composer.json > /dev/null 2>&1; then
+            composer test
+          fi
+
+      - name: Push PHP runtime split to Packagist mirror
+        env:
+          PHP_SPLIT_REPOSITORY: ${{ vars.PHP_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-twig' }}
+          PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
+        run: |
+          version=$(jq -r '.version' packages/adapter-twig/package.json)
+          test -n "$version"
+          test "$version" != "null"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git branch -D php-runtime-release 2>/dev/null || true
+          git subtree split --prefix=packages/adapter-twig/php -b php-runtime-release
+
+          split_dir=$(mktemp -d)
+          git worktree add "$split_dir" php-runtime-release
+          jq --arg version "$version" 'del(.repositories) | .require["barefootjs/php"] = $version' \
+            "$split_dir/composer.json" > "$split_dir/composer.json.tmp"
+          mv "$split_dir/composer.json.tmp" "$split_dir/composer.json"
+          composer validate --working-dir="$split_dir" --strict
+          git -C "$split_dir" add composer.json
+          git -C "$split_dir" commit -m "chore: prepare barefootjs/twig ${version} for Packagist"
+          split_ref=$(git -C "$split_dir" rev-parse HEAD)
+
+          remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_SPLIT_REPOSITORY}.git"
+          git push --force "$remote" "${split_ref}:main"
+          git tag -f "v${version}" "$split_ref"
+          git push --force "$remote" "v${version}"
+          git worktree remove "$split_dir" --force
+
+  packagist-blade-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/blade')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Validate Blade backend package
+        working-directory: packages/adapter-blade/php
+        # NOT --strict: this package intentionally requires barefootjs/php
+        # as an unbound `@dev` constraint resolved through the monorepo path
+        # repository, matching the Twig backend package.
+        run: |
+          composer validate
+          composer install --no-interaction --prefer-dist
+          if jq -e '.scripts.test' composer.json > /dev/null 2>&1; then
+            composer test
+          fi
+
+      - name: Push Blade backend split to Packagist mirror
+        env:
+          PHP_BLADE_SPLIT_REPOSITORY: ${{ vars.PHP_BLADE_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-blade' }}
+          PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
+        run: |
+          version=$(jq -r '.version' packages/adapter-blade/package.json)
+          test -n "$version"
+          test "$version" != "null"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git branch -D php-blade-release 2>/dev/null || true
+          git subtree split --prefix=packages/adapter-blade/php -b php-blade-release
+
+          split_dir=$(mktemp -d)
+          git worktree add "$split_dir" php-blade-release
+          jq --arg version "$version" 'del(.repositories) | .require["barefootjs/php"] = $version' \
+            "$split_dir/composer.json" > "$split_dir/composer.json.tmp"
+          mv "$split_dir/composer.json.tmp" "$split_dir/composer.json"
+          composer validate --working-dir="$split_dir" --strict
+          git -C "$split_dir" add composer.json
+          git -C "$split_dir" commit -m "chore: prepare barefootjs/blade ${version} for Packagist"
+          split_ref=$(git -C "$split_dir" rev-parse HEAD)
+
+          remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_BLADE_SPLIT_REPOSITORY}.git"
+          git push --force "$remote" "${split_ref}:main"
+          git tag -f "v${version}" "$split_ref"
+          git push --force "$remote" "v${version}"
+          git worktree remove "$split_dir" --force
+
+
+  # Mirrors packagist-release's shape for the engine-agnostic PHP runtime
+  # package (packages/adapter-php, Composer name barefootjs/php) --
+  # gated on @barefootjs/php (not @barefootjs/twig) being the package
+  # Changesets just published, since the runtime and the Twig backend are
+  # versioned/published independently.
+  packagist-runtime-release:
+    needs: release
+    if: needs.release.outputs.published == 'true' && contains(fromJSON(needs.release.outputs.publishedPackages).*.name, '@barefootjs/php')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@ec406be512d7077f68eed36e63f4d91bc006edc4 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Validate PHP runtime
+        working-directory: packages/adapter-php
+        run: |
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          if composer run-script --list | grep -q '^  test'; then
+            composer test
+          fi
+
+      - name: Push PHP runtime split to Packagist mirror
+        env:
+          PHP_RUNTIME_SPLIT_REPOSITORY: ${{ vars.PHP_RUNTIME_SPLIT_REPOSITORY || 'piconic-ai/barefootjs-php' }}
+          PHP_SPLIT_REPO_TOKEN: ${{ secrets.PHP_SPLIT_REPO_TOKEN }}
+        run: |
+          version=$(jq -r '.version' packages/adapter-php/package.json)
+          test -n "$version"
+          test "$version" != "null"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git branch -D php-runtime-release-shared 2>/dev/null || true
+          git subtree split --prefix=packages/adapter-php -b php-runtime-release-shared
+
+          remote="https://x-access-token:${PHP_SPLIT_REPO_TOKEN}@github.com/${PHP_RUNTIME_SPLIT_REPOSITORY}.git"
+          git push --force "$remote" php-runtime-release-shared:main
+          git tag -f "v${version}" php-runtime-release-shared
+          git push --force "$remote" "v${version}"

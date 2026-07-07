@@ -82,8 +82,12 @@ get '/static/*asset' => sub ($c) {
     $c->reply->static($c->stash('asset') // '') or $c->reply->not_found;
 };
 
+# Component props are ordinary stash values. The plugin seeds every
+# template variable's static default from the build manifest, so
+# passing \`initial\` here is optional — but it's how you hand real
+# data to a component, so the starter route shows the shape.
 get '/' => sub ($c) {
-    $c->render(template => 'Counter', layout => 'default');
+    $c->render(template => 'Counter', layout => 'default', initial => 0);
 };
 
 app->start;

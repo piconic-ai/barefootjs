@@ -18,7 +18,7 @@ function SiteHeader() {
   return (
     <header className="bf-header">
       <div className="bf-header-inner">
-        <a href="https://barefootjs.dev" className="bf-header-logo" aria-label="Barefoot.js">
+        <a href="https://barefootjs.dev" className="bf-header-logo" aria-label="BarefootJS">
           <span className="bf-header-logo-img" role="img" aria-hidden="true" />
         </a>
         <div className="bf-header-sep" />

@@ -1748,6 +1748,24 @@ export interface ErrorSuggestion {
   replacement?: string
 }
 
+/**
+ * A diagnostic an adapter intentionally emits for a shared conformance
+ * fixture (packages/adapter-tests) instead of lowering it — the adapter's
+ * machine-readable known-limitations declaration. Consumed by the adapter's
+ * own conformance test (as `expectedDiagnostics`) and by `bf compat`
+ * (issue-URL attribution). Tracked limitations carry the `known-limitation`
+ * label: https://github.com/piconic-ai/barefootjs/labels/known-limitation
+ */
+export interface ConformancePin {
+  /** Diagnostic code, e.g. 'BF101'. */
+  code: string
+  severity: 'error' | 'warning'
+  /** Tracking issue URL (known-limitation label) for this refusal, when one exists. */
+  issue?: string
+}
+/** Keyed by shared-fixture id (`JSXFixture.id`). */
+export type ConformancePins = Record<string, ReadonlyArray<ConformancePin>>
+
 // =============================================================================
 // Compile Options & Results
 // =============================================================================
@@ -1808,6 +1826,15 @@ export interface FileOutput {
   path: string
   content: string
   type: 'markedTemplate' | 'clientJs' | 'ir' | 'sourceMap' | 'types' | 'ssrDefaults'
+  /**
+   * The exported component this file was generated for. Set on
+   * `markedTemplate` / `ssrDefaults` outputs so the build pipeline can pair
+   * them per component without guessing from file basenames — a
+   * single-component file's template is named after the SOURCE file
+   * (`index.html.ep`), not the component, so the basename alone can't
+   * recover the component name (#2132).
+   */
+  componentName?: string
 }
 
 export interface CompileResult {

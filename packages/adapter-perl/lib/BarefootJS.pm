@@ -349,8 +349,72 @@ sub render_child ($self, $name, @args) {
 # it takes precedence over the manifest's `ssrDefaults` for that
 # child, allowing callers to mix manual overrides with auto-derived
 # defaults for siblings.
+#
+# Multi-component modules (#2132): a registry module exporting several
+# components from one file (`ui/toast/index.tsx` → ToastProvider, Toast,
+# ToastTitle, ...) compiles to one template PER component, listed in the
+# entry's `components` map (`{ ToastProvider => { markedTemplate,
+# ssrDefaults }, ... }`). Compiled parent templates invoke each one under
+# its snake_cased component name (`render_child('toast_provider')`), so a
+# renderer is registered per component. These run AFTER the directory-name
+# registration and win on collision — for `ui/toast/index` the key `toast`
+# must resolve to Toast's own template, not the module's first template
+# (ToastProvider), which is all the bare `markedTemplate` carries.
 sub register_components_from_manifest ($self, $manifest, %opts) {
     my $signal_inits = $opts{signal_init} // {};
+
+    for my $entry_name (keys %$manifest) {
+        # `__barefoot__` is the runtime entry, not a component.
+        next if $entry_name eq '__barefoot__';
+        # Only UI registry components (path shape `ui/<name>/index`)
+        # become child renderers; top-level page components are the
+        # render target rather than a child.
+        next unless $entry_name =~ m{^ui/([^/]+)/index$};
+        my $slot_key = $1;
+        my $entry = $manifest->{$entry_name};
+
+        # Directory-name registration — the pre-`components` convention,
+        # kept so manifests from older builds (no `components` map) still
+        # resolve single-component modules like `button`.
+        $self->_register_manifest_child(
+            $slot_key, $entry->{markedTemplate},
+            $signal_inits->{$slot_key}, $entry->{ssrDefaults},
+        );
+
+        # Per-component registrations (#2132), keyed by the snake_cased
+        # component name the compiled templates actually call.
+        my $components = $entry->{components};
+        next unless ref($components) eq 'HASH';
+        for my $component_name (sort keys %$components) {
+            my $component = $components->{$component_name};
+            next unless ref($component) eq 'HASH';
+            my $component_key = _snake_case($component_name);
+            $self->_register_manifest_child(
+                $component_key, $component->{markedTemplate},
+                $signal_inits->{$component_key}, $component->{ssrDefaults},
+            );
+        }
+    }
+}
+
+# PascalCase → snake_case, mirroring the Mojo adapter's `toTemplateName`
+# (prefix every uppercase letter with `_`, lowercase the whole string,
+# strip the leading `_`): `ToastProvider` → `toast_provider`.
+sub _snake_case ($name) {
+    my $s = $name;
+    $s =~ s/([A-Z])/_$1/g;
+    $s = CORE::lc $s;
+    $s =~ s/^_//;
+    return $s;
+}
+
+# Register one manifest-driven child renderer: `$slot_key` becomes the
+# `render_child` name, `$marked` locates the template, and `$signal_init`
+# / `$manifest_defaults` seed the child's template vars (see
+# `register_components_from_manifest` for the contract).
+sub _register_manifest_child ($self, $slot_key, $marked, $signal_init, $manifest_defaults) {
+    $marked //= '';
+    return unless $marked;
     my $parent_scope = $self->_scope_id;
     # Weaken the parent capture so the child-renderer closures stored on
     # `$self->_child_renderers` don't keep `$self` alive (the direct
@@ -361,76 +425,63 @@ sub register_components_from_manifest ($self, $manifest, %opts) {
     # stored on `$parent`, so `$parent` outlives every invocation).
     weaken(my $parent = $self);
 
-    for my $entry_name (keys %$manifest) {
-        # `__barefoot__` is the runtime entry, not a component.
-        next if $entry_name eq '__barefoot__';
-        # Only UI registry components (path shape `ui/<name>/index`)
-        # become child renderers; top-level page components are the
-        # render target rather than a child.
-        next unless $entry_name =~ m{^ui/([^/]+)/index$};
-        my $slot_key = $1;
-        my $marked = $manifest->{$entry_name}{markedTemplate} // '';
-        next unless $marked;
-        # `templates/ui/button/index.html.ep` → `ui/button/index`
-        my $template_name = $marked;
-        $template_name =~ s{^templates/}{};
-        $template_name =~ s{\.html\.ep$}{};
+    # `templates/ui/button/index.html.ep` → `ui/button/index`
+    my $template_name = $marked;
+    $template_name =~ s{^templates/}{};
+    $template_name =~ s{\.html\.ep$}{};
 
-        my $signal_init = $signal_inits->{$slot_key};
-        my $manifest_defaults = $manifest->{$entry_name}{ssrDefaults};
-        $self->register_child_renderer($slot_key, sub {
-            # `$caller` is the instance whose template invoked
-            # `render_child` (#1897) — for a nested render that is a child
-            # instance, and the grandchild's scope/slot identity must chain
-            # off ITS scope id (`root_s0_s0`), not the registrant's.
-            my ($props, $caller) = @_;
-            my $host = $caller // $parent;
-            my $host_scope = $host->_scope_id // $parent_scope;
-            # Child shares the parent's backend so nested renders go
-            # through the same engine + controller (and inherit any
-            # injected json_encoder). The controller is fetched via the weak
-            # `$parent` at call time — never captured strongly — so the
-            # closure adds no edge to the per-request reference cycle.
-            my $child_bf = BarefootJS->new($parent->c, { backend => $parent->backend });
-            my $slot_id = delete $props->{_bf_slot};
-            # JSX `key` (a reserved prop) → data-key on the child's scope root
-            # for keyed-loop reconciliation (see `data_key_attr`).
-            my $data_key = delete $props->{key};
-            $child_bf->_data_key($data_key) if defined $data_key;
-            $child_bf->_scope_id(
-                $slot_id ? $host_scope . '_' . $slot_id
-                         : $template_name . '_' . substr(rand() =~ s/^0\.//r, 0, 6)
-            );
-            $child_bf->_is_child(1);
-            # (#1249) Slot identity: host scope + slot id. Emitted as
-            # bf-h / bf-m attributes by hydration_attrs.
-            if ($slot_id) {
-                $child_bf->_bf_parent($host_scope);
-                $child_bf->_bf_mount($slot_id);
-            }
-            # Share the root registry so the child's own template can
-            # render further imported components (#1897).
-            $child_bf->_child_renderers($parent->_child_renderers);
-            $child_bf->_scripts($parent->_scripts);
-            $child_bf->_script_seen($parent->_script_seen);
+    $self->register_child_renderer($slot_key, sub {
+        # `$caller` is the instance whose template invoked
+        # `render_child` (#1897) — for a nested render that is a child
+        # instance, and the grandchild's scope/slot identity must chain
+        # off ITS scope id (`root_s0_s0`), not the registrant's.
+        my ($props, $caller) = @_;
+        my $host = $caller // $parent;
+        my $host_scope = $host->_scope_id // $parent_scope;
+        # Child shares the parent's backend so nested renders go
+        # through the same engine + controller (and inherit any
+        # injected json_encoder). The controller is fetched via the weak
+        # `$parent` at call time — never captured strongly — so the
+        # closure adds no edge to the per-request reference cycle.
+        my $child_bf = BarefootJS->new($parent->c, { backend => $parent->backend });
+        my $slot_id = delete $props->{_bf_slot};
+        # JSX `key` (a reserved prop) → data-key on the child's scope root
+        # for keyed-loop reconciliation (see `data_key_attr`).
+        my $data_key = delete $props->{key};
+        $child_bf->_data_key($data_key) if defined $data_key;
+        $child_bf->_scope_id(
+            $slot_id ? $host_scope . '_' . $slot_id
+                     : $template_name . '_' . substr(rand() =~ s/^0\.//r, 0, 6)
+        );
+        $child_bf->_is_child(1);
+        # (#1249) Slot identity: host scope + slot id. Emitted as
+        # bf-h / bf-m attributes by hydration_attrs.
+        if ($slot_id) {
+            $child_bf->_bf_parent($host_scope);
+            $child_bf->_bf_mount($slot_id);
+        }
+        # Share the root registry so the child's own template can
+        # render further imported components (#1897).
+        $child_bf->_child_renderers($parent->_child_renderers);
+        $child_bf->_scripts($parent->_scripts);
+        $child_bf->_script_seen($parent->_script_seen);
 
-            my %extra;
-            if ($signal_init) {
-                %extra = $signal_init->($props);
-            } elsif ($manifest_defaults) {
-                %extra = _derive_stash_from_defaults($manifest_defaults, $props);
-            }
+        my %extra;
+        if ($signal_init) {
+            %extra = $signal_init->($props);
+        } elsif ($manifest_defaults) {
+            %extra = _derive_stash_from_defaults($manifest_defaults, $props);
+        }
 
-            # Render the child template with $child_bf bound as the active
-            # instance for the nested render. The backend owns the
-            # engine-specific binding + restore (stash juggle for Mojo).
-            my $html = $parent->backend->render_named(
-                $template_name, $child_bf, { %$props, %extra },
-            );
-            chomp $html;
-            return $html;
-        });
-    }
+        # Render the child template with $child_bf bound as the active
+        # instance for the nested render. The backend owns the
+        # engine-specific binding + restore (stash juggle for Mojo).
+        my $html = $parent->backend->render_named(
+            $template_name, $child_bf, { %$props, %extra },
+        );
+        chomp $html;
+        return $html;
+    });
 }
 
 # Derive template-stash kvs from a manifest entry's `ssrDefaults`

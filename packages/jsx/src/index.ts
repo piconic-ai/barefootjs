@@ -53,6 +53,8 @@ export type {
   TypeDefinition,
   SourceLocation,
   CompilerError,
+  ConformancePin,
+  ConformancePins,
 } from './types.ts'
 
 // Analyzer
@@ -264,6 +266,22 @@ export interface BuildOptions {
    * Forwarded to `compileJSX` as `CompileOptions.localImportPrefixes`.
    */
   localImportPrefixes?: string[]
+  /**
+   * How the CLI produces `barefoot.js` (the client runtime bundle):
+   *   - `'treeshake'` (default) — bundle only the runtime exports this
+   *     project's compiled client JS actually imports, plus a small
+   *     always-kept public mount API (`render`, `hydrate`, etc.).
+   *   - `'full'` — copy the entire prebuilt runtime bundle verbatim.
+   * See `@barefootjs/cli`'s `runtime-treeshake.ts` for the collector and
+   * `ALWAYS_KEEP_RUNTIME_EXPORTS` for the always-kept names.
+   */
+  runtimeBundle?: 'treeshake' | 'full'
+  /**
+   * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
+   * under `runtimeBundle: 'treeshake'` — for names only ever referenced
+   * from hand-written page scripts the CLI never compiles.
+   */
+  runtimeKeep?: string[]
 }
 
 // AttrValue constructors

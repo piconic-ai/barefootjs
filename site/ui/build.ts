@@ -24,6 +24,7 @@ import {
   generateHash,
   resolveRelativeImports,
 } from '../../packages/cli/src/lib/build'
+import { transpile } from '../../packages/cli/src/lib/runtime'
 import { loadIndex } from '../../packages/cli/src/lib/meta-loader'
 import { generateUiLlmsTxt } from '../../packages/cli/src/lib/llms-txt-generator'
 import { addScriptCollection } from '../../packages/adapter-hono/src/build'
@@ -129,12 +130,22 @@ if (!await Bun.file(domDistFile).exists()) {
   await proc.exited
 }
 
-// Copy to dist/components/ for components inside rootDir (ui/components/)
-await Bun.write(
-  resolve(DIST_COMPONENTS_DIR, barefootFileName),
-  Bun.file(domDistFile)
-)
-console.log(`Generated: dist/components/${barefootFileName}`)
+// Copy to dist/components/ for components inside rootDir (ui/components/).
+// Fully minified at copy time (identifier mangling included — unlike
+// component client JS, only the runtime's ESM export names must survive,
+// and Bun.build preserves those).
+const runtimeBuild = await Bun.build({
+  entrypoints: [domDistFile],
+  target: 'browser',
+  format: 'esm',
+  minify: true,
+})
+if (!runtimeBuild.success || runtimeBuild.outputs.length === 0) {
+  for (const log of runtimeBuild.logs) console.error(log)
+  throw new Error('Failed to minify barefoot.js runtime')
+}
+await Bun.write(resolve(DIST_COMPONENTS_DIR, barefootFileName), runtimeBuild.outputs[0])
+console.log(`Generated: dist/components/${barefootFileName} (minified)`)
 
 // Build and copy barefoot-form.js from @barefootjs/form
 // External @barefootjs/client so it resolves via import map
@@ -145,6 +156,7 @@ console.log('Building @barefootjs/form for site...')
 const formBuildResult = await Bun.build({
   entrypoints: [formEntryFile],
   format: 'esm',
+  minify: true,
   external: ['@barefootjs/client', '@barefootjs/client/runtime'],
 })
 
@@ -165,6 +177,7 @@ console.log('Building @barefootjs/chart for site...')
 const chartBuildResult = await Bun.build({
   entrypoints: [chartEntryFile],
   format: 'esm',
+  minify: true,
   external: ['@barefootjs/client', '@barefootjs/client/runtime'],
 })
 
@@ -189,6 +202,7 @@ console.log('Building @barefootjs/xyflow for site...')
 const xyflowBuildResult = await Bun.build({
   entrypoints: [xyflowEntryFile],
   format: 'esm',
+  minify: true,
   external: [
     '@barefootjs/client',
     '@barefootjs/client/runtime',
@@ -213,6 +227,7 @@ await Bun.write(zodWrapper, `export { z } from 'zod';\n`)
 const zodBuildResult = await Bun.build({
   entrypoints: [zodWrapper],
   format: 'esm',
+  minify: true,
 })
 // Clean up temporary wrapper
 await Bun.file(zodWrapper).exists() && await import('node:fs/promises').then(fs => fs.unlink(zodWrapper))
@@ -429,6 +444,24 @@ await resolveRelativeImports({
   sourceDirs: [UI_COMPONENTS_DIR, SHARED_COMPONENTS_DIR, DOCS_COMPONENTS_DIR],
 })
 
+// Minify client JS. Runs after combine + import resolution so the pass
+// sees the final file contents; the static/ copies below inherit it.
+// The runtime (barefoot.js) is already minified at copy time above.
+for (const [name, entry] of Object.entries(manifest)) {
+  if (name === '__barefoot__' || !entry.clientJs) continue
+  const filePath = resolve(DIST_DIR, entry.clientJs)
+  const content = await Bun.file(filePath).text().catch(() => '')
+  if (!content) continue
+  try {
+    // loader 'ts': some inlined utility modules carry TS-only syntax
+    // (non-null assertions) that the plain 'js' parser rejects.
+    await Bun.write(filePath, transpile(content, { loader: 'ts', minify: true }))
+  } catch (err) {
+    throw new Error(`Failed to minify ${entry.clientJs}: ${err instanceof Error ? err.message : err}`)
+  }
+}
+console.log('Minified: component client JS')
+
 // Generate index.ts for re-exporting all components (handles subdirectories)
 async function collectExports(dir: string, prefix: string = ''): Promise<string[]> {
   const exports: string[] = []
@@ -471,8 +504,11 @@ const EMBLA_ESM = resolve(ROOT_DIR, '../../node_modules/embla-carousel/esm/embla
 if (await Bun.file(EMBLA_ESM).exists()) {
   const emblaDir = resolve(DIST_DIR, 'lib')
   await mkdir(emblaDir, { recursive: true })
-  await Bun.write(resolve(emblaDir, 'embla-carousel.esm.js'), Bun.file(EMBLA_ESM))
-  console.log('Copied: dist/lib/embla-carousel.esm.js')
+  await Bun.write(
+    resolve(emblaDir, 'embla-carousel.esm.js'),
+    transpile(await Bun.file(EMBLA_ESM).text(), { loader: 'js', minify: true })
+  )
+  console.log('Copied: dist/lib/embla-carousel.esm.js (minified)')
 }
 
 // Copy lib/ directory to dist/

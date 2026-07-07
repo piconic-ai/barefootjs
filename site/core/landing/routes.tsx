@@ -1,14 +1,16 @@
 /**
  * Landing page routes
  *
- * Renders the landing page at GET /.
+ * Renders the landing page at GET /. Five blocks only — hero +
+ * input/output demo, the fork, CI matrix, for/not-for, and
+ * quickstart; no feature-tour sections (PR #2112).
  */
 
 import { Hono } from 'hono'
 import { landingRenderer } from './renderer'
 import { initHighlighter } from './components/shared/highlighter'
-import { Hero } from './components/hero'
-import { FeaturesSection, UIComponentsSection } from './components/features'
+import { Hero, DemoSection } from './components/hero'
+import { ForkSection, MatrixSection, FitSection, QuickstartSection } from './components/sections'
 
 /**
  * Create the landing page app with routes.
@@ -27,13 +29,17 @@ export async function createLandingApp() {
     const uiHref = hostname === 'localhost' ? 'http://localhost:3002/' : 'https://ui.barefootjs.dev'
     return c.render(
       <>
-        <Hero />
-        <FeaturesSection />
-        <UIComponentsSection uiHref={uiHref} />
+        <Hero uiHref={uiHref} />
+        <DemoSection />
+        <ForkSection />
+        <MatrixSection uiHref={uiHref} />
+        <FitSection />
+        <QuickstartSection />
       </>,
       {
-        title: 'Barefoot.js - Reactive TSX for any backend',
-        description: 'TSX in. Your stack out.',
+        title: 'BarefootJS — TSX in. Your stack out.',
+        description:
+          "Components without the Node server. BarefootJS compiles TSX components into your backend's native templates — Go, Rails, Django, Perl, PHP, Rust. No Node in production.",
       }
     )
   })

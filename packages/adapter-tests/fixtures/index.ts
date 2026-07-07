@@ -130,6 +130,7 @@ import { fixture as clientOnlyLoop } from './client-only-loop'
 import { fixture as clientOnlyLoopWithSiblingCond } from './client-only-loop-with-sibling-cond'
 import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
+import { fixture as untypedPropsReads } from './untyped-props-reads'
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
@@ -142,6 +143,8 @@ import { fixture as returnNullishCoalescing } from './return-nullish-coalescing'
 import { fixture as returnMap } from './return-map'
 // Priority 7: Multi-file composition
 import { fixture as childComponent } from './child-component'
+import { fixture as multiComponentModule } from './multi-component-module'
+import { fixture as restSpreadChildAttrs } from './rest-spread-child-attrs'
 import { fixture as componentWithJsxChildren } from './component-with-jsx-children'
 import { fixture as nativeSelectSpreadChildren } from './native-select-spread-children'
 import { fixture as multipleInstances } from './multiple-instances'
@@ -156,6 +159,9 @@ import { fixture as recordIndexLookup } from './record-index-lookup'
 import { fixture as recordIndexLookupViaChildProp } from './record-index-lookup-via-child-prop'
 // Priority 9: Provider / Async (IR-kind coverage, #1252 Phase 0)
 import { fixture as contextProvider } from './context-provider'
+// #2087: Provider value member falling back to an empty object literal via
+// `?? {}` — the exact chart `ChartConfigContext.Provider` shape.
+import { fixture as contextProviderNullishObjectFallback } from './context-provider-nullish-object-fallback'
 import { fixture as asyncBoundary } from './async-boundary'
 import { fixture as regionBoundary } from './region-boundary'
 import { fixture as searchParamsFixture } from './search-params'
@@ -375,6 +381,7 @@ export const jsxFixtures: JSXFixture[] = [
   clientOnlyLoopWithSiblingCond,
   eventHandlers,
   defaultProps,
+  untypedPropsReads,
   nullishCoalescingText,
   nullishCoalescingJsx,
   logicalOrJsx,
@@ -387,6 +394,8 @@ export const jsxFixtures: JSXFixture[] = [
   returnMap,
   // Priority 7: Multi-file composition
   childComponent,
+  multiComponentModule,
+  restSpreadChildAttrs,
   componentWithJsxChildren,
   nativeSelectSpreadChildren,
   multipleInstances,
@@ -401,6 +410,7 @@ export const jsxFixtures: JSXFixture[] = [
   recordIndexLookupViaChildProp,
   // Priority 9: Provider / Async (IR-kind coverage, #1252 Phase 0)
   contextProvider,
+  contextProviderNullishObjectFallback,
   asyncBoundary,
   regionBoundary,
   searchParamsFixture,

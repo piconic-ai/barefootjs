@@ -6,6 +6,31 @@ import { fileExists, hashString, readText, writeText } from './runtime'
 
 export const CACHE_FILENAME = '.buildcache.json'
 
+/**
+ * Per-exported-component row inside a manifest entry's `components` map.
+ * Emitted only for `templatesPerComponent` adapters, where a multi-component
+ * source file (e.g. the registry's `ui/toast/index.tsx` exporting
+ * ToastProvider / Toast / ToastTitle / ToastClose) compiles to one template
+ * file per component. Server runtimes register one child renderer per row so
+ * `render_child('toast_provider')` etc. resolve (piconic-ai/barefootjs#2132).
+ */
+export interface ManifestComponentEntry {
+  /** Template path relative to outDir (e.g. `templates/ui/toast/Toast.html.ep`) */
+  markedTemplate: string
+  /** This component's statically-derived SSR defaults (see packages/jsx/src/ssr-defaults.ts) */
+  ssrDefaults?: Record<string, unknown>
+}
+
+/** One source file's row in `dist/templates/manifest.json`. */
+export interface ManifestEntry {
+  markedTemplate: string
+  clientJs?: string
+  stubDeps?: string[]
+  ssrDefaults?: Record<string, unknown>
+  /** Per-exported-component templates for `templatesPerComponent` adapters (#2132) */
+  components?: Record<string, ManifestComponentEntry>
+}
+
 export interface CacheEntry {
   /** Content hash of the source file itself */
   hash: string
@@ -16,7 +41,7 @@ export interface CacheEntry {
   /** Manifest key this entry contributes to (null when the entry produced no manifest row) */
   manifestKey: string | null
   /** Stored manifest row, so cache-hit entries can restore it without recompiling */
-  manifestEntry?: { markedTemplate: string; clientJs?: string; stubDeps?: string[]; ssrDefaults?: Record<string, unknown> }
+  manifestEntry?: ManifestEntry
   /** Key used to register this entry's types with the postBuild hook */
   typesKey?: string
   /** Adapter-generated types (e.g. Go structs). Restored on cache hit so the
@@ -35,6 +60,17 @@ export interface BuildCache {
    *  ships with it) implicitly discards the old cache. */
   globalHash: string
   entries: Record<string, CacheEntry>
+  /**
+   * Hash of the tree-shaken runtime's inputs (the collected used-export set,
+   * `runtimeBundle` mode, `minify`, and the source runtime dist file's own
+   * content hash) from the last build that actually regenerated
+   * `barefoot.js`. Lets an incremental build skip re-bundling the runtime
+   * when nothing that would change its contents has changed, while still
+   * regenerating it the moment a component starts (or stops) importing
+   * something — even though that component's own recompile doesn't bump
+   * `globalHash`. See `packages/cli/src/lib/runtime-treeshake.ts`.
+   */
+  runtimeKeepHash?: string
 }
 
 /** Hash a string for cache-equality checks. Short hex is plenty. */

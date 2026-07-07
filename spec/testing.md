@@ -520,6 +520,45 @@ Each example's `playwright.config.ts` configures the webServer command, port, an
 
 ---
 
+## Layer 7: Component × Adapter Compat Lockfile
+
+**Location:** `packages/compat/` (repo-internal — the published CLI does not ship this tooling)
+**Runner:** `bun run compat` (`bun run compat:lock` for the committed lockfile)
+**Speed:** ms (in-process, no language runtimes)
+
+### Purpose
+
+Report whether every `ui/` component **compiles** against every workspace `TemplateAdapter`. `bun run compat -- [component…|--all] [--md] [--json]` runs `compileJSX` + the adapter's `generate()` for each component × adapter pair, entirely in-process, and renders the result as a matrix: `✓` when the compile produced no error-severity diagnostic, otherwise the `BF10x` code(s) it emitted. Known-limitation issue URLs are attached to codes automatically from the adapter's pins (see below), so a `✗` cell in the report links straight to its tracking issue.
+
+This is a **compile-time** check only — it never invokes a language runtime (Go, Ruby, Perl, Rust, etc.) and never renders or compares HTML.
+
+This tooling is repo-internal: `packages/compat` is a private, never-published package that depends on `@barefootjs/jsx`, all 8 adapter packages, and `@barefootjs/adapter-tests`. The published `@barefootjs/cli` package has no compat command and no dependency (declared or dynamic) on any adapter package.
+
+### The lockfile workflow
+
+`bun run compat:lock` runs `bun run packages/compat/src/cli.ts --all --json --out ui/compat.lock.json` and commits the result. CI (`.github/workflows/ci-compat.yml`) regenerates the lockfile on every PR touching a component, the compiler, the client runtime, `packages/compat`, or an adapter package, then runs `git diff --exit-code -- ui/compat.lock.json`. Drift fails the build with a message pointing back at `bun run compat:lock`.
+
+The point of committing the matrix is that compatibility gains and losses show up as an ordinary PR diff — reviewers see exactly which component × adapter cells newly failed (or newly started passing) alongside the code change that caused it, the same way a snapshot test would.
+
+### Pins provenance
+
+Each of the 8 adapter packages exports a `conformancePins` module (`ConformancePins`, from `@barefootjs/jsx`) — a machine-readable declaration of the diagnostics it intentionally emits for shared conformance fixtures instead of lowering them. These pins serve two consumers:
+
+- The adapter's own conformance test (Layer 3) passes them as `expectedDiagnostics`.
+- The compat engine (`packages/compat`) uses them to attach a tracking-issue URL to a matrix cell's diagnostic code.
+
+`packages/compat/src/__tests__/compat-pins.test.ts` is the consistency gate: it replays every pinned fixture through the compat engine and asserts the pinned `{code, severity}` actually appears and that the fixture id still exists in the shared corpus. This means the compat matrix's attribution cannot silently drift from the conformance suite — a pin that goes stale in one place fails a test in the other.
+
+Tracked limitations carry the [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label; that label is the source of truth for issue URLs referenced in the lockfile and matrix output.
+
+### What NOT to test here
+
+- **Rendered-output parity** — a `✓` cell means the component compiled cleanly against that adapter, nothing about the HTML it produces. Render identity is owned by Layer 3 (Adapter Conformance) and the eval vector corpus.
+- Component structure/a11y/signals → use Component IR
+- Compiler analysis internals → use Compiler Unit
+
+---
+
 ## Decision Guide: Where to Write a Test
 
 | Scenario | Layer | Example |
@@ -537,6 +576,7 @@ Each example's `playwright.config.ts` configures the webServer command, port, an
 | Template HTML output | Adapter Conformance | Assert `expectedHtml` in fixture |
 | Client JS produces correct DOM | CSR Conformance | Add fixture, verify `expectedHtml` via CSR render |
 | Generated client JS format | Compiler Unit | Assert on `generateClientJs()` output |
+| Does component X compile against adapter Y | Compat Lockfile | `bun run compat -- X` (or `bun run compat:lock` for the full matrix) |
 
 ### Red flags (test is in the wrong layer)
 

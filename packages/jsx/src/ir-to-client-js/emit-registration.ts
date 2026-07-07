@@ -102,8 +102,10 @@ export function buildInlinableConstants(
  * — the AST substitution + chain resolution now lives upstream.
  *
  * Excludes constants whose entry is `null` (unsafe to inline) — those
- * stay in `unsafeLocalNames` and the CSR template's expression
- * substitution surfaces the UNSAFE sentinel for any reference to them.
+ * are also folded into the unsafe set `generateCsrTemplate` uses
+ * internally (see `mergeCsrNullUnsafe` in html-template.ts, #2106), so
+ * every caller of `generateCsrTemplate` gets a consistent
+ * substitute-or-fallback decision with no extra wiring required here.
  */
 export function csrInlinableConstantsFromCtx(ctx: ClientJsContext): Map<string, string> {
   const out = new Map<string, string>()

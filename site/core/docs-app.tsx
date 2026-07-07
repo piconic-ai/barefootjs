@@ -16,6 +16,7 @@ import { getDocsNavLinks } from './lib/navigation'
 import type { Page, ContentMap, MdxContentMap } from './lib/content'
 import { registerQuickStartRoutes } from './pages/quick-start'
 import { registerMdxDocsRoutes } from './pages/mdx-docs-page'
+import { registerCompatMatrixRoutes } from './pages/compat-matrix'
 
 /**
  * Create the Hono app with routes for all documentation pages.
@@ -32,6 +33,10 @@ export async function createDocsApp(content: ContentMap, pages: Page[], mdx: Mdx
 
   const quickStartSource = mdx['quick-start']
   if (quickStartSource) registerQuickStartRoutes(app, quickStartSource)
+
+  // Compatibility Matrix: rendered from the committed ui/compat.lock.json,
+  // not backed by a docs/core/*.md file.
+  registerCompatMatrixRoutes(app)
 
   // MDX pages with <Tabs> blocks
   for (const [slug, source] of Object.entries(mdx)) {

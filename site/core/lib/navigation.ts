@@ -115,6 +115,7 @@ export const navigation: NavItem[] = [
       { title: 'IR Schema', slug: 'advanced/ir-schema' },
       { title: 'Error Codes', slug: 'advanced/error-codes' },
       { title: 'Performance', slug: 'advanced/performance' },
+      { title: 'Compatibility Matrix', slug: 'advanced/compatibility-matrix' },
     ],
   },
 ]

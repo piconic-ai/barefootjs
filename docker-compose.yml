@@ -181,6 +181,21 @@ services:
       # fallback) so local dev works without running assemble-deps first.
       - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
 
+  django:
+    build:
+      context: .
+      dockerfile: integrations/django/Dockerfile.dev
+    working_dir: /workspace/integrations/django
+    environment:
+      BASE_PATH: /integrations/django
+      DJANGO_ENV: development
+    volumes:
+      - ./integrations/django:/workspace/integrations/django
+      # app.py's sys.path fallback resolves `barefootjs` from the workspace
+      # source dir directly (mirrors xslate's `use lib '../../packages/...'`
+      # fallback) so local dev works without running assemble-deps first.
+      - ./packages/adapter-jinja/python:/workspace/packages/adapter-jinja/python
+
   sinatra:
     build:
       context: .
@@ -234,6 +249,30 @@ services:
       # the workspace source dir directly (mirrors flask's sys.path
       # fallback) so local dev works without running assemble-deps first.
       - ./packages/adapter-twig/php:/workspace/packages/adapter-twig/php
+      # packages/adapter-twig/php/composer.json requires barefootjs/runtime
+      # via a `path` repository pointing at ../../adapter-php (a symlink in
+      # its vendor/ dir) -- that target must exist in the container too.
+      - ./packages/adapter-php:/workspace/packages/adapter-php
+
+  blade:
+    build:
+      context: .
+      dockerfile: integrations/blade/Dockerfile.dev
+    working_dir: /workspace/integrations/blade
+    environment:
+      BASE_PATH: /integrations/blade
+      PHP_ENV: development
+      PORT: "3015"
+    volumes:
+      - ./integrations/blade:/workspace/integrations/blade
+      # index.php's autoload fallback resolves the Barefoot\ runtime from
+      # the workspace source dir directly (mirrors flask's sys.path
+      # fallback) so local dev works without running assemble-deps first.
+      - ./packages/adapter-blade/php:/workspace/packages/adapter-blade/php
+      # packages/adapter-blade/php/composer.json requires barefootjs/runtime
+      # via a `path` repository pointing at ../../adapter-php (a symlink in
+      # its vendor/ dir) -- that target must exist in the container too.
+      - ./packages/adapter-php:/workspace/packages/adapter-php
 
   site-core:
     build:

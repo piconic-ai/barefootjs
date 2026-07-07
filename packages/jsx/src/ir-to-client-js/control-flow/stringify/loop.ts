@@ -27,7 +27,7 @@
 import { emitRefCall, varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
-import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
+import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr } from './template-parse.ts'
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
@@ -117,6 +117,7 @@ export function stringifyPlainLoop(
     indexParam,
     mapPreambleWrapped,
     template,
+    skeletonTemplate,
     reactiveEffects,
     childRefs,
     bodyIsMultiRoot,
@@ -133,6 +134,21 @@ export function stringifyPlainLoop(
     return
   }
 
+  // Hoisted shared-template fast path (perf, see `buildLoopSkeletonTemplate`):
+  // declare the once-per-loop template BEFORE the `mapArray` call so every
+  // row clones from an already-parsed node instead of re-running
+  // `document.createElement('template')` + an `innerHTML` parse per row.
+  // `bodyIsMultiRoot` is re-checked defensively even though the plan builder
+  // only sets `skeletonTemplate` when it's already false.
+  const hoistedTpl = !bodyIsMultiRoot && skeletonTemplate ? skeletonTemplate : null
+  // Keyed off `markerId` (unique per loop, #1087), NOT `containerVar` —
+  // sibling `.map()` calls under the same parent share the container slot,
+  // so a container-derived name would collide ("has already been declared").
+  const tplVar = `__tpl_${markerId.replace(/[^A-Za-z0-9_$]/g, '_')}`
+  if (hoistedTpl) {
+    emitHoistedTemplateDecl(lines, topIndent, tplVar, hoistedTpl)
+  }
+
   // `childRefs` need `__el` as a handle to invoke the user's callback inside
   // the factory, so non-empty refs force the multi-line layout the same way
   // reactive effects do (#1244).
@@ -141,7 +157,9 @@ export function stringifyPlainLoop(
     // Single-line renderItem (no reactive effects, single root, no refs).
     const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
     const preamble = mapPreambleWrapped ? `${mapPreambleWrapped}; ` : ''
-    const cloneExpr = emitTemplateCloneInline(template)
+    const cloneExpr = hoistedTpl
+      ? `return ${hoistedCloneExpr(tplVar, hoistedTpl)}`
+      : emitTemplateCloneInline(template)
     lines.push(
       `${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => { ${unwrapInline}${preamble}if (__existing) return __existing; ${cloneExpr} }, '${markerId}'${loopBfId})`,
     )
@@ -153,12 +171,16 @@ export function stringifyPlainLoop(
   const bodyIndent = topIndent + '  '
   if (paramUnwrap) lines.push(`${bodyIndent}${paramUnwrap}`)
   if (mapPreambleWrapped) lines.push(`${bodyIndent}${mapPreambleWrapped}`)
-  emitLoopItemElementSetup(lines, {
-    template,
-    bodyIsMultiRoot,
-    indent: bodyIndent,
-    singleRootLayout: 'inline',
-  })
+  if (hoistedTpl) {
+    lines.push(`${bodyIndent}const __el = __existing ?? ${hoistedCloneExpr(tplVar, hoistedTpl)}`)
+  } else {
+    emitLoopItemElementSetup(lines, {
+      template,
+      bodyIsMultiRoot,
+      indent: bodyIndent,
+      singleRootLayout: 'inline',
+    })
+  }
   if (reactiveEffects !== null) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
   }

@@ -13,8 +13,8 @@
   //   - `packages/*/src/**` only — never config, scripts, or built output.
   //   - cli / create-barefootjs are npm-only (never published to JSR), so
   //     the JSR import rules don't apply to them.
-  //   - adapter-tests is `private` + in `.changeset/config.json`'s ignore
-  //     list → never published; its `src` is test scaffolding.
+  //   - adapter-tests and compat are `private` + in `.changeset/config.json`'s
+  //     ignore list → never published; their `src` is test/tooling scaffolding.
   //   - `__tests__` and `*.d.ts` are outside JSR's published surface
   //     (`deno check` only reaches exported entries + their non-test, non
   //     -`.d.ts` imports — see scripts/jsr-publish.ts), so the convention
@@ -26,6 +26,7 @@
       "!packages/cli/**",
       "!packages/create-barefootjs/**",
       "!packages/adapter-tests/**",
+      "!packages/compat/**",
       "!**/__tests__/**",
       "!**/*.d.ts"
     ]

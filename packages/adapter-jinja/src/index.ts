@@ -6,3 +6,4 @@
 
 export { JinjaAdapter, jinjaAdapter } from './adapter/index.ts'
 export type { JinjaAdapterOptions } from './adapter/index.ts'
+export { conformancePins } from './conformance-pins.ts'

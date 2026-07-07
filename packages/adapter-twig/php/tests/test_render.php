@@ -9,14 +9,23 @@ declare(strict_types=1);
  * Writes a `.twig` template equivalent to what the `@barefootjs/twig`
  * compile-time adapter emits, then renders it through the runtime +
  * TwigBackend. Exercises scope markers, hydration attrs, text slots via
- * HTML comment markers, autoescaping, and `spread_attrs`.
+ * HTML comment markers, autoescaping, `spread_attrs`, and (being the one
+ * place a REAL TwigBackend is available) Twig-specific reserved-word
+ * mangling end-to-end.
  *
  * Needs `twig/twig` installed (`composer install`); skips gracefully with a
  * notice (not a failure) when `vendor/autoload.php` is absent, per the
  * design doc.
+ *
+ * This is the only test file left in this package (the engine-agnostic
+ * runtime's test suite moved to `packages/adapter-php/tests`, see #2100) --
+ * it requires that package's `_harness.php` directly via a relative path
+ * rather than keeping a local copy or a single-file `run.php` here, and
+ * still runs standalone via `php test_render.php` (`bf_finish()` prints +
+ * `exit()`s when `BF_RUNNER` is undefined, which it is here).
  */
 
-require_once __DIR__ . '/_harness.php';
+require_once __DIR__ . '/../../../adapter-php/tests/_harness.php';
 bf_require_runtime();
 bf_reset();
 
@@ -102,6 +111,28 @@ bf_test('render_child end-to-end (parent -> renderer -> render_named)', function
     $bf->register_child_renderer('child', $childRenderer);
     $out = $backend->render_named('parent', $bf, []);
     bf_assert_eq($out, 'parent:[c1:hi]');
+});
+
+bf_test('render_child mangles reserved-word props via backend->ident (Twig-specific)', function () use ($backend, $bf) {
+    // `BarefootJS::render_child` (packages/adapter-php) delegates key
+    // mangling to the backend's `ident()` rather than hard-coding Twig's
+    // reserved-word set. This probes that delegation directly (a renderer
+    // that reads its raw `$props`, not routed back through
+    // `render_named`'s OWN mangling pass) so the contract is verified in
+    // isolation, not just as an accidental side effect of `render_named`
+    // mangling everything a second time. Uses `for`, the Twig-specific
+    // reserved word (naming.php's TWIG_RESERVED_WORDS, frozen per the
+    // design doc) -- differs from Jinja/Python's set (`class` is Python-
+    // reserved but not Twig-reserved, and vice versa for `for`).
+    $seen = [];
+    $bf->register_child_renderer('probe', function ($props, $caller) use (&$seen) {
+        $seen['props'] = $props;
+        return 'ok';
+    });
+    $bf->render_child('probe', 'for', 'x', 'id', 'y');
+    bf_assert_eq($seen['props']['for_'], 'x');
+    bf_assert_eq($seen['props']['id'], 'y');
+    bf_assert(!array_key_exists('for', $seen['props']), 'expected the raw "for" key to be gone after mangling');
 });
 
 // Custom-escaper sanity check (design doc §2): plain `{{ }}` interpolation

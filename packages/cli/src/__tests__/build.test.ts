@@ -1062,7 +1062,7 @@ describe('processBundleEntries', () => {
       const config = makeConfig(outDir, outDir)
       const cache: BuildCache = emptyCache('global-hash')
       const nextEntries: Record<string, CacheEntry> = {}
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
       expect(changed).toBe(false)
       expect(Object.keys(nextEntries).length).toBe(0)
     } finally {
@@ -1085,7 +1085,7 @@ describe('processBundleEntries', () => {
       const cache: BuildCache = emptyCache('global-hash')
       const nextEntries: Record<string, CacheEntry> = {}
 
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
       expect(changed).toBe(true)
 
       const outPath = resolve(outDir, 'entry.js')
@@ -1134,7 +1134,7 @@ describe('processBundleEntries', () => {
       // allExternals is empty (no `externals` config), yet the bundler must
       // still leave every `@barefootjs/client*` import external rather than
       // trying to inline/resolve them — otherwise the reactive runtime forks.
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache, nextEntries, false)
       expect(changed).toBe(true)
 
       const outContent = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
@@ -1173,7 +1173,7 @@ describe('processBundleEntries', () => {
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
       await new Promise((r) => setTimeout(r, 20)) // ensure a distinguishable mtime if rebuilt
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
 
       expect(changed).toBe(false)
       const mtime2 = statSync(outPath).mtimeMs
@@ -1212,7 +1212,7 @@ describe('processBundleEntries', () => {
 
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
       expect(changed).toBe(true)
 
       const outAfter = readFileSync(resolve(outDir, 'entry.js'), 'utf8')
@@ -1245,7 +1245,7 @@ describe('processBundleEntries', () => {
 
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, false)
       expect(changed).toBe(true)
       expect(existsSync(resolve(outDir, 'entry.js'))).toBe(true)
     } finally {
@@ -1271,7 +1271,7 @@ describe('processBundleEntries', () => {
 
       const cache2: BuildCache = { globalHash: 'global-hash', entries: entries1 }
       const entries2: Record<string, CacheEntry> = {}
-      const changed = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, true)
+      const { changed } = await processBundleEntries(config, outDir, 'components', [], cache2, entries2, true)
       expect(changed).toBe(true)
     } finally {
       rmSync(projectDir, { recursive: true, force: true })

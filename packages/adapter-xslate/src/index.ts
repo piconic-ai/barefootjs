@@ -6,3 +6,4 @@
 
 export { XslateAdapter, xslateAdapter } from './adapter/index.ts'
 export type { XslateAdapterOptions } from './adapter/index.ts'
+export { conformancePins } from './conformance-pins.ts'

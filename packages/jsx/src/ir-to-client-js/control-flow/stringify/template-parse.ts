@@ -146,6 +146,36 @@ export function emitTemplateCloneInline(template: string): string {
 }
 
 /**
+ * Emit the ONE-TIME declaration of a loop's hoisted shared template (perf):
+ * built once per loop, before the `mapArray` call, so every row clones from
+ * an already-parsed node instead of re-running `document.createElement
+ * ('template')` + an `innerHTML` parse per row. `skeletonTemplate` is the
+ * STATIC-ONLY skeleton produced by `buildLoopSkeletonTemplate` (dynamic attrs
+ * omitted, text markers empty) — never the per-row interpolated `template`.
+ *
+ * SVG namespace wrap mirrors `emitTemplateCloneLines` (#135 / #1088):
+ * `templateRootIsSvg` is re-checked against the skeleton (same root tag as
+ * the interpolated template, so the same wrap decision applies).
+ */
+export function emitHoistedTemplateDecl(lines: string[], indent: string, tplVar: string, skeletonTemplate: string): void {
+  const isSvg = templateRootIsSvg(skeletonTemplate)
+  const html = isSvg ? `<svg>${skeletonTemplate}</svg>` : skeletonTemplate
+  lines.push(`${indent}const ${tplVar} = document.createElement('template')`)
+  lines.push(`${indent}${tplVar}.innerHTML = \`${html}\``)
+}
+
+/**
+ * Clone expression reading off a hoisted template variable declared via
+ * `emitHoistedTemplateDecl`, in place of the per-row
+ * `emitTemplateCloneInline` / `emitTemplateCloneLines` parse-and-clone.
+ */
+export function hoistedCloneExpr(tplVar: string, skeletonTemplate: string): string {
+  return templateRootIsSvg(skeletonTemplate)
+    ? `${tplVar}.content.firstElementChild.firstElementChild.cloneNode(true)`
+    : `${tplVar}.content.firstElementChild.cloneNode(true)`
+}
+
+/**
  * Multi-line variant for code paths that emit each line separately.
  * Returns three statements with no trailing newlines.
  */

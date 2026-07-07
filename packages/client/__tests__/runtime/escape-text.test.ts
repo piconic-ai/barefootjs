@@ -34,13 +34,21 @@ describe('escapeText', () => {
     expect(escapeText('count: 0')).toBe('count: 0')
   })
 
-  test('coerces non-string values via String()', () => {
+  test('coerces non-nullish non-string values via String()', () => {
     expect(escapeText(0)).toBe('0')
-    expect(escapeText(undefined)).toBe('undefined')
-    expect(escapeText(null)).toBe('null')
+    // `false` keeps its String() form, matching the reactive text path
+    // (`dynamic-text.ts` is nullish-only via `?? ''`).
+    expect(escapeText(false)).toBe('false')
   })
 
-  test('is byte-identical to escapeAttr (Hono escapes both contexts alike)', () => {
+  test('renders nullish as empty text (#2137)', () => {
+    // JSX/Solid semantics + the Hono SSR reference: `{undefined}` / `{null}`
+    // produce no text. Matches the reactive update path (`String(value ?? '')`).
+    expect(escapeText(undefined)).toBe('')
+    expect(escapeText(null)).toBe('')
+  })
+
+  test('is byte-identical to escapeAttr for non-nullish values (Hono escapes both contexts alike)', () => {
     const samples = ['a&b<c>d"e\'f', 'plain', '<script>', "O'Brien & co"]
     for (const s of samples) expect(escapeText(s)).toBe(escapeAttr(s))
   })

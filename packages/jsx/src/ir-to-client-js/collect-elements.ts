@@ -6,7 +6,7 @@ import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity.ts'
-import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr } from './html-template.ts'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate } from './html-template.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
@@ -671,6 +671,7 @@ export function collectElements(
 
       let template = ''
       let staticItemTemplate: string | undefined
+      let skeletonTemplate: string | undefined
       if (l.childComponent) {
         template = '' // childComponent path uses createComponent directly
         // CSR materialize fallback (#1268): when the loop array references an
@@ -714,6 +715,18 @@ export function collectElements(
           staticItemTemplate = useElementReconciliation
             ? irToPlaceholderTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
             : irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0)
+        } else if (!useElementReconciliation && !l.bodyIsMultiRoot && !l.bodyIsItemConditional) {
+          // Hoisted shared-template fast path (perf): only for the plain
+          // `mapArray` shape — single-root, dynamic array, no element
+          // reconciliation. `buildLoopSkeletonTemplate` re-derives safety
+          // from the raw IR (spread attrs, conditionals, unslotted dynamic
+          // expressions, …) and returns `null` for anything it can't prove
+          // safe; the plan builder (`build-loop.ts`) falls back to the
+          // per-row `template` above whenever this stays `undefined`.
+          skeletonTemplate = buildLoopSkeletonTemplate(l.children[0], {
+            reactiveAttrKeys: new Set(bindings.reactiveAttrs.map(a => `${a.childSlotId}::${a.attrName}`)),
+            reactiveTextSlotIds: new Set(bindings.reactiveTexts.map(t => t.slotId)),
+          }) ?? undefined
         }
       }
 
@@ -732,6 +745,7 @@ export function collectElements(
         iterationShape: l.iterationShape,
         template,
         staticItemTemplate,
+        skeletonTemplate,
         childEventHandlers: childHandlers,
         bindings,
         childComponent: l.childComponent,

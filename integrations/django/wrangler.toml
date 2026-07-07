@@ -1,0 +1,31 @@
+name = "barefootjs-django-example"
+main = "container.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[containers]]
+class_name = "DjangoContainer"
+image = "./Dockerfile"
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "DJANGO_CONTAINER"
+class_name = "DjangoContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DjangoContainer"]
+
+# Two patterns: `/integrations/django/*` matches /integrations/django/...
+# but not the bare /integrations/django, so add the no-slash variant
+# explicitly.
+[[routes]]
+pattern = "barefootjs.dev/integrations/django"
+zone_name = "barefootjs.dev"
+
+[[routes]]
+pattern = "barefootjs.dev/integrations/django/*"
+zone_name = "barefootjs.dev"
+
+[vars]
+BASE_PATH = "/integrations/django"

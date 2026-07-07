@@ -4404,8 +4404,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item), (item, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`<li data-key="\${item()}"><!--bf:s0-->\${escapeText(item())}<!--/--></li>\`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const [__rt_s0] = $t(__el, 's0')
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item()) }) }
     return __el
@@ -4523,8 +4525,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item), (item, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`<li data-key="\${item()}"><!--bf:s0-->\${escapeText(item())}<!--/--></li>\`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const [__rt_s0] = $t(__el, 's0')
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item()) }) }
     return __el
@@ -4590,8 +4594,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items().filter(item => item.active), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`<li data-key="\${item().id}"><!--bf:s0-->\${escapeText(item().name)}<!--/--></li>\`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const [__rt_s0] = $t(__el, 's0')
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
     return __el
@@ -5089,8 +5095,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => todos().filter(t => !t.done).toSorted((a, b) => a.date - b.date), _s1, (t) => String(t.id), (t, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`<li data-key="\${t().id}"><!--bf:s0-->\${escapeText(t().name)}<!--/--></li>\`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const [__rt_s0] = $t(__el, 's0')
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(t().name) }) }
     return __el
@@ -5218,8 +5226,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item.id), (item, __idx, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`<li data-key="\${item().id}"><!--bf:s0-->\${escapeText(item().name)}<!--/--></li>\`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const [__rt_s0] = $t(__el, 's0')
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
     return __el
@@ -5285,8 +5295,10 @@ export function initExample(__scope, _p = {}) {
 
   const [_s1] = $(__scope, 's1')
 
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item, i) => String(i), (item, i, __existing) => {
-    const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = \`<li data-key="\${i}"><!--bf:s0-->\${escapeText(item().name)}<!--/--></li>\`; return __tpl.content.firstElementChild.cloneNode(true) })()
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
     { const [__rt_s0] = $t(__el, 's0')
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
     return __el

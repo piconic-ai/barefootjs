@@ -1,0 +1,7 @@
+extends: substitution
+message: "Use 'BarefootJS' (npm package: barefootjs)"
+level: error
+swap:
+  'BareFootJS': BarefootJS
+  'Barefoot\.js': BarefootJS
+  'BarefootJs': BarefootJS

@@ -2078,3 +2078,57 @@ func TestQuery(t *testing.T) {
 		}
 	}
 }
+
+// AsMap normalizes any string-keyed map kind held in an interface{} prop
+// field into map[string]interface{} for object-valued context bindings, and
+// returns nil for every "absent" shape so the generated `?? {}` fallback
+// engages (#2111 review: a bare `.(map[string]interface{})` assertion
+// silently dropped a caller-supplied map[string]string).
+func TestAsMap(t *testing.T) {
+	// Present values normalize (or pass through) with entries intact.
+	direct := map[string]interface{}{"label": "Sales"}
+	if got := AsMap(direct); len(got) != 1 || got["label"] != "Sales" {
+		t.Errorf("AsMap(map[string]interface{}) = %v, want pass-through", got)
+	}
+	typed := map[string]string{"label": "Sales"}
+	if got := AsMap(typed); len(got) != 1 || got["label"] != "Sales" {
+		t.Errorf("AsMap(map[string]string) = %v, want converted map with entries", got)
+	}
+	type key string
+	named := map[key]int{"n": 1}
+	if got := AsMap(named); got != nil {
+		// Non-plain-string key kinds are still reflect.String — verify they convert.
+		if len(got) != 1 || got["n"] != 1 {
+			t.Errorf("AsMap(map[named-string]int) = %v, want converted map", got)
+		}
+	} else {
+		t.Errorf("AsMap(map[named-string]int) = nil, want converted map")
+	}
+	empty := map[string]interface{}{}
+	if got := AsMap(empty); got == nil || len(got) != 0 {
+		t.Errorf("AsMap(empty map) = %v, want present-but-empty map (not nil)", got)
+	}
+
+	// Absent shapes return nil so `?? {}` falls back.
+	if got := AsMap(nil); got != nil {
+		t.Errorf("AsMap(nil) = %v, want nil", got)
+	}
+	var typedNil map[string]string
+	if got := AsMap(typedNil); got != nil {
+		t.Errorf("AsMap(typed-nil map) = %v, want nil", got)
+	}
+	var ifaceNil map[string]interface{}
+	if got := AsMap(ifaceNil); got != nil {
+		t.Errorf("AsMap(typed-nil map[string]interface{}) = %v, want nil", got)
+	}
+	if got := AsMap("not a map"); got != nil {
+		t.Errorf("AsMap(string) = %v, want nil", got)
+	}
+	if got := AsMap(map[int]string{1: "x"}); got != nil {
+		t.Errorf("AsMap(int-keyed map) = %v, want nil", got)
+	}
+	ptr := &direct
+	if got := AsMap(ptr); len(got) != 1 || got["label"] != "Sales" {
+		t.Errorf("AsMap(*map[string]interface{}) = %v, want dereferenced map", got)
+	}
+}

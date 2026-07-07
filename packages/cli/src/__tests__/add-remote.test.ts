@@ -3,7 +3,7 @@ import { fetchRegistryItem } from '../lib/meta-loader'
 import { addFromRegistry, toRegistryName } from '../commands/add'
 import type { RegistryItem } from '../lib/types'
 import type { BarefootConfig } from '../context'
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'fs'
+import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, statSync } from 'fs'
 import path from 'path'
 import os from 'os'
 
@@ -370,6 +370,43 @@ describe('addFromRegistry', () => {
       'https://example.com/r/mixed.json',
       'https://example.com/r/Mixed.json',
     ])
+  })
+
+  test('touches uno.config.ts after adding files so unocss --watch picks up new directories', async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify(buttonItem), { status: 200 })
+
+    const unoConfig = path.join(tmpDir, 'uno.config.ts')
+    writeFileSync(unoConfig, 'export default {}')
+    const before = statSync(unoConfig).mtimeMs
+
+    await new Promise(r => setTimeout(r, 50))
+    await addFromRegistry(['button'], 'https://example.com/r/', tmpDir, config, false)
+
+    const after = statSync(unoConfig).mtimeMs
+    expect(after).toBeGreaterThan(before)
+  })
+
+  test('does not touch uno.config.ts when no files were added', async () => {
+    globalThis.fetch = async () => new Response(JSON.stringify(buttonItem), { status: 200 })
+
+    // Pre-create all files so nothing is added
+    for (const file of buttonItem.files) {
+      const destPath = file.path.startsWith('components/ui/')
+        ? path.join(tmpDir, file.path)
+        : path.join(tmpDir, file.path)
+      mkdirSync(path.dirname(destPath), { recursive: true })
+      writeFileSync(destPath, file.content)
+    }
+
+    const unoConfig = path.join(tmpDir, 'uno.config.ts')
+    writeFileSync(unoConfig, 'export default {}')
+    const before = statSync(unoConfig).mtimeMs
+
+    await new Promise(r => setTimeout(r, 50))
+    await addFromRegistry(['button'], 'https://example.com/r/', tmpDir, config, false)
+
+    const after = statSync(unoConfig).mtimeMs
+    expect(after).toBe(before)
   })
 })
 

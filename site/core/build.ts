@@ -26,6 +26,7 @@ import {
   generateHash,
   resolveRelativeImports,
 } from '../../packages/cli/src/lib/build'
+import { transpile } from '../../packages/cli/src/lib/runtime'
 import { addScriptCollection } from '../../packages/adapter-hono/src/build'
 
 const ROOT_DIR = dirname(import.meta.path)
@@ -64,11 +65,23 @@ if (!await Bun.file(domDistFile).exists()) {
   await proc.exited
 }
 
-await Bun.write(
-  resolve(DIST_COMPONENTS_DIR, barefootFileName),
-  Bun.file(domDistFile)
-)
-console.log(`Generated: dist/components/${barefootFileName}`)
+// Fully minify the runtime at copy time (identifier mangling included —
+// unlike component client JS, only the runtime's ESM export names must
+// survive, and Bun.build preserves those). The runtime is the largest
+// single script the site serves, and the LP's "~14 kB gzipped" claim is
+// measured on this minified build.
+const runtimeBuild = await Bun.build({
+  entrypoints: [domDistFile],
+  target: 'browser',
+  format: 'esm',
+  minify: true,
+})
+if (!runtimeBuild.success || runtimeBuild.outputs.length === 0) {
+  for (const log of runtimeBuild.logs) console.error(log)
+  throw new Error('Failed to minify barefoot.js runtime')
+}
+await Bun.write(resolve(DIST_COMPONENTS_DIR, barefootFileName), runtimeBuild.outputs[0])
+console.log(`Generated: dist/components/${barefootFileName} (minified)`)
 
 // ── 3. Compile "use client" components ────────────────────────
 
@@ -205,6 +218,24 @@ await resolveRelativeImports({
   manifest,
   sourceDirs: [COMPONENTS_DIR, resolve(SHARED_DIR, 'components'), LANDING_COMPONENTS_DIR],
 })
+
+// Minify client JS. Runs after combine + import resolution so the pass
+// sees the final file contents; the static/ copies below inherit it.
+// The runtime (barefoot.js) is already minified at copy time above.
+for (const [name, entry] of Object.entries(manifest)) {
+  if (name === '__barefoot__' || !entry.clientJs) continue
+  const filePath = resolve(DIST_DIR, entry.clientJs)
+  const content = await Bun.file(filePath).text().catch(() => '')
+  if (!content) continue
+  try {
+    // loader 'ts': some inlined utility modules carry TS-only syntax
+    // (non-null assertions) that the plain 'js' parser rejects.
+    await Bun.write(filePath, transpile(content, { loader: 'ts', minify: true }))
+  } catch (err) {
+    throw new Error(`Failed to minify ${entry.clientJs}: ${err instanceof Error ? err.message : err}`)
+  }
+}
+console.log('Minified: component client JS')
 
 // Generate index.ts for re-exporting all compiled components
 async function collectExports(dir: string, prefix: string = ''): Promise<string[]> {

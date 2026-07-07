@@ -90,3 +90,8 @@ __pycache__/
 # PHP (Composer)
 vendor/
 composer.lock
+
+# Benchmarks: generated output (runner/build.ts, babel transform temp, results)
+benchmarks/results/
+benchmarks/**/.babel-out*/
+benchmarks/ssr/apps/*/.build-temp/

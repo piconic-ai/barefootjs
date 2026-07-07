@@ -145,7 +145,7 @@ fails.
 | Perl | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` |
 | Python | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` |
 | Ruby | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` |
-| PHP | `packages/adapter-twig/php/tests/test_helper_vectors.php` | `packages/adapter-twig/php/tests/vector-divergences.json` |
+| PHP | `packages/adapter-php/tests/test_helper_vectors.php` | `packages/adapter-php/tests/vector-divergences.json` |
 
 The JS reference is the generator itself (`cases.ts` / `generate.ts`,
 `eval-cases.ts` / `eval-reference.ts` / `eval-generate.ts`) — there is

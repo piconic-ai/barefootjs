@@ -9,13 +9,16 @@
 import { HonoAdapter } from '../src/adapter'
 import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
+import { conformancePins } from '../src/conformance-pins'
 
 runAdapterConformanceTests({
   name: 'hono',
   factory: () => new HonoAdapter(),
   render: renderHonoComponent,
   // Hono's SSR runtime is JS — broad `acceptsTemplateCall` covers
-  // every conformance case.
+  // every conformance case. `conformancePins` is empty (no pins) but
+  // still wired through for uniformity with the other 7 adapters.
+  expectedDiagnostics: conformancePins,
   skipMarkerConformance: new Set<string>([
     // TodoApp's keyed `.map` carries a `/* @client */` marker, which
     // the compiler intentionally elides on the SSR side (loop body
