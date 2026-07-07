@@ -30,6 +30,8 @@ import {
   buildGitignore,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
+  FAVICON_SVG,
+  faviconLinkTag,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -99,6 +101,7 @@ func defaultLayout(ctx *bf.RenderContext) string {
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>%s</title>
+	${faviconLinkTag('/static/favicon.svg')}
 	${CSS_LINKS_BEGIN}
 	<!-- Link all three sheets so the browser fetches them in parallel —
 	     chaining via styles.css @import would defer tokens/uno to a
@@ -283,6 +286,7 @@ export function goCommonFiles(): Record<string, string> {
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
+    'public/favicon.svg': FAVICON_SVG,
     '.gitignore': GO_GITIGNORE,
   }
 }
@@ -291,7 +295,9 @@ export function goCommonFiles(): Record<string, string> {
 export function goScripts(): Record<string, AdapterScriptValue> {
   return {
     dev: 'go mod tidy && bf build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "go run ."',
-    build: 'go mod tidy && bf build && unocss',
+    // `--minify` (not on `dev`): matches the site's "~14 kB min+gzip"
+    // runtime-size claim, which is measured on a minified build.
+    build: 'go mod tidy && bf build --minify && unocss',
     start: 'go run .',
   }
 }

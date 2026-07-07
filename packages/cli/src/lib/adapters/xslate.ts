@@ -16,6 +16,8 @@ import {
   COMPONENTS_MANIFEST_SEED,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
+  FAVICON_SVG,
+  faviconLinkTag,
   STYLES_CSS,
   TOKENS_CSS,
   UNOCSS_DEV_DEPENDENCIES,
@@ -136,6 +138,7 @@ sub layout (%a) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BarefootJS app</title>
+    ${faviconLinkTag('/static/favicon.svg')}
     ${CSS_LINKS_BEGIN}
     <!-- Link all three sheets so the browser fetches them in parallel.
          tokens first so its CSS variables exist before any rule uses them. -->
@@ -351,6 +354,7 @@ export const XSLATE_ADAPTER: AdapterTemplate = {
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
+    'public/favicon.svg': FAVICON_SVG,
     'dist/components/manifest.json': COMPONENTS_MANIFEST_SEED,
     '.gitignore': XSLATE_GITIGNORE,
   },
@@ -360,7 +364,9 @@ export const XSLATE_ADAPTER: AdapterTemplate = {
     // Starman (not plackup's default single-process server) so the
     // dev-reload SSE endpoint can stream while requests are served.
     dev: `concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "plackup -s Starman --workers 5 -p ${XSLATE_PORT} app.psgi"`,
-    build: 'bf build && unocss',
+    // `--minify` (not on `dev`): matches the site's "~14 kB min+gzip"
+    // runtime-size claim, which is measured on a minified build.
+    build: 'bf build --minify && unocss',
     start: `PLACK_ENV=production plackup -s Starman --workers 5 -p ${XSLATE_PORT} app.psgi`,
   },
   dependencies: {

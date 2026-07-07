@@ -13,6 +13,8 @@ import {
   COMPONENTS_MANIFEST_SEED,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
+  FAVICON_SVG,
+  faviconLinkTag,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -61,6 +63,7 @@ export const renderer = jsxRenderer(({ children, title }) => (
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{title ?? 'BarefootJS app'}</title>
+      ${faviconLinkTag('/favicon.svg')}
       ${CSS_LINKS_BEGIN}
       {/* Link all three sheets so the browser fetches them in
           parallel — chaining via styles.css @import would defer
@@ -197,6 +200,7 @@ export const HONO_ADAPTER: AdapterTemplate = {
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
+    'public/favicon.svg': FAVICON_SVG,
     'public/components/manifest.json': COMPONENTS_MANIFEST_SEED,
     '.gitignore': HONO_GITIGNORE,
   },
@@ -206,8 +210,12 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // `pnpm dlx` wrapper needed (and no unpinned download on first
     // `<pm> run dev`, since the version is pinned in devDependencies).
     dev: 'concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "wrangler dev --live-reload"',
-    build: 'bf build && unocss',
-    deploy: 'bf build && unocss && wrangler deploy',
+    // `--minify` here (not on `dev`/`watch`): the site's landing-page
+    // runtime-size claim ("~14 kB min+gzip", site/core/build.ts) is
+    // measured on a minified build, and the dev pipeline intentionally
+    // serves the unminified runtime for readable stack traces.
+    build: 'bf build --minify && unocss',
+    deploy: 'bf build --minify && unocss && wrangler deploy',
   },
   deploy: {
     target: 'Cloudflare Workers',

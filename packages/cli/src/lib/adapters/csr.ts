@@ -16,6 +16,8 @@ import {
   buildGitignore,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
+  FAVICON_SVG,
+  faviconLinkTag,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -147,6 +149,7 @@ const CSR_INDEX_HTML = `<!DOCTYPE html>
   <script type="importmap">
     { "imports": { "@barefootjs/client/runtime": "/static/components/barefoot.js" } }
   </script>
+  ${faviconLinkTag('/static/favicon.svg')}
   ${CSS_LINKS_BEGIN}
   <!-- Link all three sheets so the browser fetches them in parallel —
        chaining via styles.css @import would defer tokens/uno to a
@@ -211,11 +214,14 @@ export const CSR_ADAPTER: AdapterTemplate = {
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
+    'public/favicon.svg': FAVICON_SVG,
     '.gitignore': CSR_GITIGNORE,
   },
   scripts: {
     dev: 'bf build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "tsx watch server.ts"',
-    build: 'bf build && unocss',
+    // `--minify` (not on `dev`): matches the site's "~14 kB min+gzip"
+    // runtime-size claim, which is measured on a minified build.
+    build: 'bf build --minify && unocss',
     start: 'tsx server.ts',
   },
   dependencies: {

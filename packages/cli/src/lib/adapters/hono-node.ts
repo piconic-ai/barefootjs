@@ -14,6 +14,8 @@ import {
   COMPONENTS_MANIFEST_SEED,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
+  FAVICON_SVG,
+  faviconLinkTag,
   SHARED_COUNTER_TSX,
   SHARED_COUNTER_TEST_TSX,
   STYLES_CSS,
@@ -160,6 +162,7 @@ export function createRenderer({ componentsBase }: CreateRendererOptions) {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>{title ?? 'BarefootJS app'}</title>
+          ${faviconLinkTag('/static/favicon.svg')}
           ${CSS_LINKS_BEGIN}
           {/* Link all three sheets so the browser fetches them in
               parallel — chaining via styles.css @import would defer
@@ -266,12 +269,15 @@ export const HONO_NODE_ADAPTER: AdapterTemplate = {
     'public/styles.css': STYLES_CSS,
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
+    'public/favicon.svg': FAVICON_SVG,
     'dist/components/manifest.json': COMPONENTS_MANIFEST_SEED,
     '.gitignore': HONO_NODE_GITIGNORE,
   },
   scripts: {
     dev: 'bf build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "tsx watch server.tsx"',
-    build: 'bf build && unocss',
+    // `--minify` (not on `dev`): matches the site's "~14 kB min+gzip"
+    // runtime-size claim, which is measured on a minified build.
+    build: 'bf build --minify && unocss',
     start: 'tsx server.tsx',
   },
   dependencies: {

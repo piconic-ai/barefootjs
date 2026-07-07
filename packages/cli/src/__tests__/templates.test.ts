@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { ADAPTERS, DEFAULT_ADAPTER, CSS_LIBRARIES, DEFAULT_CSS_LIBRARY } from '../lib/templates'
+import { CSS_LINKS_BEGIN } from '../lib/adapters/shared'
 
 describe('adapter registry', () => {
   test('default adapter is registered', () => {
@@ -587,6 +588,77 @@ describe('adapter registry', () => {
         expect(value).toBe('latest')
       }
     }
+  })
+
+  // Issue #2124 item 1: no scaffold shipped a favicon, so the first
+  // `npm run dev` showed a red 404 in the console for `/favicon.ico`.
+  describe('favicon (issue #2124)', () => {
+    test.each(Object.keys(ADAPTERS))('%s ships public/favicon.svg', (id) => {
+      const svg = ADAPTERS[id].files['public/favicon.svg']
+      expect(svg, `${id} missing public/favicon.svg`).toBeTruthy()
+      expect(svg).toContain('<svg')
+    })
+
+    // [adapter id, head-bearing file, the href the adapter serves
+    // public/favicon.svg at — mirrors the CSS link contract cases
+    // above, since favicon.svg rides the same static dir as
+    // tokens.css/styles.css/uno.css for every adapter.]
+    const FAVICON_HEAD_CASES: Array<[string, string, string]> = [
+      ['hono', 'renderer.tsx', '/favicon.svg'],
+      ['hono-node', 'renderer.tsx', '/static/favicon.svg'],
+      ['echo', 'renderer.go', '/static/favicon.svg'],
+      ['gin', 'renderer.go', '/static/favicon.svg'],
+      ['chi', 'renderer.go', '/static/favicon.svg'],
+      ['nethttp', 'renderer.go', '/static/favicon.svg'],
+      ['mojo', 'app.pl', '/static/favicon.svg'],
+      ['xslate', 'app.psgi', '/static/favicon.svg'],
+      ['csr', 'pages/index.html', '/static/favicon.svg'],
+    ]
+
+    test.each(FAVICON_HEAD_CASES)('%s/%s links the favicon at the right static prefix', (id, file, href) => {
+      const contents = ADAPTERS[id].files[file]
+      expect(contents, `${id} missing ${file}`).toBeTruthy()
+      expect(contents).toContain(`<link rel="icon" type="image/svg+xml" href="${href}" />`)
+    })
+
+    test.each(FAVICON_HEAD_CASES)(
+      '%s/%s links the favicon OUTSIDE the CSS_LINKS_BEGIN/END marker region',
+      (id, file, href) => {
+        // processCssHead (lib/css.ts) strips the whole marker region
+        // under `--css none` — the favicon link has to sit outside it
+        // so the bare (no-UnoCSS) scaffold still resolves the icon.
+        const contents = ADAPTERS[id].files[file]
+        const linkIdx = contents.indexOf(`href="${href}"`)
+        const beginIdx = contents.indexOf(CSS_LINKS_BEGIN)
+        expect(linkIdx, `${id}/${file} missing favicon link`).toBeGreaterThan(-1)
+        expect(beginIdx, `${id}/${file} missing CSS_LINKS_BEGIN`).toBeGreaterThan(-1)
+        expect(linkIdx).toBeLessThan(beginIdx)
+      },
+    )
+  })
+
+  // Issue #2124 item 3a: `--minify` on build/deploy (not dev/watch) so
+  // the scaffold's production build matches the site's "~14 kB
+  // min+gzip" runtime-size claim, which is measured on a minified
+  // build (site/core/build.ts).
+  describe('build/deploy scripts pass --minify to `bf build` (issue #2124)', () => {
+    test.each(Object.keys(ADAPTERS))('%s build script includes --minify', (id) => {
+      const build = ADAPTERS[id].scripts.build
+      const rendered = typeof build === 'function' ? build('npm') : build
+      expect(rendered).toMatch(/\bbf build --minify\b/)
+    })
+
+    test('hono deploy script includes --minify', () => {
+      const deploy = ADAPTERS.hono.scripts.deploy!
+      const rendered = typeof deploy === 'function' ? deploy('npm') : deploy
+      expect(rendered).toMatch(/\bbf build --minify\b/)
+    })
+
+    test.each(Object.keys(ADAPTERS))('%s dev script does NOT pass --minify', (id) => {
+      const dev = ADAPTERS[id].scripts.dev
+      const rendered = typeof dev === 'function' ? dev('npm') : dev
+      expect(rendered, `${id} dev script should stay unminified`).not.toContain('--minify')
+    })
   })
 })
 
