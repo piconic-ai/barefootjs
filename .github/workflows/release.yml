@@ -358,6 +358,17 @@ jobs:
           PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'barefootjs' }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
+          # The split push above is the substantive publish step — the mirror
+          # repo now carries the new commit + tag, and Packagist picks that up
+          # via its GitHub webhook or periodic crawl. This call only asks for an
+          # *immediate* re-crawl and needs an account API token. Treat it as
+          # best-effort: if the secret isn't configured, warn and skip rather
+          # than failing an otherwise-successful release. A present-but-rejected
+          # token still fails the step (curl -sSf), so real auth errors surface.
+          if [ -z "${PACKAGIST_API_TOKEN}" ]; then
+            echo "::warning::PACKAGIST_API_TOKEN is unset; skipping the immediate Packagist re-crawl for barefootjs/twig. The mirror push succeeded, so Packagist will update on its next crawl. Set the secret (and register the package once at packagist.org) to trigger updates immediately."
+            exit 0
+          fi
           curl -sSf -XPOST \
             -H 'Content-Type: application/json' \
             -H "API-Token: ${PACKAGIST_API_TOKEN}" \
@@ -434,6 +445,11 @@ jobs:
           PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'barefootjs' }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
+          # Best-effort immediate re-crawl; see the Twig job for the rationale.
+          if [ -z "${PACKAGIST_API_TOKEN}" ]; then
+            echo "::warning::PACKAGIST_API_TOKEN is unset; skipping the immediate Packagist re-crawl for barefootjs/blade. The mirror push succeeded, so Packagist will update on its next crawl. Set the secret (and register the package once at packagist.org) to trigger updates immediately."
+            exit 0
+          fi
           curl -sSf -XPOST \
             -H 'Content-Type: application/json' \
             -H "API-Token: ${PACKAGIST_API_TOKEN}" \
@@ -501,6 +517,11 @@ jobs:
           PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'barefootjs' }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
+          # Best-effort immediate re-crawl; see the Twig job for the rationale.
+          if [ -z "${PACKAGIST_API_TOKEN}" ]; then
+            echo "::warning::PACKAGIST_API_TOKEN is unset; skipping the immediate Packagist re-crawl for barefootjs/php. The mirror push succeeded, so Packagist will update on its next crawl. Set the secret (and register the package once at packagist.org) to trigger updates immediately."
+            exit 0
+          fi
           curl -sSf -XPOST \
             -H 'Content-Type: application/json' \
             -H "API-Token: ${PACKAGIST_API_TOKEN}" \
