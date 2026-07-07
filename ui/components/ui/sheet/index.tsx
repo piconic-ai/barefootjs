@@ -36,6 +36,16 @@
  *   </SheetContent>
  * </Sheet>
  * ```
+ *
+ * @example Styled trigger (asChild)
+ * ```tsx
+ * // Wrapping a <Button> inside SheetTrigger requires asChild. Without it,
+ * // SheetTrigger renders its OWN <button>, the HTML parser auto-closes the
+ * // nested <button>, and the sheet silently never opens.
+ * <SheetTrigger asChild>
+ *   <Button variant="outline">Open Sheet</Button>
+ * </SheetTrigger>
+ * ```
  */
 
 import { createContext, useContext, createEffect, createPortal, isSSRPortal } from '@barefootjs/client'
@@ -147,12 +157,44 @@ function Sheet(props: SheetProps) {
 }
 
 /**
+ * Detects the classic shadcn/ui migration mistake: wrapping an interactive
+ * element (e.g. `<Button>`) inside a non-asChild *Trigger. The Trigger renders
+ * its own `<button>` around it, so the HTML parser auto-closes the nested
+ * `<button>` while parsing — the outer trigger ends up EMPTY with the inner
+ * element as its next sibling instead of its child. Click wiring lands on the
+ * empty outer button, so the visible inner element does nothing.
+ * For DOM trees built without going through the HTML parser (e.g. programmatic
+ * DOM construction), the nested element can instead survive as an actual
+ * descendant, so both shapes are checked.
+ * See https://github.com/piconic-ai/barefootjs/issues/2127.
+ */
+function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive || siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger next to an interactive element — did you nest a <button>/<Button> inside it? Use <${componentName} asChild> to adopt your own element.`
+    )
+  }
+}
+
+/**
  * Props for SheetTrigger component.
  */
 interface SheetTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of SheetTrigger's own
+   * `<button>`. Required whenever `children` is itself an interactive element
+   * (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the
+   * HTML parser and the sheet silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
@@ -163,7 +205,8 @@ interface SheetTriggerProps extends ButtonHTMLAttributes {
  * Reads open state from context and toggles via onOpenChange.
  *
  * @param props.disabled - Whether disabled
- * @param props.asChild - Render child as trigger
+ * @param props.asChild - Render child as trigger. Required when `children` is an
+ *   interactive element like `<Button>` — see SheetTriggerProps.asChild for why.
  */
 function SheetTrigger(props: SheetTriggerProps) {
   const handleMount = (el: HTMLElement) => {
@@ -172,6 +215,8 @@ function SheetTrigger(props: SheetTriggerProps) {
     el.addEventListener('click', () => {
       ctx.onOpenChange(!ctx.open())
     })
+
+    if (!props.asChild) warnIfMisusedTrigger(el, 'SheetTrigger')
   }
 
   if (props.asChild) {

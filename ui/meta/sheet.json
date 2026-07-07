@@ -52,7 +52,7 @@
           "name": "asChild",
           "type": "boolean",
           "required": false,
-          "description": "Render child element as trigger instead of built-in button"
+          "description": "Render the child element as the trigger instead of SheetTrigger's own `<button>`. Required whenever `children` is itself an interactive element (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the HTML parser and the sheet silently never opens."
         },
         {
           "name": "children",
@@ -176,10 +176,14 @@
     {
       "title": "Basic sheet",
       "code": "const [open, setOpen] = createSignal(false)\n\n<Sheet open={open()} onOpenChange={setOpen}>\n  <SheetTrigger>Open Sheet</SheetTrigger>\n  <SheetOverlay />\n  <SheetContent side=\"right\" ariaLabelledby=\"sheet-title\">\n    <SheetHeader>\n      <SheetTitle id=\"sheet-title\">Sheet Title</SheetTitle>\n      <SheetDescription>Sheet description here.</SheetDescription>\n    </SheetHeader>\n    <SheetFooter>\n      <SheetClose>Close</SheetClose>\n    </SheetFooter>\n  </SheetContent>\n</Sheet>"
+    },
+    {
+      "title": "Styled trigger (asChild)",
+      "code": "// Wrapping a <Button> inside SheetTrigger requires asChild. Without it,\n// SheetTrigger renders its OWN <button>, the HTML parser auto-closes the\n// nested <button>, and the sheet silently never opens.\n<SheetTrigger asChild>\n  <Button variant=\"outline\">Open Sheet</Button>\n</SheetTrigger>"
     }
   ],
   "accessibility": {
-    "role": "dialog",
+    "role": "dialog, button",
     "ariaAttributes": [
       "aria-modal",
       "aria-labelledby",

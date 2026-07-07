@@ -46,7 +46,7 @@
           "name": "asChild",
           "type": "boolean",
           "required": false,
-          "description": "Render child element as trigger instead of built-in button"
+          "description": "Render the child element as the trigger instead of PopoverTrigger's own `<button>`. Required whenever `children` is itself an interactive element (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the HTML parser and the popover silently never opens."
         },
         {
           "name": "children",
@@ -96,10 +96,15 @@
   "examples": [
     {
       "title": "Basic popover",
-      "code": "const [open, setOpen] = createSignal(false)\n\n<Popover open={open()} onOpenChange={setOpen}>\n  <PopoverTrigger>\n    <button>Open</button>\n  </PopoverTrigger>\n  <PopoverContent>\n    <p>Popover content here.</p>\n  </PopoverContent>\n</Popover>"
+      "code": "const [open, setOpen] = createSignal(false)\n\n<Popover open={open()} onOpenChange={setOpen}>\n  <PopoverTrigger>Open</PopoverTrigger>\n  <PopoverContent>\n    <p>Popover content here.</p>\n  </PopoverContent>\n</Popover>"
+    },
+    {
+      "title": "Styled trigger (asChild)",
+      "code": "// Wrapping a <Button> inside PopoverTrigger requires asChild. Without it,\n// PopoverTrigger renders its OWN <button>, the HTML parser auto-closes the\n// nested <button>, and the popover silently never opens.\n<PopoverTrigger asChild>\n  <Button variant=\"outline\">Open</Button>\n</PopoverTrigger>"
     }
   ],
   "accessibility": {
+    "role": "button",
     "ariaAttributes": [
       "aria-expanded"
     ],

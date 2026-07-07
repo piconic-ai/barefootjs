@@ -52,7 +52,7 @@
           "name": "asChild",
           "type": "boolean",
           "required": false,
-          "description": "Render child element as trigger instead of built-in button"
+          "description": "Render the child element as the trigger instead of AlertDialogTrigger's own `<button>`. Required whenever `children` is itself an interactive element (e.g. `<Button>`) — without it, the nested `<button>` gets auto-closed by the HTML parser and the alert dialog silently never opens."
         },
         {
           "name": "children",
@@ -174,10 +174,14 @@
     {
       "title": "Basic alert dialog",
       "code": "const [open, setOpen] = createSignal(false)\n\n<AlertDialog open={open()} onOpenChange={setOpen}>\n  <AlertDialogTrigger>Delete</AlertDialogTrigger>\n  <AlertDialogOverlay />\n  <AlertDialogContent ariaLabelledby=\"alert-title\" ariaDescribedby=\"alert-desc\">\n    <AlertDialogHeader>\n      <AlertDialogTitle id=\"alert-title\">Are you sure?</AlertDialogTitle>\n      <AlertDialogDescription id=\"alert-desc\">\n        This action cannot be undone.\n      </AlertDialogDescription>\n    </AlertDialogHeader>\n    <AlertDialogFooter>\n      <AlertDialogCancel>Cancel</AlertDialogCancel>\n      <AlertDialogAction>Continue</AlertDialogAction>\n    </AlertDialogFooter>\n  </AlertDialogContent>\n</AlertDialog>"
+    },
+    {
+      "title": "Styled trigger (asChild)",
+      "code": "// Wrapping a <Button> inside AlertDialogTrigger requires asChild. Without it,\n// AlertDialogTrigger renders its OWN <button>, the HTML parser auto-closes the\n// nested <button>, and the alert dialog silently never opens.\n<AlertDialogTrigger asChild>\n  <Button variant=\"destructive\">Delete</Button>\n</AlertDialogTrigger>"
     }
   ],
   "accessibility": {
-    "role": "alertdialog, dialog",
+    "role": "alertdialog, button, dialog",
     "ariaAttributes": [
       "aria-modal",
       "aria-labelledby",

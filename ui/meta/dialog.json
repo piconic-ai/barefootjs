@@ -52,7 +52,7 @@
           "name": "asChild",
           "type": "boolean",
           "required": false,
-          "description": "Render child element as trigger instead of built-in button"
+          "description": "Render the child element as the trigger instead of DialogTrigger's own `<button>`. Required whenever `children` is itself an interactive element (e.g. `<Button>`) — without it, DialogTrigger renders its own `<button>` around the child, the HTML parser auto-closes the nested `<button>`, and the dialog silently never opens."
         },
         {
           "name": "children",
@@ -168,10 +168,14 @@
     {
       "title": "Basic dialog",
       "code": "const [open, setOpen] = createSignal(false)\n\n<Dialog open={open()} onOpenChange={setOpen}>\n  <DialogTrigger>Open Dialog</DialogTrigger>\n  <DialogOverlay />\n  <DialogContent ariaLabelledby=\"dialog-title\">\n    <DialogHeader>\n      <DialogTitle id=\"dialog-title\">Dialog Title</DialogTitle>\n      <DialogDescription>Dialog description here.</DialogDescription>\n    </DialogHeader>\n    <DialogFooter>\n      <DialogClose>Cancel</DialogClose>\n      <Button onClick={handleAction}>Confirm</Button>\n    </DialogFooter>\n  </DialogContent>\n</Dialog>"
+    },
+    {
+      "title": "Styled trigger (asChild)",
+      "code": "// Wrapping a <Button> (or any element) inside DialogTrigger requires asChild.\n// Without it, DialogTrigger renders its OWN <button>, the HTML parser auto-closes\n// the nested <button>, and the dialog silently never opens.\n<DialogTrigger asChild>\n  <Button variant=\"outline\">Open Dialog</Button>\n</DialogTrigger>"
     }
   ],
   "accessibility": {
-    "role": "dialog",
+    "role": "dialog, button",
     "ariaAttributes": [
       "aria-modal",
       "aria-labelledby",

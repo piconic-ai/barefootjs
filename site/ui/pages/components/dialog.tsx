@@ -246,7 +246,7 @@ const dialogTriggerProps: PropDefinition[] = [
     name: 'asChild',
     type: 'boolean',
     defaultValue: 'false',
-    description: 'Render child element as trigger instead of built-in button.',
+    description: 'Render child element as trigger instead of built-in button. Required when the child is itself interactive (e.g. a <Button>) — otherwise the nested button gets auto-closed by the parser and the dialog silently never opens.',
   },
 ]
 
