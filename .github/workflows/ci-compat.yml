@@ -58,10 +58,11 @@ jobs:
           bun run --filter '@barefootjs/jsx' build
           bun run --filter '@barefootjs/client' build
           # packages/compat (the compat engine + `bun run compat:lock`)
-          # imports every workspace adapter. These 7 have `main`/`exports`
+          # imports every workspace adapter. These 8 have `main`/`exports`
           # pointing at `./dist/index.js` (unlike @barefootjs/hono and
           # @barefootjs/jsx, which resolve via `./src/index.ts`), so they
           # MUST be built before anything imports them (see #2099).
+          bun run --filter '@barefootjs/blade' build
           bun run --filter '@barefootjs/erb' build
           bun run --filter '@barefootjs/go-template' build
           bun run --filter '@barefootjs/jinja' build
