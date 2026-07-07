@@ -275,9 +275,15 @@ await Bun.write(resolve(DIST_STATIC_DIR, 'globals.css'), combinedCSS)
 console.log('Generated: dist/static/globals.css (tokens + globals + landing)')
 
 // ── 5. Generate UnoCSS ───────────────────────────────────────
+// Scan globs come from uno.config.ts (content.filesystem) so the config is
+// the single source of truth — a page dir added there is picked up here too.
+// The CLI doesn't read content.filesystem itself, so pass them as arguments.
 console.log('\nGenerating UnoCSS...')
+const { default: unoConfig } = await import('./uno.config')
+const unoGlobs = unoConfig.content?.filesystem
+if (!unoGlobs?.length) throw new Error('uno.config.ts must define content.filesystem globs')
 const unoProc = Bun.spawn(
-  ['bunx', 'unocss', './renderer.tsx', './landing/**/*.tsx', './components/**/*.tsx', './dist/**/*.tsx', '../shared/components/**/*.tsx', '-o', 'dist/uno.css'],
+  ['bunx', 'unocss', ...unoGlobs, '-o', 'dist/uno.css'],
   { cwd: ROOT_DIR, stdout: 'inherit', stderr: 'inherit' }
 )
 await unoProc.exited
