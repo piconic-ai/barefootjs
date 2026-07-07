@@ -2783,12 +2783,28 @@ export function initDialogTrigger(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const dialogTriggerClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3'
+  const warnIfMisusedTrigger = (el, componentName) => {
+  const interactiveSelector = 'button, [role="button"], a[href]'
+  const hasNestedInteractive = el.querySelector(interactiveSelector) != null
+  const isEmpty = Array.from(el.childNodes).every(
+    (node) => node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()
+  )
+  const siblingIsInteractive = isEmpty && (el.nextElementSibling?.matches(interactiveSelector) ?? false)
+
+  if (hasNestedInteractive || siblingIsInteractive) {
+    console.warn(
+      `[barefootjs] ${componentName} rendered an empty trigger next to an interactive element — did you nest a <button>/<Button> inside it? Use <${componentName} asChild> to adopt your own element.`
+    )
+  }
+}
   const handleMount = (el) => {
     const ctx = useContext(DialogContext)
 
     el.addEventListener('click', () => {
       ctx.onOpenChange(!ctx.open())
     })
+
+    if (!_p.asChild) warnIfMisusedTrigger(el, 'DialogTrigger')
   }
 
   const [_s1, _s0] = $(__scope, 's1', 's0')

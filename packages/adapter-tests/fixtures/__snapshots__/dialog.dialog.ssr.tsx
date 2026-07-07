@@ -22,7 +22,12 @@ interface DialogProps {
 interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
+   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
+   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
+   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
@@ -79,7 +84,12 @@ interface DialogProps {
 interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
+   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
+   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
+   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
@@ -146,7 +156,12 @@ interface DialogProps {
 interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
+   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
+   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
+   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
@@ -213,7 +228,12 @@ interface DialogProps {
 interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
+   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
+   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
+   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
@@ -280,7 +300,12 @@ interface DialogProps {
 interface DialogTriggerProps extends ButtonHTMLAttributes {
   /** Whether disabled */
   disabled?: boolean
-  /** Render child element as trigger instead of built-in button */
+  /**
+   * Render the child element as the trigger instead of DialogTrigger's own `<button>`.
+   * Required whenever `children` is itself an interactive element (e.g. `<Button>`) —
+   * without it, DialogTrigger renders its own `<button>` around the child, the HTML
+   * parser auto-closes the nested `<button>`, and the dialog silently never opens.
+   */
   asChild?: boolean
   /** Button content */
   children?: Child
