@@ -132,4 +132,15 @@ export const conformancePins: ConformancePins = {
   // UNSUPPORTED_METHODS gate refuses it with BF101 rather than emitting
   // a broken template.
   'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
+  // Edge-case sweep (Priority 12): `dangerouslySetInnerHTML` requires a
+  // deliberate raw-HTML (unescaped) output affordance in the target
+  // template language. No lowering exists yet, so the compiler refuses
+  // the shape loudly instead of emitting entity-escaped markup that
+  // silently renders tags as text.
+  'dangerous-inner-html': [{ code: 'BF101', severity: 'error' }],
+  // Edge-case sweep (Priority 12): `.replaceAll` has no lowering yet —
+  // only first-occurrence `.replace` is wired to the runtime helpers.
+  // Refused with BF101 rather than reusing the first-only lowering,
+  // which would silently change semantics.
+  'string-replaceall': [{ code: 'BF101', severity: 'error' }],
 }

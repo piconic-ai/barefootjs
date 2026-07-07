@@ -42,6 +42,15 @@ describe('indentHTML', () => {
     expect(result).toContain('<span bf="s1"><span bf="s0">0</span></span>')
   })
 
+  test('hyphenated custom-element tags survive tokenization', () => {
+    // Regression: the tokenizer's tag-name class lacked `-`, so
+    // `<my-widget …>` fell through to TEXT with its `<` dropped,
+    // corrupting generated fixture HTML (custom-element-tag fixture).
+    const html = '<my-widget theme="light" widget-id="w1"><span>slotted</span></my-widget>'
+    const result = indentHTML(html)
+    expect(normalizeExpectedHtml(result)).toBe(html)
+  })
+
   test('nested single-child chain stays on one line', () => {
     const html = '<span bf="s1"><span bf="s0">Hello</span></span>'
     const result = indentHTML(html)

@@ -300,6 +300,60 @@ import { fixture as reduceRightConcat } from './methods/reduce-right-concat'
 import { fixture as arrayEntries } from './methods/array-entries'
 import { fixture as arrayKeys } from './methods/array-keys'
 import { fixture as arrayValues } from './methods/array-values'
+// Priority 12: Edge-case sweep (adapter-coverage 炙り出し). Broad probes
+// for JSX semantics the corpus didn't yet pin — falsy children, JSX
+// comments/whitespace/entities, unicode, expression operators, attribute
+// name/typing rules, SVG/custom elements, loop/conditional nestings,
+// composition depth, and string-method gaps. Shapes an adapter can't
+// lower are pinned per-adapter (skipJsx / conformance-pins), never here.
+import { fixture as falsyTextValues } from './falsy-text-values'
+import { fixture as jsxCommentChild } from './jsx-comment-child'
+import { fixture as jsxTextWhitespace } from './jsx-text-whitespace'
+import { fixture as unicodeText } from './unicode-text'
+import { fixture as htmlEntityText } from './html-entity-text'
+import { fixture as arithmeticText } from './arithmetic-text'
+import { fixture as comparisonTernaryText } from './comparison-ternary-text'
+import { fixture as unaryNotBinding } from './unary-not-binding'
+import { fixture as stringConcatPlus } from './string-concat-plus'
+import { fixture as templateLiteralMultiInterp } from './template-literal-multi-interp'
+import { fixture as optionalChainingProp } from './optional-chaining-prop'
+import { fixture as numberToFixed } from './number-tofixed'
+import { fixture as mathMethods } from './math-methods'
+import { fixture as stringLengthText } from './string-length-text'
+import { fixture as booleanAttrLiterals } from './boolean-attr-literals'
+import { fixture as camelcaseAttributes } from './camelcase-attributes'
+import { fixture as staticAttrEscape } from './static-attr-escape'
+import { fixture as svgIcon } from './svg-icon'
+import { fixture as customElementTag } from './custom-element-tag'
+import { fixture as dataAriaValues } from './data-aria-values'
+import { fixture as attrTernaryTitle } from './attr-ternary-title'
+import { fixture as logicalAndChain } from './logical-and-chain'
+import { fixture as emptyListBranch } from './empty-list-branch'
+import { fixture as adjacentConditionals } from './adjacent-conditionals'
+import { fixture as conditionalWrappingLoop } from './conditional-wrapping-loop'
+import { fixture as elseIfChain } from './else-if-chain'
+import { fixture as inlineArrayMap } from './inline-array-map'
+import { fixture as objectEntriesMap } from './object-entries-map'
+import { fixture as mapKeyIndex } from './map-key-index'
+import { fixture as nestedLoopOuterBinding } from './nested-loop-outer-binding'
+import { fixture as conditionalReturnNull } from './conditional-return-null'
+import { fixture as jsxElementProp } from './jsx-element-prop'
+import { fixture as grandchildComposition } from './grandchild-composition'
+import { fixture as childPrimitiveProps } from './child-primitive-props'
+import { fixture as preWhitespace } from './pre-whitespace'
+import { fixture as tableDynamicRows } from './table-dynamic-rows'
+import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
+import { fixture as memoChain } from './memo-chain'
+import { fixture as signalObjectField } from './signal-object-field'
+import { fixture as nestedFragments } from './nested-fragments'
+import { fixture as deepNesting } from './deep-nesting'
+import { fixture as signalAttrAndText } from './signal-attr-and-text'
+import { fixture as selectOptionSelected } from './select-option-selected'
+import { fixture as dangerousInnerHtml } from './dangerous-inner-html'
+import { fixture as multilineAttrValue } from './multiline-attr-value'
+import { fixture as stringSlice } from './methods/string-slice'
+import { fixture as stringReplaceAll } from './methods/string-replaceall'
+import { fixture as stringTrimSided } from './methods/string-trim-sided'
 
 import type { JSXFixture } from '../src/types'
 
@@ -515,4 +569,53 @@ export const jsxFixtures: JSXFixture[] = [
   arrayEntries,
   arrayKeys,
   arrayValues,
+  // Priority 12: Edge-case sweep (adapter-coverage 炙り出し).
+  falsyTextValues,
+  jsxCommentChild,
+  jsxTextWhitespace,
+  unicodeText,
+  htmlEntityText,
+  arithmeticText,
+  comparisonTernaryText,
+  unaryNotBinding,
+  stringConcatPlus,
+  templateLiteralMultiInterp,
+  optionalChainingProp,
+  numberToFixed,
+  mathMethods,
+  stringLengthText,
+  booleanAttrLiterals,
+  camelcaseAttributes,
+  staticAttrEscape,
+  svgIcon,
+  customElementTag,
+  dataAriaValues,
+  attrTernaryTitle,
+  logicalAndChain,
+  emptyListBranch,
+  adjacentConditionals,
+  conditionalWrappingLoop,
+  elseIfChain,
+  inlineArrayMap,
+  objectEntriesMap,
+  mapKeyIndex,
+  nestedLoopOuterBinding,
+  conditionalReturnNull,
+  jsxElementProp,
+  grandchildComposition,
+  childPrimitiveProps,
+  preWhitespace,
+  tableDynamicRows,
+  adjacentDynamicText,
+  memoChain,
+  signalObjectField,
+  nestedFragments,
+  deepNesting,
+  signalAttrAndText,
+  selectOptionSelected,
+  dangerousInnerHtml,
+  multilineAttrValue,
+  stringSlice,
+  stringReplaceAll,
+  stringTrimSided,
 ]

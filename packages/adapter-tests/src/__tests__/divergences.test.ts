@@ -51,13 +51,26 @@ function isNumSentinel(value: unknown): boolean {
 
 /**
  * Recursively finds every file named `vector-divergences.json` under
- * `dir`, skipping `node_modules`, `dist`, and hidden directories
- * (dotfiles). Returns absolute paths.
+ * `dir`, skipping `node_modules`, `dist`, `vendor`, and hidden
+ * directories (dotfiles). Returns absolute paths.
+ *
+ * `vendor` matters: the PHP adapters' documented setup
+ * (`composer install --working-dir packages/adapter-{twig,blade}/php`)
+ * vendors `barefootjs/php` as a path-repository SYMLINK back to
+ * `packages/adapter-php`, so without the skip the walk re-discovers
+ * adapter-php's declaration file "inside" adapter-twig/adapter-blade
+ * and the uniqueness + same-package assertions below false-fail on any
+ * checkout where the PHP render deps are actually installed.
  */
 function findDivergenceFiles(dir: string): string[] {
   const found: string[] = []
   for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === 'dist' || entry.startsWith('.')) continue
+    if (
+      entry === 'node_modules' ||
+      entry === 'dist' ||
+      entry === 'vendor' ||
+      entry.startsWith('.')
+    ) continue
     const full = join(dir, entry)
     const stat = statSync(full)
     if (stat.isDirectory()) {

@@ -104,6 +104,12 @@ const statelessFixtures = new Set([
   'conditional-return-button',
   'todo-app',
   'ai-chat',
+  // Priority-12 edge-case sweep: same one-side-renders-less divergence as
+  // `conditional-return-button` above — the three-branch if/else-if/else
+  // chain's client JS wires marker ids for EVERY branch, but the SSR HTML
+  // (rendered with `level: 'mid'`… normalised to the low branch) carries
+  // only the rendered branch's ids.
+  'else-if-chain',
   // #1448 Tier B — iteration shape fixtures are prop-based components
   // without signals. SSR renders them fully; no client JS is emitted.
   'array-entries',
