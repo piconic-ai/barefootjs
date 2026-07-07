@@ -1,5 +1,5 @@
 package Mojolicious::Plugin::BarefootJS::DevReload;
-our $VERSION = "0.17.1";
+our $VERSION = "0.18.0";
 use Mojo::Base 'Mojolicious::Plugin', -signatures;
 
 =head1 NAME

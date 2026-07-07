@@ -2,6 +2,8 @@ Revision history for Perl extension Mojolicious-Plugin-BarefootJS
 
 {{$NEXT}}
 
+0.18.0 - 2026-07-07
+
     - Load the build manifest lazily per render (cached on mtime/size)
       instead of once at plugin-register time, so booting before the
       first `bf build` completes no longer disables ssrDefaults stash
