@@ -158,6 +158,18 @@ class TemplatePrimitivesTest(unittest.TestCase):
         out.append("mutated")
         self.assertEqual(src, ["a", "b", "c"])
 
+    def test_slice_string_receiver(self):
+        # The `string-slice` divergence (#2182): a string receiver used
+        # to fall through the array-only branch and return an empty
+        # list instead of a substring.
+        word = "barefootjs"
+        self.assertEqual(self.bf.slice(word, 0, 4), "bare")
+        self.assertEqual(self.bf.slice(word, -4, None), "otjs")
+        self.assertEqual(self.bf.slice(word, 4, None), "footjs")
+        self.assertEqual(self.bf.slice(word, 5, 2), "")
+        # Multi-byte: index by character, not byte.
+        self.assertEqual(self.bf.slice("héllo", 0, 2), "hé")
+
     def test_reverse_mutation_isolation(self):
         self.assertEqual(self.bf.reverse(["a", "b", "c"]), ["c", "b", "a"])
         self.assertEqual(self.bf.reverse([]), [])

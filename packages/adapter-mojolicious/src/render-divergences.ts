@@ -23,8 +23,6 @@ export const renderDivergences: RenderDivergences = {
     'nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`',
   'jsx-element-prop':
     'a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped',
-  'string-slice':
-    '`.slice()` on a STRING misfires through the array slice helper',
   'string-trim-sided':
     '`.trimStart()` / `.trimEnd()` render empty (no lowering)',
 }

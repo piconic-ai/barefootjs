@@ -166,6 +166,34 @@ fn char_slice_to(s: &str, n: usize) -> String {
     s.chars().take(n).collect()
 }
 
+/// `[start, end)` range slice by Unicode scalar value (`char`), not
+/// byte offset -- shared by `slice`'s string branch. Matches JS except
+/// for astral-plane input, the same divergence boundary `char_len` /
+/// `char_slice_from` / `char_slice_to` already accept.
+fn char_slice_range(s: &str, start: usize, end: usize) -> String {
+    if start >= end {
+        return String::new();
+    }
+    s.chars().skip(start).take(end - start).collect()
+}
+
+/// Clamp JS `.slice(start, end?)` bounds against a receiver of
+/// `length` elements -- shared by `slice`'s array and string branches
+/// below.
+fn clamp_slice_range(length: i64, start: &JsValue, end: &JsValue) -> (i64, i64) {
+    let mut s = if matches!(start, JsValue::Null) { 0 } else { num::to_f64(start) as i64 };
+    if s < 0 {
+        s += length;
+    }
+    s = s.clamp(0, length);
+    let mut e = if matches!(end, JsValue::Null) { length } else { num::to_f64(end) as i64 };
+    if e < 0 {
+        e += length;
+    }
+    e = e.clamp(0, length);
+    (s, e)
+}
+
 // ---------------------------------------------------------------------------
 // spread_attrs support (JSX intrinsic-element spread, #1407).
 // ---------------------------------------------------------------------------
@@ -1351,7 +1379,18 @@ pub fn concat(a: &JsValue, b: &JsValue) -> JsValue {
     JsValue::Array(out)
 }
 
+/// `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
+/// (the `string-slice` divergence) -- the adapter emits the same
+/// `bf.slice(recv, start, end)` call for both receiver shapes (it
+/// can't disambiguate string vs. array at compile time), so this
+/// dispatches on `recv`'s `JsValue` variant, mirroring `includes` /
+/// `length` above.
 pub fn slice(recv: &JsValue, start: &JsValue, end: &JsValue) -> JsValue {
+    if let JsValue::String(s) = recv {
+        let length = char_len(s) as i64;
+        let (s_idx, e_idx) = clamp_slice_range(length, start, end);
+        return JsValue::String(char_slice_range(s, s_idx as usize, e_idx as usize));
+    }
     let items = match recv.as_array() {
         Some(a) => a,
         None => return JsValue::Array(Vec::new()),
@@ -1360,16 +1399,7 @@ pub fn slice(recv: &JsValue, start: &JsValue, end: &JsValue) -> JsValue {
     if length == 0 {
         return JsValue::Array(Vec::new());
     }
-    let mut s = if matches!(start, JsValue::Null) { 0 } else { num::to_f64(start) as i64 };
-    if s < 0 {
-        s += length;
-    }
-    s = s.clamp(0, length);
-    let mut e = if matches!(end, JsValue::Null) { length } else { num::to_f64(end) as i64 };
-    if e < 0 {
-        e += length;
-    }
-    e = e.clamp(0, length);
+    let (s, e) = clamp_slice_range(length, start, end);
     if s >= e {
         return JsValue::Array(Vec::new());
     }

@@ -188,6 +188,19 @@ bf_test('slice mutation isolation and clamping', function () use ($bf) {
     bf_assert_eq($src, ['a', 'b', 'c']);
 });
 
+bf_test('slice string receiver', function () use ($bf) {
+    // The `string-slice` divergence (#2182): a string receiver used to
+    // fall through the array-only branch and return an empty array
+    // instead of a substring.
+    $word = 'barefootjs';
+    bf_assert_eq($bf->slice($word, 0, 4), 'bare');
+    bf_assert_eq($bf->slice($word, -4, null), 'otjs');
+    bf_assert_eq($bf->slice($word, 4, null), 'footjs');
+    bf_assert_eq($bf->slice($word, 5, 2), '');
+    // Multi-byte: index by character, not byte.
+    bf_assert_eq($bf->slice('héllo', 0, 2), 'hé');
+});
+
 bf_test('reverse mutation isolation', function () use ($bf) {
     bf_assert_eq($bf->reverse(['a', 'b', 'c']), ['c', 'b', 'a']);
     bf_assert_eq($bf->reverse([]), []);

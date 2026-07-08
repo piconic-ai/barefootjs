@@ -2454,40 +2454,6 @@
           ]
         }
       },
-      "string-slice": {
-        "blade": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING renders empty (array-slice helper misfires on strings)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING lowers through the array slice helper and renders \"[]\" instead of the substring"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING routes through the array `bf_slice` helper and renders \"[]\" instead of the substring"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING renders empty (array-slice helper misfires on strings)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING renders empty (array-slice helper misfires on strings)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING misfires through the array slice helper"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING misfires through the array slice helper"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`.slice()` on a STRING misfires through the array slice helper"
-        }
-      },
       "string-trim-sided": {
         "blade": {
           "kind": "render",

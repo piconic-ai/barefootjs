@@ -53,7 +53,7 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   index_of: (a: unknown[], x: unknown) => a.indexOf(x),
   last_index_of: (a: unknown[], x: unknown) => a.lastIndexOf(x),
   concat: (a: unknown[], b: unknown[]) => a.concat(b),
-  slice: (a: unknown[], start: number, end?: number) => a.slice(start, end),
+  slice: (a: string | unknown[], start: number, end?: number) => a.slice(start, end),
   reverse: (a: unknown[]) => [...a].reverse(),
   // Depth -1 is the compiled Infinity sentinel (spec entry).
   flat: (a: unknown[], depth: number) => a.flat(depth === -1 ? Infinity : depth),
@@ -355,6 +355,16 @@ export const cases: HelperCase[] = [
   { fn: 'slice', args: [[1, 2, 3, 4], 0, -1], note: 'negative end drops the tail' },
   { fn: 'slice', args: [[1, 2, 3, 4], 2, 1], note: 'start past end yields []' },
   { fn: 'slice', args: [[1, 2, 3, 4], 0, 99], note: 'end clamps to length' },
+
+  // String receiver (the `string-slice` divergence, #2182): the adapter
+  // can't disambiguate a string from an array at compile time, so the
+  // backend helper must dispatch on the runtime value's type the same
+  // way `includes` already does.
+  { fn: 'slice', args: ['barefootjs', 0, 4], note: 'string: start and end' },
+  { fn: 'slice', args: ['barefootjs', -4], note: 'string: negative start counts from the end' },
+  { fn: 'slice', args: ['barefootjs', 4], note: 'string: start only runs to the end' },
+  { fn: 'slice', args: ['barefootjs', 5, 2], note: 'string: start past end yields empty string' },
+  { fn: 'slice', args: ['héllo', 0, 2], note: 'string: multi-byte characters count as one unit each' },
 
   { fn: 'reverse', args: [[1, 2, 3]], note: 'basic reversal' },
   { fn: 'reverse', args: [[]], note: 'empty array' },

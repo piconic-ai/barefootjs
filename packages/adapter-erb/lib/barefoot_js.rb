@@ -563,13 +563,22 @@ module BarefootJS
       out
     end
 
-    # `Array.prototype.slice(start, end?)`. Mirrors the Go/Perl `bf_slice` /
-    # `slice` arithmetic so adapter output stays symmetric.
+    # `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
+    # (the `string-slice` divergence) -- the adapter emits the same
+    # `bf_slice` call for both receiver shapes (it can't disambiguate
+    # string vs. array at compile time), so this dispatches on Ruby
+    # class, mirroring `includes` above. Mirrors the Go/Perl `bf_slice`
+    # / `slice` arithmetic so adapter output stays symmetric.
+    # `String#length` / `#[]` already index by character (not byte) for
+    # a UTF-8-encoded string, matching JS except for astral-plane input
+    # (the same divergence boundary every other adapter's pad/trim
+    # helpers already accept).
     def slice(recv, start, end_ = nil)
-      return [] unless recv.is_a?(Array)
+      return [] unless recv.is_a?(Array) || recv.is_a?(String)
 
+      empty = recv.is_a?(String) ? '' : []
       len = recv.length
-      return [] if len.zero?
+      return empty if len.zero?
 
       s = start.nil? ? 0 : start.to_i
       s = len + s if s.negative?
@@ -581,7 +590,7 @@ module BarefootJS
       e = 0 if e.negative?
       e = len if e > len
 
-      return [] if s >= e
+      return empty if s >= e
 
       recv[s...e]
     end

@@ -800,22 +800,39 @@ sub concat ($self, $a, $b) {
     return \@out;
 }
 
-# `Array.prototype.slice(start, end?)` — carves out a sub-range
-# into a new ARRAY ref. Mirrors the Go `bf_slice` arithmetic so
-# adapter output stays symmetric:
+# `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
+# (the `string-slice` divergence) — carves out a sub-range. The
+# adapter emits the same call for both receiver shapes (it can't
+# disambiguate string vs. array at compile time), so this dispatches
+# at runtime on `ref($recv)`, mirroring `includes` above. Mirrors the
+# Go `bf_slice` arithmetic so adapter output stays symmetric:
 #   - start < 0          → length + start  (e.g. -1 = last index)
 #   - end < 0            → length + end
 #   - start < 0 after clamp → 0
 #   - end > length       → length
 #   - start >= end       → empty
 #   - end undef          → "to length"
-# Non-array receivers return an empty ARRAY ref.
+# String length/positions are characters (`use utf8` is active), not
+# bytes. Any other receiver returns an empty ARRAY ref.
 
 sub slice ($self, $recv, $start, $end) {
+    if (!ref($recv) && defined $recv) {
+        my $len = CORE::length($recv);
+        my ($s, $e) = _clamp_slice_range($len, $start, $end);
+        return '' if $s >= $e;
+        return substr($recv, $s, $e - $s);
+    }
     return [] unless ref($recv) eq 'ARRAY';
     my $len = scalar @$recv;
     return [] if $len == 0;
 
+    my ($s, $e) = _clamp_slice_range($len, $start, $end);
+    return [] if $s >= $e;
+    return [ @{$recv}[$s .. $e - 1] ];
+}
+
+# Shared bounds arithmetic for both `slice` branches above.
+sub _clamp_slice_range ($len, $start, $end) {
     my $s = $start // 0;
     $s = $len + $s if $s < 0;
     $s = 0    if $s < 0;
@@ -826,8 +843,7 @@ sub slice ($self, $recv, $start, $end) {
     $e = 0    if $e < 0;
     $e = $len if $e > $len;
 
-    return [] if $s >= $e;
-    return [ @{$recv}[$s .. $e - 1] ];
+    return ($s, $e);
 }
 
 # `Array.prototype.reverse()` / `Array.prototype.toReversed()` —

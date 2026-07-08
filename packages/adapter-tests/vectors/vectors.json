@@ -1481,6 +1481,54 @@
       "note": "end clamps to length"
     },
     {
+      "fn": "slice",
+      "args": [
+        "barefootjs",
+        0,
+        4
+      ],
+      "expect": "bare",
+      "note": "string: start and end"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        "barefootjs",
+        -4
+      ],
+      "expect": "otjs",
+      "note": "string: negative start counts from the end"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        "barefootjs",
+        4
+      ],
+      "expect": "footjs",
+      "note": "string: start only runs to the end"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        "barefootjs",
+        5,
+        2
+      ],
+      "expect": "",
+      "note": "string: start past end yields empty string"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        "héllo",
+        0,
+        2
+      ],
+      "expect": "hé",
+      "note": "string: multi-byte characters count as one unit each"
+    },
+    {
       "fn": "reverse",
       "args": [
         [

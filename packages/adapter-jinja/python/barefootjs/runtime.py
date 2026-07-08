@@ -933,12 +933,20 @@ class BarefootJS:
             out.extend(b)
         return out
 
-    def slice(self, recv: Any, start: Any, end: Any) -> list:
-        if not isinstance(recv, list):
+    def slice(self, recv: Any, start: Any, end: Any) -> Any:
+        # `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
+        # (the `string-slice` divergence, #2182) -- the adapter emits the
+        # same `bf.slice(recv, start, end)` call for both receiver shapes
+        # (it can't disambiguate string vs. array at compile time), so
+        # this dispatches on the Python type, mirroring `includes` above.
+        # `str` and `list` share slicing semantics (`recv[s:e]`) and
+        # `len()`, so one clamp computation serves both; `str` indexing
+        # is by Unicode code point already, matching JS except for
+        # astral-plane input (the same divergence boundary every other
+        # adapter's pad/trim helpers already accept).
+        if not isinstance(recv, (list, str)):
             return []
         length = len(recv)
-        if length == 0:
-            return []
         s = start if start is not None else 0
         if s < 0:
             s = length + s
@@ -950,8 +958,8 @@ class BarefootJS:
         e = max(e, 0)
         e = min(e, length)
         if s >= e:
-            return []
-        return list(recv[s:e])
+            return recv[0:0]
+        return recv[s:e] if isinstance(recv, str) else list(recv[s:e])
 
     def reverse(self, recv: Any) -> list:
         if not isinstance(recv, list):
