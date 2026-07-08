@@ -59,7 +59,7 @@
  *      entry point `_renderTwigFilterExprPublic`.
  */
 
-import {
+import { groupBinaryOperand,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -187,8 +187,11 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // See the file header, divergence 4: Twig's `==`/`!=` are PHP loose
     // equality — NEVER emit them for JS `===`/`!==`. `bf.eq`/`bf.neq` are
     // the one shared JS-strict-equality implementation.
@@ -384,8 +387,11 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // See the file header, divergence 4: Twig's `==`/`!=` are PHP loose
     // equality — NEVER emit them for JS `===`/`!==`.
     if (op === '===') return `bf.eq(${l}, ${r})`

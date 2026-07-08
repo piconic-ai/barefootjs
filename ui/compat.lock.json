@@ -1816,32 +1816,6 @@
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
     "totalFixtures": 236,
     "fixtures": {
-      "arithmetic-text": {
-        "blade": {
-          "kind": "render",
-          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)"
-        }
-      },
       "array-map-function-reference": {
         "blade": {
           "kind": "refusal",

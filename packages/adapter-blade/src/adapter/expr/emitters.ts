@@ -82,7 +82,7 @@
  *      entry point `_renderBladeFilterExprPublic`.
  */
 
-import {
+import { groupBinaryOperand,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -208,8 +208,11 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // See the file header, divergence 8: PHP's `==`/`!=`/`===`/`!==` are
     // NEVER emitted for JS `===`/`!==`. `$bf->eq`/`$bf->neq` are the one
     // shared JS-strict-equality implementation.
@@ -405,8 +408,11 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // See the file header, divergence 8: PHP's `==`/`!=`/`===`/`!==` are
     // NEVER emitted for JS `===`/`!==`.
     if (op === '===') return `$bf->eq(${l}, ${r})`

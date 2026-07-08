@@ -207,6 +207,26 @@ export interface ParsedExprEmitter {
  * a TS compile error here — and, transitively, in every adapter that
  * hasn't extended its `ParsedExprEmitter` implementation.
  */
+/**
+ * Wrap an emitted binary/logical/ternary OPERAND in parentheses so the
+ * source grouping the `ParsedExpr` tree encodes survives infix
+ * re-emission (#2173). `(count() + 2) * 3` parses as
+ * `binary{*, binary{+}, 3}` — the tree is unambiguous, but an emitter
+ * that joins operands textually (`${l} ${op} ${r}`) re-exposes the
+ * text to the TARGET language's precedence, silently computing
+ * `count + 2 * 3`. Grouping is decided here, in the shared layer
+ * (the semantics), so adapters just call this on each operand — no
+ * per-language precedence table needed: parenthesizing a compound
+ * operand is universally valid, and leaf operands (identifiers,
+ * literals, calls, members) stay unwrapped so simple emissions remain
+ * byte-identical.
+ */
+export function groupBinaryOperand(operand: ParsedExpr, emitted: string): string {
+  return operand.kind === 'binary' || operand.kind === 'logical' || operand.kind === 'conditional'
+    ? `(${emitted})`
+    : emitted
+}
+
 export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): string {
   const emit = (child: ParsedExpr): string => emitParsedExpr(child, emitter)
   switch (expr.kind) {
