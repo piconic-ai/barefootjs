@@ -1892,74 +1892,6 @@
           ]
         }
       },
-      "boolean-attr-literals": {
-        "blade": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "camelCase boolean alias `readOnly`: Hono SSRs `readOnly=\"true\"`, this adapter emits bare presence"
-        }
-      },
-      "camelcase-attributes": {
-        "blade": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`htmlFor` is not lowered to `for` (Hono maps it)"
-        }
-      },
       "child-primitive-props": {
         "go-template": {
           "kind": "render",
@@ -2708,40 +2640,6 @@
         "xslate": {
           "kind": "render",
           "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        }
-      },
-      "svg-icon": {
-        "blade": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case"
         }
       },
       "todo-app": {

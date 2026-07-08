@@ -106,12 +106,27 @@ describe('toHTMLAttrName (compile-time)', () => {
     expect(toHTMLAttrName('strokeWidth')).toBe('stroke-width')
   })
 
-  test('tabIndex passes through (no generic kebab)', () => {
-    expect(toHTMLAttrName('tabIndex')).toBe('tabIndex')
+  // #2172: HTML camelCase aliases resolve through HTML_CAMEL_ALIASES —
+  // these are known HTML attributes with a defined lowercase spelling,
+  // NOT the generic kebab conversion (which stays data-*/aria-* only).
+  test('tabIndex lowers to tabindex (HTML alias table)', () => {
+    expect(toHTMLAttrName('tabIndex')).toBe('tabindex')
   })
 
-  test('autoFocus passes through (no generic kebab)', () => {
-    expect(toHTMLAttrName('autoFocus')).toBe('autoFocus')
+  test('autoFocus lowers to autofocus (HTML alias table)', () => {
+    expect(toHTMLAttrName('autoFocus')).toBe('autofocus')
+  })
+
+  test('readOnly lowers to the BOOLEAN_ATTRS member readonly', () => {
+    expect(toHTMLAttrName('readOnly')).toBe('readonly')
+  })
+
+  test('spellCheck lowers to the enumerated (non-boolean) spellcheck', () => {
+    expect(toHTMLAttrName('spellCheck')).toBe('spellcheck')
+  })
+
+  test('unknown camelCase names still pass through unchanged', () => {
+    expect(toHTMLAttrName('myCustomAttr')).toBe('myCustomAttr')
   })
 })
 
@@ -144,12 +159,16 @@ describe('toHTMLAttrNameRuntime', () => {
     expect(toHTMLAttrNameRuntime('ariaLabel')).toBe('aria-label')
   })
 
-  test('tabIndex passes through (no kebab)', () => {
-    expect(toHTMLAttrNameRuntime('tabIndex')).toBe('tabIndex')
+  test('tabIndex lowers to tabindex (HTML alias table, #2172)', () => {
+    expect(toHTMLAttrNameRuntime('tabIndex')).toBe('tabindex')
   })
 
-  test('autoFocus passes through (no kebab)', () => {
-    expect(toHTMLAttrNameRuntime('autoFocus')).toBe('autoFocus')
+  test('autoFocus lowers to autofocus (HTML alias table, #2172)', () => {
+    expect(toHTMLAttrNameRuntime('autoFocus')).toBe('autofocus')
+  })
+
+  test('unknown camelCase names still pass through unchanged', () => {
+    expect(toHTMLAttrNameRuntime('myCustomAttr')).toBe('myCustomAttr')
   })
 })
 

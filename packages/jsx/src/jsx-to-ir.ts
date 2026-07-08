@@ -48,6 +48,7 @@ import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironme
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
+import { toHTMLAttrName } from '@barefootjs/shared'
 
 // =============================================================================
 // Transform Context
@@ -4066,13 +4067,13 @@ function processAttributes(
 
     if (!ts.isJsxAttribute(attr)) continue
 
-    const name = attr.name.getText(ctx.sourceFile)
+    const rawName = attr.name.getText(ctx.sourceFile)
 
     // ref is captured separately (not pushed into `attrs`) because it never
     // appears in the rendered HTML — it's a compile-time binding from the
     // JSX call site to the runtime DOM element, surfaced via the IRElement
     // `ref` field for the client-JS emitter.
-    if (name === 'ref') {
+    if (rawName === 'ref') {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         ref = ctx.getJS(attr.initializer.expression)
@@ -4084,19 +4085,32 @@ function processAttributes(
     // they're wired up at hydration time (delegated event registration) and
     // must not leak into rendered HTML. The DOM event name is lowercase
     // (`click`, not `Click`), so strip the `on` prefix and downcase.
-    if (/^on[A-Z]/.test(name)) {
+    if (/^on[A-Z]/.test(rawName)) {
       if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-        const eventName = name.slice(2).toLowerCase()
+        const eventName = rawName.slice(2).toLowerCase()
         reportJsxBranchLocalInCallback(attr.initializer.expression, ctx)
         events.push({
           name: eventName,
-          originalAttr: name,
+          originalAttr: rawName,
           handler: ctx.getJS(attr.initializer.expression),
           loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
         })
       }
       continue
     }
+
+    // Normalize the JSX prop spelling to the HTML/SVG attribute name ONCE,
+    // here in Phase 1, so IRAttribute.name is already the name every
+    // adapter emits verbatim (#2172): React-style HTML camelCase aliases
+    // lower (`htmlFor` → `for`, `tabIndex` → `tabindex`, `readOnly` →
+    // the BOOLEAN_ATTRS member `readonly`), SVG presentation attrs
+    // kebab-case (`strokeWidth` → `stroke-width`), case-sensitive SVG XML
+    // names (`viewBox`) and everything unknown (`data-*`, custom-element
+    // attrs) pass through. Previously each adapter re-derived (at most)
+    // `className` → `class` itself and every other alias leaked into the
+    // emitted HTML as an unknown attribute the browser ignores. Intrinsic
+    // elements only — component props (IRProp) keep the user's API names.
+    const name = toHTMLAttrName(rawName)
 
     let value = getAttributeValue(attr, ctx)
     let clientOnly: boolean | undefined

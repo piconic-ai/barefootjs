@@ -3090,7 +3090,7 @@ export function initExample(__scope, _p = {}) {
   initChild('DialogTrigger', _s0, { asChild: true })
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild('DialogTrigger', {asChild: true, children: \`<span role="button" \${(0) != null ? 'tabIndex="' + escapeAttr(0) + '"' : ''}>Open</span>\`}, undefined, 's0')}</div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${renderChild('DialogTrigger', {asChild: true, children: \`<span role="button" \${(0) != null ? 'tabindex="' + escapeAttr(0) + '"' : ''}>Open</span>\`}, undefined, 's0')}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 

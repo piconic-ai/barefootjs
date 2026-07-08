@@ -27,14 +27,8 @@ export const renderDivergences: RenderDivergences = {
     '`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)',
   'math-methods':
     'Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered',
-  'boolean-attr-literals':
-    'camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`, this adapter emits bare presence',
-  'camelcase-attributes':
-    '`htmlFor` is not lowered to `for` (Hono maps it)',
   'static-attr-escape':
     'static attribute values are not HTML-escaped (`title="Fish & Chips"` emitted raw; Hono escapes)',
-  'svg-icon':
-    'SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering',
   'nested-loop-outer-binding':

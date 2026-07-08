@@ -213,11 +213,9 @@ describe('CSR Conformance Tests', () => {
     //     `©` by SSR but passed through as the raw entity by the CSR
     //     template string (same DOM after parse, different bytes).
     'html-entity-text',
-    //   - `boolean-attr-literals`: `readOnly` (camelCase alias of a
-    //     boolean attr) SSRs as `readOnly="true"` but CSRs as bare
-    //     `readOnly` — the boolean-attribute canonicalisation in
-    //     `normalizeHTML` only covers the lowercase spellings.
-    'boolean-attr-literals',
+    //   (`boolean-attr-literals` graduated — #2172 normalizes intrinsic
+    //   attribute names in Phase 1, so `readOnly` reaches both SSR and
+    //   CSR as the BOOLEAN_ATTRS member `readonly`.)
     //   - `static-attr-escape`: static attribute values are HTML-escaped
     //     by Hono SSR (`Fish &amp; Chips`) but emitted RAW by the CSR
     //     template literal (`Fish & Chips`).

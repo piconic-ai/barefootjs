@@ -73,6 +73,79 @@ const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
 }
 
 /**
+ * HTML attributes written in React-style camelCase in JSX that map to a
+ * lowercase (or hyphenated) HTML attribute name. Mirrors React DOM's
+ * HTML attribute aliases. `className` / `htmlFor` are handled before
+ * this table (they predate it); everything here is a plain rename —
+ * value semantics are untouched (`readOnly` becomes the BOOLEAN_ATTRS
+ * member `readonly`; `spellCheck` stays the *enumerated* — NOT boolean
+ * — `spellcheck`).
+ *
+ * Consumed by `toHTMLAttrName` (compile-time Phase 1: `processAttributes`
+ * normalizes IRAttribute.name so adapters emit the HTML name as-is) and
+ * by `toHTMLAttrNameRuntime` (runtime spread paths). Names NOT in this
+ * table pass through unchanged, so `data-*`, `aria-*`, and custom-element
+ * attributes are never rewritten.
+ */
+const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = {
+  acceptCharset: 'accept-charset',
+  accessKey: 'accesskey',
+  allowFullScreen: 'allowfullscreen',
+  autoCapitalize: 'autocapitalize',
+  autoComplete: 'autocomplete',
+  autoCorrect: 'autocorrect',
+  autoFocus: 'autofocus',
+  autoPlay: 'autoplay',
+  cellPadding: 'cellpadding',
+  cellSpacing: 'cellspacing',
+  charSet: 'charset',
+  colSpan: 'colspan',
+  contentEditable: 'contenteditable',
+  controlsList: 'controlslist',
+  crossOrigin: 'crossorigin',
+  dateTime: 'datetime',
+  dirName: 'dirname',
+  encType: 'enctype',
+  enterKeyHint: 'enterkeyhint',
+  fetchPriority: 'fetchpriority',
+  formAction: 'formaction',
+  formEncType: 'formenctype',
+  formMethod: 'formmethod',
+  formNoValidate: 'formnovalidate',
+  formTarget: 'formtarget',
+  frameBorder: 'frameborder',
+  hrefLang: 'hreflang',
+  httpEquiv: 'http-equiv',
+  imageSizes: 'imagesizes',
+  imageSrcSet: 'imagesrcset',
+  inputMode: 'inputmode',
+  itemID: 'itemid',
+  itemProp: 'itemprop',
+  itemRef: 'itemref',
+  itemScope: 'itemscope',
+  itemType: 'itemtype',
+  marginHeight: 'marginheight',
+  marginWidth: 'marginwidth',
+  maxLength: 'maxlength',
+  minLength: 'minlength',
+  noModule: 'nomodule',
+  noValidate: 'novalidate',
+  playsInline: 'playsinline',
+  popoverTarget: 'popovertarget',
+  popoverTargetAction: 'popovertargetaction',
+  radioGroup: 'radiogroup',
+  readOnly: 'readonly',
+  referrerPolicy: 'referrerpolicy',
+  rowSpan: 'rowspan',
+  spellCheck: 'spellcheck',
+  srcDoc: 'srcdoc',
+  srcLang: 'srclang',
+  srcSet: 'srcset',
+  tabIndex: 'tabindex',
+  useMap: 'usemap',
+}
+
+/**
  * SVG XML attribute names that are case-sensitive and MUST stay in camelCase.
  *
  * These are distinct from the CSS-style presentation attrs above: `viewBox`
@@ -169,6 +242,8 @@ export function classifyDOMProp(key: string): DOMPropClassification {
 export function toHTMLAttrName(key: string): string {
   if (key === 'className') return 'class'
   if (key === 'htmlFor')   return 'for'
+  const htmlAlias = HTML_CAMEL_ALIASES[key]
+  if (htmlAlias !== undefined) return htmlAlias
   const svgKebab = SVG_CAMEL_TO_KEBAB[key]
   if (svgKebab !== undefined) return svgKebab
   return key
@@ -178,13 +253,17 @@ export function toHTMLAttrName(key: string): string {
  * Runtime variant of attribute name mapping that additionally applies
  * camelCase→kebab conversion for `data-*` and `aria-*` convenience
  * props (e.g. `dataTestId` → `data-test-id`) and preserves SVG XML
- * attribute casing. All other non-SVG keys pass through unchanged —
- * standard HTML attributes like `tabIndex` and `autoFocus` must not
- * be kebab-cased (`tab-index` / `auto-focus` are not valid attrs).
+ * attribute casing. HTML camelCase aliases resolve through the same
+ * `HTML_CAMEL_ALIASES` table as the compile-time variant (`tabIndex` →
+ * `tabindex`); generic kebab-casing still applies ONLY to `data-*` /
+ * `aria-*` — an unknown camelCase key passes through unchanged rather
+ * than being guessed into a hyphenated non-attribute.
  */
 export function toHTMLAttrNameRuntime(key: string): string {
   if (key === 'className') return 'class'
   if (key === 'htmlFor')   return 'for'
+  const htmlAlias = HTML_CAMEL_ALIASES[key]
+  if (htmlAlias !== undefined) return htmlAlias
   const svgKebab = SVG_CAMEL_TO_KEBAB[key]
   if (svgKebab !== undefined) return svgKebab
   if (SVG_XML_CAMEL_ATTRS.has(key)) return key

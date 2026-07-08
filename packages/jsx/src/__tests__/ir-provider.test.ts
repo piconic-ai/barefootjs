@@ -83,8 +83,8 @@ describe('Context.Provider JSX', () => {
       contextName: 'Ctx',
       valueProp: { name: 'value', value: { kind: 'expression', expr: '{ active, setActive }' } },
       children: [
-        { type: 'element', tag: 'div', attrs: [{ name: 'className', value: { kind: 'literal', value: 'tabs-header' } }] },
-        { type: 'element', tag: 'div', attrs: [{ name: 'className', value: { kind: 'literal', value: 'tabs-body' } }] },
+        { type: 'element', tag: 'div', attrs: [{ name: 'class', value: { kind: 'literal', value: 'tabs-header' } }] },
+        { type: 'element', tag: 'div', attrs: [{ name: 'class', value: { kind: 'literal', value: 'tabs-body' } }] },
       ],
     })
   })

@@ -21,14 +21,8 @@ export const renderDivergences: RenderDivergences = {
     '`user?.name ?? …` on an object prop: the Ruby render exits 1 (optional chaining into a Hash prop has no lowering)',
   'math-methods':
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
-  'boolean-attr-literals':
-    'camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`, this adapter emits bare presence',
-  'camelcase-attributes':
-    '`htmlFor` is not lowered to `for` (Hono maps it)',
   'static-attr-escape':
     'static attribute values are not HTML-escaped (`title="Fish & Chips"` emitted raw; Hono escapes)',
-  'svg-icon':
-    'SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders but its loop item keys diverge from the reference serialisation',
   'nested-loop-outer-binding':
