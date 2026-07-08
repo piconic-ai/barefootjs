@@ -225,7 +225,7 @@ export function initDialogHeader(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","class"])
 
 }
 
@@ -250,7 +250,7 @@ export function initDialogTitle(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","id","children","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","id","children","data-slot","class"])
 
 }
 
@@ -275,7 +275,7 @@ export function initDialogDescription(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","id","children","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","id","children","data-slot","class"])
 
 }
 
@@ -298,7 +298,7 @@ export function initDialogFooter(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","class"])
 
 }
 

@@ -20,7 +20,7 @@ export function initTabs(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","value","defaultValue","children","data-slot","data-value"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","value","defaultValue","children","data-slot","data-value","class"])
 
 }
 
@@ -43,7 +43,7 @@ export function initTabsList(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","role"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","children","data-slot","role","class"])
 
 }
 
