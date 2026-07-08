@@ -153,6 +153,7 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'starts_with': return $bf->starts_with(...$args);
         case 'ends_with': return $bf->ends_with(...$args);
         case 'replace': return $bf->replace(...$args);
+        case 'replace_all': return $bf->replace_all(...$args);
         case 'repeat': return $bf->repeat(...$args);
         case 'pad_start': return $bf->pad_start(...$args);
         case 'pad_end': return $bf->pad_end(...$args);

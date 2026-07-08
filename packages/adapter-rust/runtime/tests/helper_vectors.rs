@@ -126,6 +126,7 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
         "starts_with" => JsValue::Bool(runtime::starts_with(&a(0), &a(1), &a(2))),
         "ends_with" => JsValue::Bool(runtime::ends_with(&a(0), &a(1), &a(2))),
         "replace" => JsValue::String(runtime::replace(&a(0), &a(1), &a(2))),
+        "replace_all" => JsValue::String(runtime::replace_all(&a(0), &a(1), &a(2))),
         "repeat" => JsValue::String(runtime::repeat(&a(0), &a(1))),
         "pad_start" => JsValue::String(runtime::pad(&runtime::js_string(&a(0)), &a(1), &a(2), true)),
         "pad_end" => JsValue::String(runtime::pad(&runtime::js_string(&a(0)), &a(1), &a(2), false)),

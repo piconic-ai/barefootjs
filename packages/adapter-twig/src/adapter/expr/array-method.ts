@@ -125,6 +125,16 @@ export function renderArrayMethod(
       const newS = emit(args[1])
       return `bf.replace(${recv}, ${oldS}, ${newS})`
     }
+    case 'replaceAll': {
+      // `.replaceAll(old, new)` — string-pattern form, EVERY occurrence,
+      // via the dedicated `bf.replace_all` helper (not `bf.replace` with
+      // a flag) — the regex-pattern form is refused upstream at the
+      // parser, same as `.replace`. See #2182.
+      const recv = emit(object)
+      const oldS = emit(args[0])
+      const newS = emit(args[1])
+      return `bf.replace_all(${recv}, ${oldS}, ${newS})`
+    }
     case 'repeat': {
       const recv = emit(object)
       const count = args.length === 0 ? '0' : emit(args[0])

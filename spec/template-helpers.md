@@ -202,6 +202,12 @@ occurrence; empty pattern inserts at the front. Vectors avoid
 `$`-containing replacements (JS interprets replacement patterns;
 template lowerings treat the replacement literally).
 
+### replace_all
+
+JS `.replaceAll(pattern, replacement)`, string-pattern form, EVERY
+occurrence — the all-occurrences sibling of `replace` above. Same
+literal-replacement caveat (no `$`-pattern interpretation).
+
 ### repeat
 
 JS `.repeat(n)` for integer `n ≥ 0` (`0` → `""`). Negative counts

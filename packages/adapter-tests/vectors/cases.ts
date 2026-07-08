@@ -43,6 +43,7 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   starts_with: (s: string, prefix: string, position?: number) => s.startsWith(prefix, position),
   ends_with: (s: string, suffix: string, endPosition?: number) => s.endsWith(suffix, endPosition),
   replace: (s: string, pattern: string, replacement: string) => s.replace(pattern, replacement),
+  replace_all: (s: string, pattern: string, replacement: string) => s.replaceAll(pattern, replacement),
   repeat: (s: string, n: number) => s.repeat(n),
   pad_start: (s: string, target: number, pad?: string) => s.padStart(target, pad),
   pad_end: (s: string, target: number, pad?: string) => s.padEnd(target, pad),
@@ -296,6 +297,17 @@ export const cases: HelperCase[] = [
   { fn: 'replace', args: ['abc', '', 'X'], note: 'empty pattern inserts at the front' },
   { fn: 'replace', args: ['a.b.c', '.', '-'], note: 'pattern is literal, not regex' },
   { fn: 'replace', args: ['abc', 'b', ''], note: 'empty replacement deletes' },
+
+  // `replace_all` mirrors `replace`'s cases with a MULTI-OCCURRENCE
+  // receiver as the flagship: a backend that reuses its first-only
+  // `replace` helper here would produce 'X-b-a' instead of 'X-b-X',
+  // so the case catches a swapped lowering the single-occurrence
+  // `string-replaceall` fixture alone could not.
+  { fn: 'replace_all', args: ['a-b-a', 'a', 'X'], note: 'every occurrence, not just the first' },
+  { fn: 'replace_all', args: ['abc', 'z', 'X'], note: 'pattern not found leaves receiver unchanged' },
+  { fn: 'replace_all', args: ['abc', '', 'X'], note: 'empty pattern inserts at every boundary' },
+  { fn: 'replace_all', args: ['a.b.c', '.', '-'], note: 'pattern is literal, not regex' },
+  { fn: 'replace_all', args: ['abc', 'b', ''], note: 'empty replacement deletes' },
 
   { fn: 'repeat', args: ['ab', 3], note: 'basic repetition' },
   { fn: 'repeat', args: ['x', 0], note: 'zero count is empty' },

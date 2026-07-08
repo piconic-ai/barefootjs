@@ -124,6 +124,7 @@ BINDINGS = {
     "starts_with": lambda *a: bf.starts_with(*a),
     "ends_with": lambda *a: bf.ends_with(*a),
     "replace": lambda *a: bf.replace(*a),
+    "replace_all": lambda *a: bf.replace_all(*a),
     "repeat": lambda *a: bf.repeat(*a),
     "pad_start": lambda *a: bf.pad_start(*a),
     "pad_end": lambda *a: bf.pad_end(*a),

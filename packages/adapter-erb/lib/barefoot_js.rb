@@ -750,6 +750,38 @@ module BarefootJS
       s[0...idx] + n + s[(idx + o.length)..]
     end
 
+    # `String.prototype.replaceAll(pattern, replacement)` -- string-pattern
+    # form only (#2182), replacing EVERY occurrence (the all-occurrences
+    # sibling of `replace` above). Deliberately NOT `String#gsub`: Ruby's
+    # `gsub` interprets `\1` / `\&` backreference syntax in the replacement
+    # even for a literal string pattern (`"abc".gsub("b", "\\1")` -> "ac",
+    # not the literal "\1"), which would diverge from `.replace`'s literal
+    # splice above and from the other backends' literal treatment. The
+    # index/splice loop keeps the replacement literal, matching `replace`.
+    # An empty pattern inserts at every boundary, including before the
+    # first and after the last character (`"abc".replaceAll("", "X")` ->
+    # "XaXbXcX"), matching JS.
+    def replace_all(recv, pattern, replacement)
+      s = recv.nil? ? '' : string(recv)
+      o = pattern.nil? ? '' : string(pattern)
+      n = replacement.nil? ? '' : string(replacement)
+      return ([''] + s.chars + ['']).join(n) if o.empty?
+
+      # `+''` (not the frozen `''` literal under frozen_string_literal)
+      # so `<<` can append in place instead of `+=` reallocating a new
+      # string each iteration (quadratic for long inputs / many matches).
+      out = +''
+      pos = 0
+      loop do
+        idx = s.index(o, pos)
+        break if idx.nil?
+
+        out << s[pos...idx] << n
+        pos = idx + o.length
+      end
+      out << s[pos..]
+    end
+
     # `queryHref(base, { ... })` (#2042) -- build "base?k=v&..." from a flat
     # list of (guard, key, value) triples. A pair is included iff its guard
     # is truthy AND its value is a non-empty string. A value may instead be

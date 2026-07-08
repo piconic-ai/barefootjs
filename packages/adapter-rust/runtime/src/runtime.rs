@@ -1227,6 +1227,7 @@ impl Object for BfInstance {
             "starts_with" => Ok(MjValue::from(starts_with(a(0), a(1), a(2)))),
             "ends_with" => Ok(MjValue::from(ends_with(a(0), a(1), a(2)))),
             "replace" => Ok(MjValue::from(replace(a(0), a(1), a(2)))),
+            "replace_all" => Ok(MjValue::from(replace_all(a(0), a(1), a(2)))),
             "query" => Ok(MjValue::from(query(a(0), &js_args[1..]))),
             "repeat" => Ok(MjValue::from(repeat(a(0), a(1)))),
             "pad_start" => Ok(MjValue::from(pad(&scalar_or_empty(a(0)), a(1), a(2), true))),
@@ -1516,6 +1517,20 @@ pub fn replace(recv: &JsValue, pattern: &JsValue, replacement: &JsValue) -> Stri
         None => s,
         Some(byte_idx) => format!("{}{}{}", &s[..byte_idx], n, &s[byte_idx + o.len()..]),
     }
+}
+
+/// `String.prototype.replaceAll(pattern, replacement)`, string-pattern
+/// form only (#2182) -- every occurrence, the all-occurrences sibling
+/// of `replace` above. Rust's own `str::replace` (no count arg) is
+/// already global by default, including the empty-pattern-inserts-at-
+/// every-boundary edge case (`"abc".replace("", "X")` -> "XaXbXcX"),
+/// so it needs no hand-rolled loop the way `replace_all` on the
+/// backends whose native replace is first-occurrence-only does.
+pub fn replace_all(recv: &JsValue, pattern: &JsValue, replacement: &JsValue) -> String {
+    let s = scalar_or_empty(recv);
+    let o = js_string(pattern);
+    let n = js_string(replacement);
+    s.replace(&o, &n)
 }
 
 /// `queryHref(base, {...})` (#2042) -- build `"$base?k=v&..."` from a flat

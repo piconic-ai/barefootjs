@@ -178,6 +178,19 @@ export function renderArrayMethod(
       const newS = emit(args[1])
       return `bf.replace(${recv}, ${oldS}, ${newS})`
     }
+    case 'replaceAll': {
+      // `.replaceAll(old, new)` — string-pattern form, EVERY occurrence,
+      // via the dedicated `bf.replace_all` helper (NOT Ruby's `gsub`,
+      // which interprets `\1` / `\&` backreference syntax in the
+      // replacement even for a literal string pattern — that would
+      // diverge from `.replace`'s literal splice above). The
+      // regex-pattern form is refused upstream at the parser, same as
+      // `.replace`. See #2182.
+      const recv = emit(object)
+      const oldS = emit(args[0])
+      const newS = emit(args[1])
+      return `bf.replace_all(${recv}, ${oldS}, ${newS})`
+    }
     case 'repeat': {
       // `.repeat(n)` — string repeated `n` times. The `bf.repeat` helper
       // wraps Ruby's `*` string-repeat operator with the same

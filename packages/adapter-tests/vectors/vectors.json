@@ -887,6 +887,56 @@
       "note": "empty replacement deletes"
     },
     {
+      "fn": "replace_all",
+      "args": [
+        "a-b-a",
+        "a",
+        "X"
+      ],
+      "expect": "X-b-X",
+      "note": "every occurrence, not just the first"
+    },
+    {
+      "fn": "replace_all",
+      "args": [
+        "abc",
+        "z",
+        "X"
+      ],
+      "expect": "abc",
+      "note": "pattern not found leaves receiver unchanged"
+    },
+    {
+      "fn": "replace_all",
+      "args": [
+        "abc",
+        "",
+        "X"
+      ],
+      "expect": "XaXbXcX",
+      "note": "empty pattern inserts at every boundary"
+    },
+    {
+      "fn": "replace_all",
+      "args": [
+        "a.b.c",
+        ".",
+        "-"
+      ],
+      "expect": "a-b-c",
+      "note": "pattern is literal, not regex"
+    },
+    {
+      "fn": "replace_all",
+      "args": [
+        "abc",
+        "b",
+        ""
+      ],
+      "expect": "ac",
+      "note": "empty replacement deletes"
+    },
+    {
       "fn": "repeat",
       "args": [
         "ab",

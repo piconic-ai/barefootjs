@@ -2404,56 +2404,6 @@
           "reason": "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition"
         }
       },
-      "string-replaceall": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ]
-        }
-      },
       "string-trim-sided": {
         "blade": {
           "kind": "render",

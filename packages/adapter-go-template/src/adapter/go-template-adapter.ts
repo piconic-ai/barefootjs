@@ -3557,6 +3557,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const newS = emit(args[1])
         return `bf_replace ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(oldS)} ${wrapIfMultiToken(newS)}`
       }
+      case 'replaceAll': {
+        // `.replaceAll(old, new)` — string-pattern form, EVERY occurrence, via
+        // `bf_replace_all` (`strings.ReplaceAll`). A dedicated helper, not
+        // `bf_replace` with a different n — the regex-pattern form is refused
+        // upstream at the parser, same as `.replace`.
+        const recv = emit(object)
+        const oldS = emit(args[0])
+        const newS = emit(args[1])
+        return `bf_replace_all ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(oldS)} ${wrapIfMultiToken(newS)}`
+      }
       case 'repeat': {
         // `.repeat(n)` — string repeated `n` times. `bf_repeat` clamps a negative
         // count to "" instead of letting `strings.Repeat` panic. No argument is
