@@ -75,6 +75,21 @@ describe('render-nothing literal children fold in Phase 1', () => {
     expect(childrenOf(ir)[0].type).toBe('expression')
   })
 
+  test('a SHADOWED `undefined` binding is not folded (renders the value)', () => {
+    // `const undefined = …` is lint-hostile but legal JS — the shadowed
+    // binding's value must render, so the fold checks the binding
+    // environment before treating the identifier as the global.
+    const ir = irFor(`
+      export function C() {
+        const undefined = 'shadowed'
+        return <div>{undefined}</div>
+      }
+    `)
+    const children = childrenOf(ir)
+    expect(children).toHaveLength(1)
+    expect(children[0].type).toBe('expression')
+  })
+
   test('conditional null branches keep their existing handling', () => {
     // `cond ? <a/> : null` routes through the conditional transformer,
     // not the JSX-child scalar path — the fold must not disturb it.

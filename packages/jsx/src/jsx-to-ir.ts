@@ -44,7 +44,7 @@ import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
 } from './prop-rewrite.ts'
-import { resolveFreeRefs, type BindingEnvironment } from './free-refs.ts'
+import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
@@ -1525,8 +1525,14 @@ function transformChildren(
  * here (`0` renders "0"; `''` renders empty by stringification), and a
  * dynamic expression that EVALUATES to null is a runtime concern the
  * client runtime / adapters own, not a compile-time fold.
+ *
+ * `undefined` is an Identifier, not a keyword, and CAN be legally
+ * shadowed (`const undefined = 1` — lint-hostile but valid JS); the
+ * shadowed binding's VALUE must render, so the identifier only folds
+ * when nothing in the binding environment (imports, locals, props,
+ * signals, memos, active loop params) binds the name.
  */
-function isRenderNothingLiteral(expr: ts.Expression): boolean {
+function isRenderNothingLiteral(expr: ts.Expression, ctx: TransformContext): boolean {
   let e = expr
   while (
     ts.isParenthesizedExpression(e) ||
@@ -1540,7 +1546,9 @@ function isRenderNothingLiteral(expr: ts.Expression): boolean {
     e.kind === ts.SyntaxKind.NullKeyword ||
     e.kind === ts.SyntaxKind.TrueKeyword ||
     e.kind === ts.SyntaxKind.FalseKeyword ||
-    (ts.isIdentifier(e) && e.text === 'undefined')
+    (ts.isIdentifier(e) &&
+      e.text === 'undefined' &&
+      !isNameBoundInEnv('undefined', makeBindingEnv(ctx)))
   )
 }
 
@@ -1613,7 +1621,7 @@ function transformExpressionInner(
   // `{null}`, template adapters emitted "false" for `{false}`). The
   // conditional-branch path (`cond ? <a/> : null`) is NOT routed
   // through here and keeps its own null-branch handling.
-  if (isRenderNothingLiteral(expr)) {
+  if (isRenderNothingLiteral(expr, ctx)) {
     return null
   }
 
