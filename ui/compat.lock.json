@@ -2404,12 +2404,6 @@
           "reason": "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition"
         }
       },
-      "string-length-text": {
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)"
-        }
-      },
       "string-replaceall": {
         "blade": {
           "kind": "refusal",

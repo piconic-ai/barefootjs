@@ -338,7 +338,22 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       if (staticValue !== null) return staticValue
     }
     const obj = emit(object)
-    if (property === 'length') return `scalar(@{${obj}})`
+    if (property === 'length') {
+      // `.length` dispatches on receiver type: a STRING receiver needs
+      // Perl's scalar `length($x)`, while the array lowering
+      // `scalar(@{$x})` dereferences the value as an array ref and
+      // returns 0 for a scalar string (the `string-length-text`
+      // divergence). The receiver is string-typed when it's a known
+      // string prop/getter (`isStringTypedOperand`) or a bare
+      // identifier bound to one — the same `_isStringValueName` witness
+      // the `eq`/concat lowering already consults.
+      const isStr = (e: ParsedExpr) => isStringTypedOperand(e, n => this.ctx._isStringValueName(n))
+      const isStringReceiver =
+        isStr(object) ||
+        (object.kind === 'identifier' && this.ctx._isStringValueName(object.name))
+      if (isStringReceiver) return `length(${obj})`
+      return `scalar(@{${obj}})`
+    }
     return `${obj}->{${property}}`
   }
 
