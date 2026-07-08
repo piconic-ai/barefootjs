@@ -44,7 +44,7 @@ import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
 } from './prop-rewrite.ts'
-import { resolveFreeRefs, type BindingEnvironment } from './free-refs.ts'
+import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
@@ -1517,6 +1517,41 @@ function transformChildren(
 // Text Transformation
 // =============================================================================
 
+/**
+ * True for the literals that render NOTHING in JSX child position per
+ * JSX semantics: `null`, `undefined`, `true`, `false` — including
+ * transparently wrapped spellings (`{(null)}`, `{null as any}`,
+ * `{undefined!}`). Deliberately narrow: `0`, `NaN`, and `''` are NOT
+ * here (`0` renders "0"; `''` renders empty by stringification), and a
+ * dynamic expression that EVALUATES to null is a runtime concern the
+ * client runtime / adapters own, not a compile-time fold.
+ *
+ * `undefined` is an Identifier, not a keyword, and CAN be legally
+ * shadowed (`const undefined = 1` — lint-hostile but valid JS); the
+ * shadowed binding's VALUE must render, so the identifier only folds
+ * when nothing in the binding environment (imports, locals, props,
+ * signals, memos, active loop params) binds the name.
+ */
+function isRenderNothingLiteral(expr: ts.Expression, ctx: TransformContext): boolean {
+  let e = expr
+  while (
+    ts.isParenthesizedExpression(e) ||
+    ts.isAsExpression(e) ||
+    ts.isSatisfiesExpression(e) ||
+    ts.isNonNullExpression(e)
+  ) {
+    e = e.expression
+  }
+  return (
+    e.kind === ts.SyntaxKind.NullKeyword ||
+    e.kind === ts.SyntaxKind.TrueKeyword ||
+    e.kind === ts.SyntaxKind.FalseKeyword ||
+    (ts.isIdentifier(e) &&
+      e.text === 'undefined' &&
+      !isNameBoundInEnv('undefined', makeBindingEnv(ctx)))
+  )
+}
+
 function transformText(node: ts.JsxText, ctx: TransformContext): IRText | null {
   // Normalize whitespace (React-like behavior)
   const text = node.text.replace(/\s+/g, ' ')
@@ -1575,6 +1610,20 @@ function transformExpressionInner(
   // check below (JSX-constant inlining, the shared dispatcher, the
   // scalar fallback's `ctx.getJS`) sees the untagged template literal.
   expr = tryDesugarInterleaveTaggedTemplate(expr, ctx)
+
+  // JSX render-nothing literals (#2171): `{null}` / `{undefined}` /
+  // `{true}` / `{false}` in child position render NOTHING per JSX
+  // semantics (`{0}` and `{''}` still render their stringification).
+  // Folding here — Phase 1, before any adapter sees the node — is what
+  // makes every backend agree: previously the literal fell through to
+  // the scalar IRExpression fallback and each adapter stringified it
+  // its own way (the Hono reference emitted the text "null" for
+  // `{null}`, template adapters emitted "false" for `{false}`). The
+  // conditional-branch path (`cond ? <a/> : null`) is NOT routed
+  // through here and keeps its own null-branch handling.
+  if (isRenderNothingLiteral(expr, ctx)) {
+    return null
+  }
 
   // Check for bare signal/memo identifier (BF044)
   checkBareSignalOrMemoIdentifier(expr, ctx)

@@ -23,8 +23,6 @@ export const renderDivergences: RenderDivergences = {
     '`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)',
   'number-tofixed':
     'the literal `¥` in template text reaches the output as U+FFFD — a UTF-8 encoding gap for non-ASCII literal text adjacent to a dynamic slot',
-  'falsy-text-values':
-    '`{false}` renders "false" (Hono drops it); `{null}`/`{undefined}` render empty (Hono renders "null") — neither side matches JSX semantics',
   'html-entity-text':
     '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'math-methods':

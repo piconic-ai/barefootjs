@@ -397,6 +397,19 @@ function resolveFreeRefsInternal(
  * through a local constant are recursively expanded so the consumer sees
  * the constant's *kind composition*, not just the local name.
  */
+/**
+ * Whether `name` is bound by anything in the environment — an import, a
+ * local const/function, a prop param, a signal/memo, or an active loop
+ * param. Used by Phase 1's render-nothing-literal fold to distinguish
+ * the global `undefined` (renders nothing per JSX semantics) from a
+ * shadowed local binding named `undefined` (legal, if inadvisable — the
+ * shadowed VALUE must render). Cheap: the binding map is memoized per
+ * environment.
+ */
+export function isNameBound(name: string, env: BindingEnvironment): boolean {
+  return buildBindingMap(env).has(name)
+}
+
 export function resolveFreeRefs(
   node: ts.Node,
   env: BindingEnvironment
