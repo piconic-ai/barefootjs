@@ -935,7 +935,7 @@ class BarefootJS:
 
     def slice(self, recv: Any, start: Any, end: Any) -> Any:
         # `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
-        # (the `string-slice` divergence, #2168) -- the adapter emits the
+        # (the `string-slice` divergence, #2182) -- the adapter emits the
         # same `bf.slice(recv, start, end)` call for both receiver shapes
         # (it can't disambiguate string vs. array at compile time), so
         # this dispatches on the Python type, mirroring `includes` above.

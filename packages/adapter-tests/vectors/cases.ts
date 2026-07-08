@@ -356,7 +356,7 @@ export const cases: HelperCase[] = [
   { fn: 'slice', args: [[1, 2, 3, 4], 2, 1], note: 'start past end yields []' },
   { fn: 'slice', args: [[1, 2, 3, 4], 0, 99], note: 'end clamps to length' },
 
-  // String receiver (the `string-slice` divergence, #2168): the adapter
+  // String receiver (the `string-slice` divergence, #2182): the adapter
   // can't disambiguate a string from an array at compile time, so the
   // backend helper must dispatch on the runtime value's type the same
   // way `includes` already does.
