@@ -15,8 +15,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'arithmetic-text':
-    '`(count() + 2) * 3` renders 10 instead of 18 — the parenthesised sub-expression loses its grouping (silent wrong arithmetic)',
   'string-concat-plus':
     "`'Hello, ' + name` numeric-coerces through Perl's `+` (needs `.`/`~` concat)",
   'html-entity-text':

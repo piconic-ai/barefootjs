@@ -11,7 +11,7 @@
  *     the adapter only through the narrow `XslateEmitContext` seam.
  */
 
-import {
+import { groupBinaryOperand,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -130,8 +130,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // Kolon's `==` / `!=` are value-equality operators that compare strings
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
@@ -322,8 +325,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // Kolon's `==` / `!=` are value-equality operators handling both strings
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
     // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all

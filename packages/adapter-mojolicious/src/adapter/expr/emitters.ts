@@ -11,7 +11,7 @@
  *     adapter only through the narrow `MojoEmitContext` seam.
  */
 
-import {
+import { groupBinaryOperand,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -141,8 +141,11 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // String equality: `eq`/`ne` when EITHER operand is string-typed — a string
     // literal, a string signal getter, or a string prop. Numeric `==`/`!=`
     // would coerce both sides to 0 and match unrelated non-numeric strings (#1672).
@@ -389,8 +392,11 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const l = emit(left)
-    const r = emit(right)
+    // Preserve source grouping: a compound operand re-emitted as infix
+    // text is otherwise re-parsed under THIS language's precedence —
+    // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
+    const l = groupBinaryOperand(left, emit(left))
+    const r = groupBinaryOperand(right, emit(right))
     // String equality: `eq`/`ne` when EITHER operand is string-typed — a string
     // literal (`role() === 'admin'`), a string signal getter (`sel()`), or a
     // string prop (`props.x`). Falling back to numeric `==`/`!=` would make

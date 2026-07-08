@@ -85,7 +85,7 @@ export type {
 export { JsxAdapter } from './adapters/jsx-adapter.ts'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
 export { rewriteImportsForTemplate } from './adapters/template-imports.ts'
-export { emitParsedExpr } from './adapters/parsed-expr-emitter.ts'
+export { emitParsedExpr, groupBinaryOperand } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export type { EnvSignalReader } from './adapters/env-signal.ts'
