@@ -38,7 +38,7 @@ export function initTextarea(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","placeholder","value","disabled","readonly","error","describedBy","rows","onInput","onChange","onBlur","onFocus","data-slot","aria-invalid"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","placeholder","value","disabled","readonly","error","describedBy","rows","onInput","onChange","onBlur","onFocus","data-slot","class","aria-invalid"])
 
   if (_s0) _s0.addEventListener('input', onInput)
   if (_s0) _s0.addEventListener('change', onChange)

@@ -21,7 +21,7 @@ export function initInput(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["className","type","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["className","type","data-slot","class"])
 
 }
 
