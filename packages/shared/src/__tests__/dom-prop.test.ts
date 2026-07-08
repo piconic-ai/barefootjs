@@ -167,6 +167,14 @@ describe('toHTMLAttrNameRuntime', () => {
     expect(toHTMLAttrNameRuntime('autoFocus')).toBe('autofocus')
   })
 
+  test('readOnly lowers to the boolean attr spelling readonly (HTML alias table, #2172)', () => {
+    expect(toHTMLAttrNameRuntime('readOnly')).toBe('readonly')
+  })
+
+  test('spellCheck lowers to the enumerated attr spelling spellcheck (HTML alias table, #2172)', () => {
+    expect(toHTMLAttrNameRuntime('spellCheck')).toBe('spellcheck')
+  })
+
   test('unknown camelCase names still pass through unchanged', () => {
     expect(toHTMLAttrNameRuntime('myCustomAttr')).toBe('myCustomAttr')
   })
