@@ -240,6 +240,11 @@ export async function renderMojoComponent(options: RenderOptions): Promise<strin
 use strict;
 use warnings;
 use utf8;
+# The template is read through :utf8, so $output holds decoded wide
+# characters; without a matching layer on STDOUT Perl emits them as
+# latin-1 bytes and the harness reads U+FFFD (©/¥ mangling). A real
+# Mojolicious response encodes on the way out — this is harness-only.
+binmode STDOUT, ':encoding(UTF-8)';
 
 use lib '${LIB_DIR}', '${PERL_CORE_LIB_DIR}';
 use Mojolicious;

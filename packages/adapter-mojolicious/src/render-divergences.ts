@@ -17,14 +17,8 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   'string-length-text':
     '`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)',
-  'number-tofixed':
-    'the literal `¥` in template text reaches the output as U+FFFD — a UTF-8 encoding gap for non-ASCII literal text adjacent to a dynamic slot',
-  'html-entity-text':
-    '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'math-methods':
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
-  'static-attr-escape':
-    'static attribute values are not HTML-escaped (`title="Fish & Chips"` emitted raw; Hono escapes)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations',
   'nested-loop-outer-binding':

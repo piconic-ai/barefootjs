@@ -17,12 +17,8 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'html-entity-text':
-    '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'math-methods':
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
-  'static-attr-escape':
-    'static attribute values are not HTML-escaped (`title="Fish & Chips"` emitted raw; Hono escapes)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations',
   'nested-loop-outer-binding':

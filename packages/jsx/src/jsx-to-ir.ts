@@ -48,7 +48,7 @@ import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironme
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
-import { toHTMLAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
 
 // =============================================================================
 // Transform Context
@@ -1563,7 +1563,12 @@ function transformText(node: ts.JsxText, ctx: TransformContext): IRText | null {
 
   return {
     type: 'text',
-    value: text,
+    // JSX decodes character references at parse time (`&copy;` IS the
+    // text `©`), so the IR carries the DECODED value — the semantics —
+    // and each adapter re-escapes for its own emission context.
+    // Decode AFTER whitespace normalization: `&nbsp;` yields U+00A0,
+    // which `\s+` would otherwise collapse into a plain space.
+    value: decodeEntities(text),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   }
 }
@@ -4157,9 +4162,12 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
     return AttrValueOf.booleanAttr()
   }
 
-  // String literal: <div id="main" />
+  // String literal: <div id="main" />. JSX decodes character references
+  // in quoted attribute values just like in text children, so the IR
+  // carries the decoded string (`title="Fish &amp; Chips"` IS the value
+  // `Fish & Chips`); adapters re-escape on emit.
   if (ts.isStringLiteral(attr.initializer)) {
-    return AttrValueOf.literal(attr.initializer.text)
+    return AttrValueOf.literal(decodeEntities(attr.initializer.text))
   }
 
   // Expression: <div class={className} />

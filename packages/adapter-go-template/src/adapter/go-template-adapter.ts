@@ -68,7 +68,7 @@ import {
   computeSsrSeedPlan,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
-import { BF_REGION } from '@barefootjs/shared'
+import { BF_REGION, escapeHtml } from '@barefootjs/shared'
 
 import {
   GO_IDENTIFIER,
@@ -2579,7 +2579,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   emitText(node: IRText): string {
-    return node.value
+    // IRText carries the entity-DECODED value (Phase 1 decodes JSX
+    // character references); re-escape for direct HTML emission.
+    return escapeHtml(node.value)
   }
 
   emitExpression(node: IRExpression): string {
@@ -5181,7 +5183,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * doesn't share a contract with the intrinsic-attribute one.
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${value.value}"`,
+    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
     emitExpression: (value, name) => {
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101.

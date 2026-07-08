@@ -41,6 +41,7 @@ export {
   BOOLEAN_ATTRS,
 } from './dom-prop.ts'
 export type { DOMPropKind, DOMPropClassification } from './dom-prop.ts'
+export { decodeEntities, escapeHtml } from './html-entities.ts'
 
 export type {
   ProfilerEvent,

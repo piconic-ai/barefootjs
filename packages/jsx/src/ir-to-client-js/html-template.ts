@@ -10,7 +10,7 @@ import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } from './csr-substitute.ts'
 import type { ClientJsContext } from './types.ts'
-import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE } from '@barefootjs/shared'
+import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 
 /**
@@ -313,7 +313,7 @@ function renderTemplateAttrPart(
     case 'boolean-attr':
       return attrName
     case 'literal':
-      return `${attrName}="${v.value}"`
+      return `${attrName}="${escapeHtml(v.value)}"`
     case 'expression': {
       const valExpr = wrap(v.expr)
       return templateAttrExpr(attrName, valExpr, v.presenceOrUndefined)
@@ -550,7 +550,9 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
     }
 
     case 'text':
-      return node.value
+      // IRText carries the entity-DECODED value; this string is parsed
+      // as HTML (template.innerHTML), so re-escape for the HTML parser.
+      return escapeHtml(node.value)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -757,7 +759,7 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
         const v = a.value
         switch (v.kind) {
           case 'literal':
-            attrParts.push(`${toHtmlAttrName(a.name)}="${v.value}"`)
+            attrParts.push(`${toHtmlAttrName(a.name)}="${escapeHtml(v.value)}"`)
             break
           case 'boolean-attr':
             attrParts.push(toHtmlAttrName(a.name))
@@ -796,7 +798,9 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
     }
 
     case 'text':
-      return node.value
+      // IRText carries the entity-DECODED value; this string is parsed
+      // as HTML (template.innerHTML), so re-escape for the HTML parser.
+      return escapeHtml(node.value)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -870,7 +874,9 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
     }
 
     case 'text':
-      return node.value
+      // IRText carries the entity-DECODED value; this string is parsed
+      // as HTML (template.innerHTML), so re-escape for the HTML parser.
+      return escapeHtml(node.value)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -1228,7 +1234,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
                 return templateAttrExpr(keyName, transformExpr(tmplStr))
               }
               case 'literal':
-                return `${keyName}="${v.value}"`
+                return `${keyName}="${escapeHtml(v.value)}"`
               default:
                 return ''
             }
@@ -1238,7 +1244,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
             case 'boolean-attr':
               return attrName
             case 'literal':
-              return `${attrName}="${v.value}"`
+              return `${attrName}="${escapeHtml(v.value)}"`
             case 'expression':
               return templateAttrExpr(attrName, transformExpr(v.expr, v.templateExpr), v.presenceOrUndefined)
             case 'template': {
@@ -1269,7 +1275,9 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
     }
 
     case 'text':
-      return node.value
+      // IRText carries the entity-DECODED value; this string is parsed
+      // as HTML (template.innerHTML), so re-escape for the HTML parser.
+      return escapeHtml(node.value)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -1806,7 +1814,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
             case 'boolean-attr':
               return attrName
             case 'literal':
-              return `${attrName}="${v.value}"`
+              return `${attrName}="${escapeHtml(v.value)}"`
             case 'expression':
               return templateAttrExpr(attrName, transformExpr(v.expr, v.templateExpr), v.presenceOrUndefined)
             case 'template': {
@@ -1837,7 +1845,9 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     }
 
     case 'text':
-      return node.value
+      // IRText carries the entity-DECODED value; this string is parsed
+      // as HTML (template.innerHTML), so re-escape for the HTML parser.
+      return escapeHtml(node.value)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''

@@ -2058,40 +2058,6 @@
           "reason": "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value"
         }
       },
-      "html-entity-text": {
-        "blade": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes"
-        }
-      },
       "jsx-element-prop": {
         "blade": {
           "kind": "render",
@@ -2204,10 +2170,6 @@
         "go-template": {
           "kind": "render",
           "reason": "`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "the literal `¥` in template text reaches the output as U+FFFD — a UTF-8 encoding gap for non-ASCII literal text adjacent to a dynamic slot"
         }
       },
       "object-entries-map": {
@@ -2434,40 +2396,6 @@
             "BF101",
             "BF103"
           ]
-        }
-      },
-      "static-attr-escape": {
-        "blade": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "static attribute values are not HTML-escaped (`title=\"Fish & Chips\"` emitted raw; Hono escapes)"
         }
       },
       "string-concat-plus": {
