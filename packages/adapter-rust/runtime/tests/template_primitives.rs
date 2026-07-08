@@ -169,6 +169,20 @@ fn slice_mutation_isolation_and_clamping() {
     assert_eq!(src, arr(vec![s("a"), s("b"), s("c")]));
 }
 
+/// The `string-slice` divergence (#2182): a string receiver used to
+/// fall through the array-only branch and return an empty array
+/// instead of a substring.
+#[test]
+fn slice_string_receiver() {
+    let word = s("barefootjs");
+    assert_eq!(runtime::slice(&word, &n(0.0), &n(4.0)), s("bare"));
+    assert_eq!(runtime::slice(&word, &n(-4.0), &JsValue::Null), s("otjs"));
+    assert_eq!(runtime::slice(&word, &n(4.0), &JsValue::Null), s("footjs"));
+    assert_eq!(runtime::slice(&word, &n(5.0), &n(2.0)), s(""));
+    // Multi-byte: index by character, not byte.
+    assert_eq!(runtime::slice(&s("héllo"), &n(0.0), &n(2.0)), s("hé"));
+}
+
 #[test]
 fn reverse_mutation_isolation() {
     assert_eq!(runtime::reverse(&arr(vec![s("a"), s("b"), s("c")])), arr(vec![s("c"), s("b"), s("a")]));

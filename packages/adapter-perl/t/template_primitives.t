@@ -189,7 +189,7 @@ subtest 'concat — merges two arrays into a new array ref' => sub {
 # into a new ARRAY ref (#1448 Tier A). Mirrors the Go `bf_slice`
 # JS-compat semantics: negative-index normalisation, out-of-bounds
 # clamping, `start >= end` returns empty, undef `end` means "to
-# length". Non-array receivers return an empty ARRAY ref.
+# length". Non-array, non-string receivers return an empty ARRAY ref.
 subtest 'slice — array sub-range with negative-index + clamping' => sub {
     my $arr = ['a', 'b', 'c', 'd', 'e'];
 
@@ -213,13 +213,29 @@ subtest 'slice — array sub-range with negative-index + clamping' => sub {
     # Edge cases.
     is $bf->slice([],     0, undef), [],                   'empty array → empty';
     is $bf->slice(undef,  0, undef), [],                   'undef receiver → empty';
-    is $bf->slice('scalar', 0, undef), [],                 'scalar receiver → empty';
+    is $bf->slice({foo => 1}, 0, undef), [],                'hashref receiver → empty (not array, not string)';
 
     # Mutation isolation.
     my $src = ['a', 'b', 'c'];
     my $out = $bf->slice($src, 0, 2);
     push @$out, 'mutated';
     is $src, ['a', 'b', 'c'], 'source unchanged after mutating slice result';
+};
+
+# `String.prototype.slice(start, end?)` — the `string-slice`
+# divergence (#2182): a scalar receiver used to fall through the
+# array-only branch above and return an empty ARRAY ref instead of a
+# substring. Mirrors the array subtest's shape with a string receiver.
+subtest 'slice — string sub-range with negative-index + clamping' => sub {
+    my $word = 'barefootjs';
+
+    is $bf->slice($word, 0, 4),      'bare',   'start+end carves the prefix';
+    is $bf->slice($word, -4, undef), 'otjs',   'negative start counts from the end';
+    is $bf->slice($word, 4, undef),  'footjs', 'undef end → to length';
+    is $bf->slice($word, 5, 2),      '',       'start > end → empty string';
+
+    # Multi-byte: index by character, not byte.
+    is $bf->slice('héllo', 0, 2), 'hé', 'multi-byte characters count as one unit each';
 };
 
 # `Array.prototype.reverse()` / `Array.prototype.toReversed()` —
