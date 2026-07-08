@@ -15,8 +15,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'string-length-text':
-    '`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)',
   'math-methods':
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
   'object-entries-map':
