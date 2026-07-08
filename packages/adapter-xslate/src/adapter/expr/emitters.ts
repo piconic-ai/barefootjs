@@ -12,6 +12,7 @@
  */
 
 import { groupBinaryOperand,
+  isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -135,6 +136,12 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
+    // (#2176). Lower to Kolon's `~` concat operator.
+    if (isStringConcatBinary(op, left, right, this.isStringName)) {
+      return `${l} ~ ${r}`
+    }
     // Kolon's `==` / `!=` are value-equality operators that compare strings
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
@@ -330,6 +337,14 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
+    // (#2176). Lower to Kolon's `~` concat operator. Structural detection
+    // (string-literal / template-literal operands) carries the decision;
+    // this context has no string-name registry to consult.
+    if (isStringConcatBinary(op, left, right, () => false)) {
+      return `${l} ~ ${r}`
+    }
     // Kolon's `==` / `!=` are value-equality operators handling both strings
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
     // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all

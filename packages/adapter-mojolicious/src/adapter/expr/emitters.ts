@@ -12,6 +12,8 @@
  */
 
 import { groupBinaryOperand,
+  isStringTypedOperand,
+  isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -29,7 +31,7 @@ import { groupBinaryOperand,
 
 import type { MojoEmitContext } from '../emit-context.ts'
 import { MOJO_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { emitIndexAccessPerl, isStringTypedOperand } from './operand.ts'
+import { emitIndexAccessPerl } from './operand.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -156,6 +158,12 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     }
     if ((op === '!==' || op === '!=') && stringCmp) {
       return `${l} ne ${r}`
+    }
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
+    // to Perl's `.` concat operator.
+    if (isStringConcatBinary(op, left, right, this.isStringName)) {
+      return `${l} . ${r}`
     }
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
@@ -409,6 +417,12 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     }
     if ((op === '!==' || op === '!=') && stringCmp) {
       return `${l} ne ${r}`
+    }
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
+    // to Perl's `.` concat operator.
+    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
+      return `${l} . ${r}`
     }
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',

@@ -2471,25 +2471,9 @@
         }
       },
       "string-concat-plus": {
-        "blade": {
-          "kind": "render",
-          "reason": "`'Hello, ' + name` is emitted as PHP `+`, which fatals with \"Unsupported operand types: string + string\" — needs PHP's `.` concat"
-        },
         "go-template": {
           "kind": "render",
           "reason": "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`'Hello, ' + name` renders \"0\" — Perl's numeric `+` coerces the strings; JS string-concat `+` needs Perl's `.`"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`'Hello, ' + name` lowers through Twig's numeric `+` instead of `~` string concat"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`'Hello, ' + name` numeric-coerces through Perl's `+` (needs `.`/`~` concat)"
         }
       },
       "string-length-text": {
