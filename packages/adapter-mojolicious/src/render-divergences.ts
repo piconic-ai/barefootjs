@@ -15,8 +15,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'string-concat-plus':
-    "`'Hello, ' + name` renders \"0\" — Perl's numeric `+` coerces the strings; JS string-concat `+` needs Perl's `.`",
   'string-length-text':
     '`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)',
   'number-tofixed':

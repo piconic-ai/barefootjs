@@ -60,6 +60,7 @@
  */
 
 import { groupBinaryOperand,
+  isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -197,6 +198,12 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     // the one shared JS-strict-equality implementation.
     if (op === '===') return `bf.eq(${l}, ${r})`
     if (op === '!==') return `bf.neq(${l}, ${r})`
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // Twig's `+` is numeric-only (PHP arithmetic underneath fatals on
+    // non-numeric strings, #2176). Lower to Twig's `~` concat operator.
+    if (isStringConcatBinary(op, left, right, this.isStringName)) {
+      return `${l} ~ ${r}`
+    }
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*', '/': '/',
@@ -396,6 +403,14 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // equality — NEVER emit them for JS `===`/`!==`.
     if (op === '===') return `bf.eq(${l}, ${r})`
     if (op === '!==') return `bf.neq(${l}, ${r})`
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // Twig's `+` is numeric-only (PHP arithmetic underneath fatals on
+    // non-numeric strings, #2176). Lower to Twig's `~` concat operator.
+    // The adapter's string-value registry catches getter/prop operands
+    // with no literal present (`firstName() + lastName()`).
+    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
+      return `${l} ~ ${r}`
+    }
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

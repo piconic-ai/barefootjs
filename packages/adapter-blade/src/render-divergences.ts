@@ -15,8 +15,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'string-concat-plus':
-    '`\'Hello, \' + name` is emitted as PHP `+`, which fatals with "Unsupported operand types: string + string" — needs PHP\'s `.` concat',
   'html-entity-text':
     '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'math-methods':

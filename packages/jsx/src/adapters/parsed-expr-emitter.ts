@@ -199,14 +199,51 @@ export interface ParsedExprEmitter {
 }
 
 /**
- * Single point of dispatch from `ParsedExpr.kind` to the adapter's
- * method. Adapters call this once at their entry point; the recursion
- * threads the `emit` callback for child nodes.
+ * Whether an operand is string-typed, as far as the ParsedExpr tree can
+ * tell: a string literal, a template literal, a zero-arg getter call /
+ * `props.x` member whose name the adapter knows to be string-valued
+ * (`isStringName`, from adapter state), or a `+` chain that is itself a
+ * string concatenation. Promoted from the Mojo/Xslate adapters' local
+ * copies (their file header marked it a shared candidate) and extended
+ * with the template-literal and nested-`+` arms.
  *
- * The `assertNever` default arm makes adding a new `ParsedExpr.kind`
- * a TS compile error here — and, transitively, in every adapter that
- * hasn't extended its `ParsedExprEmitter` implementation.
+ * Consumed by `===`/`!==` lowering on backends whose `==` is numeric
+ * (Perl `eq`/`ne`) and by `isStringConcatBinary` below.
  */
+export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string) => boolean): boolean {
+  if (expr.kind === 'literal' && expr.literalType === 'string') return true
+  if (expr.kind === 'template-literal') return true
+  if (expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0) {
+    return isStringName(expr.callee.name)
+  }
+  if (expr.kind === 'member' && expr.object.kind === 'identifier' && expr.object.name === 'props') {
+    return isStringName(expr.property)
+  }
+  if (expr.kind === 'binary' && expr.op === '+') {
+    return isStringTypedOperand(expr.left, isStringName) || isStringTypedOperand(expr.right, isStringName)
+  }
+  return false
+}
+
+/**
+ * Whether a `binary` node is JS STRING concatenation rather than numeric
+ * addition: `+` with at least one string-typed operand (#2176). JS `+`
+ * overloads on operand type; backends whose `+` is numeric-only coerce
+ * the strings — Perl renders `'Hello, ' + name` as 0, PHP fatals with
+ * "Unsupported operand types" — so their emitters must pick the
+ * language's concat operator (`.` / `~`) when this returns true. The
+ * decision is shared-layer semantics; each adapter only maps true to
+ * its own operator.
+ */
+export function isStringConcatBinary(
+  op: string,
+  left: ParsedExpr,
+  right: ParsedExpr,
+  isStringName: (n: string) => boolean,
+): boolean {
+  return op === '+' && (isStringTypedOperand(left, isStringName) || isStringTypedOperand(right, isStringName))
+}
+
 /**
  * Wrap an emitted binary/logical/ternary OPERAND in parentheses so the
  * source grouping the `ParsedExpr` tree encodes survives infix
@@ -227,6 +264,15 @@ export function groupBinaryOperand(operand: ParsedExpr, emitted: string): string
     : emitted
 }
 
+/**
+ * Single point of dispatch from `ParsedExpr.kind` to the adapter's
+ * method. Adapters call this once at their entry point; the recursion
+ * threads the `emit` callback for child nodes.
+ *
+ * The `assertNever` default arm makes adding a new `ParsedExpr.kind`
+ * a TS compile error here — and, transitively, in every adapter that
+ * hasn't extended its `ParsedExprEmitter` implementation.
+ */
 export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): string {
   const emit = (child: ParsedExpr): string => emitParsedExpr(child, emitter)
   switch (expr.kind) {

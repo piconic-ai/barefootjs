@@ -83,6 +83,7 @@
  */
 
 import { groupBinaryOperand,
+  isStringConcatBinary,
   type ParsedExprEmitter,
   type HigherOrderMethod,
   type ArrayMethod,
@@ -218,6 +219,12 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     // shared JS-strict-equality implementation.
     if (op === '===') return `$bf->eq(${l}, ${r})`
     if (op === '!==') return `$bf->neq(${l}, ${r})`
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // PHP's `+` fatals on non-numeric strings ("Unsupported operand
+    // types", #2176). Lower to PHP's `.` concat operator.
+    if (isStringConcatBinary(op, left, right, this.isStringName)) {
+      return `${l} . ${r}`
+    }
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*', '/': '/',
@@ -417,6 +424,14 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // NEVER emitted for JS `===`/`!==`.
     if (op === '===') return `$bf->eq(${l}, ${r})`
     if (op === '!==') return `$bf->neq(${l}, ${r})`
+    // JS `+` with a string-typed operand is CONCATENATION, not addition —
+    // PHP's `+` fatals on non-numeric strings ("Unsupported operand
+    // types", #2176). Lower to PHP's `.` concat operator. The adapter's
+    // string-value registry catches getter/prop operands with no literal
+    // present (`firstName() + lastName()`).
+    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
+      return `${l} . ${r}`
+    }
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
