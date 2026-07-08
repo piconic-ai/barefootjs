@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/streaming",
-  "version": "0.18.2",
+  "version": "0.18.3",
   "description": "Backend-agnostic SSR streaming helpers for BarefootJS",
   "type": "module",
   "main": "./src/index.ts",
