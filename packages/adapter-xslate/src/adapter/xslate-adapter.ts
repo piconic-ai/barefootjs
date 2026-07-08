@@ -1436,6 +1436,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
+      _isStringValueName: (name) => this._isStringValueName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderKolonFilterExprPublic: (e, p) => this._renderKolonFilterExprPublic(e, p),
     }

@@ -406,9 +406,9 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Twig's `+` is numeric-only (PHP arithmetic underneath fatals on
     // non-numeric strings, #2176). Lower to Twig's `~` concat operator.
-    // Structural detection (string-literal / template-literal operands)
-    // carries the decision; this context has no string-name registry.
-    if (isStringConcatBinary(op, left, right, () => false)) {
+    // The adapter's string-value registry catches getter/prop operands
+    // with no literal present (`firstName() + lastName()`).
+    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
       return `${l} ~ ${r}`
     }
     const opMap: Record<string, string> = {

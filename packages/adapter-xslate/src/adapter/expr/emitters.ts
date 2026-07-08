@@ -339,10 +339,10 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const r = groupBinaryOperand(right, emit(right))
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
-    // (#2176). Lower to Kolon's `~` concat operator. Structural detection
-    // (string-literal / template-literal operands) carries the decision;
-    // this context has no string-name registry to consult.
-    if (isStringConcatBinary(op, left, right, () => false)) {
+    // (#2176). Lower to Kolon's `~` concat operator. The adapter's
+    // string-value registry catches getter/prop operands with no literal
+    // present (`firstName() + lastName()`).
+    if (isStringConcatBinary(op, left, right, n => this.ctx._isStringValueName(n))) {
       return `${l} ~ ${r}`
     }
     // Kolon's `==` / `!=` are value-equality operators handling both strings

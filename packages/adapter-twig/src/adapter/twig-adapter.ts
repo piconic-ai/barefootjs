@@ -1544,6 +1544,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
+      _isStringValueName: (name) => this._isStringValueName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderTwigFilterExprPublic: (e, p) => this._renderTwigFilterExprPublic(e, p),
     }

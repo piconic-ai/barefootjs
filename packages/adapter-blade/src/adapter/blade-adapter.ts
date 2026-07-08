@@ -1659,6 +1659,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
+      _isStringValueName: (name) => this._isStringValueName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderBladeFilterExprPublic: (e, p) => this._renderBladeFilterExprPublic(e, p),
     }

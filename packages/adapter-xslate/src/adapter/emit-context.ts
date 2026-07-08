@@ -42,6 +42,9 @@ export interface XslateEmitContext {
    */
   _resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
+  /** Whether a getter/prop name resolves to a string-typed SSR value. */
+  _isStringValueName(name: string): boolean
+
   /** Record a BF101 unsupported-expression diagnostic. */
   _recordExprBF101(message: string, reason?: string): void
 
