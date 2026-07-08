@@ -47,7 +47,7 @@ type HonoRenderCtx = {
   isInsideLoop?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, escapeHtml } from '@barefootjs/shared'
 
 export interface HonoAdapterOptions {
   /**
@@ -731,7 +731,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   }
 
   private renderText(text: IRText): string {
-    return text.value
+    // IRText carries the entity-DECODED value (Phase 1 decodes JSX
+    // character references). Re-encode for JSX SOURCE text: the shared
+    // HTML escape covers `< > & "` (the JSX parser decodes them right
+    // back; raw `'` is legal JSX text), and `{`/`}` — JSX expression delimiters with no named
+    // entity — go numeric. Rendering then re-escapes with Hono's own
+    // set, so output bytes match the pre-decode pipeline.
+    return escapeHtml(text.value).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
   }
 
   renderExpression(expr: IRExpression): string {
@@ -1076,7 +1082,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * AttrValue kind becomes a TS compile error here (#1290 step 2).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${value.value}"`,
+    // The decoded static value re-encodes for the JSX attr string (the
+    // JSX parser decodes entities in quoted attribute values, so the
+    // runtime sees the decoded string and escapes it on render).
+    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
     emitExpression: (value, name) => {
       // Boolean attrs / presence-folded expressions: pass `undefined` when
       // falsy so Hono omits the attribute. Wrap in parens to keep `??`
@@ -1106,9 +1115,11 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   private readonly componentPropEmitter: AttrValueEmitter = {
     emitLiteral: (value, name) =>
       // IR-authoritative string literal: `<X fill="var(--c)" />`.
-      // Emitting verbatim is what distinguishes a CSS-shaped value
-      // (`var(...)`, `url(...)`, `calc(...)`) from a JS expression.
-      `${name}="${value.value}"`,
+      // Emitting as a plain JSX attr string (not a JS expression) is what
+      // distinguishes a CSS-shaped value (`var(...)`, `url(...)`,
+      // `calc(...)`) from a JS expression. The decoded value re-encodes
+      // so the JSX parser hands the component the same decoded string.
+      `${name}="${escapeHtml(value.value)}"`,
     emitExpression: (value, name) => `${name}={${value.expr}}`,
     emitBooleanAttr: (_value, name) => name,
     emitBooleanShorthand: (_value, name) => name,

@@ -17,8 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'html-entity-text':
-    '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'string-concat-plus':
     "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition",
   'optional-chaining-prop':
@@ -27,8 +25,6 @@ export const renderDivergences: RenderDivergences = {
     '`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)',
   'math-methods':
     'Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered',
-  'static-attr-escape':
-    'static attribute values are not HTML-escaped (`title="Fish & Chips"` emitted raw; Hono escapes)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering',
   'nested-loop-outer-binding':

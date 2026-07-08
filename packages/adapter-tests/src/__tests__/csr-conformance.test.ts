@@ -209,17 +209,14 @@ describe('CSR Conformance Tests', () => {
     // documents it until the compiler/runtime reconciles the two paths:
     //   (`falsy-text-values` graduated — #2171 folds the render-nothing
     //   literals in Phase 1, so SSR and CSR now agree by construction.)
-    //   - `html-entity-text`: `&copy;` in JSX literal text is decoded to
-    //     `©` by SSR but passed through as the raw entity by the CSR
-    //     template string (same DOM after parse, different bytes).
-    'html-entity-text',
+    //   (`html-entity-text` graduated — Phase 1 decodes JSX character
+    //   references, and the CSR template builder re-escapes static text
+    //   for its innerHTML context, so SSR and CSR agree by construction.)
     //   (`boolean-attr-literals` graduated — #2172 normalizes intrinsic
     //   attribute names in Phase 1, so `readOnly` reaches both SSR and
     //   CSR as the BOOLEAN_ATTRS member `readonly`.)
-    //   - `static-attr-escape`: static attribute values are HTML-escaped
-    //     by Hono SSR (`Fish &amp; Chips`) but emitted RAW by the CSR
-    //     template literal (`Fish & Chips`).
-    'static-attr-escape',
+    //   (`static-attr-escape` graduated — the CSR template builder now
+    //   HTML-escapes static attribute values like the SSR side.)
     //   - `object-entries-map` / `nested-loop-outer-binding`: nested/
     //     tuple-destructure loops emit `data-key`/`data-key-1` depth
     //     suffixes differently between the SSR snapshot and template-eval.

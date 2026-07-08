@@ -143,7 +143,7 @@ import {
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, BF_REGION } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, BF_REGION, escapeHtml } from '@barefootjs/shared'
 
 import type { JinjaRenderCtx } from './lib/types.ts'
 import { JINJA_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -401,7 +401,9 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   }
 
   emitText(node: IRText): string {
-    return node.value
+    // IRText carries the entity-DECODED value (Phase 1 decodes JSX
+    // character references); re-escape for direct HTML emission.
+    return escapeHtml(node.value)
   }
 
   emitExpression(node: IRExpression): string {
@@ -1132,7 +1134,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
    * AttrValue lowering for intrinsic-element attributes (Jinja).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${value.value}"`,
+    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
     emitExpression: (value, name) => {
       // `style={{ … }}` object literal → a CSS string with dynamic values
       // interpolated, instead of refusing the bare object with BF101 (#1322).
