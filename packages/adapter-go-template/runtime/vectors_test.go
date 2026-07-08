@@ -84,8 +84,9 @@ var vectorBindings = map[string]func(args []any) any{
 		}
 		return EndsWith(args[0].(string), args[1].(string))
 	},
-	"replace": func(args []any) any { return Replace(args[0].(string), args[1].(string), args[2].(string)) },
-	"repeat":  func(args []any) any { return Repeat(args[0].(string), args[1].(int)) },
+	"replace":     func(args []any) any { return Replace(args[0].(string), args[1].(string), args[2].(string)) },
+	"replace_all": func(args []any) any { return ReplaceAll(args[0].(string), args[1].(string), args[2].(string)) },
+	"repeat":      func(args []any) any { return Repeat(args[0].(string), args[1].(int)) },
 	"pad_start": func(args []any) any {
 		if len(args) > 2 {
 			return PadStart(args[0].(string), args[1].(int), args[2].(string))

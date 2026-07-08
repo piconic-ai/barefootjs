@@ -1137,6 +1137,33 @@ sub replace ($self, $recv, $pattern, $replacement) {
     return substr($s, 0, $i) . $n . substr($s, $i + CORE::length($o));
 }
 
+# `String.prototype.replaceAll(pattern, replacement)` — string-pattern
+# form only (#2182), replacing EVERY occurrence (the all-occurrences
+# sibling of `replace` above). Same literal-splice approach (no regex
+# metacharacters, no `$1`/`$&` interpolation) as `replace`, looped
+# forward from each match's end. An empty pattern inserts the
+# replacement at every boundary, including before the first and after
+# the last character (`"abc".replaceAll("", "X")` -> "XaXbXcX"),
+# matching JS.
+
+sub replace_all ($self, $recv, $pattern, $replacement) {
+    my $s = defined $recv && !ref($recv) ? "$recv" : '';
+    my $o = defined $pattern ? "$pattern" : '';
+    my $n = defined $replacement ? "$replacement" : '';
+    return CORE::join($n, '', split(//, $s), '') if $o eq '';
+    my $out = '';
+    my $pos = 0;
+    my $olen = CORE::length($o);
+    while (1) {
+        my $i = index($s, $o, $pos);
+        last if $i < 0;
+        $out .= substr($s, $pos, $i - $pos) . $n;
+        $pos = $i + $olen;
+    }
+    $out .= substr($s, $pos);
+    return $out;
+}
+
 # `queryHref(base, { … })` (#2042) — build `"$base?k=v&…"` from a flat list of
 # (guard, key, value) triples. A pair is included iff its guard is truthy AND
 # its value is a non-empty string, mirroring the client `queryHref`'s `if

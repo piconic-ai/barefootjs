@@ -93,6 +93,7 @@ export type ParsedExpr =
         | 'startsWith'
         | 'endsWith'
         | 'replace'
+        | 'replaceAll'
         | 'repeat'
         | 'padStart'
         | 'padEnd'
@@ -345,18 +346,17 @@ const UNSUPPORTED_METHODS = new Set([
   // `startsWith` / `endsWith` are no longer here — both lower via the
   // `array-method` IR + `bf_starts_with` / `bf_ends_with` (Go) and
   // `bf->starts_with` / `bf->ends_with` (Mojo). See #1448 Tier B.
-  // `replace` is no longer here — the string-pattern form lowers via
-  // the `array-method` IR + `bf_replace` (Go) / `bf->replace` (Mojo);
-  // the regex-pattern form is refused at the parse arm below (it would
-  // need the per-adapter regex-flavour decision). `replaceAll` stays
-  // refused. See #1448 Tier B.
+  // `replace` / `replaceAll` are no longer here — the string-pattern
+  // form of each lowers via the `array-method` IR + `bf_replace` /
+  // `bf_replace_all` (Go) / `bf->replace` / `bf->replace_all` (Mojo);
+  // the regex-pattern form of EITHER is refused at the parse arm below
+  // (it would need the per-adapter regex-flavour decision).
   // `repeat` is no longer here — `String.prototype.repeat(n)` lowers via
   // the `array-method` IR + `bf_repeat` (Go) / `bf->repeat` (Mojo).
   // See #1448 Tier B.
   // `padStart` / `padEnd` are no longer here — both lower via the
   // `array-method` IR + `bf_pad_start` / `bf_pad_end` (Go) and
   // `bf->pad_start` / `bf->pad_end` (Mojo). See #1448 Tier B.
-  'replaceAll',
   'charAt', 'charCodeAt', 'codePointAt', 'normalize',
   'substring', 'substr', 'match', 'matchAll', 'search',
 ])
@@ -954,19 +954,25 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // refused: `isSupported` maps a regex-pattern `.replace` to the
       // deferred-form BF101 reason — the Perl `s///` vs Go
       // `regexp.ReplaceAllString` flavour gap is the open design
-      // question in #1448. `replaceAll` stays refused entirely.
+      // question in #1448. `.replaceAll(pattern, replacement)` shares
+      // this arm (#2182 follow-up): same arity/regex/object-literal
+      // gates, only the `method` tag and its runtime helper differ —
+      // `bf_replace_all` (Go, `strings.ReplaceAll`) / `bf->replace_all`
+      // (Mojo) replace EVERY occurrence, where `.replace`'s helpers
+      // replace only the first.
       //
       // Full JS arity: a third+ argument is ignored (the adapter reads
       // only the pattern + replacement). The one- and zero-argument
       // forms are refused: JS coerces the missing replacement (and
       // pattern) to the literal string "undefined", a degenerate result
       // (mirrors the `.includes()` / `.startsWith()` zero-arg refusal).
-      if (callee.property === 'replace') {
+      if (callee.property === 'replace' || callee.property === 'replaceAll') {
+        const method = callee.property
         if (args.length < 2) {
           return {
             kind: 'unsupported',
             raw,
-            reason: `\`.replace(${args.length === 0 ? '' : 'pattern'})\` needs both a pattern and a replacement — JS coerces the missing argument to the string "undefined", a degenerate result. Pass both arguments, or pre-compute the value before the template.`,
+            reason: `\`.${method}(${args.length === 0 ? '' : 'pattern'})\` needs both a pattern and a replacement — JS coerces the missing argument to the string "undefined", a degenerate result. Pass both arguments, or pre-compute the value before the template.`,
           }
         }
         // A regex-literal pattern is the deferred form (the Perl `s///`
@@ -980,7 +986,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
         // any template use with the deferred-form reason.
         const patternNode = node.arguments[0]
         if (patternNode && ts.isRegularExpressionLiteral(patternNode)) {
-          return { kind: 'array-method', method: 'replace', object: callee.object, args }
+          return { kind: 'array-method', method, object: callee.object, args }
         }
         // Treat an object-literal argument like `unsupported` — a `.replace`
         // with an object pattern/replacement isn't lowerable, same as before
@@ -995,7 +1001,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
           const reason = badArg.kind === 'unsupported' ? badArg.reason : 'Unsupported syntax: ObjectLiteralExpression'
           return { kind: 'unsupported', raw, reason }
         }
-        return { kind: 'array-method', method: 'replace', object: callee.object, args }
+        return { kind: 'array-method', method, object: callee.object, args }
       }
       // `.repeat(n)` — string → string (the receiver concatenated `n`
       // times). Go uses `bf_repeat` (`strings.Repeat`, clamping a
@@ -2236,15 +2242,16 @@ function checkSupport(expr: ParsedExpr): SupportResult {
     }
 
     case 'array-method': {
-      // A regex-pattern `.replace` is carried structurally (a `regex` first
-      // arg) but is the deferred form (#1448) — no template language lowers it.
-      // Refuse with the dedicated reason rather than the generic standalone-regex
-      // message, preserving the diagnostic the parser used to emit directly.
-      if (expr.method === 'replace' && expr.args[0]?.kind === 'regex') {
+      // A regex-pattern `.replace` / `.replaceAll` is carried structurally
+      // (a `regex` first arg) but is the deferred form (#1448) — no
+      // template language lowers it. Refuse with the dedicated reason
+      // rather than the generic standalone-regex message, preserving the
+      // diagnostic the parser used to emit directly.
+      if ((expr.method === 'replace' || expr.method === 'replaceAll') && expr.args[0]?.kind === 'regex') {
         return {
           supported: false,
           reason:
-            'String.prototype.replace supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */',
+            `String.prototype.${expr.method} supports only a string pattern + string replacement (the regex form is deferred); use a string pattern or wrap the expression in /* @client */`,
         }
       }
       const objSupport = checkSupport(expr.object)

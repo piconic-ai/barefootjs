@@ -1229,6 +1229,29 @@ final class BarefootJS
         return substr($s, 0, $i) . $n . substr($s, $i + strlen($o));
     }
 
+    /** `String.prototype.replaceAll(pattern, replacement)` -- string-pattern
+     * form only (#2182), replacing EVERY occurrence (the all-occurrences
+     * sibling of `replace` above). A non-empty pattern uses PHP's own
+     * `str_replace`, which is global-by-default and treats both the pattern
+     * and the replacement literally (no backreference interpolation) --
+     * matching JS. PHP's `str_replace("", ...)` is a no-op, unlike JS,
+     * which inserts the replacement at every boundary (including before
+     * the first and after the last character,
+     * `"abc".replaceAll("", "X")` -> "XaXbXcX") -- so the empty pattern is
+     * special-cased with `mb_str_split` (UTF-8 code points, matching this
+     * runtime's other string helpers). */
+    public function replace_all($recv, $pattern, $replacement): string
+    {
+        $s = $this->scalarOrEmpty($recv);
+        $o = $this->string($pattern);
+        $n = $this->string($replacement);
+        if ($o === '') {
+            $chars = $s === '' ? [] : mb_str_split($s, 1, 'UTF-8');
+            return implode($n, array_merge([''], $chars, ['']));
+        }
+        return str_replace($o, $n, $s);
+    }
+
     /** `queryHref(base, {...})` (#2042) -- build `"$base?k=v&..."` from a
      * flat (guard, key, value) triple sequence. A pair is included iff its
      * guard is JS-truthy AND its value is a non-empty string; an array value

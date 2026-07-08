@@ -1084,6 +1084,19 @@ class BarefootJS:
             return s
         return s[:i] + n + s[i + len(o) :]
 
+    def replace_all(self, recv: Any, pattern: Any, replacement: Any) -> str:
+        """`String.prototype.replaceAll(pattern, replacement)`, string-pattern
+        form only (#2182) -- every occurrence, the all-occurrences sibling of
+        `replace` above. Python's own `str.replace(old, new)` (no count arg)
+        is already global by default, including the empty-pattern-inserts-
+        at-every-boundary edge case (`"abc".replace("", "X")` -> "XaXbXcX"),
+        so it needs no hand-rolled loop the way the other runtimes' first-
+        occurrence-only native replace does."""
+        s = _scalar_or_empty(recv)
+        o = js_string(pattern)
+        n = js_string(replacement)
+        return s.replace(o, n)
+
     def query(self, base: Any, *triples: Any) -> str:
         """`queryHref(base, {...})` (#2042) -- build `"$base?k=v&..."` from a
         flat list of (guard, key, value) triples. A pair is included iff its

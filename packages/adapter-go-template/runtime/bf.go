@@ -44,6 +44,7 @@ func FuncMap() template.FuncMap {
 		"bf_starts_with": StartsWith,
 		"bf_ends_with":   EndsWith,
 		"bf_replace":     Replace,
+		"bf_replace_all": ReplaceAll,
 		"bf_repeat":      Repeat,
 		"bf_pad_start":   PadStart,
 		"bf_pad_end":     PadEnd,
@@ -838,15 +839,23 @@ func EndsWith(s, suffix string, endPosition ...int) bool {
 
 // Replace lowers the string-pattern form of `String.prototype.replace`
 // (#1448 Tier B). JS replaces only the FIRST occurrence for a string
-// pattern, so the count is 1 (`strings.Replace` with n=1; n<0 would
-// replace all — that's `.replaceAll`, still refused). The replacement
-// is treated literally: unlike JS, special replacement patterns like
-// `$&` / `$1` are NOT interpreted (Go and Perl agree on literal
-// replacement, keeping the two template adapters byte-equal; this
-// diverges from the Hono/CSR JS path only for replacement strings that
-// contain `$`-patterns, which are rare in template position).
+// pattern, so the count is 1 (`strings.Replace` with n=1; `ReplaceAll`
+// below is the every-occurrence sibling, `.replaceAll`, #2182). The
+// replacement is treated literally: unlike JS, special replacement
+// patterns like `$&` / `$1` are NOT interpreted (Go and Perl agree on
+// literal replacement, keeping the two template adapters byte-equal;
+// this diverges from the Hono/CSR JS path only for replacement strings
+// that contain `$`-patterns, which are rare in template position).
 func Replace(s, old, new string) string {
 	return strings.Replace(s, old, new, 1)
+}
+
+// ReplaceAll lowers the string-pattern form of
+// `String.prototype.replaceAll` (#2182): every occurrence, via
+// `strings.ReplaceAll` (equivalent to `strings.Replace` with n=-1).
+// Same literal-replacement caveat as `Replace` above.
+func ReplaceAll(s, old, new string) string {
+	return strings.ReplaceAll(s, old, new)
 }
 
 // Repeat lowers `String.prototype.repeat(n)` (#1448 Tier B): the

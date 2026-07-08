@@ -72,6 +72,7 @@ export type ArrayMethod =
   | 'startsWith'
   | 'endsWith'
   | 'replace'
+  | 'replaceAll'
   | 'repeat'
   | 'padStart'
   | 'padEnd'

@@ -85,6 +85,7 @@ class HelperVectorsTest < Minitest::Test
     'starts_with' => ->(*a) { BF.starts_with(*a) },
     'ends_with' => ->(*a) { BF.ends_with(*a) },
     'replace' => ->(*a) { BF.replace(*a) },
+    'replace_all' => ->(*a) { BF.replace_all(*a) },
     'repeat' => ->(*a) { BF.repeat(*a) },
     'pad_start' => ->(*a) { BF.pad_start(*a) },
     'pad_end' => ->(*a) { BF.pad_end(*a) },

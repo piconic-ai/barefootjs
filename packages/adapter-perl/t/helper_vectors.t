@@ -98,6 +98,7 @@ my %bindings = (
     starts_with => sub { $bf->starts_with(@_) },
     ends_with   => sub { $bf->ends_with(@_) },
     replace     => sub { $bf->replace(@_) },
+    replace_all => sub { $bf->replace_all(@_) },
     repeat      => sub { $bf->repeat(@_) },
     pad_start   => sub { $bf->pad_start(@_) },
     pad_end     => sub { $bf->pad_end(@_) },
