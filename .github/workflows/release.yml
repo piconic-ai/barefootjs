@@ -355,14 +355,23 @@ jobs:
 
       - name: Notify Packagist
         env:
-          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'barefootjs' }}
+          # Packagist authenticates as the account that OWNS the API token, so
+          # this must be that user's login (kfly8) — NOT the "barefootjs"
+          # vendor namespace. A username/token-owner mismatch is rejected with
+          # 403. Override via the PACKAGIST_USERNAME repo variable if the token
+          # owner ever changes.
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'kfly8' }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
-          curl -sSf -XPOST \
+          # Packagist's documented auth is a Bearer header of the form
+          # "username:token" (https://packagist.org/apidoc). The "API-Token"
+          # header this used before is not recognized, so every request went
+          # out unauthenticated and 403'd regardless of the token.
+          curl -sSf -X POST \
             -H 'Content-Type: application/json' \
-            -H "API-Token: ${PACKAGIST_API_TOKEN}" \
-            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}" \
-            -d '{"repository":{"url":"https://packagist.org/packages/barefootjs/twig"}}'
+            -H "Authorization: Bearer ${PACKAGIST_USERNAME}:${PACKAGIST_API_TOKEN}" \
+            'https://packagist.org/api/update-package' \
+            -d '{"repository":"https://packagist.org/packages/barefootjs/twig"}'
 
   packagist-blade-release:
     needs: release
@@ -431,14 +440,17 @@ jobs:
 
       - name: Notify Packagist
         env:
-          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'barefootjs' }}
+          # See the Twig job: username must be the API token's owner (kfly8),
+          # not the "barefootjs" vendor namespace.
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'kfly8' }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
-          curl -sSf -XPOST \
+          # See the Twig job: Packagist wants a Bearer "username:token" header.
+          curl -sSf -X POST \
             -H 'Content-Type: application/json' \
-            -H "API-Token: ${PACKAGIST_API_TOKEN}" \
-            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}" \
-            -d '{"repository":{"url":"https://packagist.org/packages/barefootjs/blade"}}'
+            -H "Authorization: Bearer ${PACKAGIST_USERNAME}:${PACKAGIST_API_TOKEN}" \
+            'https://packagist.org/api/update-package' \
+            -d '{"repository":"https://packagist.org/packages/barefootjs/blade"}'
 
   # Mirrors packagist-twig-release's shape for the engine-agnostic PHP runtime
   # package (packages/adapter-php, Composer name barefootjs/php) --
@@ -498,11 +510,14 @@ jobs:
 
       - name: Notify Packagist
         env:
-          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'barefootjs' }}
+          # See the Twig job: username must be the API token's owner (kfly8),
+          # not the "barefootjs" vendor namespace.
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME || 'kfly8' }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
-          curl -sSf -XPOST \
+          # See the Twig job: Packagist wants a Bearer "username:token" header.
+          curl -sSf -X POST \
             -H 'Content-Type: application/json' \
-            -H "API-Token: ${PACKAGIST_API_TOKEN}" \
-            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}" \
-            -d '{"repository":{"url":"https://packagist.org/packages/barefootjs/php"}}'
+            -H "Authorization: Bearer ${PACKAGIST_USERNAME}:${PACKAGIST_API_TOKEN}" \
+            'https://packagist.org/api/update-package' \
+            -d '{"repository":"https://packagist.org/packages/barefootjs/php"}'
