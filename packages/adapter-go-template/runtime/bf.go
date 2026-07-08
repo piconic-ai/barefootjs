@@ -1221,27 +1221,17 @@ func Concat(a, b any) []any {
 	return append(left, right...)
 }
 
-// Slice carves out a sub-range from `items`. Lowers
-// `Array.prototype.slice(start, end?)` (#1448 Tier A). The variadic
-// `end` arg lets Go template's call dispatcher pass either 2 or 3
-// arguments; an absent end means "to length".
+// clampSliceRange normalizes JS `.slice(start, end?)` bounds against a
+// receiver of `length` elements (runes, for the string branch of
+// `Slice` below; array elements, for the array branch) — shared so
+// both branches clamp identically.
 //
 // JS-compat clamping:
 //   - start < 0          → length + start  (e.g. -1 = last index)
 //   - end < 0            → length + end
 //   - start < 0 after clamp → 0
 //   - end > length       → length
-//   - start >= end       → empty slice (no panic)
-//
-// Non-array receivers return an empty `[]any`.
-func Slice(items any, start int, end ...int) []any {
-	v := reflect.ValueOf(items)
-	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return []any{}
-	}
-	length := v.Len()
-
-	// Normalise start (negative = from end).
+func clampSliceRange(length, start int, end []int) (int, int) {
 	if start < 0 {
 		start = length + start
 	}
@@ -1252,7 +1242,6 @@ func Slice(items any, start int, end ...int) []any {
 		start = length
 	}
 
-	// Normalise end (optional; absent = length).
 	stop := length
 	if len(end) > 0 {
 		stop = end[0]
@@ -1266,13 +1255,46 @@ func Slice(items any, start int, end ...int) []any {
 			stop = length
 		}
 	}
+	return start, stop
+}
 
-	if start >= stop {
-		return []any{}
+// Slice carves out a sub-range from `items`. Lowers
+// `Array.prototype.slice(start, end?)` (#1448 Tier A) AND
+// `String.prototype.slice(start, end?)` (the `string-slice`
+// divergence) — the adapter emits the same `bf_slice` call for both
+// receiver shapes (it can't disambiguate string vs. array at compile
+// time), so this helper dispatches at runtime on `reflect.Kind()`,
+// mirroring `Includes` above. The variadic `end` arg lets Go
+// template's call dispatcher pass either 2 or 3 arguments; an absent
+// end means "to length".
+//
+// String length/positions are measured in runes, not UTF-16 code
+// units — the same divergence boundary `padTo` already accepts
+// (differs from JS only for astral-plane input). `start >= end`
+// (after clamping) returns an empty result for either receiver.
+//
+// Any other receiver kind returns an empty `[]any`.
+func Slice(items any, start int, end ...int) any {
+	v := reflect.ValueOf(items)
+
+	if v.Kind() == reflect.String {
+		runes := []rune(v.String())
+		s, e := clampSliceRange(len(runes), start, end)
+		if s >= e {
+			return ""
+		}
+		return string(runes[s:e])
 	}
 
-	out := make([]any, 0, stop-start)
-	for i := start; i < stop; i++ {
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return []any{}
+	}
+	s, e := clampSliceRange(v.Len(), start, end)
+	if s >= e {
+		return []any{}
+	}
+	out := make([]any, 0, e-s)
+	for i := s; i < e; i++ {
 		out = append(out, v.Index(i).Interface())
 	}
 	return out

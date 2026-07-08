@@ -914,9 +914,23 @@ final class BarefootJS
         return $out;
     }
 
-    /** `Array.prototype.slice(start, end?)`. */
-    public function slice($recv, $start, $end): array
+    /** `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
+     * (the `string-slice` divergence) -- the adapter emits the same
+     * `slice(recv, start, end)` call for both receiver shapes (it can't
+     * disambiguate string vs. array at compile time), so this dispatches
+     * on the receiver's PHP type, mirroring `includes` above. String
+     * length/positions use `mb_strlen`/`mb_substr` (UTF-8 code points,
+     * not bytes), matching this runtime's other string helpers. */
+    public function slice($recv, $start, $end)
     {
+        if (is_string($recv)) {
+            $len = mb_strlen($recv, 'UTF-8');
+            [$s, $e] = $this->clampSliceRange($len, $start, $end);
+            if ($s >= $e) {
+                return '';
+            }
+            return mb_substr($recv, (int) $s, (int) ($e - $s), 'UTF-8');
+        }
         if (!Evaluator::isJsArray($recv)) {
             return [];
         }
@@ -925,6 +939,16 @@ final class BarefootJS
         if ($len === 0) {
             return [];
         }
+        [$s, $e] = $this->clampSliceRange($len, $start, $end);
+        if ($s >= $e) {
+            return [];
+        }
+        return array_slice($arr, (int) $s, (int) ($e - $s));
+    }
+
+    /** Shared bounds arithmetic for both `slice` branches above. */
+    private function clampSliceRange(int $len, $start, $end): array
+    {
         $s = $start ?? 0;
         if ($s < 0) {
             $s += $len;
@@ -937,10 +961,7 @@ final class BarefootJS
         }
         $e = max($e, 0);
         $e = min($e, $len);
-        if ($s >= $e) {
-            return [];
-        }
-        return array_slice($arr, (int) $s, (int) ($e - $s));
+        return [$s, $e];
     }
 
     public function reverse($recv): array

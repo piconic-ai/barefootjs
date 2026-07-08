@@ -474,40 +474,68 @@ func TestSlice(t *testing.T) {
 	items := []string{"a", "b", "c", "d", "e"}
 
 	// 2-arg form.
-	got := Slice(items, 1, 3)
+	got := Slice(items, 1, 3).([]any)
 	if len(got) != 2 || got[0] != "b" || got[1] != "c" {
 		t.Errorf("Slice(items, 1, 3) = %v, want [b c]", got)
 	}
 
 	// 1-arg form (`end` absent = length).
-	got = Slice(items, 2)
+	got = Slice(items, 2).([]any)
 	if len(got) != 3 || got[0] != "c" || got[2] != "e" {
 		t.Errorf("Slice(items, 2) = %v, want [c d e]", got)
 	}
 
 	// Negative-index normalisation.
-	got = Slice(items, -2)
+	got = Slice(items, -2).([]any)
 	if len(got) != 2 || got[0] != "d" || got[1] != "e" {
 		t.Errorf("Slice(items, -2) = %v, want [d e]", got)
 	}
-	got = Slice(items, 0, -1)
+	got = Slice(items, 0, -1).([]any)
 	if len(got) != 4 || got[3] != "d" {
 		t.Errorf("Slice(items, 0, -1) = %v, want [a b c d]", got)
 	}
 
 	// Clamping (out-of-bounds + start >= end).
-	got = Slice(items, 100)
+	got = Slice(items, 100).([]any)
 	if len(got) != 0 {
 		t.Errorf("Slice(items, 100) = %v, want []", got)
 	}
-	got = Slice(items, 3, 1)
+	got = Slice(items, 3, 1).([]any)
 	if len(got) != 0 {
 		t.Errorf("Slice(items, 3, 1) = %v, want []", got)
 	}
 
-	// Non-array receiver.
-	if got := Slice("not an array", 0, 2); len(got) != 0 {
-		t.Errorf("Slice(scalar, 0, 2) = %v, want []", got)
+	// Non-array, non-string receiver: empty-array fallback.
+	if got := Slice(42, 0, 2).([]any); len(got) != 0 {
+		t.Errorf("Slice(42, 0, 2) = %v, want []", got)
+	}
+}
+
+// `String.prototype.slice(start, end?)` lowering — the `string-slice`
+// divergence (a string receiver used to fall into the array branch
+// and return an empty `[]any`). Mirrors `TestSlice` shape-for-shape
+// with a string receiver instead of a slice.
+func TestSlice_String(t *testing.T) {
+	word := "barefootjs"
+
+	if got := Slice(word, 0, 4); got != "bare" {
+		t.Errorf("Slice(%q, 0, 4) = %v, want %q", word, got, "bare")
+	}
+	// Negative start.
+	if got := Slice(word, -4); got != "otjs" {
+		t.Errorf("Slice(%q, -4) = %v, want %q", word, got, "otjs")
+	}
+	// Zero-arg-end (`end` absent = length).
+	if got := Slice(word, 4); got != "footjs" {
+		t.Errorf("Slice(%q, 4) = %v, want %q", word, got, "footjs")
+	}
+	// Clamping (start >= end).
+	if got := Slice(word, 5, 2); got != "" {
+		t.Errorf("Slice(%q, 5, 2) = %v, want empty string", word, got)
+	}
+	// Multi-byte runes: index by code point, not byte offset.
+	if got := Slice("héllo", 0, 2); got != "hé" {
+		t.Errorf(`Slice("héllo", 0, 2) = %v, want "hé"`, got)
 	}
 }
 
