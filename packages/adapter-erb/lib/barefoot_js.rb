@@ -767,16 +767,19 @@ module BarefootJS
       n = replacement.nil? ? '' : string(replacement)
       return ([''] + s.chars + ['']).join(n) if o.empty?
 
-      out = ''
+      # `+''` (not the frozen `''` literal under frozen_string_literal)
+      # so `<<` can append in place instead of `+=` reallocating a new
+      # string each iteration (quadratic for long inputs / many matches).
+      out = +''
       pos = 0
       loop do
         idx = s.index(o, pos)
         break if idx.nil?
 
-        out += s[pos...idx] + n
+        out << s[pos...idx] << n
         pos = idx + o.length
       end
-      out + s[pos..]
+      out << s[pos..]
     end
 
     # `queryHref(base, { ... })` (#2042) -- build "base?k=v&..." from a flat
