@@ -2170,10 +2170,6 @@
         "go-template": {
           "kind": "render",
           "reason": "`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "the literal `¥` in template text reaches the output as U+FFFD — a UTF-8 encoding gap for non-ASCII literal text adjacent to a dynamic slot"
         }
       },
       "object-entries-map": {
