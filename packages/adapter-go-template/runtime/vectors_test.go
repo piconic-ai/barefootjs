@@ -69,9 +69,11 @@ var vectorBindings = map[string]func(args []any) any{
 		}
 		return ToFixed(args[0], 0)
 	},
-	"lower": func(args []any) any { return Lower(args[0].(string)) },
-	"upper": func(args []any) any { return Upper(args[0].(string)) },
-	"trim":  func(args []any) any { return Trim(args[0].(string)) },
+	"lower":      func(args []any) any { return Lower(args[0].(string)) },
+	"upper":      func(args []any) any { return Upper(args[0].(string)) },
+	"trim":       func(args []any) any { return Trim(args[0].(string)) },
+	"trim_start": func(args []any) any { return TrimStart(args[0].(string)) },
+	"trim_end":   func(args []any) any { return TrimEnd(args[0].(string)) },
 	"starts_with": func(args []any) any {
 		if len(args) > 2 {
 			return StartsWith(args[0].(string), args[1].(string), args[2].(int))

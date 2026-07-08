@@ -995,6 +995,26 @@ sub trim ($self, $recv) {
     return $s;
 }
 
+# `String.prototype.trimStart()` / `.trimEnd()` — the one-sided
+# siblings of `trim` above (#2183 follow-up), same `\s` /u regex
+# semantics restricted to one side.
+
+sub trim_start ($self, $recv) {
+    return '' unless defined $recv;
+    return '' if ref($recv);
+    my $s = "$recv";
+    $s =~ s/^\s+//u;
+    return $s;
+}
+
+sub trim_end ($self, $recv) {
+    return '' unless defined $recv;
+    return '' if ref($recv);
+    my $s = "$recv";
+    $s =~ s/\s+$//u;
+    return $s;
+}
+
 # `Number.prototype.toFixed(digits)` (#1897) — fixed-decimal string with
 # zero-padding. JS rounds the scaled integer half toward +Infinity (the
 # spec's "pick the larger n" tie-break), so `(2.5).toFixed(0)` is "3";

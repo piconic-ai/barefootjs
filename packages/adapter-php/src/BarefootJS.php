@@ -1138,6 +1138,25 @@ final class BarefootJS
         return (string) preg_replace('/^\s+|\s+$/u', '', $this->string($recv));
     }
 
+    /** `String.prototype.trimStart()` / `.trimEnd()` -- the one-sided
+     * siblings of `trim` above (#2183 follow-up), same `\s` /u regex
+     * restricted to one side. */
+    public function trim_start($recv): string
+    {
+        if ($recv === null || is_array($recv) || $recv instanceof \stdClass) {
+            return '';
+        }
+        return (string) preg_replace('/^\s+/u', '', $this->string($recv));
+    }
+
+    public function trim_end($recv): string
+    {
+        if ($recv === null || is_array($recv) || $recv instanceof \stdClass) {
+            return '';
+        }
+        return (string) preg_replace('/\s+$/u', '', $this->string($recv));
+    }
+
     /** `Number.prototype.toFixed(digits)` -- JS rounds the scaled integer
      * half toward +Infinity (the spec's "pick the larger n" tie-break); a
      * bare `sprintf('%.*f')` would round half-to-even, diverging. */

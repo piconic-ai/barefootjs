@@ -1219,6 +1219,8 @@ impl Object for BfInstance {
                 Ok(js_to_mj(&flat_map_tuple(a(0), &specs)))
             }
             "trim" => Ok(MjValue::from(trim(a(0)))),
+            "trim_start" => Ok(MjValue::from(trim_start(a(0)))),
+            "trim_end" => Ok(MjValue::from(trim_end(a(0)))),
             "split" => {
                 let sep = if args.len() > 1 { Some(a(1)) } else { None };
                 let limit = if args.len() > 2 && !matches!(a(2), JsValue::Null) { Some(num::to_f64(a(2)) as i64) } else { None };
@@ -1448,6 +1450,24 @@ pub fn trim(recv: &JsValue) -> String {
     match recv {
         JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
         other => js_string(other).trim().to_string(),
+    }
+}
+
+/// `String.prototype.trimStart()` -- the one-sided sibling of `trim`
+/// above (#2183 follow-up), via Rust's native `str::trim_start`.
+pub fn trim_start(recv: &JsValue) -> String {
+    match recv {
+        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
+        other => js_string(other).trim_start().to_string(),
+    }
+}
+
+/// `String.prototype.trimEnd()` -- the one-sided sibling of `trim`
+/// above (#2183 follow-up), via Rust's native `str::trim_end`.
+pub fn trim_end(recv: &JsValue) -> String {
+    match recv {
+        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
+        other => js_string(other).trim_end().to_string(),
     }
 }
 

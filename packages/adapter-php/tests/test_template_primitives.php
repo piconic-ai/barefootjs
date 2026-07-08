@@ -224,6 +224,33 @@ bf_test('trim', function () use ($bf) {
     bf_assert_eq($bf->trim(42), '42');
 });
 
+// `trim_start` / `trim_end` -- the one-sided siblings of `trim` above
+// (#2183 follow-up). Padding BOTH sides of the flagship input so a
+// swapped side (or a routed-through-both-sides regression) fails visibly.
+bf_test('trim_start / trim_end', function () use ($bf) {
+    bf_assert_eq($bf->trim_start('   padded   '), 'padded   ');
+    bf_assert_eq($bf->trim_end('   padded   '), '   padded');
+
+    bf_assert_eq($bf->trim_start("\t\nleading"), 'leading');
+    bf_assert_eq($bf->trim_end('trailing  '), 'trailing');
+
+    bf_assert_eq($bf->trim_start('no-pad'), 'no-pad');
+    bf_assert_eq($bf->trim_end('no-pad'), 'no-pad');
+
+    bf_assert_eq($bf->trim_start('   '), '');
+    bf_assert_eq($bf->trim_end('   '), '');
+
+    bf_assert_eq($bf->trim_start(''), '');
+    bf_assert_eq($bf->trim_end(''), '');
+
+    bf_assert_eq($bf->trim_start(null), '');
+    bf_assert_eq($bf->trim_end(null), '');
+    bf_assert_eq($bf->trim_start(['a' => 1]), '');
+    bf_assert_eq($bf->trim_end(['a' => 1]), '');
+    bf_assert_eq($bf->trim_start(42), '42');
+    bf_assert_eq($bf->trim_end(42), '42');
+});
+
 bf_test('split', function () use ($bf) {
     bf_assert_eq($bf->split('a,b,c', ','), ['a', 'b', 'c']);
     bf_assert_eq($bf->split('a.b.c', '.'), ['a', 'b', 'c']);

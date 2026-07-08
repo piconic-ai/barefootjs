@@ -3511,6 +3511,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const recv = emit(object)
         return `bf_trim ${wrapIfMultiToken(recv)}`
       }
+      case 'trimStart':
+      case 'trimEnd': {
+        // `.trimStart()` / `.trimEnd()` — the one-sided siblings of `.trim()`
+        // (#2183 follow-up). Dedicated `bf_trim_start` / `bf_trim_end`
+        // helpers, not `bf_trim` with a flag.
+        const fn = method === 'trimStart' ? 'bf_trim_start' : 'bf_trim_end'
+        const recv = emit(object)
+        return `${fn} ${wrapIfMultiToken(recv)}`
+      }
       case 'toFixed': {
         // `.toFixed(digits?)` → `bf_to_fixed` (`fmt.Sprintf("%.*f", …)`); default
         // 0 digits when the argument is omitted.

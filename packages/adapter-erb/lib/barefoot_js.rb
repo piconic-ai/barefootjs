@@ -672,6 +672,21 @@ module BarefootJS
       string(recv).gsub(/\A\p{Space}+|\p{Space}+\z/, '')
     end
 
+    # `String.prototype.trimStart()` / `.trimEnd()` -- the one-sided
+    # siblings of `trim` above (#2183 follow-up), same `\p{Space}` regex
+    # restricted to one side.
+    def trim_start(recv)
+      return '' if recv.nil? || recv.is_a?(Array) || recv.is_a?(Hash)
+
+      string(recv).sub(/\A\p{Space}+/, '')
+    end
+
+    def trim_end(recv)
+      return '' if recv.nil? || recv.is_a?(Array) || recv.is_a?(Hash)
+
+      string(recv).sub(/\p{Space}+\z/, '')
+    end
+
     # `Number.prototype.toFixed(digits)` -- fixed-decimal string with
     # zero-padding, rounding half toward +Infinity (matching `round`).
     def to_fixed(value, digits = 0)

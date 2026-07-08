@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -38,6 +39,8 @@ func FuncMap() template.FuncMap {
 		"bf_lower":       Lower,
 		"bf_upper":       Upper,
 		"bf_trim":        Trim,
+		"bf_trim_start":  TrimStart,
+		"bf_trim_end":    TrimEnd,
 		"bf_contains":    Contains,
 		"bf_join":        Join,
 		"bf_split":       Split,
@@ -769,6 +772,20 @@ func Upper(s string) string {
 // Trim returns s with leading and trailing whitespace removed.
 func Trim(s string) string {
 	return strings.TrimSpace(s)
+}
+
+// TrimStart returns s with leading whitespace removed
+// (String.prototype.trimStart, #2183) — the one-sided sibling of
+// Trim above, using the same unicode.IsSpace predicate strings.TrimSpace
+// applies to both sides.
+func TrimStart(s string) string {
+	return strings.TrimLeftFunc(s, unicode.IsSpace)
+}
+
+// TrimEnd returns s with trailing whitespace removed
+// (String.prototype.trimEnd, #2183) — the one-sided sibling of Trim.
+func TrimEnd(s string) string {
+	return strings.TrimRightFunc(s, unicode.IsSpace)
 }
 
 // Contains returns true if s contains substr.

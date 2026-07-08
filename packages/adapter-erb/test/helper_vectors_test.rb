@@ -82,6 +82,8 @@ class HelperVectorsTest < Minitest::Test
     'lower' => ->(s) { BF.lc(s) },
     'upper' => ->(s) { BF.uc(s) },
     'trim' => ->(s) { BF.trim(s) },
+    'trim_start' => ->(s) { BF.trim_start(s) },
+    'trim_end' => ->(s) { BF.trim_end(s) },
     'starts_with' => ->(*a) { BF.starts_with(*a) },
     'ends_with' => ->(*a) { BF.ends_with(*a) },
     'replace' => ->(*a) { BF.replace(*a) },

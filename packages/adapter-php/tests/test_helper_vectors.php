@@ -150,6 +150,8 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'lower': return $bf->lc($args[0]);
         case 'upper': return $bf->uc($args[0]);
         case 'trim': return $bf->trim($args[0]);
+        case 'trim_start': return $bf->trim_start($args[0]);
+        case 'trim_end': return $bf->trim_end($args[0]);
         case 'starts_with': return $bf->starts_with(...$args);
         case 'ends_with': return $bf->ends_with(...$args);
         case 'replace': return $bf->replace(...$args);

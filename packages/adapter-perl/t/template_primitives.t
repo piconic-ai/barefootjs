@@ -283,6 +283,33 @@ subtest 'trim — strip leading + trailing whitespace' => sub {
     is $bf->trim(42),                  '42',             'numeric receiver stringifies';
 };
 
+# `String.prototype.trimStart()` / `.trimEnd()` — the one-sided
+# siblings of `trim` above (#2183). Padding BOTH sides of the test
+# input so a swapped side (or a routed-through-both-sides regression)
+# fails visibly.
+subtest 'trim_start / trim_end — strip only their own side' => sub {
+    is $bf->trim_start('   padded   '), 'padded   ',  'trim_start leaves trailing spaces';
+    is $bf->trim_end('   padded   '),   '   padded',  'trim_end leaves leading spaces';
+
+    is $bf->trim_start("\t\nleading"),  'leading',    'trim_start strips tab + newline';
+    is $bf->trim_end('trailing  '),     'trailing',   'trim_end strips trailing spaces';
+
+    is $bf->trim_start('no-pad'),       'no-pad',     'trim_start no-op passthrough';
+    is $bf->trim_end('no-pad'),         'no-pad',     'trim_end no-op passthrough';
+
+    is $bf->trim_start('   '),          '',           'trim_start all whitespace → empty';
+    is $bf->trim_end('   '),            '',           'trim_end all whitespace → empty';
+
+    is $bf->trim_start(''),             '',           'trim_start empty input → empty';
+    is $bf->trim_end(''),               '',           'trim_end empty input → empty';
+
+    # Non-string receivers.
+    is $bf->trim_start(undef),          '',           'trim_start undef receiver → empty';
+    is $bf->trim_end(undef),            '',           'trim_end undef receiver → empty';
+    is $bf->trim_start({a => 1}),       '',           'trim_start hash ref receiver → empty';
+    is $bf->trim_end(['arr']),          '',           'trim_end array ref receiver → empty';
+};
+
 # `String.prototype.split(sep)` — string → ARRAY ref (#1448 Tier B).
 # Mirrors the Go `bf_split`: literal (quotemeta'd) separator, trailing
 # empties preserved (the `-1` limit), empty-separator char split.

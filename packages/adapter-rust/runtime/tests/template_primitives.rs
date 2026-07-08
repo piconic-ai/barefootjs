@@ -207,6 +207,34 @@ fn trim_helper() {
 }
 
 #[test]
+fn trim_start_and_trim_end_helpers() {
+    // The one-sided siblings of `trim` above (#2183 follow-up). Padding
+    // BOTH sides of the flagship input so a swapped side (or a
+    // routed-through-both-sides regression) fails visibly.
+    assert_eq!(runtime::trim_start(&s("   padded   ")), "padded   ");
+    assert_eq!(runtime::trim_end(&s("   padded   ")), "   padded");
+
+    assert_eq!(runtime::trim_start(&s("\t\nleading")), "leading");
+    assert_eq!(runtime::trim_end(&s("trailing  ")), "trailing");
+
+    assert_eq!(runtime::trim_start(&s("no-pad")), "no-pad");
+    assert_eq!(runtime::trim_end(&s("no-pad")), "no-pad");
+
+    assert_eq!(runtime::trim_start(&s("   ")), "");
+    assert_eq!(runtime::trim_end(&s("   ")), "");
+
+    assert_eq!(runtime::trim_start(&s("")), "");
+    assert_eq!(runtime::trim_end(&s("")), "");
+
+    assert_eq!(runtime::trim_start(&JsValue::Null), "");
+    assert_eq!(runtime::trim_end(&JsValue::Null), "");
+    assert_eq!(runtime::trim_start(&obj(&[("a", n(1.0))])), "");
+    assert_eq!(runtime::trim_end(&obj(&[("a", n(1.0))])), "");
+    assert_eq!(runtime::trim_start(&n(42.0)), "42");
+    assert_eq!(runtime::trim_end(&n(42.0)), "42");
+}
+
+#[test]
 fn split_helper() {
     assert_eq!(runtime::split(&s("a,b,c"), Some(&s(",")), None), arr(vec![s("a"), s("b"), s("c")]));
     assert_eq!(runtime::split(&s("a.b.c"), Some(&s(".")), None), arr(vec![s("a"), s("b"), s("c")]));
