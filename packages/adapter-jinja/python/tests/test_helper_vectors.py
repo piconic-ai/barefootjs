@@ -121,6 +121,8 @@ BINDINGS = {
     "lower": bf.lc,
     "upper": bf.uc,
     "trim": bf.trim,
+    "trim_start": bf.trim_start,
+    "trim_end": bf.trim_end,
     "starts_with": lambda *a: bf.starts_with(*a),
     "ends_with": lambda *a: bf.ends_with(*a),
     "replace": lambda *a: bf.replace(*a),

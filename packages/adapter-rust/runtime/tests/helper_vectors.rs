@@ -123,6 +123,8 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
         "lower" => JsValue::String(runtime::js_string(&a(0)).to_lowercase()),
         "upper" => JsValue::String(runtime::js_string(&a(0)).to_uppercase()),
         "trim" => JsValue::String(runtime::trim(&a(0))),
+        "trim_start" => JsValue::String(runtime::trim_start(&a(0))),
+        "trim_end" => JsValue::String(runtime::trim_end(&a(0))),
         "starts_with" => JsValue::Bool(runtime::starts_with(&a(0), &a(1), &a(2))),
         "ends_with" => JsValue::Bool(runtime::ends_with(&a(0), &a(1), &a(2))),
         "replace" => JsValue::String(runtime::replace(&a(0), &a(1), &a(2))),

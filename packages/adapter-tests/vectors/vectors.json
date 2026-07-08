@@ -724,6 +724,86 @@
       "note": "empty string"
     },
     {
+      "fn": "trim_start",
+      "args": [
+        "  hi  "
+      ],
+      "expect": "hi  ",
+      "note": "strips only the leading side"
+    },
+    {
+      "fn": "trim_start",
+      "args": [
+        "\t\nx\r\n "
+      ],
+      "expect": "x\r\n ",
+      "note": "ASCII whitespace mix"
+    },
+    {
+      "fn": "trim_start",
+      "args": [
+        "no trim needed"
+      ],
+      "expect": "no trim needed",
+      "note": "inner spaces preserved"
+    },
+    {
+      "fn": "trim_start",
+      "args": [
+        "   "
+      ],
+      "expect": "",
+      "note": "all-whitespace collapses to empty"
+    },
+    {
+      "fn": "trim_start",
+      "args": [
+        ""
+      ],
+      "expect": "",
+      "note": "empty string"
+    },
+    {
+      "fn": "trim_end",
+      "args": [
+        "  hi  "
+      ],
+      "expect": "  hi",
+      "note": "strips only the trailing side"
+    },
+    {
+      "fn": "trim_end",
+      "args": [
+        "\t\nx\r\n "
+      ],
+      "expect": "\t\nx",
+      "note": "ASCII whitespace mix"
+    },
+    {
+      "fn": "trim_end",
+      "args": [
+        "no trim needed"
+      ],
+      "expect": "no trim needed",
+      "note": "inner spaces preserved"
+    },
+    {
+      "fn": "trim_end",
+      "args": [
+        "   "
+      ],
+      "expect": "",
+      "note": "all-whitespace collapses to empty"
+    },
+    {
+      "fn": "trim_end",
+      "args": [
+        ""
+      ],
+      "expect": "",
+      "note": "empty string"
+    },
+    {
       "fn": "starts_with",
       "args": [
         "hello",

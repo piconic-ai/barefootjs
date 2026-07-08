@@ -88,6 +88,8 @@ export type ParsedExpr =
         | 'toLowerCase'
         | 'toUpperCase'
         | 'trim'
+        | 'trimStart'
+        | 'trimEnd'
         | 'toFixed'
         | 'split'
         | 'startsWith'
@@ -881,6 +883,16 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // trailing whitespace" semantic via a Perl regex.
       if (callee.property === 'trim') {
         return { kind: 'array-method', method: 'trim', object: callee.object, args }
+      }
+      // `.trimStart()` / `.trimEnd()` — the one-sided siblings of
+      // `.trim()` (#2183 follow-up). No array equivalent exists, so
+      // there's no receiver-type ambiguity to resolve (unlike `.slice`);
+      // each is a dedicated `array-method` variant (matching the
+      // `padStart`/`padEnd` precedent — separate members, not a shared
+      // member with a `side` flag) lowering to its own runtime helper
+      // per adapter, not `.trim()` with a flag.
+      if (callee.property === 'trimStart' || callee.property === 'trimEnd') {
+        return { kind: 'array-method', method: callee.property, object: callee.object, args }
       }
       // `.toFixed(digits?)` — Number → fixed-decimal string. The digit
       // count (default 0) travels as the single arg; all adapters route

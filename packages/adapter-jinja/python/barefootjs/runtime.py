@@ -1022,6 +1022,20 @@ class BarefootJS:
             return ""
         return js_string(recv).strip()
 
+    def trim_start(self, recv: Any) -> str:
+        """`String.prototype.trimStart()` -- the one-sided sibling of `trim`
+        above (#2183 follow-up)."""
+        if recv is None or isinstance(recv, (list, dict)):
+            return ""
+        return js_string(recv).lstrip()
+
+    def trim_end(self, recv: Any) -> str:
+        """`String.prototype.trimEnd()` -- the one-sided sibling of `trim`
+        above (#2183 follow-up)."""
+        if recv is None or isinstance(recv, (list, dict)):
+            return ""
+        return js_string(recv).rstrip()
+
     def to_fixed(self, value: Any, digits: int = 0) -> str:
         n = self.number(value)
         if _is_nan(n):

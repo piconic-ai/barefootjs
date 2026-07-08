@@ -67,6 +67,8 @@ export type ArrayMethod =
   | 'toLowerCase'
   | 'toUpperCase'
   | 'trim'
+  | 'trimStart'
+  | 'trimEnd'
   | 'toFixed'
   | 'split'
   | 'startsWith'

@@ -39,6 +39,4 @@ export const renderDivergences: RenderDivergences = {
     'a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level',
   'signal-object-field':
     'object-valued signal (`user().name`): generated Go fails to run (exit 1) — no struct synthesis outside loops',
-  'string-trim-sided':
-    '`.trimStart()` / `.trimEnd()`: generated Go fails to run (exit 1) — only both-sides `bf_trim` exists',
 }

@@ -90,6 +90,15 @@ export function renderArrayMethod(
       const recv = emit(object)
       return `bf.trim(${recv})`
     }
+    case 'trimStart':
+    case 'trimEnd': {
+      // `.trimStart()` / `.trimEnd()` — the one-sided siblings of
+      // `.trim()` (#2183 follow-up). Dedicated `bf.trim_start` /
+      // `bf.trim_end` helpers, not `bf.trim` with a flag.
+      const fn = method === 'trimStart' ? 'trim_start' : 'trim_end'
+      const recv = emit(object)
+      return `bf.${fn}(${recv})`
+    }
     case 'toFixed': {
       // `.toFixed(digits?)` — `bf.to_fixed` mirrors JS rounding +
       // zero-padding (default 0 digits). #1897.

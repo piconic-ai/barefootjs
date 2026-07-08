@@ -2404,40 +2404,6 @@
           "reason": "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition"
         }
       },
-      "string-trim-sided": {
-        "blade": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering; only both-sides `.trim` is wired)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()`: generated Go fails to run (exit 1) — only both-sides `bf_trim` exists"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`.trimStart()` / `.trimEnd()` render empty (no lowering)"
-        }
-      },
       "todo-app": {
         "blade": {
           "kind": "refusal",

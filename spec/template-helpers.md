@@ -188,6 +188,12 @@ contract.
 JS `.trim()`. Vectors use ASCII whitespace; exact Unicode whitespace
 sets vary across hosts.
 
+### trim_start / trim_end
+
+JS `.trimStart()` / `.trimEnd()` — the one-sided siblings of `trim`
+above, stripping ASCII whitespace from only the named side and
+preserving whitespace on the other.
+
 ### starts_with / ends_with
 
 JS `.startsWith(prefix, position?)` / `.endsWith(suffix,

@@ -187,6 +187,18 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.trim({"a": 1}), "")
         self.assertEqual(self.bf.trim(42), "42")
 
+    def test_trim_start_and_trim_end(self):
+        # The one-sided siblings of `trim` above (#2183). Padding BOTH
+        # sides so a swapped side fails visibly.
+        self.assertEqual(self.bf.trim_start("   padded   "), "padded   ")
+        self.assertEqual(self.bf.trim_end("   padded   "), "   padded")
+        self.assertEqual(self.bf.trim_start(""), "")
+        self.assertEqual(self.bf.trim_end(""), "")
+        self.assertEqual(self.bf.trim_start(None), "")
+        self.assertEqual(self.bf.trim_end(None), "")
+        self.assertEqual(self.bf.trim_start({"a": 1}), "")
+        self.assertEqual(self.bf.trim_end([1, 2]), "")
+
     def test_split(self):
         self.assertEqual(self.bf.split("a,b,c", ","), ["a", "b", "c"])
         self.assertEqual(self.bf.split("a.b.c", "."), ["a", "b", "c"])

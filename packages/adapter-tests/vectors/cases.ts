@@ -40,6 +40,8 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   lower: (s: string) => s.toLowerCase(),
   upper: (s: string) => s.toUpperCase(),
   trim: (s: string) => s.trim(),
+  trim_start: (s: string) => s.trimStart(),
+  trim_end: (s: string) => s.trimEnd(),
   starts_with: (s: string, prefix: string, position?: number) => s.startsWith(prefix, position),
   ends_with: (s: string, suffix: string, endPosition?: number) => s.endsWith(suffix, endPosition),
   replace: (s: string, pattern: string, replacement: string) => s.replace(pattern, replacement),
@@ -277,6 +279,22 @@ export const cases: HelperCase[] = [
   { fn: 'trim', args: ['no trim needed'], note: 'inner spaces preserved' },
   { fn: 'trim', args: ['   '], note: 'all-whitespace collapses to empty' },
   { fn: 'trim', args: [''], note: 'empty string' },
+
+  // `trim_start` / `trim_end` mirror `trim`'s cases with a BOTH-SIDED
+  // whitespace receiver as the flagship: a backend that swaps the two
+  // (or routes either through the both-sides `trim` helper) produces a
+  // visibly wrong side, so the case catches it.
+  { fn: 'trim_start', args: ['  hi  '], note: 'strips only the leading side' },
+  { fn: 'trim_start', args: ['\t\nx\r\n '], note: 'ASCII whitespace mix' },
+  { fn: 'trim_start', args: ['no trim needed'], note: 'inner spaces preserved' },
+  { fn: 'trim_start', args: ['   '], note: 'all-whitespace collapses to empty' },
+  { fn: 'trim_start', args: [''], note: 'empty string' },
+
+  { fn: 'trim_end', args: ['  hi  '], note: 'strips only the trailing side' },
+  { fn: 'trim_end', args: ['\t\nx\r\n '], note: 'ASCII whitespace mix' },
+  { fn: 'trim_end', args: ['no trim needed'], note: 'inner spaces preserved' },
+  { fn: 'trim_end', args: ['   '], note: 'all-whitespace collapses to empty' },
+  { fn: 'trim_end', args: [''], note: 'empty string' },
 
   { fn: 'starts_with', args: ['hello', 'he'], note: 'matching prefix' },
   { fn: 'starts_with', args: ['hello', 'lo'], note: 'non-prefix substring' },
