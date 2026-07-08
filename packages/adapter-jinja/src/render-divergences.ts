@@ -21,14 +21,8 @@ export const renderDivergences: RenderDivergences = {
     '`&copy;` in JSX literal text: Hono decodes to `©`, this adapter re-emits the raw entity — same DOM, different bytes',
   'math-methods':
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
-  'boolean-attr-literals':
-    'camelCase boolean alias `readOnly`: Hono SSRs `readOnly="true"`, this adapter emits bare presence',
-  'camelcase-attributes':
-    '`htmlFor` is not lowered to `for` (Hono maps it)',
   'static-attr-escape':
     'static attribute values are not HTML-escaped (`title="Fish & Chips"` emitted raw; Hono escapes)',
-  'svg-icon':
-    'SVG camelCase presentation attrs (`strokeWidth`, `strokeLinecap`) pass through unmapped; Hono lowers to kebab-case',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations',
   'nested-loop-outer-binding':

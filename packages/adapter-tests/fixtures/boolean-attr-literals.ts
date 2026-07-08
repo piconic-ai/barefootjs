@@ -27,7 +27,7 @@ export function BooleanAttrLiterals() {
       <button disabled>bare</button>
       <button disabled>true</button>
       <button>false</button>
-      <input checked readOnly="true" type="checkbox">
+      <input checked readonly type="checkbox">
     </div>
   `,
 })

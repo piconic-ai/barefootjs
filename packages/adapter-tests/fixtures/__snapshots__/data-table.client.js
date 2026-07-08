@@ -17,7 +17,7 @@ export function initTable(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -40,7 +40,7 @@ export function initTableHeader(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -63,7 +63,7 @@ export function initTableBody(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -86,7 +86,7 @@ export function initTableFooter(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -109,7 +109,7 @@ export function initTableRow(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -132,7 +132,7 @@ export function initTableHead(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -155,7 +155,7 @@ export function initTableCell(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -178,7 +178,7 @@ export function initTableCaption(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot"])
+  if (_s0) applyRestAttrs(_s0, _p, ["children","className","data-slot","class"])
 
 }
 
@@ -230,7 +230,7 @@ export function initCheckIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -336,7 +336,7 @@ export function initChevronDownIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -442,7 +442,7 @@ export function initChevronUpIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -548,7 +548,7 @@ export function initChevronLeftIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -654,7 +654,7 @@ export function initChevronRightIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -760,7 +760,7 @@ export function initXIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -866,7 +866,7 @@ export function initPlusIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -972,7 +972,7 @@ export function initMinusIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1078,7 +1078,7 @@ export function initSunIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1184,7 +1184,7 @@ export function initMoonIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1290,7 +1290,7 @@ export function initMonitorIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1396,7 +1396,7 @@ export function initCopyIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1502,7 +1502,7 @@ export function initClipboardIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1608,7 +1608,7 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1714,7 +1714,7 @@ export function initMenuIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1820,7 +1820,7 @@ export function initArrowLeftIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1926,7 +1926,7 @@ export function initArrowRightIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2032,7 +2032,7 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2115,7 +2115,7 @@ export function initEllipsisIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2154,7 +2154,7 @@ export function initGitHubIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","class","aria-hidden"])
 
 }
 
@@ -2193,7 +2193,7 @@ export function initSettingsIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2232,7 +2232,7 @@ export function initGlobeIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2271,7 +2271,7 @@ export function initLogOutIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2310,7 +2310,7 @@ export function initCircleHelpIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2349,7 +2349,7 @@ export function initSearchIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2388,7 +2388,7 @@ export function initCircleCheckIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2427,7 +2427,7 @@ export function initCircleXIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2466,7 +2466,7 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2505,7 +2505,7 @@ export function initInfoIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2544,7 +2544,7 @@ export function initCalendarIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2583,7 +2583,7 @@ export function initGripVerticalIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2645,7 +2645,7 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2728,7 +2728,7 @@ export function initPanelLeftIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2808,7 +2808,7 @@ export function initIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s1) applyRestAttrs(_s1, _p, ["name","size","className","xmlns","width","height","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s1) applyRestAttrs(_s1, _p, ["name","size","className","xmlns","width","height","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 
   // Reactive child component props
@@ -3004,7 +3004,7 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
     }
   })
 
-  if (_s6) applyRestAttrs(_s6, _p, ["title","sorted","onSort","className","data-slot","type"])
+  if (_s6) applyRestAttrs(_s6, _p, ["title","sorted","onSort","className","data-slot","type","class"])
 
   if (_s6) _s6.addEventListener('click', onSort)
 
@@ -3050,7 +3050,7 @@ export function initDataTablePagination(__scope, _p = {}) {
     }
   })
 
-  if (_s4) applyRestAttrs(_s4, _p, ["canPrev","canNext","onPrev","onNext","children","className","data-slot"])
+  if (_s4) applyRestAttrs(_s4, _p, ["canPrev","canNext","onPrev","onNext","children","className","data-slot","class"])
 
   if (_s1) _s1.addEventListener('click', onPrev)
   if (_s3) _s3.addEventListener('click', onNext)

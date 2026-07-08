@@ -41,7 +41,7 @@ function classAttrValue(source: string, filename = 'TagDemo.tsx') {
   expect(ir).not.toBeNull()
   expect(ir!.type).toBe('element')
   const el = ir as IRElement
-  const attr = el.attrs.find(a => a.name === 'className')
+  const attr = el.attrs.find(a => a.name === 'class')
   expect(attr).toBeDefined()
   return attr!.value
 }
@@ -256,7 +256,7 @@ describe('tagged-template interleave-tag recognition (#2092)', () => {
     const ir = jsxToIR(ctx)
     expect(ir).not.toBeNull()
     const el = ir as IRElement
-    const attr = el.attrs.find(a => a.name === 'className')
+    const attr = el.attrs.find(a => a.name === 'class')
     expect(attr).toBeDefined()
     // The desugar still applies (the client-only directive doesn't block
     // recognition — it's read independently from the original node), and

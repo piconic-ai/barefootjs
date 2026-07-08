@@ -26,7 +26,7 @@ function findClassNameValue(node: IRNode): AttrValue | null {
   if (node.type === 'element') {
     const el = node as IRElement
     for (const attr of el.attrs) {
-      if (attr.name === 'className') return attr.value
+      if (attr.name === 'class') return attr.value
     }
     for (const child of el.children) {
       const v = findClassNameValue(child)

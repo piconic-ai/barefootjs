@@ -23,7 +23,7 @@ export function CamelcaseAttributes() {
   expectedHtml: `
     <div bf-s="test">
       <label for="name-field">Name</label>
-      <input autoComplete="off" id="name-field" maxLength="10" spellCheck="false" tabIndex="2">
+      <input autocomplete="off" id="name-field" maxlength="10" spellcheck="false" tabindex="2">
     </div>
   `,
 })

@@ -1132,7 +1132,15 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // mismatch where the server renders an attribute the client would
       // re-derive on mount. #1966
       if (attr.clientOnly) continue
-      const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attr.name)
+      // The IR carries the canonical HTML attribute name (#2172:
+      // `processAttributes` normalizes `className`→`class`, `htmlFor`→
+      // `for`, camelCase aliases → lowercase). This adapter's target
+      // language is JSX typed against `@barefootjs/jsx` html-types,
+      // whose vocabulary is those same lowercase HTML names with ONE
+      // JSX-ism: `className` (`class?: never`, #773). Map it back at
+      // emit — the JSX-language equivalent of Go emitting `{{.X}}`.
+      const jsxName = attr.name === 'class' ? 'className' : attr.name
+      const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, jsxName)
       if (lowered) parts.push(lowered)
     }
 

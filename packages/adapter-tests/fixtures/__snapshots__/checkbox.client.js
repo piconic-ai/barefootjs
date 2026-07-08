@@ -46,7 +46,7 @@ export function initCheckIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -152,7 +152,7 @@ export function initChevronDownIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -258,7 +258,7 @@ export function initChevronUpIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -364,7 +364,7 @@ export function initChevronLeftIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -470,7 +470,7 @@ export function initChevronRightIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -576,7 +576,7 @@ export function initXIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -682,7 +682,7 @@ export function initPlusIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -788,7 +788,7 @@ export function initMinusIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -894,7 +894,7 @@ export function initSunIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1000,7 +1000,7 @@ export function initMoonIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1106,7 +1106,7 @@ export function initMonitorIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1212,7 +1212,7 @@ export function initCopyIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1318,7 +1318,7 @@ export function initClipboardIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1424,7 +1424,7 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1530,7 +1530,7 @@ export function initMenuIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1636,7 +1636,7 @@ export function initArrowLeftIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1742,7 +1742,7 @@ export function initArrowRightIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1848,7 +1848,7 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1931,7 +1931,7 @@ export function initEllipsisIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -1970,7 +1970,7 @@ export function initGitHubIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","class","aria-hidden"])
 
 }
 
@@ -2009,7 +2009,7 @@ export function initSettingsIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2048,7 +2048,7 @@ export function initGlobeIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2087,7 +2087,7 @@ export function initLogOutIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2126,7 +2126,7 @@ export function initCircleHelpIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2165,7 +2165,7 @@ export function initSearchIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2204,7 +2204,7 @@ export function initCircleCheckIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2243,7 +2243,7 @@ export function initCircleXIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2282,7 +2282,7 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2321,7 +2321,7 @@ export function initInfoIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2360,7 +2360,7 @@ export function initCalendarIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2399,7 +2399,7 @@ export function initGripVerticalIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2461,7 +2461,7 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2544,7 +2544,7 @@ export function initPanelLeftIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s0) applyRestAttrs(_s0, _p, ["size","className","xmlns","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 }
 
@@ -2624,7 +2624,7 @@ export function initIcon(__scope, _p = {}) {
     }
   })
 
-  if (_s1) applyRestAttrs(_s1, _p, ["name","size","className","xmlns","width","height","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","aria-hidden"])
+  if (_s1) applyRestAttrs(_s1, _p, ["name","size","className","xmlns","width","height","viewBox","fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","class","aria-hidden"])
 
 
   // Reactive child component props
