@@ -17,8 +17,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   'string-length-text':
     '`.length` on a STRING prop diverges (array-length lowering misapplied to a scalar)',
-  'number-tofixed':
-    'the literal `¥` in template text reaches the output as U+FFFD — a UTF-8 encoding gap for non-ASCII literal text adjacent to a dynamic slot',
   'math-methods':
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
   'object-entries-map':
