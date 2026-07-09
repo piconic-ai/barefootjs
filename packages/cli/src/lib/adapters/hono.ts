@@ -231,17 +231,16 @@ export const HONO_ADAPTER: AdapterTemplate = {
   devDependencies: {
     ...UNOCSS_DEV_DEPENDENCIES,
     '@barefootjs/cli': 'latest',
-    // Must track wrangler's `peerOptional @cloudflare/workers-types`
-    // (bun tolerates a mismatch; npm does not — CI's smoke-publish
-    // gate catches it). wrangler 4.108.0 briefly moved this to
-    // `^5.20260706.1`, but upstream deprecated that release the same
-    // day ("causing deployment failures in CI ... downgrade to
-    // 4.107.1") — npm's resolver skips a deprecated version when
-    // satisfying a range, so `wrangler: '^4.0.0'` (below) resolves
-    // back to 4.107.1, which still peers on
-    // `^4.20260702.1`. Track whichever wrangler actually resolves,
-    // not whichever last shipped upstream.
-    '@cloudflare/workers-types': '^4.20260702.1',
+    // Must satisfy wrangler's `peerOptional @cloudflare/workers-types`
+    // (bun tolerates a mismatch; npm does not — CI's smoke-publish gate
+    // catches it). Upstream keeps flip-flopping which major it peers on:
+    // 4.107.1 peers `^4.20260702.1`; 4.108.0 moved to `^5.20260706.1` and
+    // was deprecated same-day; 4.110.0 (which `^4.0.0` resolves to today)
+    // peers `^5.20260708.1`. Rather than chase whichever version last
+    // shipped, accept BOTH majors so npm installs whichever the resolved
+    // wrangler actually peers on — v5 when it wants v5, v4 after a
+    // deprecation falls back to a v4-peering wrangler. No ERESOLVE either way.
+    '@cloudflare/workers-types': '^4.20260702.1 || ^5.20260708.1',
     // `@barefootjs/test` powers `renderToTest()` — the canonical
     // millisecond IR test the docs (and `bf gen test`) point new users
     // at. Without it the scaffold's `test` script is a no-op and any
