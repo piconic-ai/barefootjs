@@ -932,7 +932,11 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     //     other than member-access / spread (already refused by the gate)
     //     can't observe a sibling field the pattern destructured explicitly.
     const indexLocalLines: string[] = []
-    if (loop.iterationShape === 'keys') {
+    if (loop.objectIteration) {
+      // `key`/`value` bind directly in the `@foreach` header (see below)
+      // via `$bf->entries`/`$bf->keys`/`$bf->values` — no derived
+      // `$loop->index` local needed, unlike the array `iterationShape` cases.
+    } else if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`@php(${bladeVar(param)} = $loop->index)`)
     } else if (loop.index) {
       indexLocalLines.push(`@php(${bladeVar(loop.index)} = $loop->index)`)
@@ -986,7 +990,23 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // See this file's header, divergence 2: raw PHP `foreach` over a
     // null/undefined array raises, unlike Twig's `strict_variables: false`
     // tolerance — the `?? []` guard restores that same tolerance uniformly.
-    lines.push(`@foreach((${array} ?? []) as ${bladeVar(loopVar)})`)
+    //
+    // `objectIteration` (#2168 object-entries-map): PHP's native `foreach`
+    // CAN iterate a `stdClass` object's public properties directly (unlike
+    // Twig's `for` tag, which needs `Traversable`) — but this still routes
+    // through `$bf->entries`/`$bf->keys`/`$bf->values` for the same
+    // defensive non-object guard Twig needs and for a single source of
+    // truth on "is this a JS object" (`isJsObject`, `BarefootJS.php`); the
+    // `(array)` cast those methods do preserves the object's own insertion
+    // order either way.
+    const forHeader = loop.objectIteration === 'entries'
+      ? `@foreach($bf->entries(${array} ?? []) as ${bladeVar(loop.index ?? param)} => ${bladeVar(param)})`
+      : loop.objectIteration === 'keys'
+        ? `@foreach($bf->keys(${array} ?? []) as ${bladeVar(param)})`
+        : loop.objectIteration === 'values'
+          ? `@foreach($bf->values(${array} ?? []) as ${bladeVar(param)})`
+          : `@foreach((${array} ?? []) as ${bladeVar(loopVar)})`
+    lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
     // Handle filter().map() pattern by wrapping children in if-condition

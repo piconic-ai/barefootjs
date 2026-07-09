@@ -856,11 +856,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // the whole body (children + key + filter) so a same-named loop variable
     // isn't replaced by the const literal (#1749 review). Ref-counted for
     // nested loops; released after the body lines are assembled below.
-    const loopBound = loop.iterationShape === 'keys'
-      ? [param]
-      : supportableDestructure
-        ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
-        : [param, loop.index ?? '_i']
+    const loopBound = loop.objectIteration === 'entries'
+      ? [param, loop.index ?? '_k']
+      : loop.objectIteration === 'keys' || loop.objectIteration === 'values' || loop.iterationShape === 'keys'
+        ? [param]
+        : supportableDestructure
+          ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
+          : [param, loop.index ?? '_i']
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
@@ -931,6 +933,21 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       }
       lines.push(`% my $${sortedHoist} = ${sorted};`)
     }
+    if (loop.objectIteration) {
+      // `objectIteration` (#2168 object-entries-map): a Perl hash has no
+      // native insertion-order guarantee (unlike Ruby's `Hash`/Python's
+      // `dict`) — this codebase's own runtime already works around this
+      // elsewhere with `sort keys %$hash` (`BarefootJS.pm`'s
+      // `spread_attrs`/`_style_to_css`), so this reuses that exact
+      // convention for a deterministic, alphabetically-sorted iteration
+      // (not JS insertion order — a documented known limitation for
+      // out-of-alphabetical-order data, same as Go/Rust/Xslate).
+      const keyVar = loop.objectIteration === 'values' ? '$__bf_k' : `$${loop.index ?? param}`
+      lines.push(`% for my ${keyVar} (sort keys %{${array}}) {`)
+      if (loop.objectIteration === 'entries' || loop.objectIteration === 'values') {
+        lines.push(`% my $${param} = ${array}->{${keyVar}};`)
+      }
+    } else {
     lines.push(`% for my ${indexVar} (0..$#{${array}}) {`)
     if (loop.iterationShape !== 'keys') {
       if (supportableDestructure) {
@@ -963,6 +980,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       } else {
         lines.push(`% my $${param} = ${array}->[${indexVar}];`)
       }
+    }
     }
 
     // Handle filter().map() pattern by wrapping children in if-condition

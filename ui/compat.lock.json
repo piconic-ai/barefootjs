@@ -2082,40 +2082,6 @@
           "reason": "`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)"
         }
       },
-      "object-entries-map": {
-        "blade": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders but its loop item keys diverge from the reference serialisation"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
-        }
-      },
       "signal-object-field": {
         "go-template": {
           "kind": "render",

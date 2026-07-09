@@ -820,7 +820,11 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // adds one `{% set %}` local per binding (`rest` aliases the item so
     // `rest.flag` resolves).
     const indexLocalLines: string[] = []
-    if (loop.iterationShape === 'keys') {
+    if (loop.objectIteration) {
+      // `key`/`value` bind directly in the for-header (see below) via the
+      // `|items` filter — no derived `loop.index0` local needed, unlike
+      // the array `iterationShape` cases.
+    } else if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`{% set ${minijinjaIdent(param)} = loop.index0 %}`)
     } else if (loop.index) {
       indexLocalLines.push(`{% set ${minijinjaIdent(loop.index)} = loop.index0 %}`)
@@ -876,7 +880,25 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | safe }}`)
-    lines.push(`{% for ${minijinjaIdent(loopVar)} in ${array} %}`)
+    // `objectIteration` (#2168 object-entries-map): minijinja has no
+    // built-in `.items()` OBJECT METHOD (unlike Python's dict) — `|items`
+    // is a FILTER, yielding `[key, value]` pairs, which the `for` tag's
+    // own tuple-unpack target (`for a, b in ...`, mirroring Jinja2) binds
+    // directly. There's no `|keys`/`|values` filter, so `'keys'`/`'values'`
+    // reuse the SAME `|items` pairs and bind the unused half to a
+    // throwaway name. Order is whatever the underlying `BTreeMap` gives —
+    // sorted-by-key, not JS insertion order (a deliberate design choice
+    // for a DIFFERENT feature, canonical JSON encoding — see `num.rs`);
+    // this happens to satisfy the current fixture, but is a documented
+    // known limitation for out-of-alphabetical-order data, same as Go.
+    const forHeader = loop.objectIteration === 'entries'
+      ? `{% for ${minijinjaIdent(loop.index ?? param)}, ${minijinjaIdent(param)} in ${array}|items %}`
+      : loop.objectIteration === 'keys'
+        ? `{% for ${minijinjaIdent(param)}, __bf_v in ${array}|items %}`
+        : loop.objectIteration === 'values'
+          ? `{% for __bf_k, ${minijinjaIdent(param)} in ${array}|items %}`
+          : `{% for ${minijinjaIdent(loopVar)} in ${array} %}`
+    lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
     // Handle filter().map() pattern by wrapping children in if-condition
