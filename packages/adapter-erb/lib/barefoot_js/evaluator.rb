@@ -188,7 +188,20 @@ module BarefootJS
       return Float::INFINITY if t == 'Infinity' || t == '+Infinity'
       return -Float::INFINITY if t == '-Infinity'
       return Integer(t, 16) if t =~ HEX_STRING_RE
-      return Float(t) if t =~ NUMERIC_STRING_RE
+
+      if t =~ NUMERIC_STRING_RE
+        # Ruby's Float() rejects a trailing decimal point ("5.", "5.e3"),
+        # while JS's Number() accepts it (treating the fractional part as
+        # empty). Strip a "." that isn't followed by a digit before
+        # converting, so the accepted grammar stays identical to JS but the
+        # conversion itself never raises.
+        normalized = t.sub(/\.(?=\z|[eE])/, '')
+        begin
+          return Float(normalized)
+        rescue ArgumentError, TypeError
+          return Float::NAN
+        end
+      end
 
       Float::NAN
     end
