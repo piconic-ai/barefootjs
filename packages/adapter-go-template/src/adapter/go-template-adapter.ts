@@ -1390,7 +1390,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             break
           }
           case 'jsx-children':
-            // Handled below via `child.childrenText` / `child.childrenHtml`.
+            // The RESERVED children slot (`comp.children.length > 0 ? comp.children
+            // : jsxChildrenPropNodes(...)`) is handled below via
+            // `child.childrenText` / `child.childrenHtml` and must not be
+            // re-emitted here. A JSX-valued prop under any OTHER name
+            // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) is a
+            // named slot — bake it the same way real children are baked
+            // (`extractTextChildren` / `extractHtmlChildren`) and emit it as
+            // its own struct field, mirroring the `Children` field's
+            // text-vs-HTML branching just below.
+            if (prop.name !== 'children') {
+              const text = this.extractTextChildren(prop.value.children)
+              if (text !== null) {
+                emitChildField(prop.name, JSON.stringify(text))
+              } else {
+                const html = this.extractHtmlChildren(prop.value.children)
+                if (html !== null) {
+                  this.state.usesHtmlTemplate = true
+                  emitChildField(prop.name, `template.HTML(${JSON.stringify(html)})`)
+                } else {
+                  // The value's root needs the PARENT's runtime scope id
+                  // (`<strong>` hoisted from the call site inherits the
+                  // caller's `bf-s`, not a bake-time constant) — same
+                  // needsScope case `childrenScopedHtmlExpr` handles for
+                  // the reserved children slot. The returned string is
+                  // already a Go concatenation expression (`"..." +
+                  // scopeID + "..."`), not a literal to re-quote.
+                  const scopedHtml = this.extractScopedHtmlChildren(prop.value.children)
+                  if (scopedHtml !== null) {
+                    this.state.usesHtmlTemplate = true
+                    emitChildField(prop.name, `template.HTML(${scopedHtml})`)
+                  }
+                }
+              }
+            }
             break
         }
       }

@@ -1062,10 +1062,30 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
 
   renderComponent(comp: IRComponent): string {
     const propParts: string[] = []
+    // Named JSX-valued props OTHER than the reserved `children`
+    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) get the
+    // same `begin %>…<% end` capture as the reserved children slot below,
+    // just keyed by the prop's own name. `render_child` (BarefootJS.pm)
+    // materializes every prop value that's a CODE ref — not only
+    // `children` — into the Mojo::ByteStream the capture block produces,
+    // so the child's read of the slot back out (`<%= $header %>`) sees an
+    // already-safe ByteStream and Mojo::Template's auto-escape passes it
+    // through unescaped, the same way it already does for `children`.
+    const namedSlotCaptures: string[] = []
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
+      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
+        const prevInLoop = this.inLoop
+        this.inLoop = false
+        const slotBody = this.renderChildren(p.value.children)
+        this.inLoop = prevInLoop
+        const varName = `$bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+        namedSlotCaptures.push(`<% my ${varName} = begin %>${slotBody}<% end %>`)
+        propParts.push(`${perlHashKey(p.name)} => ${varName}`)
+        continue
+      }
       const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
       if (lowered) propParts.push(lowered)
     }
@@ -1103,9 +1123,9 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       const childrenBody = this.renderChildren(effectiveChildren)
       this.inLoop = prevInLoop
       const varName = `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
-      return `<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
+      return `${namedSlotCaptures.join('')}<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
     }
-    return `<%== bf->render_child('${tplName}'${propsStr}) %>`
+    return `${namedSlotCaptures.join('')}<%== bf->render_child('${tplName}'${propsStr}) %>`
   }
 
   private childrenCaptureCounter = 0

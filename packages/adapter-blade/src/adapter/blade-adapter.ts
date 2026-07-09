@@ -1127,11 +1127,30 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
     const segments: Segment[] = [{ kind: 'entries', parts: [] }]
     const currentEntries = () => this.componentPropSegmentEntries(segments)
+    // Named JSX-valued props OTHER than the reserved `children`
+    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
+    // their own output-buffering capture, prepended to the final returned
+    // string below — same mechanism as the reserved children capture,
+    // just keyed by the prop's own name instead of `children`.
+    const namedSlotCaptures: string[] = []
 
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
+      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
+        const prevInLoop = this.inLoop
+        this.inLoop = false
+        const slotBody = this.renderChildren(p.value.children)
+        this.inLoop = prevInLoop
+        const captureVar = bladeVar(`bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)
+        namedSlotCaptures.push(
+          `@php(ob_start())\n${slotBody}\n` +
+          `@php(${captureVar} = $bf->backend->mark_raw(preg_replace('/\\n\\z/', '', ob_get_clean(), 1)))`,
+        )
+        currentEntries().push(`${bladeHashKey(p.name)} => ${captureVar}`)
+        continue
+      }
       if (p.value.kind === 'spread') {
         const trimmed = p.value.expr.trim()
         // SolidJS-style props identifier (`function(props: P)`) has no
@@ -1206,6 +1225,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       currentEntries().push(`${bladeHashKey('children')} => ${captureVar}`)
       const dict = this.combineComponentPropSegments(segments)
       return (
+        namedSlotCaptures.join('') +
         `@php(ob_start())\n${childrenBody}\n` +
         `@php(${captureVar} = $bf->backend->mark_raw(preg_replace('/\\n\\z/', '', ob_get_clean(), 1)))` +
         `{!! $bf->render_child('${tplName}', ${dict}) !!}`
@@ -1214,7 +1234,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
 
     const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
     const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `{!! $bf->render_child('${tplName}'${dictEntries}) !!}`
+    return `${namedSlotCaptures.join('')}{!! $bf->render_child('${tplName}'${dictEntries}) !!}`
   }
 
   private childrenCaptureCounter = 0

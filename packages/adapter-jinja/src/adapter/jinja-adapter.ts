@@ -987,11 +987,27 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
     const segments: Segment[] = [{ kind: 'entries', parts: [] }]
     const currentEntries = () => this.componentPropSegmentEntries(segments)
+    // Named JSX-valued props OTHER than the reserved `children`
+    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
+    // their own `{% set %}` capture, prepended to the final returned
+    // string below — same mechanism as the reserved children capture,
+    // just keyed by the prop's own name instead of `children`.
+    const namedSlotSetBlocks: string[] = []
 
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
+      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
+        const prevInLoop = this.inLoop
+        this.inLoop = false
+        const slotBody = this.renderChildren(p.value.children)
+        this.inLoop = prevInLoop
+        const captureName = `bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+        namedSlotSetBlocks.push(`{% set ${captureName} %}${slotBody}{% endset %}`)
+        currentEntries().push(`${jinjaHashKey(p.name)}: ${captureName}`)
+        continue
+      }
       if (p.value.kind === 'spread') {
         const trimmed = p.value.expr.trim()
         // SolidJS-style props identifier (`function(props: P)`) has no
@@ -1055,12 +1071,12 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       const captureName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       currentEntries().push(`${jinjaHashKey('children')}: ${captureName}`)
       const dict = this.combineComponentPropSegments(segments)
-      return `{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | safe }}`
+      return `${namedSlotSetBlocks.join('')}{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | safe }}`
     }
 
     const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
     const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `{{ bf.render_child('${tplName}'${dictEntries}) | safe }}`
+    return `${namedSlotSetBlocks.join('')}{{ bf.render_child('${tplName}'${dictEntries}) | safe }}`
   }
 
   private childrenCaptureCounter = 0

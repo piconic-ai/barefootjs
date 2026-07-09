@@ -2058,40 +2058,6 @@
           "reason": "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value"
         }
       },
-      "jsx-element-prop": {
-        "blade": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped"
-        }
-      },
       "math-methods": {
         "go-template": {
           "kind": "render",

@@ -13,15 +13,25 @@ module BarefootJS
     # operations the runtime delegates to, targeting Ruby stdlib ERB:
     #
     #   encode_json(data)            -> JSON string (injectable encoder)
-    #   mark_raw(str)                -> identity (ERB has no "safe string"
-    #                                    wrapper type -- ERB's own `<%=` is
-    #                                    NOT auto-escaping, so the compiled
-    #                                    templates that need escaping call
-    #                                    `bf.h(...)` explicitly; `mark_raw`
-    #                                    only exists so runtime helpers that
-    #                                    already produce finished HTML --
-    #                                    e.g. spread_attrs -- share one
-    #                                    interface with the Kolon/EP ports)
+    #   mark_raw(str)                -> wraps in BarefootJS::SafeString --
+    #                                    ERB's own `<%=` is NOT auto-escaping,
+    #                                    so most compiled templates call
+    #                                    `bf.h(...)` explicitly instead of
+    #                                    relying on a safe-string bypass; the
+    #                                    wrapper exists for the one path that
+    #                                    DOES need one -- a named-slot /
+    #                                    children value captured in a parent
+    #                                    template and forwarded into a
+    #                                    child's vars Hash, where the child
+    #                                    reads it back through the generic
+    #                                    `bf.h(...)` text-expression path
+    #                                    (`Context#h` unwraps SafeString to
+    #                                    skip re-escaping) -- and so that
+    #                                    runtime helpers which already
+    #                                    produce finished HTML (e.g.
+    #                                    spread_attrs) share one
+    #                                    `backend.mark_raw(...)` interface
+    #                                    with the Kolon/EP ports
     #   materialize(value)           -> resolve a captured-children value
     #                                    to a string
     #   render_named(name, bf, vars) -> render `<name>.erb` with `bf` and
@@ -58,13 +68,12 @@ module BarefootJS
         @json_encoder.call(data)
       end
 
-      # ERB has no "already-safe" string wrapper the way Kolon's `mark_raw`
-      # or Mojo::ByteStream do -- stdlib ERB's `<%=` never auto-escapes, so
-      # there is nothing to opt out of. Identity, kept only so runtime
-      # helpers (`spread_attrs`) share one `backend.mark_raw(...)` call
-      # shape across every BarefootJS backend port.
+      # See the class docstring's `mark_raw` entry: wraps in
+      # `BarefootJS::SafeString` so `Context#h` recognises and skips
+      # re-escaping already-finished HTML forwarded across a
+      # parent/child template boundary.
       def mark_raw(str)
-        str
+        BarefootJS::SafeString.new(str.to_s)
       end
 
       # JSX children captured by the adapter's buffer-slice capture

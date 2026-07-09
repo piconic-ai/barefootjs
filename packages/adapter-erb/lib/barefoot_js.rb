@@ -25,6 +25,18 @@ require 'barefoot_js/search_params'
 # runtime carries -- a Ruby `true`/`false` IS a boolean, distinguishable
 # from `0`/`1` for free.
 module BarefootJS
+  # Marker wrapper for a string that is ALREADY finished HTML and must not
+  # be re-escaped by `Context#h` -- e.g. a named-slot / children capture
+  # (`renderComponent`'s output-buffer slice) forwarded from a parent
+  # template into a child's vars Hash. Stdlib ERB's `<%=` has no built-in
+  # "safe string" concept the way Twig's `Markup` or Kolon's `mark_raw`
+  # do, so the escape decision that elsewhere falls out of the template
+  # engine has to be carried on the VALUE itself here; see
+  # `Backend::Erb#mark_raw`, which is what actually wraps a string in this
+  # class.
+  class SafeString < String
+  end
+
   # Context is the `bf` object every compiled `.erb` template receives as a
   # local. One instance per render (root or child); `render_child` /
   # `register_components_from_manifest` construct a fresh child instance
@@ -391,8 +403,13 @@ module BarefootJS
     # HTML-escaping helper for text interpolation (`<%= bf.h(expr) %>` --
     # stdlib ERB does not auto-escape). JS-style stringification via
     # `string` (numbers per JS Number#toString, nil -> "", booleans ->
-    # "true"/"false"), then HTML-escaped.
+    # "true"/"false"), then HTML-escaped. A `SafeString` (already-finished
+    # HTML forwarded from a parent's capture -- see that class's docstring)
+    # passes through unescaped, matching Twig/Blade/Kolon's safe-string
+    # bypass on their own auto-escaping `{{ }}`/`<: :>` output tags.
     def h(value)
+      return value if value.is_a?(SafeString)
+
       html_escape(string(value))
     end
 
