@@ -17,28 +17,22 @@ export function MapIndexHandler() {
     { id: 10, label: 'a' },
     { id: 20, label: 'b' },
   ])
-  const [selected, setSelected] = createSignal(-1)
+  const [, setActive] = createSignal(0)
   return (
-    <div>
-      <p>selected: {selected()}</p>
-      <ul>
-        {items().map((item, i) => (
-          <li key={item.id}>
-            <button onClick={() => setSelected(i)}>{item.label}</button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul>
+      {items().map((item, i) => (
+        <li key={item.id}>
+          <button onClick={() => setActive(i)}>{item.label}</button>
+        </li>
+      ))}
+    </ul>
   )
 }
 `,
   expectedHtml: `
-    <div bf-s="test">
-      <p bf="s1">selected: <!--bf:s0-->-1<!--/--></p>
-      <ul bf="s4">
-        <li data-key="10"><button bf="s3"><!--bf:s2-->a<!--/--></button></li>
-        <li data-key="20"><button bf="s3"><!--bf:s2-->b<!--/--></button></li>
-      </ul>
-    </div>
+    <ul bf-s="test" bf="s2">
+      <li data-key="10"><button bf="s1"><!--bf:s0-->a<!--/--></button></li>
+      <li data-key="20"><button bf="s1"><!--bf:s0-->b<!--/--></button></li>
+    </ul>
   `,
 })
