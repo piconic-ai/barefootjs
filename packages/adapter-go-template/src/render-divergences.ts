@@ -19,10 +19,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   'string-concat-plus':
     "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition",
-  'number-tofixed':
-    '`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)',
-  'math-methods':
-    'Math.min/max/abs/floor over a signal render "0" for every value — the fractional initial value (-7.6) types the signal field as Go `int` (zero value), not `float64`. `Math.min`/`Math.max`/`Math.abs` ARE now correctly registered/lowered (this is the same root cause as `number-tofixed`, not a registry gap: `typeInfoToGo`\'s `kind: \'primitive\'` branch hard-codes any TS `number` to Go `int` and never consults the literal value, unlike the `kind: \'unknown\'` branch\'s `inferTypeFromValue` fallback)',
   'grandchild-composition':
     "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value",
   'child-primitive-props':

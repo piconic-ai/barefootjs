@@ -18,7 +18,11 @@ import type { GoEmitContext } from '../emit-context.ts'
 /**
  * Convert a `TypeInfo` to a Go type string.
  *
- * @param defaultValue used to infer the type when `typeInfo.kind` is `unknown`
+ * @param defaultValue used to infer the type when `typeInfo.kind` is
+ *   `unknown`, and to distinguish `int` vs `float64` when `kind` is
+ *   `primitive`/`number` (#2168 math-methods/number-tofixed — a bare TS
+ *   `number` blindly mapped to Go `int`, so a fractional signal initial
+ *   value like `-7.6` silently truncated to the Go zero value)
  * @returns the Go type, falling back to `interface{}` when unresolvable
  */
 export function typeInfoToGo(
@@ -32,7 +36,7 @@ export function typeInfoToGo(
         case 'string':
           return 'string'
         case 'number':
-          return 'int'
+          return defaultValue !== undefined ? numberPrimitiveGoType(defaultValue) : 'int'
         case 'boolean':
           return 'bool'
         default:
@@ -97,6 +101,19 @@ export function tsTypeStringToGo(ctx: GoEmitContext, tsType: string): string {
   // be returned bare, or the generated code references an undeclared type.
   if (ctx.state.localStructFields.has(t) || ctx.state.localTypeAliases.has(t)) return t
   return 'interface{}'
+}
+
+/**
+ * Distinguish Go `int` vs `float64` for a `number`-typed field from the
+ * literal source text of its default/initial value. Falls back to `int`
+ * when `value` isn't recognizably a bare numeric literal (e.g. a
+ * destructured default that's itself an expression, `props.initial ?? 0`)
+ * — `int` remains the blind fallback for `kind: 'primitive'`; only a
+ * literal fractional value (`-7.6`) is positive enough evidence to widen
+ * to `float64`.
+ */
+function numberPrimitiveGoType(value: string): string {
+  return /^-?\d+\.\d+$/.test(value) ? 'float64' : 'int'
 }
 
 /** Infer a Go type from a JS value literal; `interface{}` when unrecognized. */

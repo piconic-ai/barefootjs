@@ -5,7 +5,7 @@
  * generators and the nillable-field set so they can't drift.
  */
 
-import type { ComponentIR, IRMetadata } from '@barefootjs/jsx'
+import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
@@ -35,7 +35,62 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
       }
     }
   }
+
+  // A bare `number`-typed prop with no other evidence resolves to Go `int`
+  // (`typeInfoToGo`'s blind default) — but `.toFixed()` can only be called on
+  // a real JS number, and the runtime value it formats (e.g. a price, 19.5)
+  // may be fractional, which a Go `int` struct field can't hold (assigning a
+  // fractional untyped constant to it is a compile error: #2168
+  // number-tofixed). Unlike a signal's fractional LITERAL initial value
+  // (rescued by `typeInfoToGo`'s own `defaultValue` consultation — the
+  // math-methods half of the same divergence), a prop with no default has no
+  // literal to read the fraction off of; the usage of `.toFixed()` itself is
+  // the only available evidence, so it's collected by walking the JSX tree.
+  for (const propName of collectToFixedPropNames(ir.root)) {
+    const param = ir.metadata.propsParams.find(p => p.name === propName)
+    if (!param) continue
+    const resolved = overrides.get(propName) ?? typeInfoToGo(ctx, param.type, param.defaultValue)
+    if (resolved === 'int') {
+      overrides.set(propName, 'float64')
+    }
+  }
+
   return overrides
+}
+
+/**
+ * Names of identifiers used as the receiver of `.toFixed(...)` anywhere in
+ * the component's JSX tree (text expressions, conditions, and attribute
+ * values). Deliberately narrow — `.toFixed()` is the one number-shape usage
+ * that needs this rescue (see `buildPropTypeOverrides` above); it isn't a
+ * general "infer number-ness from usage" walker.
+ */
+function collectToFixedPropNames(root: IRNode): Set<string> {
+  const names = new Set<string>()
+  const checkExpr = (expr: ParsedExpr | undefined) => {
+    if (expr?.kind === 'array-method' && expr.method === 'toFixed' && expr.object.kind === 'identifier') {
+      names.add(expr.object.name)
+    }
+  }
+  const walk = (node: IRNode | null | undefined) => {
+    if (!node) return
+    if (node.type === 'expression') checkExpr(node.parsed)
+    if (node.type === 'conditional') {
+      checkExpr(node.parsedCondition)
+      walk(node.whenTrue)
+      walk(node.whenFalse)
+    }
+    if (node.type === 'element') {
+      for (const attr of node.attrs) {
+        if (attr.value.kind === 'expression') checkExpr(attr.value.parsed)
+      }
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      node.children.forEach(walk)
+    }
+  }
+  walk(root)
+  return names
 }
 
 /**
