@@ -33,7 +33,7 @@
  */
 
 import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils.ts'
-import { extractIdentifiers } from '../../identifiers.ts'
+import { extractFreeIdentifiersFromText } from '../../csr-substitute.ts'
 import type {
   EventDelegationPlan,
   KeyedItemLookup,
@@ -62,28 +62,15 @@ function withTurn(call: string, componentName: string | undefined, childSlotId: 
 }
 
 /**
- * Build the `const <indexParam> = <indexExpr>` binding line for a delegated
- * handler that closes over the loop's index param (#2189).
- *
- * The `.map((item, i) => ...)` index only lives inside the SSR/mapArray
- * template closure — the runtime delegation dispatcher re-derives the item
- * from `data-key`/DOM position but historically dropped the index, so a
- * handler like `() => handle(i)` threw `ReferenceError: i is not defined`.
- * We re-derive the index from the same runtime source the item comes from
- * (`arr.findIndex(...)` for keyed lookups, the already-computed `idx`/`__idx`
- * for the index shapes) and bind it under the user's param name.
- *
- * Returns `null` — emit nothing — when there is no index param, when the
- * handler never references it (so unaffected loops keep byte-for-byte output),
- * or when the user's index name already equals the in-scope index variable
- * (`idx`/`__idx`), which would make the binding a redeclaring self-alias.
+ * Bind the loop index under the user's param name for a delegated handler that
+ * closes over it (#2189). Returns `null` when there is no index param, the
+ * handler doesn't reference it (so unaffected loops keep byte-for-byte output),
+ * or the name already equals the in-scope index var (a self-alias). Uses AST
+ * free identifiers, not a token match, so `item.id` (property) doesn't count.
  */
 function indexBindingLine(handler: string, indexParam: string | null, indexExpr: string): string | null {
-  if (!indexParam) return null
-  const referenced = new Set<string>()
-  extractIdentifiers(handler, referenced)
-  if (!referenced.has(indexParam)) return null
-  if (indexParam === indexExpr) return null
+  if (!indexParam || indexParam === indexExpr) return null
+  if (!extractFreeIdentifiersFromText(handler).has(indexParam)) return null
   return `const ${indexParam} = ${indexExpr}`
 }
 
@@ -194,7 +181,6 @@ function emitKeyedLookup(
   const outerGuard = hasBindings ? '__bfLoopItem' : param
   const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
   if (mapPreamble) ls.push(`      ${mapPreamble}`)
-  // Outer-loop index — re-derived from the outer key (#2189).
   const idxLine = indexBindingLine(ev.handler, indexParam, `${arrayExpr}.findIndex(item => String(${keyWithItem}) === outerKey)`)
   if (idxLine) ls.push(`      if (${allParams.join(' && ')}) { ${idxLine}; ${handlerCall} }`)
   else ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
@@ -207,8 +193,6 @@ function emitDynamicIndexLookup(
   lookup: DynamicIndexItemLookup,
 ): void {
   const { arrayExpr, param, mapPreamble, hasBindings, indexParam } = lookup
-  // `idx` is the DOM/array position — alias it to the user's index param when
-  // a handler closes over it (#2189).
   const idxLine = indexBindingLine(ev.handler, indexParam, 'idx')
   ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
   ls.push(`      if (li && li.parentElement) {`)
@@ -238,8 +222,6 @@ function emitStaticIndexLookup(
   containerVar: string,
 ): void {
   const { arrayExpr, param, mapPreamble, offset, indexParam } = lookup
-  // `__idx` is the recovered array index — alias it to the user's index param
-  // when a handler closes over it (#2189).
   const idxLine = indexBindingLine(ev.handler, indexParam, '__idx')
   ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
   ls.push(`      while (__el.parentElement && __el.parentElement !== ${containerVar}) __el = __el.parentElement`)

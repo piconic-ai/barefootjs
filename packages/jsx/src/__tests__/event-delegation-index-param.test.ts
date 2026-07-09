@@ -1,18 +1,9 @@
 /**
- * BarefootJS Compiler — delegated handlers may close over the `.map()` index
- * param (#2189).
- *
- * When a list-item event handler references the `.map((item, i) => ...)` index
- * parameter, the compiler lowers the per-item handler into a single delegated
- * listener on the container. That dispatcher re-derives the item from
- * `data-key` / DOM position but historically dropped the index, so the handler
- * closure referenced a dangling `i` and threw `ReferenceError: i is not
- * defined` the first time it fired.
- *
- * Fix (#2189): re-derive the index at dispatch time from the same runtime
- * source the item comes from — `arr.findIndex(...)` for keyed lookups, the
- * already-computed DOM position for the index shapes — and bind it under the
- * user's param name so the reference resolves.
+ * Delegated handlers closing over the `.map((item, i) => ...)` index param
+ * (#2189). The dispatcher re-derives the index at dispatch time and binds it
+ * under the user's name, so a handler like `() => handle(i)` no longer throws
+ * `ReferenceError: i is not defined`. Gating is byte-for-byte free of churn
+ * when the handler doesn't reference the index.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -83,6 +74,33 @@ describe('delegated handler closing over the .map() index (#2189)', () => {
 
     // Nothing references `i`, so the dispatcher must not emit an index binding.
     expect(content).not.toContain('const i = items().findIndex')
+    expect(content).toContain('(() => handle(item.id))(__bfEvt)')
+  })
+
+  test('index named like a property is not bound when only the property is used', () => {
+    // Index param `id` shadows nothing here — the handler reads `item.id`, a
+    // property, not the index. Gating is AST-based (free identifiers), so no
+    // spurious binding is emitted.
+    const content = clientJsFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      interface Item { id: number; label: string }
+      export function Repro() {
+        const [items] = createSignal<Item[]>([])
+        const handle = (n: number) => { console.log(n) }
+        return (
+          <ul>
+            {items().map((item, id) => (
+              <li key={item.id}>
+                <button onClick={() => handle(item.id)}>{item.label}</button>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    `)
+
+    expect(content).not.toContain('.findIndex(')
     expect(content).toContain('(() => handle(item.id))(__bfEvt)')
   })
 

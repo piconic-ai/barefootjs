@@ -52,10 +52,9 @@ export interface KeyedItemLookup {
   /** Loop param identifier (or destructure pattern text — used as receiver name only). */
   param: string
   /**
-   * Loop index param name (e.g. `i` from `.map((item, i) => ...)`), or `null`
-   * when the callback declares no index. When a delegated handler closes over
-   * this name, the stringifier re-derives the index at dispatch time
-   * (`arr.findIndex(...)`) and binds it so the reference resolves (#2189).
+   * Loop index param name (e.g. `i` from `.map((item, i) => ...)`), or `null`.
+   * When a delegated handler closes over it, the stringifier re-derives the
+   * index at dispatch time and binds it so the reference resolves (#2189).
    */
   indexParam: string | null
   /** Destructured-binding metadata. Determines TDZ-safe `__bfLoopItem` shape (#951). */

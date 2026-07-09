@@ -1,13 +1,8 @@
 /**
- * End-to-end runtime test for #2189: a delegated list-item handler that closes
- * over the `.map()` index param.
- *
- * `items().map((item, i) => <button onClick={() => setClicked(i)} />)` lowers to
- * a single delegated `click` listener on the container. Before the fix that
- * dispatcher re-derived the *item* from `data-key` but dropped the *index*, so
- * `i` was a dangling reference and the click threw
- * `ReferenceError: i is not defined`. This mounts the real compiled output in a
- * DOM, clicks a row, and asserts the handler ran with the correct index.
+ * End-to-end runtime test for #2189: a delegated list-item handler closing over
+ * the `.map()` index param. Mounts the real compiled output in a DOM, clicks a
+ * row, and asserts the handler ran with the correct index (before the fix the
+ * dispatcher dropped the index and the click threw `ReferenceError`).
  */
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'

@@ -323,7 +323,7 @@ export function applyPropsRewrite(text: string, propsObjectName: string | null):
   return text.replace(new RegExp(`\\b${propsObjectName}\\.`, 'g'), `${PROPS_PARAM}.`)
 }
 
-function extractFreeIdentifiersFromText(text: string): Set<string> {
+export function extractFreeIdentifiersFromText(text: string): Set<string> {
   if (!text || text.trim().length === 0) return new Set()
   const sf = ts.createSourceFile(
     '__free_ids__.ts',
