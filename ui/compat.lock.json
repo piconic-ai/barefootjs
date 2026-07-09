@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 236,
+    "totalFixtures": 238,
     "fixtures": {
       "array-map-function-reference": {
         "blade": {
@@ -2130,6 +2130,12 @@
         "go-template": {
           "kind": "render",
           "reason": "a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level"
+        }
+      },
+      "nested-loop-triple-depth": {
+        "go-template": {
+          "kind": "render",
+          "reason": "a THIRD level of nested .map() renders every item field EMPTY (key values and text content alike), though the data-key/-1/-2 suffix naming itself is correct — Go loop-scope binding only reaches two levels deep"
         }
       },
       "number-tofixed": {
