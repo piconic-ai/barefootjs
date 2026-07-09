@@ -21,8 +21,6 @@ export const renderDivergences: RenderDivergences = {
     'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations',
-  'nested-loop-outer-binding':
-    'nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`',
   'jsx-element-prop':
     'a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped',
 }

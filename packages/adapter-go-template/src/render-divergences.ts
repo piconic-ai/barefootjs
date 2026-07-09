@@ -27,8 +27,6 @@ export const renderDivergences: RenderDivergences = {
     'Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering',
-  'nested-loop-outer-binding':
-    'nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`',
   'jsx-element-prop':
     'a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped',
   'grandchild-composition':

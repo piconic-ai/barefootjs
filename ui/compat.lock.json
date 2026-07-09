@@ -2132,40 +2132,6 @@
           "reason": "a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level"
         }
       },
-      "nested-loop-outer-binding": {
-        "blade": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`"
-        }
-      },
       "number-tofixed": {
         "go-template": {
           "kind": "render",

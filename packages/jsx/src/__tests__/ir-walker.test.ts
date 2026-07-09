@@ -53,6 +53,7 @@ function loop(children: IRNode[]): IRNode {
     markerId: 'l0',
     loc,
     isStaticArray: false,
+    depth: 0,
   }
 }
 

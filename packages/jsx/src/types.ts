@@ -575,6 +575,19 @@ export interface IRLoop {
   iterationShape?: 'entries' | 'keys'
 
   /**
+   * Count of enclosing `.map()` loops (0 = outermost, 1 = nested one
+   * level deep, ...). Adapters use this to derive the loop body's
+   * `key`/`data-key` attribute suffix — `depth > 0 ? 'data-key-' +
+   * depth : 'data-key'` — matching `keyAttrName()` in
+   * `ir-to-client-js/utils.ts`, which the CSR path and the Hono SSR
+   * adapter each already derive independently (a recursion counter and
+   * a push/pop stack respectively). Before this field, the 8 template
+   * (non-JS) adapters had no depth awareness at all and always emitted
+   * plain `data-key` on nested-loop items (#2168 nested-loop-outer-binding).
+   */
+  depth: number
+
+  /**
    * When true, loop should be evaluated on client side only.
    * SSR adapters should skip rendering and output placeholder markers.
    */

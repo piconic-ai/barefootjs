@@ -207,6 +207,14 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   private errors: CompilerError[] = []
   private inLoop: boolean = false
   /**
+   * `IRLoop.depth` of the loop currently being rendered (save/restore
+   * around `renderChildren(loop.children)`, mirroring `inLoop` above).
+   * `renderAttributes` reads this to derive the `key` → `data-key`/
+   * `data-key-N` suffix — the depth is IR-computed (jsx-to-ir.ts), not
+   * re-derived here (#2168 nested-loop-outer-binding).
+   */
+  private currentLoopKeyDepth = 0
+  /**
    * SolidJS-style props identifier (`function(props: P)`) and the
    * analyzer-extracted prop names. Stashed at `generate()` entry so the
    * per-attribute `emitSpread` callback can build a propsObject spread bag as
@@ -804,10 +812,13 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
 
     const prevInLoop = this.inLoop
     this.inLoop = true
+    const prevLoopKeyDepth = this.currentLoopKeyDepth
+    this.currentLoopKeyDepth = loop.depth
     // Re-render children now that inLoop is set (so nested components use the
     // loop-child naming convention). renderedChildren above was computed with
     // the previous flag; recompute under the loop flag.
     const childrenUnderLoop = this.renderChildren(loop.children)
+    this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
     void renderedChildren
 
@@ -1339,7 +1350,10 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       // Rewrite JSX special-prop names to their HTML-attribute counterparts.
       let attrName: string
       if (attr.name === 'className') attrName = 'class'
-      else if (attr.name === 'key') attrName = 'data-key'
+      else if (attr.name === 'key') {
+        const depth = this.currentLoopKeyDepth
+        attrName = depth > 0 ? `data-key-${depth}` : 'data-key'
+      }
       else attrName = attr.name
       const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attrName)
       if (lowered) parts.push(lowered)
