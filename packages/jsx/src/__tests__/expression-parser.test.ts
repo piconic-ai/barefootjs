@@ -70,6 +70,43 @@ describe('expression-parser', () => {
       expect(result.kind).toBe('member')
       if (result.kind === 'member') {
         expect(result.property).toBe('name')
+        expect(result.optional).toBe(false)
+      }
+    })
+
+    // #2168 optional-chaining-prop: `optional` must reflect the source `?.`
+    // token exactly — set on the one written hop, `false` everywhere else
+    // (a plain `.`/`[]` access, including a literal-index computed access).
+    test('parses optional chaining (?.) into `member.optional`', () => {
+      const dotResult = parseExpression('user?.name')
+      expect(dotResult.kind).toBe('member')
+      if (dotResult.kind === 'member') {
+        expect(dotResult.property).toBe('name')
+        expect(dotResult.computed).toBe(false)
+        expect(dotResult.optional).toBe(true)
+      }
+
+      const stringKeyResult = parseExpression("obj?.['key']")
+      expect(stringKeyResult.kind).toBe('member')
+      if (stringKeyResult.kind === 'member') {
+        expect(stringKeyResult.property).toBe('key')
+        expect(stringKeyResult.computed).toBe(true)
+        expect(stringKeyResult.optional).toBe(true)
+      }
+
+      const numericIndexResult = parseExpression('arr?.[0]')
+      expect(numericIndexResult.kind).toBe('member')
+      if (numericIndexResult.kind === 'member') {
+        expect(numericIndexResult.property).toBe('0')
+        expect(numericIndexResult.computed).toBe(true)
+        expect(numericIndexResult.optional).toBe(true)
+      }
+
+      // Non-optional literal-index access stays `optional: false`.
+      const plainIndexResult = parseExpression('arr[0]')
+      expect(plainIndexResult.kind).toBe('member')
+      if (plainIndexResult.kind === 'member') {
+        expect(plainIndexResult.optional).toBe(false)
       }
     })
 
@@ -1230,6 +1267,7 @@ describe('expression-parser', () => {
         object: { kind: 'identifier', name: 'x' },
         property: 'done',
         computed: false,
+        optional: false,
       })
     })
 

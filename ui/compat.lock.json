@@ -2116,16 +2116,6 @@
           "reason": "`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations"
         }
       },
-      "optional-chaining-prop": {
-        "erb": {
-          "kind": "render",
-          "reason": "`user?.name ?? …` on an object prop: the Ruby render exits 1 (optional chaining into a Hash prop has no lowering)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "`user?.name ?? …` on an object prop: generated Go fails to run (exit 1) — optional chaining into a struct/map prop has no lowering"
-        }
-      },
       "signal-object-field": {
         "go-template": {
           "kind": "render",

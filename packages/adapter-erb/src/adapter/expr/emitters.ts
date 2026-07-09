@@ -123,11 +123,19 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `.length` needs no special higher-order form here — see the file
     // docstring's simplification (2): `.select { ... }.length` just works
     // in Ruby, unlike Perl's anonymous-arrayref `scalar(@{...})` detour.
     if (property === 'length') return `${emit(object)}.length`
+    // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
+    // Ruby's own `nil[:key]` raises `NoMethodError` (unlike Hash#[] on a
+    // present Hash) — `&.` is Ruby's native safe-navigation operator, and
+    // `&.[](...)` is its explicit-method form for indexing rather than a
+    // dotted method call. Only guards the single written `?.` hop, not a
+    // JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
+    // variant's docstring for the multi-hop caveat.
+    if (optional) return `${emit(object)}&.[](${rubySymbolLiteral(property)})`
     return `${emit(object)}[${rubySymbolLiteral(property)}]`
   }
 
@@ -323,7 +331,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.x` flattens to the `v[:x]` the ERB SSR caller seeds each prop
     // under (props arrive as vars-Hash entries, not a nested `props` Hash).
     if (object.kind === 'identifier' && object.name === 'props') {
@@ -339,6 +347,11 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     }
     const obj = emit(object)
     if (property === 'length') return `${obj}.length`
+    // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
+    // see `ErbFilterEmitter.member()`'s comment above for why `&.[](...)`
+    // (not a dotted `&.name`) is the right safe-nav form for a Hash-keyed
+    // prop, and for the single-hop caveat.
+    if (optional) return `${obj}&.[](${rubySymbolLiteral(property)})`
     return `${obj}[${rubySymbolLiteral(property)}]`
   }
 

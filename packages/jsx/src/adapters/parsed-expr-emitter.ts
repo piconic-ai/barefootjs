@@ -114,10 +114,16 @@ export interface ParsedExprEmitter {
   identifier(name: string): string
   literal(value: string | number | boolean | null, literalType: LiteralType): string
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string
+  // `optional` is true for a `?.`-written access (`user?.name`); see the
+  // `ParsedExpr` `member` variant's docstring in `expression-parser.ts`
+  // for the single-hop caveat. Every adapter's `member()` implementation
+  // that doesn't need it (its lowering is already null-safe) is free to
+  // ignore the parameter.
   member(
     object: ParsedExpr,
     property: string,
     computed: boolean,
+    optional: boolean,
     emit: (e: ParsedExpr) => string,
   ): string
   // Element access with a non-literal index (`arr[index]`). The index
@@ -291,7 +297,7 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.call(expr.callee, expr.args, emit)
     }
     case 'member':
-      return emitter.member(expr.object, expr.property, expr.computed, emit)
+      return emitter.member(expr.object, expr.property, expr.computed, expr.optional, emit)
     case 'index-access':
       return emitter.indexAccess(expr.object, expr.index, emit)
     case 'binary':

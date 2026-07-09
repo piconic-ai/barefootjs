@@ -15,8 +15,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'optional-chaining-prop':
-    '`user?.name ?? …` on an object prop: the Ruby render exits 1 (optional chaining into a Hash prop has no lowering)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders but its loop item keys diverge from the reference serialisation',
 }

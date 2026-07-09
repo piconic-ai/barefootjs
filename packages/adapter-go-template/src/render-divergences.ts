@@ -19,8 +19,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   'string-concat-plus':
     "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition",
-  'optional-chaining-prop':
-    '`user?.name ?? …` on an object prop: generated Go fails to run (exit 1) — optional chaining into a struct/map prop has no lowering',
   'number-tofixed':
     '`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)',
   'math-methods':
