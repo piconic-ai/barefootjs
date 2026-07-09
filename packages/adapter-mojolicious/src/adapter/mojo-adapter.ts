@@ -1081,7 +1081,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
         this.inLoop = prevInLoop
-        const varName = `$bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't a
+        // valid Perl variable token, and `comp.slotId` alone would collide
+        // across two named-slot props on the same component invocation
+        // (unlike the reserved children slot, there's only ever one of
+        // those per invocation).
+        const varName = `$bf_prop_${this.childrenCaptureCounter++}`
         namedSlotCaptures.push(`<% my ${varName} = begin %>${slotBody}<% end %>`)
         propParts.push(`${perlHashKey(p.name)} => ${varName}`)
         continue

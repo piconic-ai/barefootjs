@@ -1132,7 +1132,13 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
         this.inLoop = prevInLoop
-        const suffix = `${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't
+        // valid in a Ruby local variable name, and `comp.slotId` alone
+        // would collide across two named-slot props on the same component
+        // invocation (unlike the reserved children slot, there's only ever
+        // one of those per invocation).
+        const suffix = `${this.childrenCaptureCounter++}`
         const lenVar = `__bf_len_${suffix}`
         const rawVar = `__bf_praw_${suffix}`
         const capVar = `__bf_prop_${suffix}`

@@ -1143,7 +1143,14 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
         this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
         this.inLoop = prevInLoop
-        const captureVar = bladeVar(`bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) `bladeIdent`
+        // doesn't sanitize (it only guards reserved words), producing an
+        // invalid PHP variable name; `comp.slotId` alone would also collide
+        // across two named-slot props on the same component invocation
+        // (unlike the reserved children slot, there's only ever one of
+        // those per invocation).
+        const captureVar = bladeVar(`bf_prop_${this.childrenCaptureCounter++}`)
         namedSlotCaptures.push(
           `@php(ob_start())\n${slotBody}\n` +
           `@php(${captureVar} = $bf->backend->mark_raw(preg_replace('/\\n\\z/', '', ob_get_clean(), 1)))`,

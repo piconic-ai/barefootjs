@@ -304,3 +304,24 @@ export { Slot }
     expect(template).toMatch(/\*\*v\[:rest\]/)
   })
 })
+
+describe('ErbAdapter - named-slot capture identifier safety (#2168 jsx-element-prop)', () => {
+  // A JSX-valued prop under a hyphenated name (`data-slot`, a valid JSX
+  // attribute name) must not leak into the buffer-slice capture's local
+  // variables — Ruby local variable names can't contain `-`. The capture
+  // suffix is purely counter-based (never derived from the prop name); the
+  // hash KEY passed to `render_child` still carries the real name, quoted
+  // via `rubySymbolKey`.
+  test('a hyphenated prop name does not appear in the capture variables', () => {
+    const { template } = compileAndGenerate(`
+function Card(props) { return null }
+export function Parent() {
+  return <Card data-slot={<strong>Title</strong>}>text</Card>
+}
+`)
+    expect(template).toContain('__bf_len_0 = _erbout.length')
+    expect(template).toContain('__bf_prop_0 = bf.backend.mark_raw(__bf_praw_0)')
+    expect(template).toContain('"data-slot": __bf_prop_0')
+    expect(template).not.toContain('bf_prop_data')
+  })
+})

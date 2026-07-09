@@ -961,9 +961,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
         this.inLoop = prevInLoop
-        const macroName = `bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't a
+        // valid Kolon macro identifier, and `comp.slotId` alone would
+        // collide across two named-slot props on the same component
+        // invocation (unlike the reserved children slot, there's only ever
+        // one of those per invocation).
+        const macroName = `bf_prop_${this.childrenCaptureCounter++}`
         namedSlotMacros.push(`<: macro ${macroName} -> () { :>${slotBody}<: } :>`)
-        currentEntries().push(`${p.name} => ${macroName}()`)
+        currentEntries().push(`${kolonHashKey(p.name)} => ${macroName}()`)
         continue
       }
       if (p.value.kind === 'spread') {

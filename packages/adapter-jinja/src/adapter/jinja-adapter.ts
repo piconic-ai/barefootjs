@@ -1003,7 +1003,13 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
         this.inLoop = prevInLoop
-        const captureName = `bf_prop_${p.name}_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't a
+        // valid Jinja `{% set %}` target, and `comp.slotId` alone would
+        // collide across two named-slot props on the same component
+        // invocation (unlike the reserved children slot, there's only ever
+        // one of those per invocation).
+        const captureName = `bf_prop_${this.childrenCaptureCounter++}`
         namedSlotSetBlocks.push(`{% set ${captureName} %}${slotBody}{% endset %}`)
         currentEntries().push(`${jinjaHashKey(p.name)}: ${captureName}`)
         continue
