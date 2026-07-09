@@ -2,8 +2,10 @@ package bf
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -304,6 +306,13 @@ func evalJoin(obj any, sep string) string {
 // null/"" → NaN) for SSR-survival reasons that do not apply to the evaluator.
 // ---------------------------------------------------------------------------
 
+// jsDecimalNumberRe matches the JS StringToNumber decimal numeric literal
+// grammar (ASCII digits only): optional sign, then integer/fraction digits,
+// then an optional exponent. It deliberately excludes underscore digit
+// separators, radix prefixes (0x/0o/0b), and hex-float forms — none of which
+// are valid JS decimal numeric literals.
+var jsDecimalNumberRe = regexp.MustCompile(`^[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$`)
+
 func evalToNumber(v any) float64 {
 	switch x := v.(type) {
 	case nil:
@@ -318,19 +327,40 @@ func evalToNumber(v any) float64 {
 		if t == "" {
 			return 0
 		}
-		// Decimal / exponent / "Infinity" numeric strings parse JS-faithfully
-		// (ParseFloat handles these, matching the Perl evaluator). The
-		// radix-prefixed forms JS Number() also accepts ("0x10" / "0o17" /
-		// "0b101") are a documented divergence region: they yield NaN here, as
-		// they do in the Perl evaluator (looks_like_number is false for them),
-		// so Go==Perl while differing from the JS reference. Template data
-		// carries JSON numbers, not radix-string literals, so this never
-		// arises in practice.
-		f, err := strconv.ParseFloat(t, 64)
-		if err != nil {
+		// Exact JS Infinity spellings (case-sensitive, no other aliases like
+		// "infinity"/"inf" are valid JS numeric strings).
+		switch t {
+		case "Infinity", "+Infinity":
+			return math.Inf(1)
+		case "-Infinity":
+			return math.Inf(-1)
+		}
+		// Decimal / exponent numeric strings parse JS-faithfully, including
+		// overflow: strconv.ParseFloat rejects underscores, hex-floats, and
+		// non-canonical "inf"/"nan" spellings via the anchored decimal-grammar
+		// gate below, so those correctly yield NaN. The radix-prefixed forms
+		// JS Number() also accepts ("0x10" / "0o17" / "0b101") are a
+		// documented divergence region: they fail the decimal grammar (a
+		// leading "0x"/"0o"/"0b" is not a valid decimal literal) and yield
+		// NaN here, as they do in the Perl evaluator (looks_like_number is
+		// false for them), so Go==Perl while differing from the JS
+		// reference. Template data carries JSON numbers, not radix-string
+		// literals, so this never arises in practice.
+		if !jsDecimalNumberRe.MatchString(t) {
 			return math.NaN()
 		}
-		return f
+		f, err := strconv.ParseFloat(t, 64)
+		if err == nil {
+			return f
+		}
+		if errors.Is(err, strconv.ErrRange) {
+			// ParseFloat still returns the correctly-signed ±Inf (or a
+			// subnormal) as its best-effort value on overflow/underflow;
+			// JS Number() on an overflowing decimal literal yields ±Infinity
+			// (e.g. "1e1000" -> +Infinity), so surface that value as-is.
+			return f
+		}
+		return math.NaN()
 	default:
 		if evalIsNumeric(v) {
 			return toFloat64(v)

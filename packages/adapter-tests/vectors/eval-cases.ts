@@ -115,6 +115,27 @@ export const evalCases: EvalCase[] = [
   { src: 'Number(item.s)', env: { item: { s: '3.14' } }, note: 'Number() parses a numeric string' },
   { src: 'Boolean(item.s)', env: { item: { s: '' } }, note: 'Boolean() of an empty string is false' },
 
+  // ----- Number() string coercion: the JS decimal StringToNumber grammar ---
+  // These pin the numeric-string grammar edges each backend must reproduce
+  // byte-for-byte with JS `Number(s)`. Two backends diverged here before
+  // being fixed: the Ruby evaluator RAISED on a trailing-dot string
+  // (`"5."` — aborting SSR) instead of returning 5, and the Go evaluator
+  // OVER-accepted forms JS rejects (underscore separators, hex-float
+  // `0x…p…` syntax) and turned decimal overflow into NaN. The valid decimal
+  // grammar (leading/trailing dot, sign, exponent, whitespace) must parse;
+  // anything outside it — underscores, hex-floats, trailing junk — is NaN;
+  // and a decimal that overflows the double range is ±Infinity, never NaN.
+  { src: 'Number(item.s)', env: { item: { s: '5.' } }, note: 'Number: a trailing decimal point is valid (→ 5), and must not raise' },
+  { src: 'Number(item.s)', env: { item: { s: '.5' } }, note: 'Number: a leading decimal point is valid (→ 0.5)' },
+  { src: 'Number(item.s)', env: { item: { s: '+7' } }, note: 'Number: a leading plus sign parses' },
+  { src: 'Number(item.s)', env: { item: { s: '1e3' } }, note: 'Number: exponent notation parses' },
+  { src: 'Number(item.s)', env: { item: { s: '  42  ' } }, note: 'Number: surrounding ASCII whitespace is trimmed' },
+  { src: 'Number(item.s)', env: { item: { s: '12px' } }, note: 'Number: trailing non-numeric junk is NaN' },
+  { src: 'Number(item.s)', env: { item: { s: '1_000' } }, note: 'Number: underscore digit separators are NOT valid in JS strings (→ NaN)' },
+  { src: 'Number(item.s)', env: { item: { s: '0x1p4' } }, note: 'Number: hex-float syntax is not a valid JS numeric string (→ NaN)' },
+  { src: 'Number(item.s)', env: { item: { s: '1e1000' } }, note: 'Number: a decimal literal that overflows the double range is Infinity, not NaN' },
+  { src: 'Number(item.s)', env: { item: { s: '-1e1000' } }, note: 'Number: negative decimal overflow is -Infinity' },
+
   // ----- array-method: includes --------------------------------------------
   { src: "item.tags.includes('go')", env: { item: { tags: ['perl', 'go'] } }, note: 'array .includes: hit' },
   { src: "item.tags.includes('rust')", env: { item: { tags: ['perl', 'go'] } }, note: 'array .includes: miss' },

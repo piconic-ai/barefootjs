@@ -1717,6 +1717,306 @@
       "note": "Boolean() of an empty string is false"
     },
     {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "5."
+        }
+      },
+      "expect": 5,
+      "note": "Number: a trailing decimal point is valid (→ 5), and must not raise"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": ".5"
+        }
+      },
+      "expect": 0.5,
+      "note": "Number: a leading decimal point is valid (→ 0.5)"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "+7"
+        }
+      },
+      "expect": 7,
+      "note": "Number: a leading plus sign parses"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "1e3"
+        }
+      },
+      "expect": 1000,
+      "note": "Number: exponent notation parses"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "  42  "
+        }
+      },
+      "expect": 42,
+      "note": "Number: surrounding ASCII whitespace is trimmed"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "12px"
+        }
+      },
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "Number: trailing non-numeric junk is NaN"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "1_000"
+        }
+      },
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "Number: underscore digit separators are NOT valid in JS strings (→ NaN)"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "0x1p4"
+        }
+      },
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "Number: hex-float syntax is not a valid JS numeric string (→ NaN)"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "1e1000"
+        }
+      },
+      "expect": {
+        "$num": "Infinity"
+      },
+      "note": "Number: a decimal literal that overflows the double range is Infinity, not NaN"
+    },
+    {
+      "src": "Number(item.s)",
+      "expr": {
+        "kind": "call",
+        "callee": {
+          "kind": "identifier",
+          "name": "Number"
+        },
+        "args": [
+          {
+            "kind": "member",
+            "object": {
+              "kind": "identifier",
+              "name": "item"
+            },
+            "property": "s",
+            "computed": false,
+            "optional": false
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "s": "-1e1000"
+        }
+      },
+      "expect": {
+        "$num": "-Infinity"
+      },
+      "note": "Number: negative decimal overflow is -Infinity"
+    },
+    {
       "src": "item.tags.includes('go')",
       "expr": {
         "kind": "array-method",
