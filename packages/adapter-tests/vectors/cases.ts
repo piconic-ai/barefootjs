@@ -36,6 +36,9 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   floor: (v: unknown) => Math.floor(Number(v)),
   ceil: (v: unknown) => Math.ceil(Number(v)),
   round: (v: unknown) => Math.round(Number(v)),
+  min: (a: unknown, b: unknown) => Math.min(Number(a), Number(b)),
+  max: (a: unknown, b: unknown) => Math.max(Number(a), Number(b)),
+  abs: (v: unknown) => Math.abs(Number(v)),
   to_fixed: (v: unknown, digits?: number) => Number(v).toFixed(digits ?? 0),
   lower: (s: string) => s.toLowerCase(),
   upper: (s: string) => s.toUpperCase(),
@@ -261,6 +264,23 @@ export const cases: HelperCase[] = [
   { fn: 'round', args: [-2.4], note: 'negative below half rounds toward zero' },
   { fn: 'round', args: [7], note: 'integral passthrough' },
   { fn: 'round', args: ['6.6'], note: 'numeric-string operand routes through number coercion' },
+
+  { fn: 'min', args: [3, 7], note: 'first operand smaller' },
+  { fn: 'min', args: [7, 3], note: 'second operand smaller (order-independent)' },
+  { fn: 'min', args: [-2, -5], note: 'negative operands' },
+  { fn: 'min', args: ['not', 5], note: 'NaN in first operand propagates' },
+  { fn: 'min', args: [5, 'not'], note: 'NaN in second operand propagates' },
+
+  { fn: 'max', args: [3, 7], note: 'second operand larger' },
+  { fn: 'max', args: [7, 3], note: 'first operand larger (order-independent)' },
+  { fn: 'max', args: [-2, -5], note: 'negative operands' },
+  { fn: 'max', args: ['not', 5], note: 'NaN in first operand propagates' },
+  { fn: 'max', args: [5, 'not'], note: 'NaN in second operand propagates' },
+
+  { fn: 'abs', args: [-7.6], note: 'negative fractional operand' },
+  { fn: 'abs', args: [7.6], note: 'positive operand is a no-op' },
+  { fn: 'abs', args: [0], note: 'zero operand' },
+  { fn: 'abs', args: ['not'], note: 'NaN propagates' },
 
   { fn: 'to_fixed', args: [316, 2], note: 'integer padded to 2 decimals (data-table amount)' },
   { fn: 'to_fixed', args: [3.14159, 2], note: 'rounds to 2 decimals' },

@@ -17,8 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'math-methods':
-    'Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations',
   'jsx-element-prop':

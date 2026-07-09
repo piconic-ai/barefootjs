@@ -24,7 +24,7 @@ export const renderDivergences: RenderDivergences = {
   'number-tofixed':
     '`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)',
   'math-methods':
-    'Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered',
+    'Math.min/max/abs/floor over a signal render "0" for every value — the fractional initial value (-7.6) types the signal field as Go `int` (zero value), not `float64`. `Math.min`/`Math.max`/`Math.abs` ARE now correctly registered/lowered (this is the same root cause as `number-tofixed`, not a registry gap: `typeInfoToGo`\'s `kind: \'primitive\'` branch hard-codes any TS `number` to Go `int` and never consults the literal value, unlike the `kind: \'unknown\'` branch\'s `inferTypeFromValue` fallback)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering',
   'jsx-element-prop':

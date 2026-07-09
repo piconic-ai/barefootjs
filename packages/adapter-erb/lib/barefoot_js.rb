@@ -430,6 +430,34 @@ module BarefootJS
       finite_number?(n) ? (n + 0.5).floor : n
     end
 
+    # `Math.min(a, b)` / `Math.max(a, b)` -- two-arg forms only (#2168
+    # math-methods). JS returns NaN if either operand is NaN. `number()`
+    # may return a plain Integer (no `#nan?`), so guard like
+    # `finite_number?` above rather than calling `#nan?` unconditionally.
+    def min(a, b)
+      x = number(a)
+      y = number(b)
+      return x if nan_number?(x)
+      return y if nan_number?(y)
+
+      x < y ? x : y
+    end
+
+    def max(a, b)
+      x = number(a)
+      y = number(b)
+      return x if nan_number?(x)
+      return y if nan_number?(y)
+
+      x > y ? x : y
+    end
+
+    # `Math.abs()` (#2168 math-methods).
+    def abs(value)
+      n = number(value)
+      nan_number?(n) ? n : n.abs
+    end
+
     # -----------------------------------------------------------------
     # Array / String method helpers
     # -----------------------------------------------------------------
@@ -1032,6 +1060,10 @@ module BarefootJS
 
     def finite_number?(n)
       !(n.respond_to?(:nan?) && n.nan?) && !(n.respond_to?(:infinite?) && n.infinite?)
+    end
+
+    def nan_number?(n)
+      n.respond_to?(:nan?) && n.nan?
     end
 
     def html_escape(s)

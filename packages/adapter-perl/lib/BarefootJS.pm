@@ -627,6 +627,32 @@ sub round ($self, $value) {
     return POSIX::floor($n + 0.5);
 }
 
+# `Math.min(a, b)` / `Math.max(a, b)` -- two-arg forms only (#2168
+# math-methods). JS returns NaN if either operand is NaN.
+sub min ($self, $a, $b) {
+    my $x = $self->number($a);
+    my $y = $self->number($b);
+    return $x if _is_nan($x);
+    return $y if _is_nan($y);
+    return $x < $y ? $x : $y;
+}
+
+sub max ($self, $a, $b) {
+    my $x = $self->number($a);
+    my $y = $self->number($b);
+    return $x if _is_nan($x);
+    return $y if _is_nan($y);
+    return $x > $y ? $x : $y;
+}
+
+# `Math.abs()` (#2168 math-methods). `CORE::abs` avoids Perl's
+# ambiguous-call warning against this package's own `abs` sub.
+sub abs ($self, $value) {
+    my $n = $self->number($value);
+    return $n if _is_nan($n);
+    return CORE::abs($n);
+}
+
 # ---------------------------------------------------------------------------
 # Array / String method helpers (#1448 Tier A)
 # ---------------------------------------------------------------------------

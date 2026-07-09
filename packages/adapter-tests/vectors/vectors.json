@@ -599,6 +599,138 @@
       "note": "numeric-string operand routes through number coercion"
     },
     {
+      "fn": "min",
+      "args": [
+        3,
+        7
+      ],
+      "expect": 3,
+      "note": "first operand smaller"
+    },
+    {
+      "fn": "min",
+      "args": [
+        7,
+        3
+      ],
+      "expect": 3,
+      "note": "second operand smaller (order-independent)"
+    },
+    {
+      "fn": "min",
+      "args": [
+        -2,
+        -5
+      ],
+      "expect": -5,
+      "note": "negative operands"
+    },
+    {
+      "fn": "min",
+      "args": [
+        "not",
+        5
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "NaN in first operand propagates"
+    },
+    {
+      "fn": "min",
+      "args": [
+        5,
+        "not"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "NaN in second operand propagates"
+    },
+    {
+      "fn": "max",
+      "args": [
+        3,
+        7
+      ],
+      "expect": 7,
+      "note": "second operand larger"
+    },
+    {
+      "fn": "max",
+      "args": [
+        7,
+        3
+      ],
+      "expect": 7,
+      "note": "first operand larger (order-independent)"
+    },
+    {
+      "fn": "max",
+      "args": [
+        -2,
+        -5
+      ],
+      "expect": -2,
+      "note": "negative operands"
+    },
+    {
+      "fn": "max",
+      "args": [
+        "not",
+        5
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "NaN in first operand propagates"
+    },
+    {
+      "fn": "max",
+      "args": [
+        5,
+        "not"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "NaN in second operand propagates"
+    },
+    {
+      "fn": "abs",
+      "args": [
+        -7.6
+      ],
+      "expect": 7.6,
+      "note": "negative fractional operand"
+    },
+    {
+      "fn": "abs",
+      "args": [
+        7.6
+      ],
+      "expect": 7.6,
+      "note": "positive operand is a no-op"
+    },
+    {
+      "fn": "abs",
+      "args": [
+        0
+      ],
+      "expect": 0,
+      "note": "zero operand"
+    },
+    {
+      "fn": "abs",
+      "args": [
+        "not"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "NaN propagates"
+    },
+    {
       "fn": "to_fixed",
       "args": [
         316,

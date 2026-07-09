@@ -680,6 +680,33 @@ final class BarefootJS
         return (is_nan($n) || is_infinite($n)) ? $n : floor($n + 0.5);
     }
 
+    /** `Math.min(a, b)` / `Math.max(a, b)` -- two-arg forms only (#2168
+     * math-methods). JS returns NaN if either operand is NaN. */
+    public function min($a, $b): float
+    {
+        $x = $this->number($a);
+        $y = $this->number($b);
+        if (is_nan($x)) return $x;
+        if (is_nan($y)) return $y;
+        return $x < $y ? $x : $y;
+    }
+
+    public function max($a, $b): float
+    {
+        $x = $this->number($a);
+        $y = $this->number($b);
+        if (is_nan($x)) return $x;
+        if (is_nan($y)) return $y;
+        return $x > $y ? $x : $y;
+    }
+
+    /** `Math.abs()` (#2168 math-methods). */
+    public function abs($value): float
+    {
+        $n = $this->number($value);
+        return is_nan($n) ? $n : abs($n);
+    }
+
     // -----------------------------------------------------------------
     // Array / String method helpers (#1448 Tier A)
     // -----------------------------------------------------------------

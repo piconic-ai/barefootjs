@@ -77,6 +77,9 @@ class HelperVectorsTest < Minitest::Test
     'floor' => ->(v) { BF.floor(v) },
     'ceil' => ->(v) { BF.ceil(v) },
     'round' => ->(v) { BF.round(v) },
+    'min' => ->(a, b) { BF.min(a, b) },
+    'max' => ->(a, b) { BF.max(a, b) },
+    'abs' => ->(v) { BF.abs(v) },
     'to_fixed' => ->(*a) { BF.to_fixed(*a) },
 
     'lower' => ->(s) { BF.lc(s) },

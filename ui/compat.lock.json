@@ -2093,37 +2093,9 @@
         }
       },
       "math-methods": {
-        "blade": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
-        },
         "go-template": {
           "kind": "render",
-          "reason": "Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "Math.min/max/abs over a signal render empty (only Math.floor is in the template-primitive registry)"
+          "reason": "Math.min/max/abs/floor over a signal render \"0\" for every value — the fractional initial value (-7.6) types the signal field as Go `int` (zero value), not `float64`. `Math.min`/`Math.max`/`Math.abs` ARE now correctly registered/lowered (this is the same root cause as `number-tofixed`, not a registry gap: `typeInfoToGo`'s `kind: 'primitive'` branch hard-codes any TS `number` to Go `int` and never consults the literal value, unlike the `kind: 'unknown'` branch's `inferTypeFromValue` fallback)"
         }
       },
       "memo-chain": {

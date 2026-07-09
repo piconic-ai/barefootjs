@@ -373,6 +373,36 @@ pub fn js_round(n: f64) -> f64 {
     (n + 0.5).floor()
 }
 
+/// `Math.min(a, b)` / `Math.max(a, b)` -- two-arg forms only (#2168
+/// math-methods). NOT `f64::min`/`f64::max`: those follow IEEE-754
+/// `minNum`/`maxNum` semantics and return the non-NaN operand when only
+/// one side is NaN, whereas JS returns NaN if EITHER operand is NaN.
+pub fn js_min(a: f64, b: f64) -> f64 {
+    if a.is_nan() {
+        return a;
+    }
+    if b.is_nan() {
+        return b;
+    }
+    if a < b { a } else { b }
+}
+
+pub fn js_max(a: f64, b: f64) -> f64 {
+    if a.is_nan() {
+        return a;
+    }
+    if b.is_nan() {
+        return b;
+    }
+    if a > b { a } else { b }
+}
+
+/// `Math.abs()` (#2168 math-methods). `f64::abs` already matches JS for
+/// NaN (NaN.abs() is NaN) and both infinities, no guard needed.
+pub fn js_abs(n: f64) -> f64 {
+    n.abs()
+}
+
 /// JS `%`: remainder with the dividend's sign. Rust's `%` on `f64` already
 /// implements C `fmod` semantics (IEEE-754 remainder), so this is a
 /// documentation-only wrapper -- see the module docstring for why no

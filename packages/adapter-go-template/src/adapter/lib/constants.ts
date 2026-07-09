@@ -17,6 +17,7 @@ export const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.floor':     { arity: 1, emit: (args) => `bf_floor ${wrapGoArg(args[0])}` },
   'Math.ceil':      { arity: 1, emit: (args) => `bf_ceil ${wrapGoArg(args[0])}` },
   'Math.round':     { arity: 1, emit: (args) => `bf_round ${wrapGoArg(args[0])}` },
+  'Math.abs':       { arity: 1, emit: (args) => `bf_abs ${wrapGoArg(args[0])}` },
   // Two-arg forms only; an N-arg `Math.min(a, b, c)` falls through to the
   // standard BF101 unsupported-call diagnostic via the arity gate.
   'Math.min':       { arity: 2, emit: (args) => `bf_min ${wrapGoArg(args[0])} ${wrapGoArg(args[1])}` },
