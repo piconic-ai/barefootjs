@@ -1,5 +1,6 @@
 ---
 "@barefootjs/jsx": patch
+"@barefootjs/hono": patch
 "@barefootjs/jinja": patch
 "@barefootjs/mojolicious": patch
 "@barefootjs/xslate": patch
@@ -25,3 +26,5 @@ The compiler only recognized the array instance-method form (`arr.entries()`/`.k
 - Fixed a related client-JS regression this surfaced: an object-shaped loop source that happens to be a static module-scope const (e.g. `const chartConfig = {...}`) was previously miscategorized as a "static array" (which assumes a real array, calling `.forEach()`/`.map()` on it) — `isStaticArray` now excludes any `objectIteration`-shaped loop, routing it through the dynamic `mapArray()` reconciliation path instead, whose array-expression reconstruction (`applyObjectIterationWrap`) already handles it correctly.
 
 `object-entries-map` graduates from a render divergence to a passing render on all 8 adapters; `ui/compat.lock.json` and the divergence declarations are updated accordingly.
+
+Also fixed the SAME gap in `@barefootjs/hono` (the JSX/JS reference renderer used for `expectedHtml` generation and real Hono apps) — it re-emits real JS for SSR, so it needed the identical `Object.entries/keys/values(x)` reconstruction as the client-JS emitter, caught by its own conformance suite in CI.
