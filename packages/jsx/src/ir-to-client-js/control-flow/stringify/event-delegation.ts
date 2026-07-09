@@ -33,6 +33,7 @@
  */
 
 import { toDomEventName, varSlotId, substituteLoopBindings, buildLoopChildIndexSubtraction, DATA_KEY, keyAttrName } from '../../utils.ts'
+import { extractFreeIdentifiersFromText } from '../../csr-substitute.ts'
 import type {
   EventDelegationPlan,
   KeyedItemLookup,
@@ -58,6 +59,19 @@ function withTurn(call: string, componentName: string | undefined, childSlotId: 
   if (!componentName) return call
   const id = JSON.stringify(`${componentName}#handler:${childSlotId}:${eventName}`)
   return `beginTurn(${id}); try { ${call} } finally { endTurn() }`
+}
+
+/**
+ * Bind the loop index under the user's param name for a delegated handler that
+ * closes over it (#2189). Returns `null` when there is no index param, the
+ * handler doesn't reference it (so unaffected loops keep byte-for-byte output),
+ * or the name already equals the in-scope index var (a self-alias). Uses AST
+ * free identifiers, not a token match, so `item.id` (property) doesn't count.
+ */
+function indexBindingLine(handler: string, indexParam: string | null, indexExpr: string): string | null {
+  if (!indexParam || indexParam === indexExpr) return null
+  if (!extractFreeIdentifiersFromText(handler).has(indexParam)) return null
+  return `const ${indexParam} = ${indexExpr}`
 }
 
 export function stringifyEventDelegation(lines: string[], plan: EventDelegationPlan): void {
@@ -112,10 +126,11 @@ function emitKeyedLookup(
   handlerCall: string,
   lookup: KeyedItemLookup,
 ): void {
-  const { arrayExpr, param, keyWithItem, mapPreamble, hasBindings } = lookup
+  const { arrayExpr, param, keyWithItem, mapPreamble, hasBindings, indexParam } = lookup
 
   if (ev.nestedLoops.length === 0) {
     // Single-level keyed lookup.
+    const idxLine = indexBindingLine(ev.handler, indexParam, `${arrayExpr}.findIndex(item => String(${keyWithItem}) === key)`)
     ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('[${DATA_KEY}]')`)
     ls.push(`      if (li) {`)
     ls.push(`        const key = li.getAttribute('${DATA_KEY}')`)
@@ -125,12 +140,14 @@ function emitKeyedLookup(
       ls.push(`        if (__bfLoopItem) {`)
       ls.push(`          const ${param} = __bfLoopItem`)
       if (mapPreamble) ls.push(`          ${mapPreamble}`)
+      if (idxLine) ls.push(`          ${idxLine}`)
       ls.push(`          ${handlerCall}`)
       ls.push(`        }`)
     } else {
       ls.push(`        const ${param} = ${arrayExpr}.find(item => String(${keyWithItem}) === key)`)
       if (mapPreamble) ls.push(`        ${mapPreamble}`)
-      ls.push(`        if (${param}) ${handlerCall}`)
+      if (idxLine) ls.push(`        if (${param}) { ${idxLine}; ${handlerCall} }`)
+      else ls.push(`        if (${param}) ${handlerCall}`)
     }
     ls.push(`      }`)
     return
@@ -164,7 +181,9 @@ function emitKeyedLookup(
   const outerGuard = hasBindings ? '__bfLoopItem' : param
   const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
   if (mapPreamble) ls.push(`      ${mapPreamble}`)
-  ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
+  const idxLine = indexBindingLine(ev.handler, indexParam, `${arrayExpr}.findIndex(item => String(${keyWithItem}) === outerKey)`)
+  if (idxLine) ls.push(`      if (${allParams.join(' && ')}) { ${idxLine}; ${handlerCall} }`)
+  else ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
 }
 
 function emitDynamicIndexLookup(
@@ -173,7 +192,8 @@ function emitDynamicIndexLookup(
   handlerCall: string,
   lookup: DynamicIndexItemLookup,
 ): void {
-  const { arrayExpr, param, mapPreamble, hasBindings } = lookup
+  const { arrayExpr, param, mapPreamble, hasBindings, indexParam } = lookup
+  const idxLine = indexBindingLine(ev.handler, indexParam, 'idx')
   ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
   ls.push(`      if (li && li.parentElement) {`)
   ls.push(`        const idx = Array.from(li.parentElement.children).indexOf(li)`)
@@ -182,12 +202,14 @@ function emitDynamicIndexLookup(
     ls.push(`        if (__bfLoopItem) {`)
     ls.push(`          const ${param} = __bfLoopItem`)
     if (mapPreamble) ls.push(`          ${mapPreamble}`)
+    if (idxLine) ls.push(`          ${idxLine}`)
     ls.push(`          ${handlerCall}`)
     ls.push(`        }`)
   } else {
     ls.push(`        const ${param} = ${arrayExpr}[idx]`)
     if (mapPreamble) ls.push(`        ${mapPreamble}`)
-    ls.push(`        if (${param}) ${handlerCall}`)
+    if (idxLine) ls.push(`        if (${param}) { ${idxLine}; ${handlerCall} }`)
+    else ls.push(`        if (${param}) ${handlerCall}`)
   }
   ls.push(`      }`)
 }
@@ -199,7 +221,8 @@ function emitStaticIndexLookup(
   lookup: StaticIndexItemLookup,
   containerVar: string,
 ): void {
-  const { arrayExpr, param, mapPreamble, offset } = lookup
+  const { arrayExpr, param, mapPreamble, offset, indexParam } = lookup
+  const idxLine = indexBindingLine(ev.handler, indexParam, '__idx')
   ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
   ls.push(`      while (__el.parentElement && __el.parentElement !== ${containerVar}) __el = __el.parentElement`)
   ls.push(`      if (__el.parentElement === ${containerVar}) {`)
@@ -207,6 +230,7 @@ function emitStaticIndexLookup(
   ls.push(`        const __idx = Array.from(${containerVar}.children).indexOf(__el)${idxOffset}`)
   ls.push(`        const ${param} = ${arrayExpr}[__idx]`)
   if (mapPreamble) ls.push(`        ${mapPreamble}`)
-  ls.push(`        if (${param}) ${handlerCall}`)
+  if (idxLine) ls.push(`        if (${param}) { ${idxLine}; ${handlerCall} }`)
+  else ls.push(`        if (${param}) ${handlerCall}`)
   ls.push(`      }`)
 }

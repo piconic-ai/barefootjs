@@ -51,6 +51,12 @@ export interface KeyedItemLookup {
   arrayExpr: string
   /** Loop param identifier (or destructure pattern text — used as receiver name only). */
   param: string
+  /**
+   * Loop index param name (e.g. `i` from `.map((item, i) => ...)`), or `null`.
+   * When a delegated handler closes over it, the stringifier re-derives the
+   * index at dispatch time and binds it so the reference resolves (#2189).
+   */
+  indexParam: string | null
   /** Destructured-binding metadata. Determines TDZ-safe `__bfLoopItem` shape (#951). */
   paramBindings: TopLevelLoop['paramBindings']
   /**
@@ -72,6 +78,8 @@ export interface DynamicIndexItemLookup {
   param: string
   mapPreamble: string | null
   hasBindings: boolean
+  /** Loop index param name — see `KeyedItemLookup.indexParam` (#2189). */
+  indexParam: string | null
 }
 
 export interface StaticIndexItemLookup {
@@ -79,6 +87,8 @@ export interface StaticIndexItemLookup {
   arrayExpr: string
   param: string
   mapPreamble: string | null
+  /** Loop index param name — see `KeyedItemLookup.indexParam` (#2189). */
+  indexParam: string | null
   /**
    * Offset of the loop's items past its preceding container siblings. Its
    * terms are subtracted from the DOM child index to recover the array index,
