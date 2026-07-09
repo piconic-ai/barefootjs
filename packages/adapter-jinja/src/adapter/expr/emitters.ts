@@ -149,8 +149,16 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     if (property === 'length') {
       return `bf.length(${emit(object)})`
     }
-    // Attribute / dict-key access — Jinja `.` resolves both transparently.
-    return `${emit(object)}.${property}`
+    // Bracket/item access, NOT `.` attribute access: Jinja's default
+    // `getattr` semantics try a Python ATTRIBUTE first, falling back to a
+    // dict key only if no such attribute exists — so `group.items` (a
+    // dict key from the JS object) instead resolves to the built-in bound
+    // method `dict.items`, raising "not iterable" downstream instead of
+    // returning the key's value. `[...]` compiles through Jinja's
+    // `getitem`, which tries the KEY first, sidestepping any built-in
+    // dict method name (items/keys/values/get/pop/update/...) that would
+    // otherwise shadow a same-named JS object field.
+    return `${emit(object)}['${escapeJinjaSingleQuoted(property)}']`
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
@@ -331,8 +339,13 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     const obj = emit(object)
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return `bf.length(${obj})`
-    // Jinja `.` access works for both dicts and objects.
-    return `${obj}.${property}`
+    // Bracket/item access, NOT `.` attribute access — see the sibling
+    // `JinjaFilterEmitter.member()` for why: Jinja's `.` tries a Python
+    // ATTRIBUTE first, so a dict key that happens to share a name with a
+    // built-in dict method (`items`, `keys`, `values`, `get`, ...) resolves
+    // to the bound method instead of the value. `[...]` (Jinja `getitem`)
+    // tries the key first.
+    return `${obj}['${escapeJinjaSingleQuoted(property)}']`
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {

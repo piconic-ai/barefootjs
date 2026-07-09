@@ -82,6 +82,17 @@ interface TransformContext {
   _destructuredPropNames?: Set<string> | null
   /** Active loop parameter names for slotId assignment to loop-param-dependent expressions */
   loopParams: Set<string>
+  /**
+   * Count of enclosing `.map()` loops (0 = outermost), incremented/
+   * decremented in lockstep with entering/leaving `transformMapCall`.
+   * Unlike `loopParams` (a name Set that can gain several entries for
+   * ONE loop level via destructuring), this is a plain per-level
+   * counter — the single source of truth `IRLoop.depth` is stamped
+   * from, so every adapter's `data-key`/`data-key-N` suffix derives
+   * from one IR-computed value instead of each adapter re-deriving
+   * nesting depth its own way (#2168 nested-loop-outer-binding).
+   */
+  loopDepth: number
   /** Counter for async boundary IDs (a0, a1, ...) */
   asyncIdCounter: number
   /** Counter for <Region> structural index (0, 1, ...) within a file. */
@@ -395,6 +406,7 @@ function createTransformContext(analyzer: AnalyzerContext): TransformContext {
     isRoot: true,
     insideComponentChildren: false,
     loopParams: new Set(),
+    loopDepth: 0,
     patterns: {
       signals: analyzer.signals.map(s => ({
         getter: s.getter,
@@ -3251,6 +3263,10 @@ function transformMapCall(
   // Capture nesting depth before we register this map's own params.
   // ctx.loopParams is populated by the *outer* map; if non-empty we are inside one.
   const isNested = ctx.loopParams.size > 0
+  // This loop's own depth (0 = outermost) is however many enclosing
+  // loops are already active, captured before `ctx.loopDepth` below is
+  // bumped for THIS loop's own descendants.
+  const depth = ctx.loopDepth
 
   const propAccess = node.expression as ts.PropertyAccessExpression
   const mapSource = propAccess.expression
@@ -3509,6 +3525,7 @@ function transformMapCall(
       ctx.loopParams.add(param)
     }
     if (index) ctx.loopParams.add(index)
+    ctx.loopDepth++
 
     // Logical control flow (`cond && <X/>`, `a ?? themeLogo()`) as the map
     // body. This is not a JSX literal, ternary, or block, so without this
@@ -3631,6 +3648,7 @@ function transformMapCall(
       ctx.loopParams.delete(param)
     }
     if (index) ctx.loopParams.delete(index)
+    ctx.loopDepth--
   }
 
   // If no JSX children were found (e.g., callback returns a function call),
@@ -3749,6 +3767,7 @@ function transformMapCall(
     sortComparator,
     chainOrder,
     iterationShape,
+    depth,
     clientOnly: isClientOnly || undefined,
     mapPreamble,
     templateMapPreamble,

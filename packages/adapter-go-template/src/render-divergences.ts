@@ -27,8 +27,6 @@ export const renderDivergences: RenderDivergences = {
     'Math.min/max/abs over a signal: generated Go fails to run (exit 1) — only Math.floor is registered',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)`: generated Go fails to run (exit 1) — no object-iteration loop lowering',
-  'nested-loop-outer-binding':
-    'nested-loop inner items carry `data-key` where the reference emits the depth-suffixed `data-key-1`',
   'jsx-element-prop':
     'a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped',
   'grandchild-composition':
@@ -39,4 +37,6 @@ export const renderDivergences: RenderDivergences = {
     'a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level',
   'signal-object-field':
     'object-valued signal (`user().name`): generated Go fails to run (exit 1) — no struct synthesis outside loops',
+  'nested-loop-triple-depth':
+    'a THIRD level of nested .map() renders every item field EMPTY (key values and text content alike), though the data-key/-1/-2 suffix naming itself is correct — Go loop-scope binding only reaches two levels deep',
 }

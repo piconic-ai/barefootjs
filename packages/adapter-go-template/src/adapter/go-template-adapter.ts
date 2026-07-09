@@ -226,6 +226,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private inLoop: boolean = false
   private loopParamStack: string[] = []
   /**
+   * Stack of `IRLoop.depth` values (innermost last), pushed/popped around
+   * `renderChildren(loop.children)` in `renderLoop`. `renderAttributes`
+   * reads the top of this stack to derive the `key` → `data-key`/
+   * `data-key-N` suffix — the depth is IR-computed (jsx-to-ir.ts), not
+   * re-derived here; this stack only threads that value down to the
+   * loop body's root element (#2168 nested-loop-outer-binding).
+   */
+  private loopKeyDepthStack: number[] = []
+  /**
    * Per-loop: true when the body renders the bare range value (scalar-item
    * inline-literal loop), so the `bf_tmpl` companion is fed `.BfLoopItem` (the
    * wrapper's synthetic scalar field) instead of `.`. Innermost last.
@@ -4941,7 +4950,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null,
     )
     this.loopWrapperStack.push(!!loop.childComponent)
+    this.loopKeyDepthStack.push(loop.depth)
     const children = this.renderChildren(loop.children)
+    this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
     this.loopScalarItemStack.pop()
     // Build the per-item anchor marker while the loop param is still on the
@@ -5386,10 +5397,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Rewrite JSX special-prop names to their HTML-attribute counterparts. The
       // Go template adapter has no JSX runtime to strip `key` / emit `data-key`,
       // so the rewrite happens at attribute-emit time. Mirror of the `key`
-      // branch in `ir-to-client-js/html-template.ts`.
+      // branch in `ir-to-client-js/html-template.ts`. The depth-suffix (plain
+      // `data-key` at the outermost loop, `data-key-N` N levels deep) comes
+      // from `IRLoop.depth` via `loopKeyDepthStack`, not re-derived here.
       let attrName: string
       if (attr.name === 'className') attrName = 'class'
-      else if (attr.name === 'key') attrName = 'data-key'
+      else if (attr.name === 'key') {
+        const depth = this.loopKeyDepthStack.at(-1) ?? 0
+        attrName = depth > 0 ? `data-key-${depth}` : 'data-key'
+      }
       else attrName = attr.name
       const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, attrName)
       if (lowered) parts.push(lowered)

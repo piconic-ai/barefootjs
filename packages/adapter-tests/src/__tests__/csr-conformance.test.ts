@@ -37,6 +37,10 @@ describe('CSR Conformance Tests', () => {
     // lambda, so the post-init DOM shape is verified by the runtime regression
     // in `packages/client/__tests__/runtime/static-loop-csr-materialize.test.ts`.
     'static-array-from-props',
+    // Same reason as `static-array-from-props` — both `fruits` and
+    // `veggies` are direct prop arrays, materialized at init time via the
+    // clone-and-insert fallback, not available at template-eval scope.
+    'sibling-loops-key-isolation',
     // #1268: same reason as `static-array-from-props` — the childComponent
     // variant also materialises children at init time via the clone-and-
     // insert fallback, not at template-eval time. CSR coverage lives in
@@ -222,6 +226,10 @@ describe('CSR Conformance Tests', () => {
     //     suffixes differently between the SSR snapshot and template-eval.
     'object-entries-map',
     'nested-loop-outer-binding',
+    // Same class as `nested-loop-outer-binding` above, one level deeper —
+    // the SSR snapshot and template-eval disagree on nested data-key
+    // depth suffixes the same way.
+    'nested-loop-triple-depth',
     //   - `jsx-element-prop`: a JSX element passed as a NON-children prop
     //     reaches the CSR insert as an escaped STRING (with the
     //     `__BF_PARENT_SCOPE__` placeholder still embedded) instead of

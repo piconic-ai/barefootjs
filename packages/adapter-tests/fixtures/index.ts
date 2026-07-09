@@ -336,6 +336,8 @@ import { fixture as inlineArrayMap } from './inline-array-map'
 import { fixture as objectEntriesMap } from './object-entries-map'
 import { fixture as mapKeyIndex } from './map-key-index'
 import { fixture as nestedLoopOuterBinding } from './nested-loop-outer-binding'
+import { fixture as nestedLoopTripleDepth } from './nested-loop-triple-depth'
+import { fixture as siblingLoopsKeyIsolation } from './sibling-loops-key-isolation'
 import { fixture as conditionalReturnNull } from './conditional-return-null'
 import { fixture as jsxElementProp } from './jsx-element-prop'
 import { fixture as grandchildComposition } from './grandchild-composition'
@@ -600,6 +602,8 @@ export const jsxFixtures: JSXFixture[] = [
   objectEntriesMap,
   mapKeyIndex,
   nestedLoopOuterBinding,
+  nestedLoopTripleDepth,
+  siblingLoopsKeyIsolation,
   conditionalReturnNull,
   jsxElementProp,
   grandchildComposition,
