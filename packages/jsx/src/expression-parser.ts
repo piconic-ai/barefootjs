@@ -25,7 +25,21 @@ export type ParsedExpr =
   // canonical form in `value`.
   | { kind: 'literal'; value: string | number | boolean | null; literalType: 'string' | 'number' | 'boolean' | 'null'; raw?: string }
   | { kind: 'call'; callee: ParsedExpr; args: ParsedExpr[] }
-  | { kind: 'member'; object: ParsedExpr; property: string; computed: boolean }
+  // `optional` is true for a `?.`-written access (`user?.name`,
+  // `arr?.[0]`) — the ONE hop that was actually optional-chained in JS
+  // source; a plain `.`/`[]` access is `false`. Adapters whose member
+  // lowering is already null-safe by construction (e.g. Jinja's `[]`
+  // subscript swallows a `None` receiver, Blade's `data_get` helper)
+  // ignore this field entirely; Go and ERB (whose native `.` access
+  // panics/raises on a nil/undefined receiver) route an `optional: true`
+  // access through a defensive form (`bf_get`, Ruby `&.`) instead. NOTE:
+  // this does NOT reproduce JS's whole-chain short-circuit for a
+  // MULTI-hop chain (`a?.b.c` also guards `.c` in JS once `a` is
+  // nullish) — only the single hop written with `?.` is marked; a
+  // following plain `.c` on a possibly-nullish `a?.b` is a known,
+  // untracked limitation on Go/ERB (not exercised by the current
+  // `optional-chaining-prop` fixture, which is single-hop only).
+  | { kind: 'member'; object: ParsedExpr; property: string; computed: boolean; optional: boolean }
   // Element access with a NON-literal index (`selected()[index]`,
   // `rows[i + 1]`). A literal-index access (`arr[0]`, `obj['key']`)
   // stays a `member` (computed) since the key is statically known and
@@ -1090,7 +1104,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     const property = node.name.text
 
     // Return as normal member - filter.length is handled in adapter
-    return { kind: 'member', object, property, computed: false }
+    return { kind: 'member', object, property, computed: false, optional: !!node.questionDotToken }
   }
 
   // Element access: items[0], obj['key']
@@ -1106,10 +1120,10 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     }
     // For simple number/string access, store as property
     if (ts.isNumericLiteral(argNode)) {
-      return { kind: 'member', object, property: argNode.text, computed: true }
+      return { kind: 'member', object, property: argNode.text, computed: true, optional: !!node.questionDotToken }
     }
     if (ts.isStringLiteral(argNode)) {
-      return { kind: 'member', object, property: argNode.text, computed: true }
+      return { kind: 'member', object, property: argNode.text, computed: true, optional: !!node.questionDotToken }
     }
     // Variable / expression index (`selected()[index]`, `rows[i + 1]`):
     // carry the index as its own ParsedExpr so the adapter can lower it
@@ -2081,7 +2095,7 @@ function substituteDestructuredFields(
         // one-hop chain identical to the pre-#1530 shape.
         let node: ParsedExpr = { kind: 'identifier', name: syntheticParam }
         for (const segment of entry.path) {
-          node = { kind: 'member', object: node, property: segment, computed: false }
+          node = { kind: 'member', object: node, property: segment, computed: false, optional: false }
         }
         // Default value (#1531): wrap the accessor in `?? <default>` so
         // a missing field falls back to the user-supplied literal /
@@ -2106,9 +2120,10 @@ function substituteDestructuredFields(
             object: { kind: 'identifier', name: syntheticParam },
             property: e.property,
             computed: false,
+            optional: e.optional,
           }
         }
-        return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed }
+        return { kind: 'member', object: walk(e.object), property: e.property, computed: e.computed, optional: e.optional }
       case 'index-access':
         return { kind: 'index-access', object: walk(e.object), index: walk(e.index) }
       case 'binary':
@@ -2912,7 +2927,7 @@ function inlineBinding(
       case 'call':
         return { kind: 'call', callee: walk(e.callee, enclosing), args: e.args.map(a => walk(a, enclosing)) }
       case 'member':
-        return { kind: 'member', object: walk(e.object, enclosing), property: e.property, computed: e.computed }
+        return { kind: 'member', object: walk(e.object, enclosing), property: e.property, computed: e.computed, optional: e.optional }
       case 'index-access':
         return { kind: 'index-access', object: walk(e.object, enclosing), index: walk(e.index, enclosing) }
       case 'binary':
@@ -3300,7 +3315,7 @@ export function materializeGetterCalls(expr: ParsedExpr, names: ReadonlySet<stri
         alternate: rw(expr.alternate),
       }
     case 'member':
-      return { kind: 'member', object: rw(expr.object), property: expr.property, computed: expr.computed }
+      return { kind: 'member', object: rw(expr.object), property: expr.property, computed: expr.computed, optional: expr.optional }
     case 'index-access':
       return { kind: 'index-access', object: rw(expr.object), index: rw(expr.index) }
     case 'template-literal':

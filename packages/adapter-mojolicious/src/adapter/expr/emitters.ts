@@ -105,7 +105,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `.length` on a higher-order result (e.g.
     // `x.tags.filter(t => t.active).length > 0` inside the outer
     // filter predicate, #1443). The higher-order emit produces an
@@ -322,7 +322,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.x` flattens to the bare `$x` the Mojo SSR caller binds each
     // prop to (props arrive as individual `my $x = ...` vars, not a
     // `$props` hashref).

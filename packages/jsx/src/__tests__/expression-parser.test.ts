@@ -1230,6 +1230,7 @@ describe('expression-parser', () => {
         object: { kind: 'identifier', name: 'x' },
         property: 'done',
         computed: false,
+        optional: false,
       })
     })
 

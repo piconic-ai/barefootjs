@@ -43,6 +43,7 @@ describe('materializeGetterCalls', () => {
           object: { kind: 'identifier', name: 'p' },
           property: 'tags',
           computed: false,
+          optional: false,
         },
         args: [{ kind: 'identifier', name: 'tag' }],
       },

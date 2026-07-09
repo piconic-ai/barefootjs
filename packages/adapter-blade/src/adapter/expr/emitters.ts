@@ -176,7 +176,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `.length` — route through `$bf->length` (handles both array element
     // count and string char count, JS-compatibly).
     if (property === 'length') {
@@ -346,7 +346,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, _optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.x` flattens to the bare context var the SSR caller binds each
     // prop to (props arrive as individual top-level context entries, not a
     // nested `props` hash).

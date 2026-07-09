@@ -3070,6 +3070,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     object: ParsedExpr,
     property: string,
     _computed: boolean,
+    optional: boolean,
     emit: (e: ParsedExpr) => string,
   ): string {
     // .length on a `.filter(...)` callback call → len (bf_filter ...)
@@ -3160,6 +3161,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const obj = emit(object)
     if (property === 'length') return `len ${obj}`
+    // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
+    // a plain `.Field` dot-chain panics evaluating a field on a nil
+    // interface/pointer (`nil pointer evaluating interface {}.Name`), so
+    // route through the runtime's existing nil-safe reflection-based
+    // getter instead — `bf_get`/`getFieldValue` (bf.go), already used for
+    // map-rooted context chains above, guards the nil case and returns Go
+    // `nil` (which `or`/`bf.truthy?`-style fallbacks treat as falsy) —
+    // unlike that map-rooted call site, this passes the Go-cased field
+    // name (`goFieldNameForKey`), matching `getFieldValue`'s struct-branch
+    // exact-match fast path. Only guards the single written `?.` hop, not
+    // a JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
+    // variant's docstring for the multi-hop caveat.
+    if (optional) {
+      return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(goFieldNameForKey(property))}`
+    }
     return `${obj}.${goFieldNameForKey(property)}`
   }
 
