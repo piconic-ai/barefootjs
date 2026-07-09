@@ -34,6 +34,7 @@ export function buildDynamicLoopDelegationPlan(
       param: elem.param,
       paramBindings: elem.paramBindings,
       key: elem.key,
+      index: elem.index,
       mapPreamble: elem.mapPreamble ?? null,
     }),
   }
@@ -58,6 +59,7 @@ export function buildBranchLoopDelegationPlan(
       param: loop.param,
       paramBindings: loop.paramBindings,
       key: loop.key,
+      index: loop.index,
       mapPreamble: loop.mapPreamble ?? null,
     }),
   }
@@ -86,6 +88,7 @@ export function buildStaticArrayDelegationPlan(
       param: elem.param,
       mapPreamble: elem.mapPreamble ?? null,
       offset: elem.offset ?? null,
+      indexParam: elem.index ?? null,
     },
   }
 }
@@ -99,6 +102,7 @@ function buildKeyedOrIndexLookup(args: {
   param: string
   paramBindings: TopLevelLoop['paramBindings']
   key: string | null
+  index: string | null
   mapPreamble: string | null
 }): ItemLookup {
   const hasBindings = (args.paramBindings?.length ?? 0) > 0
@@ -116,6 +120,7 @@ function buildKeyedOrIndexLookup(args: {
       keyWithItem,
       mapPreamble: args.mapPreamble,
       hasBindings,
+      indexParam: args.index,
     }
   }
   return {
@@ -124,6 +129,7 @@ function buildKeyedOrIndexLookup(args: {
     param: args.param,
     mapPreamble: args.mapPreamble,
     hasBindings,
+    indexParam: args.index,
   }
 }
 
