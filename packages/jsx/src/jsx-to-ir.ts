@@ -2500,6 +2500,31 @@ function isIteratorShapeCall(
   return { array: node.expression.expression, shape: name }
 }
 
+/**
+ * Check if a node is the STATIC `Object.entries(x)` / `Object.keys(x)` /
+ * `Object.values(x)` call form (#2168 object-entries-map) — the
+ * one-argument form where `x` is a plain object/Record being iterated,
+ * as opposed to {@link isIteratorShapeCall}'s zero-arg instance-method
+ * form (`arr.entries()`) on an actual array. Returns the object
+ * expression (any expression — `props.x`, `x ?? {}`, not just a bare
+ * identifier) and the iteration shape so `transformMapCall` can strip
+ * the `Object.<method>(...)` wrapper and record it on the IRLoop as
+ * `objectIteration` (see that field's docstring in `types.ts` for why
+ * this is a distinct field from `iterationShape`, not a shared one).
+ */
+function isObjectIteratorCall(
+  node: ts.Expression,
+): { object: ts.Expression; shape: 'entries' | 'keys' | 'values' } | null {
+  if (!ts.isCallExpression(node)) return null
+  if (!ts.isPropertyAccessExpression(node.expression)) return null
+  if (!ts.isIdentifier(node.expression.expression)) return null
+  if (node.expression.expression.text !== 'Object') return null
+  if (node.arguments.length !== 1) return null
+  const name = node.expression.name.text
+  if (name !== 'entries' && name !== 'keys' && name !== 'values') return null
+  return { object: node.arguments[0], shape: name }
+}
+
 type SortExtractionResult = {
   result: IRLoopSort | null
   unsupportedReason?: string
@@ -3292,6 +3317,7 @@ function transformMapCall(
   let templateMapPreamble: string | undefined
   let typedMapPreamble: string | undefined
   let iterationShape: 'entries' | 'keys' | undefined
+  let objectIteration: 'entries' | 'keys' | 'values' | undefined
 
   // Helper to set both array and templateArray
   const setArray = (node: ts.Expression) => {
@@ -3305,8 +3331,11 @@ function transformMapCall(
   // adapters emit the right loop variable bindings. `.values()` is a
   // no-op (same as plain `.map()`) so it's stripped but not recorded.
   // The inner expression (after stripping) feeds into the standard
-  // filter/sort chain detection below.
-  let chainSource = mapSource
+  // filter/sort chain detection below. Widened to `ts.Expression` (not
+  // narrowed to `mapSource`'s own `LeftHandSideExpression` type) since
+  // `isObjectIteratorCall`'s stripped argument can be any expression
+  // (`x ?? {}`, not just a `LeftHandSideExpression`).
+  let chainSource: ts.Expression = mapSource
   const iteratorInfo = isIteratorShapeCall(mapSource)
   if (iteratorInfo) {
     chainSource = iteratorInfo.array
@@ -3316,6 +3345,18 @@ function transformMapCall(
       iterationShape = 'keys'
     }
     // 'values' is a no-op — same as plain .map()
+  } else {
+    // Detect the STATIC `Object.entries(x)` / `.keys(x)` / `.values(x)`
+    // form (#2168 object-entries-map) — see `isObjectIteratorCall`'s and
+    // `IRLoop.objectIteration`'s docstrings for why this is a SEPARATE
+    // shape from the array-instance-method case above, not a shared one.
+    // Unlike that case, `'values'` DOES need recording here (it isn't a
+    // no-op: `x` itself isn't iterable as a plain object).
+    const objectIteratorInfo = isObjectIteratorCall(mapSource)
+    if (objectIteratorInfo) {
+      chainSource = objectIteratorInfo.object
+      objectIteration = objectIteratorInfo.shape
+    }
   }
 
   const filterInfo = isFilterCall(chainSource)
@@ -3466,8 +3507,12 @@ function transformMapCall(
       // `.entries()` synthesises `[index, value]` — when the callback
       // destructures exactly two array elements, extract the names into
       // `index` and `param` so the loop renders with proper bindings and
-      // the BF104 destructure-param refusal doesn't fire.
-      if (iterationShape === 'entries' && ts.isArrayBindingPattern(firstParam.name)) {
+      // the BF104 destructure-param refusal doesn't fire. `Object.entries(x)`
+      // (`objectIteration === 'entries'`) synthesises the SAME `[key,
+      // value]` 2-tuple shape — `index` just holds a string key instead
+      // of a numeric position — so it reuses this exact extraction.
+      const isEntriesShape = iterationShape === 'entries' || objectIteration === 'entries'
+      if (isEntriesShape && ts.isArrayBindingPattern(firstParam.name)) {
         const elements = firstParam.name.elements.filter(
           el => !ts.isOmittedExpression(el),
         )
@@ -3506,7 +3551,7 @@ function transformMapCall(
         }
       }
     }
-    if (callback.parameters.length > 1 && iterationShape !== 'entries') {
+    if (callback.parameters.length > 1 && iterationShape !== 'entries' && objectIteration !== 'entries') {
       const secondParam = callback.parameters[1]
       index = secondParam.name.getText(ctx.sourceFile)
       if (secondParam.type) {
@@ -3728,6 +3773,16 @@ function transformMapCall(
     !isSignalOrMemoArray(array, ctx)
     && !isDirectPropArray
     && !hasCalls
+    // `objectIteration` (#2168 object-entries-map): `array` here is the
+    // STRIPPED object expression (`Object.entries(x)`'s `x`), which can
+    // itself be a static module-scope const object literal and would
+    // otherwise satisfy every check above — but a plain OBJECT has no
+    // `.forEach()`/`.map()` (the static-array client codegen's own
+    // methods), unlike an actual array literal. Force the dynamic
+    // `mapArray()` path instead, which this shape's client-JS array-expr
+    // reconstruction (`applyObjectIterationWrap`, `ir-to-client-js/utils.ts`)
+    // already handles correctly.
+    && !objectIteration
 
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
@@ -3767,6 +3822,7 @@ function transformMapCall(
     sortComparator,
     chainOrder,
     iterationShape,
+    objectIteration,
     depth,
     clientOnly: isClientOnly || undefined,
     mapPreamble,

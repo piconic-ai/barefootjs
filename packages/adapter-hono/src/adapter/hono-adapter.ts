@@ -905,6 +905,27 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     } else if (loop.iterationShape === 'keys') {
       chainedArray = `[...${chainedArray}.keys()]`
       callbackParam = `(${loop.param}${paramAnnotation})`
+    } else if (loop.objectIteration === 'entries') {
+      // `objectIteration` (#2168 object-entries-map): reconstruct the
+      // STATIC `Object.entries(x)` call the IR stripped off (`x` is
+      // `chainedArray` here — a plain object, not an array). Unlike the
+      // array `iterationShape === 'entries'` case above, this does NOT
+      // require `loop.index` to be truthy: an elided/nested destructure
+      // (`([, cfg]) => …`) leaves `index` null and falls to the generic
+      // `paramAnnotation`/`loop.param` fallback below, where `loop.param`
+      // is already the raw (valid) destructure-pattern text — only the
+      // ARRAY needs wrapping in that case, matching the analogous split
+      // in `applyIterationShape` (`ir-to-client-js/html-template.ts`).
+      chainedArray = `Object.entries(${chainedArray})`
+      callbackParam = loop.index
+        ? `([${loop.index}${indexAnnotation}, ${loop.param}${paramAnnotation}])`
+        : `(${loop.param}${paramAnnotation}${indexParam})`
+    } else if (loop.objectIteration === 'keys') {
+      chainedArray = `Object.keys(${chainedArray})`
+      callbackParam = `(${loop.param}${paramAnnotation})`
+    } else if (loop.objectIteration === 'values') {
+      chainedArray = `Object.values(${chainedArray})`
+      callbackParam = `(${loop.param}${paramAnnotation})`
     } else {
       callbackParam = `(${loop.param}${paramAnnotation}${indexParam})`
     }

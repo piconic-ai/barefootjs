@@ -148,6 +148,38 @@ export function exhaustiveAttrValue(value: never): never {
 }
 
 /**
+ * Reconstruct the `Object.entries/keys/values(x)` call the compiler
+ * stripped off at IR-build time (`isObjectIteratorCall`, `jsx-to-ir.ts`)
+ * for the CLIENT's array expression — unlike a template adapter, the
+ * client runs real JS, so it just re-wraps the plain object `x` (the
+ * loop's `array`) to get back the actual iterable `mapArray` needs.
+ *
+ * Deliberately does NOT also handle the array-only `iterationShape`
+ * (`arr.entries()`/`.keys()`) — that shape's `mapArray` callback already
+ * gets what it needs from `mapArray`'s own native `(value, index)`
+ * signature (the compiler synthesizes `param`/`index` to match those two
+ * positions directly), so wrapping the array there would double up. See
+ * `IRLoop.objectIteration`'s docstring (`types.ts`) for why the two
+ * fields are distinct, and `applyIterationShape` in `html-template.ts`
+ * (a different consumer — the CSR template-literal's own inline `.map()`
+ * — which does handle both fields, since its shape doesn't reuse
+ * `mapArray`'s positional signature).
+ *
+ * The callback's OWN head (`__bfItem` vs a plain param name) is unrelated
+ * and unaffected — that's `destructureLoopParam`'s job
+ * (`control-flow/shared.ts`), driven entirely by `param`/`paramBindings`.
+ */
+export function applyObjectIterationWrap(
+  node: { objectIteration?: 'entries' | 'keys' | 'values' },
+  arrayExpr: string,
+): string {
+  if (node.objectIteration === 'entries') return `Object.entries(${arrayExpr})`
+  if (node.objectIteration === 'keys') return `Object.keys(${arrayExpr})`
+  if (node.objectIteration === 'values') return `Object.values(${arrayExpr})`
+  return arrayExpr
+}
+
+/**
  * Build the chained array expression for reconcileList. Thin
  * adapter over `buildLoopChainExpr` that unpacks the collected
  * `TopLevelLoop` / `BranchLoop` shape into the primitive inputs.
@@ -156,12 +188,13 @@ export function exhaustiveAttrValue(value: never): never {
  * branch preserves the chain (#1434).
  */
 export function buildChainedArrayExpr(elem: TopLevelLoop | BranchLoop): string {
-  return buildLoopChainExpr({
+  const chained = buildLoopChainExpr({
     base: elem.array,
     sortComparator: elem.sortComparator,
     filterPredicate: elem.filterPredicate,
     chainOrder: elem.chainOrder,
   })
+  return applyObjectIterationWrap(elem, chained)
 }
 
 /**

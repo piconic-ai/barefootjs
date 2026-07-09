@@ -734,9 +734,13 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // For `keys`-shape iterations the callback param IS the index. We iterate
     // the array but bind the loop var to a throwaway and expose the index as
     // `$param`. Kolon's `$~loopvar.index` provides the 0-based index.
-    const loopVar = loop.iterationShape === 'keys'
-      ? '__bf_item'
-      : supportableDestructure ? '__bf_item' : param
+    const loopVar = loop.objectIteration === 'entries'
+      ? '__bf_pair'
+      : loop.objectIteration
+        ? param
+        : loop.iterationShape === 'keys'
+          ? '__bf_item'
+          : supportableDestructure ? '__bf_item' : param
 
     // Index alias: when an explicit `index` param is present (`.map((x, i) =>
     // ...)`) or the iteration is `keys`-shaped, expose it via a `: my` Kolon
@@ -756,7 +760,16 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // `segments` (empty at the loop root, per the `LoopParamBinding` jsdoc) —
     // NOT the same as a fixed binding's full-accessor segments.
     const indexLocalLines: string[] = []
-    if (loop.iterationShape === 'keys') {
+    if (loop.objectIteration === 'entries') {
+      // `key`/`value` bind off the `.kv()` pair (see the for-header below)
+      // — no derived `.index` local needed, unlike the array
+      // `iterationShape` cases.
+      indexLocalLines.push(`: my $${loop.index ?? param} = $${loopVar}.key;`)
+      indexLocalLines.push(`: my $${param} = $${loopVar}.value;`)
+    } else if (loop.objectIteration) {
+      // 'keys'/'values': `.keys()`/`.values()` already yield the bound
+      // value directly — no derived local needed either.
+    } else if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`: my $${param} = $~${loopVar}.index;`)
     } else if (loop.index) {
       indexLocalLines.push(`: my $${loop.index} = $~${loopVar}.index;`)
@@ -802,7 +815,21 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`<: $bf.comment("loop:${loop.markerId}") | mark_raw :>`)
-    lines.push(`: for ${array} -> $${loopVar} {`)
+    // `objectIteration` (#2168 object-entries-map): Kolon has no built-in
+    // hash-destructure `for` target, so `'entries'` iterates `.kv()`
+    // (yielding `{key, value}` pair objects, unpacked via the `: my`
+    // locals above) while `'keys'`/`'values'` iterate `.keys()`/`.values()`
+    // directly. All three are alphabetically sorted by Text::Xslate itself
+    // (verified empirically) — not JS insertion order, a documented known
+    // limitation for out-of-alphabetical-order data, same as Go/Rust.
+    const forHeader = loop.objectIteration === 'entries'
+      ? `: for ${array}.kv() -> $${loopVar} {`
+      : loop.objectIteration === 'keys'
+        ? `: for ${array}.keys() -> $${loopVar} {`
+        : loop.objectIteration === 'values'
+          ? `: for ${array}.values() -> $${loopVar} {`
+          : `: for ${array} -> $${loopVar} {`
+    lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
     // Handle filter().map() pattern by wrapping children in if-condition

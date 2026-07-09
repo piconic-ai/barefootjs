@@ -575,6 +575,61 @@ export interface IRLoop {
   iterationShape?: 'entries' | 'keys'
 
   /**
+   * Pre-`.map()` object iteration (#2168 object-entries-map). Distinct
+   * from {@link iterationShape}, which is scoped ENTIRELY to an array's
+   * own zero-arg `.entries()`/`.keys()`/`.values()` methods — those
+   * synthesize a real numeric index off the array's position, and every
+   * adapter's consumption of `iterationShape` assumes an actual
+   * array/slice underneath.
+   *
+   * `objectIteration` instead records the STATIC `Object.entries(x)` /
+   * `Object.keys(x)` / `Object.values(x)` call form, where `x` is a
+   * plain object/Record (not an array): the "index" bound for `'entries'`
+   * is a STRING KEY, not a numeric position, and the collection an
+   * adapter must iterate is its native map/dict/hash type, not an
+   * array/slice. `transformMapCall` strips the `Object.<method>(...)`
+   * wrapper the same way it strips `arr.entries()` — `array`/`arrayParsed`
+   * end up holding just `x` — and records the shape here so each
+   * adapter's loop renderer picks the right native construct:
+   *
+   *   - `'entries'` → both `index` (bound to the KEY) and `param` (bound
+   *     to the VALUE), synthesized from the 2-element destructure the
+   *     same way `iterationShape: 'entries'` is (see `jsx-to-ir.ts`'s
+   *     `transformMapCall`) — e.g. Jinja `for k, v in x.items()`.
+   *   - `'keys'` → `param` bound to the key only — e.g. Jinja
+   *     `for k in x.keys()`.
+   *   - `'values'` → `param` bound to the value only — e.g. Jinja
+   *     `for v in x.values()`. Unlike the array case, `'values'` is NOT
+   *     a no-op here: `Object.values(x)` genuinely differs from
+   *     iterating `x` itself (`x` isn't iterable at all as a plain
+   *     object), so it must be recorded.
+   *
+   * Iteration ORDER is native-map-dependent: Python `dict`/PHP
+   * array-object/Ruby `Hash` preserve the source object's insertion
+   * order (matching JS `Object.entries()` semantics exactly), so Jinja,
+   * Twig, Blade, and ERB lower directly to their native map/dict/hash
+   * iteration. Go's `map[string]T`, Rust's `BTreeMap` (deliberate design,
+   * see `num.rs`), and Perl's hash (Xslate/Mojolicious) have NO
+   * order-preserving native map type, so those four instead lower to a
+   * DETERMINISTIC SORTED-BY-KEY iteration — Go's `{{range}}` (the
+   * stdlib's own `fmtsort`), minijinja's `BTreeMap` (already sorted),
+   * Kolon's `.kv()`/`.keys()`/`.values()` (verified empirically sorted),
+   * and Mojolicious's explicit `sort keys %$hash` (mirroring the
+   * existing `spread_attrs`/`_style_to_css` convention in
+   * `BarefootJS.pm`). This is a documented, permanent known limitation
+   * relative to JS's insertion-order guarantee (not a follow-up TODO) —
+   * true insertion order is physically unrecoverable from those
+   * languages' native map types once constructed, so sorted order is the
+   * best available deterministic approximation, not an interim refusal.
+   *
+   * Only the OUTERMOST, unchained `Object.<method>(x).map(cb)` shape is
+   * recognized — mirroring `iterationShape`'s own scope, chaining
+   * (`Object.entries(x).filter(pred).map(cb)`) is not (yet) recognized
+   * either, same as the array case.
+   */
+  objectIteration?: 'entries' | 'keys' | 'values'
+
+  /**
    * Count of enclosing `.map()` loops (0 = outermost, 1 = nested one
    * level deep, ...). Adapters use this to derive the loop body's
    * `key`/`data-key` attribute suffix — `depth > 0 ? 'data-key-' +

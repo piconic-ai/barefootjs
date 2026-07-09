@@ -145,6 +145,42 @@ function applyIterationShape(
       callbackParam: `(${node.param})`,
     }
   }
+  // `objectIteration` (#2168 object-entries-map): reconstruct the STATIC
+  // `Object.entries/keys/values(x)` call the compiler stripped at IR-build
+  // time (`isObjectIteratorCall`, `jsx-to-ir.ts`) — `arrayExpr` here is just
+  // `x` (the plain object), so the client, unlike a template adapter,
+  // re-wraps it in real JS to get the actual entries/keys/values array
+  // (this runs in a real JS engine, so no per-language lowering is needed).
+  //
+  // Unlike the array `iterationShape` case, the 'entries' ARRAY wrap does
+  // NOT require `node.index` — that field is only populated for a CLEAN
+  // 2-identifier destructure (`([word, n]) => …`); an elided/nested
+  // pattern (`([, cfg]) => …`) falls through to the generic `paramBindings`
+  // machinery instead (`node.param` stays the raw destructure TEXT, e.g.
+  // `"[, cfg]"`, which is already a syntactically valid callback param that
+  // correctly destructures a `[key, value]` pair — see the trailing
+  // fallback below). Only the ARRAY needs wrapping in that case; the
+  // callback param is unaffected either way.
+  if (node.objectIteration === 'entries') {
+    return {
+      array: `Object.entries(${arrayExpr})`,
+      callbackParam: node.index
+        ? `([${node.index}, ${node.param}])`
+        : `(${node.param}${indexParam})`,
+    }
+  }
+  if (node.objectIteration === 'keys') {
+    return {
+      array: `Object.keys(${arrayExpr})`,
+      callbackParam: `(${node.param})`,
+    }
+  }
+  if (node.objectIteration === 'values') {
+    return {
+      array: `Object.values(${arrayExpr})`,
+      callbackParam: `(${node.param})`,
+    }
+  }
   return { array: arrayExpr, callbackParam: `(${node.param}${indexParam})` }
 }
 

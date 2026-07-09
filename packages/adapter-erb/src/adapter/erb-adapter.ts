@@ -906,11 +906,13 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // whole body (children + key + filter) so a same-named loop variable
     // isn't replaced by the const literal / a vars-Hash read. Ref-counted
     // for nested loops; released after the body lines are assembled below.
-    const loopBound = loop.iterationShape === 'keys'
-      ? [param]
-      : supportableDestructure
-        ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
-        : [param, loop.index ?? '_i']
+    const loopBound = loop.objectIteration === 'entries'
+      ? [param, loop.index ?? '_k']
+      : loop.objectIteration === 'keys' || loop.objectIteration === 'values' || loop.iterationShape === 'keys'
+        ? [param]
+        : supportableDestructure
+          ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
+          : [param, loop.index ?? '_i']
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
@@ -979,6 +981,21 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       }
       lines.push(`<%- ${sortedHoist} = ${sorted} -%>`)
     }
+    if (loop.objectIteration) {
+      // `objectIteration` (#2168 object-entries-map): Ruby's `Hash`
+      // preserves the source object's insertion order natively (unlike
+      // Go's `map`/Perl's hash), so this bypasses the index-range form
+      // above entirely and uses Ruby's own native block-param binding
+      // (`each_pair`/`each_key`/`each_value`) — no `array[index]` lookup
+      // needed, since the block directly yields the key/value.
+      const method = loop.objectIteration === 'entries'
+        ? 'each_pair'
+        : loop.objectIteration === 'keys' ? 'each_key' : 'each_value'
+      const blockParams = loop.objectIteration === 'entries'
+        ? `${rubyLocal(loop.index ?? param)}, ${rubyLocal(param)}`
+        : rubyLocal(param)
+      lines.push(`<%- ${array}.${method} do |${blockParams}| -%>`)
+    } else {
     lines.push(`<%- (0...${array}.length).each do |${indexVar}| -%>`)
     if (loop.iterationShape !== 'keys') {
       if (supportableDestructure) {
@@ -1016,6 +1033,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       } else {
         lines.push(`<%- ${rubyLocal(param)} = ${array}[${indexVar}] -%>`)
       }
+    }
     }
 
     // Handle filter().map() pattern by wrapping children in if-condition

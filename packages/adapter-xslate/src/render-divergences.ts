@@ -14,7 +14,4 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {
-  'object-entries-map':
-    '`Object.entries(prop).map(([k, v]) => …)` renders an EMPTY list — the object-shaped prop silently produces zero iterations',
-}
+export const renderDivergences: RenderDivergences = {}

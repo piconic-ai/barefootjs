@@ -832,7 +832,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     //     other than member-access / spread (already refused by the gate)
     //     can't observe a sibling field the pattern destructured explicitly.
     const indexLocalLines: string[] = []
-    if (loop.iterationShape === 'keys') {
+    if (loop.objectIteration) {
+      // `key`/`value` bind directly in the for-header (see below) via
+      // `bf.entries`/`bf.keys`/`bf.values` — no derived `loop.index0`
+      // local needed, unlike the array `iterationShape` cases.
+    } else if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`{% set ${twigIdent(param)} = loop.index0 %}`)
     } else if (loop.index) {
       indexLocalLines.push(`{% set ${twigIdent(loop.index)} = loop.index0 %}`)
@@ -883,7 +887,21 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | raw }}`)
-    lines.push(`{% for ${twigIdent(loopVar)} in ${array} %}`)
+    // `objectIteration` (#2168 object-entries-map): Twig's own `for` tag
+    // needs a plain PHP array to unpack `key, value` from (it can't iterate
+    // a `stdClass` — the live representation for a `json_decode()`-sourced
+    // object prop — directly, since `stdClass` isn't `Traversable`), so
+    // this routes through the runtime's `bf.entries`/`bf.keys`/`bf.values`
+    // (a `(array)` cast, which preserves the object's own insertion order
+    // — see those methods' docstrings in `BarefootJS.php`).
+    const forHeader = loop.objectIteration === 'entries'
+      ? `{% for ${twigIdent(loop.index ?? param)}, ${twigIdent(param)} in bf.entries(${array}) %}`
+      : loop.objectIteration === 'keys'
+        ? `{% for ${twigIdent(param)} in bf.keys(${array}) %}`
+        : loop.objectIteration === 'values'
+          ? `{% for ${twigIdent(param)} in bf.values(${array}) %}`
+          : `{% for ${twigIdent(loopVar)} in ${array} %}`
+    lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
     // Handle filter().map() pattern by wrapping children in if-condition

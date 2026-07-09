@@ -283,6 +283,16 @@ export interface LoopCore {
    * (#1448 Tier B). Threaded from `IRLoop.iterationShape`.
    */
   iterationShape?: 'entries' | 'keys'
+
+  /**
+   * Object iteration shape from the STATIC `Object.entries(x)` /
+   * `.keys(x)` / `.values(x)` call form (#2168 object-entries-map) —
+   * distinct from {@link iterationShape} for the same reason `IRLoop`'s
+   * own field is (see that field's docstring, `packages/jsx/src/types.ts`):
+   * `x` is a plain object, not an array. Threaded from
+   * `IRLoop.objectIteration`.
+   */
+  objectIteration?: 'entries' | 'keys' | 'values'
 }
 
 /**

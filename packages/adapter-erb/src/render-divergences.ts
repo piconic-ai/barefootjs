@@ -14,7 +14,4 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {
-  'object-entries-map':
-    '`Object.entries(prop).map(([k, v]) => …)` renders but its loop item keys diverge from the reference serialisation',
-}
+export const renderDivergences: RenderDivergences = {}

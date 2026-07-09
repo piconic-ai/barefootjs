@@ -879,6 +879,46 @@ final class BarefootJS
         return mb_strlen($this->scalarOrEmpty($recv), 'UTF-8');
     }
 
+    /** True for a JS *object* value under the canonical value convention
+     * (`Evaluator::isJsArray`'s docstring): a `stdClass` (the live
+     * representation for a `json_decode()`-sourced object prop) or a
+     * non-list PHP array (a compiler-baked object literal, `toPhpLiteral`'s
+     * `stdClass`-cast form notwithstanding -- defensive, in case a bare
+     * assoc array ever reaches here directly). */
+    private function isJsObject($recv): bool
+    {
+        return $recv instanceof \stdClass || (is_array($recv) && !Evaluator::isJsArray($recv));
+    }
+
+    /**
+     * `Object.entries(x)` (#2168 object-entries-map) -- returns a PHP assoc
+     * array (`key => value`) so the generated Twig/Blade `for`/`@foreach`
+     * unpacks key + value directly via the language's own 2-variable
+     * iteration form. `(array)` on a `stdClass` (or a bare assoc array)
+     * preserves the object's OWN declaration/insertion order -- a PHP
+     * array's iteration order IS its insertion order by language
+     * guarantee, unlike e.g. a Go `map[string]T` or a Perl hash, which
+     * have no such guarantee (see `IRLoop.objectIteration`'s docstring,
+     * `packages/jsx/src/types.ts`, for why those adapters take a
+     * different, sorted-order approach instead).
+     */
+    public function entries($recv): array
+    {
+        return $this->isJsObject($recv) ? (array) $recv : [];
+    }
+
+    /** `Object.keys(x)` -- see `entries()`. */
+    public function keys($recv): array
+    {
+        return $this->isJsObject($recv) ? array_keys((array) $recv) : [];
+    }
+
+    /** `Object.values(x)` -- see `entries()`. */
+    public function values($recv): array
+    {
+        return $this->isJsObject($recv) ? array_values((array) $recv) : [];
+    }
+
     private function arrayIndexOf($recv, $elem, bool $reverse): int
     {
         if (!Evaluator::isJsArray($recv)) {

@@ -787,7 +787,11 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     //     `{...rest}` → `bf.spread_attrs(rest)` emit path both see only the
     //     keys NOT already destructured.
     const indexLocalLines: string[] = []
-    if (loop.iterationShape === 'keys') {
+    if (loop.objectIteration) {
+      // `key`/`value` bind directly in the for-header (see `array` below)
+      // via Jinja's own dict iteration — no derived `loop.index0` local
+      // needed, unlike the array `iterationShape` cases.
+    } else if (loop.iterationShape === 'keys') {
       indexLocalLines.push(`{% set ${jinjaIdent(param)} = loop.index0 %}`)
     } else if (loop.index) {
       indexLocalLines.push(`{% set ${jinjaIdent(loop.index)} = loop.index0 %}`)
@@ -835,7 +839,19 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // Scoped per-call-site marker so sibling `.map()`s under the same parent
     // each get their own reconciliation range.
     lines.push(`{{ bf.comment("loop:${loop.markerId}") | safe }}`)
-    lines.push(`{% for ${jinjaIdent(loopVar)} in ${array} %}`)
+    // `objectIteration` (#2168 object-entries-map): Python `dict` preserves
+    // JS `Object.entries()`'s insertion-order semantics natively, so this
+    // lowers straight to Jinja's own dict-iteration forms — no runtime
+    // helper needed. `.items()` binds `index` (the KEY) alongside `param`;
+    // `.keys()`/`.values()` bind `param` alone.
+    const forHeader = loop.objectIteration === 'entries'
+      ? `{% for ${jinjaIdent(loop.index ?? param)}, ${jinjaIdent(param)} in ${array}.items() %}`
+      : loop.objectIteration === 'keys'
+        ? `{% for ${jinjaIdent(param)} in ${array}.keys() %}`
+        : loop.objectIteration === 'values'
+          ? `{% for ${jinjaIdent(param)} in ${array}.values() %}`
+          : `{% for ${jinjaIdent(loopVar)} in ${array} %}`
+    lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
     // Handle filter().map() pattern by wrapping children in if-condition
