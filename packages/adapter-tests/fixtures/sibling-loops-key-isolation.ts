@@ -39,9 +39,7 @@ export { SiblingLoopsKeyIsolation }
         <li data-key="apple"><!--bf:s0-->apple<!--/--></li>
         <li data-key="plum"><!--bf:s0-->plum<!--/--></li>
       </ul>
-      <ul bf="s3">
-        <li data-key="carrot"><!--bf:s2-->carrot<!--/--></li>
-      </ul>
+      <ul bf="s3"><li data-key="carrot"><!--bf:s2-->carrot<!--/--></li></ul>
     </div>
   `,
 })

@@ -44,13 +44,6 @@ export { NestedLoopTripleDepth }
     ],
   },
   expectedHtml: `
-    <div bf-s="test" bf="s3">
-      <section bf="s2" data-key="t1">
-        <article bf="s1" data-key-1="b1">
-          <span data-key-2="l1"><!--bf:s0-->l1<!--/--></span>
-          <span data-key-2="l2"><!--bf:s0-->l2<!--/--></span>
-        </article>
-      </section>
-    </div>
+    <div bf-s="test" bf="s3"><section bf="s2" data-key="t1"><article bf="s1" data-key-1="b1"><span data-key-2="l1"><!--bf:s0-->l1<!--/--></span><span data-key-2="l2"><!--bf:s0-->l2<!--/--></span></article></section></div>
   `,
 })
