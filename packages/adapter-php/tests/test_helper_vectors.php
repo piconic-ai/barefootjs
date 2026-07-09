@@ -146,6 +146,9 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'floor': return $bf->floor($args[0]);
         case 'ceil': return $bf->ceil($args[0]);
         case 'round': return $bf->round($args[0]);
+        case 'min': return $bf->min($args[0], $args[1]);
+        case 'max': return $bf->max($args[0], $args[1]);
+        case 'abs': return $bf->abs($args[0]);
         case 'to_fixed': return $bf->to_fixed(...$args);
         case 'lower': return $bf->lc($args[0]);
         case 'upper': return $bf->uc($args[0]);

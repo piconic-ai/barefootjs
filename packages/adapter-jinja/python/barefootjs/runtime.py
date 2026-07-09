@@ -819,6 +819,29 @@ class BarefootJS:
         # is -1, not -2). `floor(n + 0.5)` reproduces that for both signs.
         return float(math.floor(n + 0.5))
 
+    def min(self, a: Any, b: Any) -> float:
+        """`Math.min(a, b)` -- two-arg form only (#2168 math-methods).
+        JS returns NaN if either operand is NaN."""
+        x, y = js_number(a), js_number(b)
+        if _is_nan(x):
+            return x
+        if _is_nan(y):
+            return y
+        return x if x < y else y
+
+    def max(self, a: Any, b: Any) -> float:
+        x, y = js_number(a), js_number(b)
+        if _is_nan(x):
+            return x
+        if _is_nan(y):
+            return y
+        return x if x > y else y
+
+    def abs(self, value: Any) -> float:
+        """`Math.abs()` (#2168 math-methods)."""
+        n = js_number(value)
+        return n if _is_nan(n) else abs(n)
+
     # -----------------------------------------------------------------
     # Array / String method helpers (#1448 Tier A)
     # -----------------------------------------------------------------

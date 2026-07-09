@@ -74,6 +74,27 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.round(-1.6), -2)
         self.assertTrue(_is_nan(self.bf.round("not")))
 
+    def test_min_max_abs(self):
+        # `Math.min(a, b)` / `Math.max(a, b)` (two-arg forms only) and
+        # `Math.abs()` (#2168 math-methods). JS returns NaN if EITHER
+        # min/max operand is NaN.
+        self.assertEqual(self.bf.min(3, 7), 3)
+        self.assertEqual(self.bf.min(7, 3), 3)
+        self.assertEqual(self.bf.min(-2, -5), -5)
+        self.assertTrue(_is_nan(self.bf.min("not", 5)))
+        self.assertTrue(_is_nan(self.bf.min(5, "not")))
+
+        self.assertEqual(self.bf.max(3, 7), 7)
+        self.assertEqual(self.bf.max(7, 3), 7)
+        self.assertEqual(self.bf.max(-2, -5), -2)
+        self.assertTrue(_is_nan(self.bf.max("not", 5)))
+        self.assertTrue(_is_nan(self.bf.max(5, "not")))
+
+        self.assertEqual(self.bf.abs(-7.6), 7.6)
+        self.assertEqual(self.bf.abs(7.6), 7.6)
+        self.assertEqual(self.bf.abs(0), 0)
+        self.assertTrue(_is_nan(self.bf.abs("not")))
+
     def test_includes_dispatch(self):
         # `Array.prototype.includes(x)` + `String.prototype.includes(sub)`
         # lower to the same `bf.includes(recv, elem)` shape -- see #1448

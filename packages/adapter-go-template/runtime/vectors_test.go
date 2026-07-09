@@ -63,6 +63,9 @@ var vectorBindings = map[string]func(args []any) any{
 	"floor":  func(args []any) any { return Floor(args[0]) },
 	"ceil":   func(args []any) any { return Ceil(args[0]) },
 	"round":  func(args []any) any { return Round(args[0]) },
+	"min":    func(args []any) any { return Min(args[0], args[1]) },
+	"max":    func(args []any) any { return Max(args[0], args[1]) },
+	"abs":    func(args []any) any { return Abs(args[0]) },
 	"to_fixed": func(args []any) any {
 		if len(args) > 1 {
 			return ToFixed(args[0], args[1].(int))

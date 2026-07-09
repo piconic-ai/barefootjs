@@ -78,6 +78,28 @@ subtest 'floor / ceil / round — Math.* mirrors; propagate NaN' => sub {
     ok is_nan($bf->round('not')), 'round: NaN propagates';
 };
 
+# `Math.min(a, b)` / `Math.max(a, b)` (two-arg forms only) and
+# `Math.abs()` (#2168 math-methods). JS returns NaN if EITHER min/max
+# operand is NaN.
+subtest 'min / max / abs — Math.* mirrors; propagate NaN' => sub {
+    is $bf->min(3, 7),    3, 'min(3, 7) → 3';
+    is $bf->min(7, 3),    3, 'min(7, 3) → 3 (order-independent)';
+    is $bf->min(-2, -5), -5, 'min(-2, -5) → -5';
+    ok is_nan($bf->min('not', 5)), 'min: NaN in first arg propagates';
+    ok is_nan($bf->min(5, 'not')), 'min: NaN in second arg propagates';
+
+    is $bf->max(3, 7),    7, 'max(3, 7) → 7';
+    is $bf->max(7, 3),    7, 'max(7, 3) → 7 (order-independent)';
+    is $bf->max(-2, -5), -2, 'max(-2, -5) → -2';
+    ok is_nan($bf->max('not', 5)), 'max: NaN in first arg propagates';
+    ok is_nan($bf->max(5, 'not')), 'max: NaN in second arg propagates';
+
+    is $bf->abs(-7.6), 7.6, 'abs(-7.6) → 7.6';
+    is $bf->abs(7.6),  7.6, 'abs(7.6) → 7.6 (no-op)';
+    is $bf->abs(0),    0,   'abs(0) → 0';
+    ok is_nan($bf->abs('not')), 'abs: NaN propagates';
+};
+
 # `Array.prototype.includes(x)` + `String.prototype.includes(sub)` lower
 # to the same `$bf->includes($recv, $elem)` shape — see #1448 Tier A.
 # The Perl helper dispatches on `ref()`: ARRAY ref scans elements with

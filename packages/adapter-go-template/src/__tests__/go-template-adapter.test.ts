@@ -2286,7 +2286,7 @@ export function Tagged(props: { className?: string }) {
       // list rather than replace.
       const a = new GoTemplateAdapter()
       const keys = Object.keys(a.templatePrimitives ?? {}).sort()
-      expect(keys).toEqual(['JSON.stringify', 'Math.ceil', 'Math.floor', 'Math.max', 'Math.min', 'Math.round', 'Number', 'String'])
+      expect(keys).toEqual(['JSON.stringify', 'Math.abs', 'Math.ceil', 'Math.floor', 'Math.max', 'Math.min', 'Math.round', 'Number', 'String'])
     })
 
     test('unregistered identifier-path callee is NOT accepted by the registry', () => {

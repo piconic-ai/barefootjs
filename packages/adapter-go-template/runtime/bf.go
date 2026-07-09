@@ -65,6 +65,7 @@ func FuncMap() template.FuncMap {
 		"bf_floor":    Floor,
 		"bf_ceil":     Ceil,
 		"bf_round":    Round,
+		"bf_abs":      Abs,
 		"bf_to_fixed": ToFixed,
 
 		// Array/Slice
@@ -711,9 +712,19 @@ func Div(a, b any) any {
 
 // Min returns the smaller of a and b (two-arg `Math.min`). Like Mul, it keeps
 // an integer result when both operands are int-like so a CSS value such as
-// `bf_min 100 x` stays `100` rather than `100.000000`.
+// `bf_min 100 x` stays `100` rather than `100.000000`. Uses `Number` (not
+// `toFloat64`, which silently zeroes an unrecognized type like a non-numeric
+// string) plus explicit NaN checks, since IEEE-754 `<`/`>` comparisons
+// against NaN are always false and would otherwise let a non-NaN operand
+// win instead of propagating NaN like JS `Math.min`/`Math.max` do.
 func Min(a, b any) any {
-	av, bv := toFloat64(a), toFloat64(b)
+	av, bv := Number(a), Number(b)
+	if math.IsNaN(av) {
+		return av
+	}
+	if math.IsNaN(bv) {
+		return bv
+	}
 	r := av
 	if bv < av {
 		r = bv
@@ -725,9 +736,15 @@ func Min(a, b any) any {
 }
 
 // Max returns the larger of a and b (two-arg `Math.max`), with the same
-// int-preserving rule as Min.
+// int-preserving rule and NaN-propagation as Min.
 func Max(a, b any) any {
-	av, bv := toFloat64(a), toFloat64(b)
+	av, bv := Number(a), Number(b)
+	if math.IsNaN(av) {
+		return av
+	}
+	if math.IsNaN(bv) {
+		return bv
+	}
 	r := av
 	if bv > av {
 		r = bv
@@ -1044,6 +1061,12 @@ func Number(v any) float64 {
 // (`bf_floor` then `bf_string`) line up with JS's number type.
 func Floor(v any) float64 {
 	return math.Floor(Number(v))
+}
+
+// Abs returns the absolute value of v as a float64, mirroring JS
+// `Math.abs`. #2168 math-methods.
+func Abs(v any) float64 {
+	return math.Abs(Number(v))
 }
 
 // ToFixed formats v with exactly `digits` decimal places, mirroring JS

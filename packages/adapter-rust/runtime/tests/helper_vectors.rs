@@ -116,6 +116,9 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
         "floor" => JsValue::Number(num::js_floor(runtime::js_number(&a(0)))),
         "ceil" => JsValue::Number(num::js_ceil(runtime::js_number(&a(0)))),
         "round" => JsValue::Number(num::js_round(runtime::js_number(&a(0)))),
+        "min" => JsValue::Number(num::js_min(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
+        "max" => JsValue::Number(num::js_max(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
+        "abs" => JsValue::Number(num::js_abs(runtime::js_number(&a(0)))),
         "to_fixed" => {
             let digits = if args.len() > 1 { num::to_f64(&a(1)) as i32 } else { 0 };
             JsValue::String(num::to_fixed(runtime::js_number(&a(0)), digits))

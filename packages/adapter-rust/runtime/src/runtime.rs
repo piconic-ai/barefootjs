@@ -1183,6 +1183,9 @@ impl Object for BfInstance {
             "floor" => Ok(MjValue::from(num::js_floor(js_number(a(0))))),
             "ceil" => Ok(MjValue::from(num::js_ceil(js_number(a(0))))),
             "round" => Ok(MjValue::from(num::js_round(js_number(a(0))))),
+            "min" => Ok(MjValue::from(num::js_min(js_number(a(0)), js_number(a(1))))),
+            "max" => Ok(MjValue::from(num::js_max(js_number(a(0)), js_number(a(1))))),
+            "abs" => Ok(MjValue::from(num::js_abs(js_number(a(0))))),
             "to_fixed" => Ok(MjValue::from(num::to_fixed(js_number(a(0)), num::to_f64(a(1)) as i32))),
 
             // -- Array / string method helpers (#1448 Tier A) ------------------

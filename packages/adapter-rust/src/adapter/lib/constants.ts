@@ -26,6 +26,9 @@ export const JINJA_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.floor':     { arity: 1, emit: (args) => `bf.floor(${args[0]})` },
   'Math.ceil':      { arity: 1, emit: (args) => `bf.ceil(${args[0]})` },
   'Math.round':     { arity: 1, emit: (args) => `bf.round(${args[0]})` },
+  'Math.min':       { arity: 2, emit: (args) => `bf.min(${args[0]}, ${args[1]})` },
+  'Math.max':       { arity: 2, emit: (args) => `bf.max(${args[0]}, ${args[1]})` },
+  'Math.abs':       { arity: 1, emit: (args) => `bf.abs(${args[0]})` },
 }
 
 /**

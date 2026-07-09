@@ -1163,7 +1163,7 @@ export function Foo(props: { v: string }) {
     // list rather than replace.
     const a = new MojoAdapter()
     const keys = Object.keys(a.templatePrimitives ?? {}).sort()
-    expect(keys).toEqual(['JSON.stringify', 'Math.ceil', 'Math.floor', 'Math.round', 'Number', 'String'])
+    expect(keys).toEqual(['JSON.stringify', 'Math.abs', 'Math.ceil', 'Math.floor', 'Math.max', 'Math.min', 'Math.round', 'Number', 'String'])
   })
 
   test('unregistered identifier-path callee is NOT accepted', () => {
