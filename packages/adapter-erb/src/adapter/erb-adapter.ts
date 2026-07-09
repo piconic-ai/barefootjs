@@ -1108,10 +1108,46 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
 
   renderComponent(comp: IRComponent): string {
     const propParts: string[] = []
+    // Named JSX-valued props OTHER than the reserved `children`
+    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
+    // their own buffer-slice capture, prepended to the final returned
+    // string below — same mechanism as the reserved children capture,
+    // just keyed by the prop's own name instead of `children`. Unlike the
+    // reserved `children` value (which the child template reads back
+    // through a structural bypass, `isChildrenValueExpr`), a named slot
+    // is read by the child through the GENERIC `bf.h(v[:name])`
+    // text-expression path — there's no name to special-case there, since
+    // any prop name is possible. So the captured HTML is wrapped in
+    // `bf.backend.mark_raw(...)` here (`BarefootJS::SafeString`,
+    // `barefoot_js.rb`) and `Context#h` unwraps it to skip re-escaping —
+    // giving ERB the same "value carries its own safety" bypass Twig's
+    // `Markup` / Kolon's `mark_raw` get from their auto-escaping `{{ }}`.
+    const namedSlotCaptures: string[] = []
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
+      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
+        const prevInLoop = this.inLoop
+        this.inLoop = false
+        const slotBody = this.renderChildren(p.value.children)
+        this.inLoop = prevInLoop
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't
+        // valid in a Ruby local variable name, and `comp.slotId` alone
+        // would collide across two named-slot props on the same component
+        // invocation (unlike the reserved children slot, there's only ever
+        // one of those per invocation).
+        const suffix = `${this.childrenCaptureCounter++}`
+        const lenVar = `__bf_len_${suffix}`
+        const rawVar = `__bf_praw_${suffix}`
+        const capVar = `__bf_prop_${suffix}`
+        namedSlotCaptures.push(
+          `<% ${lenVar} = _erbout.length %>${slotBody}<% ${rawVar} = _erbout.slice!(${lenVar}..); ${capVar} = bf.backend.mark_raw(${rawVar}) %>`,
+        )
+        propParts.push(`${rubySymbolKey(p.name)} ${capVar}`)
+        continue
+      }
       const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
       if (lowered) propParts.push(lowered)
     }
@@ -1151,10 +1187,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       const lenVar = `__bf_len_${suffix}`
       const capVar = `__bf_children_${suffix}`
       const propsHash = `{ ${[...propParts, `children: ${capVar}`].join(', ')} }`
-      return `<% ${lenVar} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(${lenVar}..) %><%= bf.render_child('${tplName}', ${propsHash}) %>`
+      return `${namedSlotCaptures.join('')}<% ${lenVar} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(${lenVar}..) %><%= bf.render_child('${tplName}', ${propsHash}) %>`
     }
     const propsHash = propParts.length > 0 ? `{ ${propParts.join(', ')} }` : '{}'
-    return `<%= bf.render_child('${tplName}', ${propsHash}) %>`
+    return `${namedSlotCaptures.join('')}<%= bf.render_child('${tplName}', ${propsHash}) %>`
   }
 
   private childrenCaptureCounter = 0

@@ -396,6 +396,26 @@ export { A }
   })
 })
 
+describe('XslateAdapter - named-slot capture identifier safety (#2168 jsx-element-prop)', () => {
+  // A JSX-valued prop under a hyphenated name (`data-slot`, a valid JSX
+  // attribute name) must not leak into the Kolon macro's identifier — Kolon
+  // macro names can't contain `-`. The macro name is purely counter-based
+  // (never derived from the prop name); the hash KEY passed to
+  // `render_child` still carries the real name, quoted via `kolonHashKey`.
+  test('a hyphenated prop name does not appear in the macro name', () => {
+    const { template } = compileAndGenerate(`
+function Card(props) { return null }
+export function Parent() {
+  return <Card data-slot={<strong>Title</strong>}>text</Card>
+}
+`)
+    expect(template).toContain('<: macro bf_prop_0 -> ()')
+    expect(template).toContain("'data-slot' => bf_prop_0()")
+    expect(template).not.toContain('data-slot -> ()')
+    expect(template).not.toContain('data-slot_')
+  })
+})
+
 // #2038 nested-callback-predicate loudness is pinned at the shared
 // conformance layer: `filter-nested-callback-predicate` /
 // `filter-nested-find-predicate` (BF101 via `expectedDiagnostics` above) and

@@ -19,6 +19,4 @@ export const renderDivergences: RenderDivergences = {
     '`user?.name ?? …` on an object prop: the Ruby render exits 1 (optional chaining into a Hash prop has no lowering)',
   'object-entries-map':
     '`Object.entries(prop).map(([k, v]) => …)` renders but its loop item keys diverge from the reference serialisation',
-  'jsx-element-prop':
-    'a JSX element passed as a NON-children prop renders an empty slot — the element value is silently dropped',
 }

@@ -303,16 +303,17 @@ sub render_child ($self, $name, @args) {
     # Template languages whose method calls can't splat a hash into positional
     # args (Text::Xslate Kolon, Template Toolkit) pass one hashref instead.
     my %props = (@args == 1 && ref $args[0] eq 'HASH') ? %{ $args[0] } : @args;
-    # JSX children come in via the engine's children-capture mechanism
-    # (Mojo's `begin %>...<% end`, which produces a CODE ref returning a
-    # Mojo::ByteStream). Materialize it through the backend before handing
-    # the props to the child renderer so the child template sees
-    # `$children` as already-rendered HTML. Guard on `exists` so a
-    # childless invocation (`bf->render_child('counter')`) doesn't gain a
-    # spurious `children => undef` key — preserving the historical "only
-    # touch children when present" behaviour.
-    $props{children} = $self->backend->materialize($props{children})
-        if exists $props{children};
+    # JSX children AND any other named JSX-valued slot (`header={<strong/>}`,
+    # #2168 jsx-element-prop) come in via the engine's children-capture
+    # mechanism (Mojo's `begin %>...<% end`, which produces a CODE ref
+    # returning a Mojo::ByteStream). Materialize every prop value through
+    # the backend before handing the props to the child renderer, so the
+    # child template sees each slot as already-rendered HTML rather than a
+    # bare CODE ref — `materialize` is a no-op for a value that isn't a
+    # CODE ref (see e.g. `BarefootJS::Backend::Mojo::materialize`), so this
+    # is safe to apply unconditionally rather than naming `children`
+    # specifically.
+    $props{$_} = $self->backend->materialize($props{$_}) for keys %props;
     # Renderer contract (#1897): the renderer is invoked with TWO
     # arguments — the props hashref and the INVOKING instance. A renderer
     # registered on the root may be called from a nested child render

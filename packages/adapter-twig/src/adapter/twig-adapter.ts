@@ -1021,11 +1021,33 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
     const segments: Segment[] = [{ kind: 'entries', parts: [] }]
     const currentEntries = () => this.componentPropSegmentEntries(segments)
+    // Named JSX-valued props OTHER than the reserved `children`
+    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
+    // their own `{% set %}` capture, prepended to the final returned
+    // string below — same mechanism as the reserved children capture,
+    // just keyed by the prop's own name instead of `children`.
+    const namedSlotSetBlocks: string[] = []
 
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
+      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
+        const prevInLoop = this.inLoop
+        this.inLoop = false
+        const slotBody = this.renderChildren(p.value.children)
+        this.inLoop = prevInLoop
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't a
+        // valid Twig variable name, and `comp.slotId` alone would collide
+        // across two named-slot props on the same component invocation
+        // (unlike the reserved children slot, there's only ever one of
+        // those per invocation).
+        const captureName = `bf_prop_${this.childrenCaptureCounter++}`
+        namedSlotSetBlocks.push(`{% set ${captureName} %}${slotBody}{% endset %}`)
+        currentEntries().push(`${twigHashKey(p.name)}: ${captureName}`)
+        continue
+      }
       if (p.value.kind === 'spread') {
         const trimmed = p.value.expr.trim()
         // SolidJS-style props identifier (`function(props: P)`) has no
@@ -1100,12 +1122,12 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       const captureName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       currentEntries().push(`${twigHashKey('children')}: ${captureName}`)
       const dict = this.combineComponentPropSegments(segments)
-      return `{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | raw }}`
+      return `${namedSlotSetBlocks.join('')}{% set ${captureName} %}${childrenBody}{% endset %}{{ bf.render_child('${tplName}', ${dict}) | raw }}`
     }
 
     const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
     const dictEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `{{ bf.render_child('${tplName}'${dictEntries}) | raw }}`
+    return `${namedSlotSetBlocks.join('')}{{ bf.render_child('${tplName}'${dictEntries}) | raw }}`
   }
 
   private childrenCaptureCounter = 0

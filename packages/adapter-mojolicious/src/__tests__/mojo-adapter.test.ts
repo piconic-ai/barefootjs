@@ -1902,3 +1902,23 @@ export function C() {
     expect(deferred.template).not.toContain('data-x')
   })
 })
+
+describe('MojoAdapter - named-slot capture identifier safety (#2168 jsx-element-prop)', () => {
+  // A JSX-valued prop under a hyphenated name (`data-slot`, a valid JSX
+  // attribute name) must not leak into the `begin %>...<% end` capture
+  // variable — Perl variable tokens can't contain `-`. The capture
+  // variable is purely counter-based (never derived from the prop name);
+  // the hash KEY passed to `render_child` still carries the real name,
+  // quoted via `perlHashKey`.
+  test('a hyphenated prop name does not appear in the capture variable', () => {
+    const { template } = compileAndGenerate(`
+function Card(props) { return null }
+export function Parent() {
+  return <Card data-slot={<strong>Title</strong>}>text</Card>
+}
+`)
+    expect(template).toContain('<% my $bf_prop_0 = begin %>')
+    expect(template).toContain("'data-slot' => $bf_prop_0")
+    expect(template).not.toContain('$bf_prop_data')
+  })
+})

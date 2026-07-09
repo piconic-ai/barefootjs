@@ -945,11 +945,33 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     type Segment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
     const segments: Segment[] = [{ kind: 'entries', parts: [] }]
     const currentEntries = () => this.componentPropSegmentEntries(segments)
+    // Named JSX-valued props OTHER than the reserved `children`
+    // (`header={<strong>Title</strong>}`, #2168 jsx-element-prop) each get
+    // their own macro, prepended to the final returned string below —
+    // same mechanism as the reserved children macro, just keyed by the
+    // prop's own name instead of `children`.
+    const namedSlotMacros: string[] = []
 
     for (const p of comp.props) {
       // Skip callback props (onXxx) and `ref` — both are client-only for
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
+      if (p.value.kind === 'jsx-children' && p.name !== 'children') {
+        const prevInLoop = this.inLoop
+        this.inLoop = false
+        const slotBody = this.renderChildren(p.value.children)
+        this.inLoop = prevInLoop
+        // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
+        // A JSX prop name can contain characters (`data-slot`) that aren't a
+        // valid Kolon macro identifier, and `comp.slotId` alone would
+        // collide across two named-slot props on the same component
+        // invocation (unlike the reserved children slot, there's only ever
+        // one of those per invocation).
+        const macroName = `bf_prop_${this.childrenCaptureCounter++}`
+        namedSlotMacros.push(`<: macro ${macroName} -> () { :>${slotBody}<: } :>`)
+        currentEntries().push(`${kolonHashKey(p.name)} => ${macroName}()`)
+        continue
+      }
       if (p.value.kind === 'spread') {
         const trimmed = p.value.expr.trim()
         // SolidJS-style props identifier (`function(props: P)`) has no
@@ -1009,12 +1031,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       const macroName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       currentEntries().push(`children => ${macroName}()`)
       const dict = this.combineComponentPropSegments(segments)
-      return `<: macro ${macroName} -> () { :>${childrenBody}<: } :><: $bf.render_child('${tplName}', ${dict}) | mark_raw :>`
+      return `${namedSlotMacros.join('')}<: macro ${macroName} -> () { :>${childrenBody}<: } :><: $bf.render_child('${tplName}', ${dict}) | mark_raw :>`
     }
 
     const isEmpty = segments.every(s => s.kind === 'entries' && s.parts.length === 0)
     const hashEntries = isEmpty ? '' : `, ${this.combineComponentPropSegments(segments)}`
-    return `<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
+    return `${namedSlotMacros.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
   }
 
   private childrenCaptureCounter = 0

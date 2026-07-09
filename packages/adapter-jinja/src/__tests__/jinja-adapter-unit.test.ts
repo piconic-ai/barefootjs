@@ -383,6 +383,27 @@ export function C(props: { count: number }) {
   })
 })
 
+describe('JinjaAdapter - named-slot capture identifier safety (#2168 jsx-element-prop)', () => {
+  // A JSX-valued prop under a hyphenated name (`data-slot`, a valid JSX
+  // attribute name) must not leak into the `{% set %}` capture variable's
+  // identifier — Jinja variable names can't contain `-`. The capture
+  // identifier is purely counter-based (never derived from the prop name);
+  // the hash KEY passed to `render_child` still carries the real name,
+  // quoted via `jinjaHashKey`.
+  test('a hyphenated prop name does not appear in the capture variable', () => {
+    const { template } = compileAndGenerate(`
+function Card(props) { return null }
+export function Parent() {
+  return <Card data-slot={<strong>Title</strong>}>text</Card>
+}
+`)
+    expect(template).toContain('{% set bf_prop_0 %}')
+    expect(template).toContain("'data-slot': bf_prop_0")
+    expect(template).not.toContain('data-slot %}')
+    expect(template).not.toContain('data-slot_')
+  })
+})
+
 // #2038 nested-callback-predicate loudness is pinned at the shared
 // conformance layer (workstream C): `filter-nested-callback-predicate` /
 // `filter-nested-find-predicate` (BF101 via `expectedDiagnostics`) and
