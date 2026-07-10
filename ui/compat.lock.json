@@ -2046,12 +2046,6 @@
           ]
         }
       },
-      "nested-loop-triple-depth": {
-        "go-template": {
-          "kind": "render",
-          "reason": "a THIRD level of nested .map() renders every item field EMPTY (key values and text content alike), though the data-key/-1/-2 suffix naming itself is correct — Go loop-scope binding only reaches two levels deep"
-        }
-      },
       "static-array-children": {
         "blade": {
           "kind": "refusal",
