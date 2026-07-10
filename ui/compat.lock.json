@@ -2046,12 +2046,6 @@
           ]
         }
       },
-      "memo-chain": {
-        "go-template": {
-          "kind": "render",
-          "reason": "a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level"
-        }
-      },
       "nested-loop-triple-depth": {
         "go-template": {
           "kind": "render",
