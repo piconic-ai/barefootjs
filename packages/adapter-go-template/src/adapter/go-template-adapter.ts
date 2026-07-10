@@ -1381,6 +1381,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
                 break
               }
             }
+            // A number/boolean JSX-EXPRESSION literal (`count={5}`,
+            // `active={true}`) — as opposed to a plain quoted string attr
+            // (`label="mail"`, which is `case 'literal':` above, an entirely
+            // different `AttrValue` kind) — is still `kind: 'expression'`
+            // here, since curly braces always parse to an expression
+            // container regardless of what's inside them. #2168
+            // child-primitive-props: `resolveDynamicPropValue` below only
+            // recognizes a getter call or a comparison against one; a bare
+            // `5`/`true` matches neither, so the field was silently OMITTED
+            // and the Badge's `Count`/`Active` fields defaulted to Go's zero
+            // value (`0`/`false`) regardless of the actual literal. The
+            // structured `parsed` tree (not a text-regex re-match of
+            // `exprText`) is the reliable signal here — a string literal
+            // would ALSO be `kind: 'literal'` in `parsed`, but re-quoting it
+            // from `.value` (already unescaped) rather than round-tripping
+            // through the raw source text avoids re-parsing quote style.
+            if (parsedValue?.kind === 'literal') {
+              const goVal =
+                parsedValue.literalType === 'string'
+                  ? JSON.stringify(String(parsedValue.value))
+                  : parsedValue.literalType === 'null'
+                    ? 'nil'
+                    : String(parsedValue.value)
+              emitChildField(prop.name, goVal)
+              break
+            }
             const resolvedValue = this.resolveDynamicPropValue(
               exprText,
               ir.metadata.signals,

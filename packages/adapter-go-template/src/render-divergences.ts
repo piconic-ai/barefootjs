@@ -17,8 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'child-primitive-props':
-    'numeric/boolean LITERAL props on a child (`count={5}` `active={true}`) render as Go zero values (0 / false)',
   'memo-chain':
     'a memo derived from another memo renders EMPTY for the second layer — the constructor folds only one derivation level',
   'signal-object-field':

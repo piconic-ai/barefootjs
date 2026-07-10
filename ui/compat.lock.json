@@ -1866,12 +1866,6 @@
           ]
         }
       },
-      "child-primitive-props": {
-        "go-template": {
-          "kind": "render",
-          "reason": "numeric/boolean LITERAL props on a child (`count={5}` `active={true}`) render as Go zero values (0 / false)"
-        }
-      },
       "dangerous-inner-html": {
         "blade": {
           "kind": "refusal",
