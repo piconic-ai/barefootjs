@@ -2434,7 +2434,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // not the prop, and must keep falling through to `null` rather than
     // being misresolved to `in.Label`.
     const propsObjectName = this.state.propsObjectName
-    const identifierPattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    // `$` is a valid JS/TS identifier character (Copilot review, #2198) —
+    // without it, a passthrough like `text={$label}` or `text={props.$label}`
+    // never matches either shape below and silently falls through to `null`.
+    const identifierPattern = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
     const bareIdentifier = identifierPattern.test(expr) ? expr : null
     // Plain prefix/suffix check rather than an `expr`-interpolated `RegExp`:
     // `propsObjectName` is an arbitrary identifier and could itself contain
@@ -2447,9 +2450,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ? expr.slice(propsObjectName.length + 1)
         : null
     const passthroughName = bareIdentifier ?? barePropAccess
+    // A `localConstants` entry sharing this name is a genuine SHADOW only
+    // when it's an independent local — NOT when it's the analyzer's own
+    // body-level destructure alias (`const { label } = props`, expanded to
+    // a `localConstants` entry named `label` valued exactly `props.label`,
+    // #1138/analyzer.ts `collectConstant`). That alias IS the same prop
+    // value, so a bare `label` reference is still a pure passthrough
+    // (Copilot review, #2198 — the earlier blanket "any `localConstants`
+    // match blocks it" check wrongly reintroduced the omitted-field bug for
+    // exactly this common destructured-body pattern). A `?? default`-bearing
+    // alias value does NOT match the exact-string check below, so it's
+    // correctly still treated as a shadow (a fallback-bearing local isn't a
+    // pure passthrough either — same reasoning as the outer `??`/`||` guard
+    // above).
+    const localConst = this.state.localConstants.find(c => c.name === passthroughName)
+    const isPropsDestructureAlias =
+      localConst !== undefined &&
+      propsObjectName !== null &&
+      localConst.value === `${propsObjectName}.${passthroughName}`
     const shadowedByLocal =
       passthroughName !== null &&
-      (this.state.localConstants.some(c => c.name === passthroughName) ||
+      ((localConst !== undefined && !isPropsDestructureAlias) ||
         this.state.localHelperNames.has(passthroughName))
     if (passthroughName && !shadowedByLocal && propsParams.some(p => p.name === passthroughName)) {
       return `in.${capitalizeFieldName(passthroughName)}`
