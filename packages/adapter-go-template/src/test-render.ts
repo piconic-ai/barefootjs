@@ -9,7 +9,7 @@ import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter, ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './build.ts'
-import { capitalizeFieldName } from './adapter/lib/go-naming.ts'
+import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -728,7 +728,11 @@ function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): stri
 function goStructLiteral(obj: Record<string, unknown>, typeName: string): string {
   const fields: string[] = []
   for (const [k, v] of Object.entries(obj)) {
-    const goField = capitalizeFieldName(k)
+    // `goFieldNameForKey`, not the bare `capitalizeFieldName` — a data-driven
+    // key here can be non-identifier-shaped (`'data-x'`), and the real
+    // adapter's own struct-literal baking (`parsed-literal-to-go.ts`)
+    // sanitizes those to `DataX`, not `Data-x` (Copilot review, #2202).
+    const goField = goFieldNameForKey(k)
     if (typeof v === 'string') fields.push(`${goField}: "${v.replace(/"/g, '\\"')}"`)
     else if (typeof v === 'number' || typeof v === 'boolean') fields.push(`${goField}: ${v}`)
     else if (v === null) fields.push(`${goField}: nil`)
@@ -765,14 +769,19 @@ function goMapLiteralFromObject(
 ): string {
   const entries: string[] = []
   for (const [k, v] of Object.entries(obj)) {
-    // `capitalizeFieldName` (not a naive first-letter uppercase) — #2168
-    // nested-loop-triple-depth: a naive capitalize disagrees with the real
-    // adapter's Go-initialism-aware field naming for a key like `id`
-    // (naive → "Id", adapter's generated struct/template field → "ID"),
-    // so the harness baked a literal the template's `{{.ID}}` lookup could
-    // never match — the fixture's rendered fields came back empty at
-    // EVERY nesting depth for this reason, not because of any depth limit.
-    const emittedKey = capitalizeKeys ? capitalizeFieldName(k) : k
+    // `goFieldNameForKey`, not a naive first-letter uppercase and not the
+    // bare `capitalizeFieldName` — #2168 nested-loop-triple-depth: a naive
+    // capitalize disagrees with the real adapter's Go-initialism-aware
+    // field naming for a key like `id` (naive → "Id", adapter's generated
+    // struct/template field → "ID"), so the harness baked a literal the
+    // template's `{{.ID}}` lookup could never match — the fixture's
+    // rendered fields came back empty at EVERY nesting depth for this
+    // reason, not because of any depth limit. `capitalizeFieldName` alone
+    // fixes the initialism case but still mis-bakes a non-identifier key
+    // (`'data-x'` → `"Data-x"`, not the adapter's own `"DataX"` —
+    // Copilot review, #2202); `goFieldNameForKey` is what the real adapter
+    // uses for exactly this key-to-Go-field sanitization.
+    const emittedKey = capitalizeKeys ? goFieldNameForKey(k) : k
     const key = JSON.stringify(emittedKey)
     if (typeof v === 'string') entries.push(`${key}: "${v.replace(/"/g, '\\"')}"`)
     else if (typeof v === 'number') entries.push(`${key}: ${v}`)
