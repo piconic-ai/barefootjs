@@ -366,13 +366,19 @@ export function memoInitialFromParsedBody(
     const operator = body.op
     const operand = String(body.right.value)
 
-    // getter() * N — return the signal's Go initial value times N.
+    // getter() * N — return the signal's (or, #2168 memo-chain, another
+    // memo's) Go initial value times N. `resolveGetterValueAsGo` checks
+    // `signals` first (unchanged behavior for a signal-derived memo like
+    // `doubled = createMemo(() => count() * 2)`), then falls back to
+    // `ctx.state.currentMemos` and recurses — needed for a memo derived from
+    // ANOTHER memo (`label = createMemo(() => doubled() + 1)`), which this
+    // branch previously couldn't recognize at all (a signals-only lookup),
+    // silently folding to the Go zero value instead of "7".
     const depName = getterCallName(body.left)
     if (depName) {
-      const signal = signals.find(s => s.getter === depName)
-      if (signal) {
-        const signalInitial = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars)
-        return `${signalInitial} ${operator} ${operand}`
+      const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
+      if (depInitial !== null) {
+        return `${depInitial} ${operator} ${operand}`
       }
     }
 
@@ -408,12 +414,13 @@ export function memoInitialFromParsedBody(
     }
   }
 
-  // () => getter() — just return the signal's Go initial value.
+  // () => getter() — just return the signal's (or another memo's, #2168
+  // memo-chain) Go initial value.
   const simpleDep = getterCallName(body)
   if (simpleDep) {
-    const signal = signals.find(s => s.getter === simpleDep)
-    if (signal) {
-      return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars)
+    const depInitial = resolveGetterValueAsGo(ctx, simpleDep, signals, propsParams, propFallbackVars, resolving)
+    if (depInitial !== null) {
+      return depInitial
     }
   }
 
