@@ -2058,12 +2058,6 @@
           "reason": "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value"
         }
       },
-      "math-methods": {
-        "go-template": {
-          "kind": "render",
-          "reason": "Math.min/max/abs/floor over a signal render \"0\" for every value — the fractional initial value (-7.6) types the signal field as Go `int` (zero value), not `float64`. `Math.min`/`Math.max`/`Math.abs` ARE now correctly registered/lowered (this is the same root cause as `number-tofixed`, not a registry gap: `typeInfoToGo`'s `kind: 'primitive'` branch hard-codes any TS `number` to Go `int` and never consults the literal value, unlike the `kind: 'unknown'` branch's `inferTypeFromValue` fallback)"
-        }
-      },
       "memo-chain": {
         "go-template": {
           "kind": "render",
@@ -2074,12 +2068,6 @@
         "go-template": {
           "kind": "render",
           "reason": "a THIRD level of nested .map() renders every item field EMPTY (key values and text content alike), though the data-key/-1/-2 suffix naming itself is correct — Go loop-scope binding only reaches two levels deep"
-        }
-      },
-      "number-tofixed": {
-        "go-template": {
-          "kind": "render",
-          "reason": "`.toFixed(2)` on a number PROP: generated Go fails to run (exit 1)"
         }
       },
       "signal-object-field": {

@@ -42,8 +42,12 @@ export function convertInitialValue(
       return value === 'true' ? 'true' : 'false'
     }
     if (typeInfo.primitive === 'number') {
-      if (/^\d+$/.test(value)) return value
-      if (/^\d+\.\d+$/.test(value)) return value
+      // Leading `-` (#2168 math-methods: `createSignal(-7.6)`) — without it,
+      // a negative initial value never matches either literal shape below
+      // and silently falls to the `0` zero-value fallback, regardless of the
+      // field's Go type.
+      if (/^-?\d+$/.test(value)) return value
+      if (/^-?\d+\.\d+$/.test(value)) return value
       return '0'
     }
     if (typeInfo.primitive === 'string') {
