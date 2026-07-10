@@ -377,7 +377,15 @@ export function memoInitialFromParsedBody(
     const depName = getterCallName(body.left)
     if (depName) {
       const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
-      if (depInitial !== null) {
+      // `resolveGetterValueAsGo` can return an IIFE (`func() string { ... }()`
+      // / `func() interface{} { ... }()`, e.g. a memo that shadows `props.X
+      // ?? <lit>`, #2075) rather than a plain atom — none of those return
+      // types support Go's `<op>` arithmetic operators, so splicing one in
+      // bare would emit invalid Go (Copilot review, #2200: e.g. `operator
+      // is not defined on interface{}`/`string`). Bail (fall through to the
+      // caller's zero-value default) rather than emit broken arithmetic.
+      const isArithmeticSafe = depInitial !== null && !depInitial.startsWith('func(')
+      if (isArithmeticSafe) {
         // A signal's own initial value is always a simple atom (a literal,
         // `in.Field`, a hoisted var) — never needs grouping. A MEMO's initial
         // value can itself be a compound expression from this exact branch
