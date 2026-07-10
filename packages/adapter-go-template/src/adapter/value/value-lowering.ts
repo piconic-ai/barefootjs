@@ -86,6 +86,14 @@ export function convertInitialValue(
     if (ctx.state.localStructFields.has(typeInfo.raw)) {
       const baked = jsLiteralToGo(ctx, typeInfo, preParsed)
       if (baked !== null) return baked
+      // Baking failed (a non-literal initial value, or no `preParsed` tree)
+      // — `nil` is STILL invalid Go for this non-pointer struct field, so
+      // the same compile error would resurface for any such case (Copilot
+      // review, #2201). The struct's own zero value (`User{}`) is the
+      // correct fallback here — mirrors this function's own docstring
+      // ("falls back to the type's zero value") for every other typed
+      // branch above.
+      return `${typeInfo.raw}{}`
     }
   }
 
