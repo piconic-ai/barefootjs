@@ -366,13 +366,40 @@ export function memoInitialFromParsedBody(
     const operator = body.op
     const operand = String(body.right.value)
 
-    // getter() * N — return the signal's Go initial value times N.
+    // getter() * N — return the signal's (or, #2168 memo-chain, another
+    // memo's) Go initial value times N. `resolveGetterValueAsGo` checks
+    // `signals` first (unchanged behavior for a signal-derived memo like
+    // `doubled = createMemo(() => count() * 2)`), then falls back to
+    // `ctx.state.currentMemos` and recurses — needed for a memo derived from
+    // ANOTHER memo (`label = createMemo(() => doubled() + 1)`), which this
+    // branch previously couldn't recognize at all (a signals-only lookup),
+    // silently folding to the Go zero value instead of "7".
     const depName = getterCallName(body.left)
     if (depName) {
-      const signal = signals.find(s => s.getter === depName)
-      if (signal) {
-        const signalInitial = getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars)
-        return `${signalInitial} ${operator} ${operand}`
+      const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
+      // `resolveGetterValueAsGo` can return an IIFE (`func() string { ... }()`
+      // / `func() interface{} { ... }()`, e.g. a memo that shadows `props.X
+      // ?? <lit>`, #2075) rather than a plain atom — none of those return
+      // types support Go's `<op>` arithmetic operators, so splicing one in
+      // bare would emit invalid Go (Copilot review, #2200: e.g. `operator
+      // is not defined on interface{}`/`string`). Bail (fall through to the
+      // caller's zero-value default) rather than emit broken arithmetic.
+      const isArithmeticSafe = depInitial !== null && !depInitial.startsWith('func(')
+      if (isArithmeticSafe) {
+        // A signal's own initial value is always a simple atom (a literal,
+        // `in.Field`, a hoisted var) — never needs grouping. A MEMO's initial
+        // value can itself be a compound expression from this exact branch
+        // one level up (`"3 * 2"`), and splicing that in bare under a
+        // DIFFERENT outer operator can silently invert precedence (a memo
+        // chain shaped `inner = () => count() + 1` then `outer = () =>
+        // inner() * 2` would fold to `3 + 1 * 2` = 5 in Go, vs JS's `(3+1)*2`
+        // = 8). Parenthesize whenever `depInitial` is compound (contains
+        // whitespace — a simple atom never does) so precedence is
+        // preserved regardless of which operator combination a memo chain
+        // uses. A simple atom is left bare so existing exact-text
+        // expectations (`Doubled: 3 * 2,`) don't gain a no-op paren.
+        const wrapped = /\s/.test(depInitial) ? `(${depInitial})` : depInitial
+        return `${wrapped} ${operator} ${operand}`
       }
     }
 
@@ -408,12 +435,13 @@ export function memoInitialFromParsedBody(
     }
   }
 
-  // () => getter() — just return the signal's Go initial value.
+  // () => getter() — just return the signal's (or another memo's, #2168
+  // memo-chain) Go initial value.
   const simpleDep = getterCallName(body)
   if (simpleDep) {
-    const signal = signals.find(s => s.getter === simpleDep)
-    if (signal) {
-      return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars)
+    const depInitial = resolveGetterValueAsGo(ctx, simpleDep, signals, propsParams, propFallbackVars, resolving)
+    if (depInitial !== null) {
+      return depInitial
     }
   }
 
