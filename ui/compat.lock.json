@@ -2252,12 +2252,6 @@
           ]
         }
       },
-      "string-concat-plus": {
-        "go-template": {
-          "kind": "render",
-          "reason": "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition"
-        }
-      },
       "todo-app": {
         "blade": {
           "kind": "refusal",

@@ -66,6 +66,7 @@ import {
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
+  isStringConcatBinary,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -126,6 +127,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames } from "./props/prop-types.ts"
+import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -340,6 +342,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.primeCompileState(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
+    this.state.stringValueNames = collectStringValueNames(ir)
 
     // Surface loop-body usages of sibling-imported components (see
     // `checkImportedLoopChildComponents`). The barefoot CLI compiles a
@@ -3218,6 +3221,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case '<=':
         return `le ${wl} ${wr}`
       case '+':
+        // JS `+` with a string-typed operand is CONCATENATION, not addition
+        // — Go's `bf_add` coerces both sides through `toFloat64` (#2168
+        // string-concat-plus: `'Hello, ' + name` rendered "0", since a
+        // string operand's `toFloat64` is 0). `html/template` has no infix
+        // `+` at all, so both directions are a runtime call; route through
+        // `bf_concat_str` when either operand is string-typed.
+        if (isStringConcatBinary(op, left, right, n => this._isStringValueName(n))) {
+          return `bf_concat_str ${wl} ${wr}`
+        }
         return `bf_add ${wl} ${wr}`
       case '-':
         return `bf_sub ${wl} ${wr}`
@@ -3230,6 +3242,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       default:
         return `${l} ${op} ${r}`
     }
+  }
+
+  /** Whether `name` (a signal getter or prop) holds a string value — drives
+   *  `isStringConcatBinary`'s string-vs-numeric `+` decision (#2168
+   *  string-concat-plus). */
+  private _isStringValueName(name: string): boolean {
+    return this.state.stringValueNames.has(name)
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
@@ -4142,6 +4161,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '<=':
             return `le ${left} ${right}`
           case '+':
+            // See `binary()`'s `case '+'` above — same string-vs-numeric `+`
+            // decision, applied to a filter predicate's own `left`/`right`
+            // ParsedExpr (not `emit`'s rendered strings, so it can inspect
+            // their structure).
+            if (isStringConcatBinary(expr.op, expr.left, expr.right, n => this._isStringValueName(n))) {
+              return `bf_concat_str ${left} ${right}`
+            }
             return `bf_add ${left} ${right}`
           case '-':
             return `bf_sub ${left} ${right}`
@@ -4706,7 +4732,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '<=':
             result = `le ${left} ${right}`; break
           case '+':
-            result = `bf_add ${left} ${right}`; break
+            // See `binary()`'s `case '+'` above — same string-vs-numeric `+`
+            // decision, applied to this condition's own `left`/`right`
+            // ParsedExpr (not the rendered `left`/`right` strings, so it can
+            // inspect their structure).
+            if (isStringConcatBinary(expr.op, expr.left, expr.right, n => this._isStringValueName(n))) {
+              result = `bf_concat_str ${left} ${right}`
+            } else {
+              result = `bf_add ${left} ${right}`
+            }
+            break
           case '-':
             result = `bf_sub ${left} ${right}`; break
           case '*':
