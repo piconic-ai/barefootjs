@@ -17,8 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'signal-object-field':
-    'object-valued signal (`user().name`): generated Go fails to run (exit 1) — no struct synthesis outside loops',
   'nested-loop-triple-depth':
     'a THIRD level of nested .map() renders every item field EMPTY (key values and text content alike), though the data-key/-1/-2 suffix naming itself is correct — Go loop-scope binding only reaches two levels deep',
 }
