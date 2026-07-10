@@ -2427,13 +2427,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // /`||` suffix — qualifies; a fallback-bearing expression isn't a pure
     // passthrough and must keep falling through to `null` rather than
     // silently dropping the fallback.
+    //
+    // Guarded against a LOCAL const/helper shadowing a propsParam's name
+    // (`const label = compute(); ... text={label}` inside a component whose
+    // OWN prop is also called `label`) — that bare `label` means the local,
+    // not the prop, and must keep falling through to `null` rather than
+    // being misresolved to `in.Label`.
     const propsObjectName = this.state.propsObjectName
-    const bareIdentifier = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(expr) ? expr : null
-    const barePropAccess = propsObjectName
-      ? new RegExp(`^${propsObjectName}\\.([a-zA-Z_][a-zA-Z0-9_]*)$`).exec(expr)?.[1] ?? null
-      : null
+    const identifierPattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    const bareIdentifier = identifierPattern.test(expr) ? expr : null
+    // Plain prefix/suffix check rather than an `expr`-interpolated `RegExp`:
+    // `propsObjectName` is an arbitrary identifier and could itself contain
+    // regex metacharacters (e.g. `$props`), which would silently build a
+    // malformed pattern instead of erroring.
+    const barePropAccess =
+      propsObjectName &&
+      expr.startsWith(`${propsObjectName}.`) &&
+      identifierPattern.test(expr.slice(propsObjectName.length + 1))
+        ? expr.slice(propsObjectName.length + 1)
+        : null
     const passthroughName = bareIdentifier ?? barePropAccess
-    if (passthroughName && propsParams.some(p => p.name === passthroughName)) {
+    const shadowedByLocal =
+      passthroughName !== null &&
+      (this.state.localConstants.some(c => c.name === passthroughName) ||
+        this.state.localHelperNames.has(passthroughName))
+    if (passthroughName && !shadowedByLocal && propsParams.some(p => p.name === passthroughName)) {
       return `in.${capitalizeFieldName(passthroughName)}`
     }
 
