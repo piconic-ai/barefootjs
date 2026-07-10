@@ -2416,6 +2416,66 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // A bare passthrough of the CALLER's own prop — `text={props.label}`
+    // forwarding into a nested child-component invocation (or the
+    // destructured form, `text={label}`) — #2168 grandchild-composition: a
+    // prop re-forwarded through a second component layer matched neither
+    // pattern above (not a getter call, not a literal — that's `case
+    // 'literal'` above this function entirely) and fell through to `null`,
+    // silently OMITTING the field so Go's zero value applied instead of the
+    // threaded value. Only an EXACT `props.<name>` / bare `<name>` — no `??`
+    // /`||` suffix — qualifies; a fallback-bearing expression isn't a pure
+    // passthrough and must keep falling through to `null` rather than
+    // silently dropping the fallback.
+    //
+    // Guarded against a LOCAL const/helper shadowing a propsParam's name
+    // (`const label = compute(); ... text={label}` inside a component whose
+    // OWN prop is also called `label`) — that bare `label` means the local,
+    // not the prop, and must keep falling through to `null` rather than
+    // being misresolved to `in.Label`.
+    const propsObjectName = this.state.propsObjectName
+    // `$` is a valid JS/TS identifier character (Copilot review, #2198) —
+    // without it, a passthrough like `text={$label}` or `text={props.$label}`
+    // never matches either shape below and silently falls through to `null`.
+    const identifierPattern = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
+    const bareIdentifier = identifierPattern.test(expr) ? expr : null
+    // Plain prefix/suffix check rather than an `expr`-interpolated `RegExp`:
+    // `propsObjectName` is an arbitrary identifier and could itself contain
+    // regex metacharacters (e.g. `$props`), which would silently build a
+    // malformed pattern instead of erroring.
+    const barePropAccess =
+      propsObjectName &&
+      expr.startsWith(`${propsObjectName}.`) &&
+      identifierPattern.test(expr.slice(propsObjectName.length + 1))
+        ? expr.slice(propsObjectName.length + 1)
+        : null
+    const passthroughName = bareIdentifier ?? barePropAccess
+    // A `localConstants` entry sharing this name is a genuine SHADOW only
+    // when it's an independent local — NOT when it's the analyzer's own
+    // body-level destructure alias (`const { label } = props`, expanded to
+    // a `localConstants` entry named `label` valued exactly `props.label`,
+    // #1138/analyzer.ts `collectConstant`). That alias IS the same prop
+    // value, so a bare `label` reference is still a pure passthrough
+    // (Copilot review, #2198 — the earlier blanket "any `localConstants`
+    // match blocks it" check wrongly reintroduced the omitted-field bug for
+    // exactly this common destructured-body pattern). A `?? default`-bearing
+    // alias value does NOT match the exact-string check below, so it's
+    // correctly still treated as a shadow (a fallback-bearing local isn't a
+    // pure passthrough either — same reasoning as the outer `??`/`||` guard
+    // above).
+    const localConst = this.state.localConstants.find(c => c.name === passthroughName)
+    const isPropsDestructureAlias =
+      localConst !== undefined &&
+      propsObjectName !== null &&
+      localConst.value === `${propsObjectName}.${passthroughName}`
+    const shadowedByLocal =
+      passthroughName !== null &&
+      ((localConst !== undefined && !isPropsDestructureAlias) ||
+        this.state.localHelperNames.has(passthroughName))
+    if (passthroughName && !shadowedByLocal && propsParams.some(p => p.name === passthroughName)) {
+      return `in.${capitalizeFieldName(passthroughName)}`
+    }
+
     return null
   }
 
