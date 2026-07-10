@@ -74,6 +74,27 @@ export function convertInitialValue(
       }
       return '""'
     }
+    // A struct-backed `interface` kind (an explicitly-typed object signal,
+    // `createSignal<User>({...})`) — #2168 signal-object-field. Mirrors the
+    // `array` branch above: `jsLiteralToGo` → `parsedLiteralToGo`'s
+    // object-literal case already bakes an object literal against a named
+    // local struct correctly (proven by the existing typed-array-of-objects
+    // test); it just wasn't reachable from a SCALAR struct signal, which
+    // fell straight through to `nil` — a compile error for a non-pointer
+    // struct field (`cannot use nil as User value in struct literal`), not
+    // merely a silently-dropped initial value.
+    if (ctx.state.localStructFields.has(typeInfo.raw)) {
+      const baked = jsLiteralToGo(ctx, typeInfo, preParsed)
+      if (baked !== null) return baked
+      // Baking failed (a non-literal initial value, or no `preParsed` tree)
+      // — `nil` is STILL invalid Go for this non-pointer struct field, so
+      // the same compile error would resurface for any such case (Copilot
+      // review, #2201). The struct's own zero value (`User{}`) is the
+      // correct fallback here — mirrors this function's own docstring
+      // ("falls back to the type's zero value") for every other typed
+      // branch above.
+      return `${typeInfo.raw}{}`
+    }
   }
 
   return 'nil'
