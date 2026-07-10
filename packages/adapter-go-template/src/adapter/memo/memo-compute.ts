@@ -378,7 +378,20 @@ export function memoInitialFromParsedBody(
     if (depName) {
       const depInitial = resolveGetterValueAsGo(ctx, depName, signals, propsParams, propFallbackVars, resolving)
       if (depInitial !== null) {
-        return `${depInitial} ${operator} ${operand}`
+        // A signal's own initial value is always a simple atom (a literal,
+        // `in.Field`, a hoisted var) — never needs grouping. A MEMO's initial
+        // value can itself be a compound expression from this exact branch
+        // one level up (`"3 * 2"`), and splicing that in bare under a
+        // DIFFERENT outer operator can silently invert precedence (a memo
+        // chain shaped `inner = () => count() + 1` then `outer = () =>
+        // inner() * 2` would fold to `3 + 1 * 2` = 5 in Go, vs JS's `(3+1)*2`
+        // = 8). Parenthesize whenever `depInitial` is compound (contains
+        // whitespace — a simple atom never does) so precedence is
+        // preserved regardless of which operator combination a memo chain
+        // uses. A simple atom is left bare so existing exact-text
+        // expectations (`Doubled: 3 * 2,`) don't gain a no-op paren.
+        const wrapped = /\s/.test(depInitial) ? `(${depInitial})` : depInitial
+        return `${wrapped} ${operator} ${operand}`
       }
     }
 
