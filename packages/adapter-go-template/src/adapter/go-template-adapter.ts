@@ -2416,6 +2416,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // A bare passthrough of the CALLER's own prop — `text={props.label}`
+    // forwarding into a nested child-component invocation (or the
+    // destructured form, `text={label}`) — #2168 grandchild-composition: a
+    // prop re-forwarded through a second component layer matched neither
+    // pattern above (not a getter call, not a literal — that's `case
+    // 'literal'` above this function entirely) and fell through to `null`,
+    // silently OMITTING the field so Go's zero value applied instead of the
+    // threaded value. Only an EXACT `props.<name>` / bare `<name>` — no `??`
+    // /`||` suffix — qualifies; a fallback-bearing expression isn't a pure
+    // passthrough and must keep falling through to `null` rather than
+    // silently dropping the fallback.
+    const propsObjectName = this.state.propsObjectName
+    const bareIdentifier = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(expr) ? expr : null
+    const barePropAccess = propsObjectName
+      ? new RegExp(`^${propsObjectName}\\.([a-zA-Z_][a-zA-Z0-9_]*)$`).exec(expr)?.[1] ?? null
+      : null
+    const passthroughName = bareIdentifier ?? barePropAccess
+    if (passthroughName && propsParams.some(p => p.name === passthroughName)) {
+      return `in.${capitalizeFieldName(passthroughName)}`
+    }
+
     return null
   }
 

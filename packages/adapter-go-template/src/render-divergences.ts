@@ -17,8 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'grandchild-composition':
-    "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value",
   'child-primitive-props':
     'numeric/boolean LITERAL props on a child (`count={5}` `active={true}`) render as Go zero values (0 / false)',
   'memo-chain':

@@ -2052,12 +2052,6 @@
           ]
         }
       },
-      "grandchild-composition": {
-        "go-template": {
-          "kind": "render",
-          "reason": "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value"
-        }
-      },
       "memo-chain": {
         "go-template": {
           "kind": "render",
