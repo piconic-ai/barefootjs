@@ -4184,14 +4184,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '<=':
             return `le ${left} ${right}`
           case '+':
-            // See `binary()`'s `case '+'` above — same string-vs-numeric `+`
-            // decision, applied to a filter predicate's own `left`/`right`
-            // ParsedExpr (not `emit`'s rendered strings, so it can inspect
-            // their structure).
-            if (isStringConcatBinary(expr.op, expr.left, expr.right, n => this._isStringValueName(n))) {
-              return `bf_concat_str ${left} ${right}`
-            }
-            return `bf_add ${left} ${right}`
+            return this._emitPlus(expr.left, expr.right, left, right)
           case '-':
             return `bf_sub ${left} ${right}`
           case '*':
@@ -4755,16 +4748,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '<=':
             result = `le ${left} ${right}`; break
           case '+':
-            // See `binary()`'s `case '+'` above — same string-vs-numeric `+`
-            // decision, applied to this condition's own `left`/`right`
-            // ParsedExpr (not the rendered `left`/`right` strings, so it can
-            // inspect their structure).
-            if (isStringConcatBinary(expr.op, expr.left, expr.right, n => this._isStringValueName(n))) {
-              result = `bf_concat_str ${left} ${right}`
-            } else {
-              result = `bf_add ${left} ${right}`
-            }
-            break
+            result = this._emitPlus(expr.left, expr.right, left, right); break
           case '-':
             result = `bf_sub ${left} ${right}`; break
           case '*':
