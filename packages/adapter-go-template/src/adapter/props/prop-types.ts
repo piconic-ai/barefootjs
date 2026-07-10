@@ -64,6 +64,19 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
  * values). Deliberately narrow — `.toFixed()` is the one number-shape usage
  * that needs this rescue (see `buildPropTypeOverrides` above); it isn't a
  * general "infer number-ness from usage" walker.
+ *
+ * KNOWN LIMITATION: only a DIRECT identifier receiver in the JSX tree is
+ * caught (`{price.toFixed(2)}`). A bare `number` prop with no default is
+ * still silently typed `int` — and hits the exact same `go run` compile
+ * failure (#2168 number-tofixed) on a fractional runtime value — if the
+ * fraction only surfaces indirectly (`.toFixed()` inside a signal's
+ * initial value or a memo's computation, reached via `ir.metadata` rather
+ * than `ir.root`) or via any OTHER fraction-producing operation on the
+ * same bare prop (division, `Math.round`/`Math.floor`, etc. — none of
+ * which carry the same unambiguous "this must be a real JS number" signal
+ * `.toFixed()` does). Widening this walker to those cases is a real,
+ * currently-unaddressed gap, not a hypothetical one — flag it rather than
+ * treating a future occurrence as a fresh regression.
  */
 function collectToFixedPropNames(root: IRNode): Set<string> {
   const names = new Set<string>()
