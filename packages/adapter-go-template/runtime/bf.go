@@ -26,14 +26,15 @@ import (
 func FuncMap() template.FuncMap {
 	return template.FuncMap{
 		// Arithmetic
-		"bf_add": Add,
-		"bf_sub": Sub,
-		"bf_mul": Mul,
-		"bf_div": Div,
-		"bf_mod": Mod,
-		"bf_neg": Neg,
-		"bf_min": Min,
-		"bf_max": Max,
+		"bf_add":        Add,
+		"bf_concat_str": ConcatStr,
+		"bf_sub":        Sub,
+		"bf_mul":        Mul,
+		"bf_div":        Div,
+		"bf_mod":        Mod,
+		"bf_neg":        Neg,
+		"bf_min":        Min,
+		"bf_max":        Max,
 
 		// String
 		"bf_lower":       Lower,
@@ -678,6 +679,16 @@ func Add(a, b any) any {
 		return int(result)
 	}
 	return result
+}
+
+// ConcatStr returns a and b concatenated as strings — the string-typed half
+// of JS `+` (#2168 string-concat-plus). JS `+` is addition when BOTH
+// operands are numeric and concatenation when EITHER is a string; `Add`
+// (above) covers the numeric case, this covers the string one — `Add`
+// itself can't (`toFloat64` returns 0 for a string operand, so `'Hello, ' +
+// name` silently rendered "0" before this existed).
+func ConcatStr(a, b any) string {
+	return toString(a) + toString(b)
 }
 
 // Sub returns a - b. Supports int and float64.

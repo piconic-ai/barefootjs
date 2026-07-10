@@ -17,8 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  'string-concat-plus':
-    "`'Hello, ' + name` renders \"0\" — JS string-concat `+` lowered through numeric addition",
   'grandchild-composition':
     "three-level composition: the grandchild's threaded prop renders EMPTY — prop forwarding through two template-render layers loses the value",
   'child-primitive-props':

@@ -66,6 +66,7 @@ import {
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
+  isStringConcatBinary,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -126,6 +127,7 @@ import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames } from "./props/prop-types.ts"
+import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -340,6 +342,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.primeCompileState(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
+    this.state.stringValueNames = collectStringValueNames(ir)
 
     // Surface loop-body usages of sibling-imported components (see
     // `checkImportedLoopChildComponents`). The barefoot CLI compiles a
@@ -3218,7 +3221,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case '<=':
         return `le ${wl} ${wr}`
       case '+':
-        return `bf_add ${wl} ${wr}`
+        return this._emitPlus(left, right, wl, wr)
       case '-':
         return `bf_sub ${wl} ${wr}`
       case '*':
@@ -3230,6 +3233,45 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       default:
         return `${l} ${op} ${r}`
     }
+  }
+
+  /**
+   * JS `+` with a string-typed operand is CONCATENATION, not addition — Go's
+   * `bf_add` coerces both sides through `toFloat64` (#2168
+   * string-concat-plus: `'Hello, ' + name` rendered "0", since a string
+   * operand's `toFloat64` is 0). `html/template` has no infix `+` at all, so
+   * both directions are a runtime call; route through `bf_concat_str` when
+   * either operand is string-typed.
+   *
+   * Shared by all THREE `case '+':` sites in this file (`binary()` here, the
+   * filter-predicate emitter's own `binary` case, and the condition-
+   * expression emitter's own `binary` case) — each recurses over its own
+   * `ParsedExpr` tree with its own rendered-operand strings, but the
+   * string-vs-numeric decision itself must stay identical everywhere so the
+   * three never drift out of sync (a Copilot review comment on #2197 flagged
+   * exactly this risk when they were three independent inline checks).
+   * Callers pass their own `leftExpr`/`rightExpr` (the raw `ParsedExpr` nodes
+   * `isStringConcatBinary` inspects) and `leftRendered`/`rightRendered` (the
+   * already-emitted, already-wrapped/parenthesised operand text for THIS
+   * call site's Go form).
+   */
+  private _emitPlus(
+    leftExpr: ParsedExpr,
+    rightExpr: ParsedExpr,
+    leftRendered: string,
+    rightRendered: string,
+  ): string {
+    if (isStringConcatBinary('+', leftExpr, rightExpr, n => this._isStringValueName(n))) {
+      return `bf_concat_str ${leftRendered} ${rightRendered}`
+    }
+    return `bf_add ${leftRendered} ${rightRendered}`
+  }
+
+  /** Whether `name` (a signal getter or prop) holds a string value — drives
+   *  `isStringConcatBinary`'s string-vs-numeric `+` decision (#2168
+   *  string-concat-plus). */
+  private _isStringValueName(name: string): boolean {
+    return this.state.stringValueNames.has(name)
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
@@ -4142,7 +4184,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '<=':
             return `le ${left} ${right}`
           case '+':
-            return `bf_add ${left} ${right}`
+            return this._emitPlus(expr.left, expr.right, left, right)
           case '-':
             return `bf_sub ${left} ${right}`
           case '*':
@@ -4706,7 +4748,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           case '<=':
             result = `le ${left} ${right}`; break
           case '+':
-            result = `bf_add ${left} ${right}`; break
+            result = this._emitPlus(expr.left, expr.right, left, right); break
           case '-':
             result = `bf_sub ${left} ${right}`; break
           case '*':

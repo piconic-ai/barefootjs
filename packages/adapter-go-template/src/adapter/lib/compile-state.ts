@@ -137,6 +137,14 @@ export class CompileState {
    */
   nillablePropNames: Set<string> = new Set()
 
+  /**
+   * String-typed signal getter / prop names (#2168 string-concat-plus).
+   * Feeds `isStringName` for `isStringConcatBinary`, which decides whether a
+   * JS `+` operand chain is string concatenation rather than numeric
+   * addition — see `collectStringValueNames` (`props/prop-classes.ts`).
+   */
+  stringValueNames: Set<string> = new Set()
+
   /** Component root scope element(s) — each carries `data-key` for a keyed loop
    *  item. */
   rootScopeNodes: Set<IRNode> = new Set()
