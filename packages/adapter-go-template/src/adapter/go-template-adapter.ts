@@ -1381,6 +1381,35 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
                 break
               }
             }
+            // A number/boolean JSX-EXPRESSION literal (`count={5}`,
+            // `active={true}`) — as opposed to a plain quoted string attr
+            // (`label="mail"`, which is `case 'literal':` above, an entirely
+            // different `AttrValue` kind) — is still `kind: 'expression'`
+            // here, since curly braces always parse to an expression
+            // container regardless of what's inside them. #2168
+            // child-primitive-props: `resolveDynamicPropValue` below only
+            // recognizes a getter call or a comparison against one; a bare
+            // `5`/`true` matches neither, so the field was silently OMITTED
+            // and the Badge's `Count`/`Active` fields defaulted to Go's zero
+            // value (`0`/`false`) regardless of the actual literal.
+            //
+            // Route through `parsedLiteralToGo` rather than hand-rolling a
+            // switch on `.value`/`.literalType`: a numeric literal needs its
+            // exact source `raw` token (Copilot review — `String(value)` can
+            // change spelling/precision, e.g. a large integer or `-0`), and
+            // `parsedLiteralToGo` also covers the LEADING-UNARY-MINUS shape
+            // (`count={-5}` parses as `kind: 'unary'` wrapping the literal,
+            // not `kind: 'literal'` itself — a case this branch's earlier
+            // `parsedValue?.kind === 'literal'` gate missed entirely and
+            // would have silently reintroduced the same omitted-field bug
+            // for a negative numeric literal).
+            if (parsedValue) {
+              const goVal = parsedLiteralToGo(this.emitCtx, parsedValue)
+              if (goVal !== null) {
+                emitChildField(prop.name, goVal)
+                break
+              }
+            }
             const resolvedValue = this.resolveDynamicPropValue(
               exprText,
               ir.metadata.signals,
