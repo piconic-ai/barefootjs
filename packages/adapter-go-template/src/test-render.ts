@@ -572,9 +572,7 @@ function buildGoPropsInit(
   // in struct literal of type InputInput`. (#1467 Phase 2b)
   const declaredParams = new Set((ir?.metadata.propsParams ?? []).map(p => p.name))
   const restPropsName = ir?.metadata.restPropsName ?? null
-  const restBagField = restPropsName
-    ? restPropsName.charAt(0).toUpperCase() + restPropsName.slice(1)
-    : null
+  const restBagField = restPropsName ? capitalizeFieldName(restPropsName) : null
 
   const lines: string[] = []
   const restBagEntries: Array<[string, unknown]> = []
@@ -594,8 +592,9 @@ function buildGoPropsInit(
       restBagEntries.push([key, value])
       continue
     }
-    // Capitalize first letter for Go field name
-    const goField = key.charAt(0).toUpperCase() + key.slice(1)
+    // Same Go-initialism-aware capitalizer as the real adapter (`id` → `ID`,
+    // not the naive `Id`) — see `goMapLiteralFromObject`'s identical fix.
+    const goField = capitalizeFieldName(key)
     if (typeof value === 'string') {
       lines.push(`\t\t${goField}: "${value}",`)
     } else if (typeof value === 'number') {
@@ -766,7 +765,14 @@ function goMapLiteralFromObject(
 ): string {
   const entries: string[] = []
   for (const [k, v] of Object.entries(obj)) {
-    const emittedKey = capitalizeKeys ? k.charAt(0).toUpperCase() + k.slice(1) : k
+    // `capitalizeFieldName` (not a naive first-letter uppercase) — #2168
+    // nested-loop-triple-depth: a naive capitalize disagrees with the real
+    // adapter's Go-initialism-aware field naming for a key like `id`
+    // (naive → "Id", adapter's generated struct/template field → "ID"),
+    // so the harness baked a literal the template's `{{.ID}}` lookup could
+    // never match — the fixture's rendered fields came back empty at
+    // EVERY nesting depth for this reason, not because of any depth limit.
+    const emittedKey = capitalizeKeys ? capitalizeFieldName(k) : k
     const key = JSON.stringify(emittedKey)
     if (typeof v === 'string') entries.push(`${key}: "${v.replace(/"/g, '\\"')}"`)
     else if (typeof v === 'number') entries.push(`${key}: ${v}`)
