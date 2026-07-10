@@ -28,12 +28,14 @@ type probeFile struct {
 // decodeNum preserves the int/float distinction the evaluator's env and expect
 // carry (JSON integers stay integers), mirroring the committed harness's
 // decodeVectorValue.
-func decode(raw json.RawMessage) any {
+func decode(raw json.RawMessage) (any, error) {
 	dec := json.NewDecoder(strings.NewReader(string(raw)))
 	dec.UseNumber()
 	var v any
-	dec.Decode(&v)
-	return normalize(v)
+	if err := dec.Decode(&v); err != nil {
+		return nil, err
+	}
+	return normalize(v), nil
 }
 
 func normalize(v any) any {
@@ -152,11 +154,32 @@ func main() {
 	n := 0
 	for _, c := range doc.Cases {
 		n++
+		// A decode failure is corpus corruption, not a divergence — surface it
+		// as an ERROR line (which fails the driver) rather than silently
+		// evaluating a nil expr/env and reporting a misleading (non-)mismatch.
 		var exprNode any
-		json.Unmarshal(c.Expr, &exprNode)
-		envAny := decode(c.Env)
-		env, _ := envAny.(map[string]any)
-		expect := decode(c.Expect)
+		if err := json.Unmarshal(c.Expr, &exprNode); err != nil {
+			fmt.Printf("ERROR\t%s\t%s\tdecode expr: %v\n", c.Category, c.Note, err)
+			continue
+		}
+		envAny, err := decode(c.Env)
+		if err != nil {
+			fmt.Printf("ERROR\t%s\t%s\tdecode env: %v\n", c.Category, c.Note, err)
+			continue
+		}
+		env, ok := envAny.(map[string]any)
+		if !ok {
+			if envAny != nil {
+				fmt.Printf("ERROR\t%s\t%s\tenv is not a JSON object\n", c.Category, c.Note)
+				continue
+			}
+			env = map[string]any{}
+		}
+		expect, err := decode(c.Expect)
+		if err != nil {
+			fmt.Printf("ERROR\t%s\t%s\tdecode expect: %v\n", c.Category, c.Note, err)
+			continue
+		}
 		var got any
 		func() {
 			defer func() {
