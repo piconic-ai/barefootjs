@@ -1391,21 +1391,24 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             // recognizes a getter call or a comparison against one; a bare
             // `5`/`true` matches neither, so the field was silently OMITTED
             // and the Badge's `Count`/`Active` fields defaulted to Go's zero
-            // value (`0`/`false`) regardless of the actual literal. The
-            // structured `parsed` tree (not a text-regex re-match of
-            // `exprText`) is the reliable signal here — a string literal
-            // would ALSO be `kind: 'literal'` in `parsed`, but re-quoting it
-            // from `.value` (already unescaped) rather than round-tripping
-            // through the raw source text avoids re-parsing quote style.
-            if (parsedValue?.kind === 'literal') {
-              const goVal =
-                parsedValue.literalType === 'string'
-                  ? JSON.stringify(String(parsedValue.value))
-                  : parsedValue.literalType === 'null'
-                    ? 'nil'
-                    : String(parsedValue.value)
-              emitChildField(prop.name, goVal)
-              break
+            // value (`0`/`false`) regardless of the actual literal.
+            //
+            // Route through `parsedLiteralToGo` rather than hand-rolling a
+            // switch on `.value`/`.literalType`: a numeric literal needs its
+            // exact source `raw` token (Copilot review — `String(value)` can
+            // change spelling/precision, e.g. a large integer or `-0`), and
+            // `parsedLiteralToGo` also covers the LEADING-UNARY-MINUS shape
+            // (`count={-5}` parses as `kind: 'unary'` wrapping the literal,
+            // not `kind: 'literal'` itself — a case this branch's earlier
+            // `parsedValue?.kind === 'literal'` gate missed entirely and
+            // would have silently reintroduced the same omitted-field bug
+            // for a negative numeric literal).
+            if (parsedValue) {
+              const goVal = parsedLiteralToGo(this.emitCtx, parsedValue)
+              if (goVal !== null) {
+                emitChildField(prop.name, goVal)
+                break
+              }
             }
             const resolvedValue = this.resolveDynamicPropValue(
               exprText,
