@@ -3221,16 +3221,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case '<=':
         return `le ${wl} ${wr}`
       case '+':
-        // JS `+` with a string-typed operand is CONCATENATION, not addition
-        // — Go's `bf_add` coerces both sides through `toFloat64` (#2168
-        // string-concat-plus: `'Hello, ' + name` rendered "0", since a
-        // string operand's `toFloat64` is 0). `html/template` has no infix
-        // `+` at all, so both directions are a runtime call; route through
-        // `bf_concat_str` when either operand is string-typed.
-        if (isStringConcatBinary(op, left, right, n => this._isStringValueName(n))) {
-          return `bf_concat_str ${wl} ${wr}`
-        }
-        return `bf_add ${wl} ${wr}`
+        return this._emitPlus(left, right, wl, wr)
       case '-':
         return `bf_sub ${wl} ${wr}`
       case '*':
@@ -3242,6 +3233,38 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       default:
         return `${l} ${op} ${r}`
     }
+  }
+
+  /**
+   * JS `+` with a string-typed operand is CONCATENATION, not addition — Go's
+   * `bf_add` coerces both sides through `toFloat64` (#2168
+   * string-concat-plus: `'Hello, ' + name` rendered "0", since a string
+   * operand's `toFloat64` is 0). `html/template` has no infix `+` at all, so
+   * both directions are a runtime call; route through `bf_concat_str` when
+   * either operand is string-typed.
+   *
+   * Shared by all THREE `case '+':` sites in this file (`binary()` here, the
+   * filter-predicate emitter's own `binary` case, and the condition-
+   * expression emitter's own `binary` case) — each recurses over its own
+   * `ParsedExpr` tree with its own rendered-operand strings, but the
+   * string-vs-numeric decision itself must stay identical everywhere so the
+   * three never drift out of sync (a Copilot review comment on #2197 flagged
+   * exactly this risk when they were three independent inline checks).
+   * Callers pass their own `leftExpr`/`rightExpr` (the raw `ParsedExpr` nodes
+   * `isStringConcatBinary` inspects) and `leftRendered`/`rightRendered` (the
+   * already-emitted, already-wrapped/parenthesised operand text for THIS
+   * call site's Go form).
+   */
+  private _emitPlus(
+    leftExpr: ParsedExpr,
+    rightExpr: ParsedExpr,
+    leftRendered: string,
+    rightRendered: string,
+  ): string {
+    if (isStringConcatBinary('+', leftExpr, rightExpr, n => this._isStringValueName(n))) {
+      return `bf_concat_str ${leftRendered} ${rightRendered}`
+    }
+    return `bf_add ${leftRendered} ${rightRendered}`
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value — drives
