@@ -67,11 +67,15 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * String-typed signals and props, so equality comparisons against them lower
- * to `eq`/`ne` (#1672). A signal is string-typed when its inferred type is
- * `string` (the analyzer infers this from a string-literal initial value) or,
- * defensively, when its initial value is a bare string literal; a prop when
- * its annotated type is `string`.
+ * String-typed signals, props, and same-file local consts, so equality
+ * comparisons against them lower to `eq`/`ne` (#1672) and `+` concatenation
+ * against them lowers to Perl's `.` instead of numeric `+` (#2163, #2212 —
+ * `isStringConcatBinary`/`isStringTypedOperand` in `@barefootjs/jsx`, which
+ * now also recognizes a bare identifier operand, not just a prop/getter/
+ * literal). A signal is string-typed when its inferred type is `string`
+ * (the analyzer infers this from a string-literal initial value) or,
+ * defensively, when its initial value is a bare string literal; a prop or
+ * local const when its annotated (or inferred) type is `string`.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -82,6 +86,9 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const p of ir.metadata.propsParams) {
     if (isStringTypeInfo(p.type)) names.add(p.name)
+  }
+  for (const c of ir.metadata.localConstants) {
+    if (isStringTypeInfo(c.type ?? undefined) || isBareStringLiteral(c.value)) names.add(c.name)
   }
   return names
 }

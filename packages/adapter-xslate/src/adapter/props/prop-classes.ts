@@ -43,12 +43,17 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * String-typed signals and props. A signal is string-typed when its inferred
- * type is `string` (or, defensively, when its initial value is a bare string
- * literal); a prop when its annotated type is `string`. In the Mojo adapter
- * this drives `eq`/`ne` selection for string equality; the Kolon emitters
- * don't consume the distinction (Kolon's `==`/`!=` compare strings and numbers
- * correctly), so this set is carried for parity with the Mojo adapter.
+ * String-typed signals, props, and same-file local consts (#2212). A
+ * signal is string-typed when its inferred type is `string` (or,
+ * defensively, when its initial value is a bare string literal); a prop
+ * when its annotated type is `string`; a local const the same way. Consumed
+ * by `isStringConcatBinary`/`isStringTypedOperand` (`@barefootjs/jsx`) to
+ * pick Kolon's `~` over JS `+`'s numeric fallback (#2163, #2212) —
+ * including now for a bare identifier operand, not just a prop/getter/
+ * literal. In the Mojo adapter this ALSO drives `eq`/`ne` selection for
+ * string equality; the Kolon emitters don't consume that distinction
+ * (Kolon's `==`/`!=` compare strings and numbers correctly), so that half
+ * of this set is carried only for parity with the Mojo adapter.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -59,6 +64,9 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const p of ir.metadata.propsParams) {
     if (isStringTypeInfo(p.type)) names.add(p.name)
+  }
+  for (const c of ir.metadata.localConstants) {
+    if (isStringTypeInfo(c.type ?? undefined) || isBareStringLiteral(c.value)) names.add(c.name)
   }
   return names
 }

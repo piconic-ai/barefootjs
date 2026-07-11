@@ -43,14 +43,18 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * String-typed signals and props. A signal is string-typed when its inferred
- * type is `string` (or, defensively, when its initial value is a bare string
- * literal); a prop when its annotated type is `string`. In the Mojo adapter
- * this drives `eq`/`ne` selection for string equality; the Blade emitters
- * don't consume the distinction — `===`/`!==` ALWAYS route through
- * `bf.eq`/`bf.neq` regardless of operand type (see
- * `expr/emitters.ts`'s file header, divergence 4) — so this set is carried
- * only for parity with the Perl-family adapters.
+ * String-typed signals, props, and same-file local consts (#2212). A
+ * signal is string-typed when its inferred type is `string` (or,
+ * defensively, when its initial value is a bare string literal); a prop
+ * when its annotated type is `string`; a local const the same way. Consumed
+ * by `isStringConcatBinary`/`isStringTypedOperand` (`@barefootjs/jsx`) to
+ * pick `.` over JS `+`'s numeric fallback (#2163, #2212) — including now
+ * for a bare identifier operand, not just a prop/getter/literal. In the
+ * Mojo adapter this ALSO drives `eq`/`ne` selection for string equality;
+ * the Blade emitters don't consume the distinction there — `===`/`!==`
+ * ALWAYS route through `bf.eq`/`bf.neq` regardless of operand type (see
+ * `expr/emitters.ts`'s file header, divergence 4) — so that half of this
+ * set is carried only for parity with the Perl-family adapters.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -61,6 +65,9 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const p of ir.metadata.propsParams) {
     if (isStringTypeInfo(p.type)) names.add(p.name)
+  }
+  for (const c of ir.metadata.localConstants) {
+    if (isStringTypeInfo(c.type ?? undefined) || isBareStringLiteral(c.value)) names.add(c.name)
   }
   return names
 }
