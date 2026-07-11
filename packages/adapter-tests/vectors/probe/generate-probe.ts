@@ -81,11 +81,17 @@ const NUMSTRS: Val[] = [
 
 // General strings. Non-ASCII flagged known: string ops are ASCII-domain by
 // spec (`.length` differs — UTF-16 units in JS vs codepoints/bytes on hosts).
+// BMP-only non-ASCII (café / 日本 / ﾊ) is no longer flagged: #2196 Level 1
+// fixed Perl's `.length` to count codepoints (matching Go/Ruby/Python/PHP),
+// and codepoint count == UTF-16-unit count for any BMP-only string, so all
+// five backends now agree with JS here. Astral characters (😀, a😀b) stay
+// `known` — JS counts 2 UTF-16 units per astral scalar, every backend still
+// counts 1 codepoint (Level 2, full UTF-16 parity, remains open).
 const STRS: Val[] = [
   val('', '""'), val('a', '"a"'), val('abcd', '"abcd"'), val('0', '"0"'),
-  val('hello world', '"hello world"'), val('café', '"café"', true),
-  val('😀', '"😀"', true), val('a😀b', '"a😀b"', true), val('日本', '"日本"', true),
-  val('ﾊ', '"ﾊ"', true),
+  val('hello world', '"hello world"'), val('café', '"café"'),
+  val('😀', '"😀"', true), val('a😀b', '"a😀b"', true), val('日本', '"日本"'),
+  val('ﾊ', '"ﾊ"'),
 ]
 
 const BOOLS: Val[] = [val(true, 'true'), val(false, 'false')]

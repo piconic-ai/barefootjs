@@ -10,6 +10,12 @@ use Scalar::Util qw(looks_like_number);
 use lib "$FindBin::Bin/../lib";
 use BarefootJS::Evaluator;
 
+# eval-vectors.json is UTF-8 (non-ASCII `.length` cases, #2196). Route TAP
+# through a UTF-8 layer so a wide test name/diagnostic doesn't trigger
+# "Wide character in print" — same pattern as t/helper_vectors.t.
+binmode Test::More->builder->$_, ':encoding(UTF-8)'
+    for qw(output failure_output todo_output);
+
 # Golden ParsedExpr-evaluator vectors (issue #2018, spec/compiler.md
 # "ParsedExpr Evaluator Semantics"), generated from the JS reference
 # evaluator and shared with the Go evaluator. The file is not shipped in
@@ -24,7 +30,12 @@ plan skip_all => 'eval vectors not available outside the monorepo checkout'
 my $doc = do {
     open my $fh, '<:raw', $vectors_path or die "open $vectors_path: $!";
     local $/;
-    JSON::PP->new->decode(<$fh>);
+    # ->utf8 decodes the file's UTF-8 bytes into Perl characters, so a value
+    # like "café" round-trips to a single é (U+00E9) instead of its two raw
+    # bytes — otherwise a `.length` vector would see byte-length input
+    # regardless of the Evaluator.pm fix (#2196), and any non-ASCII vector
+    # would silently exercise mojibake instead of the intended codepoints.
+    JSON::PP->new->utf8->decode(scalar <$fh>);
 };
 
 die "eval-vectors.json contains no cases" unless @{ $doc->{cases} || [] };

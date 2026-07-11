@@ -9,10 +9,16 @@ use Scalar::Util qw(looks_like_number);
 use lib "$FindBin::Bin/../../../../adapter-perl/lib";
 use BarefootJS::Evaluator;
 
+binmode STDOUT, ':encoding(UTF-8)'; # non-ASCII case notes (café, 日本, ...) print raw below
+
 my $doc = do {
     open my $fh, '<:raw', $ENV{PROBE_VECTORS} or die $!;
     local $/;
-    JSON::PP->new->decode(<$fh>);
+    # ->utf8 decodes the file's UTF-8 bytes into Perl characters (see
+    # eval_vectors.t's identical fix, #2196) — without it, the STRS corpus's
+    # non-ASCII values (café, 日本, ...) arrive as mojibake, masking whether
+    # Evaluator.pm's `.length` fix actually agrees with JS on codepoints.
+    JSON::PP->new->utf8->decode(scalar <$fh>);
 };
 
 sub _is_real_number {
