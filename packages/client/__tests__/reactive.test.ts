@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createSignal, createMemo, createEffect, onCleanup, onMount, batch } from '../src/reactive'
+import { createSignal, createMemo, createSelector, createEffect, createRoot, onCleanup, onMount, batch, untrack } from '../src/reactive'
 
 describe('createSignal', () => {
   test('returns initial value', () => {
@@ -667,5 +667,132 @@ describe('batch', () => {
     expect(a()).toBe(10)
     expect(b()).toBe(20)
     expect(c()).toBe(30)
+  })
+})
+
+describe('createSelector', () => {
+  test('O(changed): only old-key and new-key subscribers re-run', () => {
+    const [selected, setSelected] = createSignal(1)
+    const isSelected = createSelector(selected)
+    const runs: Record<number, number> = {}
+    const seen: Record<number, boolean> = {}
+    for (const id of [1, 2, 3, 4, 5]) {
+      createEffect(() => {
+        runs[id] = (runs[id] ?? 0) + 1
+        seen[id] = isSelected(id)
+      })
+    }
+    expect(seen).toEqual({ 1: true, 2: false, 3: false, 4: false, 5: false })
+    expect(runs).toEqual({ 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 })
+
+    setSelected(3)
+    // Only key 1 (deselected) and key 3 (selected) re-ran.
+    expect(runs).toEqual({ 1: 2, 2: 1, 3: 2, 4: 1, 5: 1 })
+    expect(seen).toEqual({ 1: false, 2: false, 3: true, 4: false, 5: false })
+
+    setSelected(3) // no-op write: signal bails, nothing runs
+    expect(runs).toEqual({ 1: 2, 2: 1, 3: 2, 4: 1, 5: 1 })
+  })
+
+  test('batched writes dispatch once through PendingEffects', () => {
+    const [selected, setSelected] = createSignal(0)
+    const isSelected = createSelector(selected)
+    let runsA = 0
+    createEffect(() => { runsA++; isSelected(1) })
+    batch(() => {
+      setSelected(1)
+      setSelected(2)
+      setSelected(1)
+    })
+    // initial + one flush (1 was false before batch, true after — flipped once)
+    expect(runsA).toBe(2)
+  })
+
+  test('disposal prunes subscription (no leak, no dispatch to disposed)', () => {
+    const [selected, setSelected] = createSignal(0)
+    const isSelected = createSelector(selected)
+    let runs = 0
+    let dispose!: () => void
+    createRoot(d => {
+      dispose = d
+      createEffect(() => { runs++; isSelected(7) })
+    })
+    expect(runs).toBe(1)
+    dispose()
+    setSelected(7)
+    expect(runs).toBe(1)
+  })
+
+  test('re-run that stops reading a key unsubscribes it', () => {
+    const [selected, setSelected] = createSignal(0)
+    const [mode, setMode] = createSignal<'a' | 'b'>('a')
+    const isSelected = createSelector(selected)
+    let runs = 0
+    createEffect(() => {
+      runs++
+      if (mode() === 'a') isSelected(1)
+    })
+    expect(runs).toBe(1)
+    setMode('b')     // re-run, no longer reads key 1
+    expect(runs).toBe(2)
+    setSelected(1)   // key 1 flipped — but nobody subscribes anymore
+    expect(runs).toBe(2)
+  })
+
+  test('custom comparator (range selection)', () => {
+    const [range, setRange] = createSignal<[number, number]>([1, 3])
+    const inRange = createSelector<[number, number], number>(range, (k, [lo, hi]) => k >= lo && k <= hi)
+    const runs: Record<number, number> = {}
+    const seen: Record<number, boolean> = {}
+    for (const id of [1, 2, 3, 4, 5]) {
+      createEffect(() => { runs[id] = (runs[id] ?? 0) + 1; seen[id] = inRange(id) })
+    }
+    expect(seen).toEqual({ 1: true, 2: true, 3: true, 4: false, 5: false })
+    setRange([3, 4])
+    // flipped: 1,2 (out), 4 (in). 3 and 5 unchanged.
+    expect(runs).toEqual({ 1: 2, 2: 2, 3: 1, 4: 2, 5: 1 })
+  })
+
+  test('untracked read does not subscribe', () => {
+    const [selected, setSelected] = createSignal(0)
+    const isSelected = createSelector(selected)
+    let runs = 0
+    createEffect(() => { runs++; untrack(() => isSelected(9)) })
+    setSelected(9)
+    expect(runs).toBe(1)
+  })
+
+  test('re-run that switches keys is only subscribed to its most recent key', () => {
+    const [selected, setSelected] = createSignal(0)
+    const [key, setKey] = createSignal(1)
+    const isSelected = createSelector(selected)
+    let runs = 0
+    createEffect(() => { runs++; isSelected(key()) })
+    expect(runs).toBe(1)
+    setKey(2)        // re-run reads key 2 — cleanup must drop the key-1 subscription
+    expect(runs).toBe(2)
+    setSelected(1)   // flips key 1 only: nobody subscribed anymore
+    expect(runs).toBe(2)
+    setSelected(2)   // flips key 2: the effect's current subscription fires
+    expect(runs).toBe(3)
+  })
+
+  test('subscriber disposing another subscriber mid-dispatch is safe (collect-then-run)', () => {
+    // A custom comparator can flip several keys in one sweep. The first
+    // dispatched subscriber disposes the second — the `toRun` Set snapshot
+    // must tolerate that (runEffect's disposed guard), same as signal.set()'s
+    // subscriber-snapshot dispatch.
+    const [range, setRange] = createSignal<[number, number]>([0, 0])
+    const inRange = createSelector<[number, number], number>(range, (k, [lo, hi]) => k >= lo && k <= hi)
+    let disposeOther!: () => void
+    let runs1 = 0
+    let runs2 = 0
+    createRoot(d => { disposeOther = d; createEffect(() => { runs2++; inRange(2) }) })
+    createEffect(() => { runs1++; inRange(1); if (runs1 > 1) disposeOther() })
+    setRange([1, 2]) // flips keys 1 AND 2; subscriber 1 disposes subscriber 2 mid-sweep
+    expect(runs1).toBe(2)
+    setRange([0, 0]) // flips both again; the disposed subscriber must stay dead
+    expect(runs2).toBeLessThanOrEqual(2)
+    expect(runs1).toBe(3)
   })
 })

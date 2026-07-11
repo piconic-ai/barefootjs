@@ -1,6 +1,6 @@
 'use client'
 
-import { createSignal } from '@barefootjs/client'
+import { createSignal, createSelector } from '@barefootjs/client'
 
 // Row-data generator inlined from benchmarks/apps/shared/data.ts (krausest
 // js-framework-benchmark parity — same adjectives/colours/nouns, same
@@ -68,6 +68,7 @@ function buildData(count: number): RowData[] {
 function Bench() {
   const [rows, setRows] = createSignal<RowData[]>([])
   const [selected, setSelected] = createSignal<number>(0)
+  const isSelected = createSelector(selected)
 
   const run = () => {
     setSelected(0)
@@ -127,7 +128,7 @@ function Bench() {
       <table className="table">
         <tbody id="tbody">
           {rows().map(row => (
-            <tr key={row.id} className={selected() === row.id ? 'danger' : ''}>
+            <tr key={row.id} className={isSelected(row.id) ? 'danger' : ''}>
               <td className="col-md-1">{row.id}</td>
               <td className="col-md-4">
                 <a className="lbl" onClick={() => select(row.id)}>{row.label}</a>

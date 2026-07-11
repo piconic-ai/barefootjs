@@ -734,6 +734,86 @@ export function createMemo<T>(fn: () => T, __bfId?: string): Memo<T> {
   return value
 }
 
+/**
+ * O(changed) selection primitive (SolidJS-compatible `createSelector`).
+ *
+ * `class={selected() === row.id ? 'danger' : ''}` subscribes every row to the
+ * one `selected` signal — O(rows) effect runs per selection change. The
+ * selector inverts the fan-out: each row's effect subscribes to its OWN key,
+ * and an internal effect tracking `source()` dispatches only the keys whose
+ * `fn(key, value)` result actually flipped — two effect runs per selection
+ * change (deselected row + selected row) regardless of list size.
+ *
+ * The returned accessor is `Reactive<>`-branded, so the compiler's
+ * type-based reactivity analysis recognises `isSelected(row.id)` as a
+ * reactive expression exactly like a signal/memo read.
+ *
+ * @example
+ * const [selected, setSelected] = createSignal<number>(0)
+ * const isSelected = createSelector(selected)
+ * // inside a loop body:
+ * //   <tr class={isSelected(row.id) ? 'danger' : ''}>
+ */
+export function createSelector<T, U = T>(
+  source: () => T,
+  fn: (key: U, value: T) => boolean = ((key: U, value: T) => (key as unknown) === (value as unknown)) as (key: U, value: T) => boolean,
+): Reactive<(key: U) => boolean> {
+  // Per-key subscriber sets, created lazily on first tracked read of a key
+  // and self-pruned to empty via onCleanup — keys from replaced list items
+  // (e.g. clear + recreate cycles) don't accumulate.
+  const subs = new Map<U, Set<EffectContext>>()
+  let value: T
+
+  createEffect(() => {
+    const newValue = source()
+    const oldValue = value
+    value = newValue
+    // Collect-then-run: a re-running subscriber unsubscribes and immediately
+    // re-subscribes its key (onCleanup below), which deletes and re-inserts
+    // Map entries. A live Map iterator REVISITS a key deleted and re-added
+    // during iteration, so dispatching inline would re-flip the same key
+    // forever. Finish the sweep over `subs` first, then dispatch — this also
+    // gives the same fixed-at-dispatch-time semantics as a signal write's
+    // subscriber snapshot. The Set dedupes an effect subscribed to several
+    // flipped keys (possible with a custom `fn`), matching PendingEffects.
+    let toRun: Set<EffectContext> | null = null
+    for (const [key, keySubs] of subs) {
+      if (fn(key, newValue) !== fn(key, oldValue)) {
+        if (BatchDepth > 0) {
+          for (const effect of keySubs) PendingEffects.add(effect)
+        } else {
+          if (!toRun) toRun = new Set()
+          for (const effect of keySubs) toRun.add(effect)
+        }
+      }
+    }
+    if (toRun) {
+      for (const effect of toRun) runEffect(effect)
+    }
+  })
+
+  const selector = (key: U): boolean => {
+    const listener = Listener
+    if (listener) {
+      let keySubs = subs.get(key)
+      if (!keySubs) {
+        keySubs = new Set()
+        subs.set(key, keySubs)
+      }
+      keySubs.add(listener)
+      // Runs on both re-run and disposal of the subscribing effect; a re-run
+      // that still reads this key immediately re-subscribes.
+      onCleanup(() => {
+        keySubs.delete(listener)
+        if (keySubs.size === 0) subs.delete(key)
+      })
+    }
+    return fn(key, value)
+  }
+
+  return selector as Reactive<(key: U) => boolean>
+}
+
 
 // ---------------------------------------------------------------------------
 // Request-scoped environment signals (router v0.5, spec/router.md "The wedge")
