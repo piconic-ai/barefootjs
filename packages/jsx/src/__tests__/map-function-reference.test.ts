@@ -169,4 +169,135 @@ describe('function-reference .map(cb) callback (#2206)', () => {
     expect(sortCall).not.toBeNull()
     expect(sortCall!.arrow.params).toEqual(['a', 'b'])
   })
+
+  test('cross-kind ambiguity (const AND function of the same name) stays refused', () => {
+    const source = `
+      const format = (t: string) => 'const:' + t
+      function format2() {}
+      function TagLine({ tags }: { tags: string[] }) {
+        function format(t: string) { return 'fn:' + t }
+        return <p>{tags.map(format).join(' ')}</p>
+      }
+      export { TagLine }
+    `
+    const ctx = analyzeComponent(source, 'TagLine.tsx')
+    const ir = jsxToIR(ctx)
+    const expr = textExpr(ir)
+    const joinCall = expr.parsed!
+    if (joinCall.kind !== 'array-method') throw new Error('expected array-method')
+    // Component scope has BOTH a const `format` (module scope) and a
+    // `function format` (component scope) in play once findLocalConst /
+    // findLocalFunction search across scopes — same cross-kind ambiguity
+    // `resolveSortComparatorIdentifier` refuses for `.sort(fnref)`.
+    expect(asCallbackMethodCall(joinCall.object)).toBeNull()
+    expect(isSupported(joinCall).supported).toBe(false)
+  })
+
+  test('.reduce(fnref, init) resolves the callback and preserves the init arg', () => {
+    const source = `
+      const sum = (acc: number, t: string) => acc + t.length
+      function TagLine({ tags }: { tags: string[] }) {
+        return <p>{tags.reduce(sum, 0)}</p>
+      }
+      export { TagLine }
+    `
+    const ctx = analyzeComponent(source, 'TagLine.tsx')
+    const ir = jsxToIR(ctx)
+    const expr = textExpr(ir)
+    const parsed = expr.parsed!
+    const reduceCall = asCallbackMethodCall(parsed)
+    expect(reduceCall).not.toBeNull()
+    expect(reduceCall!.method).toBe('reduce')
+    expect(reduceCall!.arrow.params).toEqual(['acc', 't'])
+    // The trailing `0` init arg survives resolution untouched.
+    expect(reduceCall!.args).toEqual([{ kind: 'literal', value: 0, literalType: 'number', raw: '0' }])
+  })
+
+  // Fable review (#2214): a spliced-in resolved arrow's body is NOT
+  // re-walked, so a bare-identifier callback nested inside another
+  // resolved declaration stays refused — a deliberate one-hop limit (see
+  // resolveCallbackMethodFunctionReferences's docstring), pinned here so a
+  // future change to that behavior is a conscious decision, not a silent
+  // regression.
+  test('a bare-identifier callback nested inside a resolved declaration stays refused (one-hop limit)', () => {
+    const source = `
+      const inner = (t: string) => '#' + t
+      const outer = (xs: string[]) => xs.map(inner).join(',')
+      function TagLine({ rows }: { rows: string[][] }) {
+        return <p>{rows.map(outer).join(' ')}</p>
+      }
+      export { TagLine }
+    `
+    const ctx = analyzeComponent(source, 'TagLine.tsx')
+    const ir = jsxToIR(ctx)
+    const expr = textExpr(ir)
+    const outerJoin = expr.parsed!
+    if (outerJoin.kind !== 'array-method') throw new Error('expected array-method')
+    const outerMap = asCallbackMethodCall(outerJoin.object)!
+    expect(outerMap).not.toBeNull()
+    // `outer`'s body resolves one hop (`xs.map(inner).join(',')`), but the
+    // nested `.map(inner)` inside that spliced body is never re-walked.
+    const innerJoin = outerMap.arrow.body
+    if (innerJoin.kind !== 'array-method') throw new Error('expected inner array-method')
+    if (innerJoin.object.kind !== 'call') throw new Error('expected inner call')
+    expect(innerJoin.object.args[0]).toEqual({ kind: 'identifier', name: 'inner' })
+    expect(asCallbackMethodCall(innerJoin.object)).toBeNull()
+  })
+
+  // Fable review (#2214): the resolver must respect lexical scoping — a
+  // bare identifier in callback position that's actually bound by an
+  // ENCLOSING arrow's own parameter (not a same-file const/function) must
+  // never be resolved against the const/function tables, or SSR silently
+  // renders the wrong function while CSR (which evaluates the raw,
+  // correctly-scoped expression) renders the right one.
+  test('an enclosing callback arrow param shadows a same-named module const', () => {
+    const source = `
+      const fn = (t: string) => 'WRONG:' + t
+      function TagLine({ rows }: { rows: { tags: string[] }[] }) {
+        return <p>{rows.map(fn => fn.tags.map(fn).join(',')).join(' ')}</p>
+      }
+      export { TagLine }
+    `
+    const ctx = analyzeComponent(source, 'TagLine.tsx')
+    const ir = jsxToIR(ctx)
+    const expr = textExpr(ir)
+    const outerJoin = expr.parsed!
+    if (outerJoin.kind !== 'array-method') throw new Error('expected array-method')
+    const outerMap = asCallbackMethodCall(outerJoin.object)!
+    // The outer arrow's body is `fn.tags.map(fn).join(',')` — the inner
+    // `.map(fn)` refers to the outer arrow's OWN param `fn`, not the
+    // module-scope const, so it must stay unresolved (an identifier arg).
+    const innerJoin = outerMap.arrow.body
+    if (innerJoin.kind !== 'array-method') throw new Error('expected inner array-method')
+    if (innerJoin.object.kind !== 'call') throw new Error('expected inner call')
+    expect(innerJoin.object.args[0]).toEqual({ kind: 'identifier', name: 'fn' })
+    expect(asCallbackMethodCall(innerJoin.object)).toBeNull()
+  })
+
+  test('a loop item param shadows a same-named module const inside the loop body', () => {
+    const source = `
+      const format = (t: string) => 'WRONG:' + t
+      function TagLine({ fns, tags }: { fns: string[]; tags: string[] }) {
+        return <ul>{fns.map(format => <li>{tags.map(format).join(' ')}</li>)}</ul>
+      }
+      export { TagLine }
+    `
+    const ctx = analyzeComponent(source, 'TagLine.tsx')
+    const ir = jsxToIR(ctx)
+    if (!ir || ir.type !== 'element') throw new Error('expected a root element')
+    const loop = ir.children.find(c => c.type === 'loop')
+    if (!loop || loop.type !== 'loop') throw new Error('expected a loop child')
+    expect(loop.param).toBe('format')
+    const li = loop.children.find(c => c.type === 'element')
+    if (!li || li.type !== 'element') throw new Error('expected the <li> element')
+    const innerExpr = li.children.find(c => c.type === 'expression')
+    if (!innerExpr || innerExpr.type !== 'expression') throw new Error('expected an expression child')
+    const joinCall = innerExpr.parsed!
+    if (joinCall.kind !== 'array-method') throw new Error('expected array-method')
+    // `tags.map(format)` inside the loop body refers to the loop's own item
+    // variable `format`, not the module-scope const — must stay unresolved.
+    if (joinCall.object.kind !== 'call') throw new Error('expected inner call')
+    expect(joinCall.object.args[0]).toEqual({ kind: 'identifier', name: 'format' })
+    expect(asCallbackMethodCall(joinCall.object)).toBeNull()
+  })
 })

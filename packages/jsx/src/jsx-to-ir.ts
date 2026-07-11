@@ -591,6 +591,9 @@ function parseValueExpr(trimmed: string): ParsedExpr {
   return parseExpression(trimmed.startsWith('{') ? `(${trimmed})` : trimmed)
 }
 
+/** Shared empty-set default for `attachParsedExpressions`/`resolveCallbackMethodFunctionReferences`'s `bound` param — avoids a fresh allocation per call when nothing is shadowed. */
+const EMPTY_BOUND: ReadonlySet<string> = new Set()
+
 /**
  * Attach `parsed` (`parseExpression(expr.trim())`) to every `expression` node
  * in the tree, so SSR adapters emit from the structured tree instead of each
@@ -602,11 +605,14 @@ function parseValueExpr(trimmed: string): ParsedExpr {
  * (#2206) so a bare-identifier `.map`/`.filter`/… callback (`tags.map(format)`)
  * resolves to its declaration wherever it can appear — text/attr/prop/provider
  * expressions and the loop-array expression alike — not just one hardcoded
- * spot.
+ * spot. `bound` carries the enclosing loop(s)' `param`/`index` names down
+ * into that resolution (Fable review, #2214) so a loop item variable that
+ * happens to share a name with a module-scope const/function shadows it,
+ * same as real JS scoping — resolution stays off within that loop's body.
  */
-function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext): void {
-  const parse = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseExpression(trimmed), analyzer)
-  const parseValue = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseValueExpr(trimmed), analyzer)
+function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound: ReadonlySet<string> = EMPTY_BOUND): void {
+  const parse = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseExpression(trimmed), analyzer, bound)
+  const parseValue = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseValueExpr(trimmed), analyzer, bound)
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
     if (trimmed) node.parsed = parse(trimmed)
@@ -647,39 +653,47 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext): void 
     case 'component':
     case 'fragment':
     case 'provider':
-      for (const child of node.children) attachParsedExpressions(child, analyzer)
+      for (const child of node.children) attachParsedExpressions(child, analyzer, bound)
       break
     case 'async':
-      attachParsedExpressions(node.fallback, analyzer)
-      for (const child of node.children) attachParsedExpressions(child, analyzer)
+      attachParsedExpressions(node.fallback, analyzer, bound)
+      for (const child of node.children) attachParsedExpressions(child, analyzer, bound)
       break
     case 'loop': {
       // Attach the parse of the SAME `array` string the adapters consume
       // (the Go adapter's scalar-literal loop typing reads `loop.array` /
       // `nested.loopArray`, which is exactly `loop.array`), so it can read
-      // the tree instead of re-parsing with `ts.createSourceFile`.
+      // the tree instead of re-parsing with `ts.createSourceFile`. The array
+      // expression itself is evaluated in the OUTER scope (before the loop's
+      // own `param`/`index` exist), so it parses against the unextended `bound`.
       const trimmedArray = node.array.trim()
       if (trimmedArray) node.arrayParsed = parse(trimmedArray)
-      for (const child of node.children) attachParsedExpressions(child, analyzer)
+      // The loop's item/index variables shadow any same-named module-scope
+      // const/function for everything inside the loop body (Fable review,
+      // #2214) — mirrors an arrow's own params in `resolveCallbackMethodFunctionReferences`.
+      const loopBound = new Set(bound)
+      loopBound.add(node.param)
+      if (node.index) loopBound.add(node.index)
+      for (const child of node.children) attachParsedExpressions(child, analyzer, loopBound)
       // Loops also hold expression nodes off the main `children` array.
       if (node.childComponent) {
-        for (const child of node.childComponent.children) attachParsedExpressions(child, analyzer)
+        for (const child of node.childComponent.children) attachParsedExpressions(child, analyzer, loopBound)
       }
       for (const nested of node.nestedComponents ?? []) {
-        for (const child of nested.children) attachParsedExpressions(child, analyzer)
+        for (const child of nested.children) attachParsedExpressions(child, analyzer, loopBound)
       }
       for (const frag of node.flatMapCallback?.fragments ?? []) {
-        attachParsedExpressions(frag.ir, analyzer)
+        attachParsedExpressions(frag.ir, analyzer, loopBound)
       }
       break
     }
     case 'conditional':
-      attachParsedExpressions(node.whenTrue, analyzer)
-      attachParsedExpressions(node.whenFalse, analyzer)
+      attachParsedExpressions(node.whenTrue, analyzer, bound)
+      attachParsedExpressions(node.whenFalse, analyzer, bound)
       break
     case 'if-statement':
-      attachParsedExpressions(node.consequent, analyzer)
-      if (node.alternate) attachParsedExpressions(node.alternate, analyzer)
+      attachParsedExpressions(node.consequent, analyzer, bound)
+      if (node.alternate) attachParsedExpressions(node.alternate, analyzer, bound)
       break
   }
 }
@@ -2708,9 +2722,35 @@ function resolveCallbackMethodFunctionReferenceIdentifier(name: string, analyzer
  * `identifier` arg passes through as-is, and `asCallbackMethodCall`'s
  * existing arrow-kind check still refuses it with the current BF101,
  * unchanged.
+ *
+ * A spliced-in resolved arrow's OWN body is not re-walked (`visit` returns
+ * it as-is rather than recursing) — a bare-identifier callback declared
+ * INSIDE another resolved declaration (`const outer = xs => xs.map(inner).join(',')`
+ * used as `rows.map(outer)`) stays unresolved and BF101-refuses, same as
+ * before #2206. This is a deliberate one-hop limit, not an oversight: naively
+ * recursing risks an infinite loop on a self-referential declaration
+ * (`const f = xs => xs.map(f)`), which would need a resolution stack to
+ * detect — out of scope here. Fails safe (refuses loudly rather than
+ * mis-rendering); see the pinned-refusal test in map-function-reference.test.ts.
+ *
+
+ * `bound` tracks names that are lexically shadowed at the current walk
+ * position — an enclosing arrow's own params (`rows.map(fn => fn.tags.map(fn)…)`
+ * — so a bare identifier that refers to a PARAMETER rather than a same-file
+ * const/function is never resolved against the const/function tables
+ * (Fable review, #2214): it grows exactly like {@link freeVarsInBody}'s own
+ * `bound` set, at the SAME `arrow` case. The initial call from
+ * `attachParsedExpressions` seeds it with the enclosing loop's `param`/
+ * `index` too (a loop's item variable shadows a same-named module const the
+ * same way a callback arrow's param does — `origin.freeRefs` already tags
+ * such a name `kind: 'render-item'`, this walk now honors it).
  */
-function resolveCallbackMethodFunctionReferences(expr: ParsedExpr, analyzer: AnalyzerContext): ParsedExpr {
-  function visit(e: ParsedExpr): ParsedExpr {
+function resolveCallbackMethodFunctionReferences(
+  expr: ParsedExpr,
+  analyzer: AnalyzerContext,
+  bound: ReadonlySet<string> = EMPTY_BOUND,
+): ParsedExpr {
+  function visit(e: ParsedExpr, bound: ReadonlySet<string>): ParsedExpr {
     switch (e.kind) {
       case 'literal':
       case 'identifier':
@@ -2718,12 +2758,13 @@ function resolveCallbackMethodFunctionReferences(expr: ParsedExpr, analyzer: Ana
       case 'unsupported':
         return e
       case 'call': {
-        const callee = visit(e.callee)
-        const args = e.args.map(visit)
+        const callee = visit(e.callee, bound)
+        const args = e.args.map(a => visit(a, bound))
         if (
           callee.kind === 'member' && !callee.computed &&
           CALLBACK_METHODS.has(callee.property) &&
-          args[0]?.kind === 'identifier'
+          args[0]?.kind === 'identifier' &&
+          !bound.has(args[0].name)
         ) {
           const resolved = resolveCallbackMethodFunctionReferenceIdentifier(args[0].name, analyzer)
           const arrow = resolved ? tsNodeToParsedExpr(resolved) : null
@@ -2732,20 +2773,20 @@ function resolveCallbackMethodFunctionReferences(expr: ParsedExpr, analyzer: Ana
         return { ...e, callee, args }
       }
       case 'member':
-        return { ...e, object: visit(e.object) }
+        return { ...e, object: visit(e.object, bound) }
       case 'index-access':
-        return { ...e, object: visit(e.object), index: visit(e.index) }
+        return { ...e, object: visit(e.object, bound), index: visit(e.index, bound) }
       case 'binary':
       case 'logical':
-        return { ...e, left: visit(e.left), right: visit(e.right) }
+        return { ...e, left: visit(e.left, bound), right: visit(e.right, bound) }
       case 'unary':
-        return { ...e, argument: visit(e.argument) }
+        return { ...e, argument: visit(e.argument, bound) }
       case 'conditional':
-        return { ...e, test: visit(e.test), consequent: visit(e.consequent), alternate: visit(e.alternate) }
+        return { ...e, test: visit(e.test, bound), consequent: visit(e.consequent, bound), alternate: visit(e.alternate, bound) }
       case 'template-literal':
-        return { ...e, parts: e.parts.map(p => (p.type === 'expression' ? { ...p, expr: visit(p.expr) } : p)) }
+        return { ...e, parts: e.parts.map(p => (p.type === 'expression' ? { ...p, expr: visit(p.expr, bound) } : p)) }
       case 'array-literal':
-        return { ...e, elements: e.elements.map(visit) }
+        return { ...e, elements: e.elements.map(el => visit(el, bound)) }
       case 'array-method':
         // `e.args` is a fixed-length tuple for some `method` variants (e.g.
         // `flat`'s `args: []`) — `.map(visit)` preserves length/order (a
@@ -2755,17 +2796,19 @@ function resolveCallbackMethodFunctionReferences(expr: ParsedExpr, analyzer: Ana
         // whole-object cast rather than a narrower one.
         return {
           ...e,
-          object: visit(e.object),
-          args: e.args.map(visit),
-          ...(e.method === 'flat' && e.depthExpr ? { depthExpr: visit(e.depthExpr) } : {}),
+          object: visit(e.object, bound),
+          args: e.args.map(a => visit(a, bound)),
+          ...(e.method === 'flat' && e.depthExpr ? { depthExpr: visit(e.depthExpr, bound) } : {}),
         } as ParsedExpr
       case 'object-literal':
-        return { ...e, properties: e.properties.map(p => ({ ...p, value: visit(p.value) })) }
-      case 'arrow':
-        return { ...e, body: visit(e.body) }
+        return { ...e, properties: e.properties.map(p => ({ ...p, value: visit(p.value, bound) })) }
+      case 'arrow': {
+        const inner = e.params.length === 0 ? bound : new Set([...bound, ...e.params])
+        return { ...e, body: visit(e.body, inner) }
+      }
     }
   }
-  return visit(expr)
+  return visit(expr, bound)
 }
 
 /**
