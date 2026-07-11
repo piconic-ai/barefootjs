@@ -909,10 +909,29 @@ const SKELETON_PATH_HAZARD_TAGS = new Set([
   'p',
   'pre', 'textarea', 'listing',
   'template',
+  'math', // MathML foreign-content: breakout tags pop content back out, same class of hazard as SVG.
 ])
 
-/** Tags the HTML parser force-closes when nested inside an ancestor of the same tag, even in well-formed markup. */
-const SKELETON_PATH_FORCE_CLOSE_TAGS = new Set(['a', 'button', 'form', 'option'])
+/**
+ * Tag groups the HTML parser force-closes when a tag from the group is
+ * nested inside ANY other open tag from the SAME group — not just an
+ * identical tag (e.g. `<h2>` inside `<h1>` closes the `<h1>`, `<dd>` inside
+ * `<dt>` closes the `<dt>`). A skeleton hitting this bails on path
+ * computation entirely (see `SKELETON_PATH_HAZARD_TAGS` doc).
+ */
+const SKELETON_PATH_FORCE_CLOSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
+  new Set(['a']),
+  new Set(['button']),
+  new Set(['form']),
+  new Set(['option']),
+  new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']),
+  new Set(['dd', 'dt']),
+  new Set(['li']),
+]
+
+function skeletonForceCloseGroup(tag: string): number {
+  return SKELETON_PATH_FORCE_CLOSE_GROUPS.findIndex(group => group.has(tag))
+}
 
 interface SkeletonPathState {
   elementPaths: Map<string, readonly number[]>
@@ -941,16 +960,44 @@ function walkSkeletonPathNode(
   path: readonly number[],
   safe: LoopSkeletonSafeSlots,
   state: SkeletonPathState,
-  forceCloseAncestors: ReadonlySet<string>,
+  forceCloseAncestors: ReadonlySet<number>,
 ): void {
   if (state.bailed || node.type !== 'element') return
   if (SKELETON_PATH_HAZARD_TAGS.has(node.tag)) { state.bailed = true; return }
-  if (SKELETON_PATH_FORCE_CLOSE_TAGS.has(node.tag) && forceCloseAncestors.has(node.tag)) { state.bailed = true; return }
+  const groupIdx = skeletonForceCloseGroup(node.tag)
+  if (groupIdx >= 0 && forceCloseAncestors.has(groupIdx)) { state.bailed = true; return }
+  // Void elements never legally carry children; if the IR claims otherwise
+  // the browser reparses `</tag>` as stray content instead of a close tag,
+  // diverging from the naive one-node-per-element model.
+  const flatChildren = flattenSkeletonChildren(node.children)
+  if (VOID_ELEMENTS.has(node.tag) && flatChildren.length > 0) { state.bailed = true; return }
+  // Foster parenting (#2143 review): a bare `<tr>` root is intentionally NOT
+  // in SKELETON_PATH_HAZARD_TAGS (it's the common loop-row shape), but
+  // non-`td`/`th` element children — and any non-whitespace text run —
+  // directly inside it get foster-parented OUT of the row by the HTML
+  // parser, shifting every sibling index after them. Comments (the `bf:sN`
+  // marker pairs) are unaffected — comments are inserted in place even in
+  // table-related insertion modes.
+  if (node.tag === 'tr' && hasForeignTableRowContent(flatChildren)) { state.bailed = true; return }
   if (node.slotId) state.elementPaths.set(node.slotId, path)
-  const nextAncestors = SKELETON_PATH_FORCE_CLOSE_TAGS.has(node.tag)
-    ? new Set([...forceCloseAncestors, node.tag])
+  const nextAncestors = groupIdx >= 0
+    ? new Set([...forceCloseAncestors, groupIdx])
     : forceCloseAncestors
-  walkSkeletonPathChildren(flattenSkeletonChildren(node.children), path, safe, state, nextAncestors)
+  walkSkeletonPathChildren(flatChildren, path, safe, state, nextAncestors)
+}
+
+/** True if `children` (already flattened) contains anything the HTML parser would foster-parent out of a `<tr>`. */
+function hasForeignTableRowContent(children: readonly IRNode[]): boolean {
+  for (const child of children) {
+    if (child.type === 'text') {
+      if (child.value.trim() !== '') return true
+      continue
+    }
+    if (child.type === 'element' && child.tag !== 'td' && child.tag !== 'th') {
+      return true
+    }
+  }
+  return false
 }
 
 /** Splice fragment children inline — a fragment contributes no DOM node of its own. */
@@ -979,7 +1026,7 @@ function walkSkeletonPathChildren(
   parentPath: readonly number[],
   safe: LoopSkeletonSafeSlots,
   state: SkeletonPathState,
-  forceCloseAncestors: ReadonlySet<string>,
+  forceCloseAncestors: ReadonlySet<number>,
 ): void {
   let idx = 0
   let pendingText = false
