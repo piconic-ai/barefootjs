@@ -7,7 +7,7 @@
  * adapter's `props/prop-types.ts`. No adapter instance state.
  */
 
-import type { ComponentIR } from '@barefootjs/jsx'
+import { collectLoopBoundNames, type ComponentIR } from '@barefootjs/jsx'
 import { isStringTypeInfo, isBareStringLiteral } from '../value/parsed-literal.ts'
 
 /**
@@ -76,6 +76,19 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
  * (the analyzer infers this from a string-literal initial value) or,
  * defensively, when its initial value is a bare string literal; a prop or
  * local const when its annotated (or inferred) type is `string`.
+ *
+ * Excludes any name bound as a `.map()`/`.filter()` loop callback's item
+ * or index parameter ANYWHERE in the component (Fable review, #2212): the
+ * lookup below is a flat, scope-blind `Set<string>` with no notion of a
+ * loop param shadowing an outer string-typed binding of the same name
+ * (`items.map((name) => 1 + name)` inside a component that also has a
+ * string `name` prop) — left unguarded, that shadowed `name` would be
+ * misdetected as string-typed and `1 + name` would silently lower to `.`
+ * instead of staying numeric `+`. Subtracting loop-bound names is coarse
+ * (it also suppresses a genuinely non-shadowed same-named string
+ * elsewhere in the component) but safe: the suppressed case just falls
+ * back to today's numeric `+` — the same, already-accepted residual as an
+ * unresolvable operand — never silently-wrong output.
  */
 export function collectStringValueNames(ir: ComponentIR): Set<string> {
   const names = new Set<string>()
@@ -90,5 +103,6 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   for (const c of ir.metadata.localConstants) {
     if (isStringTypeInfo(c.type ?? undefined) || isBareStringLiteral(c.value)) names.add(c.name)
   }
+  for (const bound of collectLoopBoundNames(ir)) names.delete(bound)
   return names
 }
