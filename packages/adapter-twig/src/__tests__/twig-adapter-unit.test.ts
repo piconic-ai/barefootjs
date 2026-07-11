@@ -483,4 +483,35 @@ function Widget({ label, values }: { label: string; values: number[] }) {
     expect(template).toContain("label ~ '!'")
     expect(template).not.toContain("label + '!'")
   })
+
+  // Fable re-review: a DESTRUCTURED loop param (`.map(({ name }) => ...)`)
+  // shadows an outer string prop of the same name too. Twig lowers the
+  // destructure to a `{% set name = __bf_item.name %}` local (#2087), which
+  // leaves `name` reachable as a bare identifier in the loop body —
+  // `collectLoopBoundNames` must read `paramBindings`, not just `param`
+  // (which holds the raw, un-parsed destructure pattern text here), to
+  // catch this shape.
+  test('a destructured loop param shadowing an outer string PROP stays numeric + inside the loop', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ name, rows }: { name: string; rows: { name: number }[] }) {
+  return <ul>{rows.map(({ name }) => <li key={name}>{1 + name}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + name')
+    expect(template).not.toContain('1 ~ name')
+  })
+
+  // Fable re-review: a `.filter(pred).map(cb)` chain's filter predicate
+  // param can itself shadow an outer string-typed name, independent of the
+  // map callback's own param — the predicate is lowered through the same
+  // binary/string-name machinery before any rename to the loop's param.
+  test('a filter() predicate param shadowing an outer string PROP stays numeric + in the filter condition', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ n, values }: { n: string; values: number[] }) {
+  return <ul>{values.filter(n => n + 1 > 3).map(v => <li key={v}>{v}</li>)}</ul>
+}
+`)
+    expect(template).toContain('(v + 1) > 3')
+    expect(template).not.toContain('(v ~ 1) > 3')
+  })
 })

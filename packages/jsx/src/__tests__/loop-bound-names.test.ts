@@ -67,4 +67,36 @@ describe('collectLoopBoundNames (#2212)', () => {
     `)
     expect(collectLoopBoundNames(component)).toEqual(new Set(['item']))
   })
+
+  // Fable re-review (#2212): `param` holds the raw pattern text for a
+  // destructured callback (`"{ name }"`), not the bound name itself — the
+  // real bound names live in `paramBindings`. Adapters that lower a
+  // destructure to a `{% set name = __bf_item.name %}`-style local (#2087)
+  // leave `name` reachable as a bare identifier in the loop body, so it
+  // needs the same exclusion as a plain loop param. `node.param`'s raw
+  // pattern text still ends up in the set too (added unconditionally,
+  // before this arm existed) — harmless noise, since it can never collide
+  // with a real identifier name.
+  test('a destructured loop param contributes its extracted binding names', () => {
+    const component = ir(`
+      function Test({ rows }: { rows: { name: string }[] }) {
+        return <ul>{rows.map(({ name }) => <li key={name}>{name}</li>)}</ul>
+      }
+      export { Test }
+    `)
+    expect(collectLoopBoundNames(component)).toEqual(new Set(['{ name }', 'name']))
+  })
+
+  // Fable re-review (#2212): a `.filter(pred).map(cb)` chain's filter
+  // predicate is emitted through the same binary/string-name machinery
+  // using its OWN param, which may differ from the map callback's `param`.
+  test('a filter().map() chain contributes both the filter predicate param and the map param', () => {
+    const component = ir(`
+      function Test({ values }: { values: number[] }) {
+        return <ul>{values.filter(n => n > 3).map(v => <li key={v}>{v}</li>)}</ul>
+      }
+      export { Test }
+    `)
+    expect(collectLoopBoundNames(component)).toEqual(new Set(['n', 'v']))
+  })
 })

@@ -38,6 +38,18 @@ export function collectLoopBoundNames(ir: ComponentIR): Set<string> {
       case 'loop':
         names.add(node.param)
         if (node.index) names.add(node.index)
+        // A destructured callback param (`.map(({ name }) => ...)`) binds
+        // its extracted names via `paramBindings`, not `param` itself
+        // (`param` holds the raw pattern text there) — adapters that lower
+        // the destructure to a `{% set name = __bf_item.name %}`-style
+        // local (#2087) leave `name` reachable as a bare identifier in the
+        // body, so it needs the same exclusion as a plain loop param.
+        for (const binding of node.paramBindings ?? []) names.add(binding.name)
+        // A `.filter(pred).map(cb)` chain's filter predicate is emitted
+        // through the same binary/string-name machinery, using its OWN
+        // param (which may differ from the map callback's `param`) before
+        // any rename to the loop param happens.
+        if (node.filterPredicate) names.add(node.filterPredicate.param)
         for (const child of node.children) visit(child)
         if (node.childComponent) {
           for (const child of node.childComponent.children) visit(child)
