@@ -22,7 +22,9 @@ export const conformancePins: ConformancePins = {
   // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
   // local const whose array-literal initializer the adapter's loop-source
   // gate refuses to bind (only string-derived locals resolve) — see #2208.
-  'static-array-children': [{ code: 'BF101', severity: 'error' }],
+  'static-array-children': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2208' },
+  ],
   // The `([emoji, users]) => ...` / `([id, t]) => ...` params in these two
   // fixtures no longer trip BF104 — the destructure itself now lowers
   // cleanly to a native `{% set %}` accessor (#2087 Phase B). But both
