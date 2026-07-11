@@ -6,6 +6,7 @@ export {
   createEffect,
   createDisposableEffect,
   createMemo,
+  createSelector,
   createRoot,
   onCleanup,
   onMount,

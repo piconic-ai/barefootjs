@@ -127,6 +127,12 @@ export function createSignal<T>(_initial?: T): never {
 export function createMemo<T>(_fn: () => T): never {
   return calledAtSSR('createMemo')
 }
+export function createSelector<T, U = T>(
+  _source: () => T,
+  _fn?: (key: U, value: T) => boolean,
+): never {
+  return calledAtSSR('createSelector')
+}
 export function createEffect(_fn: () => void): never {
   return calledAtSSR('createEffect')
 }

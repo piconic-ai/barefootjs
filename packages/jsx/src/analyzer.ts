@@ -50,6 +50,11 @@ export function needsTypeBasedDetection(source: string): boolean {
   if (REACTIVE_BRAND_PACKAGES.some(pkg => source.includes(pkg))) return true
   // BF023/BF024 nullable-key check needs getTypeAtLocation() on the key expression.
   if (/\.map\s*\(/.test(source)) return true
+  // createSelector's returned accessor is Reactive<>-branded like a library
+  // accessor above — a selector call outside any `.map()` (no loop in the
+  // file at all) would otherwise skip the TypeChecker entirely and miss the
+  // brand.
+  if (source.includes('createSelector')) return true
   return false
 }
 
@@ -1828,6 +1833,7 @@ function collectLocalDeclarations(root: ts.Node): Set<string> {
 // and are emitted by the compiler for 'use client' components.
 const CLIENT_EXPORTS = new Set([
   'createSignal', 'createEffect', 'createDisposableEffect', 'createMemo',
+  'createSelector',
   'createRoot', 'onCleanup', 'onMount', 'untrack', 'batch', 'splitProps',
   'forwardProps', 'unwrap', '__slot',
   'createContext', 'useContext', 'provideContext',
