@@ -45,15 +45,15 @@ export function Counter() {
 }
 `,
   components: {
-    // Class composition uses a template literal, NOT string `+`: every
-    // adapter has a dedicated template-literal concat lowering, whereas
-    // JS binary `+` currently lowers to the target language's numeric
-    // `+` — a PHP fatal on Twig/Blade at render time despite compiling
-    // clean (tracked separately, #2163). This fixture deliberately
-    // stays inside every adapter's supported envelope.
+    // Class composition uses JS binary `+` (not a template literal) —
+    // exercising #2163's fix: `isStringConcatBinary` detects the
+    // string-literal `'btn '` operand and lowers `+` to each target's
+    // string-concat operator (Twig `~`, Blade/PHP `.`) instead of its
+    // numeric `+`, which used to compile clean but fatal at PHP render
+    // time (`Unsupported operand types: string + string`).
     './button.tsx': `
 export function Button({ children, className = '', onClick }: { children?: unknown; className?: string; onClick?: () => void }) {
-  return <button className={\`btn \${className}\`} onClick={onClick}>{children}</button>
+  return <button className={'btn ' + className} onClick={onClick}>{children}</button>
 }
 `,
   },
