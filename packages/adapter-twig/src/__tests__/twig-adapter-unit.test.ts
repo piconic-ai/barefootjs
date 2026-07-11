@@ -407,3 +407,111 @@ export function Parent() {
 // `filter-nested-find-predicate` (BF101 via `expectedDiagnostics`) and
 // `filter-nested-callback-predicate-client` (the `/* @client */` suppression
 // twin, which must render clean).
+
+// Fable review (#2212): a loop callback's own param can shadow an outer
+// string-typed prop/const of the same name — `collectLoopBoundNames`
+// excludes every such name from `collectStringValueNames` so the shadowed
+// occurrence never gets misdetected as string-typed. SSR-only (no Hono/CSR):
+// a real, PRE-EXISTING, unrelated bug in ir-to-client-js's prop-substitution
+// (filed as #2222) means ANY component where a loop param shadows an
+// outer prop/const currently produces broken CLIENT js — so this can't be
+// pinned via a cross-adapter fixture without also tripping that bug. The SSR
+// template output alone, checked here, is unaffected by it.
+describe('TwigAdapter - loop param shadowing a string-typed name (#2212)', () => {
+  test('a loop param shadowing an outer string PROP stays numeric + inside the loop', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ label }: { label: string }) {
+  return <ul>{[2, 5].map((label) => <li key={label}>{1 + label}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + label')
+    expect(template).not.toContain('1 ~ label')
+  })
+
+  // The outer `const label` itself is also inlined by-value at every
+  // reference to the name (`_resolveLiteralConst`, scope-blind the same
+  // way — filed as #2221, separate from this test's own #2212 scope), so
+  // the loop body renders `1 + 'x'` rather than `1 + label`. That
+  // substitution happens upstream of operator selection; what this test
+  // actually pins is the OPERATOR itself never flipping to Twig's `~` for
+  // the shadowed occurrence, regardless of which literal/identifier form
+  // the operand takes by the time it reaches emission.
+  test('a loop param shadowing an outer string LOCAL CONST stays numeric + inside the loop', () => {
+    const { template } = compileAndGenerate(`
+function Widget() {
+  const label: string = 'x'
+  return <ul>{[2, 5].map((label) => <li key={label}>{1 + label}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + ')
+    expect(template).not.toContain('1 ~ ')
+  })
+
+  // `label + '!'` outside the loop concatenates via Twig's `~` regardless of
+  // whether `label` survives the loop-bound exclusion: a bare string
+  // *literal* operand (`'!'`) alone is decisive for `isStringConcatBinary`
+  // (JS `+` with a string literal is always string concat, independent of
+  // the other operand's type) — so this case never exercises the coarse
+  // exclusion trade-off at all. The trade-off documented above (a
+  // non-shadowed same-named string elsewhere in the component falling back
+  // to numeric `+`) only shows up when BOTH operands' string-ness is
+  // inferred solely from identifier lookup — e.g. `label + label`, where
+  // the only string-typed name involved is the one excluded for being
+  // loop-bound elsewhere in the component.
+  test('a same-named identifier added to itself outside the loop falls back to numeric + (the accepted coarse-exclusion trade-off)', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ label, values }: { label: string; values: number[] }) {
+  return <div>
+    <p>{label + label}</p>
+    <ul>{values.map((label) => <li key={label}>{1 + label}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain('label + label')
+    expect(template).not.toContain('label ~ label')
+  })
+
+  test('a string literal operand forces concat even for a name that is loop-bound elsewhere', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ label, values }: { label: string; values: number[] }) {
+  return <div>
+    <p>{label + '!'}</p>
+    <ul>{values.map((label) => <li key={label}>{1 + label}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain("label ~ '!'")
+    expect(template).not.toContain("label + '!'")
+  })
+
+  // Fable re-review: a DESTRUCTURED loop param (`.map(({ name }) => ...)`)
+  // shadows an outer string prop of the same name too. Twig lowers the
+  // destructure to a `{% set name = __bf_item.name %}` local (#2087), which
+  // leaves `name` reachable as a bare identifier in the loop body —
+  // `collectLoopBoundNames` must read `paramBindings`, not just `param`
+  // (which holds the raw, un-parsed destructure pattern text here), to
+  // catch this shape.
+  test('a destructured loop param shadowing an outer string PROP stays numeric + inside the loop', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ name, rows }: { name: string; rows: { name: number }[] }) {
+  return <ul>{rows.map(({ name }) => <li key={name}>{1 + name}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + name')
+    expect(template).not.toContain('1 ~ name')
+  })
+
+  // Fable re-review: a `.filter(pred).map(cb)` chain's filter predicate
+  // param can itself shadow an outer string-typed name, independent of the
+  // map callback's own param — the predicate is lowered through the same
+  // binary/string-name machinery before any rename to the loop's param.
+  test('a filter() predicate param shadowing an outer string PROP stays numeric + in the filter condition', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ n, values }: { n: string; values: number[] }) {
+  return <ul>{values.filter(n => n + 1 > 3).map(v => <li key={v}>{v}</li>)}</ul>
+}
+`)
+    expect(template).toContain('(v + 1) > 3')
+    expect(template).not.toContain('(v ~ 1) > 3')
+  })
+})

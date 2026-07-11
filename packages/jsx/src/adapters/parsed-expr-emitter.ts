@@ -228,6 +228,15 @@ export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string)
   if (expr.kind === 'member' && expr.object.kind === 'identifier' && expr.object.name === 'props') {
     return isStringName(expr.property)
   }
+  // A bare identifier (#2212): a destructured prop param or a same-file
+  // local const, string-typed per the caller's `isStringName` set — each
+  // adapter's `collectStringValueNames` already tracks `propsParams`, so a
+  // component's own `{ a, b }: { a: string; b: string }` destructure was
+  // only unreachable here for lack of this arm; extending
+  // `collectStringValueNames` to also walk `ir.metadata.localConstants`
+  // (adapter-side change) closes the "two same-file string consts" shape
+  // the same way.
+  if (expr.kind === 'identifier') return isStringName(expr.name)
   if (expr.kind === 'binary' && expr.op === '+') {
     return isStringTypedOperand(expr.left, isStringName) || isStringTypedOperand(expr.right, isStringName)
   }
