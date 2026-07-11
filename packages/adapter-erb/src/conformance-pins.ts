@@ -95,12 +95,10 @@ export const conformancePins: ConformancePins = {
   // `/* @client */` keyed-map slot-id elision contract only (same as
   // `todo-app`), not a render or BF101 gap.
   //
-  // #2073 follow-up: a function-reference `.map(format)` callback has no
-  // arrow body to serialize — not a CALLBACK_METHODS shape — so the
-  // UNSUPPORTED_METHODS gate (shared `@barefootjs/jsx` code) refuses it
-  // with BF101 rather than emitting a broken template. Same pin as
-  // mojo/xslate.
-  'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
+  // `array-map-function-reference` no longer pinned — a bare-identifier
+  // `.map(format)` callback now resolves one hop to its declaration
+  // (`resolveCallbackMethodFunctionReferences`, #2206), the same mechanism
+  // #2090 established for `.sort(fnref)`.
   // Edge-case sweep (Priority 12): `dangerouslySetInnerHTML` requires a
   // deliberate raw-HTML (unescaped) output affordance in the target
   // template language. No lowering exists yet, so the compiler refuses

@@ -95,13 +95,10 @@ export const conformancePins: ConformancePins = {
   // / etc. via the same evaluator-JSON mechanism as `.filter` / `.every` /
   // `.some`, so they render. Only the NESTED-in-a-predicate form above is
   // refused (#2038).
-  // #2073 follow-up (same as xslate): a function-reference `.map(format)`
-  // callback has no arrow body to serialize — not a CALLBACK_METHODS shape
-  // (`asCallbackMethodCall` requires an arrow argument) — so the shared
-  // `isSupported`'s `UNSUPPORTED_METHODS` gate refuses it with the generic
-  // "Expression not supported" BF101 rather than emitting a broken
-  // template.
-  'array-map-function-reference': [{ code: 'BF101', severity: 'error' }],
+  // `array-map-function-reference` no longer pinned — a bare-identifier
+  // `.map(format)` callback now resolves one hop to its declaration
+  // (`resolveCallbackMethodFunctionReferences`, #2206), the same mechanism
+  // #2090 established for `.sort(fnref)`.
   // Edge-case sweep (Priority 12): `dangerouslySetInnerHTML` requires a
   // deliberate raw-HTML (unescaped) output affordance in the target
   // template language. No lowering exists yet, so the compiler refuses

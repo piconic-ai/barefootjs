@@ -3239,9 +3239,10 @@ export { C }
     expect(t).toContain('bf_map_eval .Users')
   })
 
-  // The function-reference `.map(format)` BF101 refusal is now covered
-  // cross-adapter by the `array-map-function-reference` shared fixture's
-  // `expectedDiagnostics` entry above.
+  // The function-reference `.map(format)` case is now covered cross-adapter
+  // by the `array-map-function-reference` shared fixture — `format` resolves
+  // to its declaration (#2206) and the fixture compiles clean rather than
+  // refusing with BF101.
 })
 
 describe('GoTemplateAdapter - #1448 Tier C .flatMap(field projection)', () => {

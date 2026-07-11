@@ -685,7 +685,12 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       return ''
     }
 
-    const rubyExpr = this.convertExpressionToRuby(expr.expr)
+    // Thread the IR-carried `.parsed` tree through (mirrors go-template's
+    // `convertExpressionToGo(expr.expr, classify, expr.parsed)`) so a
+    // resolved bare-identifier `.map`/`.filter`/… callback
+    // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
+    // fresh, unresolved re-parse of the raw string.
+    const rubyExpr = this.convertExpressionToRuby(expr.expr, expr.parsed)
 
     // A bare read of the `children` prop (`{children}` / `{props.children}`,
     // optionally `?? fallback`) is pre-rendered HTML — captured via the

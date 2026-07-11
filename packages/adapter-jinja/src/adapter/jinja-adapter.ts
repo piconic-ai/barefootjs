@@ -568,8 +568,12 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     }
 
     // Text-position interpolation of a possibly-non-string value — see the
-    // file header, divergence 2.
-    const jinjaExpr = `bf.string(${this.convertExpressionToJinja(expr.expr)})`
+    // file header, divergence 2. Thread the IR-carried `.parsed` tree
+    // through (mirrors go-template's `convertExpressionToGo(expr.expr,
+    // classify, expr.parsed)`) so a resolved bare-identifier
+    // `.map`/`.filter`/… callback (`resolveCallbackMethodFunctionReferences`,
+    // #2206) isn't lost to a fresh, unresolved re-parse of the raw string.
+    const jinjaExpr = `bf.string(${this.convertExpressionToJinja(expr.expr, expr.parsed)})`
 
     if (expr.slotId) {
       return `{{ bf.text_start("${expr.slotId}") | safe }}{{ ${jinjaExpr} }}{{ bf.text_end() | safe }}`

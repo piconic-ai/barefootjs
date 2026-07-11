@@ -1,19 +1,21 @@
 import { createFixture } from '../../src/types'
 
 /**
- * Function-reference `.map(cb)` callback (#2073 follow-up).
+ * Function-reference `.map(cb)` callback (#2206).
  *
  * `tags.map(format)` passes a named function reference rather than an inline
- * arrow — there is no arrow body to serialize into the runtime evaluator's
- * ParsedExpr JSON, so the template adapters (Go / Mojo / Xslate) refuse the
- * shape loudly with BF101 via the `UNSUPPORTED_METHODS` gate rather than
- * silently dropping the callback. Hono / CSR evaluate real JS at runtime and
- * render it like any other `.map` — same marker/attr shape as
- * `array-map-value-template`.
+ * arrow. `resolveCallbackMethodFunctionReferences` (jsx-to-ir.ts) resolves
+ * `format` one hop to its same-file `const`/`function` declaration and
+ * splices the resolved arrow body in place, so the shape compiles exactly
+ * as if `format`'s body had been written inline — on every adapter, not
+ * just the JS-runtime ones. Before #2206, no arrow body existed to
+ * serialize into the runtime evaluator's ParsedExpr JSON, so every
+ * template adapter refused the shape loudly with BF101 via the
+ * `UNSUPPORTED_METHODS` gate rather than silently dropping the callback.
  */
 export const fixture = createFixture({
   id: 'array-map-function-reference',
-  description: '.map(format).join(" ") with a function-reference callback renders on JS-runtime adapters',
+  description: '.map(format).join(" ") with a function-reference callback resolves and renders on every adapter',
   source: `
 const format = (t: string) => '#' + t
 function TagLine({ tags }: { tags: string[] }) {

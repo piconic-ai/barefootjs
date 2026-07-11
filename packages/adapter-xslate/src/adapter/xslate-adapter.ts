@@ -541,7 +541,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       return ''
     }
 
-    const perlExpr = this.convertExpressionToKolon(expr.expr)
+    // Thread the IR-carried `.parsed` tree through (mirrors go-template's
+    // `convertExpressionToGo(expr.expr, classify, expr.parsed)`) so a
+    // resolved bare-identifier `.map`/`.filter`/… callback
+    // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
+    // fresh, unresolved re-parse of the raw string.
+    const perlExpr = this.convertExpressionToKolon(expr.expr, expr.parsed)
 
     if (expr.slotId) {
       return `<: $bf.text_start("${expr.slotId}") | mark_raw :><: ${perlExpr} :><: $bf.text_end() | mark_raw :>`
