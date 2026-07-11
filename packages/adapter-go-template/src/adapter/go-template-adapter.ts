@@ -67,6 +67,10 @@ import {
   envSignalReaderFor,
   computeSsrSeedPlan,
   isStringConcatBinary,
+  isDangerousInnerHtmlAttr,
+  resolveDangerousInnerHtml,
+  dangerousInnerHtmlMetacharViolation,
+  dangerousInnerHtmlDiagnostic,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -2757,7 +2761,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   renderElement(element: IRElement): string {
     const tag = element.tag
     const attrs = this.renderAttributes(element)
-    const children = this.renderChildren(element.children)
+    const dangerousHtml = this.renderDangerousInnerHtml(element)
+    const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
 
     let hydrationAttrs = ''
     if (element.needsScope) {
@@ -2790,6 +2795,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+  }
+
+  /**
+   * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — see the Blade
+   * adapter's identical helper for the full rationale. `null` means the
+   * attribute is absent (caller falls through to normal `renderChildren`);
+   * a non-`null` string (possibly `''`) replaces the children outright.
+   */
+  private renderDangerousInnerHtml(element: IRElement): string | null {
+    const resolution = resolveDangerousInnerHtml(element)
+    if (!resolution) return null
+    if (resolution.kind === 'dynamic') {
+      this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
+      return ''
+    }
+    const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
+    if (violation) {
+      const attr = element.attrs.find(isDangerousInnerHtmlAttr)!
+      this.errors.push(dangerousInnerHtmlDiagnostic(`{ __html: ${JSON.stringify(resolution.html)} }`, attr.loc, violation))
+      return ''
+    }
+    return resolution.html
   }
 
   renderExpression(expr: IRExpression): string {
@@ -5574,6 +5601,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // predicate (no BF101 / BF102). This keeps the BF102 remediation ("defer
       // it with /* @client */") accurate for attribute-only state.
       if (attr.clientOnly) continue
+      // `dangerouslySetInnerHTML` never renders as an HTML attribute — it's
+      // handled by `renderDangerousInnerHtml` instead, which replaces the
+      // element's children. Skip it here so its `{ __html: ... }` object
+      // literal never reaches the generic object-literal BF101 refusal
+      // (which would double-report alongside the purpose-built one).
+      if (isDangerousInnerHtmlAttr(attr)) continue
       // Rewrite JSX special-prop names to their HTML-attribute counterparts. The
       // Go template adapter has no JSX runtime to strip `key` / emit `data-key`,
       // so the rewrite happens at attribute-emit time. Mirror of the `key`

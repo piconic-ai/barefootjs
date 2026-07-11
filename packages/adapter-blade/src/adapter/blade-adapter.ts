@@ -289,6 +289,10 @@ import {
   queryHrefArgs,
   sortComparatorFromArrow,
   isValidHelperId,
+  isDangerousInnerHtmlAttr,
+  resolveDangerousInnerHtml,
+  dangerousInnerHtmlMetacharViolation,
+  dangerousInnerHtmlDiagnostic,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -669,7 +673,8 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   renderElement(element: IRElement): string {
     const tag = element.tag
     const attrs = this.renderAttributes(element)
-    const children = this.renderChildren(element.children)
+    const dangerousHtml = this.renderDangerousInnerHtml(element)
+    const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
 
     let hydrationAttrs = ''
     if (element.needsScope) {
@@ -702,6 +707,35 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     }
 
     return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+  }
+
+  /**
+   * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — replaces the
+   * element's normal children with a compile-time-literal raw-HTML string,
+   * spliced directly as template text (never through a `{!! !!}`-style
+   * runtime raw-output primitive: the value is already fully known at
+   * compile time, so no runtime escape hatch is needed, and using one would
+   * reopen a template-source injection surface for no benefit). Returns
+   * `null` when the attribute is absent (caller falls through to normal
+   * `renderChildren`); a non-`null` string (possibly `''`) means the caller
+   * must use it as-is instead — including the dynamic/guard-violation
+   * refusal cases, where the empty string is safe filler for a compile that
+   * fails anyway.
+   */
+  private renderDangerousInnerHtml(element: IRElement): string | null {
+    const resolution = resolveDangerousInnerHtml(element)
+    if (!resolution) return null
+    if (resolution.kind === 'dynamic') {
+      this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
+      return ''
+    }
+    const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
+    if (violation) {
+      const attr = element.attrs.find(isDangerousInnerHtmlAttr)!
+      this.errors.push(dangerousInnerHtmlDiagnostic(`{ __html: ${JSON.stringify(resolution.html)} }`, attr.loc, violation))
+      return ''
+    }
+    return resolution.html
   }
 
   // ===========================================================================
@@ -1559,6 +1593,12 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // the unsupported-expression lowering is never reached for a deferred
       // predicate (no BF101 / BF102). #1966
       if (attr.clientOnly) continue
+      // `dangerouslySetInnerHTML` never renders as an HTML attribute — it's
+      // handled by `renderDangerousInnerHtml` instead, which replaces the
+      // element's children. Skip it here so its `{ __html: ... }` object
+      // literal never reaches `refuseUnsupportedAttrExpression`'s generic
+      // BF101 (which would double-report alongside the purpose-built one).
+      if (isDangerousInnerHtmlAttr(attr)) continue
       // Rewrite JSX special-prop names to their HTML-attribute counterparts.
       let attrName: string
       if (attr.name === 'className') attrName = 'class'

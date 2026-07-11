@@ -353,6 +353,7 @@ import { fixture as deepNesting } from './deep-nesting'
 import { fixture as signalAttrAndText } from './signal-attr-and-text'
 import { fixture as selectOptionSelected } from './select-option-selected'
 import { fixture as dangerousInnerHtml } from './dangerous-inner-html'
+import { fixture as dangerousInnerHtmlDynamic } from './dangerous-inner-html-dynamic'
 import { fixture as multilineAttrValue } from './multiline-attr-value'
 import { fixture as stringSlice } from './methods/string-slice'
 import { fixture as stringReplaceAll } from './methods/string-replaceall'
@@ -620,6 +621,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalAttrAndText,
   selectOptionSelected,
   dangerousInnerHtml,
+  dangerousInnerHtmlDynamic,
   multilineAttrValue,
   stringSlice,
   stringReplaceAll,

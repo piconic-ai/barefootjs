@@ -80,10 +80,10 @@ export const conformancePins: ConformancePins = {
   // `.map(format)` callback now resolves one hop to its declaration
   // (`resolveCallbackMethodFunctionReferences`, #2206), the same mechanism
   // #2090 established for `.sort(fnref)`.
-  // Edge-case sweep (Priority 12): `dangerouslySetInnerHTML` requires a
-  // deliberate raw-HTML (unescaped) output affordance in the target
-  // template language. No lowering exists yet, so the compiler refuses
-  // the shape loudly instead of emitting entity-escaped markup that
-  // silently renders tags as text.
-  'dangerous-inner-html': [{ code: 'BF101', severity: 'error' }],
+  // `dangerous-inner-html` no longer pinned — a compile-time string-literal
+  // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
+  // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
+  // A dynamic/signal-derived value still refuses with BF101 — see the
+  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2215).
+  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2215' }],
 }
