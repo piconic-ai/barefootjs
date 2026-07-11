@@ -408,11 +408,23 @@ function collectFixtureDiagnostics(args: {
   adapter: TemplateAdapter
 }): CompilerError[] {
   const all: CompilerError[] = []
+  // Mirrors `bf build`'s real semantics (packages/compat/src/engine.ts): a
+  // fixture with sibling `components` compiles them onto one template
+  // instance, so cross-template calls from a loop body resolve at render
+  // time. Without this, `checkImportedLoopChildComponents` fires BF103 for
+  // every adapter even though the shape works in real usage (#2205).
+  // Assumes every relative import the fixture's source makes is present in
+  // `components` — a fixture that imports a sibling NOT provided there
+  // would have its legitimate BF103 suppressed here too, surfacing instead
+  // as a murkier render-time "missing template" error. Such a fixture is
+  // broken by construction regardless, so this isn't gated further.
+  const siblingTemplatesRegistered = Boolean(args.components)
   if (args.components) {
     for (const [filename, childSource] of Object.entries(args.components)) {
       const r = compileJSX(childSource.trimStart(), filename, {
         adapter: args.adapter,
         outputIR: true,
+        siblingTemplatesRegistered,
       })
       all.push(...r.errors)
     }
@@ -420,6 +432,7 @@ function collectFixtureDiagnostics(args: {
   const result = compileJSX(args.source.trimStart(), 'component.tsx', {
     adapter: args.adapter,
     outputIR: true,
+    siblingTemplatesRegistered,
   })
   all.push(...result.errors)
   return all

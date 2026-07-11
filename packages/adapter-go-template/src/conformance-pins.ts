@@ -15,19 +15,21 @@ export const conformancePins: ConformancePins = {
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic
   // values interpolated (`background-color:{{.Color}};padding:8px`) via
   // `tryLowerStyleObject` (#1322).
-  // Sibling-imported child component inside a loop body: the adapter
-  // emits `{{template "X" .}}` which only resolves if the user has
-  // compiled the sibling file and registered the template on the
-  // same instance. BF103 makes that requirement loud. (The barefoot
-  // CLI passes `siblingTemplatesRegistered: true` so CLI builds
-  // suppress the diagnostic — see compileJSX `siblingTemplatesRegistered`.)
-  'static-array-children': [{ code: 'BF103', severity: 'error' }],
-  // TodoApp / TodoAppSSR import `TodoItem` from a sibling file and
-  // call it inside a keyed `.map`. Same BF103 surface as
-  // `static-array-children` above — pinned at adapter level so the
-  // shared-component corpus stays adapter-neutral.
-  'todo-app': [{ code: 'BF103', severity: 'error' }],
-  'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
+  // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
+  // harness now passes `siblingTemplatesRegistered: true` for fixtures with
+  // sibling `components`, matching `bf build`'s real semantics, so the
+  // BF103 loop-body cross-template check no longer fires spuriously.
+  // (`todo-app-ssr` is still skipped on this adapter via
+  // `render-divergences.ts` — #2209 — for an unrelated signal-seeding gap;
+  // `todo-app`'s pre-hydration empty render is unaffected.)
+  // `static-array-children` similarly no longer hits BF103, but now hits a
+  // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
+  // local const whose array-literal initializer the adapter's loop-source
+  // gate refuses to bind (only string-derived locals resolve to a
+  // generated struct field) — see #2208.
+  'static-array-children': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2208' },
+  ],
   // `([emoji, users]) => ...` is an array-index tuple destructure — #2087
   // Phase B's widened gate now admits this shape (`destructure-array-index-in-map`
   // exercises the same `segments`-based lowering). The remaining refusal here
@@ -40,13 +42,11 @@ export const conformancePins: ConformancePins = {
   // array bound to such a const. See the `renderLoop` comment at the check
   // site; Jinja / ERB apply the same narrow check for the same reason.
   'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
-  // Same computed-const array as above, plus the pre-existing BF103 (a
-  // sibling-imported child component used inside the loop body) — the
-  // destructure param itself no longer contributes a diagnostic.
-  'static-array-from-props-with-component': [
-    { code: 'BF103', severity: 'error' },
-    { code: 'BF101', severity: 'error' },
-  ],
+  // Same computed-const array as above — the destructure param itself no
+  // longer contributes a diagnostic, and BF103 (sibling-imported child
+  // component in the loop body) no longer fires either now that the
+  // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
+  'static-array-from-props-with-component': [{ code: 'BF101', severity: 'error' }],
   // (`style-3-signals` graduated alongside `style-object-dynamic` — see note
   // above; the `style={{ … }}` object now lowers to a CSS string.)
   // (`tagged-template-classname` graduated by #2092 — the tag resolves

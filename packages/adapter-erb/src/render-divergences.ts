@@ -14,4 +14,13 @@
 
 import type { RenderDivergences } from '@barefootjs/jsx'
 
-export const renderDivergences: RenderDivergences = {}
+export const renderDivergences: RenderDivergences = {
+  // TodoApp seeds its `todos` signal from `(props.initialTodos ??
+  // []).map(t => ({ ...t, editing: false }))` — a compound expression this
+  // harness's `evaluateSignalInit` can't parse, so `todos` seeds as `nil`
+  // and the Ruby render crashes (`undefined method 'length' for nil`).
+  // Orthogonal to #2205 (sibling template registration, which these
+  // fixtures now pass cleanly): a test-harness signal-seeding gap.
+  'todo-app': 'https://github.com/piconic-ai/barefootjs/issues/2209',
+  'todo-app-ssr': 'https://github.com/piconic-ai/barefootjs/issues/2209',
+}

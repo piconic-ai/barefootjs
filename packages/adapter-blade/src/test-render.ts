@@ -157,8 +157,15 @@ export async function renderBladeComponent(options: RenderOptions): Promise<stri
     }
   }
 
-  // Compile parent source.
-  const result = compileJSX(source, 'component.tsx', { adapter, outputIR: true })
+  // Compile parent source. `siblingTemplatesRegistered: Boolean(components)`
+  // matches this harness's real behavior — every sibling child template is registered
+  // alongside the parent before rendering, so a loop-body cross-template
+  // call resolves at render time (#2205).
+  const result = compileJSX(source, 'component.tsx', {
+    adapter,
+    outputIR: true,
+    siblingTemplatesRegistered: Boolean(components),
+  })
 
   const errors = result.errors.filter(e => e.severity === 'error')
   if (errors.length > 0) {

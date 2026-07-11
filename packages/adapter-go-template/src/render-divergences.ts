@@ -17,4 +17,14 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
+  // TodoAppSSR (no `/* @client */` markers — the loop must render server-
+  // side) seeds its `todos` signal from `(props.initialTodos ??
+  // []).map(t => ({ ...t, editing: false }))`. This harness's signal-init
+  // seeding can't evaluate that compound expression, so `todos` seeds
+  // empty and `<ul class="todo-list">` renders with no `<li>`s. Orthogonal
+  // to #2205 (sibling template registration, which this fixture now
+  // compiles cleanly under): a test-harness signal-seeding gap. `todo-app`
+  // (client-hydrated variant) is unaffected — its initial empty SSR list
+  // is the correct pre-hydration render.
+  'todo-app-ssr': 'https://github.com/piconic-ai/barefootjs/issues/2209',
 }
