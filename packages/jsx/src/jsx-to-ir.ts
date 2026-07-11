@@ -34,7 +34,7 @@ import {
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames } from './analyzer-context.ts'
-import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, type ParsedExpr } from './expression-parser.ts'
+import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, type ParsedExpr } from './expression-parser.ts'
 import type { IRLoopSort, FunctionInfo } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
@@ -597,14 +597,22 @@ function parseValueExpr(trimmed: string): ParsedExpr {
  * re-parsing the string at emit time. Best-effort: a node this walk misses (or
  * an empty `expr`) simply has no `parsed`, and the adapter falls back to
  * parsing — so under-coverage is safe, never a behavioural change.
+ *
+ * Every parse is run through {@link resolveCallbackMethodFunctionReferences}
+ * (#2206) so a bare-identifier `.map`/`.filter`/… callback (`tags.map(format)`)
+ * resolves to its declaration wherever it can appear — text/attr/prop/provider
+ * expressions and the loop-array expression alike — not just one hardcoded
+ * spot.
  */
-function attachParsedExpressions(node: IRNode): void {
+function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext): void {
+  const parse = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseExpression(trimmed), analyzer)
+  const parseValue = (trimmed: string) => resolveCallbackMethodFunctionReferences(parseValueExpr(trimmed), analyzer)
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
-    if (trimmed) node.parsed = parseExpression(trimmed)
+    if (trimmed) node.parsed = parse(trimmed)
   } else if (node.type === 'conditional' || node.type === 'if-statement') {
     const trimmed = node.condition.trim()
-    if (trimmed) node.parsedCondition = parseExpression(trimmed)
+    if (trimmed) node.parsedCondition = parse(trimmed)
   }
   // Attach `parsed` to every expression-valued attribute / prop so adapters can
   // lower from the tree instead of re-parsing the string. Element attrs,
@@ -615,23 +623,23 @@ function attachParsedExpressions(node: IRNode): void {
     for (const attr of node.attrs) {
       if (attr.value.kind === 'expression') {
         const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parseValueExpr(trimmed)
+        if (trimmed) attr.value.parsed = parseValue(trimmed)
       } else if (attr.value.kind === 'spread') {
         const trimmed = attr.value.expr.trim()
-        if (trimmed) attr.value.parsed = parseExpression(trimmed)
+        if (trimmed) attr.value.parsed = parse(trimmed)
       }
     }
   } else if (node.type === 'component') {
     for (const prop of node.props) {
       if (prop.value.kind === 'expression') {
         const trimmed = prop.value.expr.trim()
-        if (trimmed) prop.value.parsed = parseValueExpr(trimmed)
+        if (trimmed) prop.value.parsed = parseValue(trimmed)
       }
     }
   } else if (node.type === 'provider') {
     if (node.valueProp.value.kind === 'expression') {
       const trimmed = node.valueProp.value.expr.trim()
-      if (trimmed) node.valueProp.value.parsed = parseValueExpr(trimmed)
+      if (trimmed) node.valueProp.value.parsed = parseValue(trimmed)
     }
   }
   switch (node.type) {
@@ -639,11 +647,11 @@ function attachParsedExpressions(node: IRNode): void {
     case 'component':
     case 'fragment':
     case 'provider':
-      for (const child of node.children) attachParsedExpressions(child)
+      for (const child of node.children) attachParsedExpressions(child, analyzer)
       break
     case 'async':
-      attachParsedExpressions(node.fallback)
-      for (const child of node.children) attachParsedExpressions(child)
+      attachParsedExpressions(node.fallback, analyzer)
+      for (const child of node.children) attachParsedExpressions(child, analyzer)
       break
     case 'loop': {
       // Attach the parse of the SAME `array` string the adapters consume
@@ -651,34 +659,34 @@ function attachParsedExpressions(node: IRNode): void {
       // `nested.loopArray`, which is exactly `loop.array`), so it can read
       // the tree instead of re-parsing with `ts.createSourceFile`.
       const trimmedArray = node.array.trim()
-      if (trimmedArray) node.arrayParsed = parseExpression(trimmedArray)
-      for (const child of node.children) attachParsedExpressions(child)
+      if (trimmedArray) node.arrayParsed = parse(trimmedArray)
+      for (const child of node.children) attachParsedExpressions(child, analyzer)
       // Loops also hold expression nodes off the main `children` array.
       if (node.childComponent) {
-        for (const child of node.childComponent.children) attachParsedExpressions(child)
+        for (const child of node.childComponent.children) attachParsedExpressions(child, analyzer)
       }
       for (const nested of node.nestedComponents ?? []) {
-        for (const child of nested.children) attachParsedExpressions(child)
+        for (const child of nested.children) attachParsedExpressions(child, analyzer)
       }
       for (const frag of node.flatMapCallback?.fragments ?? []) {
-        attachParsedExpressions(frag.ir)
+        attachParsedExpressions(frag.ir, analyzer)
       }
       break
     }
     case 'conditional':
-      attachParsedExpressions(node.whenTrue)
-      attachParsedExpressions(node.whenFalse)
+      attachParsedExpressions(node.whenTrue, analyzer)
+      attachParsedExpressions(node.whenFalse, analyzer)
       break
     case 'if-statement':
-      attachParsedExpressions(node.consequent)
-      if (node.alternate) attachParsedExpressions(node.alternate)
+      attachParsedExpressions(node.consequent, analyzer)
+      if (node.alternate) attachParsedExpressions(node.alternate, analyzer)
       break
   }
 }
 
 export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
   const root = buildIRRoot(analyzer)
-  if (root) attachParsedExpressions(root)
+  if (root) attachParsedExpressions(root, analyzer)
   return root
 }
 
@@ -2632,8 +2640,8 @@ function extractSortComparator(
  * vs. unresolved) is decided by the caller, not here.
  */
 function resolveSortComparatorIdentifier(name: string, ctx: TransformContext): ts.Expression | null {
-  const constInfo = findLocalConst(name, ctx)
-  const fnInfo = findLocalFunction(name, ctx)
+  const constInfo = findLocalConst(name, ctx.analyzer)
+  const fnInfo = findLocalFunction(name, ctx.analyzer)
   if (constInfo && fnInfo) return null
   if (constInfo) {
     const ast = parseConstInitializer(constInfo)
@@ -2644,6 +2652,120 @@ function resolveSortComparatorIdentifier(name: string, ctx: TransformContext): t
     return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
   }
   return null
+}
+
+/**
+ * Resolve a bare-identifier callback passed to a value-position higher-order
+ * array method (`tags.map(format)`, `.filter`, `.sort`, … — any name in
+ * {@link CALLBACK_METHODS}, #2206) to its underlying arrow / function-
+ * expression node — the SAME one-hop, ambiguity-refuses lookup #2090
+ * established for `.sort(fnref)` comparators (`resolveSortComparatorIdentifier`
+ * above). Kept as its own small function (mirroring the existing
+ * `resolveInterleaveTagIdentifier` precedent below) rather than sharing code
+ * with the sort resolver, so each call site's refusal semantics stay
+ * independently reviewable.
+ *
+ * Only needs `AnalyzerContext` (not a full `TransformContext`) because its
+ * caller, {@link resolveCallbackMethodFunctionReferences}, runs as a
+ * post-parse pass over an already-built `ParsedExpr` tree — no live
+ * `ts.Node`/source-file binding is available or needed, since
+ * `parseConstInitializer` / `parseFunctionInfoAsExpr` re-parse the
+ * analyzer's stored declaration TEXT into a fresh, isolated source file.
+ */
+function resolveCallbackMethodFunctionReferenceIdentifier(name: string, analyzer: AnalyzerContext): ts.Expression | null {
+  const constInfo = findLocalConst(name, analyzer)
+  const fnInfo = findLocalFunction(name, analyzer)
+  if (constInfo && fnInfo) return null
+  if (constInfo) {
+    const ast = parseConstInitializer(constInfo)
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
+  }
+  if (fnInfo) {
+    const ast = parseFunctionInfoAsExpr(fnInfo)
+    return ast && (ts.isArrowFunction(ast) || ts.isFunctionExpression(ast)) ? ast : null
+  }
+  return null
+}
+
+/**
+ * Post-parse pass (#2206): walk a `ParsedExpr` tree and resolve every
+ * `<recv>.<CALLBACK_METHODS method>(<bare identifier>, …rest)` call's
+ * callback argument to its declaration, so `tags.map(format).join(' ')`
+ * compiles exactly as if `format`'s body had been written inline
+ * (`tags.map(t => '#' + t).join(' ')`) — the shape `asCallbackMethodCall`
+ * (expression-parser.ts) already recognizes and every adapter's `map_eval`
+ * (#2073) already lowers.
+ *
+ * Runs AFTER `parseExpression`, not threaded into it, because the
+ * value-returning `.map(cb)` form is recognized generically downstream of
+ * parsing (`asCallbackMethodCall`'s `arrow.kind !== 'arrow'` check), not
+ * during it — `convertNode` already happily produces a generic `call` node
+ * with an `identifier` arg for `tags.map(format)` with no special-casing
+ * needed there. An unresolvable reference (import, non-function const,
+ * alias chain, cross-kind ambiguity — see
+ * {@link resolveCallbackMethodFunctionReferenceIdentifier}) or a resolved
+ * body that can't fold to a single expression is left untouched: the
+ * `identifier` arg passes through as-is, and `asCallbackMethodCall`'s
+ * existing arrow-kind check still refuses it with the current BF101,
+ * unchanged.
+ */
+function resolveCallbackMethodFunctionReferences(expr: ParsedExpr, analyzer: AnalyzerContext): ParsedExpr {
+  function visit(e: ParsedExpr): ParsedExpr {
+    switch (e.kind) {
+      case 'literal':
+      case 'identifier':
+      case 'regex':
+      case 'unsupported':
+        return e
+      case 'call': {
+        const callee = visit(e.callee)
+        const args = e.args.map(visit)
+        if (
+          callee.kind === 'member' && !callee.computed &&
+          CALLBACK_METHODS.has(callee.property) &&
+          args[0]?.kind === 'identifier'
+        ) {
+          const resolved = resolveCallbackMethodFunctionReferenceIdentifier(args[0].name, analyzer)
+          const arrow = resolved ? tsNodeToParsedExpr(resolved) : null
+          if (arrow && arrow.kind === 'arrow') args[0] = arrow
+        }
+        return { ...e, callee, args }
+      }
+      case 'member':
+        return { ...e, object: visit(e.object) }
+      case 'index-access':
+        return { ...e, object: visit(e.object), index: visit(e.index) }
+      case 'binary':
+      case 'logical':
+        return { ...e, left: visit(e.left), right: visit(e.right) }
+      case 'unary':
+        return { ...e, argument: visit(e.argument) }
+      case 'conditional':
+        return { ...e, test: visit(e.test), consequent: visit(e.consequent), alternate: visit(e.alternate) }
+      case 'template-literal':
+        return { ...e, parts: e.parts.map(p => (p.type === 'expression' ? { ...p, expr: visit(p.expr) } : p)) }
+      case 'array-literal':
+        return { ...e, elements: e.elements.map(visit) }
+      case 'array-method':
+        // `e.args` is a fixed-length tuple for some `method` variants (e.g.
+        // `flat`'s `args: []`) — `.map(visit)` preserves length/order (a
+        // callback resolution never adds/removes args), so this is a
+        // same-shape cast, not a structural change. TS can't verify the
+        // per-`method` tuple-length invariant across a `.map`, hence the
+        // whole-object cast rather than a narrower one.
+        return {
+          ...e,
+          object: visit(e.object),
+          args: e.args.map(visit),
+          ...(e.method === 'flat' && e.depthExpr ? { depthExpr: visit(e.depthExpr) } : {}),
+        } as ParsedExpr
+      case 'object-literal':
+        return { ...e, properties: e.properties.map(p => ({ ...p, value: visit(p.value) })) }
+      case 'arrow':
+        return { ...e, body: visit(e.body) }
+    }
+  }
+  return visit(expr)
 }
 
 /**
@@ -4434,7 +4556,7 @@ function tryResolveTemplateSpanFromConst(
 ): IRTemplatePart[] | null {
   // ${IDENT}
   if (ts.isIdentifier(expr)) {
-    const constInfo = findLocalConst(expr.text, ctx)
+    const constInfo = findLocalConst(expr.text, ctx.analyzer)
     if (!constInfo) return null
     const ast = parseConstInitializer(constInfo)
     if (!ast) return null
@@ -4447,7 +4569,7 @@ function tryResolveTemplateSpanFromConst(
   // ${IDENT[KEY]}
   if (ts.isElementAccessExpression(expr)) {
     if (!ts.isIdentifier(expr.expression)) return null
-    const constInfo = findLocalConst(expr.expression.text, ctx)
+    const constInfo = findLocalConst(expr.expression.text, ctx.analyzer)
     if (!constInfo) return null
     const ast = parseConstInitializer(constInfo)
     if (!ast || !ts.isObjectLiteralExpression(ast)) return null
@@ -4504,8 +4626,8 @@ function tryResolveTemplateSpanFromConst(
  *
  * Returns undefined when no const matches.
  */
-function findLocalConst(name: string, ctx: TransformContext) {
-  const matches = ctx.analyzer.localConstants.filter(c => c.name === name)
+function findLocalConst(name: string, analyzer: AnalyzerContext) {
+  const matches = analyzer.localConstants.filter(c => c.name === name)
   if (matches.length === 0) return undefined
   // Prefer the innermost (non-module) binding; fall back to whatever's
   // there if every match is at module scope.
@@ -4522,8 +4644,8 @@ function findLocalConst(name: string, ctx: TransformContext) {
  *
  * Returns undefined when no local function matches.
  */
-function findLocalFunction(name: string, ctx: TransformContext) {
-  const matches = ctx.analyzer.localFunctions.filter(f => f.name === name)
+function findLocalFunction(name: string, analyzer: AnalyzerContext) {
+  const matches = analyzer.localFunctions.filter(f => f.name === name)
   if (matches.length === 0) return undefined
   const fnScoped = matches.filter(f => !f.isModule)
   const pool = fnScoped.length > 0 ? fnScoped : matches
@@ -4613,7 +4735,7 @@ function tryResolveIdentifierAsTemplateLiteral(
   ident: ts.Identifier,
   ctx: TransformContext,
 ): IRTemplatePart[] | null {
-  const constInfo = findLocalConst(ident.text, ctx)
+  const constInfo = findLocalConst(ident.text, ctx.analyzer)
   if (!constInfo) return null
   const ast = parseConstInitializer(constInfo)
   if (!ast) return null
@@ -4823,8 +4945,8 @@ function tryDesugarInterleaveTaggedTemplate(
  * followed, matching that precedent. Returns null when nothing resolves.
  */
 function resolveInterleaveTagIdentifier(name: string, ctx: TransformContext): ts.Expression | null {
-  const constInfo = findLocalConst(name, ctx)
-  const fnInfo = findLocalFunction(name, ctx)
+  const constInfo = findLocalConst(name, ctx.analyzer)
+  const fnInfo = findLocalFunction(name, ctx.analyzer)
   // A name bound BOTH as a const and as a `function` declaration is the
   // same cross-kind ambiguity `resolveSortComparatorIdentifier` refuses:
   // it can only occur across scopes, and `FunctionInfo.isModule` reflects

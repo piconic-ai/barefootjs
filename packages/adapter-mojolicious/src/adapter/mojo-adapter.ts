@@ -665,7 +665,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       return ''
     }
 
-    const perlExpr = this.convertExpressionToPerl(expr.expr)
+    // Thread the IR-carried `.parsed` tree through (mirrors go-template's
+    // `convertExpressionToGo(expr.expr, classify, expr.parsed)`) so a
+    // resolved bare-identifier `.map`/`.filter`/… callback
+    // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
+    // fresh, unresolved re-parse of the raw string.
+    const perlExpr = this.convertExpressionToPerl(expr.expr, expr.parsed)
 
     if (expr.slotId) {
       return `<%== bf->text_start("${expr.slotId}") %><%= ${perlExpr} %><%== bf->text_end %>`

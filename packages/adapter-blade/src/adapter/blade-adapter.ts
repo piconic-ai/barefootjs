@@ -717,8 +717,13 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     }
 
     // Text-position interpolation of a possibly-non-string value — see the
-    // file header, "Stringification" (carried unchanged from Twig).
-    const bladeExpr = `$bf->string(${this.convertExpressionToBlade(expr.expr)})`
+    // file header, "Stringification" (carried unchanged from Twig). Thread
+    // the IR-carried `.parsed` tree through (mirrors go-template's
+    // `convertExpressionToGo(expr.expr, classify, expr.parsed)`) so a
+    // resolved bare-identifier `.map`/`.filter`/… callback
+    // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
+    // fresh, unresolved re-parse of the raw string.
+    const bladeExpr = `$bf->string(${this.convertExpressionToBlade(expr.expr, expr.parsed)})`
 
     if (expr.slotId) {
       return `{!! $bf->text_start("${expr.slotId}") !!}{!! e(${bladeExpr}) !!}{!! $bf->text_end() !!}`
