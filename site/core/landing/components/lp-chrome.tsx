@@ -19,7 +19,7 @@ export function LpHeader({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: st
           <span className="lp-logo-icon"><LogoIcon /></span>
         </a>
         <nav className="lp-nav-links" aria-label="Main">
-          <a href="/docs">Docs</a>
+          <a href="/docs/introduction">Docs</a>
           <a href={uiHref}>Components</a>
           <a href="/integrations">Integrations</a>
           <a href="https://github.com/piconic-ai/barefootjs">Source</a>
@@ -35,7 +35,7 @@ export function LpFooter({ uiHref = 'https://ui.barefootjs.dev' }: { uiHref?: st
     <footer className="lp-footer">
       <div className="lp-wrap lp-foot-row">
         <div>
-          <a href="/docs">Docs</a>
+          <a href="/docs/introduction">Docs</a>
           <a href={uiHref}>Components</a>
           <a href="/integrations">Integrations</a>
           <a href="/docs/advanced/compatibility-matrix">Compatibility</a>
