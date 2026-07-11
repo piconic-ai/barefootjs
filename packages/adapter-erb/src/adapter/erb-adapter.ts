@@ -88,6 +88,10 @@ import {
   queryHrefArgs,
   isValidHelperId,
   sortComparatorFromArrow,
+  isDangerousInnerHtmlAttr,
+  resolveDangerousInnerHtml,
+  dangerousInnerHtmlMetacharViolation,
+  dangerousInnerHtmlDiagnostic,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -636,7 +640,8 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   renderElement(element: IRElement): string {
     const tag = element.tag
     const attrs = this.renderAttributes(element)
-    const children = this.renderChildren(element.children)
+    const dangerousHtml = this.renderDangerousInnerHtml(element)
+    const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
 
     let hydrationAttrs = ''
     if (element.needsScope) {
@@ -671,6 +676,28 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     }
 
     return `<${tag}${attrs}${hydrationAttrs}>${children}</${tag}>`
+  }
+
+  /**
+   * `dangerouslySetInnerHTML={{ __html: '...' }}` (#2207) — see the Blade
+   * adapter's identical helper for the full rationale. `null` means the
+   * attribute is absent (caller falls through to normal `renderChildren`);
+   * a non-`null` string (possibly `''`) replaces the children outright.
+   */
+  private renderDangerousInnerHtml(element: IRElement): string | null {
+    const resolution = resolveDangerousInnerHtml(element)
+    if (!resolution) return null
+    if (resolution.kind === 'dynamic') {
+      this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
+      return ''
+    }
+    const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
+    if (violation) {
+      const attr = element.attrs.find(isDangerousInnerHtmlAttr)!
+      this.errors.push(dangerousInnerHtmlDiagnostic(`{ __html: ${JSON.stringify(resolution.html)} }`, attr.loc, violation))
+      return ''
+    }
+    return resolution.html
   }
 
   // ===========================================================================
@@ -1514,6 +1541,12 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // the unsupported-expression lowering is never reached for a
       // deferred predicate (no BF101 / BF102).
       if (attr.clientOnly) continue
+      // `dangerouslySetInnerHTML` never renders as an HTML attribute — it's
+      // handled by `renderDangerousInnerHtml` instead, which replaces the
+      // element's children. Skip it here so its `{ __html: ... }` object
+      // literal never reaches the generic object-literal BF101 refusal
+      // (which would double-report alongside the purpose-built one).
+      if (isDangerousInnerHtmlAttr(attr)) continue
       // Rewrite JSX special-prop names to their HTML-attribute
       // counterparts. `className` → `class`; `key` → `data-key` matches
       // the canonical Hono attribute name the client runtime reconciles

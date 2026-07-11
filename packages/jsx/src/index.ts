@@ -116,6 +116,13 @@ export { emitIRNode } from './adapters/ir-node-emitter.ts'
 export type { IRNodeEmitter, EmitIRNode } from './adapters/ir-node-emitter.ts'
 export { emitAttrValue } from './adapters/attr-value-emitter.ts'
 export type { AttrValueEmitter } from './adapters/attr-value-emitter.ts'
+export {
+  isDangerousInnerHtmlAttr,
+  resolveDangerousInnerHtml,
+  dangerousInnerHtmlMetacharViolation,
+  dangerousInnerHtmlDiagnostic,
+} from './adapters/dangerous-inner-html.ts'
+export type { DangerousInnerHtmlResolution } from './adapters/dangerous-inner-html.ts'
 
 // Client JS Generator
 export { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'

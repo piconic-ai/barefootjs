@@ -45,9 +45,10 @@ describe('compileForCompat', () => {
     expect(cell.ok).toBe(false)
     // `issues` is the UNION of every issue URL any BF101 pin carries on
     // this adapter (buildCompatCell attributes by code, not by fixture —
-    // see its docstring) — #2038 (this shape, nested filter callback) and
-    // #2208 (a different BF101 shape, the static-array-children loop-source
-    // gate) both surface here even though this test only exercises #2038's.
+    // see its docstring) — #2038 (this shape, nested filter callback),
+    // #2208 (static-array-children's loop-source gate), and #2215
+    // (dangerous-inner-html-dynamic, #2207's PR) all surface here even
+    // though this test only exercises #2038's shape.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
@@ -55,6 +56,7 @@ describe('compileForCompat', () => {
         issues: [
           'https://github.com/piconic-ai/barefootjs/issues/2038',
           'https://github.com/piconic-ai/barefootjs/issues/2208',
+          'https://github.com/piconic-ai/barefootjs/issues/2215',
         ],
       },
     ])
