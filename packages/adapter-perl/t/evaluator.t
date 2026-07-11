@@ -137,6 +137,23 @@ subtest 'boolean-valued ops return JS booleans, not 1/0' => sub {
     # `.length` is a string/array property only; a numeric scalar has none.
     my $len = BarefootJS::Evaluator::evaluate(nmem(nid('n'), 'length'), { n => 123 });
     ok(!defined $len, '(123).length is null, not 3');
+
+    # #2196: `.length` counts codepoints even when the input string does NOT
+    # carry Perl's internal UTF8 flag — the real-world shape a decoded-JSON
+    # or raw-request scalar can arrive in. Build "café" (4 codepoints),
+    # force the UTF8 flag on with `utf8::upgrade` (a Latin-1-range literal
+    # like "\x{00E9}" isn't reliably flagged on its own), then
+    # `utf8::encode` it back off — leaving the same 5 UTF-8 BYTES behind,
+    # exactly the input shape that used to make Perl's bare `length()`
+    # return 5 instead of 4.
+    my $cafe = "caf\x{00E9}";
+    utf8::upgrade($cafe);
+    ok(utf8::is_utf8($cafe), 'sanity: "café" is UTF8-flagged after utf8::upgrade');
+    utf8::encode($cafe);
+    ok(!utf8::is_utf8($cafe), 'sanity: utf8::encode dropped the UTF8 flag');
+    is(length($cafe), 5, 'sanity: the unflagged scalar is 5 raw UTF-8 bytes');
+    my $cafe_len = BarefootJS::Evaluator::evaluate(nmem(nid('s'), 'length'), { s => $cafe });
+    is($cafe_len, 4, '"café".length is 4 codepoints, not 5 bytes, even unflagged');
 };
 
 # `.includes` (#2075) is the one `array-method` in the evaluator subset,

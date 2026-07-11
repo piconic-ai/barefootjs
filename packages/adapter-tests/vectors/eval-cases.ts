@@ -91,6 +91,17 @@ export const evalCases: EvalCase[] = [
   { src: 'item.missing', env: { item: {} }, note: 'a missing field reads as null' },
   { src: 'item.tags.length', env: { item: { tags: ['x', 'y', 'z'] } }, note: '.length on an array field' },
   { src: 'item.name.length', env: { item: { name: 'abcd' } }, note: '.length on a string field' },
+  // Non-ASCII BMP `.length` (#2196 Level 1): every backend must agree with
+  // JS's UTF-16 code-unit count, which for BMP-only text equals the
+  // Unicode-codepoint count Go/Ruby/Python/PHP already produce — this pins
+  // Perl to the same codepoint count (previously UTF-8 BYTES: 5, 6, 3).
+  // Astral characters (e.g. "😀".length, 2 UTF-16 units vs 1 codepoint)
+  // stay OUT of this strict, all-backends-must-match corpus — that's
+  // Level 2 (full UTF-16 parity), tracked separately, and still flagged
+  // `known` in the generative divergence probe (generate-probe.ts).
+  { src: 'item.name.length', env: { item: { name: 'café' } }, note: '.length on a non-ASCII BMP string (accented Latin)' },
+  { src: 'item.name.length', env: { item: { name: '日本' } }, note: '.length on a non-ASCII BMP string (CJK)' },
+  { src: 'item.name.length', env: { item: { name: 'ﾊ' } }, note: '.length on a non-ASCII BMP string (halfwidth katakana)' },
   { src: 'item[i]', env: { item: [10, 20, 30], i: 1 }, note: 'index access by a numeric variable' },
   { src: 'item[i]', env: { item: [10, 20], i: 5 }, note: 'out-of-range index reads as null' },
   { src: 'row[k]', env: { row: { price: 9 }, k: 'price' }, note: 'index access into an object by a string key' },

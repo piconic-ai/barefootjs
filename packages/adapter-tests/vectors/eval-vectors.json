@@ -1146,6 +1146,84 @@
       "note": ".length on a string field"
     },
     {
+      "src": "item.name.length",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "name",
+          "computed": false,
+          "optional": false
+        },
+        "property": "length",
+        "computed": false,
+        "optional": false
+      },
+      "env": {
+        "item": {
+          "name": "café"
+        }
+      },
+      "expect": 4,
+      "note": ".length on a non-ASCII BMP string (accented Latin)"
+    },
+    {
+      "src": "item.name.length",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "name",
+          "computed": false,
+          "optional": false
+        },
+        "property": "length",
+        "computed": false,
+        "optional": false
+      },
+      "env": {
+        "item": {
+          "name": "日本"
+        }
+      },
+      "expect": 2,
+      "note": ".length on a non-ASCII BMP string (CJK)"
+    },
+    {
+      "src": "item.name.length",
+      "expr": {
+        "kind": "member",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "name",
+          "computed": false,
+          "optional": false
+        },
+        "property": "length",
+        "computed": false,
+        "optional": false
+      },
+      "env": {
+        "item": {
+          "name": "ﾊ"
+        }
+      },
+      "expect": 1,
+      "note": ".length on a non-ASCII BMP string (halfwidth katakana)"
+    },
+    {
       "src": "item[i]",
       "expr": {
         "kind": "index-access",

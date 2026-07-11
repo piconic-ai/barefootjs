@@ -266,6 +266,22 @@ sub _is_number ($v) {
     return (defined $v && !ref $v && !_is_string($v)) ? 1 : 0;
 }
 
+# Perl's builtin `length` counts UTF-8 BYTES unless the scalar already
+# carries the internal UTF8 flag (set when the caller decoded it, e.g. via
+# `JSON::PP->new->utf8->decode`) — a byte count diverges from JS `.length`
+# (UTF-16 code units) on ANY non-ASCII input, not just astral characters
+# (#2196 Level 1). Count Unicode codepoints instead: agrees with JS for
+# every BMP character; astral characters (emoji, CJK-ext) still diverge
+# from JS's 2-code-unit count (documented, separate known limitation) but
+# now agree with the other four backends (Go/Ruby/Python/PHP), which all
+# already count codepoints.
+sub _codepoint_length ($s) {
+    return length($s) if utf8::is_utf8($s);
+    my $copy = $s;
+    utf8::decode($copy); # no-op on already-decoded or invalid-UTF-8 input
+    return length($copy);
+}
+
 sub _nan {
     my $inf = 9**9**9;
     return $inf - $inf;
@@ -496,7 +512,7 @@ sub _read_property ($obj, $key) {
     # `.length` in the subset (JS `(123).length` is undefined → null), so
     # guard on _is_string rather than coercing the number to a string.
     # Matches the Go evaluator (numbers fall through to nil there).
-    return length($obj) if $key eq 'length' && _is_string($obj);
+    return _codepoint_length($obj) if $key eq 'length' && _is_string($obj);
     return undef;
 }
 
