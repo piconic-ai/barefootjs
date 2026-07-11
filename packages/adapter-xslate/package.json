@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/xslate",
-  "version": "0.18.5",
+  "version": "0.18.6",
   "description": "Text::Xslate (Kolon) adapter for BarefootJS — compiles IR to .tx templates and ships the Xslate rendering backend; runs under any PSGI/Plack app",
   "type": "module",
   "main": "./dist/index.js",
