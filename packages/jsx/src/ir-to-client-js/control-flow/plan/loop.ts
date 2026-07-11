@@ -23,6 +23,7 @@ import type {
   TopLevelLoop,
 } from '../../types.ts'
 import type { IRLoopChildComponent } from '../../../types.ts'
+import type { SkeletonSlotPaths } from '../../html-template.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 import type { InnerLoopsPlan } from './inner-loop.ts'
 
@@ -103,6 +104,14 @@ interface PlainLoopVariant extends DynamicLoopCommon {
    * stringifier falls back to the legacy per-row `emitTemplateCloneInline`.
    */
   skeletonTemplate?: string
+  /**
+   * Compile-time child-index paths for `skeletonTemplate`'s dynamic slots
+   * (perf, #2143). When present, the stringifier resolves attr/text/ref
+   * slots via direct `.firstChild`/`.nextSibling` property chains on a
+   * fresh clone instead of `qsa`/`$t`, falling back to the runtime lookup
+   * only for hydration (`__existing`) or any slot missing from the map.
+   */
+  skeletonPaths?: SkeletonSlotPaths
   /** Resolved reactive-effects plan — null forces the single-line renderItem shape. */
   reactiveEffects: ReactiveEffectsPlan | null
   /**

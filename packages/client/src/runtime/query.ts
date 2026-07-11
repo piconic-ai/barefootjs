@@ -593,8 +593,14 @@ export function $t(scope: Element | null, ...ids: string[]): (Text | null)[] {
 
 /**
  * Get or create the Text node immediately after a comment marker.
+ *
+ * Exported as `tAfter` for compiler-generated hoisted-loop codegen (#2143):
+ * when a loop row's text-marker position is known at compile time as a
+ * child-index path, the compiler resolves the `<!--bf:sN-->` Comment node
+ * directly (skipping `$t`'s TreeWalker scan) and calls this to get the
+ * same create-if-absent Text node `$t` would have returned.
  */
-function textNodeAfterComment(comment: Comment): Text {
+export function textNodeAfterComment(comment: Comment): Text {
   const next = comment.nextSibling
   if (next?.nodeType === Node.TEXT_NODE) {
     return next as Text
@@ -604,6 +610,8 @@ function textNodeAfterComment(comment: Comment): Text {
   comment.parentNode?.insertBefore(textNode, comment.nextSibling)
   return textNode
 }
+
+export { textNodeAfterComment as tAfter }
 
 /**
  * Check if a comment node belongs to the given scope (not inside a nested child scope).
