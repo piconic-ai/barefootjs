@@ -103,6 +103,34 @@ describe('resolveDangerousInnerHtml (#2207)', () => {
     const names = el.attrs.map(a => a.name)
     expect(names.filter(n => isDangerousInnerHtmlAttr({ name: n } as never))).toEqual(['dangerouslySetInnerHTML'])
   })
+
+  // Fable review (#2217): a `/* @client */`-deferred value is already a
+  // working escape hatch — every adapter's own renderAttributes skips a
+  // clientOnly attr, and the client's createEffect-driven innerHTML
+  // assignment (emit-reactive.ts) runs regardless of SSR — so this module
+  // must treat it as "render normally" (null), not refuse with BF101.
+  // Refusing here was a real regression the review caught: it broke the
+  // only path that made this module's own suggestion text achievable.
+  test('/* @client */-deferred dangerouslySetInnerHTML resolves to null (render normally, defer to hydrate)', () => {
+    const el = rootElement(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function Test() {
+        const [html, setHtml] = createSignal('<b>hi</b>')
+        return <div dangerouslySetInnerHTML={/* @client */ { __html: html() }} />
+      }
+      export { Test }
+    `)
+    expect(resolveDangerousInnerHtml(el)).toBeNull()
+  })
+
+  test('empty-string literal resolves as static with an empty html value', () => {
+    const el = rootElement(`
+      function Test() { return <div dangerouslySetInnerHTML={{ __html: '' }} /> }
+      export { Test }
+    `)
+    expect(resolveDangerousInnerHtml(el)).toEqual({ kind: 'static', html: '' })
+  })
 })
 
 describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
@@ -112,8 +140,12 @@ describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
     }
   })
 
-  test('unknown adapter id is a no-op (returns null)', () => {
-    expect(dangerousInnerHtmlMetacharViolation('<b>{{ anything }}</b>', 'not-a-real-adapter')).toBeNull()
+  // Fable review (#2217): a 9th template adapter with no entry in the guard
+  // table must fail CLOSED (refuse) rather than fail open (splice
+  // unguarded) — the safe default when nobody has verified that adapter's
+  // template syntax yet.
+  test('unknown adapter id fails CLOSED (refuses) rather than open', () => {
+    expect(dangerousInnerHtmlMetacharViolation('<b>plain html, no metachars</b>', 'not-a-real-adapter')).not.toBeNull()
   })
 
   const cases: Array<[adapterId: string, html: string]> = [
@@ -121,6 +153,11 @@ describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
     ['blade', '<b>{!! $evil !!}</b>'],
     ['blade', '<?php echo 1; ?>'],
     ['blade', '@if(true)x@endif'],
+    // Laravel's BladeCompiler compiles component tags by default — <x-foo>
+    // resolves and renders a live Blade component, not template
+    // substitution. The sharpest "not inert text" case in the table.
+    ['blade', '<x-alert>evil</x-alert>'],
+    ['blade', '</x-alert>'],
     ['erb', '<b><%= evil %></b>'],
     ['go-template', '<b>{{ .Evil }}</b>'],
     ['jinja', '<b>{{ evil }}</b>'],
@@ -130,8 +167,17 @@ describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
     ['twig', '<b>{{ evil }}</b>'],
     ['mojolicious', '<b><%= evil %></b>'],
     ['mojolicious', '% my $x = 1;\n<b>hi</b>'],
+    // Leading whitespace (not just a bare line start) before the line-code
+    // marker, and the marker as the very first character of the string.
+    ['mojolicious', '  % my $x = 1;\n<b>hi</b>'],
+    ['mojolicious', '% my $x = 1;'],
     ['xslate', '<b><: $evil :></b>'],
     ['xslate', ': my $x = 1;\n<b>hi</b>'],
+    ['xslate', '  : my $x = 1;\n<b>hi</b>'],
+    ['xslate', ': my $x = 1;'],
+    // A literal that IS only the metachar sequence, nothing else.
+    ['blade', '{{'],
+    ['go-template', '{{'],
   ]
   for (const [adapterId, html] of cases) {
     test(`${adapterId} refuses ${JSON.stringify(html)}`, () => {
