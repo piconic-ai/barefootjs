@@ -43,11 +43,18 @@ describe('compileForCompat', () => {
 
     const cell = buildCompatCell(errors, goTemplatePins)
     expect(cell.ok).toBe(false)
+    // `buildCompatCell` attributes issue URLs by DIAGNOSTIC CODE across the
+    // whole pins object, not per-fixture (see its own docstring) — go-template's
+    // pins carry BF101 on both `filter-nested-callback-predicate` (#2038) and
+    // `dangerous-inner-html-dynamic` (#2215, #2207's PR), so both surface here.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
         severity: 'error',
-        issues: ['https://github.com/piconic-ai/barefootjs/issues/2038'],
+        issues: [
+          'https://github.com/piconic-ai/barefootjs/issues/2038',
+          'https://github.com/piconic-ai/barefootjs/issues/2215',
+        ],
       },
     ])
   })
