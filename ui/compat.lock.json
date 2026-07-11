@@ -2051,48 +2051,72 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "go-template": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "minijinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "mojolicious": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         },
         "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
+          ],
+          "issues": [
+            "https://github.com/piconic-ai/barefootjs/issues/2208"
           ]
         }
       },
