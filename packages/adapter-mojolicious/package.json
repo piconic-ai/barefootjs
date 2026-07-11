@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/mojolicious",
-  "version": "0.18.4",
+  "version": "0.18.5",
   "description": "Mojolicious EP template adapter for BarefootJS - generates .html.ep files from IR",
   "type": "module",
   "main": "./dist/index.js",

@@ -156,14 +156,14 @@ export async function renderTwigComponent(options: RenderOptions): Promise<strin
     }
   }
 
-  // Compile parent source. `siblingTemplatesRegistered: true` matches this
-  // harness's real behavior — every sibling child template is registered
+  // Compile parent source. `siblingTemplatesRegistered: Boolean(components)`
+  // matches this harness's real behavior — every sibling child template is registered
   // alongside the parent before rendering, so a loop-body cross-template
   // call resolves at render time (#2205).
   const result = compileJSX(source, 'component.tsx', {
     adapter,
     outputIR: true,
-    siblingTemplatesRegistered: true,
+    siblingTemplatesRegistered: Boolean(components),
   })
 
   const errors = result.errors.filter(e => e.severity === 'error')
