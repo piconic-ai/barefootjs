@@ -199,6 +199,7 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
+  resolveStaticLoopSource,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -212,6 +213,7 @@ import {
   collectRootScopeNodes,
 } from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { staticValueToTwig } from './lib/static-value.ts'
 import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest } from './expr/emitters.ts'
 import type { TwigEmitContext, TwigSpreadContext, TwigMemoContext } from './emit-context.ts'
 import {
@@ -796,8 +798,18 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // (#2087 Phase A/B) no longer refuses this fixture's `([emoji, users])
     // => ...` param first. Same policy and shape as the Jinja / ERB
     // adapters' check.
+    // #2208: a loop source that is a fully-static array literal — either
+    // inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare identifier
+    // bound to a FUNCTION-scope local const whose initializer has no
+    // prop/signal/function-call dependency — inlines as a native Twig
+    // array/hash literal below, the same way a module-scope const's value
+    // is already seeded. A runtime-computed local (#2069, e.g.
+    // `Object.entries(props.tags).filter(...)`) still refuses below.
+    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants)
+    const staticArray = staticItems !== null ? staticValueToTwig(staticItems) : null
+
     const arrayName = loop.array.trim()
-    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
       const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
       if (arrayConst && !arrayConst.isModule && this._resolveLiteralConst(arrayName) === null) {
         this.errors.push({
@@ -813,7 +825,7 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
       }
     }
 
-    const rawArray = this.convertExpressionToTwig(loop.array)
+    const rawArray = staticArray ?? this.convertExpressionToTwig(loop.array)
     // Apply sort if present: wrap the loop array in the shared `bf.sort`
     // helper, binding the sorted result to a per-iteration local so the
     // helper runs once.

@@ -3866,3 +3866,82 @@ export function TodoList(props: { todos?: Todo[] }) {
     expect(types).toContain('TodoItems []')
   })
 })
+
+// #2208: a static-array loop whose body is a single child component with a
+// plain-value prop set bakes the per-item props/data-key directly into the
+// generated constructor — see `analyzeBakeableStaticChildLoop`
+// (`analysis/static-child-loop-bake.ts`). Two-file fixture shape (sibling
+// `list-item.tsx`, `siblingTemplatesRegistered: true`) since Go's own BF103
+// cross-template-registration check (independent of #2208) would otherwise
+// fire first — mirrors `jsx-runner.ts`'s `compileWithDiagnostics`.
+describe('GoTemplateAdapter - static array-of-objects loop source baking (#2208)', () => {
+  const STATIC_LIST_SOURCE = `
+import { ListItem } from './list-item'
+export function StaticList() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return (
+    <ul>
+      {items.map(item => (
+        <ListItem key={item.label} label={item.label} className="text-sm" />
+      ))}
+    </ul>
+  )
+}
+`
+
+  function compileStaticList(adapter?: GoTemplateAdapter) {
+    return compileJSX(STATIC_LIST_SOURCE, 'test.tsx', {
+      adapter: adapter ?? new GoTemplateAdapter(),
+      siblingTemplatesRegistered: true,
+      outputIR: false,
+    })
+  }
+
+  test('compiles with no BF101 (no longer refused)', () => {
+    const result = compileStaticList()
+    expect(result.errors ?? []).toEqual([])
+  })
+
+  test('constructor bakes each item\'s props and data-key directly', () => {
+    const result = compileStaticList()
+    const types = result.files.find(f => f.type === 'types')!.content
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha", ClassName: "text-sm"})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Beta", ClassName: "text-sm"})')
+    expect(types).toContain('BfDataKey = "Alpha"')
+    expect(types).toContain('BfDataKey = "Beta"')
+  })
+
+  test('the Input struct carries no ListItems field (nothing for a caller to supply)', () => {
+    const result = compileStaticList()
+    const types = result.files.find(f => f.type === 'types')!.content
+    const inputStruct = types.slice(types.indexOf('StaticListInput struct'), types.indexOf('StaticListProps struct'))
+    expect(inputStruct).not.toContain('ListItems')
+  })
+
+  test('the template still ranges over .ListItems (unchanged)', () => {
+    const result = compileStaticList()
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain(':= .ListItems}}')
+  })
+
+  test('a runtime-computed const (#2069) still refuses with BF101', () => {
+    const result = compileJSX(
+      `
+import { ListItem } from './list-item'
+export function TagList(props: { tags: string[] }) {
+  const entries = props.tags.filter(t => t !== '')
+  return (
+    <ul>
+      {entries.map(label => (
+        <ListItem key={label} label={label} />
+      ))}
+    </ul>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter(), siblingTemplatesRegistered: true },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+})

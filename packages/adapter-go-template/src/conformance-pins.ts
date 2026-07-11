@@ -22,14 +22,14 @@ export const conformancePins: ConformancePins = {
   // (`todo-app-ssr` is still skipped on this adapter via
   // `render-divergences.ts` — #2209 — for an unrelated signal-seeding gap;
   // `todo-app`'s pre-hydration empty render is unaffected.)
-  // `static-array-children` similarly no longer hits BF103, but now hits a
-  // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
-  // local const whose array-literal initializer the adapter's loop-source
-  // gate refuses to bind (only string-derived locals resolve to a
-  // generated struct field) — see #2208.
-  'static-array-children': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2208' },
-  ],
+  // `static-array-children` no longer pinned (#2208) — `items`'s
+  // array-literal initializer is now recognized as fully-static and its
+  // per-item ListItem props/data-key are baked directly into
+  // `NewStaticListProps`'s constructor (`analyzeBakeableStaticChildLoop`),
+  // since the loop body is a single child component with a plain-value
+  // prop set. See #2224 for the narrower remaining gap (a plain-ELEMENT
+  // loop body over a static array, or an inline/unnamed array literal —
+  // still refused).
   // `([emoji, users]) => ...` is an array-index tuple destructure — #2087
   // Phase B's widened gate now admits this shape (`destructure-array-index-in-map`
   // exercises the same `segments`-based lowering). The remaining refusal here

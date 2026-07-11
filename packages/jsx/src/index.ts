@@ -49,6 +49,7 @@ export type {
   ParamInfo,
   PropertyInfo,
   MemoInfo,
+  ConstantInfo,
   TypeInfo,
   TypeDefinition,
   SourceLocation,
@@ -88,6 +89,7 @@ export { rewriteImportsForTemplate } from './adapters/template-imports.ts'
 export { emitParsedExpr, groupBinaryOperand, isStringTypedOperand, isStringConcatBinary } from './adapters/parsed-expr-emitter.ts'
 export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
+export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export type { EnvSignalReader } from './adapters/env-signal.ts'
 export { matchQueryHrefCall, queryHrefArgs, type QueryHrefCall, type QueryHrefTriple } from './query-href-lowering.ts'
