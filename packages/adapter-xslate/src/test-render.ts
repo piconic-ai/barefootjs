@@ -135,8 +135,15 @@ export async function renderXslateComponent(options: RenderOptions): Promise<str
     }
   }
 
-  // Compile parent source.
-  const result = compileJSX(source, 'component.tsx', { adapter, outputIR: true })
+  // Compile parent source. `siblingTemplatesRegistered: true` matches this
+  // harness's real behavior — every sibling child template is registered
+  // alongside the parent before rendering, so a loop-body cross-template
+  // call resolves at render time (#2205).
+  const result = compileJSX(source, 'component.tsx', {
+    adapter,
+    outputIR: true,
+    siblingTemplatesRegistered: true,
+  })
 
   const errors = result.errors.filter(e => e.severity === 'error')
   if (errors.length > 0) {

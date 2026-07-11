@@ -11,15 +11,15 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
-  // Sibling-imported child component in a loop body: emits a
-  // cross-template call needing separate registration. BF103 makes
-  // the requirement loud (same as Jinja).
-  'static-array-children': [{ code: 'BF103', severity: 'error' }],
-  // TodoApp / TodoAppSSR import `TodoItem` from a sibling file and
-  // call it inside a keyed `.map`. Same BF103 (imported child in
-  // `.map`) as Jinja.
-  'todo-app': [{ code: 'BF103', severity: 'error' }],
-  'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
+  // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
+  // harness now passes `siblingTemplatesRegistered: true` for fixtures with
+  // sibling `components`, matching `bf build`'s real semantics, so the
+  // BF103 loop-body cross-template check no longer fires spuriously.
+  // `static-array-children` similarly no longer hits BF103, but now hits a
+  // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
+  // local const whose array-literal initializer the adapter's loop-source
+  // gate refuses to bind (only string-derived locals resolve) — see #2208.
+  'static-array-children': [{ code: 'BF101', severity: 'error' }],
   // The `([emoji, users]) => …` array-destructure param itself now lowers
   // (#2087 Phase B — see the destructure comment below), but the loop
   // ARRAY is a function-scope computed const (`const entries =
@@ -28,12 +28,10 @@ export const conformancePins: ConformancePins = {
   // check and policy as Jinja / ERB) instead of silently iterating zero
   // times over an unbound name.
   'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
-  // Both BF103 (imported child) and BF101 (computed local-const loop
-  // array, as above) fire.
-  'static-array-from-props-with-component': [
-    { code: 'BF103', severity: 'error' },
-    { code: 'BF101', severity: 'error' },
-  ],
+  // BF101 (computed local-const loop array, as above) fires; BF103
+  // (imported child in the loop body) no longer does now that the
+  // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
+  'static-array-from-props-with-component': [{ code: 'BF101', severity: 'error' }],
   // #2087 Phase B: every `.map()` destructure shape in the shared corpus
   // now lowers on Blade via an `@php(...)` local built from the binding's
   // structured `segments` path (`bladeLoopBindingAccessor` in

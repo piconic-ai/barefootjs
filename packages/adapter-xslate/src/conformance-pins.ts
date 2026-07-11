@@ -9,17 +9,15 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
-  // Sibling-imported child component in a loop body: emits a
-  // cross-template call needing separate registration. BF103 makes
-  // the requirement loud (same as mojo).
-  'static-array-children': [{ code: 'BF103', severity: 'error' }],
-  // TodoApp / TodoAppSSR import `TodoItem` from a sibling file and
-  // call it inside a keyed `.map`. With the standalone-filter fix in
-  // place these reach the SAME BF103 (imported child in `.map`) as
-  // mojo — NOT BF101 — confirming the `.filter(...)` chain itself now
-  // lowers and the only remaining gate is the imported-child one.
-  'todo-app': [{ code: 'BF103', severity: 'error' }],
-  'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
+  // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
+  // harness now passes `siblingTemplatesRegistered: true` for fixtures with
+  // sibling `components`, matching `bf build`'s real semantics, so the
+  // BF103 loop-body cross-template check no longer fires spuriously.
+  // `static-array-children` similarly no longer hits BF103, but now hits a
+  // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
+  // local const whose array-literal initializer the adapter's loop-source
+  // gate refuses to bind (only string-derived locals resolve) — see #2208.
+  'static-array-children': [{ code: 'BF101', severity: 'error' }],
   // `([emoji, users]) => ...` / `([id, t]) => ...` are plain array-index
   // (tuple) destructures, no rest — #2087 Phase B's `segments`-walking
   // accessor lowers both to `$__bf_item[0]` / `$__bf_item[1]` `: my` locals
@@ -32,12 +30,11 @@ export const conformancePins: ConformancePins = {
   // simply unreachable before because BF104 refused the destructure shape
   // first.
   'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
-  // Both BF103 (sibling-imported `<Tag>` child component) and the BF101
-  // above fire; BF104 no longer does (see above).
-  'static-array-from-props-with-component': [
-    { code: 'BF103', severity: 'error' },
-    { code: 'BF101', severity: 'error' },
-  ],
+  // The BF101 above fires; BF104 no longer does (see above), and BF103
+  // (sibling-imported `<Tag>` child component in the loop body) no longer
+  // does either now that the conformance harness passes
+  // `siblingTemplatesRegistered: true` (#2205).
+  'static-array-from-props-with-component': [{ code: 'BF101', severity: 'error' }],
   // #1310 / #2087: rest destructure in .map() callback. All four shapes now
   // lower via #2087 Phase B's `segments`-walking accessor:
   //   - object-rest read via member access (`rest-destructure-object-in-map`):

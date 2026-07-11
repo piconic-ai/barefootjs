@@ -11,15 +11,17 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
-  // Sibling-imported child component in a loop body: emits a
-  // cross-template call needing separate registration. BF103 makes
-  // the requirement loud (same as xslate).
-  'static-array-children': [{ code: 'BF103', severity: 'error' }],
-  // TodoApp / TodoAppSSR import `TodoItem` from a sibling file and
-  // call it inside a keyed `.map`. Same BF103 (imported child in
-  // `.map`) as xslate.
-  'todo-app': [{ code: 'BF103', severity: 'error' }],
-  'todo-app-ssr': [{ code: 'BF103', severity: 'error' }],
+  // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
+  // harness now passes `siblingTemplatesRegistered: true` for fixtures with
+  // sibling `components`, matching `bf build`'s real semantics, so the
+  // BF103 loop-body cross-template check no longer fires spuriously. (Both
+  // fixtures are still skipped on this adapter via `render-divergences.ts`
+  // — #2209 — for an unrelated signal-seeding gap.)
+  // `static-array-children` similarly no longer hits BF103, but now hits a
+  // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
+  // local const whose array-literal initializer the adapter's loop-source
+  // gate refuses to bind (only string-derived locals resolve) — see #2208.
+  'static-array-children': [{ code: 'BF101', severity: 'error' }],
   // #2087 Phase A/B widened the destructure gate (`isLowerableLoopDestructure`)
   // to admit array-index / nested-path fixed bindings, so the
   // `([emoji, users]) => ...` / `([id, t]) => ...` params in these two
@@ -44,10 +46,10 @@ export const conformancePins: ConformancePins = {
   'static-array-from-props': [
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2087' },
   ],
-  // Both BF103 (imported child) and BF101 (unresolvable computed loop
-  // array, see above) fire.
+  // BF101 (unresolvable computed loop array, see above) fires; BF103
+  // (imported child in the loop body) no longer does now that the
+  // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
   'static-array-from-props-with-component': [
-    { code: 'BF103', severity: 'error' },
     { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2087' },
   ],
   // Rest-destructure / structured-path `.map()` callbacks (#2087 Phase B):
