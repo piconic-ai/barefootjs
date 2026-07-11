@@ -31,8 +31,10 @@ export const COMPILE_THREW_CODE = 'COMPILE_THREW'
  *   Used by the `bun run compat` CLI against real ui/ components.
  * - `'conformance'` — mirrors `collectFixtureDiagnostics`
  *   (packages/adapter-tests/src/jsx-runner.ts) exactly: any `components`
- *   children are compiled first (each with `{ adapter, outputIR: true }`),
- *   then the entry with the same options, concatenating every error.
+ *   children are compiled first (each with `{ adapter, outputIR: true,
+ *   siblingTemplatesRegistered }`), then the entry with the same options,
+ *   concatenating every error. `siblingTemplatesRegistered` is true iff
+ *   `components` is present, matching `bf build`'s real semantics (#2205).
  *   Used by the pin-consistency test to replay the adapter conformance
  *   suite's own compile shape.
  *
@@ -52,13 +54,22 @@ export function compileForCompat(
   try {
     if (mode === 'conformance') {
       const all: CompilerError[] = []
+      const siblingTemplatesRegistered = Boolean(components)
       if (components) {
         for (const [filename, childSource] of Object.entries(components)) {
-          const childResult = compileJSX(childSource.trimStart(), filename, { adapter, outputIR: true })
+          const childResult = compileJSX(childSource.trimStart(), filename, {
+            adapter,
+            outputIR: true,
+            siblingTemplatesRegistered,
+          })
           all.push(...childResult.errors)
         }
       }
-      const result = compileJSX(source.trimStart(), filePath, { adapter, outputIR: true })
+      const result = compileJSX(source.trimStart(), filePath, {
+        adapter,
+        outputIR: true,
+        siblingTemplatesRegistered,
+      })
       all.push(...result.errors)
       return all
     }
