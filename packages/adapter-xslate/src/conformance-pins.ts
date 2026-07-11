@@ -12,7 +12,9 @@ export const conformancePins: ConformancePins = {
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the
-  // BF103 loop-body cross-template check no longer fires spuriously.
+  // BF103 loop-body cross-template check no longer fires spuriously. (Both
+  // fixtures are still skipped on this adapter via `render-divergences.ts`
+  // — #2209 — for an unrelated signal-seeding gap.)
   // `static-array-children` similarly no longer hits BF103, but now hits a
   // DIFFERENT, pre-existing, orthogonal gap: `items` is a function-scope
   // local const whose array-literal initializer the adapter's loop-source
