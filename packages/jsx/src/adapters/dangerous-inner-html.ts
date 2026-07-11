@@ -11,9 +11,13 @@
  * the template) — never routed through a `|safe`/`|raw`/`{!! !!}`-style
  * runtime raw-output primitive, which would reopen a template-source
  * injection surface for no benefit (the value is already fully known at
- * compile time). A DYNAMIC value (signal, prop, template literal, local
- * const, anything non-literal) is refused with `BF101`: Hono/CSR already
- * support it (the client drives a `createEffect`-based `el.innerHTML = …`
+ * compile time). A DYNAMIC value (signal, prop, a template literal WITH a
+ * substitution, local const, anything non-literal) is refused with
+ * `BF101` — a no-substitution template literal is NOT dynamic; the parser
+ * normalizes it to the same `{kind:'literal', literalType:'string'}` shape
+ * as a plain string literal, so it's treated identically (see
+ * `staticHtmlLiteral` below). Hono/CSR already support it (the client
+ * drives a `createEffect`-based `el.innerHTML = …`
  * assignment — see `ir-to-client-js/emit-reactive.ts`), so this is a
  * template-adapter-only gap, tracked separately (#2215) rather than folded
  * into this literal-only cut.
@@ -65,11 +69,14 @@ export function resolveDangerousInnerHtml(element: IRElement): DangerousInnerHtm
  * `{ __html: '<b>bold</b>' }` → the literal string, nothing else. Exactly
  * one property, key `__html` (identifier or string form — `{ __html: … }`
  * and `{ '__html': … }` are equivalent JS), non-shorthand (`{ __html }`
- * would read a variable, not a literal), value a plain string literal.
- * A template literal (even one with no `${}` substitutions), a local
- * `const`, string concatenation, or any other shape all fall through to
- * `null` — no const-folding, no partial evaluation. Widening this is a
- * single-place change here, deliberately not attempted in v1 (#2207).
+ * would read a variable, not a literal), value a compile-time STRING
+ * LITERAL `ParsedExpr` (`{kind:'literal', literalType:'string'}`) — which
+ * a no-substitution template literal (`` `<b>bold</b>` ``) already parses
+ * to, so it's accepted the same as a quoted string. A template literal
+ * WITH a substitution, a local `const`, string concatenation, or any other
+ * non-literal shape all fall through to `null` — no const-folding, no
+ * partial evaluation. Widening this is a single-place change here,
+ * deliberately not attempted in v1 (#2207).
  */
 function staticHtmlLiteral(parsed: ParsedExpr): string | null {
   if (parsed.kind !== 'object-literal') return null
@@ -169,7 +176,7 @@ export function dangerousInnerHtmlDiagnostic(
   return {
     code: 'BF101',
     severity: 'error',
-    message: `dangerouslySetInnerHTML requires an inline { __html: '...' } string literal on template adapters${expr ? `: ${expr.trim()}` : ''}${detail}`,
+    message: `dangerouslySetInnerHTML requires a compile-time string literal __html value on template adapters (e.g. { __html: '...' })${expr ? `: ${expr.trim()}` : ''}${detail}`,
     loc,
     suggestion: {
       message:

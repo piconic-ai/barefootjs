@@ -191,7 +191,7 @@ describe('dangerousInnerHtmlDiagnostic (#2207)', () => {
     const diag = dangerousInnerHtmlDiagnostic('html', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } })
     expect(diag.code).toBe('BF101')
     expect(diag.severity).toBe('error')
-    expect(diag.message).toContain('dangerouslySetInnerHTML requires an inline')
+    expect(diag.message).toContain('dangerouslySetInnerHTML requires a compile-time string literal')
     expect(diag.suggestion?.message).toContain('2215')
   })
 })
