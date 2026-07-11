@@ -4351,7 +4351,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L190 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4408,7 +4408,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const [__rt_s0] = $t(__el, 's0')
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item()) }) }
     return __el
   }, 'l0')
@@ -4472,7 +4473,7 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L168 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4529,7 +4530,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const [__rt_s0] = $t(__el, 's0')
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item()) }) }
     return __el
   }, 'l0')
@@ -4541,7 +4543,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L180 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4598,7 +4600,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items().filter(item => item.active), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const [__rt_s0] = $t(__el, 's0')
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
     return __el
   }, 'l0')
@@ -5042,7 +5045,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5099,7 +5102,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => todos().filter(t => !t.done).toSorted((a, b) => a.date - b.date), _s1, (t) => String(t.id), (t, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const [__rt_s0] = $t(__el, 's0')
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(t().name) }) }
     return __el
   }, 'l0')
@@ -5173,7 +5177,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L67 — ✅ Stable key — DOM nodes reused when list changes 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5230,7 +5234,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const [__rt_s0] = $t(__el, 's0')
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
     return __el
   }, 'l0')
@@ -5242,7 +5247,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L70 — ❌ Index key — DOM nodes recreated on reorder 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray } from '@barefootjs/client/runtime'
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5299,7 +5304,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item, i) => String(i), (item, i, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const [__rt_s0] = $t(__el, 's0')
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
     if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
     return __el
   }, 'l0')

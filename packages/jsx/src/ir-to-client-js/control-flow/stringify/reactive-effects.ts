@@ -40,6 +40,16 @@ export interface StringifyReactiveEffectsOptions {
    * `<!--bf-loop-i-->`-bounded siblings). Optional — defaults to `false`.
    */
   bodyIsMultiRoot?: boolean
+  /**
+   * Compile-time `__p` index for each attr slotId (perf, #2143) — see
+   * `buildSkeletonPathPlan`. When a slot has an entry, the emitted lookup
+   * becomes `__p ? __p[i] : qsa(...)` instead of the bare `qsa(...)` call;
+   * `__p` is `null` on the hydration branch (`__existing`), so hydration
+   * still resolves through the battle-tested runtime lookup.
+   */
+  elementIndexBySlot?: ReadonlyMap<string, number>
+  /** Same as `elementIndexBySlot`, for text-marker slots (`$t`). */
+  textIndexBySlot?: ReadonlyMap<string, number>
 }
 
 export function stringifyReactiveEffects(
@@ -47,7 +57,7 @@ export function stringifyReactiveEffects(
   plan: ReactiveEffectsPlan,
   opts: StringifyReactiveEffectsOptions,
 ): void {
-  const { indent, elVar, bodyIsMultiRoot } = opts
+  const { indent, elVar, bodyIsMultiRoot, elementIndexBySlot, textIndexBySlot } = opts
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
   const pc = plan.profileComponentName
   const bindingBfId = (slotId: string): string => profileBindingId(pc, slotId)
@@ -55,7 +65,11 @@ export function stringifyReactiveEffects(
   // 1. Reactive attribute effects (one qsa per slot, then per-attr createEffect).
   for (const slot of plan.attrSlots) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
-    lines.push(`${indent}{ const ${varName} = ${lookup}(${elVar}, '[bf="${slot.slotId}"]')`)
+    const pIdx = elementIndexBySlot?.get(slot.slotId)
+    const lookupExpr = pIdx !== undefined
+      ? `__p ? __p[${pIdx}] : ${lookup}(${elVar}, '[bf="${slot.slotId}"]')`
+      : `${lookup}(${elVar}, '[bf="${slot.slotId}"]')`
+    lines.push(`${indent}{ const ${varName} = ${lookupExpr}`)
     lines.push(`${indent}if (${varName}) {`)
     for (const attr of slot.attrs) {
       lines.push(`${indent}  createEffect(() => {`)
@@ -69,7 +83,7 @@ export function stringifyReactiveEffects(
 
   // 2. Outer text effects (slots NOT inside any conditional branch).
   for (const text of plan.outerTexts) {
-    emitOuterText(lines, indent, elVar, text, bindingBfId(text.slotId))
+    emitOuterText(lines, indent, elVar, text, bindingBfId(text.slotId), textIndexBySlot?.get(text.slotId))
   }
 
   // 3. Reactive conditionals — each emits an insert(...) over `elVar` whose
@@ -85,9 +99,16 @@ function emitOuterText(
   elVar: string,
   text: ReactiveTextEffect,
   bfId: string = '',
+  pIdx?: number,
 ): void {
   const varName = `__rt_${varSlotId(text.slotId)}`
-  lines.push(`${indent}{ const [${varName}] = $t(${elVar}, '${text.slotId}')`)
+  if (pIdx !== undefined) {
+    // Direct-path resolution (#2143): `__p` holds the marker Comment node;
+    // `tAfter` mirrors `$t`'s create-if-absent Text-node semantics exactly.
+    lines.push(`${indent}{ const ${varName} = __p ? tAfter(__p[${pIdx}]) : $t(${elVar}, '${text.slotId}')[0]`)
+  } else {
+    lines.push(`${indent}{ const [${varName}] = $t(${elVar}, '${text.slotId}')`)
+  }
   lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${bfId}) }`)
 }
 

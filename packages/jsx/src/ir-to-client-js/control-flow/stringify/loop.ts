@@ -28,6 +28,7 @@ import { emitRefCall, varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr } from './template-parse.ts'
+import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.ts'
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
@@ -47,14 +48,18 @@ import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } fro
 export function emitLoopChildRefs(
   lines: string[],
   refs: readonly LoopChildRefBinding[],
-  opts: { indent: string; elVar: string; bodyIsMultiRoot: boolean },
+  opts: { indent: string; elVar: string; bodyIsMultiRoot: boolean; elementIndexBySlot?: ReadonlyMap<string, number> },
 ): void {
   if (refs.length === 0) return
-  const { indent, elVar, bodyIsMultiRoot } = opts
+  const { indent, elVar, bodyIsMultiRoot, elementIndexBySlot } = opts
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
   for (const ref of refs) {
     const varName = `__rf_${varSlotId(ref.childSlotId)}`
-    lines.push(`${indent}{ const ${varName} = ${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`)
+    const pIdx = elementIndexBySlot?.get(ref.childSlotId)
+    const lookupExpr = pIdx !== undefined
+      ? `__p ? __p[${pIdx}] : ${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`
+      : `${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`
+    lines.push(`${indent}{ const ${varName} = ${lookupExpr}`)
     lines.push(`${indent}if (${varName}) ${emitRefCall(ref.callback, varName)} }`)
   }
 }
@@ -181,10 +186,37 @@ export function stringifyPlainLoop(
       singleRootLayout: 'inline',
     })
   }
-  if (reactiveEffects !== null) {
-    stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
+  // Direct child-index paths (perf, #2143): only reachable when hoistedTpl
+  // is set, which itself requires a single-root, conditional-free body — so
+  // `reactiveEffects.conditionals` is always empty here and needs no path
+  // handling. `__p` is `null` on the hydration branch (`__existing` truthy)
+  // since the skeleton's empty markers/omitted attrs don't describe the
+  // SSR-rendered tree; every resolution falls back to qsa/$t there.
+  let pathPlan: SkeletonPathPlan | null = null
+  if (hoistedTpl && plan.skeletonPaths) {
+    const elementSlotIds = [
+      ...(reactiveEffects?.attrSlots.map(s => s.slotId) ?? []),
+      ...childRefs.map(r => r.childSlotId),
+    ]
+    const textSlotIds = reactiveEffects?.outerTexts.map(t => t.slotId) ?? []
+    if (elementSlotIds.length > 0 || textSlotIds.length > 0) {
+      const built = buildSkeletonPathPlan(plan.skeletonPaths, '__el', { elementSlotIds, textSlotIds })
+      if (built.arrayElems.length > 0) {
+        pathPlan = built
+        lines.push(`${bodyIndent}const __p = __existing ? null : [${built.arrayElems.join(', ')}]`)
+      }
+    }
   }
-  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot })
+  if (reactiveEffects !== null) {
+    stringifyReactiveEffects(lines, reactiveEffects, {
+      indent: bodyIndent,
+      elVar: '__el',
+      bodyIsMultiRoot,
+      elementIndexBySlot: pathPlan?.elementIndexBySlot,
+      textIndexBySlot: pathPlan?.textIndexBySlot,
+    })
+  }
+  emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot, elementIndexBySlot: pathPlan?.elementIndexBySlot })
   lines.push(`${bodyIndent}return __el`)
   lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }

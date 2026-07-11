@@ -876,6 +876,196 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
 }
 
 /**
+ * Child-node index paths for a hoisted loop skeleton (perf, #2143): computed
+ * alongside `buildLoopSkeletonTemplate` from the SAME IR tree, so the
+ * compiler can emit direct `.firstChild`/`.nextSibling` property chains
+ * (Solid-style) instead of a per-row `qsa`/`$t` runtime lookup for every
+ * dynamic slot in the hoisted single-root loop fast path.
+ *
+ * Only ever consumed for a FRESH clone of the hoisted skeleton — hydration
+ * (`__existing`, real SSR-rendered DOM) keeps using `qsa`/`$t`, since the
+ * skeleton's empty text markers and omitted dynamic attrs don't describe the
+ * SSR-rendered tree's actual shape (see `computeSkeletonSlotPaths`).
+ */
+export interface SkeletonSlotPaths {
+  /** slotId -> childNodes-index path from the clone root to the element carrying `bf="slotId"`. Empty array = the root itself. */
+  elementPaths: ReadonlyMap<string, readonly number[]>
+  /** slotId -> path to the first Comment of the `<!--bf:slotId--><!--/-->` marker pair. */
+  textMarkerPaths: ReadonlyMap<string, readonly number[]>
+}
+
+/**
+ * Tags whose HTML-parser behavior can silently restructure or drop children
+ * relative to the naive IR-tree model (implied table sections, `<select>`/
+ * `<optgroup>` child-dropping, `<p>` auto-close, leading-newline drop in
+ * `<pre>`/`<textarea>`, `<template>` content relocating into `.content`). A
+ * skeleton containing any of these bails on path computation entirely —
+ * the loop keeps its hoisted-clone fast path, but every slot lookup falls
+ * back to `qsa`/`$t`.
+ */
+const SKELETON_PATH_HAZARD_TAGS = new Set([
+  'table', 'thead', 'tbody', 'tfoot', 'caption', 'colgroup', 'col',
+  'select', 'optgroup',
+  'p',
+  'pre', 'textarea', 'listing',
+  'template',
+  'math', // MathML foreign-content: breakout tags pop content back out, same class of hazard as SVG.
+])
+
+/**
+ * Tag groups the HTML parser force-closes when a tag from the group is
+ * nested inside ANY other open tag from the SAME group — not just an
+ * identical tag (e.g. `<h2>` inside `<h1>` closes the `<h1>`, `<dd>` inside
+ * `<dt>` closes the `<dt>`). A skeleton hitting this bails on path
+ * computation entirely (see `SKELETON_PATH_HAZARD_TAGS` doc).
+ */
+const SKELETON_PATH_FORCE_CLOSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
+  new Set(['a']),
+  new Set(['button']),
+  new Set(['form']),
+  new Set(['option']),
+  new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']),
+  new Set(['dd', 'dt']),
+  new Set(['li']),
+]
+
+function skeletonForceCloseGroup(tag: string): number {
+  return SKELETON_PATH_FORCE_CLOSE_GROUPS.findIndex(group => group.has(tag))
+}
+
+interface SkeletonPathState {
+  elementPaths: Map<string, readonly number[]>
+  textMarkerPaths: Map<string, readonly number[]>
+  bailed: boolean
+}
+
+/**
+ * Compute per-slot child-index paths for a loop skeleton already proven
+ * safe by `buildLoopSkeletonTemplate` — call this ONLY after that returned
+ * non-null for the same `(node, safe)` pair; it assumes the same shape
+ * guarantees (no spreads/conditionals/components/nested loops) and does not
+ * re-derive them. Returns `null` when the tree contains a parser-hazard tag
+ * (see `SKELETON_PATH_HAZARD_TAGS`) that could make the index-path model
+ * diverge from the browser's actual parsed structure.
+ */
+export function computeSkeletonSlotPaths(node: IRNode, safe: LoopSkeletonSafeSlots): SkeletonSlotPaths | null {
+  const state: SkeletonPathState = { elementPaths: new Map(), textMarkerPaths: new Map(), bailed: false }
+  walkSkeletonPathNode(node, [], safe, state, new Set())
+  if (state.bailed) return null
+  return { elementPaths: state.elementPaths, textMarkerPaths: state.textMarkerPaths }
+}
+
+function walkSkeletonPathNode(
+  node: IRNode,
+  path: readonly number[],
+  safe: LoopSkeletonSafeSlots,
+  state: SkeletonPathState,
+  forceCloseAncestors: ReadonlySet<number>,
+): void {
+  if (state.bailed || node.type !== 'element') return
+  if (SKELETON_PATH_HAZARD_TAGS.has(node.tag)) { state.bailed = true; return }
+  const groupIdx = skeletonForceCloseGroup(node.tag)
+  if (groupIdx >= 0 && forceCloseAncestors.has(groupIdx)) { state.bailed = true; return }
+  // Void elements never legally carry children; if the IR claims otherwise
+  // the browser reparses `</tag>` as stray content instead of a close tag,
+  // diverging from the naive one-node-per-element model.
+  const flatChildren = flattenSkeletonChildren(node.children)
+  if (VOID_ELEMENTS.has(node.tag) && flatChildren.length > 0) { state.bailed = true; return }
+  // Foster parenting (#2143 review): a bare `<tr>` root is intentionally NOT
+  // in SKELETON_PATH_HAZARD_TAGS (it's the common loop-row shape), but
+  // non-`td`/`th` element children — and any non-whitespace text run —
+  // directly inside it get foster-parented OUT of the row by the HTML
+  // parser, shifting every sibling index after them. Comments (the `bf:sN`
+  // marker pairs) are unaffected — comments are inserted in place even in
+  // table-related insertion modes.
+  if (node.tag === 'tr' && hasForeignTableRowContent(flatChildren)) { state.bailed = true; return }
+  if (node.slotId) state.elementPaths.set(node.slotId, path)
+  const nextAncestors = groupIdx >= 0
+    ? new Set([...forceCloseAncestors, groupIdx])
+    : forceCloseAncestors
+  walkSkeletonPathChildren(flatChildren, path, safe, state, nextAncestors)
+}
+
+/** True if `children` (already flattened) contains anything the HTML parser would foster-parent out of a `<tr>`. */
+function hasForeignTableRowContent(children: readonly IRNode[]): boolean {
+  for (const child of children) {
+    if (child.type === 'text') {
+      if (child.value.trim() !== '') return true
+      continue
+    }
+    if (child.type === 'element' && child.tag !== 'td' && child.tag !== 'th') {
+      return true
+    }
+  }
+  return false
+}
+
+/** Splice fragment children inline — a fragment contributes no DOM node of its own. */
+function flattenSkeletonChildren(children: readonly IRNode[]): IRNode[] {
+  const out: IRNode[] = []
+  for (const child of children) {
+    if (child.type === 'fragment') {
+      out.push(...flattenSkeletonChildren(child.children))
+    } else {
+      out.push(child)
+    }
+  }
+  return out
+}
+
+/**
+ * Walk one level of (already flattened) children, tracking the DOM child
+ * index as it will exist on a FRESH clone of the skeleton (empty text
+ * markers, no dynamic attrs) — not the per-row interpolated template.
+ * Mirrors the browser's text-node-merging behavior: adjacent text content
+ * (including a dropped null/undefined expression) collapses into a single
+ * Text node; an empty literal string contributes no node at all.
+ */
+function walkSkeletonPathChildren(
+  children: readonly IRNode[],
+  parentPath: readonly number[],
+  safe: LoopSkeletonSafeSlots,
+  state: SkeletonPathState,
+  forceCloseAncestors: ReadonlySet<number>,
+): void {
+  let idx = 0
+  let pendingText = false
+  for (const child of children) {
+    if (state.bailed) return
+    switch (child.type) {
+      case 'text': {
+        if (child.value === '') continue
+        if (!pendingText) idx += 1
+        pendingText = true
+        continue
+      }
+      case 'expression': {
+        if (child.expr === 'null' || child.expr === 'undefined') continue
+        if (!child.slotId || !safe.reactiveTextSlotIds.has(child.slotId)) { state.bailed = true; return }
+        state.textMarkerPaths.set(child.slotId, [...parentPath, idx])
+        idx += 2 // the marker pair: <!--bf:sN--> then <!--/-->
+        pendingText = false
+        continue
+      }
+      case 'element': {
+        walkSkeletonPathNode(child, [...parentPath, idx], safe, state, forceCloseAncestors)
+        idx += 1
+        pendingText = false
+        continue
+      }
+      case 'fragment':
+        continue // already flattened
+      default:
+        // conditional/component/loop/if-statement/provider/async/slot: none
+        // of these should reach here — buildLoopSkeletonTemplate would have
+        // already returned null for the same tree. Bail defensively.
+        state.bailed = true
+        return
+    }
+  }
+}
+
+/**
  * Generate an HTML template for composite element reconciliation.
  * Identical to irToHtmlTemplate except component nodes become placeholder
  * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.

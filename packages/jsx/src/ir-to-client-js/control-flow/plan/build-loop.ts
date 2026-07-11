@@ -103,6 +103,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
     mapPreambleWrapped: elem.mapPreamble ? wrap(elem.mapPreamble) : '',
     template: elem.template,
     skeletonTemplate: elem.skeletonTemplate,
+    skeletonPaths: elem.skeletonPaths,
     reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem, profileComponentName) : null,
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,

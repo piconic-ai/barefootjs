@@ -6,7 +6,8 @@ import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity.ts'
-import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate } from './html-template.ts'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, type SkeletonSlotPaths } from './html-template.ts'
+import { templateRootIsSvg } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
 import { walkIR, stopAt } from './walker.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
@@ -673,6 +674,7 @@ export function collectElements(
       let template = ''
       let staticItemTemplate: string | undefined
       let skeletonTemplate: string | undefined
+      let skeletonPaths: SkeletonSlotPaths | undefined
       if (l.childComponent) {
         template = '' // childComponent path uses createComponent directly
         // CSR materialize fallback (#1268): when the loop array references an
@@ -724,10 +726,18 @@ export function collectElements(
           // expressions, …) and returns `null` for anything it can't prove
           // safe; the plan builder (`build-loop.ts`) falls back to the
           // per-row `template` above whenever this stays `undefined`.
-          skeletonTemplate = buildLoopSkeletonTemplate(l.children[0], {
+          const skeletonSafeSlots = {
             reactiveAttrKeys: new Set(bindings.reactiveAttrs.map(a => `${a.childSlotId}::${a.attrName}`)),
             reactiveTextSlotIds: new Set(bindings.reactiveTexts.map(t => t.slotId)),
-          }) ?? undefined
+          }
+          skeletonTemplate = buildLoopSkeletonTemplate(l.children[0], skeletonSafeSlots) ?? undefined
+          // Direct child-index paths (perf, #2143): only attempted when the
+          // skeleton itself hoisted, and skipped for SVG roots for now (the
+          // `<svg>`-wrap namespace fix-up is orthogonal and untested against
+          // this path model — safe fallback to qsa/$t for those loops).
+          if (skeletonTemplate && !templateRootIsSvg(skeletonTemplate)) {
+            skeletonPaths = computeSkeletonSlotPaths(l.children[0], skeletonSafeSlots) ?? undefined
+          }
         }
       }
 
@@ -748,6 +758,7 @@ export function collectElements(
         template,
         staticItemTemplate,
         skeletonTemplate,
+        skeletonPaths,
         childEventHandlers: childHandlers,
         bindings,
         childComponent: l.childComponent,

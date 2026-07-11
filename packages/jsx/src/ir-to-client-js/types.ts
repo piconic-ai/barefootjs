@@ -22,6 +22,7 @@ import type {
   ImportInfo,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
+import type { SkeletonSlotPaths } from './html-template.ts'
 
 export interface ClientJsContext {
   componentName: string
@@ -529,6 +530,14 @@ export interface TopLevelLoop extends LoopCore {
    * proven covered by an effect).
    */
   skeletonTemplate?: string
+  /**
+   * Compile-time child-index paths for `skeletonTemplate`'s dynamic slots
+   * (perf, #2143), computed by `computeSkeletonSlotPaths` from the same IR
+   * tree. `undefined` means "resolve every slot via `qsa`/`$t` at runtime"
+   * (skeletonTemplate is still hoisted/cloned — only the runtime lookups on
+   * top of the fresh clone become the fallback rather than the path chain).
+   */
+  skeletonPaths?: SkeletonSlotPaths
   childEventHandlers: string[] // Bare-identifier event handler names (for the reachability graph)
   childComponent?: IRLoopChildComponent // For createComponent-based rendering
   nestedComponents?: IRLoopChildComponent[] // For nested components in loop bodies
