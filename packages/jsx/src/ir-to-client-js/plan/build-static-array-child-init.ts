@@ -124,6 +124,11 @@ function buildInnerLoopNestedPlan(
   innerComps: readonly IRLoopChildComponent[],
 ): InnerLoopNestedInitPlan {
   const outerIndexParam = elem.index || '__idx'
+  // The user's declared inner index name, falling back to the synthetic
+  // `__innerIdx` — same idiom as the outer `elem.index || '__idx'` above.
+  // Hardcoding the synthetic name left a referenced user index unbound and
+  // `initChild`'s prop getters threw `ReferenceError` at hydration (#2231).
+  const innerIndexParam = innerLoop.index || '__innerIdx'
   const comps: InnerLoopComp[] = innerComps.map(comp => ({
     componentName: comp.name,
     selector: buildCompSelector(comp),
@@ -141,7 +146,8 @@ function buildInnerLoopNestedPlan(
     innerContainerSlotId: innerLoop.containerSlotId ?? null,
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
-    innerOffsetExpr: buildLoopChildIndexExpr('__innerIdx', innerLoop.offset),
+    innerIndexParam,
+    innerOffsetExpr: buildLoopChildIndexExpr(innerIndexParam, innerLoop.offset),
     innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
     depth: innerLoop.depth,
     comps,
@@ -179,9 +185,14 @@ function buildComponentRootedInnerLoopPlan(
     containerVar: `_${varSlotId(elem.slotId)}`,
     outerArrayExpr: elem.array,
     outerParam: elem.param,
+    // Declared index names only (#2231) — the zip shape never indexes by
+    // position, so there's no synthetic fallback and index-less loops keep
+    // byte-identical output.
+    outerIndexParam: elem.index,
     outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
+    innerIndexParam: innerLoop.index,
     innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
     depth: innerLoop.depth,
     comps,

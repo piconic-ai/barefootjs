@@ -122,7 +122,16 @@ export interface InnerLoopNestedInitPlan {
   innerContainerSlotId: string | null
   innerArrayExpr: string
   innerParam: string
-  /** Inner offset — `__innerIdx` plus any sibling-offset terms. */
+  /**
+   * Inner index parameter identifier — the user's declared `.map((item, i)
+   * => ...)` index name, or the synthetic `__innerIdx` when the callback
+   * declares none (#2231). Emitted as the inner `forEach`'s second param so
+   * prop getters that close over the index resolve it (previously the
+   * synthetic name was hardcoded and a referenced user index threw
+   * `ReferenceError` from `initChild`'s first prop read).
+   */
+  innerIndexParam: string
+  /** Inner offset — `innerIndexParam` plus any sibling-offset terms. */
   innerOffsetExpr: string
   /**
    * Inner `.map()` callback preamble locals, emitted after the
@@ -161,11 +170,21 @@ export interface ComponentRootedInnerLoopInitPlan {
   /** Outer loop's array expression. */
   outerArrayExpr: string
   outerParam: string
+  /**
+   * Outer `.map()` index param name, or `null` when the callback declares
+   * none (#2231). Unlike `inner-loop-nested`, this shape needs no synthetic
+   * fallback — the document-order zip never indexes by position — so the
+   * param is appended to the `forEach` head only when declared, keeping
+   * index-less loops byte-identical.
+   */
+  outerIndexParam: string | null
   /** Outer `.map()` callback preamble locals (#1064). */
   outerPreludeStatements: PreludeStatements
   /** Inner loop's array expression (references the outer param). */
   innerArrayExpr: string
   innerParam: string
+  /** Inner `.map()` index param name, or `null` — see `outerIndexParam` (#2231). */
+  innerIndexParam: string | null
   /** Inner `.map()` callback preamble locals (#1064). */
   innerPreludeStatements: PreludeStatements
   /** Depth used in the leading comment line. */
