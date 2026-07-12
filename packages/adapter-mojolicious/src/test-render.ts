@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileJSX, extractSsrDefaults, augmentInheritedPropAccesses, importsSearchParams } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, augmentInheritedPropAccesses, importsSearchParams, evaluateSignalInit, tryEvaluateSignalInit } from '@barefootjs/jsx'
 import type { ComponentIR } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -457,9 +457,9 @@ function buildChildDefaultsPerl(ir: ComponentIR): string {
   for (const param of ir.metadata.propsParams) {
     declared.add(param.name)
     if (param.defaultValue) {
-      const perlValue = jsToPerlValue(param.defaultValue)
-      if (perlValue !== null) {
-        entries.push(`${param.name} => ${perlValue}`)
+      const result = tryEvaluateSignalInit(param.defaultValue.trim())
+      if (result.ok) {
+        entries.push(`${param.name} => ${toPerlLiteral(result.value)}`)
         continue
       }
     }
@@ -507,9 +507,9 @@ function buildPerlProps(
   for (const param of ir.metadata.propsParams) {
     if (props && param.name in props) continue
     if (param.defaultValue) {
-      const perlValue = jsToPerlValue(param.defaultValue)
-      if (perlValue !== null) {
-        entries.push(`${param.name} => ${perlValue}`)
+      const result = tryEvaluateSignalInit(param.defaultValue.trim(), props)
+      if (result.ok) {
+        entries.push(`${param.name} => ${toPerlLiteral(result.value)}`)
         continue
       }
     }
@@ -683,176 +683,6 @@ function collectPropsObjectAccesses(ir: ComponentIR, propsObj: string): Set<stri
   return out
 }
 
-/**
- * Evaluate a signal initializer expression using provided props.
- * Handles patterns like: props.initial ?? 0, props.value, literal values.
- */
-export function evaluateSignalInit(
-  expr: string,
-  props?: Record<string, unknown>,
-): unknown {
-  // props.xxx ?? default
-  const nullishMatch = expr.match(/^props\.(\w+)\s*\?\?\s*(.+)$/)
-  if (nullishMatch) {
-    const propName = nullishMatch[1]
-    const defaultExpr = nullishMatch[2].trim()
-    if (props && propName in props) {
-      return props[propName]
-    }
-    return parseLiteral(defaultExpr)
-  }
-
-  // props.xxx (no default)
-  const propsMatch = expr.match(/^props\.(\w+)$/)
-  if (propsMatch) {
-    if (props && propsMatch[1] in props) {
-      return props[propsMatch[1]]
-    }
-    return null
-  }
-
-  // Literal value
-  return parseLiteral(expr)
-}
-
-function parseLiteral(expr: string): unknown {
-  if (/^-?\d+(\.\d+)?$/.test(expr)) return Number(expr)
-  if (expr === 'true') return true
-  if (expr === 'false') return false
-  if (expr === '[]') return []
-
-  // Non-empty array literal (`[{ id: 'a' }, { id: 'b' }]`, `['x', 'y']`).
-  // Each element is parsed recursively; if any element can't be parsed
-  // (identifier, call, member access, …) the whole array bails to null so
-  // the harness falls back to its `undef` behaviour. Mirrors the object-
-  // literal branch below. Needed so signal initial values that are inline
-  // object/scalar arrays seed the Mojo SSR stash (e.g. the whole-item loop
-  // conditional fixture, whose `items` is `[{ id: 'a' }, …]`).
-  {
-    const t = expr.trim()
-    if (t.startsWith('[') && t.endsWith(']')) {
-      const inner = t.slice(1, -1).trim()
-      if (!inner) return []
-      const out: unknown[] = []
-      for (const seg of splitTopLevelCommas(inner)) {
-        if (!seg.trim()) continue
-        const parsed = parseLiteral(seg.trim())
-        if (parsed === null && seg.trim() !== 'null') return null
-        out.push(parsed)
-      }
-      return out
-    }
-  }
-  // String literal — require matching opener/closer (the previous
-  // regex `^['"]…['"]$` accepted mixed quotes like `'foo"`) and
-  // unescape JS-style escape sequences so `'a\\'b'` round-trips as
-  // `a\'b` instead of leaking the source-level escapes into the
-  // Perl literal (#1413 review).
-  const stringMatch = expr.match(/^(['"])(.*)\1$/s)
-  if (stringMatch) return unescapeJsString(stringMatch[2])
-  // JS object literal (#1407 follow-up): `{ id: 'a', class: 'on' }`.
-  // Used for spread-bag signal initial values in the `jsx-spread-*`
-  // fixture family. Keys may be bare identifiers or string
-  // literals; values are scalars (string / number / boolean /
-  // null) or nested object literals via recursive `parseLiteral`.
-  // Non-empty array values (`[1, 2]`) are NOT supported — only
-  // the `[]` empty-array literal recognised by the early-return
-  // above lowers. Trailing commas (`{ id: 'a', }`) are accepted
-  // by skipping empty segments (#1413 review). Anything the
-  // recursive call can't handle (identifiers, function calls,
-  // member access, non-empty arrays) surfaces as null and bubbles
-  // up so the harness falls back to its existing `undef`
-  // behaviour.
-  const trimmed = expr.trim()
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    const inner = trimmed.slice(1, -1).trim()
-    if (!inner) return {}
-    const obj: Record<string, unknown> = {}
-    const pairs = splitTopLevelCommas(inner)
-    for (const pair of pairs) {
-      // Skip empty segments — typically a trailing comma's tail
-      // (#1413 review).
-      if (!pair.trim()) continue
-      const colonIdx = pair.indexOf(':')
-      if (colonIdx < 0) return null
-      let key = pair.slice(0, colonIdx).trim()
-      const val = pair.slice(colonIdx + 1).trim()
-      // Strip key quotes if any — require matching open/close
-      // quote and unescape, same shape as the value-side string
-      // literal handling above (#1413 review).
-      const keyMatch = key.match(/^(['"])(.*)\1$/s)
-      if (keyMatch) key = unescapeJsString(keyMatch[2])
-      const parsedVal = parseLiteral(val)
-      if (parsedVal === null && val !== 'null') return null
-      obj[key] = parsedVal
-    }
-    return obj
-  }
-  return null
-}
-
-/**
- * Split a comma-separated literal body (object-pair list or array element
- * list) on top-level commas only — commas nested inside braces, brackets, or
- * string literals don't split. Backslash-escaped quotes inside strings are
- * honoured (an odd run of backslashes before a quote keeps the string open).
- * Shared by the object- and array-literal branches of {@link parseLiteral}.
- */
-function splitTopLevelCommas(inner: string): string[] {
-  const segments: string[] = []
-  let depth = 0
-  let start = 0
-  let quote: string | null = null
-  for (let i = 0; i < inner.length; i++) {
-    const c = inner[i]
-    if (quote) {
-      if (c === quote) {
-        let backslashes = 0
-        for (let j = i - 1; j >= 0 && inner[j] === '\\'; j--) backslashes++
-        if (backslashes % 2 === 0) quote = null
-      }
-      continue
-    }
-    if (c === '"' || c === "'") {
-      quote = c
-      continue
-    }
-    if (c === '{' || c === '[') depth++
-    else if (c === '}' || c === ']') depth--
-    else if (c === ',' && depth === 0) {
-      segments.push(inner.slice(start, i))
-      start = i + 1
-    }
-  }
-  segments.push(inner.slice(start))
-  return segments
-}
-
-/**
- * Unescape a JS string-literal body (the content between the
- * matching opening and closing quotes, not the quotes themselves).
- * Handles the common single-character escapes `\\`, `\'`, `\"`,
- * `\n`, `\r`, `\t`, `\0`, and the backslash-anything fallback that
- * mirrors JS's "unknown escape is the character itself" semantics.
- * Hex / unicode / octal escapes are intentionally out of scope —
- * the spread-bag fixture corpus uses ASCII identifiers and short
- * literal values, so the harness doesn't need a full JS string
- * decoder (#1413 review).
- */
-function unescapeJsString(s: string): string {
-  return s.replace(/\\(.)/g, (_, c) => {
-    switch (c) {
-      case 'n': return '\n'
-      case 'r': return '\r'
-      case 't': return '\t'
-      case '0': return '\0'
-      // `\\`, `\'`, `\"`, and any other single-character escape
-      // collapse to the literal character (matches JS semantics
-      // for unrecognised escapes).
-      default: return c
-    }
-  })
-}
 
 /**
  * Perl single-quoted string escape: `'` AND `\` need escaping.
@@ -898,34 +728,3 @@ function toPerlLiteral(value: unknown): string {
   return 'undef'
 }
 
-/**
- * Convert a JS literal value to a Perl literal.
- * Handles: numbers, strings, booleans, empty arrays, props.xxx ?? default patterns.
- */
-function jsToPerlValue(jsValue: string): string | null {
-  const v = jsValue.trim()
-
-  // Number
-  if (/^-?\d+(\.\d+)?$/.test(v)) return v
-
-  // String literal
-  if (/^['"].*['"]$/.test(v)) return v
-
-  // Boolean
-  if (v === 'true') return '1'
-  if (v === 'false') return '0'
-
-  // Empty array
-  if (v === '[]') return '[]'
-
-  // props.xxx ?? default — extract the default value
-  const nullishMatch = v.match(/\?\?\s*(.+)$/)
-  if (nullishMatch) {
-    return jsToPerlValue(nullishMatch[1])
-  }
-
-  // props.xxx (no default) — return undef
-  if (v.startsWith('props.')) return 'undef'
-
-  return null
-}

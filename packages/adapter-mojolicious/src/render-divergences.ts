@@ -15,12 +15,8 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  // TodoApp seeds its `todos` signal from `(props.initialTodos ??
-  // []).map(t => ({ ...t, editing: false }))` — a compound expression this
-  // harness's signal-init seeding can't evaluate, so `todos` seeds empty
-  // and `<ul class="todo-list">` renders with no `<li>`s. Orthogonal to
-  // #2205 (sibling template registration, which these fixtures now
-  // compile cleanly under): a test-harness signal-seeding gap.
-  'todo-app': 'https://github.com/piconic-ai/barefootjs/issues/2209',
-  'todo-app-ssr': 'https://github.com/piconic-ai/barefootjs/issues/2209',
+  // `todo-app` / `todo-app-ssr` no longer diverge (#2209) — the shared
+  // `evaluateSignalInit` (`@barefootjs/jsx`, sandboxed real-JS evaluation
+  // instead of a fixed regex-shape catalogue) now correctly seeds `todos`
+  // from `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))`.
 }
