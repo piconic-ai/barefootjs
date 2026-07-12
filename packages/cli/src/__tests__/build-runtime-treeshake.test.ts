@@ -267,4 +267,118 @@ describe('build() runtime tree-shaking', () => {
       rmSync(outDir, { recursive: true, force: true })
     }
   })
+
+  test("'treeshake-exact' drops the always-kept public mount API not actually used", async () => {
+    const projectDir = makeTmpDir('exact-src')
+    const outDir = makeTmpDir('exact-out')
+    try {
+      writeFixtureDist(projectDir)
+      writeComponent(projectDir, 'Counter', ['createSignal', 'createEffect'])
+
+      const result = await build(makeConfig(projectDir, outDir, { runtimeBundle: 'treeshake-exact' }))
+      expect(result.errorCount).toBe(0)
+
+      const content = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
+      // Still kept: actually used, or compiler-injected scaffolding.
+      expectHasFn(content, 'createSignal')
+      expectHasFn(content, 'createEffect')
+      expectHasFn(content, 'createComponent')
+      expectHasFn(content, 'hydrate')
+      // Dropped: part of the always-kept set under 'treeshake', but nothing
+      // here actually calls them.
+      expectLacksFn(content, 'render')
+      expectLacksFn(content, 'setupStreaming')
+      expectLacksFn(content, 'disposeScope')
+      expectLacksFn(content, 'createSearchParams')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test("'treeshake-exact' + runtimeKeep restores a specific always-kept name for a hand-written page script", async () => {
+    const projectDir = makeTmpDir('exact-keep-src')
+    const outDir = makeTmpDir('exact-keep-out')
+    try {
+      writeFixtureDist(projectDir)
+      writeComponent(projectDir, 'Counter', ['createSignal'])
+
+      const result = await build(makeConfig(projectDir, outDir, {
+        runtimeBundle: 'treeshake-exact',
+        runtimeKeep: ['render'],
+      }))
+      expect(result.errorCount).toBe(0)
+
+      const content = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
+      expectHasFn(content, 'render')
+      // Not requested, and nothing calls it — still dropped.
+      expectLacksFn(content, 'setupStreaming')
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test("'treeshake-exact' with zero reachable runtime exports skips barefoot.js instead of crashing or falling back to a full copy", async () => {
+    const projectDir = makeTmpDir('exact-empty-src')
+    const outDir = makeTmpDir('exact-empty-out')
+    try {
+      writeFixtureDist(projectDir)
+      // No 'use client' component and no bundleEntries — nothing in this
+      // build ever imports @barefootjs/client at all.
+      const componentsDir = resolve(projectDir, 'components')
+      mkdirSync(componentsDir, { recursive: true })
+      writeFileSync(
+        resolve(componentsDir, 'Static.tsx'),
+        `export function Static() {\n  return <div>hello</div>\n}\n`,
+      )
+
+      const result = await build(makeConfig(projectDir, outDir, { runtimeBundle: 'treeshake-exact' }))
+      expect(result.errorCount).toBe(0)
+      expect(existsSync(resolve(outDir, 'components/barefoot.js'))).toBe(false)
+
+      // Cache still records a stable hash so a repeat build doesn't redo
+      // this work or oscillate.
+      const cacheAfterFirst = await loadCache(outDir)
+      expect(cacheAfterFirst?.runtimeKeepHash).toBeTruthy()
+
+      const second = await build(makeConfig(projectDir, outDir, { runtimeBundle: 'treeshake-exact' }))
+      expect(second.errorCount).toBe(0)
+      expect(existsSync(resolve(outDir, 'components/barefoot.js'))).toBe(false)
+      const cacheAfterSecond = await loadCache(outDir)
+      expect(cacheAfterSecond?.runtimeKeepHash).toBe(cacheAfterFirst?.runtimeKeepHash)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  test("switching runtimeBundle from 'treeshake' to 'treeshake-exact' regenerates barefoot.js even with unchanged sources", async () => {
+    const projectDir = makeTmpDir('exact-switch-src')
+    const outDir = makeTmpDir('exact-switch-out')
+    try {
+      writeFixtureDist(projectDir)
+      writeComponent(projectDir, 'Counter', ['createSignal'])
+
+      const first = await build(makeConfig(projectDir, outDir))
+      expect(first.errorCount).toBe(0)
+      const firstContent = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
+      expectHasFn(firstContent, 'render')
+
+      const cacheAfterFirst = await loadCache(outDir)
+
+      const second = await build(makeConfig(projectDir, outDir, { runtimeBundle: 'treeshake-exact' }))
+      expect(second.errorCount).toBe(0)
+      const secondContent = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
+      // The mode switch actually took effect (not served from a stale cache
+      // entry keyed only on the keep-set, which is identical here except for
+      // the always-kept names).
+      expectLacksFn(secondContent, 'render')
+      const cacheAfterSecond = await loadCache(outDir)
+      expect(cacheAfterSecond?.runtimeKeepHash).not.toBe(cacheAfterFirst?.runtimeKeepHash)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
 })
