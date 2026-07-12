@@ -237,8 +237,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Memoized `analyzeBakeableStaticChildLoop` result per loop marker id
    * (#2208). Consulted from three sites that all need the SAME verdict for
    * the SAME loop — the `renderLoop` gate, the Input struct's field list,
-   * and the constructor's per-item construction — so this avoids
-   * re-deriving (and risking disagreement) three times per loop.
+   * and the constructor's per-item construction. `renderLoop`'s gate runs
+   * during `generate()`'s render pass; the other two run during
+   * `generateTypes()`'s constructor-generation pass, which `generate()`
+   * also invokes internally partway through — so this cache is reset (in
+   * `primeCompileState`, not here) between those two passes too. Agreement
+   * across all three sites is therefore guaranteed by `analyzeBakeable-
+   * StaticChildLoop` being a deterministic pure function of the (re-primed)
+   * per-compile state, not by one shared memo spanning every read; the
+   * cache's value is avoiding redundant recomputation WITHIN the pass that
+   * populated it, not correctness across passes.
    */
   private bakedStaticChildLoopCache = new Map<string, BakedStaticChildLoop | null>()
   private loopParamStack: string[] = []
