@@ -83,6 +83,30 @@ export function templateRootIsSvg(template: string): boolean {
 }
 
 /**
+ * Wrap decision for MULTI-ROOT (fragment) templates, where the synthetic
+ * `<svg>` wrap swallows every sibling root at once (#2233 Copilot review).
+ *
+ * `templateRootIsSvg` inspects only the FIRST root tag. For single-root
+ * templates that's exact, but a fragment whose first root is an `<svg>`
+ * CONTAINER (`<><svg/><span/></>`) doesn't need the wrap at all — the
+ * HTML parser enters foreign content at `<svg>` on its own — and wrapping
+ * would drag the HTML siblings into the SVG namespace (`<span>` becomes an
+ * SVGUnknownElement, silently undrawn). So `<svg>`-first fragments skip
+ * the wrap; only leaf-rooted fragments (`<line>`, `<circle>`, ...) get it.
+ *
+ * Known edge (degenerate, pre-existing): an `<svg>`-first fragment with
+ * SVG-LEAF siblings (`<><svg/><line/></>`) leaves the bare leaf siblings
+ * in the HTML namespace — exactly the pre-#2219 behavior. Deciding that
+ * shape correctly needs a scan of every top-level root tag; not worth the
+ * parser until a real component hits it.
+ */
+export function multiRootTemplateNeedsSvgWrap(template: string): boolean {
+  const m = stripLeadingNonContent(template).match(/^<\s*([A-Za-z][A-Za-z0-9-]*)/)
+  if (m && m[1].toLowerCase() === 'svg') return false
+  return templateRootIsSvg(template)
+}
+
+/**
  * Strip leading whitespace and HTML comment markers (`<!-- ... -->`) so
  * that a branch like `<!--bf-cond-start:s0-->${...}<!--bf-cond-end:s0-->`
  * is inspected at its first content node — the inner `${...}`.
@@ -269,7 +293,7 @@ export function emitMultiRootTemplateCloneLines(
   varEl: string,
   varExtras: string,
 ): string[] {
-  const isSvg = templateRootIsSvg(template)
+  const isSvg = multiRootTemplateNeedsSvgWrap(template)
   // Wrap in `<svg>` so the parser walks into SVG foreign content; we then
   // descend one level to pick up the per-item roots.
   const innerHtmlExpr = isSvg ? `\`<svg>${template}</svg>\`` : `\`${template}\``

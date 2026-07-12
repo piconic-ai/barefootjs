@@ -116,6 +116,34 @@ describe('inner reactive loop with an SVG element root (#2219)', () => {
   })
 })
 
+describe('reactive multi-root fragment with an <svg>-container first root (#2233 review)', () => {
+  test('emitMultiRootTemplateCloneLines skips the wrap for <svg>-first fragments', () => {
+    const content = clientJsFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      interface Chart { id: number; r: number }
+      export function Repro() {
+        const [charts] = createSignal<Chart[]>([])
+        return (
+          <div>
+            {charts().map((c) => (
+              <>
+                <svg key={c.id} viewBox="0 0 10 10"><circle r={c.r} /></svg>
+                <span>{c.id}</span>
+              </>
+            ))}
+          </div>
+        )
+      }
+    `)
+
+    // The multi-root clone parses the fragment bare — no synthetic wrap —
+    // so the HTML <span> sibling stays in the HTML namespace.
+    expect(content).not.toContain('`<svg><svg')
+    expect(content).toContain('__tpl.content.firstElementChild.cloneNode(true)')
+  })
+})
+
 describe('static-loop CSR materialize with an SVG element root (#2219, #1247 path)', () => {
   test('SVG-rooted materialize clone wraps and descends the extra level', () => {
     const content = clientJsFor(`
@@ -162,6 +190,35 @@ describe('static-loop CSR materialize with an SVG element root (#2219, #1247 pat
     expect(content).toMatch(/__mtpl\.innerHTML = `<svg><line /)
     // Sibling iteration starts inside the synthetic wrap.
     expect(content).toContain('let __sib = __mtpl.content.firstElementChild.firstElementChild')
+  })
+
+  test('<svg>-container-first fragment is NOT over-wrapped (#2233 review)', () => {
+    // An <svg> CONTAINER parses into the correct namespace bare — the HTML
+    // parser enters foreign content on its own. Wrapping the whole fragment
+    // would drag the HTML <span> sibling into the SVG namespace instead.
+    const content = clientJsFor(`
+      'use client'
+      type Props = { charts: Record<string, number> }
+      export function Repro(props: Props) {
+        const entries = Object.entries(props.charts ?? {}).filter(([, v]) => v > 0)
+        return (
+          <div>
+            {entries.map(([id, v]) => (
+              <>
+                <svg key={id} viewBox="0 0 10 10"><circle r={v} /></svg>
+                <span>{id}</span>
+              </>
+            ))}
+          </div>
+        )
+      }
+    `)
+
+    expect(content).toMatch(/__mtpl\.innerHTML = `<svg /)
+    expect(content).not.toContain('`<svg><svg')
+    // Sibling iteration starts at the template content directly (no wrap).
+    expect(content).toContain('let __sib = __mtpl.content.firstElementChild')
+    expect(content).not.toContain('let __sib = __mtpl.content.firstElementChild.firstElementChild')
   })
 
   test('HTML-rooted materialize clone keeps the bare parse byte-identical', () => {

@@ -27,7 +27,7 @@
 import { emitRefCall, varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
-import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr, templateRootIsSvg } from './template-parse.ts'
+import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr, templateRootIsSvg, multiRootTemplateNeedsSvgWrap } from './template-parse.ts'
 import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.ts'
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
@@ -319,8 +319,12 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     // descend one extra level (#2219) — `template.innerHTML` alone parses in
     // the HTML namespace and the materialized elements would never draw.
     // Mirrors `templateRootIsSvg` handling on the reactive clone paths;
-    // HTML-rooted templates keep byte-identical output.
-    const isSvg = templateRootIsSvg(csrMaterialize.itemTemplate)
+    // HTML-rooted templates keep byte-identical output. Multi-root fragments
+    // use the fragment-aware predicate so an `<svg>`-container-first fragment
+    // isn't over-wrapped (#2233 Copilot review).
+    const isSvg = csrMaterialize.bodyIsMultiRoot
+      ? multiRootTemplateNeedsSvgWrap(csrMaterialize.itemTemplate)
+      : templateRootIsSvg(csrMaterialize.itemTemplate)
     const itemHtml = isSvg ? `<svg>${csrMaterialize.itemTemplate}</svg>` : csrMaterialize.itemTemplate
     if (csrMaterialize.bodyIsMultiRoot) {
       // Multi-root: clone every top-level sibling of the per-item template and
