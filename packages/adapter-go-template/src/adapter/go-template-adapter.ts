@@ -4317,8 +4317,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     localVarMap: Map<string, string>,
     datumField?: string
   ): string {
-    // Bare `param` in dot notation: `.Todo` under a wrapper (#2228), else `.`.
-    const paramDot = datumField ? `.${datumField}` : '.'
+    // #2228: `paramPrefix` prepends the wrapper's datum-carrying field to a
+    // loop-param access (`.Todo` under a wrapper, `''` otherwise). Two derived
+    // forms because Go template spells "the dot itself" as `.` but "field on
+    // the dot" as `.Field` — a naive shared `'.'` prefix would emit `..Done`
+    // for the non-wrapper member case:
+    //   bare `t`     → `paramDot`             (`.Todo` / `.`)
+    //   `t.done`     → `${paramPrefix}.Done`  (`.Todo.Done` / `.Done`)
+    const paramPrefix = datumField ? `.${datumField}` : ''
+    const paramDot = paramPrefix || '.'
     switch (expr.kind) {
       case 'identifier': {
         if (expr.name === param) {
@@ -4344,7 +4351,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case 'member': {
         // t.done -> .Done (or .Todo.Done under a wrapper struct, #2228)
         if (expr.object.kind === 'identifier' && expr.object.name === param) {
-          return `${paramDot}.${capitalizeFieldName(expr.property)}`
+          return `${paramPrefix}.${capitalizeFieldName(expr.property)}`
         }
         // `.length` on a higher-order filter result (e.g.
         // `x.tags.filter(t => t.active).length > 0`). Reuse
@@ -4371,7 +4378,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       case 'call': {
         // `t.isDone()` -> `.IsDone` (or `.Todo.IsDone` under a wrapper, #2228)
         if (expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
-          return `${paramDot}.${capitalizeFieldName(expr.callee.property)}`
+          return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
         }
         // Signal calls: `filter()` -> `$.Filter`
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
