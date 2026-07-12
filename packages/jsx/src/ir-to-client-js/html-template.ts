@@ -2196,13 +2196,16 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // of the child recursion's substitution env (#2222): an inlinable
       // const / signal / memo whose name the callback shadows must never
       // substitute inside the body. Destructured callbacks contribute
-      // their individual binding names; a raw pattern-text `param` that
-      // isn't a bare identifier (the BF025 fallback shapes) contributes
-      // nothing — conservatively unfiltered rather than mis-filtered.
+      // their individual binding names; a raw pattern-text `param` (the
+      // BF025 fallback shapes, detected by the same leading-`[`/`{` check
+      // `destructureLoopParam` uses — NOT an ASCII-identifier regex, which
+      // would drop Unicode param names like `π` and re-enable the shadow
+      // bug for that body) contributes nothing — conservatively
+      // unfiltered rather than mis-filtered.
       const boundHere = new Set(opts.loopBoundNames ?? [])
       if (node.paramBindings && node.paramBindings.length > 0) {
         for (const b of node.paramBindings) boundHere.add(b.name)
-      } else if (/^[A-Za-z_$][\w$]*$/.test(node.param)) {
+      } else if (!node.param.startsWith('[') && !node.param.startsWith('{')) {
         boundHere.add(node.param)
       }
       if (node.index) boundHere.add(node.index)

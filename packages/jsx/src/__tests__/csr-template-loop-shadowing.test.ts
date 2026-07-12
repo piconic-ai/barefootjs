@@ -166,6 +166,32 @@ describe('hydrate template: loop param shadowing an outer name (#2222 bug 2)', (
     expect(tpl).not.toContain('1 + _p.name')
   })
 
+  test('a Unicode loop param shadowing a const is still guarded (#2238 Copilot review)', () => {
+    const tpl = templateLambda(clientJsFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Widget6({ values }: { values: number[] }) {
+        const \u03c0: string = 'x'
+        const [n, setN] = createSignal(0)
+        return (
+          <div data-n={n()} onClick={() => setN(n() + 1)}>
+            <p>{\u03c0}</p>
+            <ul>
+              {values.map((\u03c0) => (
+                <li key={\u03c0}>{1 + \u03c0}</li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+    `))
+
+    // The Unicode param must be recognised as a bare identifier (not a
+    // destructure pattern), so the const never substitutes in the body.
+    expect(tpl).toContain('1 + \u03c0')
+    expect(tpl).not.toContain("1 + ('x')")
+  })
+
   test('a non-shadowing prop used inside the loop still rewrites to _p.<name>', () => {
     const tpl = templateLambda(clientJsFor(`
       'use client'
