@@ -16,6 +16,12 @@ import { createFixture } from '../src/types'
  * bug actually threw — so it can't regression-pin the `ReferenceError`
  * itself. That's covered by the real-DOM runtime test,
  * `packages/client/__tests__/runtime/nested-loop-index-param-e2e.test.ts`.
+ *
+ * The signal is explicitly typed (`createSignal<Group[]>`) — required for
+ * the Go adapter, whose SSR data context bakes an object-array signal
+ * initial value only against a concrete local struct (`parsedLiteralToGo`
+ * defers object literals inside an untyped `[]interface{}` to `nil`,
+ * which renders an empty list).
  */
 export const fixture = createFixture({
   id: 'nested-map-index-key',
@@ -23,8 +29,9 @@ export const fixture = createFixture({
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'
+type Group = { id: number; items: string[] }
 export function NestedMapIndexKey() {
-  const [groups] = createSignal([
+  const [groups] = createSignal<Group[]>([
     { id: 1, items: ['apple', 'plum'] },
     { id: 2, items: ['pecan'] },
   ])
