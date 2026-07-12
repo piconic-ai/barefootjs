@@ -144,6 +144,8 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
+  resolveStaticLoopSource,
+  collectLoopBoundNames,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -162,6 +164,7 @@ import {
   collectRootScopeNodes,
 } from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { staticValueToJinja } from './lib/static-value.ts'
 import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest } from './expr/emitters.ts'
 import type { JinjaEmitContext, JinjaSpreadContext, JinjaMemoContext } from './emit-context.ts'
 import {
@@ -271,6 +274,17 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   private localConstants: IRMetadata['localConstants'] = []
 
   /**
+   * Every name a `.map()`/`.filter()` loop callback binds as its item/index
+   * parameter anywhere in the component (#2208 fable review). A static
+   * loop-SOURCE name (e.g. a function-scope `const items = [...]`) must
+   * never resolve through `resolveStaticLoopSource` at a use site where a
+   * DIFFERENT, enclosing loop's own callback param shadows it — same
+   * shadowing hazard, and same coarse-but-safe mitigation, as #2212's
+   * `collectLoopBoundNames` use in `collectStringValueNames`.
+   */
+  private staticLoopSourceBoundNames: Set<string> = new Set()
+
+  /**
    * Optional, no-default props that are `None` when the caller omits them.
    * Their bare-reference attribute emission is guarded with a Jinja
    * `is defined and is not none` test so the attribute DROPS rather than
@@ -302,6 +316,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // ("True"/"False") (#1897, pagination's data-active).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
@@ -747,8 +762,27 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // test corpus only because the widened destructure gate (#2087 Phase
     // A/B) no longer refuses this fixture's `([emoji, users]) => ...`
     // param first.
+    // #2208: a loop source that is a fully-static array literal — either
+    // inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare identifier
+    // bound to a FUNCTION-scope local const whose initializer has no
+    // prop/signal/function-call dependency — inlines as a native Jinja
+    // list/dict literal below, the same way a module-scope const's value
+    // is already seeded. A runtime-computed local (#2069, e.g.
+    // `Object.entries(props.tags).filter(...)`) still refuses below.
+    // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
+    // param shadowing this identifier (fable review) — never resolve the
+    // static const in that case. `rawArray` then falls through to the
+    // bare identifier expression below, same as before #2208 — which
+    // still trips the pre-existing BF101 gate for an unresolvable local
+    // const reference (a loud, conservative refusal, not a silent wrong
+    // value).
+    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
+      isNameShadowed: name => this.staticLoopSourceBoundNames.has(name),
+    })
+    const staticArray = staticItems !== null ? staticValueToJinja(staticItems) : null
+
     const arrayName = loop.array.trim()
-    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+    if (staticArray === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
       const arrayConst = (this.localConstants ?? []).find(c => c.name === arrayName)
       if (arrayConst && !arrayConst.isModule && this._resolveLiteralConst(arrayName) === null) {
         this.errors.push({
@@ -764,7 +798,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       }
     }
 
-    const rawArray = this.convertExpressionToJinja(loop.array)
+    const rawArray = staticArray ?? this.convertExpressionToJinja(loop.array)
     // Apply sort if present: wrap the loop array in the shared `bf.sort`
     // helper, binding the sorted result to a per-iteration local so the
     // helper runs once.

@@ -71,6 +71,8 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
+  resolveStaticLoopSource,
+  collectLoopBoundNames,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -115,6 +117,7 @@ import { collectRootScopeNodes } from "./lib/ir-scope.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
+import { analyzeBakeableStaticChildLoop, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { lowerRegisteredCall } from "./expr/url-builder.ts"
@@ -230,6 +233,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   private inLoop: boolean = false
+  /**
+   * Memoized `analyzeBakeableStaticChildLoop` result per loop marker id
+   * (#2208). Consulted from three sites that all need the SAME verdict for
+   * the SAME loop — the `renderLoop` gate, the Input struct's field list,
+   * and the constructor's per-item construction. `renderLoop`'s gate runs
+   * during `generate()`'s render pass; the other two run during
+   * `generateTypes()`'s constructor-generation pass, which `generate()`
+   * also invokes internally partway through — so this cache is reset (in
+   * `primeCompileState`, not here) between those two passes too. Agreement
+   * across all three sites is therefore guaranteed by `analyzeBakeable-
+   * StaticChildLoop` being a deterministic pure function of the (re-primed)
+   * per-compile state, not by one shared memo spanning every read; the
+   * cache's value is avoiding redundant recomputation WITHIN the pass that
+   * populated it, not correctness across passes.
+   */
+  private bakedStaticChildLoopCache = new Map<string, BakedStaticChildLoop | null>()
   private loopParamStack: string[] = []
   /**
    * Stack of `IRLoop.depth` values (innermost last), pushed/popped around
@@ -311,6 +330,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.restPropsName = ir.metadata.restPropsName ?? null
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
+    // #2208 fable review: every name a `.map()`/`.filter()` loop callback
+    // binds as its item/index parameter anywhere in the component. Static
+    // loop-source resolution (`getBakedStaticChildLoop` /
+    // `analyzeBakeableStaticChildLoop`) must never resolve a const whose
+    // name a DIFFERENT, enclosing loop's own callback param shadows.
+    // Computed here (not from live render-time stack state) because this
+    // must agree across THREE call sites, two of which (`generateTypes`'s
+    // Input-struct + constructor generation) run OUTSIDE the live
+    // `renderLoop` tree-walk that would otherwise track shadowing via
+    // stack push/pop — same coarse-but-safe mitigation as #2212.
+    this.state.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
+    // #2208 fable re-review: the adapter instance is a reused singleton —
+    // `generate()` calls this once per component, but `generateTypes()` is
+    // ALSO a standalone public entry point (the Go conformance harness in
+    // `test-render.ts` calls it directly on an already-`generate()`d
+    // adapter for a sibling/child IR). Resetting the bake cache HERE, not
+    // just in `generate()`, closes that door too: a stale entry keyed by a
+    // marker id that collides with a PREVIOUS component (marker ids
+    // restart at `l0` per component) would otherwise either silently
+    // suppress this fix or leak that other component's baked data into
+    // this one's constructor. `generate()` itself calls `generateTypes()`
+    // partway through — re-priming (and so re-clearing the cache) there is
+    // harmless: `analyzeBakeableStaticChildLoop` is deterministic over
+    // identically-primed state, so a cache miss on the second pass just
+    // recomputes the same answer.
+    this.bakedStaticChildLoopCache = new Map()
     this.state.localHelperNames = new Set(
       this.state.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
     )
@@ -860,6 +905,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     for (const nested of inputNested) {
+      // #2208: a static loop whose array source is itself fully-static
+      // (baked directly in the constructor — see `generateNewPropsFunction`)
+      // has no caller-supplied data to accept; the Input struct carries no
+      // field for it at all (there was never a working `in.<Name>s` path
+      // for this shape before this fix — it refused with BF101).
+      if (nested.loopMarkerId && this.getBakedStaticChildLoop(
+        nested.loopMarkerId,
+        nested,
+        nested.loopArrayParsed,
+        nested.loopParam,
+        nested.loopKey,
+      )) continue
       lines.push(`\t${nested.name}s []${nested.name}Input`)
     }
 
@@ -1078,6 +1135,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Static nested WITHOUT body children.
     for (const nested of staticWithoutBody) {
       const varName = `${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`
+      // #2208: a static loop whose ARRAY SOURCE is itself fully-static
+      // (`const items = [{ label: 'Alpha' }, ...]`) has no caller input to
+      // wait for — every item's props/data-key are already known at
+      // compile time. Bake them directly instead of ranging over
+      // `in.<Name>s` (which stays empty forever for this shape, since the
+      // loop-source gate above only lets this fixture through BECAUSE it's
+      // baked here).
+      const baked = nested.loopMarkerId
+        ? this.getBakedStaticChildLoop(
+            nested.loopMarkerId,
+            nested,
+            nested.loopArrayParsed,
+            nested.loopParam,
+            nested.loopKey,
+          )
+        : null
+      if (baked) {
+        lines.push(`\t${varName} := make([]${nested.name}Props, ${baked.items.length})`)
+        baked.items.forEach((item, i) => {
+          const fields = item.inputFields.map(f => `${f.goField}: ${f.goValue}`).join(', ')
+          lines.push(`\t${varName}[${i}] = New${nested.name}Props(${nested.name}Input{${fields}})`)
+          lines.push(`\t${varName}[${i}].BfParent = scopeID`)
+          lines.push(`\t${varName}[${i}].BfMount = "${nested.slotId}"`)
+          if (item.dataKey !== null) {
+            lines.push(`\t${varName}[${i}].BfDataKey = ${JSON.stringify(item.dataKey)}`)
+          }
+        })
+        lines.push('')
+        continue
+      }
       lines.push(`\t${varName} := make([]${nested.name}Props, len(in.${nested.name}s))`)
       lines.push(`\tfor i, item := range in.${nested.name}s {`)
       lines.push(`\t\t${varName}[i] = New${nested.name}Props(item)`)
@@ -5001,6 +5088,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return undefined
   }
 
+  /**
+   * Memoized bakeability check for a static-array loop whose body is a
+   * single child component (#2208) — see `analyzeBakeableStaticChildLoop`'s
+   * docstring. Accepts either an `IRLoop` (the `renderLoop` gate) or a
+   * `NestedComponentInfo` (`generateNewPropsFunction`/Input-struct sites) —
+   * both carry the same `loopArrayParsed`/`loopParam`/`loopKey`/props data,
+   * just under different field names, so this normalizes to one shape and
+   * caches by marker id so all three call sites agree.
+   */
+  private getBakedStaticChildLoop(
+    markerId: string,
+    childComponent: { props: IRLoopChildComponent['props'] },
+    arrayParsed: ParsedExpr | undefined,
+    param: string | undefined,
+    key: string | undefined,
+  ): BakedStaticChildLoop | null {
+    if (this.bakedStaticChildLoopCache.has(markerId)) {
+      return this.bakedStaticChildLoopCache.get(markerId) ?? null
+    }
+    const result = analyzeBakeableStaticChildLoop(
+      { props: childComponent.props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
+      this.state.localConstants,
+      { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name) },
+    )
+    this.bakedStaticChildLoopCache.set(markerId, result)
+    return result
+  }
+
   renderLoop(loop: IRLoop): string {
     // clientOnly loops: emit SSR markers so the client can insert DOM nodes. The
     // marker id disambiguates sibling `.map()` calls under the same parent.
@@ -5063,8 +5178,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Phase A/B) no longer refuses `static-array-from-props`'s `([emoji,
     // users]) => ...` param first. Cross-adapter policy: Jinja / ERB apply the
     // same narrow check in their own `renderLoop` (see `jinja-adapter.ts`).
+    // #2208: a static-array loop whose body is a single child component
+    // (`loop.childComponent`) with a plain-value prop set can be BAKED —
+    // every per-item prop and data-key resolves to a compile-time-known Go
+    // literal (see `analyzeBakeableStaticChildLoop`), so the constructor
+    // (`generateNewPropsFunction`'s `staticWithoutBody` path) can emit the
+    // child instances directly instead of requiring the loop array bind as
+    // a template variable at all. Memoized by marker id so this gate and
+    // the constructor's later baking agree. A plain-ELEMENT body (no
+    // `childComponent`) is NOT handled by baking and keeps refusing below —
+    // see the go-only follow-up issue for that narrower gap.
+    const bakedChildLoop = loop.childComponent
+      ? this.getBakedStaticChildLoop(loop.markerId, loop.childComponent, loop.arrayParsed, loop.param, loop.key ?? undefined)
+      : null
+
     const arrayName = loop.array.trim()
-    if (/^[A-Za-z_$][\w$]*$/.test(arrayName)) {
+    if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
       const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
       if (arrayConst && !arrayConst.isModule && arrayConst.parsed && !this.isStringExpr(arrayConst.parsed, new Set())) {
         this.state.errors.push({

@@ -3866,3 +3866,166 @@ export function TodoList(props: { todos?: Todo[] }) {
     expect(types).toContain('TodoItems []')
   })
 })
+
+// #2208: a static-array loop whose body is a single child component with a
+// plain-value prop set bakes the per-item props/data-key directly into the
+// generated constructor — see `analyzeBakeableStaticChildLoop`
+// (`analysis/static-child-loop-bake.ts`). Two-file fixture shape (sibling
+// `list-item.tsx`, `siblingTemplatesRegistered: true`) since Go's own BF103
+// cross-template-registration check (independent of #2208) would otherwise
+// fire first — mirrors `jsx-runner.ts`'s `compileWithDiagnostics`.
+describe('GoTemplateAdapter - static array-of-objects loop source baking (#2208)', () => {
+  const STATIC_LIST_SOURCE = `
+import { ListItem } from './list-item'
+export function StaticList() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return (
+    <ul>
+      {items.map(item => (
+        <ListItem key={item.label} label={item.label} className="text-sm" />
+      ))}
+    </ul>
+  )
+}
+`
+
+  function compileStaticList(adapter?: GoTemplateAdapter) {
+    return compileJSX(STATIC_LIST_SOURCE, 'test.tsx', {
+      adapter: adapter ?? new GoTemplateAdapter(),
+      siblingTemplatesRegistered: true,
+      outputIR: false,
+    })
+  }
+
+  test('compiles with no BF101 (no longer refused)', () => {
+    const result = compileStaticList()
+    expect(result.errors ?? []).toEqual([])
+  })
+
+  test('constructor bakes each item\'s props and data-key directly', () => {
+    const result = compileStaticList()
+    const types = result.files.find(f => f.type === 'types')!.content
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha", ClassName: "text-sm"})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Beta", ClassName: "text-sm"})')
+    expect(types).toContain('BfDataKey = "Alpha"')
+    expect(types).toContain('BfDataKey = "Beta"')
+  })
+
+  test('the Input struct carries no ListItems field (nothing for a caller to supply)', () => {
+    const result = compileStaticList()
+    const types = result.files.find(f => f.type === 'types')!.content
+    const inputStruct = types.slice(types.indexOf('StaticListInput struct'), types.indexOf('StaticListProps struct'))
+    expect(inputStruct).not.toContain('ListItems')
+  })
+
+  test('the template still ranges over .ListItems (unchanged)', () => {
+    const result = compileStaticList()
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain(':= .ListItems}}')
+  })
+
+  test('a runtime-computed const (#2069) still refuses with BF101', () => {
+    const result = compileJSX(
+      `
+import { ListItem } from './list-item'
+export function TagList(props: { tags: string[] }) {
+  const entries = props.tags.filter(t => t !== '')
+  return (
+    <ul>
+      {entries.map(label => (
+        <ListItem key={label} label={label} />
+      ))}
+    </ul>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter(), siblingTemplatesRegistered: true },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+
+  // Fable review: `bf build` compiles a whole source dir through ONE reused
+  // adapter instance (loop marker ids restart at `l0` per component) — the
+  // bakeability cache must reset every `generate()` or a stale entry from a
+  // PREVIOUS component either silently suppresses this fix, or (worse)
+  // leaks that other component's baked literal values into this one.
+  const TAG_LIST_SOURCE = `
+import { ListItem } from './list-item'
+export function TagList(props: { tags: string[] }) {
+  const entries = props.tags.filter(t => t !== '')
+  return (
+    <ul>
+      {entries.map(label => (
+        <ListItem key={label} label={label} />
+      ))}
+    </ul>
+  )
+}
+`
+
+  test('a reused adapter does not suppress baking for a later component sharing a marker id', () => {
+    const adapter = new GoTemplateAdapter()
+    compileJSX(TAG_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    const second = compileJSX(STATIC_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    expect(second.errors ?? []).toEqual([])
+    const types = second.files.find(f => f.type === 'types')!.content
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha"')
+  })
+
+  test('a reused adapter does not leak a prior component\'s baked data into a later runtime-computed one', () => {
+    const adapter = new GoTemplateAdapter()
+    compileJSX(STATIC_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    const second = compileJSX(TAG_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    expect(second.errors?.some(e => e.code === 'BF101')).toBe(true)
+    const types = second.files.find(f => f.type === 'types')!.content
+    expect(types).not.toContain('"Alpha"')
+  })
+
+  // Fable re-review: `generateTypes()` is ALSO a standalone public entry
+  // point (the Go conformance harness in `test-render.ts` calls it
+  // directly on an already-`generate()`d adapter for a sibling/child IR),
+  // not just an internal step of `generate()` — the bake cache must reset
+  // there too, or a marker id collision with a PREVIOUS `generate()` call
+  // leaks that other component's baked data through this door instead.
+  test('a standalone generateTypes() call does not leak a prior generate() pass\'s baked data', () => {
+    const adapter = new GoTemplateAdapter()
+    const tagListIR = compileToIR(TAG_LIST_SOURCE, adapter)
+    adapter.generate(tagListIR, { siblingTemplatesRegistered: true })
+    const staticListIR = compileToIR(STATIC_LIST_SOURCE, adapter)
+    adapter.generate(staticListIR, { siblingTemplatesRegistered: true })
+
+    const types = adapter.generateTypes(tagListIR)
+    expect(types).not.toContain('"Alpha"')
+    expect(types).toContain('ListItems []ListItemInput')
+  })
+
+  // Fable review: a static loop-SOURCE identifier must not resolve through
+  // an outer const when a DIFFERENT, enclosing loop's own callback param
+  // shadows that same name.
+  test('a static const shadowed by an enclosing loop param does not get baked', () => {
+    const result = compileJSX(
+      `
+import { ListItem } from './list-item'
+export function Nested({ groups }: { groups: { label: string }[][] }) {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return (
+    <div>
+      {groups.map((items, i) => (
+        <ul key={i}>
+          {items.map(item => (
+            <ListItem key={item.label} label={item.label} />
+          ))}
+        </ul>
+      ))}
+    </div>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter(), siblingTemplatesRegistered: true },
+    )
+    const types = result.files.find(f => f.type === 'types')?.content ?? ''
+    expect(types).not.toContain('"Alpha"')
+  })
+})

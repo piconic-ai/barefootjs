@@ -49,6 +49,7 @@ export type {
   ParamInfo,
   PropertyInfo,
   MemoInfo,
+  ConstantInfo,
   TypeInfo,
   TypeDefinition,
   SourceLocation,
@@ -89,6 +90,7 @@ export { emitParsedExpr, groupBinaryOperand, isStringTypedOperand, isStringConca
 export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
 export { evaluateSignalInit, tryEvaluateSignalInit, type SignalInitEvalResult } from './signal-init-eval.ts'
+export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export type { EnvSignalReader } from './adapters/env-signal.ts'
 export { matchQueryHrefCall, queryHrefArgs, type QueryHrefCall, type QueryHrefTriple } from './query-href-lowering.ts'
@@ -281,15 +283,20 @@ export interface BuildOptions {
    *   - `'treeshake'` (default) — bundle only the runtime exports this
    *     project's compiled client JS actually imports, plus a small
    *     always-kept public mount API (`render`, `hydrate`, etc.).
+   *   - `'treeshake-exact'` — same collection, but without the always-kept
+   *     set. Smaller output; a hand-written page script the CLI never
+   *     compiles must list any runtime names it calls directly in
+   *     `runtimeKeep`, or they're silently dropped.
    *   - `'full'` — copy the entire prebuilt runtime bundle verbatim.
    * See `@barefootjs/cli`'s `runtime-treeshake.ts` for the collector and
    * `ALWAYS_KEEP_RUNTIME_EXPORTS` for the always-kept names.
    */
-  runtimeBundle?: 'treeshake' | 'full'
+  runtimeBundle?: 'treeshake' | 'treeshake-exact' | 'full'
   /**
    * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
-   * under `runtimeBundle: 'treeshake'` — for names only ever referenced
-   * from hand-written page scripts the CLI never compiles.
+   * under `runtimeBundle: 'treeshake'` or `'treeshake-exact'` — for names
+   * only ever referenced from hand-written page scripts the CLI never
+   * compiles.
    */
   runtimeKeep?: string[]
 }
