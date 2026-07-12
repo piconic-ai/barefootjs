@@ -522,26 +522,42 @@ function Widget({ n, values }: { n: string; values: number[] }) {
 // loop's own callback param shadows that same name — same shadowing hazard
 // as #2212's identifier arm, now guarded via staticLoopSourceBoundNames.
 describe('TwigAdapter - static loop source shadowed by an enclosing loop param (#2208)', () => {
-  test('an outer const shadowed by an enclosing loop param stays an identifier reference, not the const value', () => {
-    const { template } = compileAndGenerate(`
+  // Fable re-review: `staticLoopSourceBoundNames` is a coarse, GLOBAL
+  // exclusion set (every loop-bound name anywhere in the component, not a
+  // scope-precise "is THIS specific reference shadowed" check) — so once
+  // the static resolution is suppressed, `items` also fails the older,
+  // pre-#2208 identifier-based BF101 gate below it (which can't tell this
+  // reference apart from a genuinely-unresolvable one either). The net
+  // effect is a loud, conservative BF101 refusal — the same status quo
+  // every function-scope static-const loop source had before #2208 — NOT
+  // a silent, clean fallback to the identifier reference. Both are
+  // asserted here so this test can't silently start passing for the wrong
+  // reason if that changes.
+  test('an outer const shadowed by an enclosing loop param refuses with BF101 instead of baking the wrong value', () => {
+    const source = `
 function Widget({ groups }: { groups: number[][] }) {
   const items = [1, 2]
   return <div>{groups.map((items, i) => <ul key={i}>{items.map(n => <li key={n}>{n}</li>)}</ul>)}</div>
 }
-`)
-    // The inner loop must iterate the SHADOWING callback param (`items`),
-    // never the outer const's baked value `[1, 2]`.
+`
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter: new TwigAdapter(), outputIR: true })
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+    const { template } = compileAndGenerate(source)
+    // Whatever the template emits, it must never be the outer const's baked
+    // value substituted for the shadowing loop param.
     expect(template).not.toContain('for n in [1, 2]')
-    expect(template).toContain('for n in items')
   })
 
-  test('an unrelated same-named const outside any shadowing loop still bakes normally', () => {
-    const { template } = compileAndGenerate(`
+  test('an unrelated same-named const outside any shadowing loop still bakes cleanly (no BF101)', () => {
+    const source = `
 function Widget() {
   const items = [1, 2]
   return <ul>{items.map(n => <li key={n}>{n}</li>)}</ul>
 }
-`)
+`
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter: new TwigAdapter(), outputIR: true })
+    expect(result.errors ?? []).toEqual([])
+    const { template } = compileAndGenerate(source)
     expect(template).toContain('for n in [1, 2]')
   })
 })

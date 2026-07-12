@@ -771,7 +771,11 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // `Object.entries(props.tags).filter(...)`) still refuses below.
     // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
     // param shadowing this identifier (fable review) — never resolve the
-    // static const in that case; fall through to the identifier reference.
+    // static const in that case. `rawArray` then falls through to the
+    // bare identifier expression below, same as before #2208 — which
+    // still trips the pre-existing BF101 gate for an unresolvable local
+    // const reference (a loud, conservative refusal, not a silent wrong
+    // value).
     const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
       isNameShadowed: name => this.staticLoopSourceBoundNames.has(name),
     })

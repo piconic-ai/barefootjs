@@ -3982,6 +3982,24 @@ export function TagList(props: { tags: string[] }) {
     expect(types).not.toContain('"Alpha"')
   })
 
+  // Fable re-review: `generateTypes()` is ALSO a standalone public entry
+  // point (the Go conformance harness in `test-render.ts` calls it
+  // directly on an already-`generate()`d adapter for a sibling/child IR),
+  // not just an internal step of `generate()` — the bake cache must reset
+  // there too, or a marker id collision with a PREVIOUS `generate()` call
+  // leaks that other component's baked data through this door instead.
+  test('a standalone generateTypes() call does not leak a prior generate() pass\'s baked data', () => {
+    const adapter = new GoTemplateAdapter()
+    const tagListIR = compileToIR(TAG_LIST_SOURCE, adapter)
+    adapter.generate(tagListIR, { siblingTemplatesRegistered: true })
+    const staticListIR = compileToIR(STATIC_LIST_SOURCE, adapter)
+    adapter.generate(staticListIR, { siblingTemplatesRegistered: true })
+
+    const types = adapter.generateTypes(tagListIR)
+    expect(types).not.toContain('"Alpha"')
+    expect(types).toContain('ListItems []ListItemInput')
+  })
+
   // Fable review: a static loop-SOURCE identifier must not resolve through
   // an outer const when a DIFFERENT, enclosing loop's own callback param
   // shadows that same name.

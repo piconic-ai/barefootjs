@@ -333,6 +333,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `renderLoop` tree-walk that would otherwise track shadowing via
     // stack push/pop — same coarse-but-safe mitigation as #2212.
     this.state.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
+    // #2208 fable re-review: the adapter instance is a reused singleton —
+    // `generate()` calls this once per component, but `generateTypes()` is
+    // ALSO a standalone public entry point (the Go conformance harness in
+    // `test-render.ts` calls it directly on an already-`generate()`d
+    // adapter for a sibling/child IR). Resetting the bake cache HERE, not
+    // just in `generate()`, closes that door too: a stale entry keyed by a
+    // marker id that collides with a PREVIOUS component (marker ids
+    // restart at `l0` per component) would otherwise either silently
+    // suppress this fix or leak that other component's baked data into
+    // this one's constructor. `generate()` itself calls `generateTypes()`
+    // partway through — re-priming (and so re-clearing the cache) there is
+    // harmless: `analyzeBakeableStaticChildLoop` is deterministic over
+    // identically-primed state, so a cache miss on the second pass just
+    // recomputes the same answer.
+    this.bakedStaticChildLoopCache = new Map()
     this.state.localHelperNames = new Set(
       this.state.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
     )
@@ -366,14 +381,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.referencedDerivedConsts = new Set()
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
-    // #2208 fable review: the adapter instance is a reused singleton across
-    // a whole `bf build` source dir (`CompileState`'s docstring; every
-    // other per-compile field above is reset here too) — loop marker ids
-    // restart at `l0` per component, so a STALE cache entry from a
-    // PREVIOUS component would either silently suppress this fix (a marker
-    // id that happened to cache `null` for an unrelated component) or leak
-    // that other component's baked data into this one's constructor.
-    this.bakedStaticChildLoopCache = new Map()
     this.primeCompileState(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
