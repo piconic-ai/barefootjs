@@ -43,11 +43,11 @@ export function NestedMapIndexKey() {
 `,
   expectedHtml: `
     <ul bf-s="test" bf="s3">
-      <li data-key="1" bf="s2">
+      <li bf="s2" data-key="1">
         <span data-key-1="0"><!--bf:s0-->0<!--/-->: <!--bf:s1-->apple<!--/--></span>
         <span data-key-1="1"><!--bf:s0-->1<!--/-->: <!--bf:s1-->plum<!--/--></span>
       </li>
-      <li data-key="2" bf="s2"><span data-key-1="0"><!--bf:s0-->0<!--/-->: <!--bf:s1-->pecan<!--/--></span></li>
+      <li bf="s2" data-key="2"><span data-key-1="0"><!--bf:s0-->0<!--/-->: <!--bf:s1-->pecan<!--/--></span></li>
     </ul>
   `,
 })
