@@ -92,6 +92,7 @@ import {
   resolveDangerousInnerHtml,
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
+  resolveStaticLoopSource,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -111,6 +112,7 @@ import {
   collectRootScopeNodes,
 } from './lib/ir-scope.ts'
 import { renderSortMethod, renderSortEval } from './expr/array-method.ts'
+import { staticValueToRuby } from './lib/static-value.ts'
 import { ErbFilterEmitter, ErbTopLevelEmitter } from './expr/emitters.ts'
 import type { ErbEmitContext, ErbSpreadContext, ErbMemoContext } from './emit-context.ts'
 import {
@@ -901,7 +903,23 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // reproduces identically with a non-destructured param, so it is NOT a
     // destructure-lowering limitation. Surface BF101 honestly instead of
     // emitting a loop bound that silently crashes / renders empty.
-    if (loop.arrayParsed?.kind === 'identifier') {
+    // #2208: a loop source that is a fully-static array literal — either
+    // inline (`[{ label: 'Alpha' }, ...].map(...)`) or a bare identifier
+    // bound to a FUNCTION-scope local const whose initializer has no
+    // prop/signal/function-call dependency — inlines as a native Ruby
+    // array/hash literal below, the same way a module-scope const's value
+    // is already seeded. Previously the INLINE shape wasn't gated here at
+    // all (this check only ever inspected an `identifier` array source) —
+    // it still ended up refusing via `convertExpressionToRuby`'s generic
+    // `unsupported` object-literal path (BF101, "Expression not
+    // supported"), which is what this loop-specific check now also does
+    // deliberately, up front, for both shapes.
+    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
+      isNameShadowed: name => this.loopBoundNames.has(name),
+    })
+    const staticArray = staticItems !== null ? staticValueToRuby(staticItems) : null
+
+    if (staticArray === null && loop.arrayParsed?.kind === 'identifier') {
       const arrayName = loop.arrayParsed.name
       const isUnresolvableLocalConst =
         !this.loopBoundNames.has(arrayName) &&
@@ -916,7 +934,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       }
     }
 
-    const rawArray = this.convertExpressionToRuby(loop.array)
+    const rawArray = staticArray ?? this.convertExpressionToRuby(loop.array)
     // Apply sort if present: hoist the (possibly sorted) array into a Ruby
     // local BEFORE the index loop, so both the loop bound and the per-item
     // lookup reference the same materialised array — otherwise a sort

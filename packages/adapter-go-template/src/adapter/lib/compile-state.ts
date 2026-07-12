@@ -67,6 +67,15 @@ export class CompileState {
   localConstants: IRMetadata['localConstants'] = []
 
   /**
+   * Every name a `.map()`/`.filter()` loop callback binds as its item/index
+   * parameter anywhere in the component (#2208 fable review). Consulted by
+   * static loop-source resolution (`getBakedStaticChildLoop`) so a const
+   * whose name a DIFFERENT, enclosing loop's own callback param shadows is
+   * never resolved as that const's static value.
+   */
+  staticLoopSourceBoundNames: Set<string> = new Set()
+
+  /**
    * Names of component-scope arrow-const helpers (`const sortClass = …`),
    * eligible for call-site inlining.
    */
