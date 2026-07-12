@@ -72,6 +72,7 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
+  collectLoopBoundNames,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -321,6 +322,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.restPropsName = ir.metadata.restPropsName ?? null
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
+    // #2208 fable review: every name a `.map()`/`.filter()` loop callback
+    // binds as its item/index parameter anywhere in the component. Static
+    // loop-source resolution (`getBakedStaticChildLoop` /
+    // `analyzeBakeableStaticChildLoop`) must never resolve a const whose
+    // name a DIFFERENT, enclosing loop's own callback param shadows.
+    // Computed here (not from live render-time stack state) because this
+    // must agree across THREE call sites, two of which (`generateTypes`'s
+    // Input-struct + constructor generation) run OUTSIDE the live
+    // `renderLoop` tree-walk that would otherwise track shadowing via
+    // stack push/pop — same coarse-but-safe mitigation as #2212.
+    this.state.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
     this.state.localHelperNames = new Set(
       this.state.localConstants.filter(c => !c.isModule && c.containsArrow).map(c => c.name),
     )
@@ -354,6 +366,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.referencedDerivedConsts = new Set()
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
+    // #2208 fable review: the adapter instance is a reused singleton across
+    // a whole `bf build` source dir (`CompileState`'s docstring; every
+    // other per-compile field above is reset here too) — loop marker ids
+    // restart at `l0` per component, so a STALE cache entry from a
+    // PREVIOUS component would either silently suppress this fix (a marker
+    // id that happened to cache `null` for an unrelated component) or leak
+    // that other component's baked data into this one's constructor.
+    this.bakedStaticChildLoopCache = new Map()
     this.primeCompileState(ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
@@ -5075,6 +5095,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const result = analyzeBakeableStaticChildLoop(
       { props: childComponent.props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
       this.state.localConstants,
+      { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name) },
     )
     this.bakedStaticChildLoopCache.set(markerId, result)
     return result

@@ -515,3 +515,33 @@ function Widget({ n, values }: { n: string; values: number[] }) {
     expect(template).not.toContain('(v ~ 1) > 3')
   })
 })
+
+// Fable review (#2208): a static array-literal loop SOURCE (a function-scope
+// local const with no prop/signal/function-call dependency) must not resolve
+// through resolveStaticLoopSource at a use site where a DIFFERENT, enclosing
+// loop's own callback param shadows that same name — same shadowing hazard
+// as #2212's identifier arm, now guarded via staticLoopSourceBoundNames.
+describe('TwigAdapter - static loop source shadowed by an enclosing loop param (#2208)', () => {
+  test('an outer const shadowed by an enclosing loop param stays an identifier reference, not the const value', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ groups }: { groups: number[][] }) {
+  const items = [1, 2]
+  return <div>{groups.map((items, i) => <ul key={i}>{items.map(n => <li key={n}>{n}</li>)}</ul>)}</div>
+}
+`)
+    // The inner loop must iterate the SHADOWING callback param (`items`),
+    // never the outer const's baked value `[1, 2]`.
+    expect(template).not.toContain('for n in [1, 2]')
+    expect(template).toContain('for n in items')
+  })
+
+  test('an unrelated same-named const outside any shadowing loop still bakes normally', () => {
+    const { template } = compileAndGenerate(`
+function Widget() {
+  const items = [1, 2]
+  return <ul>{items.map(n => <li key={n}>{n}</li>)}</ul>
+}
+`)
+    expect(template).toContain('for n in [1, 2]')
+  })
+})

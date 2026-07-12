@@ -170,6 +170,7 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
+  collectLoopBoundNames,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -321,6 +322,17 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   private localConstants: IRMetadata['localConstants'] = []
 
   /**
+   * Every name a `.map()`/`.filter()` loop callback binds as its item/index
+   * parameter anywhere in the component (#2208 fable review). A static
+   * loop-SOURCE name (e.g. a function-scope `const items = [...]`) must
+   * never resolve through `resolveStaticLoopSource` at a use site where a
+   * DIFFERENT, enclosing loop's own callback param shadows it — same
+   * shadowing hazard, and same coarse-but-safe mitigation, as #2212's
+   * `collectLoopBoundNames` use in `collectStringValueNames`.
+   */
+  private staticLoopSourceBoundNames: Set<string> = new Set()
+
+  /**
    * Optional, no-default props that are `None` when the caller omits them.
    * Their bare-reference attribute emission is guarded with a Jinja
    * `is defined and is not none` test so the attribute DROPS rather than
@@ -352,6 +364,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // ("True"/"False") (#1897, pagination's data-active).
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
+    this.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
@@ -802,7 +815,12 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // list/dict literal below, the same way a module-scope const's value
     // is already seeded. A runtime-computed local (#2069, e.g.
     // `Object.entries(props.tags).filter(...)`) still refuses below.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants)
+    // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
+    // param shadowing this identifier (fable review) — never resolve the
+    // static const in that case; fall through to the identifier reference.
+    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
+      isNameShadowed: name => this.staticLoopSourceBoundNames.has(name),
+    })
     const staticArray = staticItems !== null ? staticValueToMinijinja(staticItems) : null
 
     const arrayName = loop.array.trim()

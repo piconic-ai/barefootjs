@@ -851,7 +851,13 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // arrayref/hashref literal below, the same way a module-scope const's
     // value is already seeded. A runtime-computed local (#2069, e.g.
     // `Object.entries(props.tags).filter(...)`) still refuses below.
-    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants)
+    // `isNameShadowed` guards a DIFFERENT, enclosing loop's own callback
+    // param shadowing this identifier (fable review) — reuses the same
+    // live `loopBoundNames` ref-counted tracking `resolveModuleStringConst`
+    // already consults for this hazard class (#1749).
+    const staticItems = resolveStaticLoopSource(loop.arrayParsed, this.localConstants, {
+      isNameShadowed: name => this.loopBoundNames.has(name),
+    })
     const staticArray = staticItems !== null ? staticValueToPerl(staticItems) : null
 
     const arrayName = loop.array.trim()

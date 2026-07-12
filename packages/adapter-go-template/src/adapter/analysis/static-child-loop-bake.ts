@@ -54,13 +54,14 @@ export function analyzeBakeableStaticChildLoop(
     loopKey?: string
   },
   localConstants: ReadonlyArray<ConstantInfo>,
+  opts?: { isNameShadowed?: (name: string) => boolean },
 ): BakedStaticChildLoop | null {
   // A destructured loop param's raw pattern text starts with `{`/`[` (the
   // synthesized single-identifier rewrite only applies to a SIMPLE param) —
   // defer rather than mis-bind bindings under a pattern name.
   if (!nested.loopParam || /^[{[]/.test(nested.loopParam)) return null
 
-  const staticItemsResult = resolveStaticLoopSource(nested.loopArrayParsed, localConstants)
+  const staticItemsResult = resolveStaticLoopSource(nested.loopArrayParsed, localConstants, opts)
   if (staticItemsResult === null) return null
 
   const items: BakedStaticChildItem[] = []

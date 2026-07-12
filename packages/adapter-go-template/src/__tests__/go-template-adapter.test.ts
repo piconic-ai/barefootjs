@@ -3944,4 +3944,70 @@ export function TagList(props: { tags: string[] }) {
     )
     expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
   })
+
+  // Fable review: `bf build` compiles a whole source dir through ONE reused
+  // adapter instance (loop marker ids restart at `l0` per component) — the
+  // bakeability cache must reset every `generate()` or a stale entry from a
+  // PREVIOUS component either silently suppresses this fix, or (worse)
+  // leaks that other component's baked literal values into this one.
+  const TAG_LIST_SOURCE = `
+import { ListItem } from './list-item'
+export function TagList(props: { tags: string[] }) {
+  const entries = props.tags.filter(t => t !== '')
+  return (
+    <ul>
+      {entries.map(label => (
+        <ListItem key={label} label={label} />
+      ))}
+    </ul>
+  )
+}
+`
+
+  test('a reused adapter does not suppress baking for a later component sharing a marker id', () => {
+    const adapter = new GoTemplateAdapter()
+    compileJSX(TAG_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    const second = compileJSX(STATIC_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    expect(second.errors ?? []).toEqual([])
+    const types = second.files.find(f => f.type === 'types')!.content
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha"')
+  })
+
+  test('a reused adapter does not leak a prior component\'s baked data into a later runtime-computed one', () => {
+    const adapter = new GoTemplateAdapter()
+    compileJSX(STATIC_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    const second = compileJSX(TAG_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
+    expect(second.errors?.some(e => e.code === 'BF101')).toBe(true)
+    const types = second.files.find(f => f.type === 'types')!.content
+    expect(types).not.toContain('"Alpha"')
+  })
+
+  // Fable review: a static loop-SOURCE identifier must not resolve through
+  // an outer const when a DIFFERENT, enclosing loop's own callback param
+  // shadows that same name.
+  test('a static const shadowed by an enclosing loop param does not get baked', () => {
+    const result = compileJSX(
+      `
+import { ListItem } from './list-item'
+export function Nested({ groups }: { groups: { label: string }[][] }) {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return (
+    <div>
+      {groups.map((items, i) => (
+        <ul key={i}>
+          {items.map(item => (
+            <ListItem key={item.label} label={item.label} />
+          ))}
+        </ul>
+      ))}
+    </div>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter(), siblingTemplatesRegistered: true },
+    )
+    const types = result.files.find(f => f.type === 'types')?.content ?? ''
+    expect(types).not.toContain('"Alpha"')
+  })
 })
