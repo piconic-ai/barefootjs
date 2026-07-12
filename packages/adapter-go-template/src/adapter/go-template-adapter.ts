@@ -73,6 +73,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   collectLoopBoundNames,
+  evaluateStaticLiteral,
 } from '@barefootjs/jsx'
 import { findInterpolationEnd } from '@barefootjs/jsx/scanner'
 import { BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -117,7 +118,8 @@ import { collectRootScopeNodes } from "./lib/ir-scope.ts"
 import { GO_TEMPLATE_PRIMITIVES } from "./lib/constants.ts"
 import { CompileState } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents } from "./analysis/component-tree.ts"
-import { analyzeBakeableStaticChildLoop, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
+import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
+import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { lowerRegisteredCall } from "./expr/url-builder.ts"
@@ -295,6 +297,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * alone (#2087 Phase B).
    */
   private loopRestExcludeStack: Array<Map<string, { parent: string; excludeKeys: string[] }>> = []
+  /**
+   * Active per-item static bindings for a #2224 unrolled plain-element loop
+   * (`renderUnrolledStaticElementLoop`) — innermost last, so a nested static
+   * unroll inside another one resolves against its own item, not an outer
+   * one's. When non-empty, `convertExpressionToGo`'s top-of-function check
+   * resolves EVERY expression against the innermost entry's item via
+   * `evaluateStaticLiteral` and returns a literal Go value instead of
+   * descending into the normal `.Field`-style dot-context lowering — there
+   * is no real `{{range}}` establishing that context during an unroll, so
+   * `identifier()`'s `currentLoopParam → '.'` branch would otherwise resolve
+   * against the WRONG (enclosing) dot context. `analyzeBakeableStaticElementLoop`
+   * has already verified every expression in the body resolves this way for
+   * every item, so the fallback failure branch below is a defensive
+   * invariant check, not a real code path.
+   */
+  private staticLoopItemStack: Array<{ param: string; item: unknown }> = []
+  /**
+   * Set by the `convertExpressionToGo` override above when a
+   * `staticLoopItemStack` entry is active but the current expression fails
+   * to resolve against it — should never happen (see that check's comment),
+   * but `renderUnrolledStaticElementLoop` asserts this stays `false` after
+   * every item render rather than silently shipping a `""` sentinel.
+   */
+  private staticLoopBakeFailed = false
 
   /**
    * Cross-component child shapes, keyed by child component name. Populated via
@@ -4523,6 +4549,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return '""'
     }
 
+    // #2224: inside a `renderUnrolledStaticElementLoop` pass, there is no
+    // real `{{range}}` establishing a per-item dot context — every
+    // expression in the body must instead resolve directly against the
+    // active item via `evaluateStaticLiteral` and lower to a literal Go
+    // value. Highest priority (even over the static-record-index / inlined-
+    // const early returns below): those string-keyed checks were never
+    // designed to reason about a loop item and could otherwise misfire on
+    // text that merely happens to match their shape. `analyzeBakeable-
+    // StaticElementLoop` has already verified every expression in this body
+    // resolves for every item, so the `staticLoopBakeFailed` branch is a
+    // defensive invariant, not a real code path — if it ever fires, the two
+    // passes disagreed and the safest move is a sentinel, not a `.Field`
+    // reference with no range context behind it.
+    if (this.staticLoopItemStack.length > 0) {
+      const top = this.staticLoopItemStack[this.staticLoopItemStack.length - 1]
+      const parsedForBake = preParsed ?? parseExpression(trimmed)
+      const resolved = evaluateStaticLiteral(parsedForBake, new Map([[top.param, top.item]]))
+      const literal = resolved !== null ? scalarToGoLiteral(resolved.value) : null
+      if (literal !== null) {
+        // Deliberately leave `out.parsed` unset — a `template-literal`-kind
+        // source (`` `Hi ${item.label}` ``) must NOT be treated as
+        // already-fragment text by `renderExpression`'s `isTemplateFragment`
+        // check (it would skip the `{{...}}` wrap and print the Go literal's
+        // quote characters raw into the HTML).
+        return literal
+      }
+      this.staticLoopBakeFailed = true
+      return '""'
+    }
+
     // `IDENT['key']` over a module object-literal const with a STRING-LITERAL key
     // is a fully static lookup — resolve it at compile time. The generic member
     // lowering below would otherwise capitalize the bracket access into a field
@@ -5192,6 +5248,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ? this.getBakedStaticChildLoop(loop.markerId, loop.childComponent, loop.arrayParsed, loop.param, loop.key ?? undefined)
       : null
 
+    // #2224 shape 1: a static-array loop whose body is a plain ELEMENT tree
+    // (no child component) has no `.{Name}s`-shaped template target for
+    // #2208's baking to feed — there's nothing for `{{range}}` to iterate at
+    // all once the array itself can't bind as a template variable. Rather
+    // than synthesizing a Go struct type for the item shape (see the #2224
+    // issue body), unroll the body once per item at template-generation
+    // time instead, substituting each item's statically-known field values
+    // directly — see `analyzeBakeableStaticElementLoop`'s docstring for the
+    // exact (conservative) acceptance gate. `null` here means the shape
+    // isn't (yet) bakeable this way; the existing gates below keep firing
+    // exactly as before.
+    const bakedElementLoop = loop.childComponent
+      ? null
+      : analyzeBakeableStaticElementLoop(
+          loop,
+          this.state.localConstants,
+          { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name) },
+        )
+    if (bakedElementLoop) {
+      return this.renderUnrolledStaticElementLoop(loop, bakedElementLoop.items)
+    }
+
     const arrayName = loop.array.trim()
     if (bakedChildLoop === null && /^[A-Za-z_$][\w$]*$/.test(arrayName)) {
       const arrayConst = this.state.localConstants.find(c => c.name === arrayName)
@@ -5209,7 +5287,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    let goArray = this.convertExpressionToGo(loop.array)
+    // #2224 shape 2: when the body IS a child component, `goArray` gets
+    // unconditionally overwritten to `.${componentName}s` below regardless
+    // of what this call returns — so for an INLINE array-literal source
+    // (`[{ label: 'Alpha' }, ...].map(item => <ListItem .../>)`), calling
+    // `convertExpressionToGo` on the raw literal text here is pure waste at
+    // best. At worst it's actively harmful: an array-literal-of-objects
+    // fails the shared `isSupported` gate (`object-literal` is refused
+    // standalone — expression-parser.ts), so this call would push a BF101
+    // as a side effect even though `bakedChildLoop` above (via
+    // `resolveStaticLoopSource`, which evaluates the literal directly
+    // instead of going through `isSupported`) already resolved the SAME
+    // loop just fine. Skip the call entirely for a child-component body —
+    // baked or not, dynamic `.map()` over a real prop/signal array included
+    // — so no spurious diagnostic is ever recorded for a value nothing ends
+    // up consuming.
+    let goArray = loop.childComponent ? '' : this.convertExpressionToGo(loop.array)
     const param = loop.param
     let index = loop.index || '_'
 
@@ -5342,6 +5435,61 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
+  }
+
+  /**
+   * #2224 shape 1: render a static-array, plain-element-body loop's per-item
+   * markup ONCE PER ITEM at template-generation time instead of a Go
+   * `{{range}}` — `analyzeBakeableStaticElementLoop` has already verified
+   * every expression in `loop.children` resolves against each item. Keeps
+   * the SAME `<!--bf-loop:id--> ... <!--/bf-loop:id-->` marker pair a
+   * dynamic loop emits (so the CSR-side static `forEach` wiring, compiled by
+   * the separate `ir-to-client-js.ts` pass and untouched by this change,
+   * still finds the same DOM range), and pushes `loop.param` /
+   * `loop.depth` onto the SAME stacks `renderLoop`'s `{{range}}` path uses,
+   * so `data-key`/`data-key-N` attribute-name derivation
+   * (`renderAttributes`) is unaffected by which path rendered the loop. No
+   * `itemMarker` (`loopItemMarker`) call: the analysis gate already refused
+   * `bodyIsMultiRoot` / `bodyIsItemConditional` bodies, so it would always
+   * return `''` here anyway.
+   */
+  private renderUnrolledStaticElementLoop(loop: IRLoop, items: readonly unknown[]): string {
+    this.inLoop = true
+    this.loopWrapperStack.push(false)
+    this.loopKeyDepthStack.push(loop.depth)
+    this.loopScalarItemStack.push(this.scalarLiteralLoopGoType(loop.arrayParsed, loop.itemType) !== null)
+    this.loopParamStack.push(loop.param)
+
+    let body = ''
+    for (const item of items) {
+      this.staticLoopItemStack.push({ param: loop.param, item })
+      body += this.renderChildren(loop.children)
+      this.staticLoopItemStack.pop()
+      if (this.staticLoopBakeFailed) {
+        // Invariant violation (see `staticLoopBakeFailed`'s docstring): the
+        // gate and this render pass disagreed. Surface it loudly instead of
+        // shipping a template with `""` sentinels silently spliced in.
+        this.staticLoopBakeFailed = false
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop array \`${loop.array.trim()}\` could not be fully unrolled — an expression in the loop body did not resolve against every item as the compile-time analysis expected.`,
+          loc: loop.loc ?? this.makeLoc(),
+          suggestion: {
+            message: 'This indicates a bug in the Go adapter\'s static-loop unrolling (#2224) rather than an unsupported source pattern; please file a bug with a reproduction.',
+          },
+        })
+        break
+      }
+    }
+
+    this.loopParamStack.pop()
+    this.loopScalarItemStack.pop()
+    this.loopKeyDepthStack.pop()
+    this.loopWrapperStack.pop()
+    this.inLoop = false
+
+    return `{{bfComment "loop:${loop.markerId}"}}${body}{{bfComment "/loop:${loop.markerId}"}}`
   }
 
   /**
