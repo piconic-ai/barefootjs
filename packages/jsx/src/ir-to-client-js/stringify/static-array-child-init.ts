@@ -36,7 +36,7 @@
  *     <i>    if (!__outerEl) return
  *     <i>    <outerPreludeStatements*>   // raw outer preamble (#1064)
  *     <i>    const __ic = <innerContainer-or-outerEl>
- *     <i>    <innerArr>.forEach((<innerParam>, __innerIdx) => {
+ *     <i>    <innerArr>.forEach((<innerParam>, <innerIdx>) => {
  *     <i>      const __innerEl = __ic.children[<innerOffset>]
  *     <i>      if (!__innerEl) return
  *     <i>      <innerPreludeStatements*>   // raw inner preamble (#1064)
@@ -137,6 +137,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     innerContainerSlotId,
     innerArrayExpr,
     innerParam,
+    innerIndexParam,
     innerOffsetExpr,
     innerPreludeStatements,
     depth,
@@ -157,7 +158,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
   } else {
     lines.push(`      const __ic = __outerEl`)
   }
-  lines.push(`      ${innerArrayExpr}.forEach((${innerParam}, __innerIdx) => {`)
+  lines.push(`      ${innerArrayExpr}.forEach((${innerParam}, ${innerIndexParam}) => {`)
   lines.push(`        const __innerEl = __ic.children[${innerOffsetExpr}]`)
   lines.push(`        if (!__innerEl) return`)
   // Inner `.map()` callback preamble — must precede the per-component
@@ -186,9 +187,9 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
  *   <i>if (<container>) {
  *   <i>  const <scopes_c> = qsaChildScopes(<container>, <selector_c>)   // per comp
  *   <i>  let <cursor_c> = 0
- *   <i>  <outerArr>.forEach((<outerParam>) => {
+ *   <i>  <outerArr>.forEach((<outerParam>[, <outerIdx>]) => {
  *   <i>    <outerPreludeStatements*>
- *   <i>    <innerArr>.forEach((<innerParam>) => {
+ *   <i>    <innerArr>.forEach((<innerParam>[, <innerIdx>]) => {
  *   <i>      <innerPreludeStatements*>
  *   <i>      const <compEl_c> = <scopes_c>[<cursor_c>++]              // per comp
  *   <i>      if (<compEl_c>) initChild('<name>', <compEl_c>, <props>)
@@ -206,9 +207,11 @@ function emitComponentRootedInnerLoop(lines: string[], plan: ComponentRootedInne
     containerVar,
     outerArrayExpr,
     outerParam,
+    outerIndexParam,
     outerPreludeStatements,
     innerArrayExpr,
     innerParam,
+    innerIndexParam,
     innerPreludeStatements,
     depth,
     comps,
@@ -226,11 +229,13 @@ function emitComponentRootedInnerLoop(lines: string[], plan: ComponentRootedInne
     lines.push(`    const ${scopesVar(i)} = qsaChildScopes(${containerVar}, ${comp.selector})`)
     lines.push(`    let ${cursorVar(i)} = 0`)
   })
-  lines.push(`    ${outerArrayExpr}.forEach((${outerParam}) => {`)
+  // Declared index names are appended to the forEach heads (#2231);
+  // index-less loops keep the bare single-param head byte-identical.
+  lines.push(`    ${outerArrayExpr}.forEach((${outerParam}${outerIndexParam ? `, ${outerIndexParam}` : ''}) => {`)
   for (const stmt of outerPreludeStatements) {
     lines.push(`      ${stmt}`)
   }
-  lines.push(`      ${innerArrayExpr}.forEach((${innerParam}) => {`)
+  lines.push(`      ${innerArrayExpr}.forEach((${innerParam}${innerIndexParam ? `, ${innerIndexParam}` : ''}) => {`)
   for (const stmt of innerPreludeStatements) {
     lines.push(`        ${stmt}`)
   }
