@@ -91,18 +91,30 @@ export interface BuildConfig {
    *     safely narrow (namespace import, default import, or dynamic
    *     `import()` of the runtime) or if no prebuilt runtime dist file can
    *     be found to bundle from.
+   *   - `'treeshake-exact'` — same collection as `'treeshake'`, but
+   *     `ALWAYS_KEEP_RUNTIME_EXPORTS` is NOT force-kept: only names actually
+   *     found in compiled output / `bundleEntries` / `externals`, plus
+   *     `runtimeKeep`, ship. A hand-written page script the CLI never
+   *     compiles (e.g. an inline `<script type="module">` in a hard-coded
+   *     HTML shell) is invisible to the collector, so any runtime export it
+   *     calls directly (`render`, `disposeScope`, …) must be listed in
+   *     `runtimeKeep` or it will be silently dropped — use `'treeshake'` if
+   *     unsure. Smaller `barefoot.js` for projects with no such script (perf,
+   *     #2143 gap 4).
    *   - `'full'` — copy the entire prebuilt runtime bundle verbatim, as
    *     `bf build` always did before per-project tree-shaking.
    */
-  runtimeBundle?: 'treeshake' | 'full'
+  runtimeBundle?: 'treeshake' | 'treeshake-exact' | 'full'
   /**
    * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
-   * under `runtimeBundle: 'treeshake'`, on top of whatever the collector
-   * finds and the always-kept public mount API. Use this for names only
-   * ever referenced from hand-written page scripts the CLI never compiles
-   * (an inline `<script type="module">` calling `hydrate()` directly, a
-   * hand-rolled router bootstrap, etc.) that aren't already covered by
-   * `ALWAYS_KEEP_RUNTIME_EXPORTS`.
+   * under `runtimeBundle: 'treeshake'` or `'treeshake-exact'`, on top of
+   * whatever the collector finds (and, under `'treeshake'` only, the
+   * always-kept public mount API). Use this for names only ever referenced
+   * from hand-written page scripts the CLI never compiles (an inline
+   * `<script type="module">` calling `hydrate()` directly, a hand-rolled
+   * router bootstrap, etc.) — under `'treeshake-exact'` this is the ONLY
+   * way such a name survives, since `ALWAYS_KEEP_RUNTIME_EXPORTS` isn't
+   * force-kept in that mode.
    */
   runtimeKeep?: string[]
 }
@@ -274,7 +286,7 @@ export function generateHash(content: string): string {
  */
 export function resolveBuildConfigFromTs(
   projectDir: string,
-  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void; externals?: Record<string, ExternalSpec>; externalsBasePath?: string; bundleEntries?: BundleEntry[]; localImportPrefixes?: string[]; runtimeBundle?: 'treeshake' | 'full'; runtimeKeep?: string[] },
+  tsConfig: { adapter: TemplateAdapter; components?: string[]; outDir?: string; minify?: boolean; contentHash?: boolean; clientOnly?: boolean; transformMarkedTemplate?: (content: string, componentId: string, clientJsPath: string) => string; outputLayout?: OutputLayout; postBuild?: (ctx: PostBuildContext) => Promise<void> | void; externals?: Record<string, ExternalSpec>; externalsBasePath?: string; bundleEntries?: BundleEntry[]; localImportPrefixes?: string[]; runtimeBundle?: 'treeshake' | 'treeshake-exact' | 'full'; runtimeKeep?: string[] },
   overrides?: { minify?: boolean }
 ): BuildConfig {
   const componentDirs = (tsConfig.components ?? ['components']).map(
@@ -486,7 +498,7 @@ export async function build(
     }
   }
 
-  const runtimeMode: 'treeshake' | 'full' = config.runtimeBundle ?? 'treeshake'
+  const runtimeMode: 'treeshake' | 'treeshake-exact' | 'full' = config.runtimeBundle ?? 'treeshake'
 
   if (runtimeMode === 'full') {
     if (domDistFile) {
@@ -508,9 +520,10 @@ export async function build(
       console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js copy.')
     }
   }
-  // `runtimeMode === 'treeshake'`: barefoot.js is produced at step 6d, once
-  // every component's (and bundleEntries'/externals') final client JS is
-  // known, so the used-export collection sees everything.
+  // `runtimeMode !== 'full'` (`'treeshake'` or `'treeshake-exact'`):
+  // barefoot.js is produced at step 6d, once every component's (and
+  // bundleEntries'/externals') final client JS is known, so the used-export
+  // collection sees everything.
 
   // 1b. Externals — copy vendor chunks, emit importmap + barefoot-externals.json
   const { changed: externalsChanged, allExternals, outfiles: externalOutfiles } =
@@ -944,7 +957,9 @@ export async function build(
   //     used across every emitted client JS file (components, bundleEntries,
   //     rebundled externals chunks) and bundle `barefoot.js` down to just
   //     those names plus the always-kept public mount API
-  //     (`ALWAYS_KEEP_RUNTIME_EXPORTS`). Must run BEFORE step 6c below: 6c
+  //     (`ALWAYS_KEEP_RUNTIME_EXPORTS`) — unless `runtimeMode ===
+  //     'treeshake-exact'`, which drops that always-kept set (perf, #2143
+  //     gap 4). Must run BEFORE step 6c below: 6c
   //     rewrites `@barefootjs/client*` specifiers to a relative
   //     `./barefoot.js` path, and the collector's AST walk matches on the
   //     original bare specifier.
@@ -964,7 +979,7 @@ export async function build(
   //     `externals` chunks need adding separately, since those aren't
   //     source-driven cache entries.
   let runtimeKeepHash: string | undefined = cache.runtimeKeepHash
-  if (runtimeMode === 'treeshake') {
+  if (runtimeMode !== 'full') {
     if (!domDistFile) {
       console.warn('Warning: @barefootjs/client dist not found. Skipping barefoot.js generation.')
       runtimeKeepHash = undefined
@@ -1008,7 +1023,7 @@ export async function build(
         runtimeKeepHash = undefined
       } else {
         const keepNames = new Set<string>([
-          ...ALWAYS_KEEP_RUNTIME_EXPORTS,
+          ...(runtimeMode === 'treeshake-exact' ? [] : ALWAYS_KEEP_RUNTIME_EXPORTS),
           ...(config.runtimeKeep ?? []),
           ...merged.names,
         ])
@@ -1020,7 +1035,32 @@ export async function build(
           keep: [...keepNames].sort(),
         }))
 
-        if (nextKeepHash === cache.runtimeKeepHash && await fileExists(runtimeOutPath)) {
+        if (keepNames.size === 0) {
+          // `'treeshake-exact'` with no runtime exports reachable anywhere
+          // (no client component, no bundleEntries/externals usage, no
+          // `runtimeKeep`) — `buildRuntimeBundle` requires a non-empty
+          // re-export list, and falling into the catch below would ship the
+          // FULL runtime (worse than shipping nothing). Skip generation
+          // entirely, and remove any `barefoot.js` left over from a PRIOR
+          // build whose keep-set was non-empty — otherwise an incremental
+          // project would keep serving a stale bundle referencing runtime
+          // exports the current build no longer proves are used, silently
+          // masking the "this name isn't kept anymore" failure until a
+          // clean build. The hash is still recorded so a repeat build with
+          // the same (empty) keep set skips this branch's own work next
+          // time — collection itself always reruns; only the skip decision
+          // is cached.
+          if (nextKeepHash !== cache.runtimeKeepHash) {
+            try {
+              await unlink(runtimeOutPath)
+              anyOutputChanged = true
+              console.log(`Skipped: ${runtimeSubdir}/barefoot.js (no runtime exports used)`)
+            } catch {
+              // Nothing to remove — first build, or already gone.
+            }
+          }
+          runtimeKeepHash = nextKeepHash
+        } else if (nextKeepHash === cache.runtimeKeepHash && await fileExists(runtimeOutPath)) {
           // Nothing that would change barefoot.js's contents has changed —
           // skip re-invoking esbuild.
           runtimeKeepHash = nextKeepHash

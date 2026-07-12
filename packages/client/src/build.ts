@@ -62,14 +62,21 @@ export interface CSRBuildOptions {
    * How the CLI produces `barefoot.js`. Defaults to `'treeshake'`, which
    * bundles only the runtime exports this project's compiled client JS
    * actually imports (plus the always-kept public mount API). Set to
+   * `'treeshake-exact'` to drop the always-kept set too — smaller output,
+   * but any hand-written page script the CLI never compiles (an inline
+   * `<script type="module">` calling `render`/`hydrate`/etc. directly) must
+   * list those names in `runtimeKeep` or they're silently dropped. Set to
    * `'full'` to copy the entire prebuilt runtime bundle verbatim, matching
    * pre-tree-shaking behavior.
    */
-  runtimeBundle?: 'treeshake' | 'full'
+  runtimeBundle?: 'treeshake' | 'treeshake-exact' | 'full'
   /**
    * Extra `@barefootjs/client*` export names to force-keep in `barefoot.js`
-   * under `runtimeBundle: 'treeshake'` — for names only ever referenced
-   * from hand-written page scripts the CLI never compiles.
+   * under `runtimeBundle: 'treeshake'` or `'treeshake-exact'` — for names
+   * only ever referenced from hand-written page scripts the CLI never
+   * compiles. Required (not just useful) under `'treeshake-exact'`, which
+   * drops the always-kept public mount API those scripts would otherwise
+   * fall back on.
    */
   runtimeKeep?: string[]
 }
