@@ -1325,6 +1325,20 @@ export interface TemplateOptions {
   csrEnv?: CsrEnv
   insideLoop?: boolean
   loopDepth?: number
+  /**
+   * Names bound by the ENCLOSING loops' callback params (item / index /
+   * destructured binding names), accumulated by the `loop` case as the
+   * recursion descends (#2222). Inside a loop body, `csrSubstitute`
+   * receives each expression in isolation — no enclosing arrow text — so
+   * its own bound-name tracking can't see the loop binding; the `loop`
+   * case instead filters these names out of the child recursion's
+   * `csrEnv`, so an inlinable const / signal / memo whose name is
+   * shadowed by a loop param never substitutes at the shadowed
+   * occurrence. Scope-accurate per nesting level (the CURRENT level's
+   * own `transformExpr` — e.g. the loop's array-source expression —
+   * keeps the unfiltered env).
+   */
+  loopBoundNames?: ReadonlySet<string>
   /** Emit `bf-s` placeholder on scoped elements inside a jsx-children prop (#1320). */
   inHoistedChildren?: boolean
   /**
@@ -2178,7 +2192,33 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     }
 
     case 'loop': {
-      let childTemplate = node.children.map(recurseInLoop).join('')
+      // Accumulate this loop's callback-bound names and filter them out
+      // of the child recursion's substitution env (#2222): an inlinable
+      // const / signal / memo whose name the callback shadows must never
+      // substitute inside the body. Destructured callbacks contribute
+      // their individual binding names; a raw pattern-text `param` that
+      // isn't a bare identifier (the BF025 fallback shapes) contributes
+      // nothing — conservatively unfiltered rather than mis-filtered.
+      const boundHere = new Set(opts.loopBoundNames ?? [])
+      if (node.paramBindings && node.paramBindings.length > 0) {
+        for (const b of node.paramBindings) boundHere.add(b.name)
+      } else if (/^[A-Za-z_$][\w$]*$/.test(node.param)) {
+        boundHere.add(node.param)
+      }
+      if (node.index) boundHere.add(node.index)
+      const childEnv: CsrEnv = {
+        ...env,
+        substitutions: new Map([...env.substitutions].filter(([name]) => !boundHere.has(name))),
+      }
+      const recurseInLoopBody = (n: IRNode): string => generateCsrTemplateWithOpts(n, {
+        ...opts,
+        insideLoop: true,
+        loopDepth: loopDepth + 1,
+        inHoistedChildren: false,
+        loopBoundNames: boundHere,
+        csrEnv: childEnv,
+      })
+      let childTemplate = node.children.map(recurseInLoopBody).join('')
       // Whole-item conditional loops (#1665): prepend the per-item
       // `<!--bf-loop-i:KEY-->` anchor so `mapArrayAnchored` can track items
       // that render no element. Mirrors the `irToHtmlTemplate` loop case.
@@ -2212,7 +2252,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       if (node.flatMapCallback) {
         let body = node.flatMapCallback.templateBody ?? node.flatMapCallback.body
         for (const frag of node.flatMapCallback.fragments) {
-          const renderedIr = recurseInLoop(frag.ir)
+          const renderedIr = recurseInLoopBody(frag.ir)
           body = body.replace(frag.placeholder, `\`${renderedIr}\``)
         }
         body = applyPropsRewrite(body, propsObjectName ?? null)
