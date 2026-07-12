@@ -1875,8 +1875,19 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
    * single-quoted string literal (`const totalPages = 5`, #1897
    * pagination) — function-scope consts never reach the per-render
    * context, so a bare reference would resolve to Undefined.
+   *
+   * The lookup is a flat name match with no notion of AST scope, so a
+   * name that any loop callback binds as its item/index param never
+   * inlines (#2221) — the occurrence may be the loop's own (shadowing)
+   * binding, and substituting the outer const's value there renders every
+   * iteration with the same hard-coded literal. Coarse (a genuinely
+   * non-shadowed same-named const elsewhere in the component also stops
+   * inlining, falling back to the bare identifier) but safe — the same
+   * trade-off as #2212's `collectLoopBoundNames` use in
+   * `collectStringValueNames`.
    */
   private _resolveLiteralConst(name: string): string | null {
+    if (this.staticLoopSourceBoundNames.has(name)) return null
     const c = (this.localConstants ?? []).find(lc => lc.name === name)
     if (c?.value === undefined) return null
     const v = c.value.trim()

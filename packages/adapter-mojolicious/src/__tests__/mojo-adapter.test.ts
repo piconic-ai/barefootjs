@@ -195,6 +195,109 @@ function Box({ other }: { other?: object }) {
   })
 })
 
+// #2221: same class of hazard as the Twig-family `_resolveLiteralConst`
+// flat-lookup bug, but this adapter's story is different. `resolveLiteralConst`
+// / `resolveStaticRecordLiteral` (mojo-adapter.ts) already guard against it —
+// they consult `loopBoundNames`, a LIVE ref-counted map that
+// `renderLoop` populates/depopulates as it descends/ascends into each loop
+// body (#1749), not a static whole-component set like the Twig family's
+// `collectLoopBoundNames(ir)`. That makes the guard scope-PRECISE rather
+// than coarse: a name loop-bound only inside one loop still inlines fine
+// at a genuinely separate, non-shadowed occurrence elsewhere in the
+// component (see the third test below) — the Twig-family's documented
+// coarse trade-off (a same-named const anywhere else in the component also
+// stops inlining) does not apply here. So no `staticLoopSourceBoundNames`
+// field was added; the existing live tracking already covers this call
+// site and is strictly more precise.
+//
+// The ONE actual gap found: `emitSpread`'s bare-identifier local-const
+// spread resolution (mojo-adapter.ts, the `this.localConstants.find(...)`
+// call keyed by `trimmed`, `{...attrs}` → `{ … }` hashref, #checkbox/icon)
+// read `this.localConstants` directly with no `loopBoundNames` guard at
+// all — a loop param named the same as an outer conditional-object const
+// (`.map((attrs) => <li {...attrs} />)` shadowing `const attrs = cond ?
+// {…} : {}`) incorrectly forwarded the outer object's literal hashref
+// instead of falling through to the per-iteration `$attrs` value. Fixed
+// with the same `loopBoundNames` guard as the other two call sites.
+//
+// Not covered here (upstream, shared-compiler hazard, out of this
+// package's scope): `key={label}` shadowed by an enclosing loop param of
+// the same name is folded to the OUTER const's literal at IR-generation
+// time (`tryResolveIdentifierAsTemplateLiteral` → `findLocalConst` in
+// `packages/jsx/src/jsx-to-ir.ts`), before any adapter runs — so this
+// adapter (and every other adapter, including Hono's native JSX
+// re-emission) still renders a `key`/`data-key` value shadowed this way
+// as the outer literal, unconditionally, every iteration.
+describe('MojoAdapter - const inlining vs loop-param shadowing (#2221)', () => {
+  test('a loop param shadowing an outer literal const emits the identifier, not the const value', () => {
+    const { template } = compileAndGenerate(`
+function Widget() {
+  const label: string = 'x'
+  return <ul>{[2, 5].map((label) => <li key={label}>{1 + label}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + $label')
+    expect(template).not.toContain("1 + 'x'")
+  })
+
+  test('a numeric const shadowed by a loop param emits the identifier too', () => {
+    const { template } = compileAndGenerate(`
+function Widget() {
+  const count = 7
+  return <ul>{[2, 5].map((count) => <li key={count}>{1 + count}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + $count')
+    expect(template).not.toContain('1 + 7')
+  })
+
+  test('a literal const NOT shadowed by any loop still inlines (#1897 pin)', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ values }: { values: number[] }) {
+  const totalPages = 5
+  return <div>
+    <p>Page 1 of {1 + totalPages}</p>
+    <ul>{values.map((v) => <li key={v}>{v}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain('1 + 5')
+  })
+
+  // Unlike the Twig-family's coarse-but-safe `collectLoopBoundNames(ir)`
+  // exclusion, this adapter's LIVE `loopBoundNames` tracking is scoped to
+  // the actual render position: a name loop-bound ONLY inside the `.map`
+  // callback still inlines correctly at a separate, non-shadowed
+  // occurrence outside the loop — no accepted trade-off here.
+  test('a const referenced outside the loop whose name is loop-bound elsewhere still inlines (more precise than Twig family)', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ values }: { values: number[] }) {
+  const label: string = 'x'
+  return <div>
+    <p>{1 + label}</p>
+    <ul>{values.map((label) => <li key={label}>{2 + label}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain("1 + 'x'")
+    expect(template).toContain('2 + $label')
+  })
+
+  // The actual gap this issue found in this adapter: `emitSpread`'s
+  // bare-identifier local-const resolution (`{...attrs}` → the outer
+  // conditional object's hashref) had no `loopBoundNames` guard.
+  test('a loop param shadowing an outer conditional-object const spread emits the loop var, not the outer hashref', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ items }: { items: object[] }) {
+  const attrs = true ? { 'data-on': 'outer' } : {}
+  return <ul>{items.map((attrs) => <li {...attrs} />)}</ul>
+}
+`)
+    expect(template).toContain('bf->spread_attrs($attrs)')
+    expect(template).not.toContain("'data-on' => 'outer'")
+  })
+})
+
 describe('MojoAdapter - Record<staticKeys,scalar>[propKey] spread value (#checkbox icon)', () => {
   // `const sizeMap: Record<IconSize, number> = { sm: 16, ... }` indexed by
   // a prop inside a conditional-spread object value lowers to an inline
