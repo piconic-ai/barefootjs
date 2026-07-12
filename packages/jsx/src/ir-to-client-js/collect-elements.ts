@@ -386,6 +386,7 @@ export function collectInnerLoops(
           arrayFreeIdentifiers: n.arrayFreeIdentifiers,
           param: n.param,
           paramBindings: n.paramBindings,
+          index: n.index,
           key: n.key,
           markerId: n.markerId,
           bodyIsMultiRoot: n.bodyIsMultiRoot,

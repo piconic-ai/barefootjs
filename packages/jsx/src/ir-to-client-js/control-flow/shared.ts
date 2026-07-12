@@ -20,19 +20,116 @@ import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
 import type { LoopChildRefBinding } from './plan/loop.ts'
+import {
+  extractFreeIdentifiersFromText,
+  extractFreeIdentifiersFromStatementText,
+  extractFreeIdentifiersFromTemplateText,
+} from '../csr-substitute.ts'
 
 /**
  * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
- * the loop has no key expression. Narrowing on `loop.kind` keeps `index`
- * off `NestedLoop` (nested loops never thread an explicit index parameter)
- * and lets the compiler verify we handled every flavour exhaustively.
+ * the loop has no key expression. Every `CollectedLoop` variant (top-level /
+ * branch / nested) carries an `index: string | null` field (#2218 threaded
+ * it onto `NestedLoop` too), so the index param — when present — is always
+ * appended to the keyFn's own parameter list. mapArray invokes `keyFn(item,
+ * i)` directly with the numeric index, independent of the synthetic
+ * `__innerIdx<uid>` binding used inside a nested loop's renderItem body
+ * (see `nestedLoopReferencesIndex` below), so no aliasing is needed here.
  */
 export function loopKeyFn(loop: CollectedLoop): string {
   if (loop.key === null) return 'null'
-  const params = loop.kind === 'nested'
-    ? loop.param
-    : `${loop.param}${loop.index ? `, ${loop.index}` : ''}`
+  const params = `${loop.param}${loop.index ? `, ${loop.index}` : ''}`
   return `(${params}) => String(${loop.key})`
+}
+
+/**
+ * Does a nested inner loop's body reference its own declared index
+ * parameter (e.g. `i` from `.map((item, i) => ...)`)? Scans every surface
+ * the renderItem/forEach body can read the index from — the key
+ * expression, reactive text/attr expressions, the map-preamble statements,
+ * the per-item HTML template's `${...}` interpolations, per-item events,
+ * ref callbacks, and child-component props — so the byte-stable gate only
+ * fires when the index is truly used (mirrors #2189's handler-only gate
+ * for delegated events, `indexBindingLine` in `stringify/event-delegation.ts`).
+ *
+ * `comps` / `events` are passed separately (rather than read off `inner`)
+ * because callers hold them in different shapes at different points in the
+ * build pipeline — `DepthLevel.comps`/`.events` for the plain inner-loop
+ * path, `inner.childComponents`/`inner.bindings.events` for the loop-child-
+ * arm (conditional-branch) path.
+ *
+ * AST-based throughout (never regex) per repo convention — a token-level
+ * scan would false-match a property access like `item.i` as a reference to
+ * an index param named `i`.
+ */
+export function nestedLoopReferencesIndex(
+  inner: NestedLoop,
+  comps: readonly IRLoopChildComponent[],
+  events: readonly LoopChildEvent[],
+): boolean {
+  const index = inner.index
+  if (!index) return false
+
+  const exprRefs = (text: string | null | undefined, precomputed?: ReadonlySet<string>): boolean => {
+    if (precomputed) return precomputed.has(index)
+    if (!text) return false
+    return extractFreeIdentifiersFromText(text).has(index)
+  }
+
+  if (exprRefs(inner.key)) return true
+  for (const t of inner.bindings.reactiveTexts) {
+    if (exprRefs(t.expression, t.freeIdentifiers)) return true
+  }
+  for (const a of inner.bindings.reactiveAttrs) {
+    if (exprRefs(a.expression, a.freeIdentifiers)) return true
+  }
+  if (inner.mapPreamble && extractFreeIdentifiersFromStatementText(inner.mapPreamble).has(index)) return true
+  if (inner.template && extractFreeIdentifiersFromTemplateText(inner.template).has(index)) return true
+  for (const ev of events) {
+    if (exprRefs(ev.handler)) return true
+  }
+  for (const r of inner.bindings.refs) {
+    if (exprRefs(r.callback)) return true
+  }
+  for (const c of comps) {
+    for (const p of c.props) {
+      if (exprRefs(attrValueToString(p.value))) return true
+    }
+    if (c.children?.length) {
+      const childrenExpr = irChildrenToJsExpr(c.children)
+      if (childrenExpr && exprRefs(childrenExpr)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * Build the prelude alias statement that binds a nested inner loop's index
+ * param to the synthetic numeric-index value mapArray/forEach passes into
+ * renderItem (#2218), or `null` when no alias is needed. Gated by
+ * `nestedLoopReferencesIndex` for byte-for-byte stability — loops that
+ * declare an index but never read it emit no extra line. `paramHead` guards
+ * against the (JS-illegal, can't actually happen) case where the index name
+ * collides with the loop's own emitted item-parameter identifier — mirrors
+ * the self-alias guard in #2189's `indexBindingLine`.
+ *
+ * `syntheticIndexVar` is the already-formatted variable name the caller's
+ * stringifier binds the numeric index to (`__innerIdx<uid>` in
+ * `stringify/inner-loop.ts`, `__bidx<uid>` in `stringify/loop-child-arm.ts`)
+ * — passed in rather than assembled here so this helper doesn't need to
+ * know which emission family is calling it.
+ */
+export function nestedLoopIndexAlias(
+  inner: NestedLoop,
+  syntheticIndexVar: string,
+  paramHead: string,
+  comps: readonly IRLoopChildComponent[],
+  events: readonly LoopChildEvent[],
+): string | null {
+  const index = inner.index
+  if (!index || index === paramHead) return null
+  if (!nestedLoopReferencesIndex(inner, comps, events)) return null
+  return `const ${index} = ${syntheticIndexVar}`
 }
 
 /**

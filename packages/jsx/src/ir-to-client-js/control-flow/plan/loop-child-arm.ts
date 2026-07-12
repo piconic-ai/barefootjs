@@ -108,6 +108,15 @@ export interface BranchInnerLoop {
   paramHead: string
   /** Body-entry unwrap statement (empty when no destructured param). */
   paramUnwrap: string
+  /**
+   * Body-entry index-alias statement (#2218), or `null` when the inner
+   * loop declares no index param or never references it. Binds the user's
+   * index name to the synthetic `__bidx<uid>` renderItem param — mirrors
+   * `InnerLoopReactiveEmit`'s prelude alias in `plan/inner-loop.ts`. Must
+   * be emitted before `paramUnwrap` and the template clone, since either
+   * may reference the index.
+   */
+  indexAlias: string | null
   /** Already-wrapped HTML template for one inner-loop item. */
   wrappedTemplate: string
   /** Pre-wrapped key expression for setAttribute, or null when no key. */
