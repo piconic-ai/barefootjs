@@ -27,7 +27,7 @@
 import { emitRefCall, varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
-import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr } from './template-parse.ts'
+import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateDecl, hoistedCloneExpr, templateRootIsSvg, multiRootTemplateNeedsSvgWrap } from './template-parse.ts'
 import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.ts'
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
@@ -315,15 +315,26 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
   lines.push(`      let __iterEl = ${containerVar}.children[${childIndexExpr}]`)
   if (csrMaterialize) {
     lines.push(`      if (!__iterEl) {`)
+    // SVG-rooted item templates parse inside a synthetic `<svg>` wrap and
+    // descend one extra level (#2219) — `template.innerHTML` alone parses in
+    // the HTML namespace and the materialized elements would never draw.
+    // Mirrors `templateRootIsSvg` handling on the reactive clone paths;
+    // HTML-rooted templates keep byte-identical output. Multi-root fragments
+    // use the fragment-aware predicate so an `<svg>`-container-first fragment
+    // isn't over-wrapped (#2233 Copilot review).
+    const isSvg = csrMaterialize.bodyIsMultiRoot
+      ? multiRootTemplateNeedsSvgWrap(csrMaterialize.itemTemplate)
+      : templateRootIsSvg(csrMaterialize.itemTemplate)
+    const itemHtml = isSvg ? `<svg>${csrMaterialize.itemTemplate}</svg>` : csrMaterialize.itemTemplate
     if (csrMaterialize.bodyIsMultiRoot) {
       // Multi-root: clone every top-level sibling of the per-item template and
       // insert them in order. `__iterEl` is the first root (the one reactive
       // bindings attach to); the rest land alongside it via insertBefore.
       lines.push(`        const __mtpl = document.createElement('template')`)
-      lines.push(`        __mtpl.innerHTML = \`${csrMaterialize.itemTemplate}\``)
+      lines.push(`        __mtpl.innerHTML = \`${itemHtml}\``)
       lines.push(`        const __anchor = ${containerVar}.children[${childIndexExpr}] ?? null`)
       lines.push(`        let __first = null`)
-      lines.push(`        let __sib = __mtpl.content.firstElementChild`)
+      lines.push(`        let __sib = __mtpl.content${isSvg ? '.firstElementChild' : ''}.firstElementChild`)
       lines.push(`        while (__sib) {`)
       lines.push(`          const __next = __sib.nextElementSibling`)
       lines.push(`          const __cloned = __sib.cloneNode(true)`)
@@ -334,8 +345,8 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
       lines.push(`        __iterEl = __first`)
     } else {
       lines.push(`        const __tpl = document.createElement('template')`)
-      lines.push(`        __tpl.innerHTML = \`${csrMaterialize.itemTemplate}\``)
-      lines.push(`        const __cloned = __tpl.content.firstElementChild`)
+      lines.push(`        __tpl.innerHTML = \`${itemHtml}\``)
+      lines.push(`        const __cloned = __tpl.content${isSvg ? '.firstElementChild' : ''}.firstElementChild`)
       lines.push(`        if (__cloned) {`)
       lines.push(`          const __anchor = ${containerVar}.children[${childIndexExpr}] ?? null`)
       lines.push(`          ${containerVar}.insertBefore(__cloned, __anchor)`)
