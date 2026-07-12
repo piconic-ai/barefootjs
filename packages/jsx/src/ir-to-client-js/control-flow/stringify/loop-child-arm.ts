@@ -86,6 +86,11 @@ export function stringifyBranchInnerLoops(
     const uid = inner.uidSuffix
     lines.push(`${indent}{ const __bic${uid} = ${inner.containerExpr}`)
     lines.push(`${indent}if (__bic${uid}) mapArray(() => ${inner.arrayExpr} || [], __bic${uid}, ${inner.keyFn}, (${inner.paramHead}, __bidx${uid}, __existing) => {`)
+    // Index alias (#2218) lands first — before the destructure unwrap and
+    // the template clone, either of which may reference the index.
+    if (inner.indexAlias) {
+      lines.push(`${indent}  ${inner.indexAlias}`)
+    }
     if (inner.paramUnwrap) {
       lines.push(`${indent}  ${inner.paramUnwrap}`)
     }

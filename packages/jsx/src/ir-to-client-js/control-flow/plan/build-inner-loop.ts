@@ -58,6 +58,7 @@ import type { DepthLevel } from '../shared.ts'
 import {
   destructureLoopParam,
   loopKeyFn,
+  nestedLoopIndexAlias,
 } from '../shared.ts'
 import type {
   InnerLoopPlan,
@@ -114,8 +115,8 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
     const useReactive = refsParent && !!inner.template
 
     const emit: InnerLoopReactiveEmit | InnerLoopStaticEmit = useReactive
-      ? buildReactiveEmit(inner, level, wrapOuter)
-      : buildStaticEmit(inner, level)
+      ? buildReactiveEmit(inner, level, wrapOuter, uidSuffix)
+      : buildStaticEmit(inner, level, uidSuffix)
 
     const arrayExpr = useReactive ? wrapOuter(inner.array) : inner.array
 
@@ -153,6 +154,7 @@ function buildReactiveEmit(
   inner: NestedLoop,
   level: DepthLevel,
   wrapOuter: (expr: string) => string,
+  uidSuffix: string,
 ): InnerLoopReactiveEmit {
   const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
@@ -218,7 +220,14 @@ function buildReactiveEmit(
   // The destructure unwrap (when `inner.param` is a binding pattern)
   // has to land before the preamble so the preamble's bare-binding
   // references resolve.
+  //
+  // The index alias (#2218) lands first — before both the unwrap and the
+  // preamble — since either may reference the user's index name (e.g. a
+  // `const rowTag = \`row-${i}\`` preamble line), and both run before the
+  // cloned-template IIFE that may also reference it.
   const preludeStatements: string[] = []
+  const indexAlias = nestedLoopIndexAlias(inner, `__innerIdx${uidSuffix}`, paramHead, level.comps, level.events)
+  if (indexAlias) preludeStatements.push(indexAlias)
   if (paramUnwrap) preludeStatements.push(paramUnwrap)
   if (inner.mapPreamble) preludeStatements.push(wrapInner(wrapOuter(inner.mapPreamble)))
 
@@ -240,7 +249,7 @@ function buildReactiveEmit(
   }
 }
 
-function buildStaticEmit(inner: NestedLoop, level: DepthLevel): InnerLoopStaticEmit {
+function buildStaticEmit(inner: NestedLoop, level: DepthLevel, uidSuffix: string): InnerLoopStaticEmit {
   // Static `forEach` iterates with the literal item as its first param, so
   // no signal-accessor rewrite is needed — emit the preamble verbatim
   // before the component/event setup so prop getters and event handlers
@@ -248,7 +257,15 @@ function buildStaticEmit(inner: NestedLoop, level: DepthLevel): InnerLoopStaticE
   // wrapping the callback would rewrite `s.x` to `s().x` and throw at
   // runtime when the callback closes over the static inner param (#1244,
   // PR #1352 Copilot review).
-  const preludeStatements: string[] = inner.mapPreamble ? [inner.mapPreamble] : []
+  //
+  // The index alias (#2218) lands first, same rationale as the reactive
+  // path: `forEach`'s second param is the synthetic `__innerIdx<uid>`, not
+  // the user's index name, so a preamble/prop/event that reads it needs the
+  // alias bound before anything else runs.
+  const preludeStatements: string[] = []
+  const indexAlias = nestedLoopIndexAlias(inner, `__innerIdx${uidSuffix}`, inner.param, level.comps, level.events)
+  if (indexAlias) preludeStatements.push(indexAlias)
+  if (inner.mapPreamble) preludeStatements.push(inner.mapPreamble)
   return {
     mode: 'static',
     rawKey: inner.key ?? null,

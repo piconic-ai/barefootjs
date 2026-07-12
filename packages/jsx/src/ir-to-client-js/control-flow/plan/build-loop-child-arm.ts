@@ -57,7 +57,7 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined)
   }
 }
-import { destructureLoopParam, loopKeyFn, buildCompSelector } from '../shared.ts'
+import { destructureLoopParam, loopKeyFn, buildCompSelector, nestedLoopIndexAlias } from '../shared.ts'
 import { BF_HOST, BF_AT } from '@barefootjs/shared'
 import type {
   BranchChildComponentInit,
@@ -269,6 +269,17 @@ export function buildBranchInnerLoopsPlan(
       handler: wrapInner(ev.handler),
     }))
 
+    // Index-param gating runs against the RAW (pre-wrap) component/event
+    // data — wrapping only rewrites loop-param references, never the
+    // index name, so it doesn't affect whether the index is referenced.
+    const indexAlias = nestedLoopIndexAlias(
+      inner,
+      `__bidxbr_${i}`,
+      paramHead,
+      inner.childComponents ?? [],
+      inner.bindings.events,
+    )
+
     const reactiveTexts: BranchInnerLoopText[] = inner.bindings.reactiveTexts.map(text => ({
       slotId: text.slotId,
       wrappedExpression: wrapBoth(text.expression),
@@ -286,6 +297,7 @@ export function buildBranchInnerLoopsPlan(
       keyFn: loopKeyFn(inner),
       paramHead,
       paramUnwrap,
+      indexAlias,
       wrappedTemplate: inner.template!,
       wrappedKey,
       keyDepth: 1,

@@ -434,6 +434,12 @@ export function collectLoopChildEventsWithNesting(
             depth: scope.nestingStack.length + 1,
             array: l.array,
             param: l.param,
+            // Event-delegation metadata only (see the field comment on
+            // `NestedLoop.index`) — threaded for type-completeness (#2218)
+            // so this record stays a structurally-valid `NestedLoop`, even
+            // though delegated-handler index binding is handled separately
+            // by `indexBindingLine` in `stringify/event-delegation.ts` (#2189).
+            index: l.index,
             key: l.key,
             markerId: l.markerId,
             containerSlotId: scope.lastElementSlotId,

@@ -405,6 +405,18 @@ export type ConditionalBranchConditional = ConditionalElement
 export interface NestedLoop extends LoopCore {
   kind: 'nested'
   depth: number    // 1 for first nesting level, 2 for second, etc.
+  /**
+   * Index parameter of the inner `.map()` callback (e.g. `i` from
+   * `.map((item, i) => ...)`), or `null` when the callback doesn't declare
+   * one. Mirrors `TopLevelLoop.index` / `BranchLoop.index` — added by #2218
+   * so a nested loop's `key`/reactive-text/reactive-attr/template/event/ref
+   * expressions that reference the index can be bound instead of throwing
+   * `ReferenceError` at runtime. The renderItem body only receives the
+   * index as a synthetic `__innerIdx<uid>` positional param (to avoid
+   * cross-depth name collisions), so emitters must alias it under this
+   * name when referenced — see `nestedLoopReferencesIndex` in `shared.ts`.
+   */
+  index: string | null
   containerSlotId: string | null // Slot ID of the parent element containing the loop (for hydration)
   /** HTML template for a single inner loop item (for mapArray CSR rendering) */
   template?: string

@@ -339,6 +339,59 @@ export function extractFreeIdentifiersFromText(text: string): Set<string> {
 }
 
 /**
+ * Free identifiers referenced by a block of JS *statements* — e.g. an inner
+ * `.map()` callback's block-body preamble (`mapPreamble`, #1052). Unlike
+ * `extractFreeIdentifiersFromText`, which wraps its input in `(...)` to
+ * force single-expression parsing, statement text (`const x = ...;`) is
+ * not a valid expression and would fail to parse inside parens — parse it
+ * as top-level source instead. Used by nested-loop index-param reference
+ * gating (#2218).
+ */
+export function extractFreeIdentifiersFromStatementText(text: string): Set<string> {
+  if (!text || text.trim().length === 0) return new Set()
+  const sf = ts.createSourceFile(
+    '__free_ids_stmt__.ts',
+    text,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TS,
+  )
+  return extractFreeIdentifiersFromNode(sf)
+}
+
+/**
+ * Free identifiers referenced inside a template-literal-style string's
+ * `${...}` interpolations — e.g. a nested loop's per-item HTML `template`
+ * (#2218). Wraps the text in backticks and parses it as a real
+ * `TemplateExpression` so brace balancing, string literals, and nested
+ * object/array literals inside `${...}` are handled correctly by the TS
+ * parser (AST-based — never the char-class regex `extractTemplateExpressions`
+ * in `identifiers.ts` uses for its looser references-graph pass). Safe by
+ * construction: the same `template` string is embedded verbatim inside a
+ * real backtick literal at emit time (`__t.innerHTML = \`${template}\``),
+ * so wrapping it here to parse mirrors exactly how it's already used.
+ */
+export function extractFreeIdentifiersFromTemplateText(template: string): Set<string> {
+  if (!template || template.length === 0) return new Set()
+  const sf = ts.createSourceFile(
+    '__free_ids_template__.ts',
+    `(\`${template}\`);`,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TS,
+  )
+  const stmt = sf.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return new Set()
+  const expr = ts.isParenthesizedExpression(stmt.expression) ? stmt.expression.expression : stmt.expression
+  if (!ts.isTemplateExpression(expr)) return new Set()
+  const ids = new Set<string>()
+  for (const span of expr.templateSpans) {
+    for (const id of extractFreeIdentifiersFromNode(span.expression)) ids.add(id)
+  }
+  return ids
+}
+
+/**
  * Reduce a memo's `() => expr` source to the expression that should be
  * substituted in for `memoName()`. Matches the extraction done by the
  * legacy `buildSignalAndMemoMaps` in `emit-registration.ts`:
