@@ -103,4 +103,36 @@ describe('evaluateSignalInit (#2209)', () => {
     expect(evaluateSignalInit(`undefined`)).toBeNull()
     expect(evaluateSignalInit(`foo()`)).toBeNull()
   })
+
+  // Copilot review (#2229): `Function` is now shadowed too — closes the
+  // most direct bypass of the blocked-globals list.
+  test('the Function constructor is shadowed', () => {
+    expect(evaluateSignalInit(`Function('return 1')()`)).toBeNull()
+  })
+
+  // Copilot review (#2229): `isTransportable` must reject a sparse array
+  // (a hole is not the same as an element that's explicitly `undefined` —
+  // `Array.prototype.every` silently skips holes, which previously let
+  // one through undetected).
+  test('a sparse array (a hole, not an explicit undefined) falls back to null', () => {
+    // biome-ignore lint: intentional sparse-array literal for the hole test
+    expect(evaluateSignalInit(`[1, , 3]`)).toBeNull()
+  })
+
+  // Copilot review (#2229): the same object appearing twice in a
+  // non-cyclic shape (shared by reference, not by cycle) is transportable
+  // — JSON-equivalent behavior would just duplicate it — and must NOT be
+  // rejected by an overly-global "seen" set.
+  test('a shared (non-cyclic) reference is transportable', () => {
+    expect(evaluateSignalInit(`(() => { const shared = { id: 1 }; return [shared, shared] })()`)).toEqual([
+      { id: 1 },
+      { id: 1 },
+    ])
+  })
+
+  test('a genuine cycle still falls back to null', () => {
+    expect(
+      evaluateSignalInit(`(() => { const o = { id: 1 }; o.self = o; return o })()`),
+    ).toBeNull()
+  })
 })

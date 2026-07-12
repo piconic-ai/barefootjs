@@ -1,12 +1,29 @@
 /**
  * TEST-HARNESS ONLY. Evaluate a signal initializer / prop-default source
- * expression against a mock `props` object by EXECUTING it (sandboxed
- * `new Function`), the same way the Hono/CSR conformance reference produces
- * its value — by actually running the component. Never call this from a
- * build path (`bf build`, `compileJSX`, any adapter's `generate`); it exists
- * only so each adapter's `test-render.ts` conformance harness can seed a
- * signal/prop-default for a non-JS-runtime SSR render (PHP/Ruby/Python/
- * Perl/Go) that matches what Hono would compute. (#2209)
+ * expression against a mock `props` object by EXECUTING it (`new
+ * Function`, with `undefined` shadowing the globals listed below), the
+ * same way the Hono/CSR conformance reference produces its value — by
+ * actually running the component. Never call this from a build path (`bf
+ * build`, `compileJSX`, any adapter's `generate`); it exists only so each
+ * adapter's `test-render.ts` conformance harness can seed a signal/
+ * prop-default for a non-JS-runtime SSR render (PHP/Ruby/Python/Perl/Go)
+ * that matches what Hono would compute. (#2209)
+ *
+ * NOT a security sandbox — the global shadowing below is a determinism
+ * tripwire (catches the common accidental-nondeterminism case, e.g.
+ * `Date.now()`), not containment: a sufficiently creative expression can
+ * still reach the real global scope (`new Function` bodies execute
+ * unlexically-scoped, so e.g. `[].constructor.constructor('return
+ * Date')()` recovers `Date` even though the bare name is shadowed, and
+ * `eval` can't be shadowed at all — JS forbids declaring or binding a
+ * parameter literally named `eval` in strict-mode code). Do not widen this
+ * module's use to anything but first-party fixture source. The actual
+ * trust boundary is that the evaluated text is first-party fixture
+ * source, already compiled by this same process — the conformance harness
+ * already executes fixture-derived code far more invasively (spawning
+ * `ruby`/`php`/`perl`/`go run` on generated programs). This module is
+ * never reachable from anything a real end user's untrusted input could
+ * influence.
  *
  * Why real execution instead of a hand-rolled evaluator: the initializer
  * source is an arbitrary JS-subset expression over `props` (e.g. `(props.x
@@ -24,21 +41,16 @@
  * regex-parsing ban exists precisely to avoid the false-match/missed-shape
  * failure mode this replaces.
  *
- * Trust boundary: the evaluated text is first-party fixture source, already
- * compiled by this same process — the conformance harness already executes
- * fixture-derived code far more invasively (spawning `ruby`/`php`/`perl`/
- * `go run` on generated programs). This module is never reachable from
- * anything a real end user's untrusted input could influence.
- *
- * Blocked as `undefined` inside the sandbox (deterministic failure, same as
- * "shape not recognized" in the old evaluators — the corpus has no signal
- * initializer that references any of these): `globalThis`, `window`,
- * `document`, `Date`, `Math`, `crypto`, `performance`, `fetch`,
- * `setTimeout`, `setInterval`, `require`, `process`.
+ * Shadowed as `undefined` (best-effort determinism, not containment — see
+ * above): `globalThis`, `window`, `document`, `Date`, `Math`, `crypto`,
+ * `performance`, `fetch`, `setTimeout`, `setInterval`, `require`,
+ * `process`, `Function`. (`eval` is deliberately absent from this list —
+ * it cannot be shadowed as a parameter name in strict-mode code; see
+ * above.)
  *
  * `props` bare-identifier destructured params (`createSignal(count)` where
  * `count` is a destructured prop, not a `props.x` member) are NOT bound —
- * the sandbox only exposes `props` — so such an initializer throws
+ * the evaluator only exposes `props` — so such an initializer throws
  * `ReferenceError` and falls back to "unset", matching every prior
  * evaluator's behavior for that shape. Extending the environment with
  * `ir.metadata.propsParams` bindings is a natural follow-up if a fixture
@@ -58,6 +70,7 @@ const BLOCKED_GLOBALS = [
   'setInterval',
   'require',
   'process',
+  'Function',
 ] as const
 
 export type SignalInitEvalResult = { ok: true; value: unknown } | { ok: false }
@@ -66,23 +79,35 @@ export type SignalInitEvalResult = { ok: true; value: unknown } | { ok: false }
  * A value the harness's downstream language serializers (JSON/Python/PHP/
  * Perl/Ruby literal builders) can actually marshal: `null`, a boolean, a
  * number (including non-finite — several serializers already special-case
- * NaN/Infinity), a string, a plain array (no `undefined` holes), or a plain
- * object (`Object.prototype` or null prototype only — rejects class
- * instances, functions, Maps/Sets, etc). Rejects cycles.
+ * NaN/Infinity), a string, a dense array with no holes and no `undefined`
+ * elements, or a plain object (`Object.prototype` or null prototype only —
+ * rejects class instances, functions, Maps/Sets, etc). Rejects genuine
+ * cycles; a shared (non-cyclic) reference appearing more than once — e.g.
+ * the same object at two array indices — is fine (JSON-equivalent
+ * behavior just duplicates it), so `ancestors` tracks only the current
+ * recursion path, not every value ever visited.
  */
-function isTransportable(value: unknown, seen: Set<unknown> = new Set()): boolean {
+function isTransportable(value: unknown, ancestors: Set<unknown> = new Set()): boolean {
   if (value === null) return true
   const t = typeof value
   if (t === 'boolean' || t === 'number' || t === 'string') return true
   if (t !== 'object') return false
-  if (seen.has(value)) return false
-  seen.add(value)
-  if (Array.isArray(value)) {
-    return value.every(el => el !== undefined && isTransportable(el, seen))
+  if (ancestors.has(value)) return false // a real cycle (value is its own ancestor)
+  ancestors.add(value)
+  try {
+    if (Array.isArray(value)) {
+      // `Array.prototype.every` silently skips holes (`[1, , 3]`), so a
+      // sparse array would otherwise pass — compare against the own
+      // enumerable key count (holes aren't own keys) to catch that.
+      if (Object.keys(value).length !== value.length) return false
+      return value.every(el => el !== undefined && isTransportable(el, ancestors))
+    }
+    const proto = Object.getPrototypeOf(value)
+    if (proto !== Object.prototype && proto !== null) return false
+    return Object.values(value as Record<string, unknown>).every(v => isTransportable(v, ancestors))
+  } finally {
+    ancestors.delete(value)
   }
-  const proto = Object.getPrototypeOf(value)
-  if (proto !== Object.prototype && proto !== null) return false
-  return Object.values(value as Record<string, unknown>).every(v => isTransportable(v, seen))
 }
 
 /**
@@ -100,9 +125,10 @@ export function tryEvaluateSignalInit(
   if (src === '') return { ok: false }
   let fn: (props: Record<string, unknown>, ...blocked: undefined[]) => unknown
   try {
-    // Sandboxed by construction: only `props` and the blocked-globals
-    // shadows are bound — see the file docstring for the trust-boundary
-    // rationale (test-harness-only, never a build path).
+    // `props` plus the blocked-globals shadows are the only bindings
+    // passed in — best-effort determinism, not containment; see the file
+    // docstring for the trust-boundary rationale (test-harness-only,
+    // never a build path).
     fn = new Function(
       'props',
       ...BLOCKED_GLOBALS,
