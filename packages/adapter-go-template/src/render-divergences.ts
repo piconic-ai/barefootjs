@@ -17,14 +17,16 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  // TodoAppSSR (no `/* @client */` markers — the loop must render server-
-  // side) seeds its `todos` signal from `(props.initialTodos ??
-  // []).map(t => ({ ...t, editing: false }))`. This harness's signal-init
-  // seeding can't evaluate that compound expression, so `todos` seeds
-  // empty and `<ul class="todo-list">` renders with no `<li>`s. Orthogonal
-  // to #2205 (sibling template registration, which this fixture now
-  // compiles cleanly under): a test-harness signal-seeding gap. `todo-app`
-  // (client-hydrated variant) is unaffected — its initial empty SSR list
-  // is the correct pre-hydration render.
-  'todo-app-ssr': 'https://github.com/piconic-ai/barefootjs/issues/2209',
+  // `todo-app-ssr` no longer diverges (#2209). Two parts: (1) `.Todos`
+  // (the loop's DATUM slice) is already seeded straight from the caller's
+  // Input — the constructor derives it from `initialTodos`, and `[]Todo`
+  // zero-fills `Editing: false`, so the `.map(t => ({ ...t, editing:
+  // false }))` transform in the signal initializer was never actually the
+  // gap on Go, unlike the 7 template-string adapters. (2) The real gap was
+  // `.TodoItems []TodoItemProps` — the loop-body CHILD COMPONENT slice the
+  // template actually ranges over — which has no server-side population
+  // path in this harness (documented as route-handler-populated in
+  // production). `buildDynamicChildLoopSeeding` (this package's
+  // `test-render.ts`) now replicates that documented contract for a
+  // signal-backed dynamic child-component loop.
 }

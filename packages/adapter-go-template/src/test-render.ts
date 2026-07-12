@@ -6,10 +6,12 @@
  */
 
 import { compileJSX } from '@barefootjs/jsx'
-import type { TemplateAdapter, ComponentIR } from '@barefootjs/jsx'
+import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './build.ts'
-import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
+import { capitalizeFieldName, goFieldNameForKey, loopKeyToGoFieldPath } from './adapter/lib/go-naming.ts'
+import { findNestedComponents } from './adapter/analysis/component-tree.ts'
+import type { NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -326,11 +328,16 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // cross-adapter; default to 'test' otherwise.
     const rootScopeId = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
 
+    // (#2209 part 2) Route-handler-equivalent seeding for a signal-backed
+    // dynamic child-component loop — see buildDynamicChildLoopSeeding's
+    // docstring.
+    const { lines: dynamicSeedingLines, needsFmt } = buildDynamicChildLoopSeeding(ir, template)
+
     // main.go — render program
     const mainGo = `package main
 
 import (
-	"html/template"
+${needsFmt ? '\t"fmt"\n' : ''}	"html/template"
 	"math/rand"
 	"os"
 
@@ -375,7 +382,7 @@ func main() {
 		ScopeID: ${JSON.stringify(rootScopeId)},
 ${propsInit}
 	})
-	if err := tmpl.ExecuteTemplate(os.Stdout, "${componentName}", props); err != nil {
+${dynamicSeedingLines.length > 0 ? dynamicSeedingLines.join('\n') + '\n' : ''}	if err := tmpl.ExecuteTemplate(os.Stdout, "${componentName}", props); err != nil {
 		os.Stderr.WriteString("template error: " + err.Error() + "\\n")
 		os.Exit(1)
 	}
@@ -556,6 +563,95 @@ function ensureMergedStdlibImports(goTypes: string): string {
   if (additions.length === 0) return goTypes
   const newBlock = `import (\n${additions.join('\n')}\n${block.replace(/^\n+/, '')})`
   return goTypes.replace(/import\s*\([^)]*\)/, newBlock)
+}
+
+/**
+ * Recursively resolve `expr` (a loop's `arrayParsed`) down through
+ * `call`/`member` chains to the base signal getter it reads
+ * (`todos().filter(...)` → `todos`), or `null` when the base isn't a
+ * signal getter call. Structural `ParsedExpr` walk, not string/regex
+ * parsing (see CLAUDE.md's "never parse JS with regex" rule).
+ */
+function findBaseSignalGetter(expr: ParsedExpr | undefined, signalGetters: ReadonlySet<string>): string | null {
+  if (!expr) return null
+  switch (expr.kind) {
+    case 'identifier':
+      return signalGetters.has(expr.name) ? expr.name : null
+    case 'call':
+      return findBaseSignalGetter(expr.callee, signalGetters)
+    case 'member':
+      return findBaseSignalGetter(expr.object, signalGetters)
+    default:
+      return null
+  }
+}
+
+/**
+ * (#2209 part 2) Replicate, in the generated `main.go`, the documented
+ * "the route handler populates the loop-body child-component slice at
+ * request time" contract for a signal-backed dynamic loop —
+ * `generateNewPropsFunction`'s doc comment on `<Name>s []<Name>Props`
+ * in `adapter/go-template-adapter.ts`. The constructor only ever seeds
+ * the loop's DATUM slice (e.g. `.Todos`, straight from the caller's
+ * Input); the child-component Props slice the template actually
+ * ranges over (`.TodoItems`) has no server-side population path in
+ * this harness — the Hono reference materializes it by literally
+ * executing the component, so this closes the gap the same way:
+ * derive each item's child Props from the datum slice, exactly as a
+ * real route handler is documented to.
+ *
+ * Deliberately narrow: only fires for a loop whose (a) array source
+ * resolves, through `call`/`member` chains, to a component signal
+ * getter, (b) generated Go TEMPLATE text actually ranges over
+ * `.<Name>s` (a plain substring check on GENERATED GO OUTPUT — not JS
+ * parsing — so a `/* @client *\/`-marked loop, whose SSR template has
+ * no such range, is untouched by construction), and (c) at least one
+ * child prop is a bare pass-through of the loop item (`todo={todo}`).
+ * Returns the Go statements to splice into `main()` plus whether `fmt`
+ * needs importing.
+ */
+function buildDynamicChildLoopSeeding(
+  ir: ComponentIR,
+  template: string,
+): { lines: string[]; needsFmt: boolean } {
+  const signalGetters = new Set(ir.metadata.signals.map(s => s.getter))
+  const lines: string[] = []
+  let needsFmt = false
+  for (const nested of findNestedComponents(ir.root) as NestedComponentInfo[]) {
+    if (!nested.isDynamic || nested.isPropDerived) continue
+    if (nested.bodyChildren && nested.bodyChildren.length > 0) continue
+    if (!nested.loopParam) continue
+    if (!template.includes(`:= .${nested.name}s}}`)) continue
+    const datumField = findBaseSignalGetter(nested.loopArrayParsed, signalGetters)
+    if (!datumField) continue
+
+    const inputFields: string[] = []
+    for (const prop of nested.props) {
+      if (prop.isEventHandler) continue
+      if (prop.name === 'key' || prop.name.includes('-')) continue
+      if (
+        prop.value.kind === 'expression' &&
+        prop.value.parsed?.kind === 'identifier' &&
+        prop.value.parsed.name === nested.loopParam
+      ) {
+        inputFields.push(`${capitalizeFieldName(prop.name)}: item`)
+      }
+    }
+    if (inputFields.length === 0) continue
+
+    lines.push(`\tprops.${nested.name}s = make([]${nested.name}Props, len(props.${capitalizeFieldName(datumField)}))`)
+    lines.push(`\tfor i, item := range props.${capitalizeFieldName(datumField)} {`)
+    lines.push(`\t\tprops.${nested.name}s[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
+    lines.push(`\t\tprops.${nested.name}s[i].BfParent = props.ScopeID`)
+    lines.push(`\t\tprops.${nested.name}s[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
+    const keyField = loopKeyToGoFieldPath(nested.loopKey, nested.loopParam)
+    if (keyField) {
+      lines.push(`\t\tprops.${nested.name}s[i].BfDataKey = fmt.Sprint(${keyField})`)
+      needsFmt = true
+    }
+    lines.push(`\t}`)
+  }
+  return { lines, needsFmt }
 }
 
 /**

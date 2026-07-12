@@ -38,7 +38,7 @@
  *     caller's `props` and needs no JSON round-trip.
  */
 
-import { compileJSX, extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
 import type { ComponentIR } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -592,122 +592,6 @@ function buildBladeProps(
   return { data, literalAssignments }
 }
 
-/**
- * Evaluate a signal initializer expression using provided props.
- * Handles: props.initial ?? 0, props.value, literal values.
- *
- * Language-agnostic (returns a real JS value, not source text) — shared
- * verbatim with the Jinja harness's helper of the same name.
- */
-export function evaluateSignalInit(
-  expr: string,
-  props?: Record<string, unknown>,
-): unknown {
-  const nullishMatch = expr.match(/^props\.(\w+)\s*\?\?\s*(.+)$/)
-  if (nullishMatch) {
-    const propName = nullishMatch[1]
-    const defaultExpr = nullishMatch[2].trim()
-    if (props && propName in props) return props[propName]
-    return parseLiteral(defaultExpr)
-  }
-
-  const propsMatch = expr.match(/^props\.(\w+)$/)
-  if (propsMatch) {
-    if (props && propsMatch[1] in props) return props[propsMatch[1]]
-    return null
-  }
-
-  return parseLiteral(expr)
-}
-
-function parseLiteral(expr: string): unknown {
-  if (/^-?\d+(\.\d+)?$/.test(expr)) return Number(expr)
-  if (expr === 'true') return true
-  if (expr === 'false') return false
-  if (expr === '[]') return []
-
-  {
-    const t = expr.trim()
-    if (t.startsWith('[') && t.endsWith(']')) {
-      const inner = t.slice(1, -1).trim()
-      if (!inner) return []
-      const out: unknown[] = []
-      for (const seg of splitTopLevelCommas(inner)) {
-        if (!seg.trim()) continue
-        const parsed = parseLiteral(seg.trim())
-        if (parsed === null && seg.trim() !== 'null') return null
-        out.push(parsed)
-      }
-      return out
-    }
-  }
-
-  const stringMatch = expr.match(/^(['"])(.*)\1$/s)
-  if (stringMatch) return unescapeJsString(stringMatch[2])
-
-  const trimmed = expr.trim()
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    const inner = trimmed.slice(1, -1).trim()
-    if (!inner) return {}
-    const obj: Record<string, unknown> = {}
-    for (const pair of splitTopLevelCommas(inner)) {
-      if (!pair.trim()) continue
-      const colonIdx = pair.indexOf(':')
-      if (colonIdx < 0) return null
-      let key = pair.slice(0, colonIdx).trim()
-      const val = pair.slice(colonIdx + 1).trim()
-      const keyMatch = key.match(/^(['"])(.*)\1$/s)
-      if (keyMatch) key = unescapeJsString(keyMatch[2])
-      const parsedVal = parseLiteral(val)
-      if (parsedVal === null && val !== 'null') return null
-      obj[key] = parsedVal
-    }
-    return obj
-  }
-  return null
-}
-
-function splitTopLevelCommas(inner: string): string[] {
-  const segments: string[] = []
-  let depth = 0
-  let start = 0
-  let quote: string | null = null
-  for (let i = 0; i < inner.length; i++) {
-    const c = inner[i]
-    if (quote) {
-      if (c === quote) {
-        let backslashes = 0
-        for (let j = i - 1; j >= 0 && inner[j] === '\\'; j--) backslashes++
-        if (backslashes % 2 === 0) quote = null
-      }
-      continue
-    }
-    if (c === '"' || c === "'") {
-      quote = c
-      continue
-    }
-    if (c === '{' || c === '[') depth++
-    else if (c === '}' || c === ']') depth--
-    else if (c === ',' && depth === 0) {
-      segments.push(inner.slice(start, i))
-      start = i + 1
-    }
-  }
-  segments.push(inner.slice(start))
-  return segments
-}
-
-function unescapeJsString(s: string): string {
-  return s.replace(/\\(.)/g, (_, c) => {
-    switch (c) {
-      case 'n': return '\n'
-      case 'r': return '\r'
-      case 't': return '\t'
-      case '0': return '\0'
-      default: return c
-    }
-  })
-}
 
 /**
  * Convert PascalCase to snake_case for template naming (matches the
