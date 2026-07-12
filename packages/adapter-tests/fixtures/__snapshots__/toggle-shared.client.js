@@ -51,5 +51,5 @@ export function initToggle(__scope, _p = {}) {
 
 }
 
-hydrate('Toggle', { init: initToggle, template: (_p) => `<div class="settings-panel" style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;" bf="s1"><h3 style="margin-top: 0;">Settings</h3><!--bf-loop:l0-->${toggleItems.map((item) => `${renderChild('ToggleItem__69f56292', {label: item.label, defaultOn: item.defaultOn}, item.label)}`).join('')}<!--bf-/loop:l0--></div>` })
+hydrate('Toggle', { init: initToggle, template: (_p) => `<div class="settings-panel" style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;" bf="s1"><h3 style="margin-top: 0;">Settings</h3><!--bf-loop:l0-->${_p.toggleItems.map((item) => `${renderChild('ToggleItem__69f56292', {label: item.label, defaultOn: item.defaultOn}, item.label)}`).join('')}<!--bf-/loop:l0--></div>` })
 export function Toggle(_p, __bfKey) { return createComponent('Toggle', _p, __bfKey) }
