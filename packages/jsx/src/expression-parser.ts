@@ -154,6 +154,39 @@ export type ParsedExpr =
   | { kind: 'unsupported'; raw: string; reason: string }
 
 /**
+ * Runtime registry of every `ParsedExpr` kind — the denominator for
+ * coverage bookkeeping (`spec/subset-conformance.md`): a conformance
+ * fixture's exercised-kind set is computed against this list, and the
+ * ledger-floor meta-test requires each entry to be exercised or
+ * explicitly excluded.
+ */
+export const PARSED_EXPR_KINDS = [
+  'identifier',
+  'literal',
+  'call',
+  'member',
+  'index-access',
+  'binary',
+  'unary',
+  'conditional',
+  'logical',
+  'template-literal',
+  'arrow',
+  'regex',
+  'array-literal',
+  'object-literal',
+  'array-method',
+  'unsupported',
+] as const satisfies ReadonlyArray<ParsedExpr['kind']>
+
+// Exhaustiveness pin: adding a `ParsedExpr` kind without listing it in
+// `PARSED_EXPR_KINDS` fails to compile here (the same drift defence the
+// exhaustive adapter switches provide for behaviour).
+type MissingFromKindRegistry = Exclude<ParsedExpr['kind'], (typeof PARSED_EXPR_KINDS)[number]>
+const _kindRegistryIsExhaustive: MissingFromKindRegistry extends never ? true : never = true
+void _kindRegistryIsExhaustive
+
+/**
  * One property of an `object-literal` `ParsedExpr`. The key is the
  * resolved (non-computed) property name — for `{ a: 1 }` and shorthand
  * `{ a }` it is `a`; for `{ 'a-b': 1 }` it is `a-b`. Computed keys

@@ -1,0 +1,3832 @@
+{
+  "fixtures": {
+    "accordion": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "adjacent-conditionals": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "adjacent-dynamic-text": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "ai-chat": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "arithmetic-text": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-at": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "unary"
+      ],
+      "axes": [
+        "array-method:at",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-at-default": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:at"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-concat": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:concat",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-concat-copy": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:concat",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-entries": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-every": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "array-find": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-findIndex": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-findLast": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-findLastIndex": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flat": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:flat",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flat-depth": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:flat",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flat-dynamic-depth": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:flat",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flat-infinity": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:flat",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flatmap-field": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flatmap-nested-filter-join": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flatmap-nested-map": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flatmap-self": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flatmap-thisarg": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-flatmap-tuple": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-includes": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "array-indexOf": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:indexOf"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-join": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-join-default": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:join"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-keys": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-lastIndexOf": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:lastIndexOf"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-map-function-reference": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-map-value-field": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-map-value-template": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-reverse": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:reverse",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-slice": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:slice",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-slice-copy": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:slice",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-some": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "array-sort-field-asc": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-sort-field-desc": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-sort-fnref": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-sort-locale": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-sort-multikey": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:-",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-sort-primitive": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:-",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-sort-ternary": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "array-toReversed": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:toReversed",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-toSorted": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:-",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "array-values": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "arrow-component": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "async-boundary": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "attr-ternary-title": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "boolean-attr-literals": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "boolean-dynamic-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "branch-local-filter-join": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition"
+      ]
+    },
+    "branch-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "branch-self-closing": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
+    "button": {
+      "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "camelcase-attributes": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "checkbox": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "literal:boolean",
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "child-component": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "child-component-init": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "child-primitive-props": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number"
+      ],
+      "contexts": []
+    },
+    "children-jsx-expression": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "class-vs-classname": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "client-only": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "client-only-loop": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "client-only-loop-with-sibling-cond": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "combobox": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "command": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:startsWith",
+        "array-method:toLowerCase",
+        "literal:boolean",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "comparison-ternary-text": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "binary:>=",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "component-with-jsx-children": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "conditional-class": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": []
+    },
+    "conditional-return-button": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "conditional-return-link": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "conditional-return-null": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "conditional-wrapping-loop": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "context-provider": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "context-provider-nullish-object-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "controlled-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "counter": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "counter-buttons": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "counter-shared": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "custom-element-tag": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "dangerous-inner-html": {
+      "kinds": [
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "dangerous-inner-html-dynamic": {
+      "kinds": [
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "data-aria-values": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "data-table": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:slice",
+        "array-method:toFixed",
+        "array-method:toLowerCase",
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:/",
+        "binary:<",
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "deep-nesting": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "default-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-array-index-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "destructure-nested-object-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "dialog": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "dropdown-menu": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "dynamic-attributes": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "effect": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "else-if-chain": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "empty-list-branch": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "event-handlers": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "falsy-text-values": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "filter-nested-callback-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-nested-callback-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-nested-find-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-param-name-differs": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "filter-simple": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-sort-chain": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-wrapper-props-reachable": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "form": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "unary"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "fragment": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "fragment-conditional": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
+    "fragment-loop-children": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
+    "fragment-wrapped-children-jsx-expression": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "grandchild-composition": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "html-entity-text": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "if-statement": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "inline-array-map": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "input": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "jsx-comment-child": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-element-prop": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "jsx-spread-multiple": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "jsx-spread-props-object": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": []
+    },
+    "jsx-spread-reactive": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "jsx-spread-rest-prop": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-spread-static-and-spread": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "jsx-text-whitespace": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "kbd": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "label": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "logical-and": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "logical-and-chain": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "logical:&&"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "logical-or-jsx": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "loop-item-conditional": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-shadows-const-key": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-shadows-outer-name": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-shadows-record-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "map-basic": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "map-dynamic-class": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "map-index-handler": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "map-key-index": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "map-nested": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "map-with-index": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "math-methods": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "member-expression-tag": {
+      "kinds": [
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [],
+      "contexts": []
+    },
+    "memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-chain": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "multi-component-module": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": []
+    },
+    "multiline-attr-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "multiple-instances": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "multiple-signals": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "native-select-spread-children": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "nested-elements": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "nested-fragments": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "nested-loop-outer-binding": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-triple-depth": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-map-index-key": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-ternary": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
+    "nullish-coalescing-jsx": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!=",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "nullish-coalescing-text": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "number-tofixed": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:toFixed",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "object-entries-map": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "optional-chaining-prop": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "pagination": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "popover": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "portal": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "pre-whitespace": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "props-reactive": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "props-reactivity-comparison": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "props-static": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "radio-group": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reactive-prop-binding": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "reactive-props": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "record-index-lookup": {
+      "kinds": [
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "record-index-lookup-via-child-prop": {
+      "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "reduce-concat": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-product": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-right-concat": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-sum-field": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-sum-self": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "region-boundary": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "rest-destructure-array-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "rest-destructure-nested-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "rest-destructure-object-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "rest-destructure-object-spread-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "rest-spread-child-attrs": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "return-logical-and": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "return-logical-or": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "return-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "return-nullish-coalescing": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!=",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "search-params": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "search-params-derived-filter": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string",
+        "logical:??",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "search-params-derived-memo": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "search-params-derived-memo-bare": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "select": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "select-option-selected": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "sibling-loops-key-isolation": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "sibling-maps": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "signal-attr-and-text": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-default-from-jsx": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-object-field": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-prop-same-name": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-with-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "sort-simple": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-array-children": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop"
+      ]
+    },
+    "static-array-from-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "logical",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-array-from-props-with-component": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop"
+      ]
+    },
+    "static-array-of-objects-element-body": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-attr-escape": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "string-concat-plus": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-concat-plus-identifiers": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-endsWith": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:endsWith",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "string-endsWith-position": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:endsWith",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "string-includes": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "string-length-text": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-padEnd": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:padEnd",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-padStart": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:padStart",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-repeat": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:repeat",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-replace": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:replace",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-replaceall": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:replaceAll",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-slice": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "unary"
+      ],
+      "axes": [
+        "array-method:slice",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-split": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:split",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-split-limit": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:split",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-startsWith": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:startsWith",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "string-startsWith-position": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:startsWith",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "string-toLowerCase": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:toLowerCase"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-toUpperCase": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:toUpperCase"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-trim": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:trim"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "string-trim-sided": {
+      "kinds": [
+        "array-method",
+        "identifier"
+      ],
+      "axes": [
+        "array-method:trimEnd",
+        "array-method:trimStart"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "style-3-signals": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "style-attribute": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "style-object-dynamic": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "style-object-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "svg-icon": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "svg-inner-loop": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
+    "switch": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "literal:boolean",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "table-dynamic-rows": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "tabs": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "tagged-template-classname": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "template-literal-multi-interp": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "ternary": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
+    "text-escape": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "textarea": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "todo-app": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "todo-app-ssr": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "toggle": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:boolean",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "toggle-shared": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "tooltip": {
+      "kinds": [
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": []
+    },
+    "top-level-ternary": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "unary-not-binding": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "unary"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "unicode-text": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "untyped-props-reads": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "void-elements": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    }
+  },
+  "kindCounts": {
+    "array-literal": 47,
+    "array-method": 56,
+    "arrow": 47,
+    "binary": 63,
+    "call": 151,
+    "conditional": 13,
+    "identifier": 224,
+    "index-access": 4,
+    "literal": 192,
+    "logical": 28,
+    "member": 100,
+    "object-literal": 30,
+    "template-literal": 17,
+    "unary": 17,
+    "unsupported": 14
+  },
+  "axisCounts": {
+    "array-method:at": 2,
+    "array-method:concat": 2,
+    "array-method:endsWith": 2,
+    "array-method:flat": 4,
+    "array-method:includes": 5,
+    "array-method:indexOf": 1,
+    "array-method:join": 31,
+    "array-method:lastIndexOf": 1,
+    "array-method:padEnd": 1,
+    "array-method:padStart": 1,
+    "array-method:repeat": 1,
+    "array-method:replace": 1,
+    "array-method:replaceAll": 1,
+    "array-method:reverse": 1,
+    "array-method:slice": 4,
+    "array-method:split": 2,
+    "array-method:startsWith": 3,
+    "array-method:toFixed": 2,
+    "array-method:toLowerCase": 3,
+    "array-method:toReversed": 1,
+    "array-method:toUpperCase": 1,
+    "array-method:trim": 1,
+    "array-method:trimEnd": 1,
+    "array-method:trimStart": 1,
+    "binary:-": 11,
+    "binary:!=": 2,
+    "binary:!==": 5,
+    "binary:*": 9,
+    "binary:/": 1,
+    "binary:+": 16,
+    "binary:<": 1,
+    "binary:===": 25,
+    "binary:>": 11,
+    "binary:>=": 1,
+    "literal:boolean": 33,
+    "literal:null": 19,
+    "literal:number": 78,
+    "literal:string": 132,
+    "logical:??": 23,
+    "logical:&&": 3,
+    "logical:||": 7,
+    "member:optional": 1,
+    "unary:-": 4,
+    "unary:!": 13
+  },
+  "uncoveredKinds": [
+    "regex"
+  ]
+}
