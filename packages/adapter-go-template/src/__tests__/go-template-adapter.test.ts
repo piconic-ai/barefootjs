@@ -4417,6 +4417,22 @@ export function List() {
     expect(template).not.toContain('{{7}}')
   })
 
+  test('record-member fast path: a module object const shadowed by the callback param resolves per-item (loop-param-shadows-record-const fixture)', () => {
+    // resolveStaticRecordLiteralIndex covers IDENT['key'] AND IDENT.key —
+    // the record-member sibling of the bare-identifier gap above. Without
+    // the isLoopShadowedName guard it baked {{"outer-lit"}} into every
+    // iteration.
+    const { template } = compileAndGenerate(`
+const cfg = { x: 'outer-lit' }
+export function List({ rows }: { rows: { id: number; x: string }[] }) {
+  return <ul>{rows.map((cfg) => <li key={cfg.id}>{cfg.x}</li>)}</ul>
+}
+`)
+    expect(template).toContain('{{range $_, $cfg := .Rows}}')
+    expect(template).toContain('{{.X}}')
+    expect(template).not.toContain('outer-lit')
+  })
+
   test('slice B: `1 + label` inside the loop that shadows an outer string prop lowers to bf_add, not bf_concat_str', () => {
     const { template } = compileAndGenerate(`
 'use client'
