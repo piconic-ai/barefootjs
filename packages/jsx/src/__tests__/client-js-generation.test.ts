@@ -2725,4 +2725,44 @@ describe('Client JS generation', () => {
       expect(js).toMatch(/items\(\)\.filter\([^)]+\)\.find\(/)
     })
   })
+
+  describe('defaultless optional prop extraction (#2259)', () => {
+    // `{ size }: { size?: number }` binds `undefined` when the prop is
+    // absent — `createSignal(size ?? 1)` must see it. A synthesized
+    // primitive default (`_p.size ?? 0`) would hydrate the signal to 0
+    // where SSR seeded the `?? 1` fallback.
+    test('emits plain extraction, not a zero default', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Probe({ label, size }: { label: string; size?: number }) {
+          const [count, setCount] = createSignal(size ?? 1)
+          return <div onClick={() => setCount(count() + 1)}>{label}{count()}</div>
+        }
+      `
+      const result = compileJSX(source, 'Probe.tsx', { adapter })
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+      const js = result.files.find(f => f.type === 'clientJs')!.content
+      expect(js).toContain('const size = _p.size')
+      expect(js).not.toContain('_p.size ?? 0')
+    })
+
+    // A destructure default still wins over plain extraction.
+    test('keeps the destructure default when one exists', () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+
+        export function Probe({ size = 5 }: { size?: number }) {
+          const [count, setCount] = createSignal(size)
+          return <div onClick={() => setCount(count() + 1)}>{count()}</div>
+        }
+      `
+      const result = compileJSX(source, 'Probe.tsx', { adapter })
+      expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+      const js = result.files.find(f => f.type === 'clientJs')!.content
+      expect(js).toContain('const size = _p.size ?? 5')
+    })
+  })
 })

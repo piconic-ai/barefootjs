@@ -3040,14 +3040,16 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
           element.propertyName && ts.isIdentifier(element.propertyName)
             ? element.propertyName.text
             : localName
-        const resolvedType: TypeInfo =
-          memberTypes?.get(sourcePropName) ?? { kind: 'unknown', raw: 'unknown' }
+        const member = memberTypes?.get(sourcePropName)
+        const resolvedType: TypeInfo = member?.type ?? { kind: 'unknown', raw: 'unknown' }
 
         const defaultContainsArrow = element.initializer ? nodeContainsArrow(element.initializer) : false
         ctx.propsParams.push({
           name: localName,
           type: resolvedType,
-          optional: !!element.initializer,
+          // The type's `?` and a destructure default (`{ x = 1 }`) both mean
+          // the caller may omit the prop.
+          optional: !!member?.optional || !!element.initializer,
           defaultValue,
           defaultContainsArrow: defaultContainsArrow || undefined,
         })
@@ -3130,18 +3132,22 @@ function collectKeysFromMembers(
 }
 
 /**
- * Build a property-name -> resolved TypeInfo map from a props type annotation,
- * for destructured params (`{ value }: Props`) so they carry the same per-prop
- * types the props-object path (`props: Props`) already resolves. Returns null
- * for external/unresolvable types.
+ * Build a property-name -> { type, optional } map from a props type
+ * annotation, for destructured params (`{ value }: Props`) so they carry the
+ * same per-prop TypeInfo and optionality the props-object path
+ * (`props: Props`) already resolves (#2150, #2259). Returns null for
+ * external/unresolvable types.
  *
- * Scope (deliberately narrow — targets the panic in issue #2150):
- * - Only REQUIRED members are resolved. Optional members (`value?: T`) are left
- *   out so they keep degrading to `unknown` -> `interface{}`: typed adapters
- *   rely on that nillable field to omit an unset optional attribute
- *   (`{{if ne .X nil}}` in Go), which a concrete zero value could not express.
- * - Only PRIMITIVE members (string/number/boolean) are resolved. Those are the
- *   types that otherwise produce an unchecked scalar assertion (`in.X.(int)`)
+ * Scope:
+ * - Optionality is collected for EVERY member — it feeds the type's `?` into
+ *   `propsParams[].optional` alongside a destructure default. (Pre-#2259,
+ *   optional members were skipped entirely so they'd degrade to `unknown` ->
+ *   `interface{}` and typed adapters could omit an unset optional attribute
+ *   via that nillable field; #2252's nullish-flip machinery now provides the
+ *   absent representation where it is semantically observable, so the blanket
+ *   guard is no longer needed.)
+ * - Only PRIMITIVE members (string/number/boolean) resolve a type. Those are
+ *   the types that otherwise produce an unchecked scalar assertion (`in.X.(int)`)
  *   that panics. Arrays/objects/functions are left as `unknown` because typed
  *   adapters lower them through interface{}-based helpers (`bf_flat`, spread,
  *   `bf_json`); giving them concrete types would break that lowering and is a
@@ -3150,19 +3156,22 @@ function collectKeysFromMembers(
 function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
-): Map<string, TypeInfo> | null {
+): Map<string, { type: TypeInfo | null; optional: boolean }> | null {
   const isResolvablePrimitive = (info: TypeInfo): boolean =>
     info.kind === 'primitive' &&
     (info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean')
 
-  const fromMembers = (members: ts.NodeArray<ts.TypeElement>): Map<string, TypeInfo> => {
-    const map = new Map<string, TypeInfo>()
+  const fromMembers = (
+    members: ts.NodeArray<ts.TypeElement>
+  ): Map<string, { type: TypeInfo | null; optional: boolean }> => {
+    const map = new Map<string, { type: TypeInfo | null; optional: boolean }>()
     for (const member of members) {
-      if (ts.isPropertySignature(member) && member.name && member.type && !member.questionToken) {
-        const info = typeNodeToTypeInfo(member.type, ctx.sourceFile)
-        if (info && isResolvablePrimitive(info)) {
-          map.set(member.name.getText(ctx.sourceFile), info)
-        }
+      if (ts.isPropertySignature(member) && member.name) {
+        const info = member.type ? typeNodeToTypeInfo(member.type, ctx.sourceFile) : null
+        map.set(member.name.getText(ctx.sourceFile), {
+          type: info && isResolvablePrimitive(info) ? info : null,
+          optional: !!member.questionToken,
+        })
       }
     }
     return map
