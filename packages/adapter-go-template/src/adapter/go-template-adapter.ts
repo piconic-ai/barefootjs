@@ -4616,7 +4616,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // the generic lowering would reference a nonexistent `.TotalPages` field).
     // Only pure numeric / single-quoted-string initializers qualify; anything
     // else may be runtime-dependent.
-    if (/^[A-Za-z_$][\w$]*$/.test(trimmed)) {
+    //
+    // #2236: this is a string-keyed fast path over `jsExpr` reached directly
+    // by call sites like attribute emission (`key={count}` → `data-key`) that
+    // never go through `identifier()`'s loop-shadow guards below — so it must
+    // carry its OWN guard. When `.map((count) => ...)` shadows the outer
+    // `const count = 7`, the occurrence inside the loop body must resolve to
+    // the range value (via the normal parse-and-lower fallthrough), not the
+    // outer literal. Mirrors the guard in `resolveModuleStringConst` /
+    // `resolveModuleNumericConst`, PLUS the `loopBindingStack` scan
+    // `identifier()` leads with: a DESTRUCTURED callback (`.map(({ id }) =>
+    // ...)`) pushes `''` onto `loopParamStack` and tracks its binding names
+    // only in `loopBindingStack`, so without this the fast path still
+    // inlined an outer `const id = 7` at the shadowed occurrence (#2242
+    // Copilot review).
+    const isLoopShadowed =
+      (this.loopParamStack.length > 0 &&
+        this.loopParamStack[this.loopParamStack.length - 1] === trimmed) ||
+      this.loopVarRefCount.has(trimmed) ||
+      this.isOuterLoopParam(trimmed) ||
+      this.loopBindingStack.some(bindings => bindings.has(trimmed))
+    if (!isLoopShadowed && /^[A-Za-z_$][\w$]*$/.test(trimmed)) {
       const litConst = (this.state.localConstants ?? []).find(c => c.name === trimmed)
       if (litConst?.value !== undefined) {
         const v = litConst.value.trim()

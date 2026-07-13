@@ -2020,12 +2020,6 @@
           ]
         }
       },
-      "loop-param-shadows-outer-name": {
-        "go-template": {
-          "kind": "render",
-          "reason": "BF-2236: convertExpressionToGo resolves a loop-param-shadowed identifier's type against the shadowed OUTER binding when choosing the `+` operator helper, emitting bf_concat_str (string concat) instead of bf_add (numeric addition)"
-        }
-      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",

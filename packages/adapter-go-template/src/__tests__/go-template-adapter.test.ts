@@ -4349,3 +4349,207 @@ export function Nested({ groups }: { groups: { label: string }[][] }) {
     expect(template).not.toContain('{{"Alpha"}}')
   })
 })
+
+// #2236: two independent loop-param-shadowing gaps, both distinct from the
+// #2224 static-array unroll above (this describe exercises the DYNAMIC
+// (signal-driven) `{{range}}` path, where a real per-iteration `.` context
+// exists — #2224's baked/unrolled loops are a different code path entirely).
+//
+// Slice A: `convertExpressionToGo`'s bare-identifier fast path (the
+// "inline a function-scope literal const" shortcut, e.g. `totalPages`) is a
+// STRING-KEYED check over the raw JS source text reached directly by call
+// sites like attribute emission (`key={count}` → `data-key`) — it never
+// goes through `identifier()` (the `ParsedExprEmitter` method), which
+// already carries the loop-shadow guards (`loopParamStack` /
+// `isOuterLoopParam`, mirrored from `resolveModuleStringConst` /
+// `resolveModuleNumericConst`). So a `.map((count) => ...)` callback param
+// that shadows an outer `const count = 7` got the OUTER literal inlined at
+// the `data-key` position even though the text position (which DOES go
+// through `identifier()`) correctly resolved to the per-item value.
+//
+// Slice B: Go's `collectStringValueNames` (prop-classes.ts) was ported from
+// Blade BEFORE #2212 added the local-const inclusion + `collectLoopBoundNames`
+// exclusion, so an outer string-typed prop/signal whose name is shadowed by a
+// `.map()` callback param still poisoned the shadowed occurrence's type
+// resolution — `1 + label` inside `values.map((label) => ...)` (with an outer
+// `label: string` prop) emitted `bf_concat_str` (string concat) instead of
+// `bf_add` (numeric addition). The full #2212 shape is ported: same-file
+// local consts join the set (so an outer `{label + suffix}` with
+// `suffix = '!'` still classifies as concat via its OTHER operand once
+// `label` is subtracted — the exact `loop-param-shadows-outer-name` fixture
+// shape) and loop-bound names are excluded.
+describe('GoTemplateAdapter - const/type resolution vs loop-param shadowing (#2236)', () => {
+  test('slice A: data-key inside a dynamic (signal-driven) loop uses the loop value, not the outer const', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function List() {
+  const count = 7
+  const [nums] = createSignal<number[]>([2, 5])
+  return <ul>{nums().map((count) => <li key={count}>{count * 3}</li>)}</ul>
+}
+`)
+    // The range establishes a real per-iteration dot context — both the
+    // `data-key` attribute and the text position must resolve the shadowed
+    // `count` through it.
+    expect(template).toContain('{{range $_, $count := .Nums}}<li data-key="{{.}}">')
+    expect(template).toContain('{{bf_mul . 3}}')
+    // Never the outer `const count = 7` literal.
+    expect(template).not.toContain('{{7}}')
+  })
+
+  test('slice A: a DESTRUCTURED callback binding shadowing an outer const resolves to the binding accessor (#2242 Copilot review)', () => {
+    // Destructured callbacks push '' onto loopParamStack and track their
+    // binding names only in loopBindingStack — the fast-path guard must
+    // scan that stack too, or the outer `const id = 7` inlines at both
+    // the key and text positions.
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function List() {
+  const id = 7
+  const [items] = createSignal<{ id: number }[]>([{ id: 2 }, { id: 5 }])
+  return <ul>{items().map(({ id }) => <li key={id}>{id}</li>)}</ul>
+}
+`)
+    expect(template).toContain('data-key="{{$__bf_item0.ID}}"')
+    expect(template).toContain('{{$__bf_item0.ID}}{{bfTextEnd}}')
+    expect(template).not.toContain('{{7}}')
+  })
+
+  test('slice B: `1 + label` inside the loop that shadows an outer string prop lowers to bf_add, not bf_concat_str', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+export function Labels({ label, values }: { label: string; values: number[] }) {
+  return <ul>{values.map((label) => <li key={label}>{1 + label}</li>)}</ul>
+}
+`)
+    expect(template).toContain('{{bf_add 1 .}}')
+    expect(template).not.toContain('bf_concat_str')
+  })
+
+  test('regression pin: a const inlined OUTSIDE any loop still inlines (slice A must not over-guard)', () => {
+    const { template } = compileAndGenerate(`
+export function Foo() {
+  const total = 5
+  return <div data-key={total}>{total}</div>
+}
+`)
+    expect(template).toContain('data-key="{{5}}"')
+    expect(template).toContain('{{5}}</div>')
+  })
+
+  test('regression pin: a genuinely string-typed `+` OUTSIDE the loop still lowers to bf_concat_str (slice B must not over-guard)', () => {
+    const { template } = compileAndGenerate(`
+export function Foo({ label }: { label: string }) {
+  const suffix = '!'
+  return <p>{label + suffix}</p>
+}
+`)
+    expect(template).toContain('bf_concat_str .Label .Suffix')
+  })
+
+  test('local-const operand carries the concat classification when the prop operand is coarsely excluded (fixture shape)', () => {
+    // The `loop-param-shadows-outer-name` fixture's combined shape: `label`
+    // is loop-bound below, so the coarse exclusion strips it from the string
+    // set — the OUTER `{label + suffix}` must then classify as concat via
+    // its `suffix = '!'` local-const operand (the #2212 local-const
+    // inclusion), or it would fall back to `bf_add` and render `0`.
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function Both({ label, values }: { label: string; values: number[] }) {
+  const suffix = '!'
+  const [n, setN] = createSignal(0)
+  return (
+    <div data-n={n()} onClick={() => setN(n() + 1)}>
+      <p>{label + suffix}</p>
+      <ul>{values.map((label) => <li key={label}>{1 + label}</li>)}</ul>
+    </div>
+  )
+}
+`)
+    // Outside the loop: still string concat, carried by the const operand.
+    expect(template).toContain('bf_concat_str .Label .Suffix')
+    // Inside the loop: the shadowed occurrence stays numeric.
+    expect(template).toContain('{{bf_add 1 .}}')
+  })
+
+  // Go's slice-A guard is scope-PRECISE: it consults the live
+  // `loopParamStack`, not a flat component-wide name set, so a const whose
+  // name is loop-bound ELSEWHERE in the component still inlines at an
+  // occurrence that is genuinely outside any loop. This is a real point of
+  // divergence from the Twig-family adapters' coarse `collectLoopBoundNames`
+  // trade-off — pinned here so a future "fix" doesn't accidentally coarsen
+  // Go's precise guard to match them.
+  test('slice A guard is scope-precise: a name that is loop-bound elsewhere still inlines outside the loop', () => {
+    const { template } = compileAndGenerate(`
+export function Foo({ items }: { items: number[] }) {
+  const count = 9
+  return <div>
+    <p data-key={count}>{count}</p>
+    <ul>{items.map(count => <li key={count}>{count}</li>)}</ul>
+  </div>
+}
+`)
+    // Outside the loop, `count` still resolves to the outer literal `9`.
+    expect(template).toContain('data-key="{{9}}"')
+    // Inside the loop, the shadowed occurrence still resolves to the loop
+    // value, not the outer literal.
+    expect(template).toContain('{{range $_, $count := .Items}}<li data-key="{{.}}">')
+  })
+
+  // Slice B's guard, by contrast, is the coarse #2212 trade-off (a flat,
+  // scope-blind `Set<string>` with the loop-bound name subtracted
+  // component-wide): a genuinely non-shadowed occurrence OUTSIDE the loop,
+  // whose name happens to be loop-bound elsewhere, also loses its
+  // string-typed classification and falls back to numeric `bf_add`. This is
+  // the accepted, already-documented residual (same as Blade's #2212
+  // comment) — the suppressed case is safe (numeric fallback, never
+  // silently-wrong string output), just imprecise.
+  test('slice B guard is coarse (accepted #2212 trade-off): a string prop shadowed elsewhere loses bf_concat_str even outside the loop', () => {
+    const { template } = compileAndGenerate(`
+export function Foo({ count, arr }: { count: string; arr: number[] }) {
+  return <div>
+    <p>{1 + count}</p>
+    <ul>{arr.map((count) => <li key={count}>{count}</li>)}</ul>
+  </div>
+}
+`)
+    // Coarse trade-off: falls back to numeric bf_add outside the loop too,
+    // even though this occurrence of `count` is the genuinely string-typed
+    // outer prop, not shadowed.
+    expect(template).toContain('bf_add 1 .Count')
+    expect(template).not.toContain('bf_concat_str')
+  })
+
+  test('end-to-end via real `go run`: shadowed const/type resolution renders correct HTML', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function List() {
+  const count = 7
+  const [nums] = createSignal<number[]>([2, 5])
+  return <ul>{nums().map((count) => <li key={count}>{count * 3}</li>)}</ul>
+}
+`,
+        adapter: new GoTemplateAdapter(),
+        props: {},
+      })
+      // The outer `const count = 7` must never leak into the rendered
+      // per-item output — each `<li>` carries its OWN loop value (2, 5),
+      // not the constant 7.
+      expect(html).toContain('<li data-key="2"><!--bf:s0-->6<!--/--></li>')
+      expect(html).toContain('<li data-key="5"><!--bf:s0-->15<!--/--></li>')
+      expect(html).not.toContain('data-key="7"')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #2236 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
