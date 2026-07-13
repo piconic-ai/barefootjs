@@ -19,6 +19,12 @@
  * `member:computed`. Kinds whose fields don't fork lowerings carry no
  * axis. Contexts come from where a parsed tree hangs off the IR:
  * `text` (child expression), `attribute`, `condition`, `loop`.
+ *
+ * Granularity note: `kinds`/`axes` walk the ENTIRE IR, metadata included
+ * (signal initial values, local constants, SSR seed plans) — those trees
+ * are lowered too, just not in template positions. `contexts` is the
+ * disambiguator: a fixture whose kind appears only in metadata has no
+ * corresponding context entry.
  */
 
 import { compileJSX, PARSED_EXPR_KINDS } from '@barefootjs/jsx'
@@ -47,9 +53,10 @@ const KIND_SET: ReadonlySet<string> = new Set(PARSED_EXPR_KINDS)
 
 /**
  * Whether an object with a registry-matching `kind` string really is a
- * `ParsedExpr` node. Three kind strings collide with other IR unions
- * (`TypeInfo` / attr-value shapes reuse 'literal', 'arrow',
- * 'unsupported'), so those check a signature field the impostor lacks.
+ * `ParsedExpr` node. The one KNOWN collision in serialized IR is
+ * `LiteralAttr` (`{ kind: 'literal', value }` — no `literalType`); the
+ * 'arrow' / 'unsupported' checks are defensive signatures against future
+ * unions, not known impostors today.
  */
 function isParsedExprNode(kind: string, rec: Record<string, unknown>): boolean {
   switch (kind) {
@@ -100,11 +107,13 @@ function collectKindsAndAxes(node: unknown, kinds: Set<string>, axes: Set<string
 }
 
 /**
- * Contexts are collected from the IR-node hooks a parsed tree hangs off.
- * The walk is field-name based (`parsed` on expression/attr nodes,
- * `parsedCondition` on conditional/if nodes, `arrayParsed` on loops) so
- * it tolerates IR-node type renames; a context is only recorded when the
- * hook actually carries a tree.
+ * Contexts are collected from the IR hooks a parsed tree hangs off:
+ * `parsed` on expression nodes and attr values (expression AND spread
+ * attrs), `parsedCondition` on conditional/if nodes, `arrayParsed` on
+ * loops. Anything reached through an element's `attrs` — including IR
+ * trees nested inside a `jsx-children` attr value — records as
+ * 'attribute'; a context is only recorded when the hook actually
+ * carries a tree.
  */
 function collectContexts(node: unknown, contexts: Set<string>, inAttr = false): void {
   if (!node || typeof node !== 'object') return
@@ -119,7 +128,11 @@ function collectContexts(node: unknown, contexts: Set<string>, inAttr = false): 
   if (Array.isArray(rec.attrs)) {
     for (const attr of rec.attrs as Array<Record<string, unknown>>) {
       const value = attr?.value as Record<string, unknown> | undefined
-      if (value?.kind === 'expression' && value.parsed) contexts.add('attribute')
+      if (!value || typeof value !== 'object') continue
+      if ((value.kind === 'expression' || value.kind === 'spread') && value.parsed) {
+        contexts.add('attribute')
+      }
+      collectContexts(value, contexts, true)
     }
   }
   for (const [key, value] of Object.entries(rec)) {
@@ -129,19 +142,30 @@ function collectContexts(node: unknown, contexts: Set<string>, inAttr = false): 
 }
 
 export function computeFixtureCoverage(fixture: JSXFixture): FixtureCoverage {
-  const result = compileJSX(fixture.source, 'component.tsx', {
-    adapter: new HonoAdapter(),
-    outputIR: true,
-    siblingTemplatesRegistered: Boolean(fixture.components),
-  })
   const kinds = new Set<string>()
   const axes = new Set<string>()
   const contexts = new Set<string>()
-  for (const file of result.files) {
-    if (file.type !== 'ir') continue
-    const ir = JSON.parse(file.content)
-    collectKindsAndAxes(ir, kinds, axes)
-    collectContexts(ir.root, contexts)
+  // A fixture's coverage is the UNION over its parent source and every
+  // sibling `components` file — 32 fixtures put the expression they exist
+  // to exercise in a child (`record-index-lookup-via-child-prop`'s Record
+  // lookup lives entirely in the child component), so a parent-only walk
+  // reports them empty.
+  const sources: Array<[string, string]> = [
+    ['component.tsx', fixture.source],
+    ...Object.entries(fixture.components ?? {}),
+  ]
+  for (const [filename, source] of sources) {
+    const result = compileJSX(source, filename, {
+      adapter: new HonoAdapter(),
+      outputIR: true,
+      siblingTemplatesRegistered: Boolean(fixture.components),
+    })
+    for (const file of result.files) {
+      if (file.type !== 'ir') continue
+      const ir = JSON.parse(file.content)
+      collectKindsAndAxes(ir, kinds, axes)
+      collectContexts(ir.root, contexts)
+    }
   }
   return {
     kinds: [...kinds].sort(),
@@ -154,14 +178,18 @@ export function computeCoverageMap(): CoverageMap {
   const fixtures: Record<string, FixtureCoverage> = {}
   const kindCounts: Record<string, number> = {}
   const axisCounts: Record<string, number> = {}
-  for (const fixture of [...jsxFixtures].sort((a, b) => a.id.localeCompare(b.id))) {
+  // Code-unit sort everywhere (never localeCompare): the artifact is
+  // byte-committed and the freshness test compares key order, so
+  // ICU-collation differences across machines would fail it spuriously
+  // and reorder thousands of committed lines on regen.
+  for (const fixture of [...jsxFixtures].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
     const coverage = computeFixtureCoverage(fixture)
     fixtures[fixture.id] = coverage
     for (const kind of coverage.kinds) kindCounts[kind] = (kindCounts[kind] ?? 0) + 1
     for (const axis of coverage.axes) axisCounts[axis] = (axisCounts[axis] ?? 0) + 1
   }
   const sortRecord = (rec: Record<string, number>) =>
-    Object.fromEntries(Object.entries(rec).sort(([a], [b]) => a.localeCompare(b)))
+    Object.fromEntries(Object.entries(rec).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
   return {
     fixtures,
     kindCounts: sortRecord(kindCounts),

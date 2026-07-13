@@ -42,11 +42,25 @@ describe('coverage ledger', () => {
 
   test('committed coverage-map.json is fresh', () => {
     const committed = JSON.parse(readFileSync(MAP_PATH, 'utf8'))
-    // toEqual's diff on the full map is unreadable; compare the cheap
-    // aggregate first so the failure names what moved.
-    expect(Object.keys(committed.fixtures)).toEqual(Object.keys(recomputed.fixtures))
-    expect(committed.kindCounts).toEqual(recomputed.kindCounts)
-    expect(committed.axisCounts).toEqual(recomputed.axisCounts)
+    // toEqual's diff on the full 4000-line map is unreadable — walk
+    // per fixture so a drift failure names the fixture and carries the
+    // regen command.
+    const REGEN = 'regen: bun packages/adapter-tests/scripts/coverage-map.ts'
+    const ids = new Set([...Object.keys(committed.fixtures ?? {}), ...Object.keys(recomputed.fixtures)])
+    for (const id of ids) {
+      const a = committed.fixtures?.[id]
+      const b = recomputed.fixtures[id]
+      if (!Bun.deepEquals(a, b)) {
+        throw new Error(
+          `coverage-map.json is stale for fixture '${id}':\n` +
+            `  committed:  ${JSON.stringify(a)}\n` +
+            `  recomputed: ${JSON.stringify(b)}\n${REGEN}`,
+        )
+      }
+    }
+    if (!Bun.deepEquals(committed, recomputed)) {
+      throw new Error(`coverage-map.json aggregates are stale (kindCounts/axisCounts/uncoveredKinds). ${REGEN}`)
+    }
     expect(committed).toEqual(recomputed)
   })
 

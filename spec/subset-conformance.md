@@ -135,8 +135,10 @@ single fixture cannot witness.
   exercises — here the compiler's own parse IS the link, and a manual
   declaration would only drift from it. `computeCoverageMap`
   (`packages/adapter-tests/src/coverage-map.ts`) walks each fixture's
-  compiled IR and records the `ParsedExpr` kinds, mechanical axes
-  (`logical:<op>`, `binary:<op>`, `literal:<literalType>`,
+  compiled IR — parent source AND sibling `components` files, whose
+  child-side expressions are what 32 fixtures exist to exercise — and
+  records the `ParsedExpr` kinds, mechanical axes (`logical:<op>`,
+  `binary:<op>`, `unary:<op>`, `literal:<literalType>`,
   `array-method:<method>`, `member:optional`/`computed`), and lowering
   contexts (text / attribute / condition / loop). The committed
   `coverage-map.json` is held by two meta-tests: **freshness** (equals a
@@ -144,12 +146,15 @@ single fixture cannot witness.
   `PARSED_EXPR_KINDS` registry — a runtime list exhaustiveness-pinned
   against the type union — is exercised or carries a documented
   exclusion, and covered kinds must graduate off the exclusion list).
-  First reading of the map: 15/16 kinds and 44 axes covered; `regex` is
-  the one documented hole, and at-a-glance axis gaps (`member:computed`
-  never exercised in a parsed position, no `binary:<=`) are now visible
-  denominators instead of folklore. The map also drives data-point
-  filtering later (only run adversarial values against fixtures
-  exercising the relevant kinds).
+  First reading of the map: 15/16 kinds and 45 axes covered; `regex` is
+  the one documented hole, and at-a-glance axis gaps (no `binary:<=` or
+  `binary:==` anywhere in the corpus) are now visible denominators
+  instead of folklore. The
+  sibling-compilation fix itself demonstrated the ledger's value: a
+  parent-only walk had under-reported 32 fixtures and mislabelled
+  `member:computed` as uncovered when 8 fixtures exercise it in child
+  components. The map also drives data-point filtering later (only run
+  adversarial values against fixtures exercising the relevant kinds).
 - **Change-time coupling** (TC39 stage-4 rule): a subset extension — new
   `ParsedExpr` kind or field, catalogue entry, builtin — does not merge
   without fixtures in the same PR. Axes derive mechanically from variant
