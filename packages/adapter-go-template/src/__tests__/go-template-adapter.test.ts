@@ -119,16 +119,6 @@ runAdapterConformanceTests({
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
   ]),
-  skipDataPoints: new Set<string>([
-    // #2248 — optional scalar props lower to non-pointer zero-valued Go
-    // fields, so `??` cannot distinguish "absent" from `''`/`0` at render
-    // time: JS keeps `''`/`0` (not nullish), Go falls back to the default.
-    // `both-absent` and `html-in-label` pass; only the zero-value-shaped
-    // points diverge. Remove these entries as the acceptance test for the
-    // nillable-lowering fix.
-    'nullish-coalescing-text:empty-label',
-    'nullish-coalescing-text:zero-size',
-  ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -516,9 +506,11 @@ export function Counter(props: { initial?: number }) {
       expect(result.types).toBeDefined()
       const types = result.types!
 
-      // Hoist: `initial := in.Initial` + zero-check + fallback assign.
-      expect(types).toContain('initial := in.Initial')
-      expect(types).toMatch(/if initial == 0 \{\s*initial = 99\s*\}/)
+      // The fallback applies only when the prop is ABSENT: an explicit
+      // `Initial: 0` is honoured (JS `0 ?? 99` is `0`, #2248).
+      expect(types).toContain('Initial interface{}')
+      expect(types).toContain('var initial int = 99')
+      expect(types).toMatch(/if in\.Initial != nil \{\s*initial = bf\.ToInt\(in\.Initial\)\s*\}/)
 
       // Prop, signal, and memo all reference the hoisted variable.
       expect(types).toContain('Initial: initial,')
@@ -563,8 +555,11 @@ export function Label(props: { label?: string }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      expect(types).toContain('label := in.Label')
-      expect(types).toMatch(/if label == ""\s*\{\s*label = "Default"\s*\}/)
+      // An explicit `Label: ""` input stays empty (JS `'' ?? 'Default'` is
+      // `''`, #2248).
+      expect(types).toContain('Label interface{}')
+      expect(types).toContain('var label string = "Default"')
+      expect(types).toMatch(/if in\.Label != nil \{\s*label = in\.Label\.\(string\)\s*\}/)
       expect(types).toContain('Label: label,')
       // Signal name `text` differs from prop name `label`, so the
       // signal field gets its own entry that resolves through the
@@ -572,12 +567,11 @@ export function Label(props: { label?: string }) {
       expect(types).toContain('Text: label,')
     })
 
-    test('hoists `props.X ?? true` against the bool zero (#1423 review)', () => {
-      // Bool-true falls through the same hoist path as int / string —
-      // the asymmetry is documented (caller can't thread "explicit
-      // false" through because Go's bool zero IS false), but emitting
-      // a hoisted local matches the int case's shape so a derived
-      // memo can inherit it.
+    test('hoists `props.X ?? true` against nil (#1423 review, #2248)', () => {
+      // Bool-true falls through the same hoist path as int / string. The
+      // interface{} field is nil only when the caller omitted the prop, so
+      // an explicit `Checked: false` survives (JS `false ?? true` is
+      // `false`).
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -590,8 +584,9 @@ export function Check(props: { checked?: boolean }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      expect(types).toContain('checked := in.Checked')
-      expect(types).toMatch(/if checked == false\s*\{\s*checked = true\s*\}/)
+      expect(types).toContain('Checked interface{}')
+      expect(types).toContain('var checked bool = true')
+      expect(types).toMatch(/if in\.Checked != nil \{\s*checked = in\.Checked\.\(bool\)\s*\}/)
       expect(types).toContain('Checked: checked,')
       expect(types).toContain('C: checked,')
     })
@@ -3641,8 +3636,9 @@ export function C(props: Props) {
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     // The `{}` fallback lowers to the safe `""` Go string sentinel — never the
     // `[UNSUPPORTED: …]` marker text, which would break `text/template` parsing
-    // once spliced as an `or` operand.
-    expect(template).toContain('{{or .Config ""}}')
+    // once spliced as an operand. `??` on a nillable prop lowers to the
+    // nil-testing `bf_nullish` (#2248), equally valid template syntax.
+    expect(template).toContain('{{bf_nullish .Config ""}}')
     expect(template).not.toContain('UNSUPPORTED')
   })
 

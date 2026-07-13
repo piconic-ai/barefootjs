@@ -140,6 +140,15 @@ export interface PropFallbackVar {
   goFallback: string
   /** Go zero literal for the prop's type (`0`, `""`, etc.). */
   zeroLiteral: string
+  /**
+   * Set when the prop lowered to the nillable `interface{}` representation
+   * (#2248): the concrete scalar Go type (`string`/`int`/`float64`/`bool`)
+   * the constructor materializes the hoisted local as. Presence switches
+   * the emission from the zero-value check (`if v == 0`) to a nil check
+   * (`if in.X != nil`), which is what makes an explicit `''`/`0` input
+   * distinguishable from an absent one.
+   */
+  assertType?: string
 }
 
 /**

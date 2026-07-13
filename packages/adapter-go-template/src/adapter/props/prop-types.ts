@@ -107,6 +107,98 @@ function collectToFixedPropNames(root: IRNode): Set<string> {
 }
 
 /**
+ * Concrete scalar Go types eligible for the nullish (`??`) nillable flip in
+ * `resolvePropGoType`. Only these can round-trip through an `interface{}`
+ * field and back via a constructor type assertion / `bf.ToInt`-style
+ * coercion (see the fallback-var emission in `generateNewPropsFunction`).
+ */
+export const NULLISH_SCALAR_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
+
+/**
+ * Names of OPTIONAL props consumed nullish-sensitively — the left operand of
+ * a `??` anywhere in the component's parsed expression trees, or a signal's
+ * `props.X ?? <literal>` initial value (#2248).
+ *
+ * Why this matters: JS `??` falls back only on `null`/`undefined`, keeping
+ * `''`/`0`/`false`. A Go zero-valued scalar field cannot represent "absent",
+ * so a `??`-consumed optional scalar must lower to the adapter's established
+ * nillable representation (`interface{}`) for the distinction to exist at
+ * render time. `resolvePropGoType` applies that flip using this set.
+ *
+ * The IR walk is generic (any nested object/array is descended, so parsed
+ * trees inside expressions, conditions, attributes, and loops are all seen)
+ * and the match is shape-precise: `identifier` left (destructured props) or
+ * `<propsObject>.<name>` member left. KNOWN LIMITATION (same class as
+ * `collectToFixedPropNames`): an `identifier` left shadowed by a same-named
+ * loop/callback param is misattributed to the prop — the flip is then merely
+ * unnecessary, not incorrect.
+ */
+export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const names = new Set<string>()
+  // A destructure default (`{ className = '' }`) means the binding is never
+  // nullish in JS — the default already applied — so such props never need
+  // the nillable flip (and `applyGoFallback`'s concrete-typed baking relies
+  // on them staying concrete).
+  const optionalParams = new Set(
+    ir.metadata.propsParams.filter(p => p.optional && p.defaultValue == null).map(p => p.name),
+  )
+  if (optionalParams.size === 0) return names
+
+  const propsObject = ctx.state.propsObjectName
+  const propNameOfLeft = (left: ParsedExpr): string | null => {
+    if (left.kind === 'identifier') return left.name
+    if (
+      left.kind === 'member' &&
+      !left.computed &&
+      left.object.kind === 'identifier' &&
+      left.object.name === propsObject
+    ) {
+      return left.property
+    }
+    return null
+  }
+
+  // `?? <zero-equivalent literal>` (`?? ''`, `?? 0`, `?? false`) is the one
+  // shape where nullish and truthiness semantics coincide — nil and the zero
+  // value both land on the same output — so it earns no flip. Only a
+  // fallback the zero value must NOT collapse into makes the distinction
+  // observable.
+  const isZeroEquivalentLiteral = (right: ParsedExpr): boolean =>
+    right.kind === 'literal' &&
+    (right.value === '' || right.value === false || right.value === null ||
+      (right.literalType === 'number' && Number(right.value) === 0))
+
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right) {
+      const propName = propNameOfLeft(rec.left as ParsedExpr)
+      if (propName && optionalParams.has(propName) && !isZeroEquivalentLiteral(rec.right as ParsedExpr)) {
+        names.add(propName)
+      }
+    }
+    for (const value of Object.values(rec)) walk(value)
+  }
+  walk(ir.root)
+
+  // Signal seeds (`createSignal(props.X ?? 1)`) live in metadata, not the
+  // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
+  // zero-equivalent exclusion matches on the Go-formatted fallback literal.
+  for (const signal of ir.metadata.signals) {
+    const match = ctx.extractPropFallback(signal.initialValue)
+    if (!match || !optionalParams.has(match.propName)) continue
+    const f = match.goFallback
+    if (f === '""' || f === 'false' || f === 'nil' || Number(f) === 0) continue
+    names.add(match.propName)
+  }
+  return names
+}
+
+/**
  * Resolve a prop param's Go struct-field type using the SAME logic
  * `generatePropsStruct` / `generateInputStruct` use: a `propTypeOverrides` entry
  * wins, otherwise `typeInfoToGo(param.type, param.defaultValue)`. Factored out so
@@ -130,6 +222,33 @@ export function resolvePropGoType(
   // (`placement?: 'top' | 'right' | …`), which must stay their scalar Go type.
   if (param.optional && ctx.state.localStructFields.has(base)) {
     return 'map[string]interface{}'
+  }
+  // An OPTIONAL scalar prop consumed by `??` lowers to `interface{}` (#2248):
+  // a zero-valued `string`/`int` field cannot distinguish "absent" from
+  // `''`/`0`, so JS nullish semantics (which KEEP `''`/`0`) are unexpressible
+  // on the concrete type. `interface{}` is the adapter's established nillable
+  // representation; the `??` template lowering then tests nil-ness via
+  // `bf_nullish` and the constructor seeds via a nil check + assertion.
+  // Assignment ergonomics are unchanged (plain literals assign into
+  // `interface{}`), and the prop joins the existing nillable behaviours
+  // (bare-attribute omission) by construction.
+  //
+  // Gated to `kind: 'primitive'` — a string-union prop
+  // (`placement?: 'top' | 'bottom'`) must stay its scalar Go type (the same
+  // invariant the struct-map gate above documents): the union-typed
+  // class-composition lowerings key off the concrete type, AND the flip
+  // would buy nothing — the zero value (`""`) is never a legal union
+  // member, so the zero-check already coincides with nullish semantics for
+  // every valid input. (A literal-number union containing 0 would be the
+  // exception; none exists in the corpus and the conflation is the
+  // documented pre-#2248 trade-off there.)
+  if (
+    param.optional &&
+    param.type.kind === 'primitive' &&
+    ctx.state.nullishConsumedPropNames.has(param.name) &&
+    NULLISH_SCALAR_GO_TYPES.has(base)
+  ) {
+    return 'interface{}'
   }
   return base
 }

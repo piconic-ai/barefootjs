@@ -147,6 +147,16 @@ export class CompileState {
   nillablePropNames: Set<string> = new Set()
 
   /**
+   * OPTIONAL prop names consumed nullish-sensitively (`??` left operand in a
+   * parsed expression tree, or a signal's `props.X ?? <literal>` seed) —
+   * #2248. Consulted by `resolvePropGoType` to flip an optional scalar to the
+   * nillable `interface{}` representation, so it MUST be populated before the
+   * first `resolvePropGoType` call of a compile (see `generate()`'s ordering
+   * against `collectNillablePropNames`).
+   */
+  nullishConsumedPropNames: Set<string> = new Set()
+
+  /**
    * String-typed signal getter / prop names (#2168 string-concat-plus).
    * Feeds `isStringName` for `isStringConcatBinary`, which decides whether a
    * JS `+` operand chain is string concatenation rather than numeric
