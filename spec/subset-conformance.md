@@ -199,9 +199,11 @@ convention.
    fixtures × 27 points across the escaping / `||`-vs-`??` / `?.`-member /
    string-`.length` / `toFixed`-rounding / template-literal-`??` /
    branch-boundary axes. Findings: #2255 (`.length` is UTF-16 code units in
-   JS — bytes on Go, codepoints on ERB/Jinja/Rust) and #2256 (the Go
-   nullish gate covers only bare prop refs; member-access left operands
-   still lower to `or`), both pinned via `skipDataPoints`. Notable passes:
+   JS — bytes on Go, codepoints everywhere else; astral input diverges on
+   all eight non-Hono adapters), #2256 (the Go nullish gate covers only
+   bare prop refs; member-access left operands still lower to `or`), both
+   pinned via `skipDataPoints`, plus a Mojo render-harness bug (explicit
+   `null` props never declared their template var — fixed). Notable passes:
    `toFixed` representation-boundary rounding and template-literal `??`
    match the oracle on every locally-runnable backend.
 3. **Type-derived value catalogue** from `TypeInfo`.
