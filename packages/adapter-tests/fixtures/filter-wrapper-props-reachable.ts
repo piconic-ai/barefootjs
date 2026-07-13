@@ -48,7 +48,11 @@ import { createFixture } from '../src/types'
  * never fired in production either. Tracked as #2245 and out of scope
  * for this backfill (#2228/#2237), so this fixture routes around it —
  * via the same-name predicate/loop param — rather than declaring a
- * divergence for a bug this PR isn't fixing.
+ * divergence for a bug this PR isn't fixing. #2245 is now fixed and
+ * pinned by this fixture's un-routed-around twin, `filter-param-name-
+ * differs` (`./filter-param-name-differs.ts`), which keeps the original
+ * differently-named `t`/`todo` params and asserts the fixed behavior
+ * directly instead of routing around it.
  *
  * Pre-#2240 this 500s on real Go (`can't evaluate field Done in type
  * FilterWrapperPropsReachableTodoRowProps`); post-#2240 it renders only
