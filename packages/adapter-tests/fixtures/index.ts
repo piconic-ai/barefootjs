@@ -368,6 +368,7 @@ import { fixture as stringTrimSided } from './methods/string-trim-sided'
 // CSR `setArray` fallback fix (#2222 bug 1) and the scope-accurate
 // prop/const shadowing fixes (#2221, #2222 bug 2) landed.
 import { fixture as loopParamShadowsOuterName } from './loop-param-shadows-outer-name'
+import { fixture as loopParamShadowsConstKey } from './loop-param-shadows-const-key'
 
 import type { JSXFixture } from '../src/types'
 
@@ -641,4 +642,5 @@ export const jsxFixtures: JSXFixture[] = [
   stringReplaceAll,
   stringTrimSided,
   loopParamShadowsOuterName,
+  loopParamShadowsConstKey,
 ]
