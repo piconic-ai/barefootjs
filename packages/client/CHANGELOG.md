@@ -1,5 +1,13 @@
 # @barefootjs/client
 
+## 0.18.7
+
+### Patch Changes
+
+- fd73cf0: Perf: new `createSelector(source, fn?)` primitive (SolidJS-compatible, #2143 gap 5) — an O(changed) selection accessor for `class={isSelected(row.id) ? ... : ...}` patterns. Each row's effect subscribes to its own key instead of the raw signal, so a selection change re-runs two effects (deselected + selected row) regardless of list size. The returned accessor is `Reactive<>`-branded, so the existing type-based reactivity analysis recognises `isSelected(row.id)` with no analyzer changes beyond registering the export and a `needsTypeBasedDetection` trigger for bare selector usage outside `.map()`. `@barefootjs/hono` gains the matching SSR client-shim stub.
+- 42e9066: Perf: new `runtimeBundle: 'treeshake-exact'` build mode (#2143 gap 4) drops the always-kept public mount API (`render`, `hydrate`, `flushHydration`, `rehydrateAll`, `rehydrateScope`, `disposeScope`, `setupStreaming`, `createSearchParams`) that `'treeshake'` (the default) unconditionally keeps in `barefoot.js` regardless of whether the project actually uses them. Under `'treeshake-exact'` these names ship only if the compiled output, `bundleEntries`, `externals`, or an explicit `runtimeKeep` entry actually reaches them — a hand-written page script the CLI never compiles (e.g. an inline `<script type="module">` calling `hydrate()` directly) must list any such name in `runtimeKeep` or it's silently dropped. Fully opt-in; `'treeshake'` stays the default with unchanged behavior. Also fixes a real crash-to-full-copy bug the new mode could hit: a project with zero reachable runtime exports now skips `barefoot.js` generation (and removes any stale copy from a prior build) instead of failing into shipping the entire uncompressed runtime.
+  - @barefootjs/shared@0.18.7
+
 ## 0.18.6
 
 ### Patch Changes

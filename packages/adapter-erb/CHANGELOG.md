@@ -1,5 +1,26 @@
 # @barefootjs/erb
 
+## 0.18.7
+
+### Patch Changes
+
+- 5c7d2ab: Fix #2245: a `filter().map()` loop whose filter and map callbacks name their params differently (e.g. `todos.filter(t => t.done).map(todo => ...)`, the exact `TodoAppSSR.tsx` shape) no longer raises `NoMethodError: undefined method '[]' for nil` at real Ruby render time. `ErbFilterEmitter` used to match a filter predicate's identifiers against the LOOP's (map callback's) param instead of the filter callback's OWN param, so a differently-named filter param lowered to an unseeded `v[:name]` vars-Hash read; it now matches against the filter's own param while still emitting the loop's actual bound Ruby local (`ErbFilterEmitter`'s new `renderParamAs`). Masked in the shipped corpus by `todo-app-ssr`'s `'all'`-default filter short-circuiting the buggy predicate branch away — pinned by the new `filter-param-name-differs` cross-adapter fixture and ERB adapter unit tests.
+- 1cab45b: Fix #2209: the conformance test harness (`test-render.ts`, not any build/compile path) can now seed a signal initializer or prop default whose source is a compound expression over `props` — e.g. `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))` — instead of only recognizing a small fixed catalogue of regex-matched shapes (`props.x`, `props.x ?? default`, a bare literal).
+
+  `@barefootjs/jsx` adds `evaluateSignalInit`/`tryEvaluateSignalInit` (`signal-init-eval.ts`), a test-harness-only sandboxed real-JS evaluator (`new Function`, with a blocked-globals allowlist and a JSON-shaped-value transport check) that replaces 7 near-duplicate regex-based evaluators previously copy-pasted across each template-string adapter's `test-render.ts`. Every prior recognized shape still works identically; the compound `.map()`/spread shape (and any future shape over `props` + literals) now resolves correctly instead of silently seeding `null`/unset.
+
+  Go template additionally replicates, in its generated test-harness render program, the documented "the route handler populates a signal-backed loop-body child-component slice at request time" contract (`buildDynamicChildLoopSeeding`) — the constructor already seeded the loop's datum slice correctly; only the child-component Props slice the template ranges over had no harness-side population path.
+
+  `todo-app` / `todo-app-ssr` graduate out of `render-divergences.ts` on all 8 adapters and now render byte-correct against the Hono reference.
+
+- 752ee52: Fix #2208: a `.map()` loop source that is a fully-static array/object literal — either inline (`[{ label: 'Alpha' }, ...].map(...)`) or a function-scope local `const` with no prop/signal/function-call dependency in its initializer — no longer refuses with BF101 on any of the 8 non-Hono template adapters.
+
+  `@barefootjs/jsx` adds `evaluateStaticLiteral`/`resolveStaticLoopSource` (`static-literal.ts`), a shared compile-time evaluator for a `ParsedExpr` that resolves to a fully compile-time-known JS value. The 7 template-string adapters (Jinja, minijinja/Rust, Twig, Blade, ERB, Mojolicious, Xslate) each serialize the resolved value into their own native array/object literal syntax and inline it directly in the loop header, the same way a module-scope const's value is already seeded. A runtime-computed local (`Object.entries(props.tags).filter(...)`, #2069) is unaffected and still refuses.
+
+  Go template additionally bakes each item's child-component props and `data-key` directly into the generated `New<Name>Props` constructor when the loop body is a single child component with a plain-value prop set (`analyzeBakeableStaticChildLoop`), since Go's `{{range .ListItems}}` template already exists for that shape and only needed the constructor data. A plain-element loop body (no child component) is out of scope for this fix on Go — see the follow-up issue for that narrower gap.
+
+  - @barefootjs/shared@0.18.7
+
 ## 0.18.6
 
 ### Patch Changes

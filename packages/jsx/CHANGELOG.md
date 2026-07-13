@@ -1,5 +1,60 @@
 # @barefootjs/jsx
 
+## 0.18.7
+
+### Patch Changes
+
+- fd73cf0: Perf: new `createSelector(source, fn?)` primitive (SolidJS-compatible, #2143 gap 5) — an O(changed) selection accessor for `class={isSelected(row.id) ? ... : ...}` patterns. Each row's effect subscribes to its own key instead of the raw signal, so a selection change re-runs two effects (deselected + selected row) regardless of list size. The returned accessor is `Reactive<>`-branded, so the existing type-based reactivity analysis recognises `isSelected(row.id)` with no analyzer changes beyond registering the export and a `needsTypeBasedDetection` trigger for bare selector usage outside `.map()`. `@barefootjs/hono` gains the matching SSR client-shim stub.
+- 52e9b47: Fix #2222: fixes two bugs in the generated `hydrate(...)` `template:` lambda (a module-scope arrow, not a closure over `init`'s destructured locals).
+
+  1. A `.map()` loop whose array source is a destructured prop threw `ReferenceError: <name> is not defined` in the CSR template — both the plain-`.map()` fallback and the simple-`filter().map()` path built `IRLoop.templateArray` from a bare `array =` assignment instead of going through `setArray`, so the `_p.`-rewritten form the chained paths already produce never made it into the template lambda.
+
+  2. Inside a loop callback body, prop/const substitution was scope-blind: an outer destructured prop or an inlinable const's literal could get substituted at an occurrence that is actually the loop's own shadowing parameter (`values.map((label) => <li key={label}>{1 + label}</li>)` where `label` also names an outer prop or const). Fixed in three places, each scope-accurate rather than a coarse whole-component exclusion:
+     - `rewriteBarePropRefs` now filters prop names out of `ctx.loopParams` (the transform position's live loop-param set, including destructured binding names and the index param) before rewriting bare identifiers to `_p.<name>`.
+     - `generateCsrTemplateWithOpts`'s `loop` case now accumulates `loopBoundNames` per nesting level and filters them out of the child recursion's `csrEnv`, so an inlinable const / signal / memo never substitutes at a loop-shadowed occurrence.
+     - `tryResolveIdentifierAsTemplateLiteral` (the IR-level const-literal fold used for e.g. `key={label}`) now guards on `ctx.loopParams`, so a loop-shadowed identifier is never baked to the outer const's literal — this fold runs at IR build time, so the fix applies to every adapter, not just CSR.
+
+  Adds the cross-adapter conformance fixture `loop-param-shadows-outer-name` (`packages/adapter-tests/fixtures/`), which #2212/#2222 previously could not add because CSR threw on this shape before either fix landed. It passes on every adapter except Go, which has its own, unrelated shadowing bug in `convertExpressionToGo`'s `+`-operator type resolution (tracked as #2236 and declared as a `renderDivergences` skip, not fixed here).
+
+  Scope note: this is the loop-shadow slice of #2235 (whole-component const-shadowing on SSR adapters is #2221, already fixed) and does not touch #2236 (Go operator-type shadowing) or #2237 (record-literal shadowing), both still open.
+
+- 638b774: Fix #2219: an inner reactive `.map()` whose item root is an SVG element (`<line>`, `<circle>`, ...) no longer renders invisibly. `template.innerHTML` always parses in the HTML namespace, so a bare SVG-rooted item cloned as an `HTMLUnknownElement` — present in the DOM, but never drawn by the SVG renderer, with no error.
+
+  The fix wraps SVG-rooted item templates in a synthetic `<svg>` and descends one extra level (`.firstElementChild.firstElementChild`) before cloning — the same `templateRootIsSvg` idiom the top-level (#135/#1088) and branch-arm paths already used, now applied to the inner-loop reactive clone (`stringify/inner-loop.ts`, the issue's root cause). While auditing sibling clone sites for the same bug class, the static-loop CSR-materialize single-root and multi-root clones (`stringify/loop.ts`, the #1247 path) turned out to have the identical gap and are fixed alongside it.
+
+  HTML-rooted templates keep byte-for-byte identical output; only SVG-rooted item templates — previously broken and invisible — change.
+
+- f2faa2a: Fix #2218: a nested (inner) `.map()` callback that declares a positional index parameter and references it — as `key={i}`, in a reactive text/attribute expression, in a template interpolation, in a `.map()` block-body preamble local, or in an event handler / ref callback / child-component prop — no longer throws `ReferenceError: i is not defined` in the generated client JS (which previously left the inner loop rendering nothing on the client).
+
+  `NestedLoop` now carries the IR loop's `index` param (mirroring `TopLevelLoop` / `BranchLoop`), `loopKeyFn` threads it into the `mapArray` keyFn signature (`(item, i) => String(i)`), and the renderItem / `forEach` body binds the user's index name to the synthetic positional index (`const i = __innerIdx<uid>`) as the first prelude statement — on both the composite inner-loop path and the conditional-branch-arm path (`loop → conditional → inner loop`). Sibling of the #2189 fix, which covered the same class of bug for delegated event handlers only.
+
+  The alias is gated by an AST-based free-identifier scan across every surface the body can read the index from (key, reactive texts/attrs, map preamble, item template interpolations, events, refs, component props), so a declared-but-unreferenced index emits no alias binding. Note that the keyFn signature itself now includes the index param whenever the callback declares one — matching how top-level and branch loops have always emitted it — so nested loops that declare an index see that (behavior-neutral) signature change even when the key doesn't reference it; loops without an index param keep byte-for-byte identical output.
+
+- 1cab45b: Fix #2209: the conformance test harness (`test-render.ts`, not any build/compile path) can now seed a signal initializer or prop default whose source is a compound expression over `props` — e.g. `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))` — instead of only recognizing a small fixed catalogue of regex-matched shapes (`props.x`, `props.x ?? default`, a bare literal).
+
+  `@barefootjs/jsx` adds `evaluateSignalInit`/`tryEvaluateSignalInit` (`signal-init-eval.ts`), a test-harness-only sandboxed real-JS evaluator (`new Function`, with a blocked-globals allowlist and a JSON-shaped-value transport check) that replaces 7 near-duplicate regex-based evaluators previously copy-pasted across each template-string adapter's `test-render.ts`. Every prior recognized shape still works identically; the compound `.map()`/spread shape (and any future shape over `props` + literals) now resolves correctly instead of silently seeding `null`/unset.
+
+  Go template additionally replicates, in its generated test-harness render program, the documented "the route handler populates a signal-backed loop-body child-component slice at request time" contract (`buildDynamicChildLoopSeeding`) — the constructor already seeded the loop's datum slice correctly; only the child-component Props slice the template ranges over had no harness-side population path.
+
+  `todo-app` / `todo-app-ssr` graduate out of `render-divergences.ts` on all 8 adapters and now render byte-correct against the Hono reference.
+
+- ecf3f14: Fix #2231: a FULLY-STATIC (module-const array, not a signal or a prop) nested loop's inner `.map((sub, i) => ...)` index param, referenced in a child-component prop, no longer throws `ReferenceError: i is not defined` at hydration.
+
+  Follow-up to #2218 (PR #2230), which fixed the reactive (`mapArray`) and branch-arm paths via `loopKeyFn` + the renderItem alias — this family never goes through either, so it needed its own fix. The `inner-loop-nested` shape (`build-static-array-child-init.ts`) hardcoded the synthetic `__innerIdx` as the inner `forEach`'s second param, so a declared-and-referenced index name like `i` compiled to `get label() { return i }` with `i` unbound — `initChild`'s first read of that prop getter threw at hydration. `component-rooted-inner-loop` (#1725) declared no index params at all, leaving both outer and inner index names unbound the same way.
+
+  The fix emits the user's declared index name directly as the `forEach`'s second param — the same idiom the outer loop has always used (`elem.index || '__idx'`) — instead of a synthetic placeholder. No alias binding is needed: `forEach` supplies the real array index positionally.
+
+  Byte stability: loops that declare no index param keep byte-for-byte identical output (`__innerIdx` fallback for `inner-loop-nested`, bare single-param `forEach` heads for `component-rooted-inner-loop`). `inner-loop-nested` loops that DO declare an index see the `forEach` param renamed from `__innerIdx` to the user's name, and the child-offset expression (`__ic.children[...]`) follows it — a behavior-neutral rename, not a semantic change.
+
+- 752ee52: Fix #2208: a `.map()` loop source that is a fully-static array/object literal — either inline (`[{ label: 'Alpha' }, ...].map(...)`) or a function-scope local `const` with no prop/signal/function-call dependency in its initializer — no longer refuses with BF101 on any of the 8 non-Hono template adapters.
+
+  `@barefootjs/jsx` adds `evaluateStaticLiteral`/`resolveStaticLoopSource` (`static-literal.ts`), a shared compile-time evaluator for a `ParsedExpr` that resolves to a fully compile-time-known JS value. The 7 template-string adapters (Jinja, minijinja/Rust, Twig, Blade, ERB, Mojolicious, Xslate) each serialize the resolved value into their own native array/object literal syntax and inline it directly in the loop header, the same way a module-scope const's value is already seeded. A runtime-computed local (`Object.entries(props.tags).filter(...)`, #2069) is unaffected and still refuses.
+
+  Go template additionally bakes each item's child-component props and `data-key` directly into the generated `New<Name>Props` constructor when the loop body is a single child component with a plain-value prop set (`analyzeBakeableStaticChildLoop`), since Go's `{{range .ListItems}}` template already exists for that shape and only needed the constructor data. A plain-element loop body (no child component) is out of scope for this fix on Go — see the follow-up issue for that narrower gap.
+
+- 42e9066: Perf: new `runtimeBundle: 'treeshake-exact'` build mode (#2143 gap 4) drops the always-kept public mount API (`render`, `hydrate`, `flushHydration`, `rehydrateAll`, `rehydrateScope`, `disposeScope`, `setupStreaming`, `createSearchParams`) that `'treeshake'` (the default) unconditionally keeps in `barefoot.js` regardless of whether the project actually uses them. Under `'treeshake-exact'` these names ship only if the compiled output, `bundleEntries`, `externals`, or an explicit `runtimeKeep` entry actually reaches them — a hand-written page script the CLI never compiles (e.g. an inline `<script type="module">` calling `hydrate()` directly) must list any such name in `runtimeKeep` or it's silently dropped. Fully opt-in; `'treeshake'` stays the default with unchanged behavior. Also fixes a real crash-to-full-copy bug the new mode could hit: a project with zero reachable runtime exports now skips `barefoot.js` generation (and removes any stale copy from a prior build) instead of failing into shipping the entire uncompressed runtime.
+  - @barefootjs/shared@0.18.7
+
 ## 0.18.6
 
 ### Patch Changes
