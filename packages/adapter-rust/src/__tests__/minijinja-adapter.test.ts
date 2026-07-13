@@ -56,6 +56,11 @@ runAdapterConformanceTests({
     // Same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
+  skipDataPoints: new Set<string>([
+    // #2255 — minijinja's length counts chars (codepoints); JS counts
+    // UTF-16 code units, so a surrogate-pair character is 2 in JS, 1 here.
+    'string-length-text:astral',
+  ]),
   onRenderError: (err, id) => {
     if (err instanceof RustNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

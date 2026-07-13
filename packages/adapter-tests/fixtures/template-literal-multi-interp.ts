@@ -19,6 +19,14 @@ export function TemplateLiteralMultiInterp(props: { greeting?: string }) {
 }
 `,
   props: { greeting: 'Hi' },
+  // `??` INSIDE a template literal is a distinct lowering path from
+  // text-position `??`: absent falls back, but a present-but-empty ''
+  // must be kept (JS nullish), and markup must arrive escaped.
+  dataPoints: [
+    { name: 'absent', props: {} },
+    { name: 'empty-greeting', props: { greeting: '' } },
+    { name: 'markup-greeting', props: { greeting: '<b>&' } },
+  ],
   expectedHtml: `
     <p bf-s="test" bf="s1"><!--bf:s0-->Hi, World! bye<!--/--></p>
   `,

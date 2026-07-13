@@ -50,6 +50,12 @@ runAdapterConformanceTests({
     // Same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
+  skipDataPoints: new Set<string>([
+    // #2255 — Twig's length filter counts codepoints (mb-based); JS
+    // counts UTF-16 code units, so a surrogate-pair character is 2 in
+    // JS, 1 here.
+    'string-length-text:astral',
+  ]),
   onRenderError: (err, id) => {
     if (err instanceof TwigNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

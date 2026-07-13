@@ -21,6 +21,16 @@ function OptionalChainingProp({ user, owner }: { user?: User; owner?: User }) {
 export { OptionalChainingProp }
 `,
   props: { user: { name: 'Ada' } },
+  // Probes `?.` short-circuit and `??` member-fallback at every presence
+  // combination: both objects present, both absent, an explicit null
+  // object, and a present object whose member is '' (kept by `??` —
+  // not nullish).
+  dataPoints: [
+    { name: 'both-present', props: { user: { name: 'Ada' }, owner: { name: 'Bob' } } },
+    { name: 'both-absent', props: {} },
+    { name: 'null-user', props: { user: null } },
+    { name: 'empty-name', props: { user: { name: '' } } },
+  ],
   expectedHtml: `
     <div bf-s="test">
       <span bf="s1"><!--bf:s0-->Ada<!--/--></span>

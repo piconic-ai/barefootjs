@@ -583,7 +583,15 @@ function buildPerlProps(
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (routedKeys.has(key)) continue
-      if (typeof value === 'string') {
+      if (value === null) {
+        // An explicit-null prop must still DECLARE the template var —
+        // `typeof null === 'object'` fails every branch below, so the key
+        // emitted nothing and `Mojo::Template`'s `vars => 1` never ran
+        // `my $user`, tripping Perl's strict-mode "Global symbol requires
+        // explicit package name" before the `//` fallback could apply
+        // (data-point conformance, optional-chaining-prop:null-user).
+        entries.push(`${key} => undef`)
+      } else if (typeof value === 'string') {
         entries.push(`${key} => '${value.replace(/'/g, "\\'")}'`)
       } else if (typeof value === 'number') {
         entries.push(`${key} => ${value}`)

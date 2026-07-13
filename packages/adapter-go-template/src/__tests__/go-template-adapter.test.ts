@@ -119,6 +119,16 @@ runAdapterConformanceTests({
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
   ]),
+  skipDataPoints: new Set<string>([
+    // #2255 — Go `len` counts bytes; JS counts UTF-16 code units
+    // ('日本語' is 3 in JS, 9 here; '👍' is 2 in JS, 4 here).
+    'string-length-text:multibyte',
+    'string-length-text:astral',
+    // #2256 — the nullish gate covers only BARE nillable prop refs; a
+    // member-access left operand (`user?.name ?? '…'`) still lowers to
+    // the truthiness `or`, so a present-but-empty member falls back.
+    'optional-chaining-prop:empty-name',
+  ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

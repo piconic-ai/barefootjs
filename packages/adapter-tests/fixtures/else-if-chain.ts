@@ -32,6 +32,14 @@ export function ElseIfChain(props: { level?: string }) {
 }
 `,
   props: { level: 'mid' },
+  // Branch selection parity per level value. The oracle carries the
+  // pinned else-if fallthrough bug identically (see the docstring), so
+  // these points assert cross-adapter AGREEMENT, not correctness.
+  dataPoints: [
+    { name: 'high', props: { level: 'high' } },
+    { name: 'absent', props: {} },
+    { name: 'empty-level', props: { level: '' } },
+  ],
   expectedHtml: `
     <span bf-s="test" bf="s1">low:<!--bf:s0-->0<!--/--></span>
   `,
