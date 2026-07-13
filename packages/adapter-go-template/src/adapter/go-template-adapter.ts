@@ -3591,8 +3591,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * while its emitted struct field is the concrete alias type. On such a
    * concrete field "absent" is invisible (the zero value), so the
    * truthiness-based `or` is the correct approximation and `bf_nullish`
-   * would wrongly KEEP the zero value (the tooltip placement-classes
-   * regression). Requiring `nullishConsumedPropNames` membership pins the
+   * would wrongly KEEP the zero value (e.g. Tooltip's
+   * `placementClasses[props.placement ?? 'top']` would resolve to no
+   * class for an omitted placement). Requiring `nullishConsumedPropNames`
+   * membership pins the
    * gate to props the `??` analysis actually saw — the same set that drives
    * the `interface{}` flip in `resolvePropGoType`.
    */

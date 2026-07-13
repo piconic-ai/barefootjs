@@ -119,10 +119,6 @@ runAdapterConformanceTests({
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
   ]),
-  // No `skipDataPoints`: the #2248 `??` zero-value divergence is fixed —
-  // `??`-consumed optional scalar props lower to nillable `interface{}`
-  // fields, `bf_nullish` carries JS nullish semantics in the template, and
-  // the constructor seeds via a nil check instead of a zero check.
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -510,10 +506,8 @@ export function Counter(props: { initial?: number }) {
       expect(result.types).toBeDefined()
       const types = result.types!
 
-      // #2248: the `??`-consumed optional scalar lowers to the nillable
-      // `interface{}` representation, and the hoist applies the fallback on
-      // NIL — not on the zero value — so an explicit `Initial: 0` input is
-      // honoured (JS `0 ?? 99` is 0).
+      // The fallback applies only when the prop is ABSENT: an explicit
+      // `Initial: 0` is honoured (JS `0 ?? 99` is `0`, #2248).
       expect(types).toContain('Initial interface{}')
       expect(types).toContain('var initial int = 99')
       expect(types).toMatch(/if in\.Initial != nil \{\s*initial = bf\.ToInt\(in\.Initial\)\s*\}/)
@@ -561,8 +555,8 @@ export function Label(props: { label?: string }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      // #2248: nil-checked, not zero-checked — an explicit `Label: ""` input
-      // stays empty (JS `'' ?? 'Default'` is `''`).
+      // An explicit `Label: ""` input stays empty (JS `'' ?? 'Default'` is
+      // `''`, #2248).
       expect(types).toContain('Label interface{}')
       expect(types).toContain('var label string = "Default"')
       expect(types).toMatch(/if in\.Label != nil \{\s*label = in\.Label\.\(string\)\s*\}/)
@@ -574,11 +568,10 @@ export function Label(props: { label?: string }) {
     })
 
     test('hoists `props.X ?? true` against nil (#1423 review, #2248)', () => {
-      // Bool-true falls through the same hoist path as int / string.
-      // Since #2248 the nillable lowering makes "explicit false"
-      // representable: the interface{} field is nil only when the caller
-      // omitted the prop, so `Checked: false` survives (JS
-      // `false ?? true` is false).
+      // Bool-true falls through the same hoist path as int / string. The
+      // interface{} field is nil only when the caller omitted the prop, so
+      // an explicit `Checked: false` survives (JS `false ?? true` is
+      // `false`).
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -3643,8 +3636,8 @@ export function C(props: Props) {
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     // The `{}` fallback lowers to the safe `""` Go string sentinel — never the
     // `[UNSUPPORTED: …]` marker text, which would break `text/template` parsing
-    // once spliced as an operand. Since #2248, `??` on a nillable prop emits
-    // the nil-testing `bf_nullish` instead of the truthiness-based `or`.
+    // once spliced as an operand. `??` on a nillable prop lowers to the
+    // nil-testing `bf_nullish` (#2248), equally valid template syntax.
     expect(template).toContain('{{bf_nullish .Config ""}}')
     expect(template).not.toContain('UNSUPPORTED')
   })
