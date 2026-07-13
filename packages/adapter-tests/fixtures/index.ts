@@ -369,6 +369,14 @@ import { fixture as stringTrimSided } from './methods/string-trim-sided'
 // prop/const shadowing fixes (#2221, #2222 bug 2) landed.
 import { fixture as loopParamShadowsOuterName } from './loop-param-shadows-outer-name'
 import { fixture as loopParamShadowsConstKey } from './loop-param-shadows-const-key'
+// #2228 (PR #2240): filter-predicate wrapper-Props datum-field
+// qualification, made reachable by a non-'all' default filter (a
+// same-file child component avoids the BF103 sibling-import refusal).
+import { fixture as filterWrapperPropsReachable } from './filter-wrapper-props-reachable'
+// #2237 (PR #2241): a `.map()` callback param shadows a module-scope
+// object const; every Twig-family adapter used to bake the const's
+// literal into each iteration instead of reading the loop's own item.
+import { fixture as loopParamShadowsRecordConst } from './loop-param-shadows-record-const'
 
 import type { JSXFixture } from '../src/types'
 
@@ -643,4 +651,6 @@ export const jsxFixtures: JSXFixture[] = [
   stringTrimSided,
   loopParamShadowsOuterName,
   loopParamShadowsConstKey,
+  filterWrapperPropsReachable,
+  loopParamShadowsRecordConst,
 ]

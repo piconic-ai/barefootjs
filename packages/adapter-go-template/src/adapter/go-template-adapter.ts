@@ -4623,20 +4623,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // carry its OWN guard. When `.map((count) => ...)` shadows the outer
     // `const count = 7`, the occurrence inside the loop body must resolve to
     // the range value (via the normal parse-and-lower fallthrough), not the
-    // outer literal. Mirrors the guard in `resolveModuleStringConst` /
-    // `resolveModuleNumericConst`, PLUS the `loopBindingStack` scan
-    // `identifier()` leads with: a DESTRUCTURED callback (`.map(({ id }) =>
-    // ...)`) pushes `''` onto `loopParamStack` and tracks its binding names
-    // only in `loopBindingStack`, so without this the fast path still
-    // inlined an outer `const id = 7` at the shadowed occurrence (#2242
-    // Copilot review).
-    const isLoopShadowed =
-      (this.loopParamStack.length > 0 &&
-        this.loopParamStack[this.loopParamStack.length - 1] === trimmed) ||
-      this.loopVarRefCount.has(trimmed) ||
-      this.isOuterLoopParam(trimmed) ||
-      this.loopBindingStack.some(bindings => bindings.has(trimmed))
-    if (!isLoopShadowed && /^[A-Za-z_$][\w$]*$/.test(trimmed)) {
+    // outer literal.
+    if (!this.isLoopShadowedName(trimmed) && /^[A-Za-z_$][\w$]*$/.test(trimmed)) {
       const litConst = (this.state.localConstants ?? []).find(c => c.name === trimmed)
       if (litConst?.value !== undefined) {
         const v = litConst.value.trim()
@@ -4708,6 +4696,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * Whether `name` at the CURRENT emission position is bound by an enclosing
+   * loop callback — its item param (`loopParamStack` top), an outer loop's
+   * range variable, a hoisted loop var, or a destructured binding name
+   * (`loopBindingStack`, which is the ONLY place destructured callbacks
+   * record their names; they push `''` onto `loopParamStack`). Shared by the
+   * string-keyed fast paths (#2236, #2242 Copilot review) that resolve raw
+   * `jsExpr` text before `identifier()`'s own guards can see it. Mirrors the
+   * checks in `resolveModuleStringConst` / `resolveModuleNumericConst`.
+   */
+  private isLoopShadowedName(name: string): boolean {
+    return (
+      (this.loopParamStack.length > 0 &&
+        this.loopParamStack[this.loopParamStack.length - 1] === name) ||
+      this.loopVarRefCount.has(name) ||
+      this.isOuterLoopParam(name) ||
+      this.loopBindingStack.some(bindings => bindings.has(name))
+    )
+  }
+
+  /**
    * Resolve `IDENT['key']` / `IDENT["key"]` where `IDENT` is a module-scope
    * object-literal const and the key is a string literal — a compile-time-static
    * lookup (the icon registry's `strokePaths['chevron-down']`). Returns the
@@ -4724,6 +4732,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // ordinary props/locals never match.
       /^([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)$/.exec(jsExpr)
     if (!m) return null
+    // The base name may be an enclosing loop callback's own (shadowing)
+    // param (`rows.map((cfg) => cfg.x)` under a module `const cfg = {...}`)
+    // — the record-member sibling of the #2236 bare-identifier gap, found
+    // by the loop-param-shadows-record-const fixture. Fall through to the
+    // generic lowering, which resolves the member through the loop binding.
+    if (this.isLoopShadowedName(m[1])) return null
     const key = m[2] ?? m[3]
     const constInfo = (this.state.localConstants ?? []).find(
       c => c.name === m[1] && c.isModule,
