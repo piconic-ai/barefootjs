@@ -4703,7 +4703,7 @@ export function initTodoList(__scope, _p = {}) {
 
 }
 
-hydrate('TodoList', { init: initTodoList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${items.map((item) => \`\${renderChild('TodoItem', {}, item.id)}\`).join('')}<!--bf-/loop:l0--></ul>\` })
+hydrate('TodoList', { init: initTodoList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.map((item) => \`\${renderChild('TodoItem', {}, item.id)}\`).join('')}<!--bf-/loop:l0--></ul>\` })
 export function TodoList(_p, __bfKey) { return createComponent('TodoList', _p, __bfKey) }"
 `;
 

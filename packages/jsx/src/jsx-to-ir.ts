@@ -291,8 +291,21 @@ function exprHasFunctionCalls(expr: ts.Expression): boolean {
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
-  const propNames = getDestructuredPropNames(ctx)
+  let propNames = getDestructuredPropNames(ctx)
   if (!propNames) return undefined
+  // #2222: a name bound as an enclosing loop callback's item/index param
+  // refers to the loop binding, not the prop, at THIS transform position —
+  // `ctx.loopParams` is the live loop-param set (destructured binding
+  // names and the index included), maintained by `transformMapCall` as it
+  // enters/leaves each callback, so this guard is scope-accurate rather
+  // than the coarse whole-component exclusion the SSR adapters use
+  // (#2221). Filter into a fresh set — `getDestructuredPropNames` caches
+  // its set on ctx and must not be mutated.
+  if (ctx.loopParams.size > 0) {
+    const filtered = new Set([...propNames].filter(n => !ctx.loopParams.has(n)))
+    if (filtered.size === 0) return undefined
+    propNames = filtered
+  }
   // #1425: union any prop refs that `expr` reaches via branch-local
   // text substitution. The AST walk in `rewriteBarePropRefsCore`
   // sees only `expr`'s original AST, so a prop ref introduced via
@@ -3634,14 +3647,19 @@ function transformMapCall(
           setArray(innerSort.array)
         }
       } else {
-        // Simple filter().map()
-        array = ctx.getJS(filterInfo.array)
-        arrayExpr = filterInfo.array
+        // Simple filter().map(). `setArray` (not a bare `array =`
+        // assignment) so `templateArray` carries the `_p.`-rewritten form —
+        // the module-scope `template:` lambda can't see init's destructured
+        // prop locals, and a bare destructured name there threw
+        // `ReferenceError` at runtime (#2222).
+        setArray(filterInfo.array)
       }
     }
   } else {
-    array = ctx.getJS(chainSource)
-    arrayExpr = chainSource
+    // Plain `.map()` fallback — same `setArray` requirement as above
+    // (#2222): this is the most common loop shape and was the primary
+    // repro for the bare-destructured-name ReferenceError.
+    setArray(chainSource)
   }
 
   // Get callback function
@@ -4778,6 +4796,14 @@ function tryResolveIdentifierAsTemplateLiteral(
   ident: ts.Identifier,
   ctx: TransformContext,
 ): IRTemplatePart[] | null {
+  // #2222/#2235: at this transform position the identifier may be an
+  // enclosing loop callback's own (shadowing) parameter — folding the
+  // outer const's literal into the IR here bakes the same hard-coded
+  // value into EVERY adapter's output (e.g. `key={label}` inside
+  // `.map((label) => ...)` becoming a constant duplicate key).
+  // `ctx.loopParams` is the live loop-param set (destructured binding
+  // names and index included), so the guard is scope-accurate.
+  if (ctx.loopParams.has(ident.text)) return null
   const constInfo = findLocalConst(ident.text, ctx.analyzer)
   if (!constInfo) return null
   const ast = parseConstInitializer(constInfo)

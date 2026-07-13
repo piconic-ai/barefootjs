@@ -361,6 +361,12 @@ import { fixture as multilineAttrValue } from './multiline-attr-value'
 import { fixture as stringSlice } from './methods/string-slice'
 import { fixture as stringReplaceAll } from './methods/string-replaceall'
 import { fixture as stringTrimSided } from './methods/string-trim-sided'
+// #2212/#2221/#2222: cross-adapter conformance for a `.map()` callback
+// param shadowing an outer destructured prop, with the loop's array
+// source itself a destructured prop — couldn't be added until both the
+// CSR `setArray` fallback fix (#2222 bug 1) and the scope-accurate
+// prop/const shadowing fixes (#2221, #2222 bug 2) landed.
+import { fixture as loopParamShadowsOuterName } from './loop-param-shadows-outer-name'
 
 import type { JSXFixture } from '../src/types'
 
@@ -632,4 +638,5 @@ export const jsxFixtures: JSXFixture[] = [
   stringSlice,
   stringReplaceAll,
   stringTrimSided,
+  loopParamShadowsOuterName,
 ]
