@@ -75,6 +75,11 @@ runAdapterConformanceTests({
     // shallow-copy contract.
     'array-flat-dynamic-depth:gen:depth:zero',
     'array-flat-dynamic-depth:gen:depth:negative',
+    // #2266 — asChild=true with plain-text children breaks the Slot
+    // rendering path (same class as the Go Slot define; observed on the
+    // real-Perl CI run).
+    'button:gen:asChild:true',
+    'kbd:gen:asChild:true',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {
