@@ -1,5 +1,77 @@
 # @barefootjs/go-template
 
+## 0.18.7
+
+### Patch Changes
+
+- b5ccd0d: Fix #2236: two independent Go template adapter gaps in loop-param-shadowing
+  resolution, both previously flagged as "not fixed" tracked residuals in the
+  #2221/#2212 changesets.
+
+  Slice A: `convertExpressionToGo`'s bare-identifier fast path (the
+  "inline a function-scope literal const" shortcut, e.g. `totalPages`) is a
+  string-keyed check over the raw JS source text, reached directly by call
+  sites like attribute emission (`key={count}` → `data-key`) that never go
+  through `identifier()` — the `ParsedExprEmitter` method that already carries
+  loop-shadow guards (`loopParamStack` / `isOuterLoopParam`, mirrored from
+  `resolveModuleStringConst` / `resolveModuleNumericConst`). A `.map((count) =>
+...)` callback param shadowing an outer `const count = 7` got the OUTER
+  literal inlined at the `data-key` position even though the text position
+  (which does go through `identifier()`) correctly resolved to the per-item
+  value. Guarded with the same loop-shadow checks the sibling resolvers use;
+  unlike the Twig-family's coarse `collectLoopBoundNames` trade-off, Go's guard
+  is scope-precise (it consults the live `loopParamStack`), so a const whose
+  name is loop-bound elsewhere in the component still inlines correctly at a
+  genuinely non-shadowed occurrence outside any loop.
+
+  Slice B: Go's own `collectStringValueNames` (`prop-classes.ts`) was ported
+  from Blade before #2212 added the `collectLoopBoundNames` exclusion, so it
+  lacked the loop-bound-name subtraction every other adapter's prop-classes.ts
+  has. An outer string-typed prop/signal shadowed by a `.map()` callback param
+  of the same name still poisoned the shadowed occurrence's type resolution —
+  `1 + label` inside `values.map((label) => ...)` (with an outer `label:
+string` prop) emitted `bf_concat_str` (string concat, "1" + "1" → "11")
+  instead of `bf_add` (numeric addition, 1 + 1 → 2). Fixed by porting the full
+  #2212 shape the sibling adapters carry: same-file local consts join the
+  string set (so an outer `{label + suffix}` with `suffix = '!'` still
+  classifies as concat via its other operand once `label` is subtracted) and
+  loop-bound names are excluded via `collectLoopBoundNames`. The exclusion is
+  the accepted #2212 coarse trade-off (a flat, component-wide name set), not
+  scope-precise like slice A: a genuinely non-shadowed occurrence outside the
+  loop, whose name happens to be loop-bound elsewhere, also falls back to
+  numeric `bf_add`. Safe (never silently-wrong string output), just imprecise.
+
+  With both fixed, the shared `loop-param-shadows-outer-name` conformance
+  fixture (#2212/#2221/#2222) now renders at reference parity on Go — its
+  `render-divergences.ts` entry is removed.
+
+- a64460c: Fix #2228: a `.filter(pred).map(item => <Child prop={item} …/>)` loop whose body is a single child component ranges over the WRAPPER Props slice (`{{range $_, $todo := .TodoItems}}` — `TodoItemProps` per item), but the inline filter predicate lowered loop-param field accesses as if the dot were the raw datum: `t.done` → `.Done`. The wrapper struct has no top-level `Done`; the datum lives nested under the prop that receives the loop param verbatim (`todo={todo}` → `.Todo.Done`). `html/template` resolves struct fields at execute time, so this shipped silently whenever the predicate branch happened to be short-circuited away (todo-app-ssr's SSR default `filter === 'all'` masks both `.Done` branches via Go's `and`/`or` short-circuit) and 500'd with `can't evaluate field Done in type TodoItemProps` the moment a non-'all' initial filter made the branch reachable.
+
+  `renderLoop`'s filter-predicate lowering now derives the datum-carrying field from the child's props (the first non-event prop whose value is a bare reference to the loop param, capitalized with the same `capitalizeFieldName` the struct generator uses — never hardcoded) and threads it through `renderPredicateCondition` → `renderFilterExpr`, which qualifies loop-param references (`t`, `t.done`, `t.isDone()`) through that field (`.Todo`, `.Todo.Done`, `.Todo.IsDone`). Outer-scope `$.`/signal references and all non-wrapper filter call sites (plain-element loop bodies, standalone `.filter()`/`.find()`/`.every()` lowering) are unchanged — they keep the bare `.`/`.Field` forms. `sortComparator` lowering is unaffected: it goes through `bf_sort_eval`/`bf_sort`, whose Go-side reflection reader (`getFieldValue`) operates on the slice values themselves, not the `{{if}}` dot path; the loop `key` (`data-key`) renders inside the child template against its own Props and was already correct.
+
+- e0bb7af: Fix the record-member sibling of #2236's bare-identifier gap, found by the new `loop-param-shadows-record-const` conformance fixture: `resolveStaticRecordLiteralIndex` (the fast path resolving `IDENT['key']` / `IDENT.key` against a module-scope object-literal const, e.g. the icon registry's `strokePaths['chevron-down']`) had no loop-shadowing guard, so `rows.map((cfg) => cfg.x)` under a module `const cfg = { x: 'outer-lit' }` baked `outer-lit` into every iteration of the SSR template. The guard is the same scope-precise check the bare-identifier fast path got in #2236 (now factored into a shared `isLoopShadowedName`, including the `loopBindingStack` scan for destructured callbacks); the shadowed occurrence falls through to the generic lowering and resolves the member through the loop binding (`{{.X}}`). Non-shadowed module record lookups are unchanged.
+- c80d35a: Fix #2224: the two static-array `.map()` loop shapes #2208 deliberately left refused on the Go template adapter no longer refuse with BF101.
+
+  1. A static array-of-objects loop whose body is a PLAIN ELEMENT (no child component), e.g. `const items = [{ label: 'Alpha' }, ...]; return <ul>{items.map(item => <li key={item.label}>{item.label}</li>)}</ul>`. `html/template` has no slice/map literal syntax and Go has no `.{Name}s`-shaped template target to bake into for an element body (that only exists for #2208's child-component shape), so rather than synthesizing a Go struct type for the item shape, the adapter now UNROLLS the loop body once per item at template-generation time — substituting each item's statically-known field values directly into text/attr/key positions instead of emitting a `{{range}}`. See `packages/adapter-go-template/src/adapter/analysis/static-element-loop-bake.ts` for the exact (conservative) acceptance gate: the callback param must be a simple identifier with no index binding, no `.filter()`/`.sort()`/`.entries()`-style chaining, a single-root non-conditional body, and every dynamic value in the body (text, attributes) must resolve to a scalar directly against the item — a signal/memo call, an index-param reference, a reference to any other non-static local, a nested loop/conditional/component, or a non-scalar field anywhere in the body keeps the existing BF101 refusal rather than risk silently wrong output. The unrolled markup keeps the same `<!--bf-loop:id-->` marker pair, `data-key` attributes, and text scope comments a dynamic loop emits, so CSR hydration (compiled by the separate, unaffected `ir-to-client-js.ts` pass) still finds the same DOM shape.
+
+  2. An inline, unnamed array literal directly in the `.map()` call (no named local const), with either a child-component or plain-element body — previously refused with `BF101: Expression not supported: [...]` because `renderLoop` unconditionally ran the loop's array expression through the shared `isSupported` gate (which refuses a standalone object literal) even when the loop was independently baked via `resolveStaticLoopSource`/`analyzeBakeableStaticChildLoop`, whose result made that conversion's return value unused. The Go adapter now skips converting the array expression at all for a child-component loop body (baked or not, the `{{range}}` source is always `.{ComponentName}s` regardless) and, for a plain-element body, routes it through the same static-unroll path as a named const.
+
+- 1cab45b: Fix #2209: the conformance test harness (`test-render.ts`, not any build/compile path) can now seed a signal initializer or prop default whose source is a compound expression over `props` — e.g. `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))` — instead of only recognizing a small fixed catalogue of regex-matched shapes (`props.x`, `props.x ?? default`, a bare literal).
+
+  `@barefootjs/jsx` adds `evaluateSignalInit`/`tryEvaluateSignalInit` (`signal-init-eval.ts`), a test-harness-only sandboxed real-JS evaluator (`new Function`, with a blocked-globals allowlist and a JSON-shaped-value transport check) that replaces 7 near-duplicate regex-based evaluators previously copy-pasted across each template-string adapter's `test-render.ts`. Every prior recognized shape still works identically; the compound `.map()`/spread shape (and any future shape over `props` + literals) now resolves correctly instead of silently seeding `null`/unset.
+
+  Go template additionally replicates, in its generated test-harness render program, the documented "the route handler populates a signal-backed loop-body child-component slice at request time" contract (`buildDynamicChildLoopSeeding`) — the constructor already seeded the loop's datum slice correctly; only the child-component Props slice the template ranges over had no harness-side population path.
+
+  `todo-app` / `todo-app-ssr` graduate out of `render-divergences.ts` on all 8 adapters and now render byte-correct against the Hono reference.
+
+- 752ee52: Fix #2208: a `.map()` loop source that is a fully-static array/object literal — either inline (`[{ label: 'Alpha' }, ...].map(...)`) or a function-scope local `const` with no prop/signal/function-call dependency in its initializer — no longer refuses with BF101 on any of the 8 non-Hono template adapters.
+
+  `@barefootjs/jsx` adds `evaluateStaticLiteral`/`resolveStaticLoopSource` (`static-literal.ts`), a shared compile-time evaluator for a `ParsedExpr` that resolves to a fully compile-time-known JS value. The 7 template-string adapters (Jinja, minijinja/Rust, Twig, Blade, ERB, Mojolicious, Xslate) each serialize the resolved value into their own native array/object literal syntax and inline it directly in the loop header, the same way a module-scope const's value is already seeded. A runtime-computed local (`Object.entries(props.tags).filter(...)`, #2069) is unaffected and still refuses.
+
+  Go template additionally bakes each item's child-component props and `data-key` directly into the generated `New<Name>Props` constructor when the loop body is a single child component with a plain-value prop set (`analyzeBakeableStaticChildLoop`), since Go's `{{range .ListItems}}` template already exists for that shape and only needed the constructor data. A plain-element loop body (no child component) is out of scope for this fix on Go — see the follow-up issue for that narrower gap.
+
+  - @barefootjs/shared@0.18.7
+
 ## 0.18.6
 
 ### Patch Changes
