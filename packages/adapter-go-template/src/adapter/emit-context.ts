@@ -41,14 +41,23 @@ export interface GoEmitContext {
     preParsed?: ParsedExpr,
   ): { condition: string; preamble: string }
 
-  /** Extract the prop name from a `props.X ?? …` initial value, or null. */
-  extractPropNameFromInitialValue(initialValue: string): string | null
+  /**
+   * Extract the prop name from a `props.X ?? …` initial value — or, given
+   * `preParsed` in a destructured component, an `x ?? …` identifier form —
+   * or null. Callers validate the name against `propsParams`.
+   */
+  extractPropNameFromInitialValue(initialValue: string, preParsed?: ParsedExpr): string | null
 
   /**
-   * Parse a signal-time initial value `props.X ?? <literal>` into the source
-   * prop name and the Go-formatted fallback, or null when it isn't that shape.
+   * Parse a signal-time initial value `props.X ?? <literal>` (or the
+   * destructured `x ?? <literal>` form when `preParsed` is given) into the
+   * source prop name and the Go-formatted fallback, or null when it isn't
+   * that shape. Callers validate the name against `propsParams`.
    */
-  extractPropFallback(initialValue: string): { propName: string; goFallback: string } | null
+  extractPropFallback(
+    initialValue: string,
+    preParsed?: ParsedExpr,
+  ): { propName: string; goFallback: string } | null
 
   /**
    * Inline a module string const by name as a Go double-quoted literal

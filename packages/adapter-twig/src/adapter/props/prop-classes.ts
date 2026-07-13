@@ -24,7 +24,9 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * Bare references to optional, no-default, non-primitive props (e.g.
+ * Bare references to presence-uncertain no-default props — non-primitive
+ * or declared optional (#2259; pre-#2259 destructured optionals arrived as
+ * `unknown` and the type test alone covered them) — (e.g.
  * textarea's `rows`) are `null` when omitted → guarded with
  * `is defined and is not null` in `emitExpression`. See the
  * `nullableOptionalProps` field docstring in `twig-adapter.ts`.
@@ -36,7 +38,7 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
         p =>
           p.defaultValue === undefined &&
           !p.isRest &&
-          p.type?.kind !== 'primitive',
+          (p.type?.kind !== 'primitive' || p.optional),
       )
       .map(p => p.name),
   )

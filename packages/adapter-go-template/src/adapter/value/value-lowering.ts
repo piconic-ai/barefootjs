@@ -32,7 +32,7 @@ export function convertInitialValue(
     }
   }
 
-  const propName = ctx.extractPropNameFromInitialValue(value)
+  const propName = ctx.extractPropNameFromInitialValue(value, preParsed)
   if (propName && propsParams?.some(p => p.name === propName)) {
     return `in.${capitalizeFieldName(propName)}`
   }

@@ -47,11 +47,11 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * resolved `interface{}` field type; here it is the absence of a default (the
  * analyzer reports `rows` — a `TextareaHTMLAttributes` member destructured
  * without a default — as no-default, `type.kind: 'unknown'`).
- * Excludes concrete-primitive types (`string`/`number`/`boolean`) to match
- * the Go adapter's scope, which guards only `interface{}` (nillable) fields
- * and leaves concrete fields unconditional. So a required, no-default
- * `string` prop still emits `attr=""` like Hono, and only nillable
- * (`unknown`/object/array) no-default props guard.
+ * A REQUIRED concrete-primitive prop (`string`/`number`/`boolean`) is
+ * excluded — the caller always supplies it, so it emits `attr=""` like Hono
+ * — but an OPTIONAL primitive is presence-uncertain and stays guarded
+ * (#2259; pre-#2259 destructured optionals arrived as `unknown` and the
+ * type test alone covered them).
  */
 export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
   return new Set(
@@ -60,7 +60,7 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
         p =>
           p.defaultValue === undefined &&
           !p.isRest &&
-          p.type?.kind !== 'primitive',
+          (p.type?.kind !== 'primitive' || p.optional),
       )
       .map(p => p.name),
   )
