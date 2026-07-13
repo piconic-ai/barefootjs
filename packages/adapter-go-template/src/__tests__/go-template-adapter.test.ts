@@ -3867,6 +3867,112 @@ export function TodoList(props: { todos?: Todo[] }) {
   })
 })
 
+// #2228: a `.filter(t => …).map(todo => <Child todo={todo} .../>)` loop whose
+// body is a single child component ranges the WRAPPER slice (`.TodoItems`,
+// `.{ChildName}s` — see #2130 above), so `{{if}}`'s dot context for the
+// filter predicate is the wrapper `TodoItemProps` struct, not the raw datum.
+// `t.done` used to lower straight to `.Done` regardless — a field that only
+// exists on the raw `Todo`, nested under whichever prop forwards the loop
+// param verbatim (`todo={todo}` → `.Todo`). `html/template` resolves struct
+// fields at EXECUTE time, not Go-compile time, so this shipped silently
+// until a predicate branch that isn't short-circuited away actually ran
+// (discovered via #2209's `buildDynamicChildLoopSeeding`, which populates
+// `.TodoItems` in the test harness — previously always empty).
+describe('GoTemplateAdapter - filter predicate qualifies through wrapper-slice datum field (#2228)', () => {
+  // Same block-body filter shape as TodoAppSSR.tsx (`filter(t => { const f =
+  // filter(); if (f === 'active') return !t.done; if (f === 'completed')
+  // return t.done; return true })`), folded to one expression by #2040's
+  // `predicateTernaryToLogical`. `filter`'s SSR default is `'active'` (not
+  // `'all'`) specifically so `!t.done` is REACHABLE — `'all'`'s short-circuit
+  // is exactly what hid this bug in the shipped todo-app-ssr fixture.
+  const TODO_FILTER_PROBE_SOURCE = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+import { TodoItem } from './todo-item'
+
+type Todo = { id: number; text: string; done: boolean }
+type Filter = 'all' | 'active' | 'completed'
+
+export function TodoFilterProbe(props: { initialTodos?: Todo[] }) {
+  const [todos] = createSignal<Todo[]>(props.initialTodos ?? [])
+  const [filter] = createSignal<Filter>('active')
+
+  return (
+    <ul>
+      {todos().filter(t => {
+        const f = filter()
+        if (f === 'active') return !t.done
+        if (f === 'completed') return t.done
+        return true
+      }).map(todo => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    </ul>
+  )
+}
+`
+
+  const TODO_ITEM_SOURCE = `
+type Todo = { id: number; text: string; done: boolean }
+type Props = { todo: Todo }
+export function TodoItem(props: Props) {
+  return <li>{props.todo.text}</li>
+}
+`
+
+  test('emits .Todo.Done, not bare .Done, in the loop-gating {{if}}', () => {
+    const adapter = new GoTemplateAdapter()
+    const ir = compileToIR(TODO_FILTER_PROBE_SOURCE, adapter)
+    const { template } = adapter.generate(ir)
+
+    // The datum-carrying field is derived from the prop that receives the
+    // loop param verbatim (`todo={todo}` → `Todo`, `capitalizeFieldName('todo')`
+    // — the SAME derivation `generatePropsStruct` uses for every other
+    // prop-to-field mapping), not hardcoded.
+    expect(template).toContain('not .Todo.Done')
+    expect(template).toContain('(.Todo.Done)')
+    // The bare (unqualified) form must not survive the fix — this is the
+    // literal string `html/template` failed to resolve pre-fix
+    // (`can't evaluate field Done in type TodoItemProps`).
+    expect(template).not.toContain('not .Done')
+    expect(template).not.toContain('(.Done)')
+    // Still ranges the wrapper slice (#2130's retarget is untouched).
+    expect(template).toContain(':= .TodoItems}}')
+  })
+
+  test('real `go run`: default filter "active" renders only the not-done item', async () => {
+    let html: string
+    try {
+      html = await renderGoTemplateComponent({
+        source: TODO_FILTER_PROBE_SOURCE.trimStart(),
+        adapter: new GoTemplateAdapter(),
+        components: { './todo-item': TODO_ITEM_SOURCE.trimStart() },
+        props: {
+          initialTodos: [
+            { id: 1, text: 'Eat breakfast', done: true },
+            { id: 2, text: 'Write tests', done: false },
+          ],
+        },
+      })
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #2228 filter-predicate e2e: go command not found')
+        return
+      }
+      throw err
+    }
+    // Pre-fix this either 500s at `tmpl.ExecuteTemplate` (`can't evaluate
+    // field Done in type TodoItemProps`) or — since `bf_sort_eval`-style
+    // evaluators are untouched by this fix, only the html/template dot-path
+    // is — renders wrong. Post-fix: only the not-done todo (id 2) survives
+    // the 'active' filter.
+    expect(html).not.toContain('Eat breakfast')
+    expect(html).toContain('Write tests')
+    expect(html).toContain('data-key="2"')
+    expect(html).not.toContain('data-key="1"')
+  })
+})
+
 // #2208: a static-array loop whose body is a single child component with a
 // plain-value prop set bakes the per-item props/data-key directly into the
 // generated constructor — see `analyzeBakeableStaticChildLoop`

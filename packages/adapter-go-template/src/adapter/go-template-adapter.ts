@@ -4241,10 +4241,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Render a predicate for use in Go template `{{if}}` conditions, substituting
-   * the loop parameter (e.g. `t` in `t.done`) with dot notation.
+   * the loop parameter (e.g. `t` in `t.done`) with dot notation. `datumField`
+   * (#2228) is the wrapper struct's datum-carrying field name (e.g. `"Todo"`)
+   * for a loop whose body is a child component — see `wrapperDatumField` — so
+   * `t.done` qualifies through it (`.Todo.Done`) instead of the bare `.Done`
+   * `html/template` can't resolve on the wrapper Props struct. `undefined` for
+   * a non-wrapper (plain-element-body) loop, where `.` already IS the datum.
    */
-  private renderPredicateCondition(pred: ParsedExpr, param: string): string {
-    return this.renderFilterExpr(pred, param)
+  private renderPredicateCondition(pred: ParsedExpr, param: string, datumField?: string | null): string {
+    return this.renderFilterExpr(pred, param, new Map(), datumField ?? undefined)
   }
 
   /** Whether an expression needs parentheses when used in and/or. */
@@ -4278,12 +4283,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Render a filter predicate expression (`t => !t.done`, or a block body
    * normalized to one — #2040). `localVarMap` is a vestigial empty default kept
    * on the recursion; block-body locals are now inlined upstream, so no caller
-   * populates it.
+   * populates it. `datumField` (#2228) qualifies a bare `param` reference (and
+   * `param.xxx` member/call access) through the wrapper struct's
+   * datum-carrying field — see `wrapperDatumField` — for a loop whose `.` is a
+   * child-component wrapper Props struct rather than the raw datum itself.
+   * `undefined` for every other caller (non-loop `.filter()`/`.find()`/etc.,
+   * or a plain-element-body loop), which keeps emitting the bare `.`/`.Field`
+   * this method always has.
    */
   private renderFilterExpr(
     expr: ParsedExpr,
     param: string,
-    localVarMap: Map<string, string> = new Map()
+    localVarMap: Map<string, string> = new Map(),
+    datumField?: string
   ): string {
     // Top-of-recursion: clear the unsupported sentinel so a previous filter
     // expression's failure doesn't poison this one. Parents (`member` /
@@ -4293,7 +4305,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.filterExprDepth === 0) this.filterExprUnsupported = false
     this.filterExprDepth++
     try {
-      return this.renderFilterExprNode(expr, param, localVarMap)
+      return this.renderFilterExprNode(expr, param, localVarMap, datumField)
     } finally {
       this.filterExprDepth--
     }
@@ -4302,12 +4314,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private renderFilterExprNode(
     expr: ParsedExpr,
     param: string,
-    localVarMap: Map<string, string>
+    localVarMap: Map<string, string>,
+    datumField?: string
   ): string {
+    // #2228: `paramPrefix` prepends the wrapper's datum-carrying field to a
+    // loop-param access (`.Todo` under a wrapper, `''` otherwise). Two derived
+    // forms because Go template spells "the dot itself" as `.` but "field on
+    // the dot" as `.Field` — a naive shared `'.'` prefix would emit `..Done`
+    // for the non-wrapper member case:
+    //   bare `t`     → `paramDot`             (`.Todo` / `.`)
+    //   `t.done`     → `${paramPrefix}.Done`  (`.Todo.Done` / `.Done`)
+    const paramPrefix = datumField ? `.${datumField}` : ''
+    const paramDot = paramPrefix || '.'
     switch (expr.kind) {
       case 'identifier': {
         if (expr.name === param) {
-          return '.'
+          return paramDot
         }
         // A local variable mapped to a signal.
         const signal = localVarMap.get(expr.name)
@@ -4327,9 +4349,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         return String(expr.value)
 
       case 'member': {
-        // t.done -> .Done
+        // t.done -> .Done (or .Todo.Done under a wrapper struct, #2228)
         if (expr.object.kind === 'identifier' && expr.object.name === param) {
-          return `.${capitalizeFieldName(expr.property)}`
+          return `${paramPrefix}.${capitalizeFieldName(expr.property)}`
         }
         // `.length` on a higher-order filter result (e.g.
         // `x.tags.filter(t => t.active).length > 0`). Reuse
@@ -4342,21 +4364,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const innerHO = this.higherOrderShapeOf(expr.object)
           if (innerHO && innerHO.method === 'filter') {
             const lenExpr = this.renderFilterLengthExpr(innerHO, e =>
-              this.renderFilterExpr(e, param, localVarMap),
+              this.renderFilterExpr(e, param, localVarMap, datumField),
             )
             if (lenExpr) return `(${lenExpr})`
           }
         }
         // Nested member access or local var.prop.
-        const obj = this.renderFilterExpr(expr.object, param, localVarMap)
+        const obj = this.renderFilterExpr(expr.object, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
         return `${obj}.${capitalizeFieldName(expr.property)}`
       }
 
       case 'call': {
-        // `t.isDone()` -> `.IsDone`
+        // `t.isDone()` -> `.IsDone` (or `.Todo.IsDone` under a wrapper, #2228)
         if (expr.callee.kind === 'member' && expr.callee.object.kind === 'identifier' && expr.callee.object.name === param) {
-          return `.${capitalizeFieldName(expr.callee.property)}`
+          return `${paramPrefix}.${capitalizeFieldName(expr.callee.property)}`
         }
         // Signal calls: `filter()` -> `$.Filter`
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
@@ -4372,13 +4394,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (asCallbackMethodCall(expr) !== null) {
           return this.refuseFilterExprNode(expr)
         }
-        const result = this.renderFilterExpr(expr.callee, param, localVarMap)
+        const result = this.renderFilterExpr(expr.callee, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
         return result
       }
 
       case 'unary': {
-        const arg = this.renderFilterExpr(expr.argument, param, localVarMap)
+        const arg = this.renderFilterExpr(expr.argument, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
         if (expr.op === '!') {
           // Wrap in parens if arg is a function call (eq, ne, gt, …).
@@ -4392,9 +4414,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'binary': {
-        const left = this.renderFilterExpr(expr.left, param, localVarMap)
+        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
-        const right = this.renderFilterExpr(expr.right, param, localVarMap)
+        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
 
         switch (expr.op) {
@@ -4426,9 +4448,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'logical': {
-        const left = this.renderFilterExpr(expr.left, param, localVarMap)
+        const left = this.renderFilterExpr(expr.left, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
-        const right = this.renderFilterExpr(expr.right, param, localVarMap)
+        const right = this.renderFilterExpr(expr.right, param, localVarMap, datumField)
         if (this.filterExprUnsupported) return 'false'
         if (expr.op === '&&') {
           return `and (${left}) (${right})`
@@ -5145,6 +5167,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * #2228: the Go field name on the wrapper Props struct that carries the
+   * loop datum, for a loop whose body IS a child component (`loop.childComponent`,
+   * e.g. `.TodoItems` ranging over `TodoItemProps`). `{{range}}`'s dot context
+   * for such a loop is the WHOLE wrapper struct (`TodoItemProps{ Todo Todo,
+   * OnToggle ..., ... }`), not the raw per-item datum — so a filter predicate
+   * (`t => !t.done`) referencing the loop param can't lower `t.done` straight
+   * to `.Done` (no such top-level field; `html/template` fails at execute time
+   * with `can't evaluate field Done in type TodoItemProps`). The datum lives
+   * nested under whichever child prop was PASSED the loop param verbatim
+   * (`todo={todo}` → field `Todo`, from `capitalizeFieldName('todo')` — the
+   * SAME derivation `generateInputStruct`/`generatePropsStruct` use for every
+   * other prop-to-field mapping, so this never invents a field name the
+   * generated struct doesn't actually have). Returns `null` for a non-wrapper
+   * loop, or when no prop's value is a bare reference to the loop param (the
+   * datum isn't forwarded at all — nothing to qualify through).
+   */
+  private wrapperDatumField(loop: {
+    childComponent?: IRLoopChildComponent
+    param: string
+  }): string | null {
+    if (!loop.childComponent) return null
+    for (const prop of loop.childComponent.props) {
+      if (prop.isEventHandler) continue
+      if (prop.value.kind !== 'expression') continue
+      const parsed = prop.value.parsed
+      const isBareParamRef = parsed
+        ? parsed.kind === 'identifier' && parsed.name === loop.param
+        : prop.value.expr.trim() === loop.param
+      if (isBareParamRef) return capitalizeFieldName(prop.name)
+    }
+    return null
+  }
+
+  /**
    * Memoized bakeability check for a static-array loop whose body is a
    * single child component (#2208) — see `analyzeBakeableStaticChildLoop`'s
    * docstring. Accepts either an `IRLoop` (the `renderLoop` gate) or a
@@ -5423,9 +5479,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       let filterCond: string
 
       if (loop.filterPredicate.predicate) {
+        // #2228: for a wrapper-slice loop (`.TodoItems` ranging over
+        // TodoItemProps), `.` in the predicate is the WHOLE wrapper struct —
+        // qualify `loop.filterPredicate.param` references through the
+        // datum-carrying field (`.Todo.Done`, not `.Done`) so the emitted
+        // `{{if}}` only ever dereferences fields the wrapper struct actually
+        // has. `wrapperDatumField` returns `null` for a plain-element-body
+        // loop, where `.` already IS the datum — `renderPredicateCondition`
+        // then keeps emitting the bare `.`/`.Field` form unchanged.
+        const datumField = this.wrapperDatumField(loop)
         filterCond = this.renderPredicateCondition(
           loop.filterPredicate.predicate,
-          loop.filterPredicate.param
+          loop.filterPredicate.param,
+          datumField
         )
       } else {
         filterCond = 'true'
