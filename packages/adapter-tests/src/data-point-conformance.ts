@@ -23,17 +23,33 @@
  * follow-up `known-limitation` issue.
  */
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, test, expect } from 'bun:test'
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import type { TemplateAdapter } from '../../jsx/src/types'
 import { jsxFixtures } from '../fixtures'
-import type { JSXFixture } from './types'
+import type { JSXFixture, JSXDataPoint } from './types'
 import {
   normalizeHTML,
   stripConditionalMarkersForCrossAdapter,
   type RenderOptions,
 } from './jsx-runner'
+
+/**
+ * Type-derived points (roadmap 3) come from the committed artifact, not
+ * a per-registration computation — see `adversarial-catalog.ts` for why
+ * (cost, reviewable diffs, stable names). Its freshness is held by
+ * `__tests__/generated-data-points.test.ts`.
+ */
+const generatedPoints: Record<string, JSXDataPoint[]> = JSON.parse(
+  readFileSync(resolve(import.meta.dir, '../generated-data-points.json'), 'utf8'),
+)
+
+function pointsForFixture(fixture: JSXFixture): JSXDataPoint[] {
+  return [...(fixture.dataPoints ?? []), ...(generatedPoints[fixture.id] ?? [])]
+}
 
 export interface RunDataPointConformanceOptions {
   /** Short lowercase label used in `describe` headings. */
@@ -79,8 +95,25 @@ function renderOptions(fixture: JSXFixture, adapter: TemplateAdapter, props: Rec
 }
 
 export function runDataPointConformance(opts: RunDataPointConformanceOptions): void {
+  // Skip-ledger rot protection: every skip entry must name a point that
+  // actually exists (declared or generated). Without this, a catalogue
+  // or fixture change silently orphans the entry and the divergence it
+  // documents stops being pinned anywhere.
+  if (opts.skipDataPoints) {
+    const validKeys = new Set(
+      jsxFixtures.flatMap(f => pointsForFixture(f).map(p => `${f.id}:${p.name}`)),
+    )
+    const orphans = [...opts.skipDataPoints].filter(k => !validKeys.has(k))
+    if (orphans.length > 0) {
+      throw new Error(
+        `[${opts.name}] skipDataPoints entries match no existing data point ` +
+          `(fixture or catalogue changed?): ${orphans.join(', ')}`,
+      )
+    }
+  }
+
   const fixtures = jsxFixtures.filter(
-    f => (f.dataPoints?.length ?? 0) > 0 && !opts.skipFixtures.has(f.id),
+    f => pointsForFixture(f).length > 0 && !opts.skipFixtures.has(f.id),
   )
   if (fixtures.length === 0) return
 
@@ -107,7 +140,7 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
           return gate
         }
 
-        for (const point of fixture.dataPoints ?? []) {
+        for (const point of pointsForFixture(fixture)) {
           if (opts.skipDataPoints?.has(`${fixture.id}:${point.name}`)) continue
 
           test(

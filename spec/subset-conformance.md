@@ -198,7 +198,7 @@ convention as `spec/adapter-architecture.md`):
 |-----------|--------|-----|
 | Normative subset | `ParsedExpr` union + exhaustive adapter switches (drift-defence); array-method / sort-comparator catalogues; builtin lowering registry; BF021/BF101 loud-refusal policy + growing-only rule (`spec/compiler.md`); `/* @client */` escape | Pieces are scattered across spec/types/catalogues with no single normative declaration; `ParsedExpr` lacks `object-literal` (adapter-architecture Roadmap A); the boundary is not fully loud — the Date silent passthrough proves unknown-type method calls pass undiagnosed; the data-domain axiom exists only in this document |
 | Canonical reference (JS render) | Hono/JS render is the *de facto* reference: snapshot generation renders expectations through it; `referenceAdapter`/`referenceRender` HTML-diff suite exists; determinism landed (#1494) | No *declaration* of canonical status (`referenceAdapter` is optional — the reference is still positioned as one adapter among eleven); oracle comparison runs at one evaluation point per fixture, not live × multiple data points |
-| Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No type-derived adversarial value catalogue; no PR-vs-nightly tiering; adversarial points cover 9 fixtures (~31 points) — the long tail of the 182-fixture corpus awaits the frontmatter/axis map for prioritization |
+| Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No PR-vs-nightly tiering (the catalogue added ~200 real-backend renders per adapter job); catalogue exclusions await their unblockers (destructured optionals → #2259, unions/objects → member enumeration, floats → #2168-class, `Date` → roadmap 4) |
 | Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix yet — but its fixture-side half now exists: the computed coverage ledger (`coverage-map.json` + `PARSED_EXPR_KINDS` registry + freshness/floor meta-tests) supplies the kind/axis denominators; joining them against per-adapter pass/skip is the remaining work |
 
 Cross-cutting gap: the change-time coupling rule (subset extensions merge
@@ -227,7 +227,23 @@ convention.
    `null` props never declared their template var — fixed). Notable passes:
    `toFixed` representation-boundary rounding and template-literal `??`
    match the oracle on every locally-runnable backend.
-3. **Type-derived value catalogue** from `TypeInfo`.
+3. **Type-derived value catalogue** from `TypeInfo`. **Landed** (first
+   cut): `adversarial-catalog.ts` derives per-prop value sets
+   (string/number/boolean/array/absent; deliberate exclusions documented
+   in the module) and varies one prop at a time over the primary props;
+   the 201 generated points live in a committed artifact
+   (`generated-data-points.json`, freshness-tested like the coverage
+   ledger) and run through the same gate/oracle/skip machinery with
+   `gen:`-prefixed stable names plus a skip-rot assertion (an orphaned
+   `skipDataPoints` entry now fails loudly). Its first full run found
+   four new divergence classes: #2260 (controlled boolean props — SSR
+   seeds evaluate only the static fallback of `props.X ?? internal()`
+   chains, every template adapter), #2261 (invalid dynamic CSS values:
+   Hono drops the property, Go emits ZgotmplZ, ERB/Jinja/Rust keep it
+   escaped), #2262 (dynamic `.flat` depth 0/negative violates the
+   documented coercion contract on Go/ERB), and #2259 (the analyzer
+   loses TypeInfo and optionality for destructured optional props, so
+   nothing can be derived for them).
 4. **Date**: passthrough closure, then the catalogue plugin (UTC + ISO
    scope), envelope transport in the harness.
 
