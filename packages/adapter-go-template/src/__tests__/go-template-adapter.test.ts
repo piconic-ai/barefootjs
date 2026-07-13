@@ -119,6 +119,16 @@ runAdapterConformanceTests({
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
   ]),
+  skipDataPoints: new Set<string>([
+    // #2248 — optional scalar props lower to non-pointer zero-valued Go
+    // fields, so `??` cannot distinguish "absent" from `''`/`0` at render
+    // time: JS keeps `''`/`0` (not nullish), Go falls back to the default.
+    // `both-absent` and `html-in-label` pass; only the zero-value-shaped
+    // points diverge. Remove these entries as the acceptance test for the
+    // nillable-lowering fix.
+    'nullish-coalescing-text:empty-label',
+    'nullish-coalescing-text:zero-size',
+  ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
