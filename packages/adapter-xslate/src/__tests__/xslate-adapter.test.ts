@@ -67,6 +67,18 @@ runAdapterConformanceTests({
     // #2255 — Perl length() counts codepoints under utf8; JS counts
     // UTF-16 code units, so a surrogate-pair character is 2 in JS, 1 here.
     'string-length-text:astral',
+    // #2260 — controlled boolean props: the SSR seed evaluates only the
+    // static fallback of `props.X ?? internal()` chains.
+    'toggle:gen:pressed:true',
+    'switch:gen:checked:true',
+    'checkbox:gen:checked:true',
+    // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
+    // drops the property.
+    'style-object-dynamic:gen:color:markup',
+    // #2262 — dynamic `.flat` depth 0/negative violates the documented
+    // shallow-copy contract (shared with the Mojo Perl runtime).
+    'array-flat-dynamic-depth:gen:depth:zero',
+    'array-flat-dynamic-depth:gen:depth:negative',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof XslateNotAvailableError) {

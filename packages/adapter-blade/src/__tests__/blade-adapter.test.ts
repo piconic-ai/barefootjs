@@ -54,6 +54,14 @@ runAdapterConformanceTests({
     // #2255 — PHP mb_strlen counts codepoints; JS counts UTF-16 code
     // units, so a surrogate-pair character is 2 in JS, 1 here.
     'string-length-text:astral',
+    // #2260 — controlled boolean props: the SSR seed evaluates only the
+    // static fallback of `props.X ?? internal()` chains.
+    'toggle:gen:pressed:true',
+    'switch:gen:checked:true',
+    'checkbox:gen:checked:true',
+    // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
+    // drops the property.
+    'style-object-dynamic:gen:color:markup',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof BladeNotAvailableError) {
