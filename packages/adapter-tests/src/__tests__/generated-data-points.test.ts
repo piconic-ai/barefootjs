@@ -43,8 +43,6 @@ describe('generated-data-points artifact', () => {
 })
 
 describe('generateDataPointsForFixture', () => {
-  // Props-object style: the one the analyzer fully resolves (see the
-  // destructured pin below / #2259).
   const fixture = createFixture({
     id: 'catalog-unit-probe',
     description: 'generator contract probe',
@@ -92,13 +90,10 @@ export function Probe(props: { label: string; size?: number; on?: boolean }) {
     expect(generateDataPointsForFixture(gateless)).toEqual([])
   })
 
-  test('destructured optional props generate nothing (#2259 pin)', () => {
-    // The analyzer loses TypeInfo + the optional flag for destructured
-    // optionals, so the catalogue has nothing to derive from. This pin
-    // flips when #2259 lands — delete it and regen the artifact then.
+  test('destructured optional props generate the same points as the object style (#2259)', () => {
     const destructured = createFixture({
       id: 'catalog-unit-destructured',
-      description: 'destructured optional resolution gap',
+      description: 'destructured optional resolution',
       source: `
 export function D({ label, size }: { label: string; size?: number }) {
   return <div>{label}{size ?? 0}</div>
@@ -107,9 +102,29 @@ export function D({ label, size }: { label: string; size?: number }) {
       props: { label: 'Hello', size: 5 },
       expectedHtml: '<div bf-s="test">placeholder</div>',
     })
+    const byName = new Map(generateDataPointsForFixture(destructured).map(p => [p.name, p.props]))
+    expect(byName.get('gen:size:absent')).toEqual({ label: 'Hello' })
+    expect(byName.get('gen:size:zero')).toEqual({ label: 'Hello', size: 0 })
+    expect(byName.get('gen:label:empty')).toEqual({ label: '', size: 5 })
+  })
+
+  test('destructured optional NON-primitives get an absent point despite unknown type (#2259)', () => {
+    // Type resolution stays primitive-only, but the optional flag is now
+    // collected for every member — `absent` derives from it alone.
+    const destructured = createFixture({
+      id: 'catalog-unit-destructured-nonprimitive',
+      description: 'optional flag without type resolution',
+      source: `
+type Todo = { id: number }
+export function D({ items }: { items?: Todo[] }) {
+  return <div>{(items ?? []).length}</div>
+}
+`,
+      props: { items: [{ id: 1 }] },
+      expectedHtml: '<div bf-s="test">placeholder</div>',
+    })
     const names = generateDataPointsForFixture(destructured).map(p => p.name)
-    expect(names.some(n => n.startsWith('gen:size:'))).toBe(false)
-    expect(names).toContain('gen:label:empty')
+    expect(names).toContain('gen:items:absent')
   })
 
   test('declared points dedupe generated duplicates by value', () => {

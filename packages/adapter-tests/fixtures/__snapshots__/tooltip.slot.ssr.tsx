@@ -22,7 +22,7 @@ type SlotPropsWithHydration = SlotProps & {
 
 export type { SlotProps }
 
-export function Slot({ children, className, __instanceId, __bfScope: _bfScope, __bfChild: _bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props }: SlotPropsWithHydration) {
+export function Slot({ children, className, __instanceId, __bfScope: _bfScope, __bfChild: _bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": _dataKey, ...props }: SlotPropsWithHydration = {} as SlotPropsWithHydration) {
   const __scopeId = __instanceId || `Slot_${Math.random().toString(36).slice(2, 8)}`
   function isValidElement(element: unknown): element is { tag: unknown; props: Record<string, unknown> } {
   return !!(element && typeof element === 'object' && 'tag' in element && 'props' in element)

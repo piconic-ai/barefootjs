@@ -427,7 +427,7 @@ export function DialogContent(__allProps: DialogContentProps & { __instanceId?: 
   )
 }
 
-export function DialogHeader({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogHeaderPropsWithHydration) {
+export function DialogHeader({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogHeaderPropsWithHydration = {} as DialogHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `DialogHeader_${Math.random().toString(36).slice(2, 8)}`
   const dialogHeaderClasses = 'flex flex-col gap-2 text-center sm:text-left'
 
@@ -442,7 +442,7 @@ export function DialogHeader({ className = '', children, __instanceId, __bfScope
   )
 }
 
-export function DialogTitle({ className = '', id, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogTitlePropsWithHydration) {
+export function DialogTitle({ className = '', id, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogTitlePropsWithHydration = {} as DialogTitlePropsWithHydration) {
   const __scopeId = __instanceId || `DialogTitle_${Math.random().toString(36).slice(2, 8)}`
   const dialogTitleClasses = 'text-lg leading-none font-semibold'
 
@@ -458,7 +458,7 @@ export function DialogTitle({ className = '', id, children, __instanceId, __bfSc
   )
 }
 
-export function DialogDescription({ className = '', id, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogDescriptionPropsWithHydration) {
+export function DialogDescription({ className = '', id, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogDescriptionPropsWithHydration = {} as DialogDescriptionPropsWithHydration) {
   const __scopeId = __instanceId || `DialogDescription_${Math.random().toString(36).slice(2, 8)}`
   const dialogDescriptionClasses = 'text-muted-foreground text-sm'
 
@@ -474,7 +474,7 @@ export function DialogDescription({ className = '', id, children, __instanceId, 
   )
 }
 
-export function DialogFooter({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogFooterPropsWithHydration) {
+export function DialogFooter({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DialogFooterPropsWithHydration = {} as DialogFooterPropsWithHydration) {
   const __scopeId = __instanceId || `DialogFooter_${Math.random().toString(36).slice(2, 8)}`
   const dialogFooterClasses = 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
 

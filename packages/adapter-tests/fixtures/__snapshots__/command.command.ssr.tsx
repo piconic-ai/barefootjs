@@ -320,7 +320,7 @@ export function CommandInput(__allProps: CommandInputProps & { __instanceId?: st
   )
 }
 
-export function CommandList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandListPropsWithHydration) {
+export function CommandList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandListPropsWithHydration = {} as CommandListPropsWithHydration) {
   const __scopeId = __instanceId || `CommandList_${Math.random().toString(36).slice(2, 8)}`
   const commandListClasses = 'max-h-[300px] overflow-y-auto overflow-x-hidden'
 
@@ -399,7 +399,7 @@ export function CommandSeparator({ className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function CommandShortcut({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandShortcutPropsWithHydration) {
+export function CommandShortcut({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CommandShortcutPropsWithHydration = {} as CommandShortcutPropsWithHydration) {
   const __scopeId = __instanceId || `CommandShortcut_${Math.random().toString(36).slice(2, 8)}`
   const commandShortcutClasses = 'ml-auto text-xs tracking-widest text-muted-foreground'
 

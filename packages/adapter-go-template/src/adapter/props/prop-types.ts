@@ -6,6 +6,7 @@
  */
 
 import type { ComponentIR, IRMetadata, IRNode, ParsedExpr } from '@barefootjs/jsx'
+import { isBooleanAttr } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
@@ -20,7 +21,7 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
   const overrides = new Map<string, string>()
   for (const signal of ir.metadata.signals) {
     const propNames = [signal.initialValue]
-    const extracted = ctx.extractPropNameFromInitialValue(signal.initialValue)
+    const extracted = ctx.extractPropNameFromInitialValue(signal.initialValue, signal.parsed)
     if (extracted) propNames.push(extracted)
 
     for (const propName of propNames) {
@@ -189,12 +190,65 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
   // zero-equivalent exclusion matches on the Go-formatted fallback literal.
   for (const signal of ir.metadata.signals) {
-    const match = ctx.extractPropFallback(signal.initialValue)
+    const match = ctx.extractPropFallback(signal.initialValue, signal.parsed)
     if (!match || !optionalParams.has(match.propName)) continue
     const f = match.goFallback
     if (f === '""' || f === 'false' || f === 'nil' || Number(f) === 0) continue
     names.add(match.propName)
   }
+  return names
+}
+
+/**
+ * Names of OPTIONAL no-default props consumed as the BARE value of an
+ * omittable attribute (`rows={rows}` / `rows={props.rows}`) anywhere in the
+ * component's element tree.
+ *
+ * Why this matters: Hono omits an attribute whose value is `undefined`, and
+ * the adapter's `emitExpression` mirrors that with a `{{if ne .X nil}}` guard
+ * — which needs a nillable field to test. A concrete scalar field would
+ * render the zero value (`rows="0"`) instead of dropping the attribute, so
+ * these props take the same `interface{}` flip as `??` consumption
+ * (`resolvePropGoType`). The match mirrors `emitExpression`'s guard branch:
+ * bare identifiers / `<propsObject>.<name>` only, skipping `class`/`style`
+ * (own lowerings) and boolean/presence attrs (truthiness-tested, where a nil
+ * and a zero value already coincide). Same shadowing caveat as
+ * `collectNullishConsumedPropNames`: a same-named loop/callback param can
+ * misattribute, making the flip merely unnecessary, not incorrect.
+ */
+export function collectOmittableAttrConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const names = new Set<string>()
+  const optionalParams = new Set(
+    ir.metadata.propsParams.filter(p => p.optional && p.defaultValue == null).map(p => p.name),
+  )
+  if (optionalParams.size === 0) return names
+
+  const propsObject = ctx.state.propsObjectName
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.type === 'element' && Array.isArray(rec.attrs)) {
+      for (const attr of rec.attrs as Array<{ name: string; value: Record<string, unknown> }>) {
+        if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') continue
+        if (isBooleanAttr(attr.name)) continue
+        if (attr.value?.kind !== 'expression' || attr.value.presenceOrUndefined) continue
+        const bareId = String(attr.value.expr ?? '').trim()
+        const propName =
+          propsObject && bareId.startsWith(`${propsObject}.`)
+            ? bareId.slice(propsObject.length + 1)
+            : bareId
+        if (/^[A-Za-z_$][\w$]*$/.test(propName) && optionalParams.has(propName)) {
+          names.add(propName)
+        }
+      }
+    }
+    for (const value of Object.values(rec)) walk(value)
+  }
+  walk(ir.root)
   return names
 }
 
@@ -242,10 +296,14 @@ export function resolvePropGoType(
   // every valid input. (A literal-number union containing 0 would be the
   // exception; none exists in the corpus and the conflation is the
   // documented pre-#2248 trade-off there.)
+  // A bare-attribute consumption (`rows={rows}`) takes the same flip (#2259):
+  // attribute omission for an absent optional needs a nil to test — see
+  // `collectOmittableAttrConsumedPropNames`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
-    ctx.state.nullishConsumedPropNames.has(param.name) &&
+    (ctx.state.nullishConsumedPropNames.has(param.name) ||
+      ctx.state.omittableAttrConsumedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'

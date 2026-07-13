@@ -125,7 +125,7 @@ type PaginationEllipsisPropsWithHydration = PaginationEllipsisProps & {
 
 export type { PaginationLinkProps }
 
-export function Pagination({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPropsWithHydration) {
+export function Pagination({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPropsWithHydration = {} as PaginationPropsWithHydration) {
   const __scopeId = __instanceId || `Pagination_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration
@@ -139,7 +139,7 @@ export function Pagination({ className = '', children, __instanceId, __bfScope: 
   )
 }
 
-export function PaginationContent({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationContentPropsWithHydration) {
+export function PaginationContent({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationContentPropsWithHydration = {} as PaginationContentPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationContent_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration
@@ -153,7 +153,7 @@ export function PaginationContent({ className = '', children, __instanceId, __bf
   )
 }
 
-export function PaginationItem({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationItemPropsWithHydration) {
+export function PaginationItem({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationItemPropsWithHydration = {} as PaginationItemPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationItem_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration
@@ -188,7 +188,7 @@ export function PaginationLink(__allProps: PaginationLinkProps & { __instanceId?
   )
 }
 
-export function PaginationPrevious({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPreviousPropsWithHydration) {
+export function PaginationPrevious({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationPreviousPropsWithHydration = {} as PaginationPreviousPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationPrevious_${Math.random().toString(36).slice(2, 8)}`
   const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
   const variantClasses = {
@@ -210,7 +210,7 @@ export function PaginationPrevious({ className = '', children, __instanceId, __b
   )
 }
 
-export function PaginationNext({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationNextPropsWithHydration) {
+export function PaginationNext({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PaginationNextPropsWithHydration = {} as PaginationNextPropsWithHydration) {
   const __scopeId = __instanceId || `PaginationNext_${Math.random().toString(36).slice(2, 8)}`
   const buttonBaseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
   const variantClasses = {

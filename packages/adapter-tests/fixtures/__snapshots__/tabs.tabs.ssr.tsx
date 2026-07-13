@@ -129,7 +129,7 @@ interface TabsContentProps extends HTMLBaseAttributes {
 
 export type { TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps }
 
-export function Tabs({ className = '', value, defaultValue, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TabsPropsWithHydration) {
+export function Tabs({ className = '', value, defaultValue, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TabsPropsWithHydration = {} as TabsPropsWithHydration) {
   const __scopeId = __instanceId || `Tabs_${Math.random().toString(36).slice(2, 8)}`
   const tabsClasses = 'flex flex-col gap-2 w-full'
 
@@ -146,7 +146,7 @@ export function Tabs({ className = '', value, defaultValue, children, __instance
   )
 }
 
-export function TabsList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TabsListPropsWithHydration) {
+export function TabsList({ className = '', children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TabsListPropsWithHydration = {} as TabsListPropsWithHydration) {
   const __scopeId = __instanceId || `TabsList_${Math.random().toString(36).slice(2, 8)}`
   const tabsListClasses = 'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]'
 

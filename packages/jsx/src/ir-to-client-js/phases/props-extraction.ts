@@ -9,7 +9,6 @@
  *   - prop has property/index access     → `?? {}`  (skipped when the
  *                                            prop is a conditional guard
  *                                            so falsy values stay falsy)
- *   - prop is optional with type info    → `?? <inferred default>`
  *   - otherwise                          → no default
  *
  * Skipped entirely when the component uses an opaque props object name
@@ -20,7 +19,7 @@
 import type { PropUsage } from '../../types.ts'
 import { propHasPropertyAccess } from '../compute-prop-usage.ts'
 import type { ClientJsContext } from '../types.ts'
-import { inferDefaultValue, PROPS_PARAM } from '../utils.ts'
+import { PROPS_PARAM } from '../utils.ts'
 
 export function emitPropsExtraction(
   lines: string[],
@@ -53,14 +52,11 @@ export function emitPropsExtraction(
       lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? []`)
     } else if (propHasPropertyAccess(usage) && !propsUsedAsConditions.has(propName)) {
       lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? {}`)
-    } else if (prop?.optional && prop?.type) {
-      const inferredDefault = inferDefaultValue(prop.type)
-      if (inferredDefault !== 'undefined') {
-        lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName} ?? ${inferredDefault}`)
-      } else {
-        lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName}`)
-      }
     } else {
+      // No synthesized default for a defaultless optional (`{ size }:
+      // { size?: number }`): the JS binding is `undefined` when absent, and
+      // a zero default would diverge from SSR (`size ?? 1` seeds 1
+      // server-side; a `_p.size ?? 0` extraction would hydrate to 0).
       lines.push(`  const ${propName} = ${PROPS_PARAM}.${propName}`)
     }
   }

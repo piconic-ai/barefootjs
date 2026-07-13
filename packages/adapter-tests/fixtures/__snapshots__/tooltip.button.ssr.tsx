@@ -40,7 +40,7 @@ type ButtonPropsWithHydration = ButtonProps & {
 
 export type { ButtonVariant, ButtonSize, ButtonProps }
 
-export function Button({ className = '', variant = 'default', size = 'default', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ButtonPropsWithHydration) {
+export function Button({ className = '', variant = 'default', size = 'default', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ButtonPropsWithHydration = {} as ButtonPropsWithHydration) {
   const __scopeId = __instanceId || `Button_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration

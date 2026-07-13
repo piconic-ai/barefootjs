@@ -43,10 +43,11 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * omission). A prop WITH a destructure default (`value = ''`) is never
  * `nil` in the body and must stay unconditional, so it is excluded. Mirrors
  * the Go adapter's nillable-field guard: there the witness is the resolved
- * `interface{}` field type; here it is the absence of a default. Excludes
- * concrete-primitive types (`string`/`number`/`boolean`) to match the Go
- * adapter's scope, which guards only nillable fields and leaves concrete
- * fields unconditional.
+ * `interface{}` field type; here it is the absence of a default. A REQUIRED
+ * concrete-primitive prop (`string`/`number`/`boolean`) is excluded — the
+ * caller always supplies it, matching the Go adapter's unconditional
+ * concrete fields — but an OPTIONAL primitive is presence-uncertain and
+ * stays guarded (#2259).
  */
 export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
   return new Set(
@@ -55,7 +56,7 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
         p =>
           p.defaultValue === undefined &&
           !p.isRest &&
-          p.type?.kind !== 'primitive',
+          (p.type?.kind !== 'primitive' || p.optional),
       )
       .map(p => p.name),
   )

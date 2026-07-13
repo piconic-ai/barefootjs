@@ -184,6 +184,38 @@
       }
     }
   ],
+  "branch-local-filter-join": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "button": [
     {
       "name": "gen:className:absent",
@@ -209,6 +241,37 @@
         "variant": "secondary",
         "className": "",
         "children": "Click me",
+        "__instanceId": "Button_test"
+      }
+    },
+    {
+      "name": "gen:asChild:true",
+      "props": {
+        "variant": "secondary",
+        "size": "sm",
+        "className": "",
+        "children": "Click me",
+        "__instanceId": "Button_test",
+        "asChild": true
+      }
+    },
+    {
+      "name": "gen:asChild:false",
+      "props": {
+        "variant": "secondary",
+        "size": "sm",
+        "className": "",
+        "children": "Click me",
+        "__instanceId": "Button_test",
+        "asChild": false
+      }
+    },
+    {
+      "name": "gen:children:absent",
+      "props": {
+        "variant": "secondary",
+        "size": "sm",
+        "className": "",
         "__instanceId": "Button_test"
       }
     }
@@ -580,6 +643,31 @@
         "children": "K",
         "__instanceId": "Kbd_test"
       }
+    },
+    {
+      "name": "gen:asChild:true",
+      "props": {
+        "className": "",
+        "children": "K",
+        "__instanceId": "Kbd_test",
+        "asChild": true
+      }
+    },
+    {
+      "name": "gen:asChild:false",
+      "props": {
+        "className": "",
+        "children": "K",
+        "__instanceId": "Kbd_test",
+        "asChild": false
+      }
+    },
+    {
+      "name": "gen:children:absent",
+      "props": {
+        "className": "",
+        "__instanceId": "Kbd_test"
+      }
     }
   ],
   "label": [
@@ -587,6 +675,29 @@
       "name": "gen:className:absent",
       "props": {
         "children": "Email",
+        "__instanceId": "Label_test"
+      }
+    },
+    {
+      "name": "gen:className:markup",
+      "props": {
+        "className": "<b>&\"'</b>",
+        "children": "Email",
+        "__instanceId": "Label_test"
+      }
+    },
+    {
+      "name": "gen:className:multibyte",
+      "props": {
+        "className": "日本語",
+        "children": "Email",
+        "__instanceId": "Label_test"
+      }
+    },
+    {
+      "name": "gen:children:absent",
+      "props": {
+        "className": "",
         "__instanceId": "Label_test"
       }
     }
@@ -637,6 +748,62 @@
           2,
           3
         ]
+      }
+    }
+  ],
+  "nullish-coalescing-destructured": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "label": "Custom"
+      }
+    },
+    {
+      "name": "gen:size:zero",
+      "props": {
+        "label": "Custom",
+        "size": 0
+      }
+    },
+    {
+      "name": "gen:size:negative",
+      "props": {
+        "label": "Custom",
+        "size": -7
+      }
+    },
+    {
+      "name": "gen:size:large",
+      "props": {
+        "label": "Custom",
+        "size": 1234567890
       }
     }
   ],
@@ -1475,6 +1642,56 @@
         "placeholder": "Type your message here.",
         "className": "",
         "__instanceId": "Textarea_test"
+      }
+    },
+    {
+      "name": "gen:error:true",
+      "props": {
+        "placeholder": "Type your message here.",
+        "className": "",
+        "value": "",
+        "__instanceId": "Textarea_test",
+        "error": true
+      }
+    },
+    {
+      "name": "gen:error:false",
+      "props": {
+        "placeholder": "Type your message here.",
+        "className": "",
+        "value": "",
+        "__instanceId": "Textarea_test",
+        "error": false
+      }
+    },
+    {
+      "name": "gen:describedBy:empty",
+      "props": {
+        "placeholder": "Type your message here.",
+        "className": "",
+        "value": "",
+        "__instanceId": "Textarea_test",
+        "describedBy": ""
+      }
+    },
+    {
+      "name": "gen:describedBy:markup",
+      "props": {
+        "placeholder": "Type your message here.",
+        "className": "",
+        "value": "",
+        "__instanceId": "Textarea_test",
+        "describedBy": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:describedBy:multibyte",
+      "props": {
+        "placeholder": "Type your message here.",
+        "className": "",
+        "value": "",
+        "__instanceId": "Textarea_test",
+        "describedBy": "日本語"
       }
     }
   ],

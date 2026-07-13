@@ -356,21 +356,74 @@ describe('Destructured props keep their declared types (BF043 fixture #2150)', (
     expect(typeOf(ctx, 'value')).toEqual({ kind: 'unknown', raw: 'unknown' })
   })
 
-  // Deliberate scope: only required primitives are resolved. Optional and
-  // non-primitive members stay `unknown` so typed adapters keep their existing
-  // interface{}-based lowering (attribute omission, bf_flat/spread/bf_json).
-  test('leaves OPTIONAL members as unknown (preserves nillable omission)', () => {
+  // #2259: optional primitives resolve type AND optionality, same as the
+  // props-object path — pre-#2259 they were skipped wholesale so typed
+  // adapters kept a nillable interface{} field; #2252's nullish-flip
+  // machinery now supplies the absent representation where it matters.
+  test('resolves OPTIONAL primitive members with optional: true (#2259)', () => {
     const source = `
-      type Props = { value?: number }
+      type Props = { label: string; size?: number; on?: boolean }
 
-      export function Component({ value }: Props) {
-        return <div>{value}</div>
+      export function Component({ label, size, on }: Props) {
+        return <div>{label}{size ?? 0}{on ? 'y' : 'n'}</div>
       }
     `
 
     const ctx = analyzeComponent(source, 'Component.tsx')
 
-    expect(typeOf(ctx, 'value')).toEqual({ kind: 'unknown', raw: 'unknown' })
+    const param = (name: string) => ctx.propsParams.find((p) => p.name === name)
+    expect(param('label')).toMatchObject({
+      type: { kind: 'primitive', primitive: 'string' },
+      optional: false,
+    })
+    expect(param('size')).toMatchObject({
+      type: { kind: 'primitive', primitive: 'number' },
+      optional: true,
+    })
+    expect(param('on')).toMatchObject({
+      type: { kind: 'primitive', primitive: 'boolean' },
+      optional: true,
+    })
+  })
+
+  // A non-primitive optional keeps `unknown` (interface{}-based lowering)
+  // but still reports the type's `?` — the adversarial catalogue derives
+  // absent points from `optional` alone.
+  test('marks OPTIONAL non-primitive members optional while keeping unknown type (#2259)', () => {
+    const source = `
+      type Todo = { id: number }
+      type Props = { items?: Todo[] }
+
+      export function Component({ items }: Props) {
+        return <div>{(items ?? []).length}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(ctx.propsParams.find((p) => p.name === 'items')).toMatchObject({
+      type: { kind: 'unknown', raw: 'unknown' },
+      optional: true,
+    })
+  })
+
+  // A destructure default and the type's `?` both mean "caller may omit";
+  // the default keeps `defaultValue` so adapters bake it (and the Go
+  // nullish flip keeps excluding defaulted props).
+  test('keeps defaultValue alongside optional for `{ size = 5 }` (#2259)', () => {
+    const source = `
+      export function Component({ size = 5 }: { size?: number }) {
+        return <div>{size}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(ctx.propsParams.find((p) => p.name === 'size')).toMatchObject({
+      type: { kind: 'primitive', primitive: 'number' },
+      optional: true,
+      defaultValue: '5',
+    })
   })
 
   test('leaves NON-primitive members (arrays/objects) as unknown', () => {

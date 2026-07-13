@@ -144,6 +144,11 @@ runAdapterConformanceTests({
     // the contract's shallow copy.
     'array-flat-dynamic-depth:gen:depth:zero',
     'array-flat-dynamic-depth:gen:depth:negative',
+    // #2266 — asChild=true with plain-text children: the Slot define
+    // dereferences `.Children.Props.Children`, which hard-errors on a
+    // string child (`can't evaluate field Props in type interface {}`).
+    'button:gen:asChild:true',
+    'kbd:gen:asChild:true',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
@@ -617,6 +622,117 @@ export function Check(props: { checked?: boolean }) {
       expect(types).toContain('C: checked,')
     })
 
+    test('hoists the DESTRUCTURED `x ?? N` seed via signal.parsed (#2259)', () => {
+      // Destructured components have no `propsObjectName`, so the seed's
+      // prop reference is a bare identifier — matched structurally on the
+      // signal's ParsedExpr, then routed through the same nullish flip +
+      // hoisted-var machinery as `props.size ?? 1` (#2248/#2252 parity).
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Counter({ size }: { size?: number }) {
+  const [count, setCount] = createSignal(size ?? 1)
+  return <div>{count()}</div>
+}
+`)
+      const result = adapter.generate(ir)
+      const types = result.types!
+      expect(types).toContain('Size interface{}')
+      expect(types).toContain('var size int = 1')
+      expect(types).toMatch(/if in\.Size != nil \{\s*size = bf\.ToInt\(in\.Size\)\s*\}/)
+      expect(types).toContain('Size: size,')
+      expect(types).toContain('Count: size,')
+    })
+
+    test('destructured `x ?? 0` stays concrete and seeds the prop directly (#2259)', () => {
+      // A zero-equivalent fallback earns no nillable flip (nil and the Go
+      // zero value land on the same output), so the field keeps its scalar
+      // type and the signal seeds straight off the input — NOT the literal
+      // `0` the pre-#2259 lowering emitted for the unrecognized identifier
+      // form.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Counter({ size }: { size?: number }) {
+  const [count, setCount] = createSignal(size ?? 0)
+  return <div>{count()}</div>
+}
+`)
+      const result = adapter.generate(ir)
+      const types = result.types!
+      expect(types).toContain('Size int')
+      expect(types).not.toContain('Size interface{}')
+      expect(types).toContain('Size: in.Size,')
+      expect(types).toContain('Count: in.Size,')
+    })
+
+    test('negative fallback (`?? -1`) hoists in both prop styles (#2259 review)', () => {
+      // `-1` parses as unary minus around a number literal, not a literal —
+      // the structural seed match must reconstruct the sign, in the
+      // props-object form (where it preempts the regex path) and the
+      // destructured form alike.
+      for (const [params, ref] of [
+        ['props: { size?: number }', 'props.size'],
+        ['{ size }: { size?: number }', 'size'],
+      ]) {
+        const adapter = new GoTemplateAdapter()
+        const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Counter(${params}) {
+  const [count, setCount] = createSignal(${ref} ?? -1)
+  return <div>{count()}</div>
+}
+`, adapter)
+        const types = adapter.generate(ir).types!
+        expect(types).toContain('Size interface{}')
+        expect(types).toContain('var size int = -1')
+        expect(types).toContain('Count: size,')
+      }
+    })
+
+    test('string fallback with quotes survives the structural match unmangled (#2259 review)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Label({ label }: { label?: string }) {
+  const [text, setText] = createSignal(label ?? 'say "hi"')
+  return <div>{text()}</div>
+}
+`, adapter)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('var label string = "say \\"hi\\""')
+      expect(types).not.toContain('\\\\')
+    })
+
+    test('destructure DEFAULT keeps the concrete-typed applyGoFallback baking (#2259)', () => {
+      // `{ size = 5 }` never sees a nullish binding in JS (the default
+      // already applied), so it must stay excluded from the nillable flip
+      // and keep the zero-check baking on the concrete field.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Counter({ size = 5 }: { size?: number }) {
+  const [count, setCount] = createSignal(size)
+  return <div>{count()}</div>
+}
+`)
+      const result = adapter.generate(ir)
+      const types = result.types!
+      expect(types).toContain('Size int')
+      expect(types).not.toContain('Size interface{}')
+      expect(types).toContain('Size: func() int { if in.Size == 0 { return 5 }; return in.Size }(),')
+    })
+
     test('skips hoist for zero-equivalent string and float fallbacks (#1423 review)', () => {
       // The skip predicate compares the Go fallback against the
       // type's zero literal — covers `?? ''` (string) and `?? 0.0`
@@ -1010,10 +1126,13 @@ function Box({ describedBy }: { describedBy?: string }) {
       // Template emission is unchanged from the proven {...props} path.
       expect(template).toContain('{{bf_spread_attrs .Spread_0}}')
       // The bag value is a conditional map built in NewBoxProps. The
-      // prop type is unresolved (interface{}), so the condition routes
-      // through `bf.Truthy` for a faithful JS `Boolean(x)` test.
+      // optional prop resolves to a concrete `string` (#2259) — it is
+      // consumed only inside the spread condition, not as a bare attr, so
+      // no nillable flip — and the field-typed condition is a faithful
+      // `!= ""` truthiness test rather than reflection: JS string
+      // truthiness IS non-emptiness, and an absent prop zeroes to `""`.
       expect(types).toContain('Spread_0: func() map[string]any {')
-      expect(types).toContain('if bf.Truthy(in.DescribedBy) {')
+      expect(types).toContain('if in.DescribedBy != "" {')
       expect(types).toContain('return map[string]any{"aria-describedby": in.DescribedBy}')
       expect(types).toContain('return map[string]any{}')
     })

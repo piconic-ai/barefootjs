@@ -135,7 +135,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -224,8 +224,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.convertExpressionToGo(jsExpr, out, preParsed),
     convertConditionToGo: (jsCondition, preParsed) =>
       this.convertConditionToGo(jsCondition, preParsed),
-    extractPropNameFromInitialValue: (initialValue) => this.extractPropNameFromInitialValue(initialValue),
-    extractPropFallback: (initialValue) => this.extractPropFallback(initialValue),
+    extractPropNameFromInitialValue: (initialValue, preParsed) =>
+      this.extractPropNameFromInitialValue(initialValue, preParsed),
+    extractPropFallback: (initialValue, preParsed) => this.extractPropFallback(initialValue, preParsed),
     resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
   }
 
@@ -406,6 +407,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
     this.state.loweringMatchers = prepareLoweringMatchers(ir.metadata)
     augmentInheritedPropAccesses(ir)
+    // The consumed-prop sets feed `resolvePropGoType`'s interface{} flips
+    // (#2248/#2259) and `collectNillablePropNames` is derived from
+    // `resolvePropGoType`, which also consults the local type tables — so
+    // build the tables first and populate all three HERE, where both entry
+    // points share them. Computing them only in `generate()` left the
+    // standalone `generateTypes()` entry (sibling IRs in the conformance
+    // harness) resolving structs against another component's sets, and
+    // `generate()` itself computing nillability against the PREVIOUS
+    // compile's type tables.
+    this.buildLocalTypeTables(ir, ir.metadata.componentName)
+    this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
+    this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
+    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
   }
 
   /** Generate template output for a component. */
@@ -416,11 +430,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
     this.primeCompileState(ir)
-    // Ordering: the nullish-consumed set feeds `resolvePropGoType`'s
-    // interface{} flip (#2248), and `collectNillablePropNames` is itself
-    // derived from `resolvePropGoType` — so populate it first.
-    this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
-    this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
 
     // Surface loop-body usages of sibling-imported components (see
@@ -1345,7 +1354,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (propFieldNames.has(fieldName)) continue
       // `props.X ?? N` reuses the hoisted fallback var so signal and memo share
       // one value.
-      const fallbackMatch = this.extractPropFallback(signal.initialValue)
+      const fallbackMatch = this.extractPropFallback(signal.initialValue, signal.parsed)
       const hoisted = fallbackMatch ? propFallbackVars.get(fallbackMatch.propName) : undefined
       if (hoisted) {
         lines.push(`\t\t${fieldName}: ${hoisted.varName},`)
@@ -2737,7 +2746,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
     for (const signal of ir.metadata.signals) {
-      const match = this.extractPropFallback(signal.initialValue)
+      const match = this.extractPropFallback(signal.initialValue, signal.parsed)
       if (!match) continue
       if (result.has(match.propName)) continue
       const param = ir.metadata.propsParams.find(p => p.name === match.propName)
@@ -2800,15 +2809,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Parse a signal-time initial value of the form `props.X ?? <literal>` into
-   * the source prop name and the Go-formatted fallback. Returns null when the
-   * expression isn't a `??` against a property access on `propsObjectName`, or
-   * the fallback isn't a simple literal `goPropDefault` can translate.
+   * Parse a signal-time initial value of the form `props.X ?? <literal>` —
+   * or, for destructured components, `x ?? <literal>` — into the source prop
+   * name and the Go-formatted fallback. Returns null when the expression
+   * isn't that shape or the fallback isn't a simple literal `goPropDefault`
+   * can translate.
+   *
+   * `preParsed` (the signal's best-effort `ParsedExpr`) is matched
+   * structurally when available; the regex handles only the props-object
+   * member form for callers without a tree (memo computations). A bare
+   * identifier can shadow a same-named prop (loop/callback params — the
+   * `collectNullishConsumedPropNames` limitation class), so every caller
+   * validates the returned name against `ir.metadata.propsParams`.
    *
    * Keeps the original prop reference (not just the resolved value) so
    * caller-supplied non-zero inputs are honoured.
    */
-  private extractPropFallback(initialValue: string): { propName: string; goFallback: string } | null {
+  private extractPropFallback(
+    initialValue: string,
+    preParsed?: ParsedExpr,
+  ): { propName: string; goFallback: string } | null {
+    const structural = preParsed ? this.extractPropFallbackFromParsed(preParsed) : null
+    if (structural) return structural
+
+    // Regex fallback for callers without a tree (memo computation strings)
+    // and for props-object shapes the structural match doesn't model.
     if (!this.state.propsObjectName) return null
     const trimmed = initialValue.trim()
     const name = this.state.propsObjectName
@@ -2822,12 +2847,64 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return { propName: m[1], goFallback }
   }
 
+  /** Structural half of {@link extractPropFallback}. */
+  private extractPropFallbackFromParsed(
+    preParsed: ParsedExpr,
+  ): { propName: string; goFallback: string } | null {
+    if (preParsed.kind !== 'logical' || preParsed.op !== '??') return null
+    const left = preParsed.left
+    const propName =
+      left.kind === 'identifier' && !this.state.propsObjectName
+        ? left.name
+        : left.kind === 'member' &&
+            !left.computed &&
+            left.object.kind === 'identifier' &&
+            left.object.name === this.state.propsObjectName
+          ? left.property
+          : null
+    if (!propName) return null
+    // A negative fallback (`?? -1`) parses as unary minus around a number
+    // literal, not a literal.
+    let right = preParsed.right
+    let negate = ''
+    if (right.kind === 'unary' && right.op === '-') {
+      negate = '-'
+      right = right.argument
+    }
+    if (right.kind !== 'literal') return null
+    if (negate && right.literalType !== 'number') return null
+    // A string fallback is already the decoded value — quote it directly;
+    // routing it through `goPropDefault` would strip JSON.stringify's outer
+    // quotes and escape the body a second time (`"` → `\\\"`).
+    if (right.literalType === 'string') {
+      return { propName, goFallback: JSON.stringify(right.value) }
+    }
+    // Numbers keep their source spelling when available (`raw` is only
+    // populated for numbers); booleans/null stringify losslessly.
+    const goFallback = goPropDefault(negate + (right.raw ?? String(right.value)))
+    if (goFallback === null) return null
+    return { propName, goFallback }
+  }
+
   /**
    * Extract the prop name from a signal's `props.xxx`-pattern initialValue,
    * e.g. `"props.initial ?? 0"` → `"initial"`, `"props.checked"` → `"checked"`.
+   * For destructured components (`propsObjectName` null) the same shapes are
+   * matched structurally on `preParsed` with an identifier left operand
+   * (`size ?? 0` → `"size"`); callers validate the name against
+   * `propsParams`, which filters shadowing locals.
    */
-  private extractPropNameFromInitialValue(initialValue: string): string | null {
-    if (!this.state.propsObjectName) return null
+  private extractPropNameFromInitialValue(initialValue: string, preParsed?: ParsedExpr): string | null {
+    if (!this.state.propsObjectName) {
+      if (
+        preParsed?.kind === 'logical' &&
+        (preParsed.op === '??' || preParsed.op === '||') &&
+        preParsed.left.kind === 'identifier'
+      ) {
+        return preParsed.left.name
+      }
+      return null
+    }
     const trimmed = initialValue.trim()
     const name = this.state.propsObjectName
 

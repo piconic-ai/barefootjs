@@ -157,6 +157,14 @@ export class CompileState {
   nullishConsumedPropNames: Set<string> = new Set()
 
   /**
+   * OPTIONAL no-default prop names consumed as a BARE omittable-attribute
+   * value (`rows={rows}`) — #2259. Same `resolvePropGoType` flip and same
+   * populate-before-first-resolve ordering as `nullishConsumedPropNames`:
+   * the attribute-omission guard (`{{if ne .X nil}}`) needs a nillable field.
+   */
+  omittableAttrConsumedPropNames: Set<string> = new Set()
+
+  /**
    * String-typed signal getter / prop names (#2168 string-concat-plus).
    * Feeds `isStringName` for `isStringConcatBinary`, which decides whether a
    * JS `+` operand chain is string concatenation rather than numeric
