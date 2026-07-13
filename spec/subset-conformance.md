@@ -128,12 +128,33 @@ coverage** — a `ParsedExpr` kind hides axes (e.g. `member`:
 `computed × optional × hop count`), compositions, and value semantics that a
 single fixture cannot witness.
 
-- **Fixtures declare what they exercise** (test262's `esid` pattern):
-  frontmatter naming the `ParsedExpr` kinds, axes, and lowering context
-  (text / attribute / condition / loop) a fixture covers. Coverage maps are
-  then aggregation, not inference, and also drive data-point filtering
-  (only run adversarial values against fixtures exercising the relevant
-  kinds).
+- **Coverage is computed, not declared** (landed — a deliberate revision
+  of the earlier "frontmatter declares what a fixture exercises" plan):
+  test262 anchors tests to spec clauses with hand-written `esid`
+  frontmatter because no compiler links a test to the grammar it
+  exercises — here the compiler's own parse IS the link, and a manual
+  declaration would only drift from it. `computeCoverageMap`
+  (`packages/adapter-tests/src/coverage-map.ts`) walks each fixture's
+  compiled IR — parent source AND sibling `components` files, whose
+  child-side expressions are what 32 fixtures exist to exercise — and
+  records the `ParsedExpr` kinds, mechanical axes (`logical:<op>`,
+  `binary:<op>`, `unary:<op>`, `literal:<literalType>`,
+  `array-method:<method>`, `member:optional`/`computed`), and lowering
+  contexts (text / attribute / condition / loop). The committed
+  `coverage-map.json` is held by two meta-tests: **freshness** (equals a
+  recomputation) and the **ledger floor** (every kind in the
+  `PARSED_EXPR_KINDS` registry — a runtime list exhaustiveness-pinned
+  against the type union — is exercised or carries a documented
+  exclusion, and covered kinds must graduate off the exclusion list).
+  First reading of the map: 15/16 kinds and 45 axes covered; `regex` is
+  the one documented hole, and at-a-glance axis gaps (no `binary:<=` or
+  `binary:==` anywhere in the corpus) are now visible denominators
+  instead of folklore. The
+  sibling-compilation fix itself demonstrated the ledger's value: a
+  parent-only walk had under-reported 32 fixtures and mislabelled
+  `member:computed` as uncovered when 8 fixtures exercise it in child
+  components. The map also drives data-point filtering later (only run
+  adversarial values against fixtures exercising the relevant kinds).
 - **Change-time coupling** (TC39 stage-4 rule): a subset extension — new
   `ParsedExpr` kind or field, catalogue entry, builtin — does not merge
   without fixtures in the same PR. Axes derive mechanically from variant
@@ -178,7 +199,7 @@ convention as `spec/adapter-architecture.md`):
 | Normative subset | `ParsedExpr` union + exhaustive adapter switches (drift-defence); array-method / sort-comparator catalogues; builtin lowering registry; BF021/BF101 loud-refusal policy + growing-only rule (`spec/compiler.md`); `/* @client */` escape | Pieces are scattered across spec/types/catalogues with no single normative declaration; `ParsedExpr` lacks `object-literal` (adapter-architecture Roadmap A); the boundary is not fully loud — the Date silent passthrough proves unknown-type method calls pass undiagnosed; the data-domain axiom exists only in this document |
 | Canonical reference (JS render) | Hono/JS render is the *de facto* reference: snapshot generation renders expectations through it; `referenceAdapter`/`referenceRender` HTML-diff suite exists; determinism landed (#1494) | No *declaration* of canonical status (`referenceAdapter` is optional — the reference is still positioned as one adapter among eleven); oracle comparison runs at one evaluation point per fixture, not live × multiple data points |
 | Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No type-derived adversarial value catalogue; no PR-vs-nightly tiering; adversarial points cover 9 fixtures (~31 points) — the long tail of the 182-fixture corpus awaits the frontmatter/axis map for prioritization |
-| Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix; no fixture frontmatter declaring exercised kinds/axes (so a coverage map has no denominator) |
+| Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix yet — but its fixture-side half now exists: the computed coverage ledger (`coverage-map.json` + `PARSED_EXPR_KINDS` registry + freshness/floor meta-tests) supplies the kind/axis denominators; joining them against per-adapter pass/skip is the remaining work |
 
 Cross-cutting gap: the change-time coupling rule (subset extensions merge
 only with fixtures in the same PR) is not yet written into any contribution

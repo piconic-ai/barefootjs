@@ -322,6 +322,7 @@ export { ErrorCodes, createError, formatError, generateCodeFrame } from './error
 // Expression Parser
 export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, materializeGetterCalls, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, parseProviderObjectLiteral, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
 export type { StyleObjectEntry } from './expression-parser.ts'
+export { PARSED_EXPR_KINDS } from './expression-parser.ts'
 export type { ParsedExpr, ObjectLiteralProperty, ParsedStatement, SortComparator, SortKey, FlatDepth, SupportLevel, SupportResult, TemplatePart } from './expression-parser.ts'
 export { buildLoopChainExpr } from './loop-chain.ts'
 export type { LoopChainInputs } from './loop-chain.ts'
