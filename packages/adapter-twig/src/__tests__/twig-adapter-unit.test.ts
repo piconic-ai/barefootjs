@@ -408,6 +408,72 @@ export function Parent() {
 // `filter-nested-callback-predicate-client` (the `/* @client */` suppression
 // twin, which must render clean).
 
+// #2221: `_resolveLiteralConst` is a flat name lookup against
+// `ir.metadata.localConstants` with no notion of AST scope — it used to
+// substitute an outer const's literal value even at an occurrence that is
+// actually an enclosing loop callback's own (shadowing) parameter, so every
+// iteration rendered the same hard-coded literal. Guarded with the same
+// coarse `collectLoopBoundNames` exclusion as #2212: any name a loop binds
+// anywhere in the component never inlines, falling back to the bare
+// identifier. SSR-only tests for the same #2222 reason as the #2212
+// describe below.
+describe('TwigAdapter - const inlining vs loop-param shadowing (#2221)', () => {
+  test('a loop param shadowing an outer literal const emits the identifier, not the const value', () => {
+    const { template } = compileAndGenerate(`
+function Widget() {
+  const label: string = 'x'
+  return <ul>{[2, 5].map((label) => <li key={label}>{1 + label}</li>)}</ul>
+}
+`)
+    // The loop body must reference the per-iteration loop var...
+    expect(template).toContain('1 + label')
+    // ...never the outer const's hard-coded value.
+    expect(template).not.toContain("1 + 'x'")
+  })
+
+  test('a numeric const shadowed by a loop param emits the identifier too', () => {
+    const { template } = compileAndGenerate(`
+function Widget() {
+  const count = 7
+  return <ul>{[2, 5].map((count) => <li key={count}>{1 + count}</li>)}</ul>
+}
+`)
+    expect(template).toContain('1 + count')
+    expect(template).not.toContain('1 + 7')
+  })
+
+  test('a literal const NOT shadowed by any loop still inlines (#1897 pin)', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ values }: { values: number[] }) {
+  const totalPages = 5
+  return <div>
+    <p>Page 1 of {1 + totalPages}</p>
+    <ul>{values.map((v) => <li key={v}>{v}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain('1 + 5')
+  })
+
+  // The accepted coarse-exclusion trade-off (same as #2212): a name that is
+  // loop-bound ANYWHERE in the component never inlines, even at a genuinely
+  // non-shadowed occurrence outside the loop — the bare identifier is
+  // emitted instead of the value.
+  test('a const referenced outside the loop whose name is loop-bound elsewhere falls back to the identifier (accepted trade-off)', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ values }: { values: number[] }) {
+  const label: string = 'x'
+  return <div>
+    <p>{1 + label}</p>
+    <ul>{values.map((label) => <li key={label}>{2 + label}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).not.toContain("1 + 'x'")
+    expect(template).toContain('2 + label')
+  })
+})
+
 // Fable review (#2212): a loop callback's own param can shadow an outer
 // string-typed prop/const of the same name — `collectLoopBoundNames`
 // excludes every such name from `collectStringValueNames` so the shadowed

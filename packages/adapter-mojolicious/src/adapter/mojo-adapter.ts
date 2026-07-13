@@ -421,6 +421,14 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
    * quoted string literal (`const totalPages = 5`, #1897 pagination) —
    * function-scope consts never reach the per-render stash, so a bare
    * `$totalPages` faults under strict mode.
+   *
+   * The `loopBoundNames` guard also covers the #2221 hazard (a loop
+   * callback's own param shadowing this outer const's name): unlike the
+   * Twig-family adapters' coarse, whole-component `collectLoopBoundNames(ir)`
+   * static set, this adapter's `loopBoundNames` is a LIVE ref-counted map
+   * `renderLoop` populates/depopulates as it descends/ascends into each
+   * loop body (#1749) — so it's already scope-precise for this call site;
+   * no separate `staticLoopSourceBoundNames`-style field is needed here.
    */
   private resolveLiteralConst(name: string): string | null {
     if (this.loopBoundNames?.has?.(name)) return null
@@ -1461,7 +1469,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // initializer text and route through the same conditional-spread
       // lowering. Only function-scope (`!isModule`) consts whose value is
       // NOT itself a bare identifier (loop guard) are considered.
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+      //
+      // `loopBoundNames` guard (#2221): an enclosing `.map()` callback's
+      // own param can shadow this outer const's name (`.map((sizeAttrs)
+      // => <li {...sizeAttrs} />)`) — without the guard this forwarded
+      // the OUTER const's hashref at every iteration instead of the
+      // per-item `$sizeAttrs` value. Same live ref-counted map
+      // `resolveLiteralConst` / `resolveStaticRecordLiteral` already
+      // consult for this hazard class (#1749).
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.loopBoundNames.has(trimmed)) {
         const localConst = this.localConstants.find(
           c => c.name === trimmed && !c.isModule,
         )
