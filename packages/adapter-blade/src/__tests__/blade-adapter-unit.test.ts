@@ -471,6 +471,61 @@ function Widget({ values }: { values: number[] }) {
   })
 })
 
+// #2237: `_resolveStaticRecordLiteral` (`IDENT.key` on a module-scope
+// object-literal const, e.g. `variantClasses.ghost` — #1896/#1897) is a
+// flat name lookup on `objectName` with no notion of AST scope, the
+// record-literal sibling of #2221's `_resolveLiteralConst` bug. It used to
+// substitute the outer const's member value even at an occurrence that is
+// actually an enclosing loop callback's own (shadowing) parameter, so every
+// iteration rendered the same hard-coded literal instead of the per-item
+// value. Guarded with the same coarse `staticLoopSourceBoundNames`
+// exclusion as #2221: any name a loop binds anywhere in the component
+// never inlines, falling back to the bare `data_get($cfg, 'x')` member
+// expression.
+describe('BladeAdapter - record-literal member lookup vs loop-param shadowing (#2237)', () => {
+  test('a loop param shadowing an outer module object const emits the member access, not the outer literal', () => {
+    const { template } = compileAndGenerate(`
+const cfg = { x: 'outer-lit' }
+function Widget({ rows }: { rows: number[] }) {
+  return <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
+}
+`)
+    // The loop body must reference the per-iteration member access...
+    expect(template).toContain("bf->string(data_get($cfg, 'x'))")
+    // ...never the outer const's hard-coded value.
+    expect(template).not.toContain("bf->string('outer-lit')")
+  })
+
+  test('a module object const NOT shadowed by any loop still inlines (variantClasses.ghost shape, #1896/#1897 pin)', () => {
+    const { template } = compileAndGenerate(`
+const variantClasses = { solid: 'bg-solid', ghost: 'bg-ghost' }
+function Widget({ variant }: { variant: 'solid' | 'ghost' }) {
+  return <div>{variantClasses.ghost}</div>
+}
+`)
+    expect(template).toContain("bf->string('bg-ghost')")
+  })
+
+  // The accepted coarse-exclusion trade-off (same as #2221/#2212): an
+  // object name that is loop-bound ANYWHERE in the component never
+  // inlines its member lookups, even at a genuinely non-shadowed
+  // occurrence outside the loop — the bare member expression is emitted
+  // instead of the value.
+  test('a record member referenced outside the loop whose object name is loop-bound elsewhere falls back to the member expression (accepted trade-off)', () => {
+    const { template } = compileAndGenerate(`
+const cfg = { x: 'outer-lit' }
+function Widget({ rows }: { rows: number[] }) {
+  return <div>
+    <p>{cfg.x}</p>
+    <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).not.toContain("bf->string('outer-lit')")
+    expect(template).toContain("bf->string(data_get($cfg, 'x'))")
+  })
+})
+
 // #2038 nested-callback-predicate loudness is pinned at the shared
 // conformance layer (workstream C): `filter-nested-callback-predicate` /
 // `filter-nested-find-predicate` (BF101 via `expectedDiagnostics`) and
