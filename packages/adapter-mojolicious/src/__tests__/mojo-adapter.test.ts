@@ -298,6 +298,63 @@ function Widget({ items }: { items: object[] }) {
   })
 })
 
+// #2237: the record-literal sibling of #2221's `resolveLiteralConst` bug —
+// `resolveStaticRecordLiteral` (`IDENT.key` on a module-scope object-literal
+// const, e.g. `variantClasses.ghost` — #1896/#1897) is confirmed reproducible
+// on the Twig-family adapters (flat `objectName` lookup with no notion of AST
+// scope, so an enclosing loop callback's own param of the same name resolved
+// to the OUTER const's member value at every iteration). This adapter's
+// `resolveStaticRecordLiteral` already guards against it (mojo-adapter.ts:
+// `if (this.loopBoundNames?.has?.(objectName)) return null`) — the same LIVE,
+// ref-counted `loopBoundNames` map `resolveLiteralConst` consults (#1749),
+// scope-precise rather than the Twig family's coarse whole-component set.
+// Pinned here (mirroring the #2221 scope-precision pin above) rather than
+// fixed, since no code change was needed.
+describe('MojoAdapter - record-literal member lookup vs loop-param shadowing (#2237)', () => {
+  test('a loop param shadowing an outer module object const emits the member access, not the outer literal', () => {
+    const { template } = compileAndGenerate(`
+const cfg = { x: 'outer-lit' }
+function Widget({ rows }: { rows: { x: string }[] }) {
+  return <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
+}
+`)
+    // The loop body must reference the per-iteration member access...
+    expect(template).toContain('$cfg->{x}')
+    // ...never the outer const's hard-coded value.
+    expect(template).not.toContain("'outer-lit'")
+  })
+
+  test('a module object const NOT shadowed by any loop still inlines (variantClasses.ghost shape, #1896/#1897 pin)', () => {
+    const { template } = compileAndGenerate(`
+const variantClasses = { solid: 'bg-solid', ghost: 'bg-ghost' }
+function Widget({ variant }: { variant: 'solid' | 'ghost' }) {
+  return <div>{variantClasses.ghost}</div>
+}
+`)
+    expect(template).toContain("'bg-ghost'")
+  })
+
+  // Unlike the Twig-family's coarse-but-safe `staticLoopSourceBoundNames`
+  // exclusion, this adapter's LIVE `loopBoundNames` tracking is scoped to
+  // the actual render position: an object name loop-bound ONLY inside the
+  // `.map` callback still inlines its member lookup correctly at a
+  // separate, non-shadowed occurrence outside the loop — no accepted
+  // trade-off here.
+  test('an object name loop-bound only inside the loop still inlines its member lookup outside it (more precise than Twig family)', () => {
+    const { template } = compileAndGenerate(`
+const cfg = { x: 'outer-lit' }
+function Widget({ rows }: { rows: { x: string }[] }) {
+  return <div>
+    <p>{cfg.x}</p>
+    <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain("<p><%= 'outer-lit' %></p>")
+    expect(template).toContain('$cfg->{x}')
+  })
+})
+
 describe('MojoAdapter - Record<staticKeys,scalar>[propKey] spread value (#checkbox icon)', () => {
   // `const sizeMap: Record<IconSize, number> = { sm: 16, ... }` indexed by
   // a prop inside a conditional-spread object value lowers to an inline
@@ -1509,7 +1566,7 @@ describe('MojoAdapter - #1448 Tier C .flat(depth?)', () => {
   function emitFlat(expr: string): string {
     const a = new MojoAdapter()
     const ir = compileToIR(`
-function C({ rows }: { rows: number[][] }) {
+function C({ rows }: { rows: { x: string }[][] }) {
   return <div>{${expr}}</div>
 }
 export { C }

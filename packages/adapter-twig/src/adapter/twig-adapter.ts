@@ -1895,7 +1895,22 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     return null
   }
 
+  /**
+   * Resolve `IDENT.key` where `IDENT` is a module-scope object-literal const
+   * (`variantClasses.ghost`, #1896/#1897) to the looked-up scalar.
+   *
+   * The lookup is a flat name match on `objectName` with no notion of AST
+   * scope, so an enclosing loop callback's own param of the same name
+   * (`.map((cfg) => <li>{cfg.x}</li>)` shadowing a module `const cfg = {…}`)
+   * still resolved to the OUTER const's member value at every iteration
+   * (#2237) — the sibling hazard to #2221's `_resolveLiteralConst`. Same
+   * coarse-but-safe `staticLoopSourceBoundNames` guard: any name a loop
+   * binds anywhere in the component never inlines, falling back to the bare
+   * `cfg.x` member expression (which a Twig for-loop binds correctly at the
+   * shadowed occurrences).
+   */
   private _resolveStaticRecordLiteral(objectName: string, key: string): string | null {
+    if (this.staticLoopSourceBoundNames.has(objectName)) return null
     const hit = lookupStaticRecordLiteral(objectName, key, this.localConstants)
     if (!hit) return null
     return hit.kind === 'number'
