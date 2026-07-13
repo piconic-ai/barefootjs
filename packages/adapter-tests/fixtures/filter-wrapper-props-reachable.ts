@@ -45,11 +45,10 @@ import { createFixture } from '../src/types'
  * rendering raises `NoMethodError: undefined method '[]' for nil`. Same
  * masking story as #2228 itself: `todo-app-ssr`'s `'all'`-default filter
  * never evaluates the `t.done`-referencing branches, so this ERB gap has
- * never fired in production either. It's untracked (no issue exists yet)
- * and out of scope for this backfill (#2228/#2237), so this fixture
- * routes around it — via the same-name predicate/loop param — rather
- * than declaring a divergence for a bug this PR isn't fixing; flagged in
- * the PR description for follow-up.
+ * never fired in production either. Tracked as #2245 and out of scope
+ * for this backfill (#2228/#2237), so this fixture routes around it —
+ * via the same-name predicate/loop param — rather than declaring a
+ * divergence for a bug this PR isn't fixing.
  *
  * Pre-#2240 this 500s on real Go (`can't evaluate field Done in type
  * FilterWrapperPropsReachableTodoRowProps`); post-#2240 it renders only

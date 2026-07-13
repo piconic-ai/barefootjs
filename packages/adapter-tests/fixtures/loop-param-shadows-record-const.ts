@@ -33,18 +33,13 @@ import { createFixture } from '../src/types'
  * this same pattern — was NOT touched by #2237 (whose fix only shipped
  * for the five template-string adapters above) and is a genuinely
  * separate code path from the bare-identifier `isLoopShadowed` guard
- * Go's own #2236/#2242 fixes hardened. Verified directly (compileJSX +
- * GoTemplateAdapter.generate over this exact source): the emitted
- * `markedTemplate` bakes `{{"outer-lit"}}` into the loop body regardless
- * of the range item, so real `go run` renders `'outer-lit'` for every
- * row instead of each row's own `x` — a genuine render-level divergence
- * from the Hono reference. This is the SAME bug class as #2237 but an
- * un-triaged instance on a sixth adapter, not a known-limitation with an
- * issue URL to point a `renderDivergences` docstring at — so it is
- * intentionally left UNDECLARED here rather than papered over with a
- * fabricated rationale. The go-template real-render conformance test
- * for this fixture id is expected to fail until a tracking issue exists
- * and either the bug is fixed or the divergence is declared against it.
+ * Go's own #2236/#2242 fixes hardened. Adding this fixture exposed it:
+ * the emitted `markedTemplate` baked `{{"outer-lit"}}` into the loop
+ * body regardless of the range item. FIXED in the same PR that added
+ * this fixture (PR #2246): `resolveStaticRecordLiteralIndex` now guards
+ * via the shared `isLoopShadowedName`, so Go renders each row's own `x`
+ * at reference parity like every other adapter — no divergence
+ * declaration needed.
  */
 export const fixture = createFixture({
   id: 'loop-param-shadows-record-const',
