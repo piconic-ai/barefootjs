@@ -16,6 +16,12 @@ function StringConcatPlus({ name }: { name: string }) {
 export { StringConcatPlus }
 `,
   props: { name: 'Ada' },
+  // Concat parity with empty and markup-bearing operands — a backend
+  // whose `.`/`+` coerces or escapes differently shows up here.
+  dataPoints: [
+    { name: 'empty', props: { name: '' } },
+    { name: 'markup', props: { name: '<i>&' } },
+  ],
   expectedHtml: `
     <div bf-s="test" bf="s1"><!--bf:s0-->Hello, Ada!<!--/--></div>
   `,

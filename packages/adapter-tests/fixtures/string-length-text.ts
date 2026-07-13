@@ -15,6 +15,14 @@ function StringLengthText({ word }: { word: string }) {
 export { StringLengthText }
 `,
   props: { word: 'barefoot' },
+  // JS `.length` counts UTF-16 code units: '日本語' is 3 (a byte-based
+  // `len` would say 9), '👍' is 2 (a surrogate pair — codepoint-based
+  // counts would say 1). The oracle pins the JS answer.
+  dataPoints: [
+    { name: 'empty', props: { word: '' } },
+    { name: 'multibyte', props: { word: '日本語' } },
+    { name: 'astral', props: { word: '👍' } },
+  ],
   expectedHtml: `
     <div bf-s="test" bf="s2"><!--bf:s0-->8<!--/--> chars in <!--bf:s1-->barefoot<!--/--></div>
   `,

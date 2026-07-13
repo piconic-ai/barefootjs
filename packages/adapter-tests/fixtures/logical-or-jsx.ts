@@ -21,6 +21,13 @@ export function LogicalOrJsx(props: { label?: string }) {
 }
 `,
   props: {},
+  // `||` is truthiness-based in JS too: '' takes the JSX fallback
+  // (unlike `??`, which keeps it — see nullish-coalescing-text).
+  dataPoints: [
+    { name: 'empty-label', props: { label: '' } },
+    { name: 'with-label', props: { label: 'Hi' } },
+    { name: 'html-label', props: { label: '<b>&"bold' } },
+  ],
   expectedHtml: `
     <div bf-s="test" bf="s1"><span bf-c="s0">Fallback</span></div>
   `,

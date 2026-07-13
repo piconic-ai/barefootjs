@@ -177,7 +177,7 @@ convention as `spec/adapter-architecture.md`):
 |-----------|--------|-----|
 | Normative subset | `ParsedExpr` union + exhaustive adapter switches (drift-defence); array-method / sort-comparator catalogues; builtin lowering registry; BF021/BF101 loud-refusal policy + growing-only rule (`spec/compiler.md`); `/* @client */` escape | Pieces are scattered across spec/types/catalogues with no single normative declaration; `ParsedExpr` lacks `object-literal` (adapter-architecture Roadmap A); the boundary is not fully loud — the Date silent passthrough proves unknown-type method calls pass undiagnosed; the data-domain axiom exists only in this document |
 | Canonical reference (JS render) | Hono/JS render is the *de facto* reference: snapshot generation renders expectations through it; `referenceAdapter`/`referenceRender` HTML-diff suite exists; determinism landed (#1494) | No *declaration* of canonical status (`referenceAdapter` is optional — the reference is still positioned as one adapter among eleven); oracle comparison runs at one evaluation point per fixture, not live × multiple data points |
-| Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No type-derived adversarial value catalogue; no PR-vs-nightly tiering; adversarial points exist on one pilot fixture only |
+| Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No type-derived adversarial value catalogue; no PR-vs-nightly tiering; adversarial points cover 9 fixtures (~31 points) — the long tail of the 182-fixture corpus awaits the frontmatter/axis map for prioritization |
 | Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix; no fixture frontmatter declaring exercised kinds/axes (so a coverage map has no denominator) |
 
 Cross-cutting gap: the change-time coupling rule (subset extensions merge
@@ -195,7 +195,15 @@ convention.
    string-escaping bug (fixed), while ERB / Jinja / Rust passed all points
    on real backends.
 2. **Hand-written adversarial points** across existing fixtures, prioritized
-   by the frontmatter/axis map as it lands.
+   by the frontmatter/axis map as it lands. **First wave landed**: 8 more
+   fixtures × 27 points across the escaping / `||`-vs-`??` / `?.`-member /
+   string-`.length` / `toFixed`-rounding / template-literal-`??` /
+   branch-boundary axes. Findings: #2255 (`.length` is UTF-16 code units in
+   JS — bytes on Go, codepoints on ERB/Jinja/Rust) and #2256 (the Go
+   nullish gate covers only bare prop refs; member-access left operands
+   still lower to `or`), both pinned via `skipDataPoints`. Notable passes:
+   `toFixed` representation-boundary rounding and template-literal `??`
+   match the oracle on every locally-runnable backend.
 3. **Type-derived value catalogue** from `TypeInfo`.
 4. **Date**: passthrough closure, then the catalogue plugin (UTC + ISO
    scope), envelope transport in the harness.
