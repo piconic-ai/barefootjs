@@ -4624,12 +4624,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `const count = 7`, the occurrence inside the loop body must resolve to
     // the range value (via the normal parse-and-lower fallthrough), not the
     // outer literal. Mirrors the guard in `resolveModuleStringConst` /
-    // `resolveModuleNumericConst`.
+    // `resolveModuleNumericConst`, PLUS the `loopBindingStack` scan
+    // `identifier()` leads with: a DESTRUCTURED callback (`.map(({ id }) =>
+    // ...)`) pushes `''` onto `loopParamStack` and tracks its binding names
+    // only in `loopBindingStack`, so without this the fast path still
+    // inlined an outer `const id = 7` at the shadowed occurrence (#2242
+    // Copilot review).
     const isLoopShadowed =
       (this.loopParamStack.length > 0 &&
         this.loopParamStack[this.loopParamStack.length - 1] === trimmed) ||
       this.loopVarRefCount.has(trimmed) ||
-      this.isOuterLoopParam(trimmed)
+      this.isOuterLoopParam(trimmed) ||
+      this.loopBindingStack.some(bindings => bindings.has(trimmed))
     if (!isLoopShadowed && /^[A-Za-z_$][\w$]*$/.test(trimmed)) {
       const litConst = (this.state.localConstants ?? []).find(c => c.name === trimmed)
       if (litConst?.value !== undefined) {

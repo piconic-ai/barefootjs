@@ -4398,6 +4398,25 @@ export function List() {
     expect(template).not.toContain('{{7}}')
   })
 
+  test('slice A: a DESTRUCTURED callback binding shadowing an outer const resolves to the binding accessor (#2242 Copilot review)', () => {
+    // Destructured callbacks push '' onto loopParamStack and track their
+    // binding names only in loopBindingStack — the fast-path guard must
+    // scan that stack too, or the outer `const id = 7` inlines at both
+    // the key and text positions.
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function List() {
+  const id = 7
+  const [items] = createSignal<{ id: number }[]>([{ id: 2 }, { id: 5 }])
+  return <ul>{items().map(({ id }) => <li key={id}>{id}</li>)}</ul>
+}
+`)
+    expect(template).toContain('data-key="{{$__bf_item0.ID}}"')
+    expect(template).toContain('{{$__bf_item0.ID}}{{bfTextEnd}}')
+    expect(template).not.toContain('{{7}}')
+  })
+
   test('slice B: `1 + label` inside the loop that shadows an outer string prop lowers to bf_add, not bf_concat_str', () => {
     const { template } = compileAndGenerate(`
 'use client'
