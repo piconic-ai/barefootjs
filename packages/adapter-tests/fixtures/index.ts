@@ -154,6 +154,7 @@ import { fixture as counterButtons } from './counter-buttons'
 import { fixture as nativeSelectSpreadChildren } from './native-select-spread-children'
 import { fixture as multipleInstances } from './multiple-instances'
 import { fixture as staticArrayChildren } from './static-array-children'
+import { fixture as staticArrayOfObjectsElementBody } from './static-array-of-objects-element-body'
 import { fixture as staticArrayFromProps } from './static-array-from-props'
 import { fixture as staticArrayFromPropsWithComponent } from './static-array-from-props-with-component'
 // Priority 8: CSR conformance
@@ -473,6 +474,7 @@ export const jsxFixtures: JSXFixture[] = [
   nativeSelectSpreadChildren,
   multipleInstances,
   staticArrayChildren,
+  staticArrayOfObjectsElementBody,
   staticArrayFromProps,
   staticArrayFromPropsWithComponent,
   // Priority 8: CSR conformance

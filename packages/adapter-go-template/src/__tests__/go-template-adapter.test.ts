@@ -4029,3 +4029,217 @@ export function Nested({ groups }: { groups: { label: string }[][] }) {
     expect(types).not.toContain('"Alpha"')
   })
 })
+
+// #2224: the two shapes #2208 deliberately left refused.
+//   Shape 1 — a static-array loop whose body is a PLAIN ELEMENT (no child
+//   component): unrolled once per item at template-generation time (no Go
+//   struct synthesis, no `{{range}}`) — see
+//   `analysis/static-element-loop-bake.ts`'s docstring for the exact gate.
+//   Shape 2 — an INLINE, unnamed array literal directly in `.map()`, with
+//   either body kind — routed into shape 1's unroll (element body) or
+//   #2208's existing bake (component body) the same way a named const is.
+describe('GoTemplateAdapter - static array-of-objects loop, plain-element body + inline literal (#2224)', () => {
+  test('shape 1: named const + plain-element body compiles with no BF101', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return <ul>{items.map(item => <li key={item.label}>{item.label}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors ?? []).toEqual([])
+  })
+
+  test('shape 1: the template is unrolled once per item, no {{range}}', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return <ul>{items.map(item => <li key={item.label}>{item.label}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).not.toContain('{{range')
+    // The `<!--bf-loop:id--> ... <!--/bf-loop:id-->` marker pair a dynamic
+    // loop emits still wraps the unrolled body, so the CSR-side static
+    // `forEach` wiring (a separate, unaffected compiler pass) finds the
+    // same DOM range.
+    expect(template).toContain('{{bfComment "loop:l0"}}')
+    expect(template).toContain('{{bfComment "/loop:l0"}}')
+    // Per item: the SAME `data-key` / `bfTextStart`/`bfTextEnd` markers a
+    // dynamic `{{range}}` over `.Field` would emit, with the item's value
+    // substituted as a literal Go string instead of a `.Field` reference.
+    expect(template).toContain('<li data-key="{{"Alpha"}}">{{bfTextStart "s0"}}{{"Alpha"}}{{bfTextEnd}}</li>')
+    expect(template).toContain('<li data-key="{{"Beta"}}">{{bfTextStart "s0"}}{{"Beta"}}{{bfTextEnd}}</li>')
+  })
+
+  test('shape 1 rendered through real `go run` produces the expected HTML', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: `
+export function List() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return <ul>{items.map(item => <li key={item.label}>{item.label}</li>)}</ul>
+}
+`,
+        adapter: new GoTemplateAdapter(),
+        props: {},
+      })
+      expect(html).toContain('<li data-key="Alpha"><!--bf:s0-->Alpha<!--/--></li>')
+      expect(html).toContain('<li data-key="Beta"><!--bf:s0-->Beta<!--/--></li>')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #2224 shape-1 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+
+  test('shape 2, element body: inline unnamed array literal compiles and unrolls the same as a named const', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  return <ul>{[{ label: 'Alpha' }, { label: 'Beta' }].map(item => <li key={item.label}>{item.label}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).not.toContain('{{range')
+    expect(template).toContain('{{"Alpha"}}')
+    expect(template).toContain('{{"Beta"}}')
+  })
+
+  test('shape 2, component body: inline unnamed array literal reaches the #2208 constructor bake (previously BF101 "Expression not supported")', () => {
+    const result = compileJSX(
+      `
+import { ListItem } from './list-item'
+export function List() {
+  return (
+    <ul>
+      {[{ label: 'Alpha' }, { label: 'Beta' }].map(item => (
+        <ListItem key={item.label} label={item.label} />
+      ))}
+    </ul>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter(), siblingTemplatesRegistered: true },
+    )
+    expect(result.errors ?? []).toEqual([])
+    const types = result.files.find(f => f.type === 'types')!.content
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha"})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Beta"})')
+    // The template still ranges over `.ListItems` (#2208's shape — only the
+    // constructor's data is baked, not the range itself).
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain(':= .ListItems}}')
+  })
+
+  test('gate: a body expression that cannot fold against the item (a signal-shaped call) keeps the BF101 refusal', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return <ul>{items.map(item => <li key={item.label}>{item.label} - {Date.now()}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).not.toContain('{{"Alpha"}}')
+  })
+
+  test('gate: an index-param reference keeps the BF101 refusal (index is deliberately not folded)', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return <ul>{items.map((item, i) => <li key={item.label}>{i}: {item.label}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+
+  test('gate: a nested loop inside the body keeps the BF101 refusal', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha', tags: ['x', 'y'] }]
+  return <ul>{items.map(item => <li key={item.label}>{item.tags.map(t => <span>{t}</span>)}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+
+  test('gate: a non-scalar item field (array/object) keeps the BF101 refusal', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha', tags: ['x'] }]
+  return <ul>{items.map(item => <li key={item.label}>{item.tags}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+
+  test('gate: .flatMap() keeps the BF101 refusal (out of scope)', () => {
+    const result = compileJSX(
+      `
+export function List() {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return <ul>{items.flatMap(item => [<li key={item.label}>{item.label}</li>])}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
+  })
+
+  test('a static const shadowed by an enclosing loop param does not get unrolled (element body)', () => {
+    const result = compileJSX(
+      `
+export function Nested({ groups }: { groups: { label: string }[][] }) {
+  const items = [{ label: 'Alpha' }, { label: 'Beta' }]
+  return (
+    <div>
+      {groups.map((items, i) => (
+        <ul key={i}>
+          {items.map(item => (
+            <li key={item.label}>{item.label}</li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    const template = result.files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).not.toContain('{{"Alpha"}}')
+  })
+})

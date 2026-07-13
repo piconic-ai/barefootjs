@@ -32,7 +32,16 @@ export interface BakedStaticChildLoop {
   items: BakedStaticChildItem[]
 }
 
-function scalarToGoLiteral(value: unknown): string | null {
+/**
+ * Render a compile-time-known JS scalar as a Go template literal (a quoted
+ * string / bare number / `true`/`false`), or `null` for anything else
+ * (object, array, `null`, `undefined`) — those have no bare-literal Go
+ * template form at this layer. Exported for reuse by
+ * `static-element-loop-bake.ts` (#2224), which bakes item field values into
+ * a plain-element loop body's text/attr positions the same way this module
+ * bakes them into a child component's `Input{...}` constructor call.
+ */
+export function scalarToGoLiteral(value: unknown): string | null {
   if (typeof value === 'string') return `"${escapeGoString(value)}"`
   if (typeof value === 'number') return String(value)
   if (typeof value === 'boolean') return value ? 'true' : 'false'
