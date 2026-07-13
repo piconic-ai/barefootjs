@@ -106,10 +106,23 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // construction stays possible without an adapter; a missing hook keeps
     // the old silent-degrade emit.
     private readonly onUnsupported?: (message: string, reason?: string) => void,
+    // The Ruby local to EMIT for a reference matching `this.param` — as
+    // opposed to `this.param` itself, which is only the name to MATCH.
+    // These two are the SAME value everywhere in this file except the
+    // `filter().map()` loop-gating `<if>` (erb-adapter.ts's `renderLoop`,
+    // #2245): `todos.filter(t => t.done).map(todo => ...)` parses the
+    // predicate against the filter callback's OWN param (`t`), but the
+    // Ruby local actually bound by the loop is the MAP callback's param
+    // (`todo`) — Ruby has no per-callback block scope there (unlike the
+    // real nested `.select { |t| ... }` block `callbackMethod` below
+    // builds, where match and render are naturally the same param).
+    // Defaults to `rubyLocal(this.param)`, i.e. every other construction
+    // site is unaffected.
+    private readonly renderParamAs: string = rubyLocal(param),
   ) {}
 
   identifier(name: string): string {
-    if (name === this.param) return rubyLocal(this.param)
+    if (name === this.param) return this.renderParamAs
     const signal = this.localVarMap.get(name)
     if (signal) return `v[${rubySymbolLiteral(signal)}]`
     if (this.isLoopBoundOuter(name)) return rubyLocal(name)

@@ -373,6 +373,11 @@ import { fixture as loopParamShadowsConstKey } from './loop-param-shadows-const-
 // qualification, made reachable by a non-'all' default filter (a
 // same-file child component avoids the BF103 sibling-import refusal).
 import { fixture as filterWrapperPropsReachable } from './filter-wrapper-props-reachable'
+// #2245: the un-routed-around twin of `filterWrapperPropsReachable` above —
+// same shape, but keeps the filter/map callbacks' ORIGINALLY differently-
+// named params (`t` / `todo`) instead of renaming to dodge the ERB-only
+// `ErbFilterEmitter` ID-matching bug that naming previously routed around.
+import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 // #2237 (PR #2241): a `.map()` callback param shadows a module-scope
 // object const; every Twig-family adapter used to bake the const's
 // literal into each iteration instead of reading the loop's own item.
@@ -652,5 +657,6 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsOuterName,
   loopParamShadowsConstKey,
   filterWrapperPropsReachable,
+  filterParamNameDiffers,
   loopParamShadowsRecordConst,
 ]

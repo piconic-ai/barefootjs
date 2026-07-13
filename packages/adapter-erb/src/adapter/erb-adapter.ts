@@ -1090,14 +1090,31 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     if (loop.filterPredicate) {
       let filterCond: string
       if (loop.filterPredicate.predicate) {
-        // The loop's own (possibly destructure-adjusted) param name IS the
-        // filter predicate's parameter for rendering purposes — pass it
-        // straight through as the filter emitter's bound param. Ruby's
-        // named-block-param model makes the Mojo original's regex
-        // `$filterParam → $loopParam` rename unnecessary here: the emitter
-        // just renders every reference to the predicate's own arrow
-        // parameter AS `param` from the start.
-        filterCond = this.renderRubyFilterExpr(loop.filterPredicate.predicate, param)
+        // The filter predicate's identifiers were parsed against the
+        // FILTER callback's own param (`loop.filterPredicate.param`), which
+        // can differ from the loop's rendered Ruby local (`param`, the MAP
+        // callback's param) whenever the two are named differently —
+        // `todos.filter(t => t.done).map(todo => ...)` (#2245). Ruby's
+        // named-block-param model means there's no Mojo-style regex
+        // `$filterParam → $loopParam` TEXT rewrite to do, but the
+        // DISTINCTION it encoded still matters: match identifiers against
+        // the filter's own param, while EMITTING the loop's actual bound
+        // local — `ErbFilterEmitter`'s `renderParamAs` carries that split.
+        // `filterPredicate.param` is only ever a bare identifier in
+        // practice (`extractFilterPredicate` in jsx-to-ir.ts refuses a
+        // destructured filter param outright, leaving `filterPredicate`
+        // unset entirely rather than populating it with pattern text — see
+        // its docstring), but guard defensively instead of relying on that
+        // invariant: a pattern-text param (leading `[`/`{` — the same
+        // prefix check `destructureLoopParam`/#2238 use, NOT an identifier
+        // regex, which would misclassify a Unicode param name) falls back
+        // to `param`, matching pre-#2245 behavior byte-for-byte.
+        const filterOwnParam = loop.filterPredicate.param
+        const matchParam =
+          filterOwnParam && !filterOwnParam.startsWith('[') && !filterOwnParam.startsWith('{')
+            ? filterOwnParam
+            : param
+        filterCond = this.renderRubyFilterExpr(loop.filterPredicate.predicate, matchParam, undefined, rubyLocal(param))
       } else {
         filterCond = 'true'
       }
@@ -1619,6 +1636,14 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     expr: ParsedExpr,
     param: string,
     localVarMap: Map<string, string> = new Map(),
+    // See `ErbFilterEmitter`'s constructor docstring (#2245): the Ruby
+    // local to EMIT for a reference to `param`, when it differs from
+    // `param` itself (the loop-gating call site passes the filter
+    // callback's own param as `param` — the name to MATCH — and this as
+    // the loop's actual bound local). Every other caller omits it, so
+    // `ErbFilterEmitter`'s own default (`rubyLocal(param)`) applies and
+    // match/render stay the same value, unchanged from before #2245.
+    renderParamAs?: string,
   ): string {
     return emitParsedExpr(
       expr,
@@ -1628,6 +1653,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         n => this.isLoopBoundName(n),
         n => this._isStringValueName(n),
         (message, reason) => this._recordExprBF101(message, reason),
+        renderParamAs,
       ),
     )
   }

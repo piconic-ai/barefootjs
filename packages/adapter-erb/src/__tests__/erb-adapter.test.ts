@@ -305,6 +305,127 @@ export { Slot }
   })
 })
 
+describe('ErbAdapter - filter().map() predicate matches the FILTER param, not the loop param (#2245)', () => {
+  // `todos.filter(t => t.done).map(todo => ...)`: the predicate's own `t`
+  // used to be matched against the LOOP's (map's) param `todo` inside
+  // `ErbFilterEmitter.identifier()`, so every reference to `t` inside the
+  // predicate fell to the `v[:t]` vars-Hash fallback instead of resolving
+  // to the loop-bound `todo` local — `v[:t]` is never seeded, and real
+  // Ruby raises `NoMethodError: undefined method '[]' for nil` on
+  // `v[:t][:done]` at render time (masked in the shipped `todo-app-ssr`
+  // corpus by its `'all'`-default filter short-circuiting the buggy
+  // branch away — see `filter-wrapper-props-reachable`'s docstring).
+  const DIFFERENTLY_NAMED_SOURCE = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+type Todo = { id: number; text: string; done: boolean }
+
+export function TodoList(props: { initialTodos?: Todo[] }) {
+  const [todos] = createSignal<Todo[]>(props.initialTodos ?? [])
+  return (
+    <ul>
+      {todos().filter(t => !t.done).map(todo => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  )
+}
+`
+
+  function compileToIR(source: string): ComponentIR {
+    const result = compileJSX(source.trimStart(), 'test.tsx', {
+      adapter: new ErbAdapter(),
+      outputIR: true,
+    })
+    const irFile = result.files.find(f => f.type === 'ir')
+    if (!irFile) throw new Error('No IR output')
+    return JSON.parse(irFile.content) as ComponentIR
+  }
+
+  test('predicate reference lowers through the loop-bound local, never the filter-param vars-Hash fallback', () => {
+    const ir = compileToIR(DIFFERENTLY_NAMED_SOURCE)
+    const { template } = new ErbAdapter().generate(ir)
+    // The loop-gating `<if>` must reference the loop's actual bound Ruby
+    // local (`todo[:done]`, from the MAP callback's param)...
+    expect(template).toContain('todo[:done]')
+    // ...never the filter callback's own param name resolved as an
+    // (unseeded) vars-Hash key — the literal pre-fix bug.
+    expect(template).not.toContain('v[:t]')
+  })
+
+  test('same-named filter/map params render byte-identically to the pre-#2245 form (regression pin)', () => {
+    const sameNamedSource = DIFFERENTLY_NAMED_SOURCE.replace(
+      'filter(t => !t.done)',
+      'filter(todo => !todo.done)',
+    )
+    const ir = compileToIR(sameNamedSource)
+    const { template } = new ErbAdapter().generate(ir)
+    expect(template).toContain('<%- if bf.truthy?(!bf.truthy?(todo[:done])) -%>')
+  })
+
+  test('real Ruby render: reachable predicate on differently-named params renders correctly (pre-fix NoMethodError pin)', async () => {
+    // `filter` defaults to `'active'` (never `'all'`) so the predicate
+    // branch referencing `t.done` is actually REACHABLE at render time —
+    // an `'all'`-style short-circuiting default is exactly what hid this
+    // bug in the shipped `todo-app-ssr` fixture. Block-body predicate
+    // (folded to one expression by #2040's `foldBlockToExpr` +
+    // `predicateTernaryToLogical`) matches the real `TodoAppSSR.tsx` shape.
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+
+type Todo = { id: number; text: string; done: boolean }
+type Filter = 'all' | 'active'
+
+export function TodoList(props: { initialTodos?: Todo[] }) {
+  const [todos] = createSignal<Todo[]>(props.initialTodos ?? [])
+  const [filter] = createSignal<Filter>('active')
+  return (
+    <ul>
+      {todos().filter(t => {
+        const f = filter()
+        if (f === 'active') return !t.done
+        return true
+      }).map(todo => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    let html: string
+    try {
+      html = await renderErbComponent({
+        source: source.trimStart(),
+        adapter: new ErbAdapter(),
+        props: {
+          initialTodos: [
+            { id: 1, text: 'Eat breakfast', done: true },
+            { id: 2, text: 'Write tests', done: false },
+          ],
+        },
+      })
+    } catch (err) {
+      if (err instanceof ErbNotAvailableError) {
+        console.log('Skipping #2245 filter-param e2e: ruby/erb not available')
+        return
+      }
+      throw err
+    }
+    // Pre-fix: real Ruby raises `NoMethodError: undefined method '[]' for
+    // nil` evaluating `v[:t][:done]` — `renderErbComponent` surfaces that
+    // as a thrown "ruby render failed" error, so a `NoMethodError` string
+    // anywhere in a caught error would fail this test outright rather than
+    // reaching these assertions. Post-fix: only the not-done todo (id 2)
+    // survives the 'active' filter.
+    expect(html).not.toContain('Eat breakfast')
+    expect(html).toContain('Write tests')
+    expect(html).toContain('data-key="2"')
+    expect(html).not.toContain('data-key="1"')
+  })
+})
+
 describe('ErbAdapter - named-slot capture identifier safety (#2168 jsx-element-prop)', () => {
   // A JSX-valued prop under a hyphenated name (`data-slot`, a valid JSX
   // attribute name) must not leak into the buffer-slice capture's local
