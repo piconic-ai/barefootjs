@@ -512,7 +512,7 @@ type IconPropsWithHydration = { name: IconName } & IconProps & {
   "data-key"?: string | number
 }
 
-export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CheckIconPropsWithHydration) {
+export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CheckIconPropsWithHydration = {} as CheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `CheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -556,7 +556,7 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronDownIconPropsWithHydration) {
+export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronDownIconPropsWithHydration = {} as ChevronDownIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -600,7 +600,7 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronUpIconPropsWithHydration) {
+export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronUpIconPropsWithHydration = {} as ChevronUpIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronUpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -644,7 +644,7 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronLeftIconPropsWithHydration) {
+export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronLeftIconPropsWithHydration = {} as ChevronLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -688,7 +688,7 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronRightIconPropsWithHydration) {
+export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ChevronRightIconPropsWithHydration = {} as ChevronRightIconPropsWithHydration) {
   const __scopeId = __instanceId || `ChevronRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -732,7 +732,7 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
   )
 }
 
-export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: XIconPropsWithHydration) {
+export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: XIconPropsWithHydration = {} as XIconPropsWithHydration) {
   const __scopeId = __instanceId || `XIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -776,7 +776,7 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
   )
 }
 
-export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PlusIconPropsWithHydration) {
+export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PlusIconPropsWithHydration = {} as PlusIconPropsWithHydration) {
   const __scopeId = __instanceId || `PlusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -820,7 +820,7 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MinusIconPropsWithHydration) {
+export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MinusIconPropsWithHydration = {} as MinusIconPropsWithHydration) {
   const __scopeId = __instanceId || `MinusIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -864,7 +864,7 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SunIconPropsWithHydration) {
+export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SunIconPropsWithHydration = {} as SunIconPropsWithHydration) {
   const __scopeId = __instanceId || `SunIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -908,7 +908,7 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
   )
 }
 
-export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MoonIconPropsWithHydration) {
+export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MoonIconPropsWithHydration = {} as MoonIconPropsWithHydration) {
   const __scopeId = __instanceId || `MoonIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -952,7 +952,7 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MonitorIconPropsWithHydration) {
+export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MonitorIconPropsWithHydration = {} as MonitorIconPropsWithHydration) {
   const __scopeId = __instanceId || `MonitorIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -996,7 +996,7 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
   )
 }
 
-export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CopyIconPropsWithHydration) {
+export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CopyIconPropsWithHydration = {} as CopyIconPropsWithHydration) {
   const __scopeId = __instanceId || `CopyIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1040,7 +1040,7 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardIconPropsWithHydration) {
+export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardIconPropsWithHydration = {} as ClipboardIconPropsWithHydration) {
   const __scopeId = __instanceId || `ClipboardIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1084,7 +1084,7 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardCheckIconPropsWithHydration) {
+export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ClipboardCheckIconPropsWithHydration = {} as ClipboardCheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `ClipboardCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1128,7 +1128,7 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
   )
 }
 
-export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MenuIconPropsWithHydration) {
+export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: MenuIconPropsWithHydration = {} as MenuIconPropsWithHydration) {
   const __scopeId = __instanceId || `MenuIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1172,7 +1172,7 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowLeftIconPropsWithHydration) {
+export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowLeftIconPropsWithHydration = {} as ArrowLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1216,7 +1216,7 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowRightIconPropsWithHydration) {
+export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowRightIconPropsWithHydration = {} as ArrowRightIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowRightIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1260,7 +1260,7 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
   )
 }
 
-export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowUpDownIconPropsWithHydration) {
+export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: ArrowUpDownIconPropsWithHydration = {} as ArrowUpDownIconPropsWithHydration) {
   const __scopeId = __instanceId || `ArrowUpDownIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1304,7 +1304,7 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: EllipsisIconPropsWithHydration) {
+export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: EllipsisIconPropsWithHydration = {} as EllipsisIconPropsWithHydration) {
   const __scopeId = __instanceId || `EllipsisIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1325,7 +1325,7 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GitHubIconPropsWithHydration) {
+export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GitHubIconPropsWithHydration = {} as GitHubIconPropsWithHydration) {
   const __scopeId = __instanceId || `GitHubIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1346,7 +1346,7 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SettingsIconPropsWithHydration) {
+export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SettingsIconPropsWithHydration = {} as SettingsIconPropsWithHydration) {
   const __scopeId = __instanceId || `SettingsIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1367,7 +1367,7 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GlobeIconPropsWithHydration) {
+export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GlobeIconPropsWithHydration = {} as GlobeIconPropsWithHydration) {
   const __scopeId = __instanceId || `GlobeIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1388,7 +1388,7 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LogOutIconPropsWithHydration) {
+export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LogOutIconPropsWithHydration = {} as LogOutIconPropsWithHydration) {
   const __scopeId = __instanceId || `LogOutIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1409,7 +1409,7 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleHelpIconPropsWithHydration) {
+export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleHelpIconPropsWithHydration = {} as CircleHelpIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleHelpIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1430,7 +1430,7 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
   )
 }
 
-export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SearchIconPropsWithHydration) {
+export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SearchIconPropsWithHydration = {} as SearchIconPropsWithHydration) {
   const __scopeId = __instanceId || `SearchIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1451,7 +1451,7 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
   )
 }
 
-export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleCheckIconPropsWithHydration) {
+export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleCheckIconPropsWithHydration = {} as CircleCheckIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleCheckIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1472,7 +1472,7 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
   )
 }
 
-export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleXIconPropsWithHydration) {
+export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CircleXIconPropsWithHydration = {} as CircleXIconPropsWithHydration) {
   const __scopeId = __instanceId || `CircleXIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1493,7 +1493,7 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
   )
 }
 
-export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TriangleAlertIconPropsWithHydration) {
+export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TriangleAlertIconPropsWithHydration = {} as TriangleAlertIconPropsWithHydration) {
   const __scopeId = __instanceId || `TriangleAlertIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1514,7 +1514,7 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
   )
 }
 
-export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: InfoIconPropsWithHydration) {
+export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: InfoIconPropsWithHydration = {} as InfoIconPropsWithHydration) {
   const __scopeId = __instanceId || `InfoIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1535,7 +1535,7 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   )
 }
 
-export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CalendarIconPropsWithHydration) {
+export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: CalendarIconPropsWithHydration = {} as CalendarIconPropsWithHydration) {
   const __scopeId = __instanceId || `CalendarIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1556,7 +1556,7 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GripVerticalIconPropsWithHydration) {
+export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: GripVerticalIconPropsWithHydration = {} as GripVerticalIconPropsWithHydration) {
   const __scopeId = __instanceId || `GripVerticalIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1577,7 +1577,7 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
   )
 }
 
-export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LoaderCircleIconPropsWithHydration) {
+export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: LoaderCircleIconPropsWithHydration = {} as LoaderCircleIconPropsWithHydration) {
   const __scopeId = __instanceId || `LoaderCircleIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,
@@ -1621,7 +1621,7 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
   )
 }
 
-export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PanelLeftIconPropsWithHydration) {
+export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: PanelLeftIconPropsWithHydration = {} as PanelLeftIconPropsWithHydration) {
   const __scopeId = __instanceId || `PanelLeftIcon_${Math.random().toString(36).slice(2, 8)}`
   const sizeMap = {
   sm: 16,

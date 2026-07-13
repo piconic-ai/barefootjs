@@ -73,7 +73,7 @@ type KbdGroupPropsWithHydration = KbdGroupProps & {
 
 export type { KbdProps, KbdGroupProps }
 
-export function Kbd({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdPropsWithHydration) {
+export function Kbd({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdPropsWithHydration = {} as KbdPropsWithHydration) {
   const __scopeId = __instanceId || `Kbd_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration
@@ -93,7 +93,7 @@ export function Kbd({ className = '', asChild = false, children, __instanceId, _
   )
 }
 
-export function KbdGroup({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdGroupPropsWithHydration) {
+export function KbdGroup({ className = '', asChild = false, children, __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: KbdGroupPropsWithHydration = {} as KbdGroupPropsWithHydration) {
   const __scopeId = __instanceId || `KbdGroup_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration

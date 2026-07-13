@@ -324,7 +324,7 @@ export function SelectItem(__allProps: SelectItemProps & { __instanceId?: string
   )
 }
 
-export function SelectGroup({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectGroupPropsWithHydration) {
+export function SelectGroup({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectGroupPropsWithHydration = {} as SelectGroupPropsWithHydration) {
   const __scopeId = __instanceId || `SelectGroup_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration
@@ -338,7 +338,7 @@ export function SelectGroup({ children, className = '', __instanceId, __bfScope:
   )
 }
 
-export function SelectLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectLabelPropsWithHydration) {
+export function SelectLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: SelectLabelPropsWithHydration = {} as SelectLabelPropsWithHydration) {
   const __scopeId = __instanceId || `SelectLabel_${Math.random().toString(36).slice(2, 8)}`
   const selectLabelClasses = 'px-2 py-1.5 text-sm font-semibold text-foreground'
 

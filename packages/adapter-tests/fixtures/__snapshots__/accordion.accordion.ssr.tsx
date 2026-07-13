@@ -76,7 +76,7 @@ interface AccordionContentProps extends HTMLBaseAttributes {
 
 export type { AccordionProps, AccordionItemProps, AccordionTriggerProps, AccordionContentProps }
 
-export function Accordion({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: AccordionPropsWithHydration) {
+export function Accordion({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: AccordionPropsWithHydration = {} as AccordionPropsWithHydration) {
   const __scopeId = __instanceId || `Accordion_${Math.random().toString(36).slice(2, 8)}`
   const accordionClasses = 'w-full'
 

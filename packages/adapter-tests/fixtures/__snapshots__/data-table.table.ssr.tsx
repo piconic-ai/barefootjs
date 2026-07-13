@@ -428,7 +428,7 @@ type TableCaptionPropsWithHydration = TableCaptionProps & {
 
 export type { TableProps, TableHeaderProps, TableBodyProps, TableFooterProps, TableRowProps, TableHeadProps, TableCellProps, TableCaptionProps }
 
-export function Table({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TablePropsWithHydration) {
+export function Table({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TablePropsWithHydration = {} as TablePropsWithHydration) {
   const __scopeId = __instanceId || `Table_${Math.random().toString(36).slice(2, 8)}`
   const tableClasses = 'w-full caption-bottom border-collapse text-sm'
 
@@ -443,7 +443,7 @@ export function Table({ children, className = '', __instanceId, __bfScope: _bfSc
   )
 }
 
-export function TableHeader({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeaderPropsWithHydration) {
+export function TableHeader({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeaderPropsWithHydration = {} as TableHeaderPropsWithHydration) {
   const __scopeId = __instanceId || `TableHeader_${Math.random().toString(36).slice(2, 8)}`
   const tableHeaderClasses = '[&_tr]:border-b'
 
@@ -458,7 +458,7 @@ export function TableHeader({ children, className = '', __instanceId, __bfScope:
   )
 }
 
-export function TableBody({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableBodyPropsWithHydration) {
+export function TableBody({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableBodyPropsWithHydration = {} as TableBodyPropsWithHydration) {
   const __scopeId = __instanceId || `TableBody_${Math.random().toString(36).slice(2, 8)}`
   const tableBodyClasses = '[&_tr:last-child]:border-0'
 
@@ -473,7 +473,7 @@ export function TableBody({ children, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function TableFooter({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableFooterPropsWithHydration) {
+export function TableFooter({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableFooterPropsWithHydration = {} as TableFooterPropsWithHydration) {
   const __scopeId = __instanceId || `TableFooter_${Math.random().toString(36).slice(2, 8)}`
   const tableFooterClasses = 'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0'
 
@@ -488,7 +488,7 @@ export function TableFooter({ children, className = '', __instanceId, __bfScope:
   )
 }
 
-export function TableRow({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableRowPropsWithHydration) {
+export function TableRow({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableRowPropsWithHydration = {} as TableRowPropsWithHydration) {
   const __scopeId = __instanceId || `TableRow_${Math.random().toString(36).slice(2, 8)}`
   const tableRowClasses = 'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors'
 
@@ -503,7 +503,7 @@ export function TableRow({ children, className = '', __instanceId, __bfScope: _b
   )
 }
 
-export function TableHead({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeadPropsWithHydration) {
+export function TableHead({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableHeadPropsWithHydration = {} as TableHeadPropsWithHydration) {
   const __scopeId = __instanceId || `TableHead_${Math.random().toString(36).slice(2, 8)}`
   const tableHeadClasses = 'text-foreground h-10 px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
@@ -518,7 +518,7 @@ export function TableHead({ children, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function TableCell({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCellPropsWithHydration) {
+export function TableCell({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCellPropsWithHydration = {} as TableCellPropsWithHydration) {
   const __scopeId = __instanceId || `TableCell_${Math.random().toString(36).slice(2, 8)}`
   const tableCellClasses = 'p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
@@ -533,7 +533,7 @@ export function TableCell({ children, className = '', __instanceId, __bfScope: _
   )
 }
 
-export function TableCaption({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCaptionPropsWithHydration) {
+export function TableCaption({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: TableCaptionPropsWithHydration = {} as TableCaptionPropsWithHydration) {
   const __scopeId = __instanceId || `TableCaption_${Math.random().toString(36).slice(2, 8)}`
   const tableCaptionClasses = 'text-muted-foreground mt-4 text-sm'
 

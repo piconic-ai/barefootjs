@@ -707,7 +707,7 @@ export function DropdownMenuSubContent(__allProps: DropdownMenuSubContentProps &
   )
 }
 
-export function DropdownMenuLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuLabelPropsWithHydration) {
+export function DropdownMenuLabel({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuLabelPropsWithHydration = {} as DropdownMenuLabelPropsWithHydration) {
   const __scopeId = __instanceId || `DropdownMenuLabel_${Math.random().toString(36).slice(2, 8)}`
   const dropdownMenuLabelClasses = 'px-2 py-1.5 text-sm font-semibold text-foreground'
 
@@ -736,7 +736,7 @@ export function DropdownMenuSeparator({ className = '', __instanceId, __bfScope:
   )
 }
 
-export function DropdownMenuShortcut({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuShortcutPropsWithHydration) {
+export function DropdownMenuShortcut({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuShortcutPropsWithHydration = {} as DropdownMenuShortcutPropsWithHydration) {
   const __scopeId = __instanceId || `DropdownMenuShortcut_${Math.random().toString(36).slice(2, 8)}`
   const dropdownMenuShortcutClasses = 'ml-auto text-xs tracking-widest text-muted-foreground'
 
@@ -751,7 +751,7 @@ export function DropdownMenuShortcut({ children, className = '', __instanceId, _
   )
 }
 
-export function DropdownMenuGroup({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuGroupPropsWithHydration) {
+export function DropdownMenuGroup({ children, className = '', __instanceId, __bfScope: _bfScope, __bfChild, __bfParentProps, __bfParent, __bfMount, "data-key": __dataKey, ...props }: DropdownMenuGroupPropsWithHydration = {} as DropdownMenuGroupPropsWithHydration) {
   const __scopeId = __instanceId || `DropdownMenuGroup_${Math.random().toString(36).slice(2, 8)}`
 
   // Serialize props for client hydration
