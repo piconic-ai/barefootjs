@@ -24,10 +24,9 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * Bare references to presence-uncertain no-default props — non-primitive
- * or declared optional (#2259; pre-#2259 destructured optionals arrived as
- * `unknown` and the type test alone covered them) — (e.g.
- * textarea's `rows`) are `None` when omitted → guarded with
+ * Bare references to presence-uncertain no-default props (non-primitive
+ * typed OR declared optional, #2259 — e.g. textarea's `rows`) are
+ * `None` when omitted → guarded with
  * `is defined and is not none` in `emitExpression`. See the
  * `nullableOptionalProps` field docstring in `minijinja-adapter.ts`.
  */

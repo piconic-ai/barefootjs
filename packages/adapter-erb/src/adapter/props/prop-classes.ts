@@ -47,8 +47,7 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * concrete-primitive prop (`string`/`number`/`boolean`) is excluded — the
  * caller always supplies it, matching the Go adapter's unconditional
  * concrete fields — but an OPTIONAL primitive is presence-uncertain and
- * stays guarded (#2259; pre-#2259 these arrived as `unknown` and were
- * guarded by the type test alone).
+ * stays guarded (#2259).
  */
 export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
   return new Set(

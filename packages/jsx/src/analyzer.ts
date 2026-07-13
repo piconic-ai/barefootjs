@@ -3140,12 +3140,11 @@ function collectKeysFromMembers(
  *
  * Scope:
  * - Optionality is collected for EVERY member — it feeds the type's `?` into
- *   `propsParams[].optional` alongside a destructure default. (Pre-#2259,
- *   optional members were skipped entirely so they'd degrade to `unknown` ->
- *   `interface{}` and typed adapters could omit an unset optional attribute
- *   via that nillable field; #2252's nullish-flip machinery now provides the
- *   absent representation where it is semantically observable, so the blanket
- *   guard is no longer needed.)
+ *   `propsParams[].optional` alongside a destructure default. Optional
+ *   members resolve like required ones: typed adapters no longer need them
+ *   degraded to `unknown` -> `interface{}` for attribute omission, because
+ *   #2252's nullish-flip machinery supplies the nillable representation
+ *   exactly where absence is semantically observable (#2259).
  * - Only PRIMITIVE members (string/number/boolean) resolve a type. Those are
  *   the types that otherwise produce an unchecked scalar assertion (`in.X.(int)`)
  *   that panics. Arrays/objects/functions are left as `unknown` because typed

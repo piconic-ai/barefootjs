@@ -50,8 +50,7 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * A REQUIRED concrete-primitive prop (`string`/`number`/`boolean`) is
  * excluded — the caller always supplies it, so it emits `attr=""` like Hono
  * — but an OPTIONAL primitive is presence-uncertain and stays guarded
- * (#2259; pre-#2259 destructured optionals arrived as `unknown` and the
- * type test alone covered them).
+ * (#2259).
  */
 export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
   return new Set(

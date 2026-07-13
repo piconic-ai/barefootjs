@@ -25,10 +25,9 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
 }
 
 /**
- * Bare references to presence-uncertain no-default props — non-primitive
- * or declared optional (#2259; pre-#2259 destructured optionals arrived as
- * `unknown` and the type test alone covered them) — (e.g.
- * textarea's `rows`) are `undef` when omitted → `defined`-guarded in
+ * Bare references to presence-uncertain no-default props (non-primitive
+ * typed OR declared optional, #2259 — e.g. textarea's `rows`) are
+ * `undef` when omitted → `defined`-guarded in
  * `emitExpression`. See the `nullableOptionalProps` field docstring.
  */
 export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {

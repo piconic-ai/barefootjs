@@ -32,10 +32,6 @@
  *   needs member enumeration (unions) or required-field construction
  *   (objects);
  * - `Date` — joins the data domain in roadmap stage 4.
- *
- * (Destructured optional props were a v1 exclusion — the analyzer lost
- * their TypeInfo and optional flag; #2259 restored parity with the
- * props-object style, widening the artifact to destructured components.)
  */
 
 import { compileJSX } from '@barefootjs/jsx'

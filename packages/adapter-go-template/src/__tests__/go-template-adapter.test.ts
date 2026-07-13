@@ -670,6 +670,48 @@ export function Counter({ size }: { size?: number }) {
       expect(types).toContain('Count: in.Size,')
     })
 
+    test('negative fallback (`?? -1`) hoists in both prop styles (#2259 review)', () => {
+      // `-1` parses as unary minus around a number literal, not a literal —
+      // the structural seed match must reconstruct the sign, in the
+      // props-object form (where it preempts the regex path) and the
+      // destructured form alike.
+      for (const [params, ref] of [
+        ['props: { size?: number }', 'props.size'],
+        ['{ size }: { size?: number }', 'size'],
+      ]) {
+        const adapter = new GoTemplateAdapter()
+        const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Counter(${params}) {
+  const [count, setCount] = createSignal(${ref} ?? -1)
+  return <div>{count()}</div>
+}
+`, adapter)
+        const types = adapter.generate(ir).types!
+        expect(types).toContain('Size interface{}')
+        expect(types).toContain('var size int = -1')
+        expect(types).toContain('Count: size,')
+      }
+    })
+
+    test('string fallback with quotes survives the structural match unmangled (#2259 review)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Label({ label }: { label?: string }) {
+  const [text, setText] = createSignal(label ?? 'say "hi"')
+  return <div>{text()}</div>
+}
+`, adapter)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('var label string = "say \\"hi\\""')
+      expect(types).not.toContain('\\\\')
+    })
+
     test('destructure DEFAULT keeps the concrete-typed applyGoFallback baking (#2259)', () => {
       // `{ size = 5 }` never sees a nullish binding in JS (the default
       // already applied), so it must stay excluded from the nillable flip
