@@ -82,6 +82,27 @@ export type InteractionStep =
   | { type: 'drag'; selector: string; deltaX?: number; deltaY?: number }
 
 /**
+ * An additional evaluation point for oracle conformance
+ * (`spec/subset-conformance.md`). A marked template is a *function* from
+ * data to HTML; the fixture's primary `props`/`expectedHtml` pair observes
+ * one point of it. Each data point re-renders the fixture with adversarial
+ * props and compares the adapter's output against the live JS reference
+ * render — no hand-written expectation.
+ *
+ * Props must stay inside the JSON data domain (validated by
+ * `createFixture`): finite numbers, strings, booleans, `null`, arrays,
+ * plain objects. To express "optional prop absent", omit the key —
+ * `undefined` is not JSON-representable across backends. Catalogued rich
+ * types (`Date`) join the domain in a later roadmap stage.
+ */
+export interface JSXDataPoint {
+  /** Short unique name within the fixture, e.g. `'empty-label'`. */
+  name: string
+  /** Props for this evaluation point (JSON data domain only). */
+  props: Record<string, unknown>
+}
+
+/**
  * A JSX fixture defines a component source and optional props for rendering.
  * Used by the JSX conformance runner to compile and render across adapters.
  *
@@ -119,6 +140,14 @@ export interface JSXFixture {
   componentName?: string
   /** Props to pass when rendering (optional) */
   props?: Record<string, unknown>
+  /**
+   * Additional evaluation points for oracle conformance
+   * (`spec/subset-conformance.md`). Gated behind the primary
+   * `expectedHtml` smoke point: they only run when the fixture's primary
+   * render matches, so a fixture declaring `dataPoints` must also declare
+   * `expectedHtml` (enforced by `createFixture`).
+   */
+  dataPoints?: ReadonlyArray<JSXDataPoint>
   /** Expected normalized HTML output (generated from reference Hono adapter) */
   expectedHtml?: string
   /**
@@ -190,10 +219,61 @@ export function normalizeExpectedHtml(html: string): string {
 }
 
 /**
+ * Assert a data-point prop value stays inside the JSON data domain
+ * (`spec/subset-conformance.md`): finite numbers, strings, booleans,
+ * `null`, arrays, and plain objects. Everything else — `undefined`,
+ * `NaN`/`Infinity`, functions, `Date`, class instances — cannot cross
+ * the host-language boundary and fails loudly at fixture-definition
+ * time rather than as a confusing render divergence.
+ */
+function assertJsonDomain(fixtureId: string, pointName: string, value: unknown, path: string): void {
+  const fail = (why: string): never => {
+    throw new Error(
+      `[${fixtureId}] dataPoint '${pointName}': props${path} ${why} — ` +
+        `outside the JSON data domain (see spec/subset-conformance.md). ` +
+        `Omit the key to express an absent optional prop.`,
+    )
+  }
+  if (value === null) return
+  switch (typeof value) {
+    case 'string':
+    case 'boolean':
+      return
+    case 'number':
+      if (!Number.isFinite(value)) fail(`is a non-finite number (${value})`)
+      return
+    case 'undefined':
+      fail('is undefined')
+      return
+    case 'object':
+      break
+    default:
+      fail(`is a ${typeof value}`)
+      return
+  }
+  if (Array.isArray(value)) {
+    value.forEach((v, i) => assertJsonDomain(fixtureId, pointName, v, `${path}[${i}]`))
+    return
+  }
+  const proto = Object.getPrototypeOf(value)
+  if (proto !== Object.prototype && proto !== null) {
+    const ctor = (value as object).constructor?.name ?? 'unknown'
+    fail(
+      `is a ${ctor} instance${ctor === 'Date' ? ' (Date joins the catalogued data domain in a later roadmap stage)' : ''}`,
+    )
+  }
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    assertJsonDomain(fixtureId, pointName, v, `${path}.${k}`)
+  }
+}
+
+/**
  * Create a JSXFixture with automatic source trimming.
  * Strips leading newline from template literals so source
  * can be written with a natural indentation style.
  * Normalizes expectedHtml by collapsing whitespace.
+ * Validates `dataPoints` (JSON data domain, unique names, and the
+ * primary `expectedHtml` smoke point they are gated behind).
  */
 export function createFixture(input: {
   id: string
@@ -203,6 +283,7 @@ export function createFixture(input: {
   componentModules?: Record<string, string>
   componentName?: string
   props?: Record<string, unknown>
+  dataPoints?: ReadonlyArray<JSXDataPoint>
   expectedHtml?: string
   expectedClientJs?: string
   interactions?: ReadonlyArray<InteractionStep>
@@ -217,6 +298,23 @@ export function createFixture(input: {
   const normalizedExpectedHtml = input.expectedHtml
     ? normalizeExpectedHtml(input.expectedHtml)
     : undefined
+  if (input.dataPoints && input.dataPoints.length > 0) {
+    if (!input.expectedHtml) {
+      throw new Error(
+        `[${input.id}] dataPoints require expectedHtml: the primary point is the ` +
+          `smoke test and human pin the oracle points are gated behind ` +
+          `(spec/subset-conformance.md).`,
+      )
+    }
+    const seen = new Set<string>()
+    for (const point of input.dataPoints) {
+      if (seen.has(point.name)) {
+        throw new Error(`[${input.id}] duplicate dataPoint name '${point.name}'`)
+      }
+      seen.add(point.name)
+      assertJsonDomain(input.id, point.name, point.props, '')
+    }
+  }
   return {
     ...input,
     source: input.source.trimStart(),

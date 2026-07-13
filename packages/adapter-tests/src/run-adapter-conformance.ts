@@ -26,6 +26,7 @@ import { describe, test, expect } from 'bun:test'
 import type { TemplateAdapter } from '../../jsx/src/types'
 import { runJSXConformanceTests, type RenderOptions } from './jsx-runner'
 import { runConformanceSuite } from './conformance'
+import { runDataPointConformance } from './data-point-conformance'
 import { runMarkerConformance } from './marker-conformance'
 import type { ExpectedDiagnostic } from './types'
 import {
@@ -90,6 +91,16 @@ export interface RunAdapterConformanceOptions {
    * so adding a new adapter doesn't touch any fixture file.
    */
   expectedDiagnostics?: Record<string, ReadonlyArray<ExpectedDiagnostic>>
+  /**
+   * Data points (`spec/subset-conformance.md`) whose oracle comparison
+   * is consciously diverging on this adapter, keyed
+   * `${fixtureId}:${pointName}`. Each entry should be paired with a
+   * comment naming the divergence and the follow-up `known-limitation`
+   * issue; missing entries default to "skip nothing". Fixtures already
+   * in `skipJsx` / `expectedDiagnostics` are excluded wholesale — their
+   * primary point cannot gate anything.
+   */
+  skipDataPoints?: ReadonlySet<string>
 }
 
 export function runAdapterConformanceTests(
@@ -121,6 +132,18 @@ export function runAdapterConformanceTests(
     name: opts.name,
     factory: opts.factory,
     skipFixtures: opts.skipMarkerConformance,
+  })
+
+  runDataPointConformance({
+    name: opts.name,
+    factory: opts.factory,
+    render: opts.render,
+    onRenderError: opts.onRenderError,
+    skipFixtures: new Set([
+      ...(opts.skipJsx ?? []),
+      ...Object.keys(opts.expectedDiagnostics ?? {}),
+    ]),
+    skipDataPoints: opts.skipDataPoints,
   })
 
   if (opts.skipRenderContract) return

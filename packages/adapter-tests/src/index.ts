@@ -6,7 +6,9 @@
 
 export { runJSXConformanceTests, normalizeHTML, stripConditionalMarkersForCrossAdapter } from './jsx-runner'
 export { createFixture, normalizeExpectedHtml } from './types'
-export type { JSXFixture, ExpectedDiagnostic } from './types'
+export type { JSXFixture, JSXDataPoint, ExpectedDiagnostic } from './types'
+export { runDataPointConformance } from './data-point-conformance'
+export type { RunDataPointConformanceOptions } from './data-point-conformance'
 export { indentHTML } from './indent-html'
 export type { RunJSXConformanceOptions, RenderOptions } from './jsx-runner'
 export { runConformanceSuite } from './conformance'

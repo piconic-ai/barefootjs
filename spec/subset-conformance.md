@@ -177,8 +177,8 @@ convention as `spec/adapter-architecture.md`):
 |-----------|--------|-----|
 | Normative subset | `ParsedExpr` union + exhaustive adapter switches (drift-defence); array-method / sort-comparator catalogues; builtin lowering registry; BF021/BF101 loud-refusal policy + growing-only rule (`spec/compiler.md`); `/* @client */` escape | Pieces are scattered across spec/types/catalogues with no single normative declaration; `ParsedExpr` lacks `object-literal` (adapter-architecture Roadmap A); the boundary is not fully loud — the Date silent passthrough proves unknown-type method calls pass undiagnosed; the data-domain axiom exists only in this document |
 | Canonical reference (JS render) | Hono/JS render is the *de facto* reference: snapshot generation renders expectations through it; `referenceAdapter`/`referenceRender` HTML-diff suite exists; determinism landed (#1494) | No *declaration* of canonical status (`referenceAdapter` is optional — the reference is still positioned as one adapter among eleven); oracle comparison runs at one evaluation point per fixture, not live × multiple data points |
-| Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection | No `dataPoints` suite (evaluation-point multiplication unimplemented); no type-derived adversarial value catalogue; no PR-vs-nightly tiering |
-| Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix; no fixture frontmatter declaring exercised kinds/axes (so a coverage map has no denominator); `skipDataPoints` undefined until the suite lands |
+| Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 and a Go harness string-escaping bug on its first run) | No type-derived adversarial value catalogue; no PR-vs-nightly tiering; adversarial points exist on one pilot fixture only |
+| Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — first entries pin #2248 on the Go adapter) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix; no fixture frontmatter declaring exercised kinds/axes (so a coverage map has no denominator) |
 
 Cross-cutting gap: the change-time coupling rule (subset extensions merge
 only with fixtures in the same PR) is not yet written into any contribution
@@ -188,7 +188,10 @@ convention.
 
 1. **Schema + gate + live oracle** — `dataPoints` on `createFixture`, the
    gate-ordered suite in `run-adapter-conformance.ts`, JSON-domain values
-   only.
+   only. **Landed.** The pilot's first run validated the design: it
+   surfaced a genuine `??` zero-value divergence on Go (#2248, pinned via
+   `skipDataPoints`) and a Go render-harness string-escaping bug (fixed),
+   while ERB / Jinja / Rust passed all points on real backends.
 2. **Hand-written adversarial points** across existing fixtures, prioritized
    by the frontmatter/axis map as it lands.
 3. **Type-derived value catalogue** from `TypeInfo`.

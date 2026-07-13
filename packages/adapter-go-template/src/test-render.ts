@@ -699,7 +699,7 @@ function buildGoPropsInit(
     // not the naive `Id`) — see `goMapLiteralFromObject`'s identical fix.
     const goField = capitalizeFieldName(key)
     if (typeof value === 'string') {
-      lines.push(`\t\t${goField}: "${value}",`)
+      lines.push(`\t\t${goField}: ${goStringLit(value)},`)
     } else if (typeof value === 'number') {
       lines.push(`\t\t${goField}: ${value},`)
     } else if (typeof value === 'boolean') {
@@ -828,6 +828,20 @@ function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): stri
  * names. Only the keys the caller supplied are set, so an omitted optional prop
  * (e.g. `defaultOn` on the third toggle item) takes the Go zero value. (#1297)
  */
+/**
+ * Emit a JS string as a Go interpreted string literal. JSON string
+ * escaping is a subset of Go's (`\"`, `\\`, `\n`, `\uXXXX` are all valid
+ * Go escapes), so `JSON.stringify` is a correct emitter — unlike the
+ * previous quote-only `.replace(/"/g, '\\"')`, it also survives
+ * backslashes, newlines, and control characters (data-point conformance
+ * caught the quote case: a `"` in a string prop broke the generated
+ * `main.go` at compile time). Lone surrogates emit as `\uDXXX`, which Go
+ * rejects — acceptable until a fixture needs malformed-UTF-16 props.
+ */
+function goStringLit(v: string): string {
+  return JSON.stringify(v)
+}
+
 function goStructLiteral(obj: Record<string, unknown>, typeName: string): string {
   const fields: string[] = []
   for (const [k, v] of Object.entries(obj)) {
@@ -836,7 +850,7 @@ function goStructLiteral(obj: Record<string, unknown>, typeName: string): string
     // adapter's own struct-literal baking (`parsed-literal-to-go.ts`)
     // sanitizes those to `DataX`, not `Data-x` (Copilot review, #2202).
     const goField = goFieldNameForKey(k)
-    if (typeof v === 'string') fields.push(`${goField}: "${v.replace(/"/g, '\\"')}"`)
+    if (typeof v === 'string') fields.push(`${goField}: ${goStringLit(v)}`)
     else if (typeof v === 'number' || typeof v === 'boolean') fields.push(`${goField}: ${v}`)
     else if (v === null) fields.push(`${goField}: nil`)
     else if (Array.isArray(v)) fields.push(`${goField}: ${goArrayLiteralFromArray(v)}`)
@@ -848,7 +862,7 @@ function goStructLiteral(obj: Record<string, unknown>, typeName: string): string
 function goArrayLiteralFromArray(arr: unknown[]): string {
   const entries: string[] = []
   for (const v of arr) {
-    if (typeof v === 'string') entries.push(`"${v.replace(/"/g, '\\"')}"`)
+    if (typeof v === 'string') entries.push(goStringLit(v))
     else if (typeof v === 'number') entries.push(String(v))
     else if (typeof v === 'boolean') entries.push(String(v))
     else if (v === null) entries.push('nil')
@@ -886,7 +900,7 @@ function goMapLiteralFromObject(
     // uses for exactly this key-to-Go-field sanitization.
     const emittedKey = capitalizeKeys ? goFieldNameForKey(k) : k
     const key = JSON.stringify(emittedKey)
-    if (typeof v === 'string') entries.push(`${key}: "${v.replace(/"/g, '\\"')}"`)
+    if (typeof v === 'string') entries.push(`${key}: ${goStringLit(v)}`)
     else if (typeof v === 'number') entries.push(`${key}: ${v}`)
     else if (typeof v === 'boolean') entries.push(`${key}: ${v}`)
     else if (v === null) entries.push(`${key}: nil`)
