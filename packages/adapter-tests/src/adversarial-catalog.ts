@@ -31,12 +31,11 @@
  * - union / object / interface / function-typed props — value synthesis
  *   needs member enumeration (unions) or required-field construction
  *   (objects);
- * - `Date` — joins the data domain in roadmap stage 4;
- * - DESTRUCTURED optional props (#2259) — the analyzer currently loses
- *   their TypeInfo and optional flag (`{ size }: { size?: number }` →
- *   `unknown`/`optional: false`), so nothing can be derived; the
- *   props-object style resolves fully. When #2259 lands, the freshness
- *   test will demand a regen that widens the artifact automatically.
+ * - `Date` — joins the data domain in roadmap stage 4.
+ *
+ * (Destructured optional props were a v1 exclusion — the analyzer lost
+ * their TypeInfo and optional flag; #2259 restored parity with the
+ * props-object style, widening the artifact to destructured components.)
  */
 
 import { compileJSX } from '@barefootjs/jsx'

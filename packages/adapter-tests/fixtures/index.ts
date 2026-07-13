@@ -132,6 +132,7 @@ import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
 import { fixture as untypedPropsReads } from './untyped-props-reads'
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
+import { fixture as nullishCoalescingDestructured } from './nullish-coalescing-destructured'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
 import { fixture as logicalOrJsx } from './logical-or-jsx'
 import { fixture as branchSelfClosing } from './branch-self-closing'
@@ -470,6 +471,7 @@ export const jsxFixtures: JSXFixture[] = [
   defaultProps,
   untypedPropsReads,
   nullishCoalescingText,
+  nullishCoalescingDestructured,
   nullishCoalescingJsx,
   logicalOrJsx,
   branchSelfClosing,

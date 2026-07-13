@@ -2480,6 +2480,22 @@
         "condition"
       ]
     },
+    "nullish-coalescing-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "nullish-coalescing-jsx": {
       "kinds": [
         "binary",
@@ -4026,12 +4042,12 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 154,
+    "call": 155,
     "conditional": 18,
-    "identifier": 231,
+    "identifier": 232,
     "index-access": 12,
-    "literal": 193,
-    "logical": 40,
+    "literal": 194,
+    "logical": 41,
     "member": 115,
     "object-literal": 41,
     "template-literal": 27,
@@ -4075,10 +4091,10 @@
     "binary:>=": 1,
     "literal:boolean": 37,
     "literal:null": 22,
-    "literal:number": 84,
-    "literal:string": 137,
+    "literal:number": 85,
+    "literal:string": 138,
     "logical:&&": 7,
-    "logical:??": 36,
+    "logical:??": 37,
     "logical:||": 12,
     "member:computed": 8,
     "member:optional": 1,
