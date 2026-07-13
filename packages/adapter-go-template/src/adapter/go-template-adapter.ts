@@ -135,7 +135,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -416,6 +416,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
     this.primeCompileState(ir)
+    // Ordering: the nullish-consumed set feeds `resolvePropGoType`'s
+    // interface{} flip (#2248), and `collectNillablePropNames` is itself
+    // derived from `resolvePropGoType` — so populate it first.
+    this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
 
@@ -1213,10 +1217,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // from an omitted field, so it also fires on the type's zero value.
     const propFallbackVars = this.collectPropFallbackVars(ir)
     for (const [, info] of propFallbackVars) {
-      lines.push(`\t${info.varName} := in.${info.fieldName}`)
-      lines.push(`\tif ${info.varName} == ${info.zeroLiteral} {`)
-      lines.push(`\t\t${info.varName} = ${info.goFallback}`)
-      lines.push(`\t}`)
+      if (info.assertType) {
+        // Nillable-lowered prop (#2248): the `interface{}` field makes
+        // "absent" (nil) distinguishable from an explicit `''`/`0`/`false`,
+        // so the fallback applies ONLY on nil — JS `??` semantics. Numbers
+        // coerce through the runtime (an untyped `Size: 3` literal boxes as
+        // int even into a float64-shaped prop); string/bool assert directly.
+        const deref =
+          info.assertType === 'int' ? `bf.ToInt(in.${info.fieldName})`
+          : info.assertType === 'float64' ? `bf.ToFloat64(in.${info.fieldName})`
+          : `in.${info.fieldName}.(${info.assertType})`
+        lines.push(`\tvar ${info.varName} ${info.assertType} = ${info.goFallback}`)
+        lines.push(`\tif in.${info.fieldName} != nil {`)
+        lines.push(`\t\t${info.varName} = ${deref}`)
+        lines.push(`\t}`)
+      } else {
+        lines.push(`\t${info.varName} := in.${info.fieldName}`)
+        lines.push(`\tif ${info.varName} == ${info.zeroLiteral} {`)
+        lines.push(`\t\t${info.varName} = ${info.goFallback}`)
+        lines.push(`\t}`)
+      }
     }
     if (propFallbackVars.size > 0) lines.push('')
 
@@ -2715,6 +2735,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       localTaken.add(`${nested.name.charAt(0).toLowerCase()}${nested.name.slice(1)}s`)
     }
 
+    const propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
     for (const signal of ir.metadata.signals) {
       const match = this.extractPropFallback(signal.initialValue)
       if (!match) continue
@@ -2724,6 +2745,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // A destructure default already wins via applyGoFallback below.
       if (goPropDefault(param.defaultValue) !== null) continue
       const fieldName = capitalizeFieldName(match.propName)
+      // A `??`-consumed optional scalar lowered to `interface{}` (#2248) —
+      // detected off the SAME `resolvePropGoType` pipeline the struct
+      // generators use, so this can't drift from the emitted field type. The
+      // concrete pre-flip type is what the hoisted local materializes as.
+      const concreteType = propTypeOverrides.get(param.name) ?? typeInfoToGo(this.emitCtx, param.type, param.defaultValue)
+      const nullishLowered =
+        NULLISH_SCALAR_GO_TYPES.has(concreteType) &&
+        resolvePropGoType(this.emitCtx, param, propTypeOverrides) === 'interface{}'
       // Pick the zero literal based on the fallback's literal shape. Bool
       // fallbacks (`?? true`) hoist against the `false` zero — the same Go-zero
       // conflation the int / string cases accept: the caller can't distinguish
@@ -2742,8 +2771,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // (`?? 0`, `?? ''`, `?? false`, `?? 0.0`). Compare against the computed
       // zeroLiteral so spelling variants like `0.0` collapse to the same skip
       // as `0`.
-      if (match.goFallback === zeroLiteral) continue
-      if (zeroLiteral === '0' && Number(match.goFallback) === 0) continue
+      //
+      // NOT a no-op for a nillable-lowered prop (#2248): its `interface{}`
+      // field can be nil, and the typed hoisted local is what downstream
+      // consumers (`Count: size`, memo env maps) assign from — a nil
+      // interface into a concrete field is a compile error, so the local
+      // must exist even when the fallback equals the zero value.
+      if (!nullishLowered) {
+        if (match.goFallback === zeroLiteral) continue
+        if (zeroLiteral === '0' && Number(match.goFallback) === 0) continue
+      }
       // The JSX-side identifier is the natural local name; suffix with `_` if it
       // collides with a Go keyword or a local we already emit.
       let varName = match.propName
@@ -2751,7 +2788,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         varName += '_'
       }
       localTaken.add(varName)
-      result.set(match.propName, { varName, fieldName, goFallback: match.goFallback, zeroLiteral })
+      result.set(match.propName, {
+        varName,
+        fieldName,
+        goFallback: match.goFallback,
+        zeroLiteral,
+        ...(nullishLowered ? { assertType: concreteType } : {}),
+      })
     }
     return result
   }
@@ -3526,7 +3569,50 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const wrapLeft = wrapIfMultiToken(emit(left))
     const wrapRight = wrapIfMultiToken(emit(right))
     if (op === '&&') return `and ${wrapLeft} ${wrapRight}`
+    // `??` on a nillable prop needs true JS nullish semantics (#2248): Go's
+    // `or` is truthiness-based, so `{{or .Label "Default"}}` falls back on a
+    // present-but-empty `""` — JS `??` keeps it. `bf_nullish` tests nil-ness
+    // only. Non-nillable operands keep `or`: their concrete Go type can't
+    // represent "absent" at all, so `or` and `??` are indistinguishable there.
+    if (op === '??' && this.nillablePropNameOf(left) !== null) {
+      return `bf_nullish ${wrapLeft} ${wrapRight}`
+    }
     return `or ${wrapLeft} ${wrapRight}`
+  }
+
+  /**
+   * The nillable-prop name a `??` left operand refers to, or null. Matches
+   * the two prop-reference shapes (`label` destructured, `props.label`
+   * object-style) against `nullishConsumedPropNames ∩ nillablePropNames`.
+   *
+   * The intersection matters: `nillablePropNames` alone OVERAPPROXIMATES —
+   * it is collected before local type aliases are registered, so an
+   * alias-typed prop (`placement?: TooltipPlacement`) can sit in the set
+   * while its emitted struct field is the concrete alias type. On such a
+   * concrete field "absent" is invisible (the zero value), so the
+   * truthiness-based `or` is the correct approximation and `bf_nullish`
+   * would wrongly KEEP the zero value (the tooltip placement-classes
+   * regression). Requiring `nullishConsumedPropNames` membership pins the
+   * gate to props the `??` analysis actually saw — the same set that drives
+   * the `interface{}` flip in `resolvePropGoType`.
+   */
+  private nillablePropNameOf(expr: ParsedExpr): string | null {
+    let name: string | null = null
+    if (expr.kind === 'identifier') {
+      name = expr.name
+    } else if (
+      expr.kind === 'member' &&
+      !expr.computed &&
+      expr.object.kind === 'identifier' &&
+      expr.object.name === this.state.propsObjectName
+    ) {
+      name = expr.property
+    }
+    return name !== null &&
+      this.state.nullishConsumedPropNames.has(name) &&
+      this.state.nillablePropNames.has(name)
+      ? name
+      : null
   }
 
   // JSX-level ternaries (`{expr ? a : b}`) are handled at the IR level as

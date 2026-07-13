@@ -25,6 +25,11 @@ import (
 //	tmpl := template.New("").Funcs(bf.FuncMap())
 func FuncMap() template.FuncMap {
 	return template.FuncMap{
+		// Nullish coalescing (#2248): JS `??` semantics — fall back only on
+		// nil, keeping present-but-falsy values (`""`, `0`, `false`) that
+		// Go's truthiness-based `or` would replace.
+		"bf_nullish": Nullish,
+
 		// Arithmetic
 		"bf_add":        Add,
 		"bf_concat_str": ConcatStr,
@@ -2932,6 +2937,34 @@ func setPortalsOnSingle(child interface{}, collector *PortalCollector) {
 		}
 	}
 }
+
+// Nullish implements JS `??` for template use (`bf_nullish`, #2248): returns
+// fallback iff v is nil (untyped nil or a nil pointer/map/slice boxed in the
+// interface), otherwise v — so present-but-falsy `""`/`0`/`false` are KEPT,
+// unlike the truthiness-based template `or`.
+func Nullish(v, fallback any) any {
+	if v == nil {
+		return fallback
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func, reflect.Chan:
+		if rv.IsNil() {
+			return fallback
+		}
+	}
+	return v
+}
+
+// ToInt exposes the runtime's numeric coercion for generated constructors
+// (#2248): a nillable-lowered numeric prop arrives as `interface{}`, and an
+// untyped Go literal (`Size: 3`) boxes as int even when the prop is
+// float64-shaped — a direct type assertion would panic where JS accepts the
+// number. Non-numeric values coerce to 0, matching the helpers' behaviour.
+func ToInt(v any) int { return toInt(v) }
+
+// ToFloat64 is ToInt's float64 counterpart — see ToInt.
+func ToFloat64(v any) float64 { return toFloat64(v) }
 
 // =============================================================================
 // Internal Helpers
