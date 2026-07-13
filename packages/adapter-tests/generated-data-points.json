@@ -1,0 +1,1556 @@
+{
+  "array-flat-dynamic-depth": [
+    {
+      "name": "gen:depth:zero",
+      "props": {
+        "rows": [
+          [
+            [
+              1
+            ],
+            [
+              2
+            ]
+          ],
+          [
+            [
+              3
+            ],
+            [
+              4
+            ]
+          ]
+        ],
+        "depth": 0
+      }
+    },
+    {
+      "name": "gen:depth:negative",
+      "props": {
+        "rows": [
+          [
+            [
+              1
+            ],
+            [
+              2
+            ]
+          ],
+          [
+            [
+              3
+            ],
+            [
+              4
+            ]
+          ]
+        ],
+        "depth": -7
+      }
+    },
+    {
+      "name": "gen:depth:large",
+      "props": {
+        "rows": [
+          [
+            [
+              1
+            ],
+            [
+              2
+            ]
+          ],
+          [
+            [
+              3
+            ],
+            [
+              4
+            ]
+          ]
+        ],
+        "depth": 1234567890
+      }
+    }
+  ],
+  "array-includes": [
+    {
+      "name": "gen:target:empty",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "target": ""
+      }
+    },
+    {
+      "name": "gen:target:markup",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "target": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:target:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "target": "日本語"
+      }
+    }
+  ],
+  "array-indexOf": [
+    {
+      "name": "gen:target:empty",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "target": ""
+      }
+    },
+    {
+      "name": "gen:target:markup",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "target": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:target:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c"
+        ],
+        "target": "日本語"
+      }
+    }
+  ],
+  "array-lastIndexOf": [
+    {
+      "name": "gen:target:empty",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c",
+          "b",
+          "d"
+        ],
+        "target": ""
+      }
+    },
+    {
+      "name": "gen:target:markup",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c",
+          "b",
+          "d"
+        ],
+        "target": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:target:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b",
+          "c",
+          "b",
+          "d"
+        ],
+        "target": "日本語"
+      }
+    }
+  ],
+  "button": [
+    {
+      "name": "gen:className:absent",
+      "props": {
+        "variant": "secondary",
+        "size": "sm",
+        "children": "Click me",
+        "__instanceId": "Button_test"
+      }
+    },
+    {
+      "name": "gen:variant:absent",
+      "props": {
+        "size": "sm",
+        "className": "",
+        "children": "Click me",
+        "__instanceId": "Button_test"
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "variant": "secondary",
+        "className": "",
+        "children": "Click me",
+        "__instanceId": "Button_test"
+      }
+    }
+  ],
+  "checkbox": [
+    {
+      "name": "gen:defaultChecked:true",
+      "props": {
+        "className": "",
+        "__instanceId": "Checkbox_test",
+        "defaultChecked": true
+      }
+    },
+    {
+      "name": "gen:defaultChecked:false",
+      "props": {
+        "className": "",
+        "__instanceId": "Checkbox_test",
+        "defaultChecked": false
+      }
+    },
+    {
+      "name": "gen:checked:true",
+      "props": {
+        "className": "",
+        "__instanceId": "Checkbox_test",
+        "checked": true
+      }
+    },
+    {
+      "name": "gen:checked:false",
+      "props": {
+        "className": "",
+        "__instanceId": "Checkbox_test",
+        "checked": false
+      }
+    },
+    {
+      "name": "gen:error:true",
+      "props": {
+        "className": "",
+        "__instanceId": "Checkbox_test",
+        "error": true
+      }
+    },
+    {
+      "name": "gen:error:false",
+      "props": {
+        "className": "",
+        "__instanceId": "Checkbox_test",
+        "error": false
+      }
+    }
+  ],
+  "child-component": [
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語"
+      }
+    }
+  ],
+  "conditional-return-button": [
+    {
+      "name": "gen:variant:empty",
+      "props": {
+        "__instanceId": "ConditionalReturn_test",
+        "variant": ""
+      }
+    },
+    {
+      "name": "gen:variant:markup",
+      "props": {
+        "__instanceId": "ConditionalReturn_test",
+        "variant": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:variant:multibyte",
+      "props": {
+        "__instanceId": "ConditionalReturn_test",
+        "variant": "日本語"
+      }
+    }
+  ],
+  "conditional-return-link": [
+    {
+      "name": "gen:variant:absent",
+      "props": {
+        "__instanceId": "ConditionalReturn_test"
+      }
+    },
+    {
+      "name": "gen:variant:empty",
+      "props": {
+        "variant": "",
+        "__instanceId": "ConditionalReturn_test"
+      }
+    },
+    {
+      "name": "gen:variant:markup",
+      "props": {
+        "variant": "<b>&\"'</b>",
+        "__instanceId": "ConditionalReturn_test"
+      }
+    },
+    {
+      "name": "gen:variant:multibyte",
+      "props": {
+        "variant": "日本語",
+        "__instanceId": "ConditionalReturn_test"
+      }
+    }
+  ],
+  "conditional-return-null": [
+    {
+      "name": "gen:hidden:true",
+      "props": {
+        "hidden": true
+      }
+    },
+    {
+      "name": "gen:hidden:false",
+      "props": {
+        "hidden": false
+      }
+    }
+  ],
+  "controlled-signal": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "counter-shared": [
+    {
+      "name": "gen:initial:absent",
+      "props": {
+        "__instanceId": "Counter_test"
+      }
+    },
+    {
+      "name": "gen:initial:negative",
+      "props": {
+        "initial": -7,
+        "__instanceId": "Counter_test"
+      }
+    },
+    {
+      "name": "gen:initial:large",
+      "props": {
+        "initial": 1234567890,
+        "__instanceId": "Counter_test"
+      }
+    }
+  ],
+  "dangerous-inner-html-dynamic": [
+    {
+      "name": "gen:html:empty",
+      "props": {
+        "html": ""
+      }
+    },
+    {
+      "name": "gen:html:markup",
+      "props": {
+        "html": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:html:multibyte",
+      "props": {
+        "html": "日本語"
+      }
+    }
+  ],
+  "default-props": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "label": "Custom"
+      }
+    },
+    {
+      "name": "gen:size:zero",
+      "props": {
+        "label": "Custom",
+        "size": 0
+      }
+    },
+    {
+      "name": "gen:size:negative",
+      "props": {
+        "label": "Custom",
+        "size": -7
+      }
+    },
+    {
+      "name": "gen:size:large",
+      "props": {
+        "label": "Custom",
+        "size": 1234567890
+      }
+    }
+  ],
+  "else-if-chain": [
+    {
+      "name": "gen:level:markup",
+      "props": {
+        "level": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:level:multibyte",
+      "props": {
+        "level": "日本語"
+      }
+    }
+  ],
+  "if-statement": [
+    {
+      "name": "gen:variant:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:variant:markup",
+      "props": {
+        "variant": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:variant:multibyte",
+      "props": {
+        "variant": "日本語"
+      }
+    }
+  ],
+  "input": [
+    {
+      "name": "gen:className:absent",
+      "props": {
+        "type": "text",
+        "placeholder": "Enter your name",
+        "__instanceId": "Input_test"
+      }
+    }
+  ],
+  "jsx-spread-props-object": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tag": "on"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tag": "on"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tag": "on"
+      }
+    },
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "label": "a",
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "label": "a",
+        "tag": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "label": "a",
+        "tag": "日本語"
+      }
+    }
+  ],
+  "jsx-spread-rest-prop": [
+    {
+      "name": "gen:greeting:empty",
+      "props": {
+        "greeting": ""
+      }
+    },
+    {
+      "name": "gen:greeting:markup",
+      "props": {
+        "greeting": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:greeting:multibyte",
+      "props": {
+        "greeting": "日本語"
+      }
+    }
+  ],
+  "kbd": [
+    {
+      "name": "gen:className:absent",
+      "props": {
+        "children": "K",
+        "__instanceId": "Kbd_test"
+      }
+    }
+  ],
+  "label": [
+    {
+      "name": "gen:className:absent",
+      "props": {
+        "children": "Email",
+        "__instanceId": "Label_test"
+      }
+    }
+  ],
+  "logical-or-jsx": [
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "loop-param-shadows-outer-name": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    }
+  ],
+  "nullish-coalescing-text": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "size": 5
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "label": "Custom"
+      }
+    },
+    {
+      "name": "gen:size:zero",
+      "props": {
+        "label": "Custom",
+        "size": 0
+      }
+    },
+    {
+      "name": "gen:size:negative",
+      "props": {
+        "label": "Custom",
+        "size": -7
+      }
+    },
+    {
+      "name": "gen:size:large",
+      "props": {
+        "label": "Custom",
+        "size": 1234567890
+      }
+    }
+  ],
+  "number-tofixed": [
+    {
+      "name": "gen:price:negative",
+      "props": {
+        "price": -7
+      }
+    },
+    {
+      "name": "gen:price:large",
+      "props": {
+        "price": 1234567890
+      }
+    }
+  ],
+  "pre-whitespace": [
+    {
+      "name": "gen:snippet:empty",
+      "props": {
+        "snippet": ""
+      }
+    },
+    {
+      "name": "gen:snippet:markup",
+      "props": {
+        "snippet": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:snippet:multibyte",
+      "props": {
+        "snippet": "日本語"
+      }
+    }
+  ],
+  "props-reactive": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "props-static": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "count": 10
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "count": 10
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "count": 10
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "label": "Items",
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "label": "Items",
+        "count": 1234567890
+      }
+    }
+  ],
+  "return-logical-or": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "search-params-derived-filter": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "signal-default-from-jsx": [
+    {
+      "name": "gen:x:zero",
+      "props": {
+        "x": 0
+      }
+    },
+    {
+      "name": "gen:x:negative",
+      "props": {
+        "x": -7
+      }
+    },
+    {
+      "name": "gen:x:large",
+      "props": {
+        "x": 1234567890
+      }
+    }
+  ],
+  "signal-prop-same-name": [
+    {
+      "name": "gen:label:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "signal-with-fallback": [
+    {
+      "name": "gen:initial:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:initial:zero",
+      "props": {
+        "initial": 0
+      }
+    },
+    {
+      "name": "gen:initial:negative",
+      "props": {
+        "initial": -7
+      }
+    },
+    {
+      "name": "gen:initial:large",
+      "props": {
+        "initial": 1234567890
+      }
+    }
+  ],
+  "string-concat-plus": [
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "name": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "name": "日本語"
+      }
+    }
+  ],
+  "string-concat-plus-identifiers": [
+    {
+      "name": "gen:first:empty",
+      "props": {
+        "first": "",
+        "last": "Lovelace"
+      }
+    },
+    {
+      "name": "gen:first:markup",
+      "props": {
+        "first": "<b>&\"'</b>",
+        "last": "Lovelace"
+      }
+    },
+    {
+      "name": "gen:first:multibyte",
+      "props": {
+        "first": "日本語",
+        "last": "Lovelace"
+      }
+    },
+    {
+      "name": "gen:last:empty",
+      "props": {
+        "first": "Ada",
+        "last": ""
+      }
+    },
+    {
+      "name": "gen:last:markup",
+      "props": {
+        "first": "Ada",
+        "last": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:last:multibyte",
+      "props": {
+        "first": "Ada",
+        "last": "日本語"
+      }
+    }
+  ],
+  "string-endsWith": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": "",
+        "suffix": "world"
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>",
+        "suffix": "world"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語",
+        "suffix": "world"
+      }
+    },
+    {
+      "name": "gen:suffix:empty",
+      "props": {
+        "value": "hello world",
+        "suffix": ""
+      }
+    },
+    {
+      "name": "gen:suffix:markup",
+      "props": {
+        "value": "hello world",
+        "suffix": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:suffix:multibyte",
+      "props": {
+        "value": "hello world",
+        "suffix": "日本語"
+      }
+    }
+  ],
+  "string-endsWith-position": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-includes": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": "",
+        "needle": "world"
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>",
+        "needle": "world"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語",
+        "needle": "world"
+      }
+    },
+    {
+      "name": "gen:needle:empty",
+      "props": {
+        "value": "hello world",
+        "needle": ""
+      }
+    },
+    {
+      "name": "gen:needle:markup",
+      "props": {
+        "value": "hello world",
+        "needle": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:needle:multibyte",
+      "props": {
+        "value": "hello world",
+        "needle": "日本語"
+      }
+    }
+  ],
+  "string-length-text": [
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "word": "<b>&\"'</b>"
+      }
+    }
+  ],
+  "string-padEnd": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-padStart": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-repeat": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-replace": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-replaceall": [
+    {
+      "name": "gen:path:empty",
+      "props": {
+        "path": ""
+      }
+    },
+    {
+      "name": "gen:path:markup",
+      "props": {
+        "path": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:path:multibyte",
+      "props": {
+        "path": "日本語"
+      }
+    }
+  ],
+  "string-slice": [
+    {
+      "name": "gen:word:empty",
+      "props": {
+        "word": ""
+      }
+    },
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "word": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:word:multibyte",
+      "props": {
+        "word": "日本語"
+      }
+    }
+  ],
+  "string-split": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-split-limit": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-startsWith": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": "",
+        "prefix": "hello"
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>",
+        "prefix": "hello"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語",
+        "prefix": "hello"
+      }
+    },
+    {
+      "name": "gen:prefix:empty",
+      "props": {
+        "value": "hello world",
+        "prefix": ""
+      }
+    },
+    {
+      "name": "gen:prefix:markup",
+      "props": {
+        "value": "hello world",
+        "prefix": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:prefix:multibyte",
+      "props": {
+        "value": "hello world",
+        "prefix": "日本語"
+      }
+    }
+  ],
+  "string-startsWith-position": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-toLowerCase": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-toUpperCase": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-trim": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "string-trim-sided": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": ""
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語"
+      }
+    }
+  ],
+  "style-object-dynamic": [
+    {
+      "name": "gen:color:empty",
+      "props": {
+        "color": ""
+      }
+    },
+    {
+      "name": "gen:color:markup",
+      "props": {
+        "color": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:color:multibyte",
+      "props": {
+        "color": "日本語"
+      }
+    }
+  ],
+  "switch": [
+    {
+      "name": "gen:defaultChecked:true",
+      "props": {
+        "className": "",
+        "__instanceId": "Switch_test",
+        "defaultChecked": true
+      }
+    },
+    {
+      "name": "gen:defaultChecked:false",
+      "props": {
+        "className": "",
+        "__instanceId": "Switch_test",
+        "defaultChecked": false
+      }
+    },
+    {
+      "name": "gen:checked:true",
+      "props": {
+        "className": "",
+        "__instanceId": "Switch_test",
+        "checked": true
+      }
+    },
+    {
+      "name": "gen:checked:false",
+      "props": {
+        "className": "",
+        "__instanceId": "Switch_test",
+        "checked": false
+      }
+    }
+  ],
+  "template-literal-multi-interp": [
+    {
+      "name": "gen:greeting:markup",
+      "props": {
+        "greeting": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:greeting:multibyte",
+      "props": {
+        "greeting": "日本語"
+      }
+    }
+  ],
+  "text-escape": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "__instanceId": "TextEscape_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "__instanceId": "TextEscape_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "__instanceId": "TextEscape_test"
+      }
+    }
+  ],
+  "textarea": [
+    {
+      "name": "gen:className:absent",
+      "props": {
+        "placeholder": "Type your message here.",
+        "value": "",
+        "__instanceId": "Textarea_test"
+      }
+    },
+    {
+      "name": "gen:placeholder:absent",
+      "props": {
+        "className": "",
+        "value": "",
+        "__instanceId": "Textarea_test"
+      }
+    },
+    {
+      "name": "gen:value:absent",
+      "props": {
+        "placeholder": "Type your message here.",
+        "className": "",
+        "__instanceId": "Textarea_test"
+      }
+    }
+  ],
+  "todo-app": [
+    {
+      "name": "gen:initialTodos:absent",
+      "props": {
+        "__instanceId": "TodoApp_test"
+      }
+    },
+    {
+      "name": "gen:initialTodos:empty",
+      "props": {
+        "initialTodos": [],
+        "__instanceId": "TodoApp_test"
+      }
+    }
+  ],
+  "todo-app-ssr": [
+    {
+      "name": "gen:initialTodos:absent",
+      "props": {
+        "__instanceId": "TodoAppSSR_test"
+      }
+    },
+    {
+      "name": "gen:initialTodos:empty",
+      "props": {
+        "initialTodos": [],
+        "__instanceId": "TodoAppSSR_test"
+      }
+    }
+  ],
+  "toggle": [
+    {
+      "name": "gen:defaultPressed:true",
+      "props": {
+        "className": "",
+        "children": "Bold",
+        "__instanceId": "Toggle_test",
+        "defaultPressed": true
+      }
+    },
+    {
+      "name": "gen:defaultPressed:false",
+      "props": {
+        "className": "",
+        "children": "Bold",
+        "__instanceId": "Toggle_test",
+        "defaultPressed": false
+      }
+    },
+    {
+      "name": "gen:pressed:true",
+      "props": {
+        "className": "",
+        "children": "Bold",
+        "__instanceId": "Toggle_test",
+        "pressed": true
+      }
+    },
+    {
+      "name": "gen:pressed:false",
+      "props": {
+        "className": "",
+        "children": "Bold",
+        "__instanceId": "Toggle_test",
+        "pressed": false
+      }
+    },
+    {
+      "name": "gen:children:absent",
+      "props": {
+        "className": "",
+        "__instanceId": "Toggle_test"
+      }
+    }
+  ]
+}

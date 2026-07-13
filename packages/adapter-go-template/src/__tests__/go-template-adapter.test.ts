@@ -128,6 +128,22 @@ runAdapterConformanceTests({
     // member-access left operand (`user?.name ?? '…'`) still lowers to
     // the truthiness `or`, so a present-but-empty member falls back.
     'optional-chaining-prop:empty-name',
+    // #2260 — controlled/derived boolean props: the SSR seed evaluates
+    // only the static fallback of `props.X ?? internal()` chains, so a
+    // caller-supplied true never reaches aria-*/data-state.
+    'toggle:gen:defaultPressed:true',
+    'toggle:gen:pressed:true',
+    'switch:gen:defaultChecked:true',
+    'switch:gen:checked:true',
+    'checkbox:gen:defaultChecked:true',
+    'checkbox:gen:checked:true',
+    // #2261 — invalid dynamic CSS value: html/template emits the
+    // ZgotmplZ sentinel where the oracle drops the property.
+    'style-object-dynamic:gen:color:markup',
+    // #2262 — dynamic `.flat` depth 0/negative renders empty instead of
+    // the contract's shallow copy.
+    'array-flat-dynamic-depth:gen:depth:zero',
+    'array-flat-dynamic-depth:gen:depth:negative',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
