@@ -98,7 +98,7 @@ createFixture({
   canonicalization — not DOM-tree equality. Escaping divergence
   (`&#34;` vs `&quot;` class) is precisely a difference we want to catch.
 - **Skips** follow the established discipline: a typed
-  `skipDataPoints: ReadonlySet<`\``${fixtureId}:${pointName}`\``>` per
+  ``skipDataPoints: ReadonlySet<`${fixtureId}:${pointName}`>`` per
   adapter, each entry commented with the follow-up issue
   (`known-limitation`).
 - **Cost tiering.** Full matrix (fixtures × points × adapters, real backend
