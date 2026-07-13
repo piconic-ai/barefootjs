@@ -491,7 +491,7 @@ describe('MinijinjaAdapter - record-literal member lookup vs loop-param shadowin
   test('a loop param shadowing an outer module object const emits the member access, not the outer literal', () => {
     const { template } = compileAndGenerate(`
 const cfg = { x: 'outer-lit' }
-function Widget({ rows }: { rows: number[] }) {
+function Widget({ rows }: { rows: { x: string }[] }) {
   return <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
 }
 `)
@@ -519,7 +519,7 @@ function Widget({ variant }: { variant: 'solid' | 'ghost' }) {
   test('a record member referenced outside the loop whose object name is loop-bound elsewhere falls back to the member expression (accepted trade-off)', () => {
     const { template } = compileAndGenerate(`
 const cfg = { x: 'outer-lit' }
-function Widget({ rows }: { rows: number[] }) {
+function Widget({ rows }: { rows: { x: string }[] }) {
   return <div>
     <p>{cfg.x}</p>
     <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>

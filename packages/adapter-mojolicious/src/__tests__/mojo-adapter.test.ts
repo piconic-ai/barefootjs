@@ -314,7 +314,7 @@ describe('MojoAdapter - record-literal member lookup vs loop-param shadowing (#2
   test('a loop param shadowing an outer module object const emits the member access, not the outer literal', () => {
     const { template } = compileAndGenerate(`
 const cfg = { x: 'outer-lit' }
-function Widget({ rows }: { rows: number[] }) {
+function Widget({ rows }: { rows: { x: string }[] }) {
   return <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
 }
 `)
@@ -343,7 +343,7 @@ function Widget({ variant }: { variant: 'solid' | 'ghost' }) {
   test('an object name loop-bound only inside the loop still inlines its member lookup outside it (more precise than Twig family)', () => {
     const { template } = compileAndGenerate(`
 const cfg = { x: 'outer-lit' }
-function Widget({ rows }: { rows: number[] }) {
+function Widget({ rows }: { rows: { x: string }[] }) {
   return <div>
     <p>{cfg.x}</p>
     <ul>{rows.map((cfg) => <li key={cfg.x}>{cfg.x}</li>)}</ul>
@@ -1566,7 +1566,7 @@ describe('MojoAdapter - #1448 Tier C .flat(depth?)', () => {
   function emitFlat(expr: string): string {
     const a = new MojoAdapter()
     const ir = compileToIR(`
-function C({ rows }: { rows: number[][] }) {
+function C({ rows }: { rows: { x: string }[][] }) {
   return <div>{${expr}}</div>
 }
 export { C }
