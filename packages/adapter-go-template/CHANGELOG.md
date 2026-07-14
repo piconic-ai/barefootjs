@@ -1,5 +1,73 @@
 # @barefootjs/go-template
 
+## 0.19.1
+
+### Patch Changes
+
+- 5b184a8: Fix #2260: the "controlled component" idiom (an internal signal, a controlled signal seeded bare from a prop, an `isControlled` presence memo, and a derived ternary memo — the shape `ui/components/ui/toggle`, `switch`, and `checkbox` all share) now honours a caller-supplied value in SSR output on every adapter, instead of only the uncontrolled default.
+
+  - **`packages/jsx`**: `freeIdentifiers()` no longer reports the JS value-keyword `undefined` as a free variable (it parses as an `identifier` node, unlike `null`, which is a `literal`). This let `computeSsrSeedPlan`'s `classify()` correctly classify `props.X !== undefined` (the `isControlled` memo) as `derived` instead of `opaque` — the actual root cause on ERB, Jinja, and Rust (minijinja), which all consume the shared SSR-seed-plan machinery. Fixes the `toggle:gen:pressed:true` / `switch:gen:checked:true` / `checkbox:gen:checked:true` data points on those three adapters (their `defaultPressed`/`defaultChecked` sub-case already passed).
+  - **`@barefootjs/go-template`**: Go bakes these values into the constructor rather than seeding in-template, and needed three coupled fixes: (1) a new `collectPresenceCheckedPropNames` collector recognizes `props.X !== undefined` as a nillability-requiring consumption, flipping the prop to the existing nillable `interface{}` representation (#2248) — presence is otherwise inexpressible on a concrete `bool` field; (2) `memoInitialFromParsedBody` gained a presence-check branch (`props.X !== undefined` → `in.X != nil`) and a ternary-over-getter-calls branch (`cond() ? a() : b()` where all three are signal/memo getters, not just the pre-existing string-literal-branch case) for the derived `isPressed`/`isChecked` memo; (3) `convertInitialValue`/`getSignalInitialValueAsGo` now type-assert a nillable-flipped prop reference against the consuming signal's own concrete type (unwrapping a `T | undefined` signal type annotation to `T`) instead of a bare reference — needed because the flip in (1) otherwise breaks a sibling signal's own initializer (`createSignal<boolean | undefined>(props.pressed)`) with a Go compile error (`interface{}` value into a `bool` field).
+
+  Removes `toggle`/`switch`/`checkbox`'s `gen:pressed:true`/`gen:checked:true` `skipDataPoints` pins on ERB/Jinja/Rust, and those plus `gen:defaultPressed:true`/`gen:defaultChecked:true` on Go.
+
+- 1c2b116: Fix #2262: `.flat(dynamicDepth)` with a runtime depth of `0` or negative now matches the documented `ToIntegerOrInfinity` contract (shallow copy, not empty) end-to-end on Go and ERB. The depth coercion itself (`coerceFlatDepth` / `coerce_flat_depth`) was already correct — the bug was in stringifying the unflattened nested-array elements afterwards (e.g. `rows.flat(0).join(' ')`):
+
+  - Go: `toString` (used by `Join`/`ConcatStr`) returned `""` for any non-primitive value, including a nested-array element left in place by a no-op flatten — now it recursively comma-joins array elements, mirroring JS's `Array.prototype.toString` (`this.join(',')`).
+  - ERB: the shared `string` helper fell through to Ruby's `Array#to_s` (`"[[1], [2]]"`, inspect-style) for array values — now it recursively comma-joins the same way.
+
+  Removes the `array-flat-dynamic-depth:gen:depth:zero` / `:gen:depth:negative` `skipDataPoints` pins on both adapters.
+
+- 1c2b116: Fix #2267: an absent defaultless optional scalar prop consumed as a bare TEXT expression (`{size}` for `size?: number`, no `??`/attribute involvement) now renders empty on Go, matching the JS reference (`undefined` → ""), instead of the concrete field's zero value (`0`).
+
+  `resolvePropGoType`'s existing `interface{}` nillable flip (previously driven only by `??` consumption, #2248, and bare-omittable-attribute consumption, #2259) now also covers bare text-position consumption via a new `collectTextConsumedPropNames` collector. The text emitter (`renderExpression`) routes a flipped prop's bare reference through the runtime's nil-safe `bf_string` stringifier (`""` for nil, otherwise identical formatting to `text/template`'s own default printing) instead of a raw `{{.X}}` — a bare `{{.X}}` would print a nil `interface{}` as the literal `<no value>`, not empty.
+
+  Adds the `bare-text-optional-scalar` fixture (adapter-tests) pinning the `present` / `absent` / `zero` data points.
+
+- 5270372: Fix #2254: Go's `??` nullish gate now applies in **condition position** (ternary tests / `{{if}}` paths, reached via `convertConditionToGo`), not just plain expression-interpolation positions.
+
+  `renderConditionExpr`'s `logical` case unconditionally emitted Go's truthiness-based `or` for both `&&` and `??`, so a nillable-lowered optional prop's present-but-empty value (`''`/`0`/`false`) wrongly fell back to the `??` default when tested in a condition — e.g. `(props.label ?? 'Default') === 'Default' ? <A/> : <B/>` rendered `<A/>` for `label=""`, diverging from JS (which keeps `''` since it's present, not nullish). The sibling `logical()` emitter (used for other expression positions) already routed nillable operands through the nil-testing `bf_nullish` helper since #2248/#2252; this brings the condition-position emitter in line with it via the same `nillablePropNameOf` gate.
+
+- 1c2b116: Fix #2256: JS `??` nullish semantics now cover a single-hop member-access left operand rooted at a nillable optional-object prop (`user?.name ?? 'anonymous'`), not just a bare prop reference. Both `collectNullishConsumedPropNames` (the `interface{}`-flip seam) and the `??` emitter's `nillablePropNameOf` gate previously matched only `label` / `props.label` shapes, so `user?.name ?? '…'` fell through to the truthiness-based `or` — collapsing a present-but-empty `""` member into the fallback where JS keeps it. Both now recognize the ROOT of a single-hop member chain (`user` in `user?.name`); an optional-object prop already lowers to nillable `map[string]interface{}` by construction, and the existing `bf_get` nil-safe `?.` lowering already returns Go `nil` on a missing root, so gating on the root is sufficient — no new runtime helper needed. A deeper chain (`props.user?.name`, `user?.address?.city`) is unaffected — same single-hop `?.` caveat already documented on the `member` `ParsedExpr` variant.
+
+  Removes the `optional-chaining-prop:empty-name` `skipDataPoints` pin.
+
+- 3eebfb5: Fix #2266: `Slot`'s `asChild` pattern with a plain-text child (`<Button asChild>Submit</Button>`) no longer hard-errors on Go or diverges on Mojolicious.
+
+  Both adapters previously lowered the framework's `isValidElement(x)` predicate as bare truthiness on `x`. A passed-through JSX child is represented as pre-rendered markup on both SSR models, so a non-empty plain-text child was truthy and wrongly took `Slot`'s element-merge branch (`children.tag`/`children.props`) — Go hard-erred dereferencing `.Props` on a string (`can't evaluate field Props in type interface {}`); Mojolicious had no `isValidElement` primitive mapping at all and died on an undeclared `$isValidElement` stash lookup under `use strict`.
+
+  - Go: new `bf_is_element` runtime helper (`IsValidElement`, `bf.go`) does a real reflect-based shape check (a map/struct carrying both `tag`+`props`, case-insensitively) — mirrors JS's `'tag' in x && 'props' in x`. `isValidElement(x)`'s lowering now calls it instead of a bare truthiness check.
+  - Mojolicious: new `is_element` method on the shared `adapter-perl` runtime (`BarefootJS.pm`, also used by Xslate), and a new `isValidElement` → `bf->is_element(...)` entry in `MOJO_TEMPLATE_PRIMITIVES`.
+
+  ERB/Jinja/Rust/Twig/Blade/Xslate already passed this fixture's data points and are unaffected.
+
+  Removes the `button:gen:asChild:true` / `kbd:gen:asChild:true` `skipDataPoints` pins on Go and Mojolicious.
+
+- 1c2b116: Fix #2255: `.length` on a string now counts UTF-16 code units, matching JS `String.prototype.length`, on all 8 template adapters — previously each backend counted either bytes (Go's native `len`) or Unicode codepoints (every other backend's native string-length primitive), both of which diverge from JS for an astral-plane character (a surrogate pair in UTF-16, e.g. '👍' — length 2 in JS, 1 under codepoint-counting).
+
+  - Go: new `Length`/`bf_length` runtime helper (`bf.go`), used by the `.length` member lowering's generic (non-array, non-loop-slice) fallback. The array-only specialized `.length` shapes (filter-result count, memo-backed loop slice count) are unaffected and stay on native `len`.
+  - ERB: the `.length` lowering now routes through the shared `bf.length` runtime helper (previously called Ruby's native `.length` directly) so both call sites share one UTF-16-aware implementation.
+  - Jinja/Rust/Twig/Blade/Xslate/Mojolicious: fixed in place in each backend's shared `bf.length` runtime function (already the uniform `.length` dispatch point on 5 of the 6); Mojolicious additionally had a second `.length` lowering (a string-receiver fast path emitting Perl's native `length()` directly) now routed through the shared `bf->length` helper too.
+
+  All fixes implement the same UTF-16 code-unit count: iterate codepoints, count 1 for a Basic-Multilingual-Plane codepoint and 2 for an astral one (U+10000-U+10FFFF).
+
+  Out of scope: the separate `ParsedExpr` Evaluator subsystem (used for `.sort()`/`.filter()`/`.reduce()` callback bodies) has its own `.length` implementation with a documented, deliberate astral-plane divergence (`spec/compiler.md`, "byte-isomorphic between backends" contract) — unrelated to and unaffected by this fix.
+
+  Removes the `string-length-text:multibyte` (Go only) and `string-length-text:astral` (all 8 backends) `skipDataPoints` pins.
+
+- cff038f: Fix #2261: dynamic `style={{ … }}` object-literal values that could break out of a CSS declaration now match Hono's oracle behavior — the unsafe `key:value` pair is dropped entirely — instead of being kept (merely HTML-escaped) as every non-Hono adapter previously did.
+
+  Hono's own `hasUnsafeStyleValue` guard (`hono/jsx/utils.ts`) is a hand-rolled structural scan for characters that could escape a CSS declaration (unbalanced quotes/brackets, bare `;`/`{`/`}`, unterminated comments) — NOT real CSSOM property validation. It is the contract every adapter's SSR output must match byte-for-byte.
+
+  Each adapter gains a single `style_object`/`bf_style_object`/`StyleObjectToCSS` runtime helper (ported byte-for-byte from Hono's scan) that builds the whole CSS string at once: unsafe pairs are omitted, safe values are still HTML-escaped afterward (a structurally "safe" value can still carry a literal `"`/`'`/`&`). `tryLowerStyleObject` in each adapter now emits a single call to this helper instead of per-pair string interpolation.
+
+  - Go: `hasUnsafeStyleValue` + `StyleObjectToCSS` in `bf.go`, registered as `bf_style_object`.
+  - ERB/Rust/Jinja/Twig/Blade/Xslate/Mojolicious: analogous `style_object` runtime methods (Rust and PHP and Perl runtimes are each shared across two adapters — minijinja, Twig+Blade, and Xslate+Mojolicious respectively).
+
+  Removes the `style-object-dynamic:gen:color:markup` `skipDataPoints` pin from all eight adapters' conformance tests.
+
+  - @barefootjs/shared@0.19.1
+
 ## 0.19.0
 
 ### Minor Changes
