@@ -1365,9 +1365,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   }
 
   /**
-   * Lower a `style={{ … }}` object literal to a CSS string with dynamic values
-   * interpolated as Kolon actions, e.g. `{ backgroundColor: color }` →
-   * `background-color:<: $color :>`. Returns null when the shape is unsupported
+   * Lower a `style={{ … }}` object literal to a `$bf.style_object(...)` call,
+   * e.g. `{ backgroundColor: color }` → `<: $bf.style_object('background-color',
+   * $color) | mark_raw :>`. `style_object` is the single oracle-matching
+   * sanitizer (ported from Hono's `hasUnsafeStyleValue`): it drops any
+   * key:value pair whose value could break out of a CSS declaration and
+   * HTML-escapes the rest, so the call is piped through `| mark_raw` (not
+   * left to Kolon's own autoescape) to avoid double-encoding the
+   * already-safe result (#2261). Returns null when the shape is unsupported
    * or any value can't be lowered (caller falls through to BF101). (#1322)
    */
   private tryLowerStyleObject(expr: string): string | null {
@@ -1376,27 +1381,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
-    // The static CSS key + literal value are inlined into a double-quoted
-    // `style="..."` attribute as raw template text, so HTML-attr escape them
-    // (a value like `'"'` would otherwise break the attribute / inject
-    // markup). The dynamic arm's `<: … :>` is HTML-escaped by Kolon.
-    return entries
-      .map(e =>
-        e.kind === 'literal'
-          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
-          : `${this.escapeAttrText(e.cssKey)}:<: ${this.convertExpressionToKolon(e.expr)} :>`,
-      )
-      .join(';')
-  }
-
-  /** HTML-attribute escape for static text inlined into a `"..."` attribute. */
-  private escapeAttrText(s: string): string {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
+    const args = entries.flatMap(e => [
+      `'${escapeKolonSingleQuoted(e.cssKey)}'`,
+      e.kind === 'literal' ? `'${escapeKolonSingleQuoted(e.value)}'` : this.convertExpressionToKolon(e.expr),
+    ])
+    return `<: $bf.style_object(${args.join(', ')}) | mark_raw :>`
   }
 
   private renderAttributes(element: IRElement): string {

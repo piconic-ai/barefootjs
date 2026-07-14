@@ -119,37 +119,7 @@ runAdapterConformanceTests({
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
   ]),
-  skipDataPoints: new Set<string>([
-    // #2255 — Go `len` counts bytes; JS counts UTF-16 code units
-    // ('日本語' is 3 in JS, 9 here; '👍' is 2 in JS, 4 here).
-    'string-length-text:multibyte',
-    'string-length-text:astral',
-    // #2256 — the nullish gate covers only BARE nillable prop refs; a
-    // member-access left operand (`user?.name ?? '…'`) still lowers to
-    // the truthiness `or`, so a present-but-empty member falls back.
-    'optional-chaining-prop:empty-name',
-    // #2260 — controlled/derived boolean props: the SSR seed evaluates
-    // only the static fallback of `props.X ?? internal()` chains, so a
-    // caller-supplied true never reaches aria-*/data-state.
-    'toggle:gen:defaultPressed:true',
-    'toggle:gen:pressed:true',
-    'switch:gen:defaultChecked:true',
-    'switch:gen:checked:true',
-    'checkbox:gen:defaultChecked:true',
-    'checkbox:gen:checked:true',
-    // #2261 — invalid dynamic CSS value: html/template emits the
-    // ZgotmplZ sentinel where the oracle drops the property.
-    'style-object-dynamic:gen:color:markup',
-    // #2262 — dynamic `.flat` depth 0/negative renders empty instead of
-    // the contract's shallow copy.
-    'array-flat-dynamic-depth:gen:depth:zero',
-    'array-flat-dynamic-depth:gen:depth:negative',
-    // #2266 — asChild=true with plain-text children: the Slot define
-    // dereferences `.Children.Props.Children`, which hard-errors on a
-    // string child (`can't evaluate field Props in type interface {}`).
-    'button:gen:asChild:true',
-    'kbd:gen:asChild:true',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -1301,10 +1271,15 @@ export function Widget(props: P) {
       expect(types).toContain('Classes: "a b" + " " + "c d" + " " + in.ClassName + " tail"')
     })
 
-    // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) renders its
-    // SSR zero as `false`, not the int `0`, so `aria-checked={isChecked()}`
-    // matches Hono's `aria-checked="false"`.
-    test('boolean ternary memo defaults to false, not 0', () => {
+    // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) types its
+    // SSR field as `bool` (not `int`), so `aria-checked={isChecked()}`
+    // matches Hono's `aria-checked="false"` shape. Since #2260, `checked`'s
+    // presence is expressible (nillable `interface{}`), so the constructor
+    // bakes a runtime presence check + type-asserted read instead of the
+    // pre-#2260 unconditional `false` — see the `Controlled/derived
+    // boolean props honour a caller-supplied true` describe block below for
+    // the caller-supplied-`true` case this unlocks.
+    test('boolean ternary memo types as bool, resolves controlled presence at SSR', () => {
       const adapter = new GoTemplateAdapter()
       const source = `
 "use client"
@@ -1319,7 +1294,9 @@ export function Toggle(props: { checked?: boolean; defaultChecked?: boolean }) {
 `
       const types = adapter.generateTypes(compileToIR(source, adapter))!
       expect(types).toContain('IsChecked bool')
-      expect(types).toContain('IsChecked: false,')
+      expect(types).toContain(
+        'IsChecked: func() bool { if in.Checked != nil { return func() bool { if v, ok := in.Checked.(bool); ok { return v }; return false }() }; return in.DefaultChecked }(),',
+      )
     })
   })
 

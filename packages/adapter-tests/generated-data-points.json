@@ -184,6 +184,20 @@
       }
     }
   ],
+  "bare-text-optional-scalar": [
+    {
+      "name": "gen:size:negative",
+      "props": {
+        "size": -7
+      }
+    },
+    {
+      "name": "gen:size:large",
+      "props": {
+        "size": 1234567890
+      }
+    }
+  ],
   "branch-local-filter-join": [
     {
       "name": "gen:on:true",

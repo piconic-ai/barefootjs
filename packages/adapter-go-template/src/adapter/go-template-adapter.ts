@@ -135,7 +135,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
-import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -419,6 +419,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.buildLocalTypeTables(ir, ir.metadata.componentName)
     this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
     this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
+    this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
+    this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir)
   }
 
@@ -3093,13 +3095,52 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return goExpr
     }
 
+    // A bare TEXT-position reference to an optional no-default scalar prop
+    // that `resolvePropGoType` flipped to nillable `interface{}` (#2267,
+    // `collectTextConsumedPropNames`) needs a nil-safe stringify: plain
+    // `{{.X}}` prints a nil `interface{}` as the literal `<no value>`, not
+    // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
+    // nil and formats a present value identically to `text/template`'s own
+    // default printing, so this is a no-op for the non-nil case.
+    const finalExpr =
+      this.textNillablePropNameOf(classify.parsed) !== null
+        ? `bf_string ${wrapIfMultiToken(goExpr)}`
+        : goExpr
+
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.
     if (expr.slotId) {
-      return `{{bfTextStart "${expr.slotId}"}}{{${goExpr}}}{{bfTextEnd}}`
+      return `{{bfTextStart "${expr.slotId}"}}{{${finalExpr}}}{{bfTextEnd}}`
     }
 
-    return `{{${goExpr}}}`
+    return `{{${finalExpr}}}`
+  }
+
+  /**
+   * The nillable-prop name a bare TEXT-position expression refers to, or
+   * null. Mirrors `nillablePropNameOf` (the `??`-lowering gate) but keys on
+   * `textConsumedPropNames` instead of `nullishConsumedPropNames` — a
+   * text-only optional scalar prop (`{size}`, never consumed by `??` or a
+   * bare omittable attribute) is in neither of those other two sets.
+   */
+  private textNillablePropNameOf(expr: ParsedExpr | undefined): string | null {
+    if (!expr) return null
+    let name: string | null = null
+    if (expr.kind === 'identifier') {
+      name = expr.name
+    } else if (
+      expr.kind === 'member' &&
+      !expr.computed &&
+      expr.object.kind === 'identifier' &&
+      expr.object.name === this.state.propsObjectName
+    ) {
+      name = expr.property
+    }
+    return name !== null &&
+      this.state.textConsumedPropNames.has(name) &&
+      this.state.nillablePropNames.has(name)
+      ? name
+      : null
   }
 
   /**
@@ -3512,7 +3553,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     const obj = emit(object)
-    if (property === 'length') return `len ${obj}`
+    // JS `.length`: array element count OR, for a string, UTF-16 code-unit
+    // count (#2255) — NOT Go's native `len`, which is byte count for a
+    // string. `Length`/`bf_length` (bf.go) dispatches on the runtime value's
+    // shape to match. The specialized array-only `.length` shapes above
+    // (filter-result count, memo-backed loop slice count) stay on `len`,
+    // since arrays never hit the UTF-16 divergence.
+    if (property === 'length') return `bf_length ${wrapIfMultiToken(obj)}`
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
     // a plain `.Field` dot-chain panics evaluating a field on a nil
     // interface/pointer (`nil pointer evaluating interface {}.Name`), so
@@ -3679,13 +3726,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     let name: string | null = null
     if (expr.kind === 'identifier') {
       name = expr.name
-    } else if (
-      expr.kind === 'member' &&
-      !expr.computed &&
-      expr.object.kind === 'identifier' &&
-      expr.object.name === this.state.propsObjectName
-    ) {
-      name = expr.property
+    } else if (expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier') {
+      if (expr.object.name === this.state.propsObjectName) {
+        name = expr.property
+      } else {
+        // Single-hop member access rooted at a bare destructured optional
+        // OBJECT prop (`user?.name ?? '…'`, #2256) — the ROOT prop is what
+        // needs to be in the nillable/nullish-consumed sets, not the
+        // accessed field; `member()`'s own `bf_get` lowering for the `?.`
+        // hop already returns Go `nil` on a nil/missing root, so gating on
+        // the root here is sufficient. Mirrors
+        // `collectNullishConsumedPropNames`'s `propNameOfLeft`.
+        name = expr.object.name
+      }
     }
     return name !== null &&
       this.state.nullishConsumedPropNames.has(name) &&
@@ -5100,19 +5153,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return plain(this.rootFieldRef(expr.callee.name))
         }
-        // `isValidElement(x)` — the framework "is this a renderable element?"
-        // predicate. In the Go SSR children model an element is represented by
-        // its already-rendered markup, so this evaluates faithfully as a
-        // truthiness check on the argument (an element is "valid" when there is
-        // something to render). Lowering it as a real, evaluatable expression —
-        // rather than a fabricated `.IsValidElement` field access — is what lets
-        // the `Slot` dynamic-tag guard register and run cleanly on Go.
+        // `isValidElement(x)` — the framework "is this a renderable element
+        // (not plain text)?" predicate. #2266: a passed-through JSX child is
+        // ALSO represented as pre-rendered markup on Go's SSR model, so a
+        // plain non-empty STRING child is truthy but is NOT a valid element
+        // — a bare truthiness check (the pre-#2266 lowering) wrongly took
+        // `Slot`'s element-merge branch and panicked dereferencing
+        // `.Props`/`.Tag` on a string (`can't evaluate field Props in type
+        // interface {}`). `bf_is_element` (bf.go) does a real reflect-based
+        // shape check (map/struct carrying both `tag`+`props` keys/fields,
+        // case-insensitively), matching JS's `'tag' in x && 'props' in x`.
+        // Pre-parenthesised — `call`-kind results aren't covered by
+        // `needsParens`, so an unparenthesised `bf_is_element X` splices as
+        // extra sibling args into an enclosing `and`/`or`.
         if (
           expr.callee.kind === 'identifier' &&
           (identifierPath(expr.callee) ?? expr.callee.name) === 'isValidElement' &&
           expr.args.length === 1
         ) {
-          return this.renderConditionExpr(expr.args[0])
+          const inner = this.renderConditionExpr(expr.args[0])
+          return { preamble: inner.preamble, expr: `(bf_is_element ${wrapIfMultiToken(inner.expr)})` }
         }
         // Any other user-defined predicate call with arguments (e.g.
         // `isAdmin(user)`) has no server-side evaluator and is not a registered
@@ -6119,17 +6179,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
-    // The static CSS key + literal value are inlined into a double-quoted
-    // `style="..."` attribute, so HTML-attr escape them (a value like `'"'`
-    // would otherwise terminate the attribute / inject markup). The dynamic
-    // arm's `{{…}}` action is escaped by `html/template`'s attribute context.
-    return entries
-      .map(e =>
-        e.kind === 'literal'
-          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
-          : `${this.escapeAttrText(e.cssKey)}:{{${this.convertExpressionToGo(e.expr)}}}`,
-      )
-      .join(';')
+    // Routed through the single `bf_style_object` runtime call (#2261)
+    // rather than per-pair `key:value` template interpolation — a dynamic
+    // value that fails the ported `hasUnsafeStyleValue` CSS-injection scan
+    // must DROP its entire pair to match Hono's oracle behavior, which
+    // isn't expressible as a per-pair inline substitution (a dropped
+    // MIDDLE pair would otherwise leave a dangling `key:` / stray `;;` in
+    // a `.map().join(';')` splice). `String()` (already returns "" for
+    // nil) also has an established zero-value contract for numbers/bools,
+    // avoiding html/template's own contextual CSS auto-escaper (whose
+    // `ZgotmplZ` sentinel — the pre-#2261 divergence — is bypassed by the
+    // call returning a trusted `template.CSS`, not a plain `string`).
+    const args = entries.flatMap(e => [
+      JSON.stringify(e.cssKey),
+      e.kind === 'literal' ? JSON.stringify(e.value) : wrapIfMultiToken(this.convertExpressionToGo(e.expr)),
+    ])
+    return `{{bf_style_object ${args.join(' ')}}}`
   }
 
   private renderAttributes(element: IRElement): string {

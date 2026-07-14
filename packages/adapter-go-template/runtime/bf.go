@@ -76,6 +76,9 @@ func FuncMap() template.FuncMap {
 
 		// Array/Slice
 		"bf_len":            Len,
+		"bf_length":         Length,
+		"bf_is_element":     IsValidElement,
+		"bf_style_object":   StyleObjectToCSS,
 		"bf_at":             At,
 		"bf_includes":       Includes,
 		"bf_index_of":       IndexOf,
@@ -388,6 +391,91 @@ func toAttrName(key string) string {
 		}
 	}
 	return b.String()
+}
+
+// hasUnsafeStyleValue mirrors Hono's own CSS-injection guard
+// (`hono/jsx/utils.ts`'s `hasUnsafeStyleValue` — the ORACLE this adapter's
+// dynamic `style={{...}}` values must match, #2261): a hand-rolled
+// structural scan for characters that could break out of a CSS
+// declaration, NOT real CSSOM property validation. Ported byte-for-byte —
+// every character this scan tests is ASCII, so scanning by byte (Go
+// string indexing) agrees with Hono's UTF-16-code-unit scan for every
+// input; a multibyte UTF-8 sequence has no byte in the ASCII range, so it
+// can never spuriously match one of these single-byte comparisons. Skips
+// the reference implementation's regex fast-path (a pure optimization —
+// the scan below already returns `false` promptly for a clean value).
+func hasUnsafeStyleValue(value string) bool {
+	quote := byte(0)
+	blockStack := make([]byte, 0, 4)
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		switch {
+		case c == '\\':
+			if i == len(value)-1 {
+				return true
+			}
+			i++
+		case quote != 0:
+			if c == '\n' || c == '\f' || c == '\r' {
+				return true
+			}
+			if c == quote {
+				quote = 0
+			}
+		case c == '/' && i+1 < len(value) && value[i+1] == '*':
+			end := strings.Index(value[i+2:], "*/")
+			if end == -1 {
+				return true
+			}
+			i = i + 2 + end + 1
+		case c == '"' || c == '\'':
+			quote = c
+		case c == '(':
+			blockStack = append(blockStack, ')')
+		case c == '[':
+			blockStack = append(blockStack, ']')
+		case c == '{' || c == '}':
+			return true
+		case c == ')' || c == ']':
+			if len(blockStack) == 0 || blockStack[len(blockStack)-1] != c {
+				return true
+			}
+			blockStack = blockStack[:len(blockStack)-1]
+		case c == ';' && len(blockStack) == 0:
+			return true
+		}
+	}
+	return quote != 0 || len(blockStack) != 0
+}
+
+// StyleObjectToCSS builds the CSS string for a `style={{...}}` JSX
+// object-literal attribute (#2261) — `pairs` alternates CSS key (always a
+// compile-time-known literal), then value (`any`, possibly a runtime
+// expression's result). A value that fails `hasUnsafeStyleValue` (after
+// JS-`String()`-style stringification) is DROPPED — the whole `key:value`
+// pair is omitted — matching Hono's oracle behavior exactly, rather than
+// html/template's own contextual CSS auto-escaper (which instead emits its
+// `ZgotmplZ` unsafe-content sentinel for the same input). The final joined
+// string is STILL HTML-escaped (mirroring Hono's own `escapeToBuffer` call
+// on its accumulated style string) — a "safe" value can still carry a
+// literal `"`/`'`/`&` (e.g. a BALANCED-quote CSS string value like
+// `"hello"` passes the structural scan; the quote chars survive into the
+// value) that would otherwise break out of the double-quoted `style="..."`
+// attribute. Returns `template.CSS` (over the escaped result) so
+// html/template treats it as trusted CSS content instead of ALSO applying
+// its own contextual CSS auto-escaper (which would re-derive the exact
+// `ZgotmplZ` divergence this function exists to avoid).
+func StyleObjectToCSS(pairs ...any) template.CSS {
+	parts := make([]string, 0, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		key := fmt.Sprint(pairs[i])
+		value := String(pairs[i+1])
+		if hasUnsafeStyleValue(value) {
+			continue
+		}
+		parts = append(parts, template.HTMLEscapeString(key)+":"+template.HTMLEscapeString(value))
+	}
+	return template.CSS(strings.Join(parts, ";"))
 }
 
 // StyleToCss mirrors styleToCss from
@@ -1130,6 +1218,92 @@ func Round(v any) float64 {
 // =============================================================================
 // Array/Slice Operations
 // =============================================================================
+
+// Length lowers JS `.length`, matching JS semantics per receiver shape
+// (#2255): a slice/array/map counts ELEMENTS (`reflect.Value.Len`, same as
+// `Len` below), but a STRING counts UTF-16 CODE UNITS — JS
+// `String.prototype.length` counts UTF-16 code units, not bytes (Go's
+// native `len`) or codepoints. A codepoint outside the Basic Multilingual
+// Plane (astral, U+10000-U+10FFFF — e.g. '👍') is a surrogate PAIR in
+// UTF-16, so it counts as 2, not 1; `'日本語'` is 3 either way (BMP-only).
+// Routed from the `.length` member lowering's generic (non-array,
+// non-loop-slice) fallback — see `member()`'s `bf_length` call site.
+func Length(v any) int {
+	if v == nil {
+		return 0
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
+		return rv.Len()
+	case reflect.String:
+		n := 0
+		for _, r := range rv.String() {
+			if r > 0xFFFF {
+				n += 2
+			} else {
+				n++
+			}
+		}
+		return n
+	default:
+		return 0
+	}
+}
+
+// IsValidElement lowers React/Hono-style `isValidElement(x)` — the "is this
+// a renderable element (not plain text)?" predicate the `Slot` component's
+// `asChild` pattern (#2266) uses to decide whether to merge props into a
+// child ELEMENT (`children.tag`/`children.props`) or fall back to rendering
+// `children` as-is. The JS runtime checks `'tag' in x && 'props' in x`; on
+// Go SSR a passed-through JSX child is represented as pre-rendered markup
+// (a plain string) OR — where a struct/map shape carrying `Tag`/`Props`
+// (case-insensitively, mirroring `bf_get`'s field lookup) is available — an
+// element-shaped value. A plain string/number/bool/nil is never a valid
+// element, so `isValidElement` must NOT be lowered as bare truthiness
+// (previously done via `renderConditionExpr`) — a truthy non-empty STRING
+// child wrongly took the element-merge branch and panicked dereferencing
+// `.Props` on a string (`can't evaluate field Props in type interface {}`).
+func IsValidElement(v any) bool {
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return false
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Map:
+		hasTag, hasProps := false, false
+		for _, k := range rv.MapKeys() {
+			key := fmt.Sprintf("%v", k.Interface())
+			if strings.EqualFold(key, "tag") {
+				hasTag = true
+			}
+			if strings.EqualFold(key, "props") {
+				hasProps = true
+			}
+		}
+		return hasTag && hasProps
+	case reflect.Struct:
+		return fieldByFoldedName(rv, "tag").IsValid() && fieldByFoldedName(rv, "props").IsValid()
+	default:
+		return false
+	}
+}
+
+// fieldByFoldedName finds a struct field by case-insensitive name match —
+// shared by IsValidElement; mirrors getFieldValue's (bf_get) struct-branch
+// lookup so the two case-tolerant field resolutions stay consistent.
+func fieldByFoldedName(rv reflect.Value, name string) reflect.Value {
+	t := rv.Type()
+	for i := 0; i < t.NumField(); i++ {
+		if strings.EqualFold(t.Field(i).Name, name) {
+			return rv.Field(i)
+		}
+	}
+	return reflect.Value{}
+}
 
 // Len returns the length of a slice, array, map, string, or channel.
 // Returns 0 for nil or unsupported types.
@@ -3054,6 +3228,19 @@ func toString(v any) string {
 	case bool:
 		return strconv.FormatBool(s)
 	default:
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
+			// JS `Array.prototype.toString` is `this.join(',')`, applied
+			// recursively — a nested array element stringifies the same
+			// way rather than via Go's `%v`. Reached via `Join`/`ConcatStr`
+			// on an element that is itself an array (e.g. `.flat(0)`'s
+			// shallow copy joined afterwards, #2262).
+			parts := make([]string, rv.Len())
+			for i := 0; i < rv.Len(); i++ {
+				parts[i] = toString(rv.Index(i).Interface())
+			}
+			return strings.Join(parts, ",")
+		}
 		return ""
 	}
 }

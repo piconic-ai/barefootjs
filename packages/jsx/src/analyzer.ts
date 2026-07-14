@@ -1226,11 +1226,27 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   // the binding actually in scope rather than a hardcoded canonical name (#2057).
   const envFactory = envReader ? callExpr.expression.getText(ctx.sourceFile) : undefined
 
+  // Destructured-arg components only (#2265): a signal's initial value
+  // referencing a bare destructured prop (`createSignal(size ?? 1)` with
+  // `{ size }: { size?: number }`) needs `_p.size` for the CSR
+  // `template:` arrow's module-scope SSR fallback — that arrow isn't a
+  // closure over `initXxx`'s `const size = _p.size` extraction. Mirrors
+  // the local-constant rewrite a few hundred lines up (`propNames` built
+  // the same way from `ctx.propsParams`).
+  let templateInitialValue: string | undefined
+  if (!ctx.propsObjectName && callExpr.arguments[0]) {
+    const propNames = new Set(ctx.propsParams.map(p => p.name))
+    if (propNames.size > 0) {
+      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames)
+    }
+  }
+
   ctx.signals.push({
     getter,
     setter,
     initialValue,
     typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
+    templateInitialValue,
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     initialFreeIdentifiers: callExpr.arguments[0]

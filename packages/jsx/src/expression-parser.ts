@@ -592,6 +592,58 @@ export function cssKebabCase(name: string): string {
 }
 
 /**
+ * Whether a dynamic CSS style VALUE is "unsafe" — the CSS-injection guard
+ * Hono's real JSX runtime (`hono/jsx/utils.ts`'s `hasUnsafeStyleValue`,
+ * the ORACLE this compiler's adapters must match, #2261) applies before
+ * emitting a `style={{...}}` object-literal property. A value flagged
+ * unsafe is DROPPED — the whole `key:value` pair is omitted from the CSS
+ * string — rather than escaped; this is a hand-rolled structural scan for
+ * characters that could break out of a CSS declaration (unbalanced
+ * quotes/brackets, `{`/`}`, a bare `;`, an unterminated CSS comment
+ * or backslash-escape), NOT real CSSOM property validation. Ported
+ * character-for-character (character-CODE comparisons, not codepoints —
+ * every tested character is ASCII, so scanning consistently by UTF-16
+ * code unit, byte, or codepoint all agree) so every adapter's own port
+ * (Go/Ruby/Python/Rust/PHP/Perl) stays byte-isomorphic with this
+ * reference and with Hono.
+ */
+export function hasUnsafeStyleValue(value: string): boolean {
+  let quote = 0
+  const blockStack: number[] = []
+  for (let i = 0, len = value.length; i < len; i++) {
+    const c = value.charCodeAt(i)
+    if (c === 92) {
+      // backslash — an escape sequence; an escape at the very end (nothing
+      // to escape) is unsafe, else skip the escaped character.
+      if (i === len - 1) return true
+      i++
+    } else if (quote !== 0) {
+      if (c === 10 || c === 12 || c === 13) return true // \n \f \r inside a quoted string
+      if (c === quote) quote = 0
+    } else if (c === 47 && value.charCodeAt(i + 1) === 42) {
+      // "/*" comment start — must close before the value ends.
+      const end = value.indexOf('*/', i + 2)
+      if (end === -1) return true
+      i = end + 1
+    } else if (c === 34 || c === 39) {
+      quote = c // " or '
+    } else if (c === 40) {
+      blockStack.push(41) // ( expects a matching )
+    } else if (c === 91) {
+      blockStack.push(93) // [ expects a matching ]
+    } else if (c === 123 || c === 125) {
+      return true // { or } — always unsafe
+    } else if (c === 41 || c === 93) {
+      if (blockStack[blockStack.length - 1] !== c) return true // mismatched close
+      blockStack.pop()
+    } else if (c === 59 && blockStack.length === 0) {
+      return true // ; outside any bracket
+    }
+  }
+  return quote !== 0 || blockStack.length !== 0 // unterminated quote/bracket
+}
+
+/**
  * Parse a JSX `style={{ … }}` object-literal source into CSS entries, or
  * `null` when the shape isn't a plain object of static-keyed properties
  * (spread, computed key, shorthand, method, getter) — the adapter then keeps
@@ -3538,7 +3590,13 @@ export function freeIdentifiers(expr: ParsedExpr): Set<string> | null {
       case 'regex':
         return true
       case 'identifier':
-        if (!bound.has(e.name)) free.add(e.name)
+        // `undefined` parses as an `identifier` node (unlike `null`, which
+        // is a `literal`) but is never a scope reference — every adapter
+        // emitter already lowers it to `nil`/`none`/etc. Reporting it as
+        // free wrongly opaques an otherwise-derivable expression (#2260:
+        // `props.pressed !== undefined` in `computeSsrSeedPlan`'s
+        // `classify()`, whose `baseScope` has no `undefined` entry).
+        if (e.name !== 'undefined' && !bound.has(e.name)) free.add(e.name)
         return true
       case 'call': {
         const isBuiltinCallee = evalBuiltinCalleeName(e.callee) !== null

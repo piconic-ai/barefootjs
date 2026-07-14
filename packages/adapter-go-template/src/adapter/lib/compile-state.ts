@@ -165,6 +165,24 @@ export class CompileState {
   omittableAttrConsumedPropNames: Set<string> = new Set()
 
   /**
+   * OPTIONAL no-default prop names consumed as a BARE TEXT-position
+   * expression value (`{size}`) — #2267. Same `resolvePropGoType` flip and
+   * same populate-before-first-resolve ordering as
+   * `nullishConsumedPropNames`: the text emitter's nil-safe `bf_string`
+   * wrap needs a nillable field to have something to guard.
+   */
+  textConsumedPropNames: Set<string> = new Set()
+
+  /**
+   * OPTIONAL no-default prop names whose PRESENCE is tested — `props.X !==
+   * undefined` (the "controlled component" idiom's `isControlled` memo) —
+   * #2260. Same `resolvePropGoType` flip and same populate-before-first-
+   * resolve ordering as `nullishConsumedPropNames`: distinguishing "caller
+   * passed a value" from "caller omitted the prop" needs a nillable field.
+   */
+  presenceCheckedPropNames: Set<string> = new Set()
+
+  /**
    * String-typed signal getter / prop names (#2168 string-concat-plus).
    * Feeds `isStringName` for `isStringConcatBinary`, which decides whether a
    * JS `+` operand chain is string concatenation rather than numeric

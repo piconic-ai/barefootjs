@@ -35,6 +35,34 @@ function getterCallName(e: ParsedExpr): string | null {
     : null
 }
 
+/** Whether `t` is `boolean`, or a `T | undefined`/`T | null` union whose
+ *  non-nullish branch is `boolean` (the controlled-signal shape,
+ *  `createSignal<boolean | undefined>(...)`). */
+function isBooleanTypeInfo(t: TypeInfo): boolean {
+  if (t.kind === 'primitive') return t.primitive === 'boolean'
+  if (t.kind === 'union' && t.unionTypes?.length === 2) {
+    const scalar = t.unionTypes.find(u => u.primitive !== 'undefined' && u.primitive !== 'null')
+    return scalar?.kind === 'primitive' && scalar.primitive === 'boolean'
+  }
+  return false
+}
+
+/** Whether the getter NAME (a signal or memo) has a boolean-compatible
+ *  declared type — gates the ternary-over-getter-calls branch below
+ *  (#2260) so it only fires for the boolean shape it hardcodes a `func()
+ *  bool { ... }()` wrapper for; a string/number-typed getter falls through
+ *  to the caller's normal handling instead of emitting invalid Go. */
+function isBooleanTypedGetter(
+  ctx: GoEmitContext,
+  name: string,
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+): boolean {
+  const signal = signals.find(s => s.getter === name)
+  if (signal) return signal.type !== undefined && isBooleanTypeInfo(signal.type)
+  const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
+  return memo?.type !== undefined && isBooleanTypeInfo(memo.type)
+}
+
 /** A `props.X` member access → the prop name, else null. */
 function propsMemberName(e: ParsedExpr): string | null {
   return e.kind === 'member' &&
@@ -43,6 +71,25 @@ function propsMemberName(e: ParsedExpr): string | null {
     e.object.name === 'props'
     ? e.property
     : null
+}
+
+/**
+ * A prop reference resolved against the component's ACTUAL props-object
+ * binding (`ctx.state.propsObjectName` — may be a non-`props` name, or
+ * `null` for a destructured signature), else null. Mirrors
+ * `collectPresenceCheckedPropNames`'s (prop-types.ts) exact shape so the
+ * presence-check codegen branch below can't drift from the collector that
+ * decides which props got the nillable flip in the first place — unlike
+ * `propsMemberName` (hardcoded to the literal name `props`), which only
+ * matches the conventional object-props signature.
+ */
+function propNameForPropsBinding(ctx: GoEmitContext, e: ParsedExpr): string | null {
+  const propsObject = ctx.state.propsObjectName
+  if (e.kind === 'member' && !e.computed && e.object.kind === 'identifier' && e.object.name === propsObject) {
+    return e.property
+  }
+  if (!propsObject && e.kind === 'identifier') return e.name
+  return null
 }
 
 /** A `() => props.X.filter((p) => <predicate>)` match: the array prop name,
@@ -56,7 +103,7 @@ function propsMemberName(e: ParsedExpr): string | null {
 export function matchFilterArmMemo(
   ctx: GoEmitContext,
   body: ParsedExpr,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
 ): { propName: string; predJSON: string; paramName: string; freeVars: string[] } | null {
   const cb = asCallbackMethodCall(body)
@@ -93,7 +140,7 @@ export function matchFilterArmMemo(
 export function filterArmEarlierSiblingRefs(
   ctx: GoEmitContext,
   memo: { name: string; parsed?: ParsedExpr },
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
 ): string[] {
   if (!memo.parsed) return []
@@ -126,7 +173,7 @@ export function filterArmEarlierSiblingRefs(
 export function computeMemoInitialValue(
   ctx: GoEmitContext,
   memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr },
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   goType?: string,
@@ -168,7 +215,7 @@ export function computeMemoInitialValue(
 export function memoInitialFromParsedBody(
   ctx: GoEmitContext,
   body: ParsedExpr,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   currentMemoName: string,
@@ -310,6 +357,42 @@ export function memoInitialFromParsedBody(
     if (propName) return propRef(propName)
   }
 
+  // () => props.X !== undefined (or !=/===/==) — the "controlled component"
+  // idiom's `isControlled` memo (#2260). Distinguishing "caller passed a
+  // value" from "caller omitted the prop" needs the nillable `interface{}`
+  // representation `collectPresenceCheckedPropNames`/`resolvePropGoType`
+  // flip `props.X` to; the input field's Go zero value for `interface{}` IS
+  // `nil`, so a plain nil-check is exact (no `bf_nullish`-style helper
+  // needed — this is presence, not a `??` fallback).
+  if (
+    body.kind === 'binary' &&
+    (body.op === '!==' || body.op === '!=' || body.op === '===' || body.op === '==')
+  ) {
+    const other =
+      body.right.kind === 'identifier' && body.right.name === 'undefined' ? body.left :
+      body.left.kind === 'identifier' && body.left.name === 'undefined' ? body.right : null
+    const propName = other ? propNameForPropsBinding(ctx, other) : null
+    if (propName) {
+      const param = propsParams.find(p => p.name === propName)
+      // Guard on the field ACTUALLY being nillable-flipped — a presence
+      // check against a CONCRETE-typed field (a required prop, or an
+      // optional one this memo's shape didn't trigger the flip for, e.g.
+      // via `collectPresenceCheckedPropNames`'s primitive-only /
+      // no-default gate) can't be tested this way (`x != nil` doesn't even
+      // compile against a `string`/`bool` field) — fall through to the
+      // caller's zero-value default instead of emitting invalid Go. Reads
+      // the RAW `in.<Field>` directly — NOT through `propRef`, which
+      // prefers a hoisted `?? <fallback>` local when one exists: that local
+      // already collapsed "absent" into the fallback value at hoist time,
+      // so it's never nil and testing it here would be nonsensical (and,
+      // being concretely typed, wouldn't compile against `nil` either).
+      if (param && ctx.state.nillablePropNames.has(propName)) {
+        const isNe = body.op === '!==' || body.op === '!='
+        return `in.${capitalizeFieldName(propName)} ${isNe ? '!=' : '=='} nil`
+      }
+    }
+  }
+
   // () => cond() ? A : B where each branch is a module string const or a
   // string literal, and `cond` is a signal/memo this resolver can evaluate.
   if (body.kind === 'conditional') {
@@ -347,6 +430,37 @@ export function memoInitialFromParsedBody(
         if (condGo === 'false') return f
         if (condGo !== null) {
           return `func() string { if ${condGo} { return ${t} }; return ${f} }()`
+        }
+      }
+    }
+
+    // () => cond() ? branchA() : branchB() — a ternary whose CONDITION and
+    // BOTH branches are getter calls (signals/memos), not string literals
+    // (#2260's `isPressed = isControlled() ? controlledPressed() :
+    // internalPressed()`). `resolveGetterValueAsGo` resolves each — a
+    // presence-check memo like `isControlled` above already yields a Go
+    // `bool` expression, so the condition needs no extra wrapping.
+    //
+    // GATED to both branches being boolean-typed signals/memos
+    // (`isBooleanTypedGetter`) — `getterCallName` only checks call SHAPE,
+    // not type, so an ungated version would also match a derived
+    // string/number memo (`label = isActive() ? activeLabel() :
+    // inactiveLabel()`) and hardcode an invalid `func() bool { return
+    // "..." }()` (Copilot review finding on the initial version of this
+    // branch).
+    if (condName) {
+      const tName = getterCallName(body.consequent)
+      const fName = getterCallName(body.alternate)
+      if (
+        tName && fName &&
+        isBooleanTypedGetter(ctx, tName, signals) &&
+        isBooleanTypedGetter(ctx, fName, signals)
+      ) {
+        const condGo = resolveGetterValueAsGo(ctx, condName, signals, propsParams, propFallbackVars, resolving)
+        const tGo = resolveGetterValueAsGo(ctx, tName, signals, propsParams, propFallbackVars, resolving)
+        const fGo = resolveGetterValueAsGo(ctx, fName, signals, propsParams, propFallbackVars, resolving)
+        if (condGo !== null && tGo !== null && fGo !== null) {
+          return `func() bool { if ${condGo} { return ${tGo} }; return ${fGo} }()`
         }
       }
     }
@@ -473,7 +587,7 @@ export function memoInitialFromParsedBody(
 export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
   memo: { name: string; computation: string; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
   /**
@@ -555,14 +669,14 @@ export function computeMemoInitialValueOrNull(
 export function resolveGetterValueAsGo(
   ctx: GoEmitContext,
   name: string,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
   const signal = signals.find(s => s.getter === name)
   if (signal) {
-    return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars)
+    return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signal.type)
   }
   const memo = (ctx.state.currentMemos ?? []).find(m => m.name === name)
   if (memo) {
@@ -598,7 +712,7 @@ export function resolveGetterValueAsGo(
 export function computeComparisonTernaryGo(
   ctx: GoEmitContext,
   parsed: ParsedExpr | undefined,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),
@@ -654,7 +768,7 @@ export function computeComparisonTernaryGo(
 export function resolveComparisonOperandGo(
   ctx: GoEmitContext,
   node: ParsedExpr,
-  signals: { getter: string; initialValue: string }[],
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
   propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   resolving: ReadonlySet<string> = new Set(),

@@ -865,9 +865,13 @@ final class BarefootJS
         return implode($sepStr, $parts);
     }
 
-    /** `.length` -- JS works on both arrays (element count) and strings
-     * (character count). Code-point length (see the design doc's `len`
-     * vector note: the golden vectors only pin ASCII cases). */
+    /** `.length` -- JS works on both arrays (element count) and strings.
+     * The string branch counts UTF-16 CODE UNITS, matching JS
+     * `String.prototype.length` (#2255) -- NOT `mb_strlen`'s Unicode
+     * codepoint count. A codepoint outside the Basic Multilingual Plane
+     * (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
+     * UTF-16, so it counts as 2, not 1; '日本語' is 3 either way
+     * (BMP-only). */
     public function length($recv): int
     {
         if (Evaluator::isJsArray($recv)) {
@@ -876,7 +880,12 @@ final class BarefootJS
         if (is_array($recv) || $recv instanceof \stdClass) {
             return 0; // a plain object has no `.length`
         }
-        return mb_strlen($this->scalarOrEmpty($recv), 'UTF-8');
+        $s = $this->scalarOrEmpty($recv);
+        $n = 0;
+        foreach (mb_str_split($s, 1, 'UTF-8') as $char) {
+            $n += mb_ord($char, 'UTF-8') > 0xFFFF ? 2 : 1;
+        }
+        return $n;
     }
 
     /** True for a JS *object* value under the canonical value convention
@@ -1671,6 +1680,82 @@ final class BarefootJS
             $parts[] = $prop . ':' . $this->string($v);
         }
         return $parts ? implode(';', $parts) : null;
+    }
+
+    /** Structural scan for characters that could break a value out of a CSS
+     * declaration -- ported byte-for-byte from Hono's own
+     * `hasUnsafeStyleValue` (`hono/jsx/utils.ts`), the ORACLE this adapter's
+     * dynamic `style={{...}}` values must match (#2261). NOT real CSSOM
+     * property validation. Every character this scan tests is ASCII, and
+     * PHP string indexing is byte-based, so a multibyte UTF-8 sequence has
+     * no byte in the ASCII range that could spuriously match one of these
+     * single-byte comparisons. */
+    private function hasUnsafeStyleValue(string $value): bool
+    {
+        $quote = '';
+        $blockStack = [];
+        $len = strlen($value);
+        for ($i = 0; $i < $len; $i++) {
+            $c = $value[$i];
+            if ($c === '\\') {
+                if ($i === $len - 1) {
+                    return true;
+                }
+                $i++;
+            } elseif ($quote !== '') {
+                if ($c === "\n" || $c === "\f" || $c === "\r") {
+                    return true;
+                }
+                if ($c === $quote) {
+                    $quote = '';
+                }
+            } elseif ($c === '/' && $i + 1 < $len && $value[$i + 1] === '*') {
+                $end = strpos($value, '*/', $i + 2);
+                if ($end === false) {
+                    return true;
+                }
+                $i = $end + 1;
+            } elseif ($c === '"' || $c === "'") {
+                $quote = $c;
+            } elseif ($c === '(') {
+                $blockStack[] = ')';
+            } elseif ($c === '[') {
+                $blockStack[] = ']';
+            } elseif ($c === '{' || $c === '}') {
+                return true;
+            } elseif ($c === ')' || $c === ']') {
+                if (empty($blockStack) || end($blockStack) !== $c) {
+                    return true;
+                }
+                array_pop($blockStack);
+            } elseif ($c === ';' && empty($blockStack)) {
+                return true;
+            }
+        }
+        return $quote !== '' || !empty($blockStack);
+    }
+
+    /** Builds the CSS string for a `style={{...}}` JSX object-literal
+     * attribute (#2261). `$pairs` alternates CSS key (always compile-time-
+     * known), then value. A value that fails `hasUnsafeStyleValue` (after
+     * JS-`String()`-style stringification) is DROPPED -- the whole
+     * `key:value` pair is omitted -- matching Hono's oracle exactly. The
+     * joined string is STILL HTML-escaped (mirroring Hono's own
+     * `escapeToBuffer` call) since a structurally "safe" value can still
+     * carry a literal `"`/`'`/`&`. Returns the runtime's `mark_raw`-wrapped
+     * result so the caller's `{!! !!}` / raw output isn't double-escaped. */
+    public function style_object(...$pairs)
+    {
+        $parts = [];
+        for ($i = 0; $i + 1 < count($pairs); $i += 2) {
+            $key = $this->string($pairs[$i]);
+            $value = $this->string($pairs[$i + 1]);
+            if ($this->hasUnsafeStyleValue($value)) {
+                continue;
+            }
+            $parts[] = $this->htmlEscape($key) . ':' . $this->htmlEscape($value);
+        }
+        return $this->backend->mark_raw(implode(';', $parts));
     }
 
     /** Mirrors the JS `spreadAttrs` runtime so SSR output stays byte-equal

@@ -16,6 +16,45 @@ import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
 
 /**
+ * A bare prop-field reference (`in.<Field>`), type-asserted when the prop
+ * was flipped to nillable `interface{}` (#2248/#2259/#2260's
+ * `resolvePropGoType` flips) while THE CONSUMER's own expected type is a
+ * concrete scalar — e.g. `createSignal<boolean | undefined>(props.pressed)`
+ * resolves to a plain `bool` signal field (the `| undefined` half doesn't
+ * itself trigger a flip), but `props.pressed` now bakes as `interface{}`.
+ * A bare `interface{}` value can't assign into a `bool` field/branch (Go
+ * compile error) — safely type-assert with a zero-value fallback for the
+ * concrete-scalar case instead of the bare field reference. Object/array
+ * expected types are left alone (already `interface{}`-compatible).
+ *
+ * `expectedType` may be `kind: 'union'` — a `T | undefined` signal type
+ * annotation (the controlled-component idiom's controlled signal) — the `|
+ * undefined` half is source-level documentation of nullability, not a
+ * Go-representable branch, so it's unwrapped to its single non-
+ * undefined/null primitive branch.
+ */
+function nillableAwarePropRef(ctx: GoEmitContext, propName: string, expectedType: TypeInfo): string {
+  const fieldRef = `in.${capitalizeFieldName(propName)}`
+  const scalar =
+    expectedType.kind === 'primitive'
+      ? expectedType
+      : expectedType.kind === 'union' && expectedType.unionTypes?.length === 2
+        ? expectedType.unionTypes.find(t => t.primitive !== 'undefined' && t.primitive !== 'null')
+        : undefined
+  if (ctx.state.nillablePropNames.has(propName) && scalar?.kind === 'primitive') {
+    const goType =
+      scalar.primitive === 'boolean' ? 'bool' :
+      scalar.primitive === 'number' ? 'float64' :
+      scalar.primitive === 'string' ? 'string' : null
+    if (goType) {
+      const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
+      return `func() ${goType} { if v, ok := ${fieldRef}.(${goType}); ok { return v }; return ${zero} }()`
+    }
+  }
+  return fieldRef
+}
+
+/**
  * Lower a signal/const initial value to its Go SSR literal: a prop reference
  * becomes `in.<Field>`, a non-literal falls back to the type's zero value.
  */
@@ -26,15 +65,17 @@ export function convertInitialValue(
   propsParams?: { name: string }[],
   preParsed?: ParsedExpr,
 ): string {
+  const propRef = (propName: string): string => nillableAwarePropRef(ctx, propName, typeInfo)
+
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
     if (propsParams?.some(p => p.name === value)) {
-      return `in.${capitalizeFieldName(value)}`
+      return propRef(value)
     }
   }
 
   const propName = ctx.extractPropNameFromInitialValue(value, preParsed)
   if (propName && propsParams?.some(p => p.name === propName)) {
-    return `in.${capitalizeFieldName(propName)}`
+    return propRef(propName)
   }
 
   if (typeInfo.kind === 'primitive') {
@@ -148,24 +189,36 @@ export function objectLiteralToGoMap(ctx: GoEmitContext, expr: ParsedExpr): stri
  * Get a signal's initial value as Go code — a literal, or a props reference
  * (`in.<Field>`, or the hoisted fallback var when `props.X ?? N` has one).
  * Unrecognized values default to `0`.
+ *
+ * `signalType`, when passed, drives the same nillable-prop type-assertion
+ * `convertInitialValue` applies (#2260) — a caller resolving a getter as the
+ * operand of a boolean condition/ternary branch (`resolveGetterValueAsGo`)
+ * needs a concrete-typed result, not a bare `interface{}` field reference,
+ * when the referenced prop was flipped to nillable. Omitted by call sites
+ * that splice the result into an `interface{}`-typed context (e.g. a
+ * `map[string]any{...}` env entry), where the bare reference is fine.
  */
 export function getSignalInitialValueAsGo(
   ctx: GoEmitContext,
   initialValue: string,
   propsParams: { name: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
+  signalType?: TypeInfo,
 ): string {
+  const propRef = (propName: string): string =>
+    signalType ? nillableAwarePropRef(ctx, propName, signalType) : `in.${capitalizeFieldName(propName)}`
+
   if (propsParams.some(p => p.name === initialValue)) {
     const hoisted = propFallbackVars.get(initialValue)
     if (hoisted) return hoisted.varName
-    return `in.${capitalizeFieldName(initialValue)}`
+    return propRef(initialValue)
   }
 
   const propName = ctx.extractPropNameFromInitialValue(initialValue)
   if (propName && propsParams.some(p => p.name === propName)) {
     const hoisted = propFallbackVars.get(propName)
     if (hoisted) return hoisted.varName
-    return `in.${capitalizeFieldName(propName)}`
+    return propRef(propName)
   }
 
   // single quotes are normalized to Go double quotes

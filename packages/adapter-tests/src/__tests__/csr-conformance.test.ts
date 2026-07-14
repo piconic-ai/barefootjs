@@ -243,11 +243,6 @@ describe('CSR Conformance Tests', () => {
     //     first element in CSR, while SSR carries the scope on a
     //     `<!--bf-scope:...-->` comment the normalizer strips.
     'nested-fragments',
-    // #2265 (same class as #2222 Bug 1, signal-initial-value position):
-    // the module-scope `template:` arrow interpolates the bare destructured
-    // name (`${escapeText((size ?? 1))}`) it can't see —
-    // `ReferenceError: size is not defined` at template-eval time.
-    'nullish-coalescing-destructured',
   ])
 
   for (const fixture of jsxFixtures) {

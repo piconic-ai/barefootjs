@@ -76,6 +76,8 @@ import re
 import uuid
 from typing import Any, Callable, Optional
 
+from markupsafe import Markup
+
 from . import evaluator as _evaluator
 from .evaluator import looks_like_number, parse_number_literal
 from .search_params import SearchParams
@@ -358,6 +360,55 @@ def _html_escape(value: Any) -> str:
     s = s.replace('"', "&#34;")
     s = s.replace("'", "&#39;")
     return s
+
+
+def _has_unsafe_style_value(value: str) -> bool:
+    """Mirrors Hono's own CSS-injection guard (`hono/jsx/utils.ts`'s
+    `hasUnsafeStyleValue` -- the ORACLE a dynamic `style={{...}}` value
+    must match, #2261): a hand-rolled structural scan for characters that
+    could break out of a CSS declaration, NOT real CSSOM property
+    validation. Ported character-for-character (codepoint comparisons,
+    consistently, throughout -- every tested character is ASCII, so a
+    multibyte codepoint can never spuriously match one of these
+    single-character comparisons regardless of scan unit). Skips the
+    reference implementation's regex fast-path (a pure optimization -- the
+    scan below already returns `False` promptly for a clean value)."""
+    quote = ""
+    block_stack: list[str] = []
+    i = 0
+    length = len(value)
+    while i < length:
+        c = value[i]
+        if c == "\\":
+            if i == length - 1:
+                return True
+            i += 1
+        elif quote:
+            if c in ("\n", "\f", "\r"):
+                return True
+            if c == quote:
+                quote = ""
+        elif c == "/" and i + 1 < length and value[i + 1] == "*":
+            end = value.find("*/", i + 2)
+            if end == -1:
+                return True
+            i = end + 1
+        elif c in ('"', "'"):
+            quote = c
+        elif c == "(":
+            block_stack.append(")")
+        elif c == "[":
+            block_stack.append("]")
+        elif c in ("{", "}"):
+            return True
+        elif c in (")", "]"):
+            if not block_stack or block_stack[-1] != c:
+                return True
+            block_stack.pop()
+        elif c == ";" and not block_stack:
+            return True
+        i += 1
+    return bool(quote) or bool(block_stack)
 
 
 def _style_to_css(value: Any) -> Optional[str]:
@@ -912,6 +963,29 @@ class BarefootJS:
                 return i
         return -1
 
+    def style_object(self, *pairs: Any) -> Markup:
+        """Builds the CSS string for a `style={{...}}` JSX object-literal
+        attribute (#2261) -- `pairs` alternates CSS key (always a
+        compile-time-known literal), then value. A value that fails
+        `_has_unsafe_style_value` (after JS-`String()`-style
+        stringification) is DROPPED -- the whole `key:value` pair is
+        omitted -- matching Hono's oracle behavior exactly. The final
+        joined string is STILL HTML-escaped (mirroring Hono's own
+        `escapeToBuffer` call on its accumulated style string) -- a "safe"
+        value can still carry a literal `"`/`'`/`&` (e.g. a BALANCED-quote
+        CSS string value like `"hello"` passes the structural scan) that
+        would otherwise break out of the double-quoted `style="..."`
+        attribute. Returns `Markup` so Jinja's autoescape treats the
+        (already-escaped) result as safe instead of double-escaping it."""
+        parts = []
+        for i in range(0, len(pairs) - 1, 2):
+            key, value = pairs[i], pairs[i + 1]
+            v = js_string(value)
+            if _has_unsafe_style_value(v):
+                continue
+            parts.append(f"{_html_escape(key)}:{_html_escape(v)}")
+        return Markup(";".join(parts))
+
     def lc(self, s: Any) -> str:
         return js_string(s).lower()
 
@@ -929,7 +1003,12 @@ class BarefootJS:
             return len(recv)
         if isinstance(recv, dict):
             return 0
-        return len(js_string(recv))
+        # JS `String.prototype.length` counts UTF-16 CODE UNITS, not
+        # Python's codepoint-counting `len(str)` (#2255). A codepoint
+        # outside the Basic Multilingual Plane (astral, U+10000-U+10FFFF —
+        # e.g. '👍') is a surrogate PAIR in UTF-16, so it counts as 2, not
+        # 1; '日本語' is 3 either way (BMP-only).
+        return sum(2 if ord(c) > 0xFFFF else 1 for c in js_string(recv))
 
     def index_of(self, recv: Any, elem: Any) -> int:
         return _array_index_of(recv, elem, reverse=False)

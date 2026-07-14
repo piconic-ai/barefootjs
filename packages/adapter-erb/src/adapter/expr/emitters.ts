@@ -140,7 +140,11 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // `.length` needs no special higher-order form here — see the file
     // docstring's simplification (2): `.select { ... }.length` just works
     // in Ruby, unlike Perl's anonymous-arrayref `scalar(@{...})` detour.
-    if (property === 'length') return `${emit(object)}.length`
+    // Routed through `bf.length` (not the native `.length` method) because
+    // Ruby's `String#length` counts Unicode codepoints, not JS's UTF-16
+    // code units (#2255) — array `.length` is unaffected either way, so
+    // this stays one call site for both receiver shapes.
+    if (property === 'length') return `bf.length(${emit(object)})`
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
     // Ruby's own `nil[:key]` raises `NoMethodError` (unlike Hash#[] on a
     // present Hash) — `&.` is Ruby's native safe-navigation operator, and
@@ -359,7 +363,10 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
       if (staticValue !== null) return staticValue
     }
     const obj = emit(object)
-    if (property === 'length') return `${obj}.length`
+    // Routed through `bf.length`, not native `.length` — see
+    // `ErbFilterEmitter.member()`'s comment above (#2255, UTF-16 code
+    // units vs. Ruby's codepoint-counting `String#length`).
+    if (property === 'length') return `bf.length(${obj})`
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
     // see `ErbFilterEmitter.member()`'s comment above for why `&.[](...)`
     // (not a dotted `&.name`) is the right safe-nav form for a Hash-keyed

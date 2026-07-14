@@ -313,26 +313,24 @@ export function collectInnerLoops(
         const refsOuter = outerLoopParam
           ? new RegExp(`\\b${outerLoopParam}\\b`).test(n.array)
           : false
-        // Per-item bindings for inner loop body. Mirror the gating the
-        // pre-#1244 separate-field shape used:
-        //   - reactiveTexts: only when array references outer loop param
-        //     (otherwise non-outer-param reads stay statically templated).
-        //   - reactiveAttrs / refs: always when ctx is available; the
-        //     attribute SSR template renders the initial value and a
-        //     missing per-item createEffect would freeze it; refs need to
-        //     fire on every renderItem invocation (#1244).
+        // Per-item bindings for inner loop body, collected uniformly when
+        // ctx is available: reactiveTexts / reactiveAttrs / refs are each
+        // classified against the loop's OWN param via `classifyReactivity`,
+        // which already filters out non-reactive reads — a `refsOuter` gate
+        // on texts alone (removed, #2264) wrongly used the FIXED top-level
+        // loop param at every nesting depth, so an innermost loop whose
+        // array only referenced its immediate parent (not the outermost
+        // param) silently dropped its text-child update effect while the
+        // sibling attribute effect (ungated) still fired. Refs need to fire
+        // on every renderItem invocation (#1244).
         //   - events / conditionals: only in `collectBindings` (branch)
         //     mode; the legacy non-branch path didn't wire them on
         //     `NestedLoop` because event delegation handles them through
         //     the parent's bindings instead.
         const bindings: LoopChildBindings = emptyLoopChildBindings()
-        if (refsOuter && ctx) {
-          for (const child of n.children) {
-            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
-          }
-        }
         if (ctx) {
           for (const child of n.children) {
+            bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
             bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
