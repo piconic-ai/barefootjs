@@ -812,6 +812,15 @@
         "attribute"
       ]
     },
+    "bare-text-optional-scalar": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "boolean-attr-literals": {
       "kinds": [
         "literal"
@@ -4044,7 +4053,7 @@
     "binary": 67,
     "call": 155,
     "conditional": 18,
-    "identifier": 232,
+    "identifier": 233,
     "index-access": 12,
     "literal": 194,
     "logical": 41,
