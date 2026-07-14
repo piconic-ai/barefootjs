@@ -307,6 +307,80 @@ fn style_to_css(v: &JsValue) -> Option<String> {
     }
 }
 
+/// Structural scan for characters that could break a value out of a CSS
+/// declaration -- ported byte-for-byte from Hono's own `hasUnsafeStyleValue`
+/// (`hono/jsx/utils.ts`), the ORACLE this adapter's dynamic `style={{...}}`
+/// values must match (#2261). NOT real CSSOM property validation. Every
+/// character this scan tests is ASCII, so scanning by byte agrees with
+/// Hono's UTF-16-code-unit scan for every input -- a multibyte UTF-8
+/// sequence has no byte in the ASCII range, so it can never spuriously
+/// match one of these single-byte comparisons.
+fn has_unsafe_style_value(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    let mut quote: u8 = 0;
+    let mut block_stack: Vec<u8> = Vec::new();
+    let mut i = 0usize;
+    while i < bytes.len() {
+        let c = bytes[i];
+        if c == b'\\' {
+            if i == bytes.len() - 1 {
+                return true;
+            }
+            i += 1;
+        } else if quote != 0 {
+            if c == b'\n' || c == b'\x0c' || c == b'\r' {
+                return true;
+            }
+            if c == quote {
+                quote = 0;
+            }
+        } else if c == b'/' && i + 1 < bytes.len() && bytes[i + 1] == b'*' {
+            match value[i + 2..].find("*/") {
+                Some(end) => i = i + 2 + end + 1,
+                None => return true,
+            }
+        } else if c == b'"' || c == b'\'' {
+            quote = c;
+        } else if c == b'(' {
+            block_stack.push(b')');
+        } else if c == b'[' {
+            block_stack.push(b']');
+        } else if c == b'{' || c == b'}' {
+            return true;
+        } else if c == b')' || c == b']' {
+            if block_stack.last() != Some(&c) {
+                return true;
+            }
+            block_stack.pop();
+        } else if c == b';' && block_stack.is_empty() {
+            return true;
+        }
+        i += 1;
+    }
+    quote != 0 || !block_stack.is_empty()
+}
+
+/// Builds the CSS string for a `style={{...}}` JSX object-literal attribute
+/// (#2261). `pairs` alternates CSS key (always compile-time-known), then
+/// value. A value that fails `has_unsafe_style_value` (after JS-`String()`-
+/// style stringification) is DROPPED -- the whole `key:value` pair is
+/// omitted -- matching Hono's oracle exactly. The joined string is STILL
+/// HTML-escaped (mirroring Hono's `escapeToBuffer`) since a structurally
+/// "safe" value can still carry a literal `"`/`'`/`&`.
+fn style_object(pairs: &[JsValue]) -> String {
+    let mut parts = Vec::new();
+    let mut i = 0;
+    while i + 1 < pairs.len() {
+        let key = js_string(&pairs[i]);
+        let value = js_string(&pairs[i + 1]);
+        if !has_unsafe_style_value(&value) {
+            parts.push(format!("{key}:{}", escape_html_chars(&value)));
+        }
+        i += 2;
+    }
+    parts.join(";")
+}
+
 fn is_on_handler_skip(key: &str) -> bool {
     // Skip when key starts `on` and the third character is its own
     // uppercase form (matches `runtime.py`'s exact predicate, which is
@@ -1205,6 +1279,7 @@ impl Object for BfInstance {
             "uc" => Ok(MjValue::from(js_string(a(0)).to_uppercase())),
             "join" => Ok(MjValue::from(join(a(0), a(1)))),
             "length" => Ok(MjValue::from(length(a(0)))),
+            "style_object" => Ok(safe(style_object(&js_args))),
             "index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), false))),
             "last_index_of" => Ok(MjValue::from(array_index_of(a(0), a(1), true))),
             "at" => Ok(js_to_mj(&at(a(0), a(1)))),

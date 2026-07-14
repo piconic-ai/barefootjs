@@ -6179,17 +6179,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
-    // The static CSS key + literal value are inlined into a double-quoted
-    // `style="..."` attribute, so HTML-attr escape them (a value like `'"'`
-    // would otherwise terminate the attribute / inject markup). The dynamic
-    // arm's `{{…}}` action is escaped by `html/template`'s attribute context.
-    return entries
-      .map(e =>
-        e.kind === 'literal'
-          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
-          : `${this.escapeAttrText(e.cssKey)}:{{${this.convertExpressionToGo(e.expr)}}}`,
-      )
-      .join(';')
+    // Routed through the single `bf_style_object` runtime call (#2261)
+    // rather than per-pair `key:value` template interpolation — a dynamic
+    // value that fails the ported `hasUnsafeStyleValue` CSS-injection scan
+    // must DROP its entire pair to match Hono's oracle behavior, which
+    // isn't expressible as a per-pair inline substitution (a dropped
+    // MIDDLE pair would otherwise leave a dangling `key:` / stray `;;` in
+    // a `.map().join(';')` splice). `String()` (already returns "" for
+    // nil) also has an established zero-value contract for numbers/bools,
+    // avoiding html/template's own contextual CSS auto-escaper (whose
+    // `ZgotmplZ` sentinel — the pre-#2261 divergence — is bypassed by the
+    // call returning a trusted `template.CSS`, not a plain `string`).
+    const args = entries.flatMap(e => [
+      JSON.stringify(e.cssKey),
+      e.kind === 'literal' ? JSON.stringify(e.value) : wrapIfMultiToken(this.convertExpressionToGo(e.expr)),
+    ])
+    return `{{bf_style_object ${args.join(' ')}}}`
   }
 
   private renderAttributes(element: IRElement): string {

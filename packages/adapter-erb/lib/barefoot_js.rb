@@ -583,6 +583,78 @@ module BarefootJS
       string(recv).each_char.sum { |c| c.ord > 0xFFFF ? 2 : 1 }
     end
 
+    # Mirrors Hono's own CSS-injection guard (`hono/jsx/utils.ts`'s
+    # `hasUnsafeStyleValue` -- the ORACLE a dynamic `style={{...}}` value
+    # must match, #2261): a hand-rolled structural scan for characters that
+    # could break out of a CSS declaration, NOT real CSSOM property
+    # validation. Ported byte-for-byte -- every character this scan tests
+    # is ASCII, so scanning by byte agrees with Hono's UTF-16-code-unit
+    # scan for every input; a multibyte UTF-8 sequence has no byte in the
+    # ASCII range, so it can never spuriously match one of these
+    # single-byte comparisons. Skips the reference implementation's regex
+    # fast-path (a pure optimization -- the scan below already returns
+    # `false` promptly for a clean value).
+    def has_unsafe_style_value?(value)
+      bytes = value.b
+      quote = 0
+      block_stack = []
+      i = 0
+      len = bytes.bytesize
+      while i < len
+        c = bytes.getbyte(i)
+        if c == 92 # \
+          return true if i == len - 1
+          i += 1
+        elsif quote != 0
+          return true if c == 10 || c == 12 || c == 13
+          quote = 0 if c == quote
+        elsif c == 47 && i + 1 < len && bytes.getbyte(i + 1) == 42 # "/*"
+          endi = bytes.index('*/', i + 2)
+          return true if endi.nil?
+          i = endi + 1
+        elsif c == 34 || c == 39 # " or '
+          quote = c
+        elsif c == 40 # (
+          block_stack.push(41)
+        elsif c == 91 # [
+          block_stack.push(93)
+        elsif c == 123 || c == 125 # { or }
+          return true
+        elsif c == 41 || c == 93 # ) or ]
+          return true if block_stack.empty? || block_stack.last != c
+          block_stack.pop
+        elsif c == 59 && block_stack.empty? # ;
+          return true
+        end
+        i += 1
+      end
+      quote != 0 || !block_stack.empty?
+    end
+
+    # Builds the CSS string for a `style={{...}}` JSX object-literal
+    # attribute (#2261) -- `pairs` alternates CSS key (always a
+    # compile-time-known literal), then value. A value that fails
+    # `has_unsafe_style_value?` (after JS-`String()`-style stringification)
+    # is DROPPED -- the whole `key:value` pair is omitted -- matching
+    # Hono's oracle behavior exactly. The final joined string is STILL
+    # HTML-escaped (mirroring Hono's own `escapeToBuffer` call on its
+    # accumulated style string) -- a "safe" value can still carry a
+    # literal `"`/`'`/`&` (e.g. a BALANCED-quote CSS string value like
+    # `"hello"` passes the structural scan) that would otherwise break out
+    # of the double-quoted `style="..."` attribute. Returns a `SafeString`
+    # so `bf.h` (which the emitter still wraps every dynamic value with)
+    # passes the already-escaped result through unchanged.
+    def style_object(*pairs)
+      parts = []
+      pairs.each_slice(2) do |key, value|
+        v = string(value)
+        next if has_unsafe_style_value?(v)
+
+        parts << "#{key}:#{html_escape(v)}"
+      end
+      SafeString.new(parts.join(';'))
+    end
+
     # `Array.prototype.indexOf(x)` / `.lastIndexOf(x)` -- value-equality
     # search. Non-array receivers return -1.
     def index_of(recv, elem)

@@ -78,6 +78,7 @@ func FuncMap() template.FuncMap {
 		"bf_len":            Len,
 		"bf_length":         Length,
 		"bf_is_element":     IsValidElement,
+		"bf_style_object":   StyleObjectToCSS,
 		"bf_at":             At,
 		"bf_includes":       Includes,
 		"bf_index_of":       IndexOf,
@@ -390,6 +391,91 @@ func toAttrName(key string) string {
 		}
 	}
 	return b.String()
+}
+
+// hasUnsafeStyleValue mirrors Hono's own CSS-injection guard
+// (`hono/jsx/utils.ts`'s `hasUnsafeStyleValue` — the ORACLE this adapter's
+// dynamic `style={{...}}` values must match, #2261): a hand-rolled
+// structural scan for characters that could break out of a CSS
+// declaration, NOT real CSSOM property validation. Ported byte-for-byte —
+// every character this scan tests is ASCII, so scanning by byte (Go
+// string indexing) agrees with Hono's UTF-16-code-unit scan for every
+// input; a multibyte UTF-8 sequence has no byte in the ASCII range, so it
+// can never spuriously match one of these single-byte comparisons. Skips
+// the reference implementation's regex fast-path (a pure optimization —
+// the scan below already returns `false` promptly for a clean value).
+func hasUnsafeStyleValue(value string) bool {
+	quote := byte(0)
+	blockStack := make([]byte, 0, 4)
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		switch {
+		case c == '\\':
+			if i == len(value)-1 {
+				return true
+			}
+			i++
+		case quote != 0:
+			if c == '\n' || c == '\f' || c == '\r' {
+				return true
+			}
+			if c == quote {
+				quote = 0
+			}
+		case c == '/' && i+1 < len(value) && value[i+1] == '*':
+			end := strings.Index(value[i+2:], "*/")
+			if end == -1 {
+				return true
+			}
+			i = i + 2 + end + 1
+		case c == '"' || c == '\'':
+			quote = c
+		case c == '(':
+			blockStack = append(blockStack, ')')
+		case c == '[':
+			blockStack = append(blockStack, ']')
+		case c == '{' || c == '}':
+			return true
+		case c == ')' || c == ']':
+			if len(blockStack) == 0 || blockStack[len(blockStack)-1] != c {
+				return true
+			}
+			blockStack = blockStack[:len(blockStack)-1]
+		case c == ';' && len(blockStack) == 0:
+			return true
+		}
+	}
+	return quote != 0 || len(blockStack) != 0
+}
+
+// StyleObjectToCSS builds the CSS string for a `style={{...}}` JSX
+// object-literal attribute (#2261) — `pairs` alternates CSS key (always a
+// compile-time-known literal), then value (`any`, possibly a runtime
+// expression's result). A value that fails `hasUnsafeStyleValue` (after
+// JS-`String()`-style stringification) is DROPPED — the whole `key:value`
+// pair is omitted — matching Hono's oracle behavior exactly, rather than
+// html/template's own contextual CSS auto-escaper (which instead emits its
+// `ZgotmplZ` unsafe-content sentinel for the same input). The final joined
+// string is STILL HTML-escaped (mirroring Hono's own `escapeToBuffer` call
+// on its accumulated style string) — a "safe" value can still carry a
+// literal `"`/`'`/`&` (e.g. a BALANCED-quote CSS string value like
+// `"hello"` passes the structural scan; the quote chars survive into the
+// value) that would otherwise break out of the double-quoted `style="..."`
+// attribute. Returns `template.CSS` (over the escaped result) so
+// html/template treats it as trusted CSS content instead of ALSO applying
+// its own contextual CSS auto-escaper (which would re-derive the exact
+// `ZgotmplZ` divergence this function exists to avoid).
+func StyleObjectToCSS(pairs ...any) template.CSS {
+	parts := make([]string, 0, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		key := fmt.Sprint(pairs[i])
+		value := String(pairs[i+1])
+		if hasUnsafeStyleValue(value) {
+			continue
+		}
+		parts = append(parts, key+":"+template.HTMLEscapeString(value))
+	}
+	return template.CSS(strings.Join(parts, ";"))
 }
 
 // StyleToCss mirrors styleToCss from

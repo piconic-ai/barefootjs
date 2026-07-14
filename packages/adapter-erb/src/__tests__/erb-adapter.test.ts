@@ -70,11 +70,7 @@ runAdapterConformanceTests({
     // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>([
-    // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
-    // drops the property.
-    'style-object-dynamic:gen:color:markup',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof ErbNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

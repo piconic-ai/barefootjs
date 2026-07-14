@@ -56,9 +56,6 @@ runAdapterConformanceTests({
     'toggle:gen:pressed:true',
     'switch:gen:checked:true',
     'checkbox:gen:checked:true',
-    // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
-    // drops the property.
-    'style-object-dynamic:gen:color:markup',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof TwigNotAvailableError) {

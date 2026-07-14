@@ -301,10 +301,17 @@ export function P(props: { items: { id: string }[] }) {
 `
     const { template } = generate(src)
     expect(template).not.toContain('len .Visible')
-    // The loop over visible() is handler-filled as `.Rows`; the count reuses it.
+    expect(template).not.toContain('bf_length .Visible')
+    // The loop over visible() is handler-filled as `.Rows`; this is one of
+    // the specialized ARRAY-only `.length` shapes (memo-backed loop slice
+    // count) that stays on native `len` even after #2255 — see the
+    // `member()` docstring on the generic `bf_length` fallback.
     expect(template).toContain('len .Rows')
-    // props.items.length is unaffected.
-    expect(template).toContain('len .Items')
+    // props.items.length is the GENERIC (non-specialized) `.length`
+    // fallback, which #2255 routed through `bf_length` (UTF-16-aware for
+    // strings, and functionally equivalent to `len` for an array/slice —
+    // both dispatch on the underlying value's shape).
+    expect(template).toContain('bf_length .Items')
   })
 })
 

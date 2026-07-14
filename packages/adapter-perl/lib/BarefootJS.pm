@@ -1656,6 +1656,77 @@ sub _style_to_css ($value) {
 # an empty hashref rather than dying, so this stays safe as a `my` local
 # initializer even off unexpected/absent data (same defensive contract as
 # `spread_attrs`'s "no bag → nothing").
+# Structural scan for characters that could break a value out of a CSS
+# declaration -- ported byte-for-byte from Hono's own `hasUnsafeStyleValue`
+# (`hono/jsx/utils.ts`), the ORACLE this adapter's dynamic `style={{...}}`
+# values must match (#2261). NOT real CSSOM property validation. Every
+# character this scan tests is ASCII, so scanning by character (this file's
+# `use utf8` makes Perl string ops character-indexed) agrees with Hono's
+# UTF-16-code-unit scan for every input -- a non-ASCII codepoint can never
+# spuriously match one of these single-character comparisons.
+sub _has_unsafe_style_value ($value) {
+    my $quote = '';
+    my @block_stack;
+    my $len = CORE::length $value;
+    my $i = 0;
+    while ($i < $len) {
+        my $c = substr($value, $i, 1);
+        if ($c eq '\\') {
+            return 1 if $i == $len - 1;
+            $i++;
+        }
+        elsif ($quote ne '') {
+            return 1 if $c eq "\n" || $c eq "\f" || $c eq "\r";
+            $quote = '' if $c eq $quote;
+        }
+        elsif ($c eq '/' && $i + 1 < $len && substr($value, $i + 1, 1) eq '*') {
+            my $end = index($value, '*/', $i + 2);
+            return 1 if $end < 0;
+            $i = $end + 1;
+        }
+        elsif ($c eq '"' || $c eq "'") {
+            $quote = $c;
+        }
+        elsif ($c eq '(') {
+            push @block_stack, ')';
+        }
+        elsif ($c eq '[') {
+            push @block_stack, ']';
+        }
+        elsif ($c eq '{' || $c eq '}') {
+            return 1;
+        }
+        elsif ($c eq ')' || $c eq ']') {
+            return 1 if !@block_stack || $block_stack[-1] ne $c;
+            pop @block_stack;
+        }
+        elsif ($c eq ';' && !@block_stack) {
+            return 1;
+        }
+        $i++;
+    }
+    return ($quote ne '' || @block_stack) ? 1 : 0;
+}
+
+# Builds the CSS string for a `style={{...}}` JSX object-literal attribute
+# (#2261). `@pairs` alternates CSS key (always compile-time-known), then
+# value. A value that fails `_has_unsafe_style_value` (after JS-`String()`-
+# style stringification) is DROPPED -- the whole `key:value` pair is
+# omitted -- matching Hono's oracle exactly. The joined string is STILL
+# HTML-escaped (mirroring Hono's own `escapeToBuffer` call) since a
+# structurally "safe" value can still carry a literal `"`/`'`/`&`. Marked
+# raw so the calling template's raw-emit form doesn't re-escape it.
+sub style_object ($self, @pairs) {
+    my @parts;
+    for (my $i = 0; $i + 1 < @pairs; $i += 2) {
+        my $key = $self->string($pairs[$i]);
+        my $value = $self->string($pairs[$i + 1]);
+        next if _has_unsafe_style_value($value);
+        push @parts, "$key:" . _html_escape($value);
+    }
+    return $self->backend->mark_raw(CORE::join(';', @parts));
+}
+
 sub omit ($self, $bag, $keys) {
     return {} unless defined $bag && ref($bag) eq 'HASH';
     my %exclude = map { $_ => 1 } @$keys;

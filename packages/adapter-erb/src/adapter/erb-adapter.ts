@@ -1541,18 +1541,24 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     for (const e of entries) {
       if (e.kind === 'expr' && !isSupported(parseExpression(e.expr)).supported) return null
     }
-    // The static CSS key + literal value are inlined into a double-quoted
-    // `style="..."` attribute as raw template text, so HTML-attr escape
-    // them (a value like `'"'` would otherwise break the attribute /
-    // inject markup). The dynamic arm's `<%= bf.h(...) %>` is explicitly
-    // escaped (stdlib ERB doesn't auto-escape).
-    return entries
+    // Routed through the single `bf.style_object` runtime call (#2261)
+    // rather than per-pair `key:value` template interpolation — a dynamic
+    // value that fails the ported `has_unsafe_style_value?` CSS-injection
+    // scan must DROP its entire pair to match Hono's oracle behavior,
+    // which isn't expressible as a per-pair inline substitution (a dropped
+    // MIDDLE pair would otherwise leave a dangling `key:` / stray `;;` in
+    // a `.map().join(';')` splice). `style_object` returns a `SafeString`
+    // (already HTML-escaped internally), so `bf.h(...)` here is a no-op
+    // pass-through for it, consistent with every other dynamic-value call
+    // site in this file.
+    const args = entries
       .map(e =>
         e.kind === 'literal'
-          ? `${this.escapeAttrText(e.cssKey)}:${this.escapeAttrText(e.value)}`
-          : `${this.escapeAttrText(e.cssKey)}:<%= bf.h(${this.convertExpressionToRuby(e.expr)}) %>`,
+          ? `${JSON.stringify(e.cssKey)}, ${rubyStringLiteral(e.value)}`
+          : `${JSON.stringify(e.cssKey)}, (${this.convertExpressionToRuby(e.expr)})`,
       )
-      .join(';')
+      .join(', ')
+    return `<%= bf.h(bf.style_object(${args})) %>`
   }
 
   /** HTML-attribute escape for static text inlined into a `"..."` attribute. */

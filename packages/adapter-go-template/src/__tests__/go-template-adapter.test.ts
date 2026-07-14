@@ -119,11 +119,7 @@ runAdapterConformanceTests({
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
   ]),
-  skipDataPoints: new Set<string>([
-    // #2261 — invalid dynamic CSS value: html/template emits the
-    // ZgotmplZ sentinel where the oracle drops the property.
-    'style-object-dynamic:gen:color:markup',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

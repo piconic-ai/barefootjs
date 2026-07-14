@@ -65,9 +65,6 @@ runAdapterConformanceTests({
     'toggle:gen:pressed:true',
     'switch:gen:checked:true',
     'checkbox:gen:checked:true',
-    // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
-    // drops the property.
-    'style-object-dynamic:gen:color:markup',
     // #2262 — dynamic `.flat` depth 0/negative violates the documented
     // shallow-copy contract.
     'array-flat-dynamic-depth:gen:depth:zero',
