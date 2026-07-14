@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/shared",
-  "version": "0.18.7",
+  "version": "0.19.0",
   "description": "Shared constants for BarefootJS compiler and runtime",
   "type": "module",
   "main": "./src/index.ts",
