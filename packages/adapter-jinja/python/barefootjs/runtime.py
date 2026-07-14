@@ -983,7 +983,7 @@ class BarefootJS:
             v = js_string(value)
             if _has_unsafe_style_value(v):
                 continue
-            parts.append(f"{key}:{_html_escape(v)}")
+            parts.append(f"{_html_escape(key)}:{_html_escape(v)}")
         return Markup(";".join(parts))
 
     def lc(self, s: Any) -> str:

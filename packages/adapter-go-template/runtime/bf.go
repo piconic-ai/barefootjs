@@ -473,7 +473,7 @@ func StyleObjectToCSS(pairs ...any) template.CSS {
 		if hasUnsafeStyleValue(value) {
 			continue
 		}
-		parts = append(parts, key+":"+template.HTMLEscapeString(value))
+		parts = append(parts, template.HTMLEscapeString(key)+":"+template.HTMLEscapeString(value))
 	}
 	return template.CSS(strings.Join(parts, ";"))
 }

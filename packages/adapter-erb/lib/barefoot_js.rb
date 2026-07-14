@@ -650,7 +650,7 @@ module BarefootJS
         v = string(value)
         next if has_unsafe_style_value?(v)
 
-        parts << "#{key}:#{html_escape(v)}"
+        parts << "#{html_escape(key)}:#{html_escape(v)}"
       end
       SafeString.new(parts.join(';'))
     end

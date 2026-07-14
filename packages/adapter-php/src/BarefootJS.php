@@ -1753,7 +1753,7 @@ final class BarefootJS
             if ($this->hasUnsafeStyleValue($value)) {
                 continue;
             }
-            $parts[] = $key . ':' . $this->htmlEscape($value);
+            $parts[] = $this->htmlEscape($key) . ':' . $this->htmlEscape($value);
         }
         return $this->backend->mark_raw(implode(';', $parts));
     }

@@ -374,7 +374,7 @@ fn style_object(pairs: &[JsValue]) -> String {
         let key = js_string(&pairs[i]);
         let value = js_string(&pairs[i + 1]);
         if !has_unsafe_style_value(&value) {
-            parts.push(format!("{key}:{}", escape_html_chars(&value)));
+            parts.push(format!("{}:{}", escape_html_chars(&key), escape_html_chars(&value)));
         }
         i += 2;
     }

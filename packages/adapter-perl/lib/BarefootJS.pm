@@ -1722,7 +1722,7 @@ sub style_object ($self, @pairs) {
         my $key = $self->string($pairs[$i]);
         my $value = $self->string($pairs[$i + 1]);
         next if _has_unsafe_style_value($value);
-        push @parts, "$key:" . _html_escape($value);
+        push @parts, _html_escape($key) . ":" . _html_escape($value);
     }
     return $self->backend->mark_raw(CORE::join(';', @parts));
 }

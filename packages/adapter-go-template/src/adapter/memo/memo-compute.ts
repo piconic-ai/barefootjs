@@ -73,6 +73,25 @@ function propsMemberName(e: ParsedExpr): string | null {
     : null
 }
 
+/**
+ * A prop reference resolved against the component's ACTUAL props-object
+ * binding (`ctx.state.propsObjectName` — may be a non-`props` name, or
+ * `null` for a destructured signature), else null. Mirrors
+ * `collectPresenceCheckedPropNames`'s (prop-types.ts) exact shape so the
+ * presence-check codegen branch below can't drift from the collector that
+ * decides which props got the nillable flip in the first place — unlike
+ * `propsMemberName` (hardcoded to the literal name `props`), which only
+ * matches the conventional object-props signature.
+ */
+function propNameForPropsBinding(ctx: GoEmitContext, e: ParsedExpr): string | null {
+  const propsObject = ctx.state.propsObjectName
+  if (e.kind === 'member' && !e.computed && e.object.kind === 'identifier' && e.object.name === propsObject) {
+    return e.property
+  }
+  if (!propsObject && e.kind === 'identifier') return e.name
+  return null
+}
+
 /** A `() => props.X.filter((p) => <predicate>)` match: the array prop name,
  *  the predicate serialized to the runtime evaluator's ParsedExpr JSON, the
  *  arrow's param name, and the free variable names its predicate captures.
@@ -352,7 +371,7 @@ export function memoInitialFromParsedBody(
     const other =
       body.right.kind === 'identifier' && body.right.name === 'undefined' ? body.left :
       body.left.kind === 'identifier' && body.left.name === 'undefined' ? body.right : null
-    const propName = other ? propsMemberName(other) : null
+    const propName = other ? propNameForPropsBinding(ctx, other) : null
     if (propName) {
       const param = propsParams.find(p => p.name === propName)
       // Guard on the field ACTUALLY being nillable-flipped — a presence
