@@ -50,13 +50,7 @@ runAdapterConformanceTests({
     // Same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>([
-    // #2260 — controlled boolean props: the SSR seed evaluates only the
-    // static fallback of `props.X ?? internal()` chains.
-    'toggle:gen:pressed:true',
-    'switch:gen:checked:true',
-    'checkbox:gen:checked:true',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof BladeNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

@@ -63,20 +63,7 @@ runAdapterConformanceTests({
     // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>([
-    // #2260 — controlled boolean props: the SSR seed evaluates only the
-    // static fallback of `props.X ?? internal()` chains.
-    'toggle:gen:pressed:true',
-    'switch:gen:checked:true',
-    'checkbox:gen:checked:true',
-    // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
-    // drops the property.
-    'style-object-dynamic:gen:color:markup',
-    // #2262 — dynamic `.flat` depth 0/negative violates the documented
-    // shallow-copy contract (shared with the Mojo Perl runtime).
-    'array-flat-dynamic-depth:gen:depth:zero',
-    'array-flat-dynamic-depth:gen:depth:negative',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof XslateNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)

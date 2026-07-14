@@ -583,7 +583,15 @@ sub string ($self, $value) {
     # an unset prop doesn't surface as a literal "undefined" / "null"
     # in user-facing HTML — same divergence the Go adapter documents
     # for `bf_string`.
-    return defined $value ? "$value" : '';
+    return '' unless defined $value;
+    # JS `Array.prototype.toString` is `this.join(',')`, applied
+    # recursively — a bare `"$value"` interpolation would otherwise
+    # stringify an ARRAY ref as its Perl memory address
+    # ("ARRAY(0x...)") instead of the JS comma-join. Reached via
+    # `.flat(0)`'s shallow copy stringified afterwards (#2262, shared
+    # with Mojolicious/Xslate via this runtime).
+    return CORE::join(',', map { $self->string($_) } @$value) if ref($value) eq 'ARRAY';
+    return "$value";
 }
 
 sub number ($self, $value) {
@@ -755,7 +763,11 @@ sub uc ($self, $s) { return defined $s ? CORE::uc($s) : '' }
 sub join ($self, $recv, $sep = undef) {
     return '' unless ref($recv) eq 'ARRAY';
     $sep //= ',';
-    return CORE::join($sep, map { defined $_ ? $_ : '' } @$recv);
+    # Each element routes through `string()` (JS `String(v)`), not a bare
+    # defined-check, so a nested-array element (e.g. `.flat(0)`'s shallow
+    # copy, #2262) gets the recursive JS comma-join instead of stringifying
+    # to a Perl ARRAY ref's memory address.
+    return CORE::join($sep, map { $self->string($_) } @$recv);
 }
 
 # `.length` — JS works on BOTH arrays (element count) and strings; Kolon's

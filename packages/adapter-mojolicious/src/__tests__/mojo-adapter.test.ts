@@ -59,17 +59,7 @@ runAdapterConformanceTests({
     // #1467 Phase 2e: same `/* @client */` keyed-map elision (data-table).
     'data-table',
   ]),
-  skipDataPoints: new Set<string>([
-    // #2260 — controlled boolean props: the SSR seed evaluates only the
-    // static fallback of `props.X ?? internal()` chains.
-    'toggle:gen:pressed:true',
-    'switch:gen:checked:true',
-    'checkbox:gen:checked:true',
-    // #2262 — dynamic `.flat` depth 0/negative violates the documented
-    // shallow-copy contract.
-    'array-flat-dynamic-depth:gen:depth:zero',
-    'array-flat-dynamic-depth:gen:depth:negative',
-  ]),
+  skipDataPoints: new Set<string>(),
   onRenderError: (err, id) => {
     if (err instanceof PerlNotAvailableError) {
       console.log(`Skipping [${id}]: ${err.message}`)
@@ -915,7 +905,7 @@ export function C() {
     // filter, `.join`) hit a separate refusal gate and the chain
     // emitted BF101 — making the scaffold `<Button>` / `<Card>`
     // unusable on Mojo. The fix lowers all three to Embedded Perl
-    // (`join(' ', @{[grep { $_ } @{[...]}]})`), unblocking the
+    // (`bf->join([grep { $_ } @{[...]}], ' ')`), unblocking the
     // registry surface. The #1421 recursion guard stays in place
     // as defence in depth for other unsupported shapes, but this
     // specific chain no longer reaches the loop because the parser
@@ -938,7 +928,7 @@ export { Slot }
     )
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain(`join(' ', @{[grep { $_ } @{[$className]}]})`)
+    expect(template).toContain(`bf->join([grep { $_ } @{[$className]}], ' ')`)
   })
 
   test('lowers .includes(x) on an array prop via bf->includes(...) (#1448 Tier A)', () => {
@@ -1168,7 +1158,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain("join(' ', @{bf->reverse($items)})")
+    expect(template).toContain("bf->join(bf->reverse($items), ' ')")
     expect(template).not.toContain('$bf->reverse')
   })
 
@@ -1180,7 +1170,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain("join(' ', @{bf->reverse($items)})")
+    expect(template).toContain("bf->join(bf->reverse($items), ' ')")
   })
 
   test('lowers .slice(start, end).join(\' \') via bf->slice + join (#1448 Tier A)', () => {
@@ -1192,7 +1182,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain("join(' ', @{bf->slice($items, 1, 3)})")
+    expect(template).toContain("bf->join(bf->slice($items, 1, 3), ' ')")
     expect(template).not.toContain('$bf->slice')
   })
 
@@ -1206,7 +1196,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain("join(' ', @{bf->slice($items, 2, undef)})")
+    expect(template).toContain("bf->join(bf->slice($items, 2, undef), ' ')")
   })
 
   test('lowers .concat(other).join(\' \') via bf->concat + join (#1448 Tier A)', () => {
@@ -1222,7 +1212,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain("join(' ', @{bf->concat($left, $right)})")
+    expect(template).toContain("bf->join(bf->concat($left, $right), ' ')")
     expect(template).not.toContain('$bf->concat')
   })
 
@@ -1484,10 +1474,10 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: arraySliceFixture,       expect: 'bf->slice($items, 1, 3)' },
     // #1448 full-arity — zero-arg defaults.
     { fixture: arraySliceCopyFixture,   expect: 'bf->slice($items, 0, undef)' },
-    { fixture: arrayJoinDefaultFixture, expect: `join(',', @{$items})` },
+    { fixture: arrayJoinDefaultFixture, expect: `bf->join($items, ',')` },
     // `.at()` → index 0; `.concat()` → the receiver (shallow copy).
     { fixture: arrayAtDefaultFixture,   expect: 'bf->at($items, 0)' },
-    { fixture: arrayConcatCopyFixture,  expect: `join('|', @{$items})` },
+    { fixture: arrayConcatCopyFixture,  expect: `bf->join($items, '|')` },
     { fixture: arrayReverseFixture,     expect: 'bf->reverse($items)' },
     // .toReversed shares the helper with .reverse — pinning both
     // routings catches a future divergence between them.
@@ -1497,7 +1487,7 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: stringTrimFixture,       expect: 'bf->trim($value)' },
     // #1448 Tier B — string → array. `.split(',')` lowers to
     // `bf->split`, here chained into `.join('|')` so the array ref is
-    // observable (`join('|', @{bf->split($value, ',')})`).
+    // observable (`bf->join(bf->split($value, ','), '|')`).
     { fixture: stringSplitFixture,      expect: `bf->split($value, ',')` },
     { fixture: stringSplitLimitFixture, expect: `bf->split($value, ',', 2)` },
     // #1448 Tier B — string → boolean at condition position (`% if`).
@@ -1687,7 +1677,7 @@ export { C }
   // projects each element (no flatten) and composes through `.join`.
   test('.map(t => `#${t}`).join(" ") emits bf->map_eval composed into join', () => {
     const t = emitMap("tags.map(t => `#${t}`).join(' ')")
-    expect(t).toContain(`join(' ', @{bf->map_eval($tags,`)
+    expect(t).toContain(`bf->join(bf->map_eval($tags,`)
     expect(t).toContain(`"kind":"template-literal"`)
   })
 

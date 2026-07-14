@@ -35,14 +35,20 @@ export function renderArrayMethod(
 ): string {
   switch (method) {
     case 'join': {
-      // arr.join(sep) → join(sep, @{arr}). The default `${obj}->{join}`
-      // hash-lookup fallback would emit invalid Perl, which is why the
-      // IR carves out a dedicated method node instead of routing
-      // through the generic call dispatcher. `.join()` defaults the
-      // separator to `,` (JS) and ignores any extra argument.
+      // arr.join(sep) → bf->join(arr, sep), NOT Perl's native `join`
+      // builtin directly on `@{arr}` — a nested-array element (e.g.
+      // `.flat(0)`'s shallow copy) would stringify to its Perl memory
+      // address ("ARRAY(0x...)") under native `join`'s scalar coercion
+      // instead of JS's recursive comma-join (#2262/#2272). `bf->join`
+      // (BarefootJS.pm) routes each element through `string()` first.
+      // The default `${obj}->{join}` hash-lookup fallback would emit
+      // invalid Perl, which is why the IR carves out a dedicated method
+      // node instead of routing through the generic call dispatcher.
+      // `.join()` defaults the separator to `,` (JS) and ignores any
+      // extra argument.
       const obj = emit(object)
       const sep = args.length >= 1 ? emit(args[0]) : `','`
-      return `join(${sep}, @{${obj}})`
+      return `bf->join(${obj}, ${sep})`
     }
     case 'includes': {
       // Both `arr.includes(x)` and `str.includes(sub)` route here —
