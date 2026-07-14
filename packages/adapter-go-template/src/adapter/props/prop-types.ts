@@ -148,13 +148,19 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   const propsObject = ctx.state.propsObjectName
   const propNameOfLeft = (left: ParsedExpr): string | null => {
     if (left.kind === 'identifier') return left.name
-    if (
-      left.kind === 'member' &&
-      !left.computed &&
-      left.object.kind === 'identifier' &&
-      left.object.name === propsObject
-    ) {
-      return left.property
+    if (left.kind === 'member' && !left.computed && left.object.kind === 'identifier') {
+      if (left.object.name === propsObject) return left.property
+      // Single-hop member access rooted at a bare destructured optional
+      // OBJECT prop (`user?.name ?? '…'`, #2256): the flip belongs to the
+      // ROOT prop (`user`) — an optional-object prop already lowers to a
+      // nillable `map[string]interface{}` by construction
+      // (`resolvePropGoType`'s struct-map branch), so it's the root's
+      // membership here (not the accessed field) that lets
+      // `nillablePropNameOf` route the `??` to `bf_nullish`. A deeper
+      // chain (`props.user?.name`, `user?.address?.city`) isn't matched —
+      // same single-hop `?.` caveat documented on the `member` ParsedExpr
+      // variant.
+      return left.object.name
     }
     return null
   }
@@ -253,6 +259,72 @@ export function collectOmittableAttrConsumedPropNames(ctx: GoEmitContext, ir: Co
 }
 
 /**
+ * Names of OPTIONAL no-default props consumed as the BARE value of a
+ * TEXT-position expression (`{size}` / `{props.size}`) anywhere in the
+ * component's element tree.
+ *
+ * Why this matters (#2267): with no flip, an absent `size?: number` prop
+ * resolves to a concrete `int` field and `{{.Size}}` prints its zero value
+ * (`0`) instead of empty — the JS reference renders `undefined` as "".
+ * These props take the same `interface{}` flip as `??`/omittable-attribute
+ * consumption (`resolvePropGoType`); `renderExpression`'s emitter then
+ * routes the flipped field through `bf_string` (nil-safe stringify)
+ * instead of a bare `{{.X}}`, since `text/template` prints a nil
+ * `interface{}` as the literal `<no value>`, not "".
+ *
+ * Generic recursive walk (matching `type: 'expression'` ANYWHERE, like
+ * `collectNullishConsumedPropNames`) rather than only `element.children` —
+ * a fragment return (`<>{size}</>`) or a conditional branch's children
+ * would otherwise be missed. Same shadowing caveat as the sibling
+ * collectors: a same-named loop/callback param can misattribute, making
+ * the flip merely unnecessary, not incorrect.
+ *
+ * Filtered to `kind: 'primitive'` — unlike the `??`/omittable-attribute
+ * collectors (whose consumers, `bf_nullish` and the `{{if ne .X nil}}`
+ * guard, are nil-test-only and pass the underlying value through
+ * untouched), this collector's consumer (`renderExpression`'s `bf_string`
+ * wrap) RESTRINGIFIES the value via `fmt.Sprintf`. An optional prop
+ * carrying already-rendered markup (a JSX-element/children prop) also
+ * independently resolves to `interface{}` via `resolvePropGoType`'s
+ * struct-map branch — routing THAT through `bf_string` would strip its
+ * `template.HTML` safe-markup typing, so `text/template` re-escapes
+ * already-escaped HTML on print (observed as literal `&lt;div&gt;...`).
+ * Restricting to primitives keeps this collector disjoint from that flip.
+ */
+export function collectTextConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
+  const names = new Set<string>()
+  const optionalParams = new Set(
+    ir.metadata.propsParams
+      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
+      .map(p => p.name),
+  )
+  if (optionalParams.size === 0) return names
+
+  const propsObject = ctx.state.propsObjectName
+  const walk = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.type === 'expression') {
+      const bareId = String(rec.expr ?? '').trim()
+      const propName =
+        propsObject && bareId.startsWith(`${propsObject}.`)
+          ? bareId.slice(propsObject.length + 1)
+          : bareId
+      if (/^[A-Za-z_$][\w$]*$/.test(propName) && optionalParams.has(propName)) {
+        names.add(propName)
+      }
+    }
+    for (const value of Object.values(rec)) walk(value)
+  }
+  walk(ir.root)
+  return names
+}
+
+/**
  * Resolve a prop param's Go struct-field type using the SAME logic
  * `generatePropsStruct` / `generateInputStruct` use: a `propTypeOverrides` entry
  * wins, otherwise `typeInfoToGo(param.type, param.defaultValue)`. Factored out so
@@ -298,12 +370,15 @@ export function resolvePropGoType(
   // documented pre-#2248 trade-off there.)
   // A bare-attribute consumption (`rows={rows}`) takes the same flip (#2259):
   // attribute omission for an absent optional needs a nil to test — see
-  // `collectOmittableAttrConsumedPropNames`.
+  // `collectOmittableAttrConsumedPropNames`. A bare TEXT-position
+  // consumption (`{size}`) takes the same flip too (#2267) — see
+  // `collectTextConsumedPropNames`.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
     (ctx.state.nullishConsumedPropNames.has(param.name) ||
-      ctx.state.omittableAttrConsumedPropNames.has(param.name)) &&
+      ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
+      ctx.state.textConsumedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'

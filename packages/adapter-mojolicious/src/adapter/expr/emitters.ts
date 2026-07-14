@@ -351,7 +351,12 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       const isStringReceiver =
         isStr(object) ||
         (object.kind === 'identifier' && this.ctx._isStringValueName(object.name))
-      if (isStringReceiver) return `length(${obj})`
+      // A string receiver routes through the shared `bf->length` (NOT
+      // Perl's builtin `length()`) because JS `.length` counts UTF-16
+      // CODE UNITS, not Perl's codepoint-counting `length()` (#2255) — an
+      // astral codepoint (a surrogate pair in UTF-16, e.g. '👍') counts as
+      // 2, not 1.
+      if (isStringReceiver) return `bf->length(${obj})`
       return `scalar(@{${obj}})`
     }
     return `${obj}->{${property}}`

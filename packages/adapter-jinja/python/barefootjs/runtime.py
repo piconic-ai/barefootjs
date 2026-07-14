@@ -929,7 +929,12 @@ class BarefootJS:
             return len(recv)
         if isinstance(recv, dict):
             return 0
-        return len(js_string(recv))
+        # JS `String.prototype.length` counts UTF-16 CODE UNITS, not
+        # Python's codepoint-counting `len(str)` (#2255). A codepoint
+        # outside the Basic Multilingual Plane (astral, U+10000-U+10FFFF —
+        # e.g. '👍') is a surrogate PAIR in UTF-16, so it counts as 2, not
+        # 1; '日本語' is 3 either way (BMP-only).
+        return sum(2 if ord(c) > 0xFFFF else 1 for c in js_string(recv))
 
     def index_of(self, recv: Any, elem: Any) -> int:
         return _array_index_of(recv, elem, reverse=False)

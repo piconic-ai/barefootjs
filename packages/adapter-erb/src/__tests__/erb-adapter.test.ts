@@ -71,9 +71,6 @@ runAdapterConformanceTests({
     'data-table',
   ]),
   skipDataPoints: new Set<string>([
-    // #2255 — Ruby String#length counts codepoints; JS counts UTF-16
-    // code units, so a surrogate-pair character is 2 in JS, 1 here.
-    'string-length-text:astral',
     // #2260 — controlled boolean props: the SSR seed evaluates only the
     // static fallback of `props.X ?? internal()` chains.
     'toggle:gen:pressed:true',
@@ -82,10 +79,6 @@ runAdapterConformanceTests({
     // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
     // drops the property.
     'style-object-dynamic:gen:color:markup',
-    // #2262 — dynamic `.flat` depth 0/negative: the unflattened nested
-    // result stringifies Ruby-style instead of the JS join.
-    'array-flat-dynamic-depth:gen:depth:zero',
-    'array-flat-dynamic-depth:gen:depth:negative',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof ErbNotAvailableError) {

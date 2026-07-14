@@ -396,6 +396,12 @@ module BarefootJS
       return '' if value.nil?
       return value ? 'true' : 'false' if value.is_a?(TrueClass) || value.is_a?(FalseClass)
       return Evaluator.number_to_string(value) if value.is_a?(Numeric)
+      # JS `Array.prototype.toString` is `this.join(',')`, applied
+      # recursively -- Ruby's `Array#to_s` (inspect-style, e.g. "[[1], [2]]")
+      # would otherwise leak through here instead of the JS comma-join
+      # (e.g. reached via `.flat(0)`'s shallow copy joined afterwards,
+      # #2262).
+      return value.map { |el| string(el) }.join(',') if value.is_a?(Array)
 
       value.to_s
     end
@@ -564,13 +570,17 @@ module BarefootJS
       recv.map { |el| string(el) }.join(sep)
     end
 
-    # `.length` works on both arrays (element count) and strings (character
-    # count).
+    # `.length` works on both arrays (element count) and strings. The
+    # string branch counts UTF-16 CODE UNITS, matching JS
+    # `String.prototype.length` (#2255) -- NOT Ruby's native `String#length`
+    # (Unicode codepoints). A codepoint outside the Basic Multilingual
+    # Plane (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
+    # UTF-16, so it counts as 2, not 1; '日本語' is 3 either way (BMP-only).
     def length(recv)
       return recv.length if recv.is_a?(Array)
       return 0 if recv.is_a?(Hash) || recv.nil?
 
-      string(recv).length
+      string(recv).each_char.sum { |c| c.ord > 0xFFFF ? 2 : 1 }
     end
 
     # `Array.prototype.indexOf(x)` / `.lastIndexOf(x)` -- value-equality

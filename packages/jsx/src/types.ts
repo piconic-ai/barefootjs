@@ -1230,6 +1230,19 @@ export interface SignalInfo {
   parsed?: ParsedExpr
   /** Initial value with TypeScript type annotations preserved, for .tsx output */
   typedInitialValue?: string
+  /**
+   * `initialValue` with bare destructured prop references rewritten to
+   * `_p.<name>` (#2265), for the CSR `template:` arrow's module-scope
+   * SSR-string fallback — mirrors the `templateExpr`/`templateArray`/
+   * `templateCondition` fields on other IR positions. Destructured mode
+   * only (`propsObjectName === null`); undefined when no rewrite was
+   * needed (no destructured prop referenced) or the component is in
+   * object-props mode (there, `rewritePropsObjectRef`/`applyPropsRewrite`
+   * handle `props.x` → `_p.x` on the final joined/substituted string
+   * instead, since a bare `props.x` textual match works without an
+   * AST-level pre-rewrite).
+   */
+  templateInitialValue?: string
   type: TypeInfo
   loc: SourceLocation
   /**

@@ -131,6 +131,7 @@ import { fixture as clientOnlyLoopWithSiblingCond } from './client-only-loop-wit
 import { fixture as eventHandlers } from './event-handlers'
 import { fixture as defaultProps } from './default-props'
 import { fixture as untypedPropsReads } from './untyped-props-reads'
+import { fixture as bareTextOptionalScalar } from './bare-text-optional-scalar'
 import { fixture as nullishCoalescingText } from './nullish-coalescing-text'
 import { fixture as nullishCoalescingDestructured } from './nullish-coalescing-destructured'
 import { fixture as nullishCoalescingJsx } from './nullish-coalescing-jsx'
@@ -470,6 +471,7 @@ export const jsxFixtures: JSXFixture[] = [
   eventHandlers,
   defaultProps,
   untypedPropsReads,
+  bareTextOptionalScalar,
   nullishCoalescingText,
   nullishCoalescingDestructured,
   nullishCoalescingJsx,

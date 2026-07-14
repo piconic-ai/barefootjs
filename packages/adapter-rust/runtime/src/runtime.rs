@@ -158,6 +158,17 @@ fn char_len(s: &str) -> usize {
     s.chars().count()
 }
 
+// JS `String.prototype.length` counts UTF-16 CODE UNITS, not Rust's
+// codepoint-counting `chars().count()` (#2255, used by `char_len` above for
+// the char-indexed slice/pad helpers). A codepoint outside the Basic
+// Multilingual Plane (astral, U+10000-U+10FFFF — e.g. '👍') is a surrogate
+// PAIR in UTF-16, so it counts as 2, not 1; '日本語' is 3 either way
+// (BMP-only). Used only by `length` below — `char_len`'s callers need a
+// codepoint OFFSET for slicing, not this count.
+fn utf16_len(s: &str) -> usize {
+    s.chars().map(|c| if c as u32 > 0xFFFF { 2 } else { 1 }).sum()
+}
+
 fn char_slice_from(s: &str, n: usize) -> String {
     s.chars().skip(n).collect()
 }
@@ -1353,7 +1364,7 @@ pub fn length(recv: &JsValue) -> f64 {
     match recv {
         JsValue::Array(a) => a.len() as f64,
         JsValue::Object(_) => 0.0,
-        other => char_len(&js_string(other)) as f64,
+        other => utf16_len(&js_string(other)) as f64,
     }
 }
 

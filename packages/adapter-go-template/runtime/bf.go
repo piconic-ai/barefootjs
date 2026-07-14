@@ -76,6 +76,7 @@ func FuncMap() template.FuncMap {
 
 		// Array/Slice
 		"bf_len":            Len,
+		"bf_length":         Length,
 		"bf_at":             At,
 		"bf_includes":       Includes,
 		"bf_index_of":       IndexOf,
@@ -1130,6 +1131,38 @@ func Round(v any) float64 {
 // =============================================================================
 // Array/Slice Operations
 // =============================================================================
+
+// Length lowers JS `.length`, matching JS semantics per receiver shape
+// (#2255): a slice/array/map counts ELEMENTS (`reflect.Value.Len`, same as
+// `Len` below), but a STRING counts UTF-16 CODE UNITS — JS
+// `String.prototype.length` counts UTF-16 code units, not bytes (Go's
+// native `len`) or codepoints. A codepoint outside the Basic Multilingual
+// Plane (astral, U+10000-U+10FFFF — e.g. '👍') is a surrogate PAIR in
+// UTF-16, so it counts as 2, not 1; `'日本語'` is 3 either way (BMP-only).
+// Routed from the `.length` member lowering's generic (non-array,
+// non-loop-slice) fallback — see `member()`'s `bf_length` call site.
+func Length(v any) int {
+	if v == nil {
+		return 0
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map, reflect.Chan:
+		return rv.Len()
+	case reflect.String:
+		n := 0
+		for _, r := range rv.String() {
+			if r > 0xFFFF {
+				n += 2
+			} else {
+				n++
+			}
+		}
+		return n
+	default:
+		return 0
+	}
+}
 
 // Len returns the length of a slice, array, map, string, or channel.
 // Returns 0 for nil or unsupported types.
@@ -3054,6 +3087,19 @@ func toString(v any) string {
 	case bool:
 		return strconv.FormatBool(s)
 	default:
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
+			// JS `Array.prototype.toString` is `this.join(',')`, applied
+			// recursively — a nested array element stringifies the same
+			// way rather than via Go's `%v`. Reached via `Join`/`ConcatStr`
+			// on an element that is itself an array (e.g. `.flat(0)`'s
+			// shallow copy joined afterwards, #2262).
+			parts := make([]string, rv.Len())
+			for i := 0; i < rv.Len(); i++ {
+				parts[i] = toString(rv.Index(i).Interface())
+			}
+			return strings.Join(parts, ",")
+		}
 		return ""
 	}
 }

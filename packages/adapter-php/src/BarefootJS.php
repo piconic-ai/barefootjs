@@ -865,9 +865,13 @@ final class BarefootJS
         return implode($sepStr, $parts);
     }
 
-    /** `.length` -- JS works on both arrays (element count) and strings
-     * (character count). Code-point length (see the design doc's `len`
-     * vector note: the golden vectors only pin ASCII cases). */
+    /** `.length` -- JS works on both arrays (element count) and strings.
+     * The string branch counts UTF-16 CODE UNITS, matching JS
+     * `String.prototype.length` (#2255) -- NOT `mb_strlen`'s Unicode
+     * codepoint count. A codepoint outside the Basic Multilingual Plane
+     * (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
+     * UTF-16, so it counts as 2, not 1; '日本語' is 3 either way
+     * (BMP-only). */
     public function length($recv): int
     {
         if (Evaluator::isJsArray($recv)) {
@@ -876,7 +880,12 @@ final class BarefootJS
         if (is_array($recv) || $recv instanceof \stdClass) {
             return 0; // a plain object has no `.length`
         }
-        return mb_strlen($this->scalarOrEmpty($recv), 'UTF-8');
+        $s = $this->scalarOrEmpty($recv);
+        $n = 0;
+        foreach (mb_str_split($s, 1, 'UTF-8') as $char) {
+            $n += mb_ord($char, 'UTF-8') > 0xFFFF ? 2 : 1;
+        }
+        return $n;
     }
 
     /** True for a JS *object* value under the canonical value convention

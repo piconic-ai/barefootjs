@@ -474,6 +474,13 @@ function normalizeSignalInitial(signal: SignalInfo, propsObjectName: string | nu
   if (initialValue.startsWith(propsPrefix) && !initialValue.includes('??')) {
     return `${initialValue} ?? ${inferDefaultValue(signal.type)}`
   }
-  return initialValue
+  // Destructured mode (#2265): `templateInitialValue` (when present) has
+  // bare destructured prop refs already rewritten to `_p.X` — the
+  // module-scope CSR `template:` arrow can't see the bare name (it isn't
+  // a closure over `initXxx`'s `const size = _p.size` extraction), which
+  // otherwise throws `ReferenceError` at template-eval time. The `??`
+  // fallback branch above only applies to object-props mode (a raw
+  // `props.X` prefix match), so it's checked against the ORIGINAL value.
+  return signal.templateInitialValue ?? initialValue
 }
 

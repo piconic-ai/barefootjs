@@ -758,13 +758,19 @@ sub join ($self, $recv, $sep = undef) {
     return CORE::join($sep, map { defined $_ ? $_ : '' } @$recv);
 }
 
-# `.length` — JS works on BOTH arrays (element count) and strings (character
-# count); Kolon's builtin `.size()` is array-only and faults on a string. So
-# dispatch on ref type here. `CORE::length` avoids recursing into this method.
+# `.length` — JS works on BOTH arrays (element count) and strings; Kolon's
+# builtin `.size()` is array-only and faults on a string. So dispatch on ref
+# type here. The string branch counts UTF-16 CODE UNITS, matching JS
+# `String.prototype.length` (#2255) — NOT `CORE::length`'s Unicode codepoint
+# count. A codepoint outside the Basic Multilingual Plane (astral,
+# U+10000-U+10FFFF — e.g. '👍') is a surrogate PAIR in UTF-16, so it counts
+# as 2, not 1; '日本語' is 3 either way (BMP-only).
 sub length ($self, $recv) {
     return scalar @$recv if ref($recv) eq 'ARRAY';
     return 0 if ref($recv);
-    return CORE::length($recv // '');
+    my $n = 0;
+    $n += ord($_) > 0xFFFF ? 2 : 1 for split //, ($recv // '');
+    return $n;
 }
 
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
