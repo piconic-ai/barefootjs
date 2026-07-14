@@ -77,6 +77,7 @@ func FuncMap() template.FuncMap {
 		// Array/Slice
 		"bf_len":            Len,
 		"bf_length":         Length,
+		"bf_is_element":     IsValidElement,
 		"bf_at":             At,
 		"bf_includes":       Includes,
 		"bf_index_of":       IndexOf,
@@ -1162,6 +1163,60 @@ func Length(v any) int {
 	default:
 		return 0
 	}
+}
+
+// IsValidElement lowers React/Hono-style `isValidElement(x)` — the "is this
+// a renderable element (not plain text)?" predicate the `Slot` component's
+// `asChild` pattern (#2266) uses to decide whether to merge props into a
+// child ELEMENT (`children.tag`/`children.props`) or fall back to rendering
+// `children` as-is. The JS runtime checks `'tag' in x && 'props' in x`; on
+// Go SSR a passed-through JSX child is represented as pre-rendered markup
+// (a plain string) OR — where a struct/map shape carrying `Tag`/`Props`
+// (case-insensitively, mirroring `bf_get`'s field lookup) is available — an
+// element-shaped value. A plain string/number/bool/nil is never a valid
+// element, so `isValidElement` must NOT be lowered as bare truthiness
+// (previously done via `renderConditionExpr`) — a truthy non-empty STRING
+// child wrongly took the element-merge branch and panicked dereferencing
+// `.Props` on a string (`can't evaluate field Props in type interface {}`).
+func IsValidElement(v any) bool {
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return false
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Map:
+		hasTag, hasProps := false, false
+		for _, k := range rv.MapKeys() {
+			key := fmt.Sprintf("%v", k.Interface())
+			if strings.EqualFold(key, "tag") {
+				hasTag = true
+			}
+			if strings.EqualFold(key, "props") {
+				hasProps = true
+			}
+		}
+		return hasTag && hasProps
+	case reflect.Struct:
+		return fieldByFoldedName(rv, "tag").IsValid() && fieldByFoldedName(rv, "props").IsValid()
+	default:
+		return false
+	}
+}
+
+// fieldByFoldedName finds a struct field by case-insensitive name match —
+// shared by IsValidElement; mirrors getFieldValue's (bf_get) struct-branch
+// lookup so the two case-tolerant field resolutions stay consistent.
+func fieldByFoldedName(rv reflect.Value, name string) reflect.Value {
+	t := rv.Type()
+	for i := 0; i < t.NumField(); i++ {
+		if strings.EqualFold(t.Field(i).Name, name) {
+			return rv.Field(i)
+		}
+	}
+	return reflect.Value{}
 }
 
 // Len returns the length of a slice, array, map, string, or channel.

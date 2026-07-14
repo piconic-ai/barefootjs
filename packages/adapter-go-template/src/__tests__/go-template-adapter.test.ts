@@ -123,11 +123,6 @@ runAdapterConformanceTests({
     // #2261 — invalid dynamic CSS value: html/template emits the
     // ZgotmplZ sentinel where the oracle drops the property.
     'style-object-dynamic:gen:color:markup',
-    // #2266 — asChild=true with plain-text children: the Slot define
-    // dereferences `.Children.Props.Children`, which hard-errors on a
-    // string child (`can't evaluate field Props in type interface {}`).
-    'button:gen:asChild:true',
-    'kbd:gen:asChild:true',
   ]),
   onRenderError: (err, id) => {
     if (err instanceof GoNotAvailableError) {

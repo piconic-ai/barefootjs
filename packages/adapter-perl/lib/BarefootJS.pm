@@ -773,6 +773,24 @@ sub length ($self, $recv) {
     return $n;
 }
 
+# `isValidElement(x)` -- the framework "is this a renderable element (not
+# plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266). Mirrors
+# JS's `'tag' in x && 'props' in x`: true only for a HASH ref carrying both
+# keys (case-insensitively, matching the case-tolerant field lookups
+# elsewhere in this module). A passed-through JSX child is represented as
+# pre-rendered markup (a plain string) on this SSR model, so a non-empty
+# STRING child is NOT a valid element -- routing `isValidElement` through
+# bare truthiness here would wrongly take the element-merge branch.
+sub is_element ($self, $v) {
+    return 0 unless ref($v) eq 'HASH';
+    my ($has_tag, $has_props) = (0, 0);
+    for my $key (keys %$v) {
+        $has_tag = 1 if lc($key) eq 'tag';
+        $has_props = 1 if lc($key) eq 'props';
+    }
+    return ($has_tag && $has_props) ? 1 : 0;
+}
+
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
 # value-equality search (#1448 Tier A). Returns the 0-based position
 # of the first / last matching element, or -1 if not found.

@@ -5153,19 +5153,26 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         if (expr.callee.kind === 'identifier' && expr.args.length === 0) {
           return plain(this.rootFieldRef(expr.callee.name))
         }
-        // `isValidElement(x)` — the framework "is this a renderable element?"
-        // predicate. In the Go SSR children model an element is represented by
-        // its already-rendered markup, so this evaluates faithfully as a
-        // truthiness check on the argument (an element is "valid" when there is
-        // something to render). Lowering it as a real, evaluatable expression —
-        // rather than a fabricated `.IsValidElement` field access — is what lets
-        // the `Slot` dynamic-tag guard register and run cleanly on Go.
+        // `isValidElement(x)` — the framework "is this a renderable element
+        // (not plain text)?" predicate. #2266: a passed-through JSX child is
+        // ALSO represented as pre-rendered markup on Go's SSR model, so a
+        // plain non-empty STRING child is truthy but is NOT a valid element
+        // — a bare truthiness check (the pre-#2266 lowering) wrongly took
+        // `Slot`'s element-merge branch and panicked dereferencing
+        // `.Props`/`.Tag` on a string (`can't evaluate field Props in type
+        // interface {}`). `bf_is_element` (bf.go) does a real reflect-based
+        // shape check (map/struct carrying both `tag`+`props` keys/fields,
+        // case-insensitively), matching JS's `'tag' in x && 'props' in x`.
+        // Pre-parenthesised — `call`-kind results aren't covered by
+        // `needsParens`, so an unparenthesised `bf_is_element X` splices as
+        // extra sibling args into an enclosing `and`/`or`.
         if (
           expr.callee.kind === 'identifier' &&
           (identifierPath(expr.callee) ?? expr.callee.name) === 'isValidElement' &&
           expr.args.length === 1
         ) {
-          return this.renderConditionExpr(expr.args[0])
+          const inner = this.renderConditionExpr(expr.args[0])
+          return { preamble: inner.preamble, expr: `(bf_is_element ${wrapIfMultiToken(inner.expr)})` }
         }
         // Any other user-defined predicate call with arguments (e.g.
         // `isAdmin(user)`) has no server-side evaluator and is not a registered

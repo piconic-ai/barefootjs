@@ -29,6 +29,14 @@ export const MOJO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'Math.min':       { arity: 2, emit: (args) => `bf->min(${args[0]}, ${args[1]})` },
   'Math.max':       { arity: 2, emit: (args) => `bf->max(${args[0]}, ${args[1]})` },
   'Math.abs':       { arity: 1, emit: (args) => `bf->abs(${args[0]})` },
+  // `isValidElement(x)` — the framework "is this a renderable element (not
+  // plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266). A
+  // passed-through JSX child is represented as pre-rendered markup on
+  // Mojolicious's SSR model too, so a plain STRING child must NOT read as
+  // "valid" (mirrors JS's `'tag' in x && 'props' in x`) — previously this
+  // callee had no primitive entry at all and fell through to an undeclared
+  // `$isValidElement` stash lookup, dying under `use strict`/`vars => 1`.
+  'isValidElement': { arity: 1, emit: (args) => `bf->is_element(${args[0]})` },
 }
 
 /**
