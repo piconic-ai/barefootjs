@@ -4775,3 +4775,56 @@ export function C(props: Props) {
     }
   })
 })
+
+// Review finding on #2271 (the #2254 fix): `renderConditionExpr`'s `logical`
+// case wrapped operands via `needsParens` (AST-kind-based — only
+// `logical`/`unary`/`conditional`), missing any OTHER multi-token rendering
+// (`len .X`, `bf_add a b`, a call). Unwrapped, Go's `and`/`or`/`bf_nullish`
+// (all prefix builtins) parse a multi-token operand as extra sibling args
+// instead of one operand. Switched to `wrapIfMultiToken` (whitespace-based,
+// on the rendered string), matching the main `logical()` emitter.
+describe('GoTemplateAdapter - condition-position logical operand wrapping (#2271 review)', () => {
+  test('a `.length` (member → "len .X") operand of `&&` inside a ternary TEST is parenthesized', () => {
+    // A bare `{cond && <Elem/>}` is recognized as JSX conditional-rendering
+    // shorthand and its test is extracted directly, never reaching
+    // `renderConditionExpr`'s `logical` case as a literal `&&` node — so the
+    // `&&` must be nested inside an explicit ternary test to exercise it.
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(`
+"use client"
+type Item = { id: number }
+export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
+  return <div>{(items.length && enabled) ? <span>on</span> : <span>off</span>}</div>
+}
+`.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    // `and (len .Items) .Enabled` — NOT the broken 3-sibling-arg
+    // `and len .Items .Enabled` a bare `needsParens` miss would produce.
+    expect(template).toContain('and (len .Items) .Enabled')
+  })
+
+  test('end-to-end via real `go run`: the multi-token `&&` ternary-test operand compiles and renders correctly', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: `
+'use client'
+type Item = { id: number }
+export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
+  return <div>{(items.length && enabled) ? <span>on</span> : <span>off</span>}</div>
+}
+`,
+        adapter: new GoTemplateAdapter(),
+        props: { items: [{ id: 1 }], enabled: true },
+      })
+      expect(html).toContain('>on</span>')
+      expect(html).not.toContain('>off</span>')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #2271 review e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})

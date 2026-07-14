@@ -4470,11 +4470,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.renderFilterExpr(pred, param, new Map(), datumField ?? undefined)
   }
 
-  /** Whether an expression needs parentheses when used in and/or. */
-  private needsParens(expr: ParsedExpr): boolean {
-    return expr.kind === 'logical' || expr.kind === 'unary' || expr.kind === 'conditional'
-  }
-
   /**
    * Split a rendered template block into preamble + final expression.
    * The last `{{...}}` must be a variable reference (`$bf_rN` or
@@ -5312,8 +5307,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const leftResult = this.renderConditionExpr(expr.left)
         const rightResult = this.renderConditionExpr(expr.right)
         const preamble = leftResult.preamble + rightResult.preamble
-        const wrapLeft = this.needsParens(expr.left) ? `(${leftResult.expr})` : leftResult.expr
-        const wrapRight = this.needsParens(expr.right) ? `(${rightResult.expr})` : rightResult.expr
+        // `wrapIfMultiToken` (whitespace-based, on the RENDERED string) — not
+        // `needsParens` (AST-kind-based, only `logical`/`unary`/`conditional`)
+        // — matches the main `logical()` emitter's own wrapping. `needsParens`
+        // misses any other multi-token rendering (`len .X`, `bf_add a b`,
+        // `.SearchParams.Get "k"`), which `and`/`or`/`bf_nullish` (all prefix
+        // builtins) would otherwise parse as extra sibling args instead of one
+        // operand.
+        const wrapLeft = wrapIfMultiToken(leftResult.expr)
+        const wrapRight = wrapIfMultiToken(rightResult.expr)
         // `??` on a nillable prop needs true JS nullish semantics (#2254,
         // sibling of #2248/#2252's fix for text-expression/signal-seed
         // positions): Go's `or` is truthiness-based, so a present-but-empty
