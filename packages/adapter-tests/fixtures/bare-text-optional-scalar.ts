@@ -28,8 +28,6 @@ export { BareTextOptionalScalar }
     { name: 'zero', props: { size: 0 } },
   ],
   expectedHtml: `
-    <div bf-s="test">
-      <span bf="s1"><!--bf:s0-->5<!--/--></span>
-    </div>
+    <div bf-s="test"><span bf="s1"><!--bf:s0-->5<!--/--></span></div>
   `,
 })
