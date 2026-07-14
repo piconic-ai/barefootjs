@@ -57,11 +57,6 @@ runAdapterConformanceTests({
     'data-table',
   ]),
   skipDataPoints: new Set<string>([
-    // #2260 — controlled boolean props: the SSR seed evaluates only the
-    // static fallback of `props.X ?? internal()` chains.
-    'toggle:gen:pressed:true',
-    'switch:gen:checked:true',
-    'checkbox:gen:checked:true',
     // #2261 — invalid dynamic CSS value kept (escaped) where the oracle
     // drops the property.
     'style-object-dynamic:gen:color:markup',

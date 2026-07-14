@@ -3538,7 +3538,13 @@ export function freeIdentifiers(expr: ParsedExpr): Set<string> | null {
       case 'regex':
         return true
       case 'identifier':
-        if (!bound.has(e.name)) free.add(e.name)
+        // `undefined` parses as an `identifier` node (unlike `null`, which
+        // is a `literal`) but is never a scope reference — every adapter
+        // emitter already lowers it to `nil`/`none`/etc. Reporting it as
+        // free wrongly opaques an otherwise-derivable expression (#2260:
+        // `props.pressed !== undefined` in `computeSsrSeedPlan`'s
+        // `classify()`, whose `baseScope` has no `undefined` entry).
+        if (e.name !== 'undefined' && !bound.has(e.name)) free.add(e.name)
         return true
       case 'call': {
         const isBuiltinCallee = evalBuiltinCalleeName(e.callee) !== null

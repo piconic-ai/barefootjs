@@ -120,15 +120,6 @@ runAdapterConformanceTests({
     // struct + block-body memo baking render correctly on Go.
   ]),
   skipDataPoints: new Set<string>([
-    // #2260 — controlled/derived boolean props: the SSR seed evaluates
-    // only the static fallback of `props.X ?? internal()` chains, so a
-    // caller-supplied true never reaches aria-*/data-state.
-    'toggle:gen:defaultPressed:true',
-    'toggle:gen:pressed:true',
-    'switch:gen:defaultChecked:true',
-    'switch:gen:checked:true',
-    'checkbox:gen:defaultChecked:true',
-    'checkbox:gen:checked:true',
     // #2261 — invalid dynamic CSS value: html/template emits the
     // ZgotmplZ sentinel where the oracle drops the property.
     'style-object-dynamic:gen:color:markup',
@@ -1289,10 +1280,15 @@ export function Widget(props: P) {
       expect(types).toContain('Classes: "a b" + " " + "c d" + " " + in.ClassName + " tail"')
     })
 
-    // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) renders its
-    // SSR zero as `false`, not the int `0`, so `aria-checked={isChecked()}`
-    // matches Hono's `aria-checked="false"`.
-    test('boolean ternary memo defaults to false, not 0', () => {
+    // A boolean ternary memo (`isChecked = ctrl() ? c() : i()`) types its
+    // SSR field as `bool` (not `int`), so `aria-checked={isChecked()}`
+    // matches Hono's `aria-checked="false"` shape. Since #2260, `checked`'s
+    // presence is expressible (nillable `interface{}`), so the constructor
+    // bakes a runtime presence check + type-asserted read instead of the
+    // pre-#2260 unconditional `false` — see the `Controlled/derived
+    // boolean props honour a caller-supplied true` describe block below for
+    // the caller-supplied-`true` case this unlocks.
+    test('boolean ternary memo types as bool, resolves controlled presence at SSR', () => {
       const adapter = new GoTemplateAdapter()
       const source = `
 "use client"
@@ -1307,7 +1303,9 @@ export function Toggle(props: { checked?: boolean; defaultChecked?: boolean }) {
 `
       const types = adapter.generateTypes(compileToIR(source, adapter))!
       expect(types).toContain('IsChecked bool')
-      expect(types).toContain('IsChecked: false,')
+      expect(types).toContain(
+        'IsChecked: func() bool { if in.Checked != nil { return func() bool { if v, ok := in.Checked.(bool); ok { return v }; return false }() }; return in.DefaultChecked }(),',
+      )
     })
   })
 
