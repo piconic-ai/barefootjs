@@ -294,4 +294,52 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     // the live conditional sees the wrapped accessor.
     expect(effectBody).toContain('c().id')
   })
+
+  test('reactive text child of a triple-nested (depth-2) inner loop gets an update effect (#2264)', () => {
+    // `collectInnerLoops` gated `reactiveTexts` collection on whether the
+    // loop's array expression referenced the OUTERMOST loop param
+    // (`outerLoopParam`, fixed at the top-level `.map()` call and never
+    // updated while descending). At nesting depth 2 the innermost loop's
+    // array (`band.panels`) only references its immediate parent (`band`),
+    // not the top-level param (`page`), so the gate was always false and
+    // the text-child effect was silently dropped — while the sibling
+    // `className` attribute effect on the SAME element (ungated) worked
+    // fine. Only depth-1 nesting happened to pass the gate, masking the bug.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      type Panel = { id: number; text: string; cls: string }
+      type Band = { id: string; panels: Panel[] }
+      type Page = { id: string; bands: Band[] }
+
+      export function Doc() {
+        const [pages] = createSignal<Page[]>([])
+        return (
+          <div>
+            {pages().map(page => (
+              <div key={page.id}>
+                {page.bands.map(band => (
+                  <div key={band.id}>
+                    {band.panels.map(panel => (
+                      <div key={panel.id} className={panel.cls}>{panel.text}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Doc.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find((f) => f.type === 'clientJs')!.content
+
+    // The innermost loop's per-item renderItem must emit BOTH a
+    // reactive-text effect for `panel.text` and a reactive-attr effect
+    // for `panel.cls` — the bug dropped only the former.
+    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?\.textContent = String\(panel\(\)\.text\)/)
+    expect(content).toContain("setAttribute('class'")
+  })
 })
