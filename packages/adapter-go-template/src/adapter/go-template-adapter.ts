@@ -5314,9 +5314,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const preamble = leftResult.preamble + rightResult.preamble
         const wrapLeft = this.needsParens(expr.left) ? `(${leftResult.expr})` : leftResult.expr
         const wrapRight = this.needsParens(expr.right) ? `(${rightResult.expr})` : rightResult.expr
+        // `??` on a nillable prop needs true JS nullish semantics (#2254,
+        // sibling of #2248/#2252's fix for text-expression/signal-seed
+        // positions): Go's `or` is truthiness-based, so a present-but-empty
+        // `""`/`0`/`false` operand wrongly falls back. `bf_nullish` tests
+        // nil-ness only. Mirrors the `logical()` emitter's own gate (used
+        // for non-condition expression positions) — same
+        // `nullishConsumed ∩ nillable` check via `nillablePropNameOf`.
         const result = expr.op === '&&'
           ? `and ${wrapLeft} ${wrapRight}`
-          : `or ${wrapLeft} ${wrapRight}`
+          : expr.op === '??' && this.nillablePropNameOf(expr.left) !== null
+            ? `bf_nullish ${wrapLeft} ${wrapRight}`
+            : `or ${wrapLeft} ${wrapRight}`
         return { preamble, expr: result }
       }
 

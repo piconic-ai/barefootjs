@@ -4697,3 +4697,81 @@ export function List() {
     }
   })
 })
+
+// #2254: `??` in CONDITION position (ternaries/`{{if}}` via
+// `convertConditionToGo` → `renderConditionExpr`'s `logical` case) still
+// emitted Go's truthiness-based `or` even for a nillable-lowered prop, so a
+// present-but-empty (`''`) value wrongly fell back to the `??` default —
+// diverging from JS, where `??` only falls back on null/undefined. The
+// sibling `logical()` emitter (used for non-condition expression positions,
+// e.g. plain interpolation) already routed nillable operands through
+// `bf_nullish` since #2248/#2252; this brings the condition-position
+// emitter in line with it.
+describe('GoTemplateAdapter - #2254 `??` in condition position on a nillable prop', () => {
+  test('ternary test comparing `props.label ?? "Default"` lowers to bf_nullish, not or', () => {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(`
+"use client"
+type Props = { label?: string }
+export function C(props: Props) {
+  return <div>{(props.label ?? 'Default') === 'Default' ? <span>fallback</span> : <span>set</span>}</div>
+}
+`.trimStart(), 'test.tsx', { adapter })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+    expect(template).toContain('bf_nullish .Label "Default"')
+    expect(template).not.toContain('or .Label "Default"')
+  })
+
+  test('end-to-end via real `go run`: a present-but-empty label does NOT take the ?? default branch', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: `
+'use client'
+type Props = { label?: string }
+export function C(props: Props) {
+  return <div>{(props.label ?? 'Default') === 'Default' ? <span>fallback</span> : <span>set</span>}</div>
+}
+`,
+        adapter: new GoTemplateAdapter(),
+        props: { label: '' },
+      })
+      // JS: '' ?? 'Default' keeps '' (present, not nullish) → '' === 'Default'
+      // is false → the "set" branch renders. The pre-fix `or` lowering would
+      // truthiness-fallback the empty string to 'Default' and wrongly render
+      // "fallback" instead.
+      expect(html).toContain('>set</span>')
+      expect(html).not.toContain('>fallback</span>')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #2254 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+
+  test('an omitted label DOES take the ?? default branch', async () => {
+    try {
+      const html = await renderGoTemplateComponent({
+        source: `
+'use client'
+type Props = { label?: string }
+export function C(props: Props) {
+  return <div>{(props.label ?? 'Default') === 'Default' ? <span>fallback</span> : <span>set</span>}</div>
+}
+`,
+        adapter: new GoTemplateAdapter(),
+        props: {},
+      })
+      expect(html).toContain('>fallback</span>')
+      expect(html).not.toContain('>set</span>')
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) {
+        console.log('Skipping #2254 e2e: go command not found')
+        return
+      }
+      throw err
+    }
+  })
+})
