@@ -88,7 +88,7 @@ export const conformancePins: ConformancePins = {
   // below for the shared `/* @client */` keyed-map slot-id elision
   // contract (same as `todo-app`), not a render or BF101 gap.
   // #1443: `[a, b].filter(Boolean).join(' ')` (the registry Slot's
-  // shape) now lowers to `join(' ', @{[grep { $_ } @{[$a, $b]}]})`.
+  // shape) now lowers to `bf->join([grep { $_ } @{[$a, $b]}], ' ')`.
   // No BF101 expected — pinned positively via the
   // `branch-local-filter-join` template-output test below.
   //
