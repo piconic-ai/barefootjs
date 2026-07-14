@@ -1,5 +1,30 @@
 # @barefootjs/jsx
 
+## 0.19.1
+
+### Patch Changes
+
+- 5b184a8: Fix #2260: the "controlled component" idiom (an internal signal, a controlled signal seeded bare from a prop, an `isControlled` presence memo, and a derived ternary memo — the shape `ui/components/ui/toggle`, `switch`, and `checkbox` all share) now honours a caller-supplied value in SSR output on every adapter, instead of only the uncontrolled default.
+
+  - **`packages/jsx`**: `freeIdentifiers()` no longer reports the JS value-keyword `undefined` as a free variable (it parses as an `identifier` node, unlike `null`, which is a `literal`). This let `computeSsrSeedPlan`'s `classify()` correctly classify `props.X !== undefined` (the `isControlled` memo) as `derived` instead of `opaque` — the actual root cause on ERB, Jinja, and Rust (minijinja), which all consume the shared SSR-seed-plan machinery. Fixes the `toggle:gen:pressed:true` / `switch:gen:checked:true` / `checkbox:gen:checked:true` data points on those three adapters (their `defaultPressed`/`defaultChecked` sub-case already passed).
+  - **`@barefootjs/go-template`**: Go bakes these values into the constructor rather than seeding in-template, and needed three coupled fixes: (1) a new `collectPresenceCheckedPropNames` collector recognizes `props.X !== undefined` as a nillability-requiring consumption, flipping the prop to the existing nillable `interface{}` representation (#2248) — presence is otherwise inexpressible on a concrete `bool` field; (2) `memoInitialFromParsedBody` gained a presence-check branch (`props.X !== undefined` → `in.X != nil`) and a ternary-over-getter-calls branch (`cond() ? a() : b()` where all three are signal/memo getters, not just the pre-existing string-literal-branch case) for the derived `isPressed`/`isChecked` memo; (3) `convertInitialValue`/`getSignalInitialValueAsGo` now type-assert a nillable-flipped prop reference against the consuming signal's own concrete type (unwrapping a `T | undefined` signal type annotation to `T`) instead of a bare reference — needed because the flip in (1) otherwise breaks a sibling signal's own initializer (`createSignal<boolean | undefined>(props.pressed)`) with a Go compile error (`interface{}` value into a `bool` field).
+
+  Removes `toggle`/`switch`/`checkbox`'s `gen:pressed:true`/`gen:checked:true` `skipDataPoints` pins on ERB/Jinja/Rust, and those plus `gen:defaultPressed:true`/`gen:defaultChecked:true` on Go.
+
+- 1c2b116: Fix #2265: a stateful destructured component whose signal seed references a destructured prop (`const [count] = createSignal(size ?? 1)` with `{ size }: { size?: number }`) no longer throws `ReferenceError: size is not defined` when the generated `hydrate(..., { template: (_p) => ... })` CSR fallback arrow evaluates.
+
+  That module-scope arrow isn't a closure over `initXxx`'s `const size = _p.size` extraction, so a signal's initial value referencing a bare destructured prop needs the reference rewritten to `_p.size` ahead of time — the same treatment `templateExpr`/`templateArray`/`templateCondition` already give other IR positions (#2222 fixed the loop-source case; this is the signal-initial-value case, pre-existing independent of that fix). Adds `SignalInfo.templateInitialValue`, computed by the analyzer at signal-collection time via the existing `rewriteBarePropRefs` AST walk, and consumed by the CSR template's `normalizeSignalInitial`.
+
+  Removes the `nullish-coalescing-destructured` CSR-conformance skip.
+
+- d2fd918: Fix #2264: a reactive text child of the innermost element in a **depth-2 nested `.map()`** (three loop levels) now gets a `createEffect` update effect on the client, instead of being silently folded into the static clone template only.
+
+  `collectInnerLoops` (`ir-to-client-js/collect-elements.ts`) gated reactive-text collection on whether the loop's array expression referenced `outerLoopParam` — but that variable is fixed at the OUTERMOST loop's param for the whole descent and never updated per nesting level. At depth 2, the innermost loop's array (`band.panels`) only references its immediate parent (`band`), not the top-level param (`page`), so the gate was always false and the text effect was dropped. The sibling `className`/`style` attribute effects on the same element were ungated and worked fine, and depth-1 nesting happened to pass the gate (its array does reference the top-level param), which is why the bug only showed at depth 2+.
+
+  Reactive texts are now collected on the same unconditional terms as attrs/refs — `classifyReactivity` (used internally by `collectLoopChildReactiveTexts`) already filters out genuinely non-reactive reads against the loop's own param, so this doesn't introduce spurious effects for a fully-static inner array.
+
+  - @barefootjs/shared@0.19.1
+
 ## 0.19.0
 
 ### Minor Changes
