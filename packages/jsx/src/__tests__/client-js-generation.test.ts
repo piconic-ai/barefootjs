@@ -1162,6 +1162,36 @@ describe('Client JS generation', () => {
       expect(basicErrorCount).toBe(1) // only inside computeError body
       expect(isDuplicateCount).toBe(1) // only inside computeError body
     })
+
+    test('import used only inside a module-level helper is traced into the client bundle (#2283)', () => {
+      const source = `
+        'use client'
+        import { createMemo } from '@barefootjs/client'
+        import { computeSheetGeometry } from '../src/lib/sheetGeometry'
+
+        function buildSheetVMs(count: number) {
+          return computeSheetGeometry(count)
+        }
+
+        export function PrintSheets(props: { count: number }) {
+          const sheets = createMemo(() => buildSheetVMs(props.count))
+          return <div>{sheets()}</div>
+        }
+      `
+
+      const result = compileJSX(source, 'PrintSheets.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // The helper's body (which references the import) must be emitted...
+      expect(content).toContain('computeSheetGeometry(count)')
+      // ...and the import that body depends on must be traced and emitted too,
+      // otherwise the browser throws `ReferenceError: computeSheetGeometry is not defined`.
+      expect(content).toContain("import { computeSheetGeometry } from '../src/lib/sheetGeometry'")
+    })
   })
 
   describe('child component value/boolean prop binding', () => {
