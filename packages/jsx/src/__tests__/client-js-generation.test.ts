@@ -1162,6 +1162,65 @@ describe('Client JS generation', () => {
       expect(basicErrorCount).toBe(1) // only inside computeError body
       expect(isDuplicateCount).toBe(1) // only inside computeError body
     })
+
+    test('import used only inside a module-level helper is traced into the client bundle (#2283)', () => {
+      const source = `
+        'use client'
+        import { createMemo } from '@barefootjs/client'
+        import { computeSheetGeometry } from '../src/lib/sheetGeometry'
+
+        function buildSheetVMs(count: number) {
+          return computeSheetGeometry(count)
+        }
+
+        export function PrintSheets(props: { count: number }) {
+          const sheets = createMemo(() => buildSheetVMs(props.count))
+          return <div>{sheets()}</div>
+        }
+      `
+
+      const result = compileJSX(source, 'PrintSheets.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      // The helper's body (which references the import) must be emitted...
+      expect(content).toContain('computeSheetGeometry(count)')
+      // ...and the import that body depends on must be traced and emitted too,
+      // otherwise the browser throws `ReferenceError: computeSheetGeometry is not defined`.
+      expect(content).toContain("import { computeSheetGeometry } from '../src/lib/sheetGeometry'")
+    })
+
+    test('module-level helper body containing a literal "$&" is spliced in verbatim', () => {
+      // A plain-string second argument to String.replace() specially
+      // interprets `$&`/`$1`/`$$` — the placeholder-substitution step must
+      // use the replacer-function form so a helper body containing one of
+      // these sequences isn't corrupted (piconic-ai/barefootjs#2286 review).
+      const source = `
+        'use client'
+        import { createMemo } from '@barefootjs/client'
+
+        function formatMoney(amount: number) {
+          return '$&' + amount
+        }
+
+        export function Price(props: { amount: number }) {
+          const label = createMemo(() => formatMoney(props.amount))
+          return <div>{label()}</div>
+        }
+      `
+
+      const result = compileJSX(source, 'Price.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      expect(content).toContain("'$&' + amount")
+    })
   })
 
   describe('child component value/boolean prop binding', () => {

@@ -99,16 +99,23 @@ export function generateInitFunction(
   let generatedCode = rewritePropsObjectRef(lines.join('\n'), ctx.propsObjectName)
   generatedCode += '\n' + hydrateLine
 
-  const allImportLines = resolveFinalImports(generatedCode, ir, localImportPrefixes)
+  // Substitute module-level declarations BEFORE import detection: a
+  // module-level helper's body (e.g. `buildSheetVMs` calling
+  // `computeSheetGeometry`) only exists in `moduleConstantsCode`, so
+  // scanning `generatedCode` first would miss any import referenced
+  // only from that body and silently drop it (#2283).
   const moduleConstantsCode = emitModuleLevelDeclarations(
     classification.moduleLevelConstants,
     classification.moduleLevelFunctions,
     classification.moduleLevelSignals,
     classification.moduleLevelMemos,
   )
+  // Replacer-function form: a plain replacement string would let literal
+  // `$&`/`$1`/`$$` sequences in user helper bodies or import paths be
+  // reinterpreted by `String.replace`'s special-pattern handling.
+  const codeWithModuleConstants = generatedCode.replace(MODULE_CONSTANTS_PLACEHOLDER, () => moduleConstantsCode)
+  const allImportLines = resolveFinalImports(codeWithModuleConstants, ir, localImportPrefixes)
 
-  return generatedCode
-    .replace(IMPORT_PLACEHOLDER, allImportLines)
-    .replace(MODULE_CONSTANTS_PLACEHOLDER, moduleConstantsCode)
+  return codeWithModuleConstants.replace(IMPORT_PLACEHOLDER, () => allImportLines)
 }
 
