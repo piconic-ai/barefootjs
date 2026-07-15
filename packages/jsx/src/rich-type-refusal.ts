@@ -258,11 +258,11 @@ function walkNode(
   }
 
   if (node.type === 'element') {
-    for (const attr of node.attrs) walkAttrValue(attr.value, attr.clientOnly, node.loc, meta, bindings, matchers, errors, seen)
+    for (const attr of node.attrs) walkAttrValue(attr.value, attr.clientOnly, attr.loc, meta, bindings, matchers, errors, seen)
   } else if (node.type === 'component') {
-    for (const prop of node.props) walkAttrValue(prop.value, prop.clientOnly, node.loc, meta, bindings, matchers, errors, seen)
+    for (const prop of node.props) walkAttrValue(prop.value, prop.clientOnly, prop.loc, meta, bindings, matchers, errors, seen)
   } else if (node.type === 'provider') {
-    walkAttrValue(node.valueProp.value, node.valueProp.clientOnly, node.loc, meta, bindings, matchers, errors, seen)
+    walkAttrValue(node.valueProp.value, node.valueProp.clientOnly, node.valueProp.loc, meta, bindings, matchers, errors, seen)
   }
 
   switch (node.type) {
