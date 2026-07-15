@@ -739,7 +739,12 @@ final class BarefootJS
             }
             try {
                 $d = new \DateTimeImmutable($s);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // \Throwable, not \Exception: a malformed string throws
+                // DateMalformedStringException (an Exception), but under
+                // Xdebug the exception's dynamic-property enrichment raises
+                // a bare Error (not an Exception) on PHP >= 8.2 — degrade
+                // on any Throwable so the render survives either way.
                 return $op === 'toISOString' ? '' : 0;
             }
         }
