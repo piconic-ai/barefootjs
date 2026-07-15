@@ -529,8 +529,19 @@ export function collectLoopChildReactiveTexts(
       const originFreeIds = freeIdsFromRefs(n.origin?.freeRefs)
       const expanded = expandConstantForReactivity(n.expr, ctx, originFreeIds)
       // Include if expression reads signals OR references the loop parameter
-      // (loop param becomes a signal accessor via per-item signals).
-      if (classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind === 'none') return
+      // (loop param becomes a signal accessor via per-item signals). Falls
+      // back to the Solid-style AST-flag wrap decision — mirroring
+      // `collectLoopChildReactiveAttrs`'s `callsReactiveGetters` /
+      // `hasFunctionCalls` fallback (#1673) and the top-level text path's
+      // `decideWrapFromAstFlags` gate (`collectElements`'s `expression`
+      // handler) — so a loop-item text read through an opaque helper
+      // (`textAt(i)` where `const textAt = (i) => rows()[i]`, which
+      // `classifyReactivity` can't see through) still gets an update
+      // effect instead of silently freezing at its SSR value (#2282).
+      const reactive =
+        classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind !== 'none'
+        || decideWrapFromAstFlags(n).wrap
+      if (!reactive) return
       texts.push({
         slotId: n.slotId,
         expression: expanded.expr,

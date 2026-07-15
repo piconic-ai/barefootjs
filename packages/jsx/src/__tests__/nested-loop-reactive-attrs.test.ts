@@ -342,4 +342,60 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?\.textContent = String\(panel\(\)\.text\)/)
     expect(content).toContain("setAttribute('class'")
   })
+
+  test('reactive text child of a triple-nested inner loop read through an opaque helper gets an update effect (#2282)', () => {
+    // #2264 fixed the case where `classifyReactivity` proves the text
+    // reactive via the loop-param path (bare `panel.text`). It left a
+    // sibling gap: `collectLoopChildReactiveTexts` had no Solid-style
+    // AST-flag fallback, so a text read through an opaque helper the
+    // classifier can't see through (`labelAt(pi)` where `const labelAt =
+    // (i) => labels()[i]`) still silently dropped its update effect — while
+    // `collectLoopChildReactiveAttrs` already had that fallback (#1673,
+    // see `reactive-attrs-in-map.test.ts`), so the sibling `className`
+    // effect on the SAME element kept working. Reported as #2282 ("child
+    // inlined into a parent island drops the innermost reactive text
+    // effect"); the issue's own literal `{panel.text}` repro snippet
+    // doesn't reproduce it (that shape is exactly what #2264 already
+    // fixed) — this test pins the actual asymmetry root-caused during
+    // investigation, using the opaque-helper shape that does reproduce.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      type Panel = { id: number; cls: string }
+      type Band = { id: string; panels: Panel[] }
+      type Page = { id: string; bands: Band[] }
+
+      export function Doc2() {
+        const [pages] = createSignal<Page[]>([])
+        const [labels] = createSignal<string[]>([])
+        const labelAt = (i: number) => labels()[i]
+        return (
+          <div>
+            {pages().map(page => (
+              <div key={page.id}>
+                {page.bands.map(band => (
+                  <div key={band.id}>
+                    {band.panels.map((panel, pi) => (
+                      <div key={panel.id} className={panel.cls}>{labelAt(pi)}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Doc2.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find((f) => f.type === 'clientJs')!.content
+
+    // The helper call must appear inside a createEffect alongside the
+    // textContent write — `labelAt(` also appears in the static template
+    // clone, so asserting it independently would pass even with the
+    // effect missing (the exact regression here).
+    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?\.textContent = String\(labelAt\(pi\)\)/)
+    expect(content).toContain("setAttribute('class'")
+  })
 })
