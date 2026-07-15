@@ -137,4 +137,10 @@ export const conformancePins: ConformancePins = {
   // A dynamic/signal-derived value still refuses with BF101 — see the
   // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2215).
   'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2215' }],
+  // #2273: a method call on a prop typed as a built-in host rich type
+  // (Date, Map, …) has no catalogued lowering in any adapter — this is a
+  // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of
+  // `adapter.generate()`), not an adapter-specific gap, so it is pinned
+  // identically across every adapter package including Hono.
+  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2274' }],
 }

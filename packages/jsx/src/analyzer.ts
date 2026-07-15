@@ -3068,6 +3068,8 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
           optional: !!member?.optional || !!element.initializer,
           defaultValue,
           defaultContainsArrow: defaultContainsArrow || undefined,
+          // Only aliased bindings carry the source key — see ParamInfo.sourceName.
+          ...(sourcePropName !== localName && { sourceName: sourcePropName }),
         })
       }
     }

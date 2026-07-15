@@ -163,6 +163,44 @@ const byPrice = (a, b) => a.price - b.price
 ))}
 ```
 
+#### Host rich-typed prop method calls (#2273)
+
+**Trigger:** A method call on a prop provably typed as a built-in host rich
+type — `Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, `URL`, `URLSearchParams`,
+`RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function` — with no
+catalogued lowering.
+
+```tsx
+// ❌ BF021 — Date.prototype.toISOString has no catalogued lowering
+function Post({ createdAt }: { createdAt: Date }) {
+  return <div>{createdAt.toISOString()}</div>
+}
+```
+
+The receiver's type must be provable from the component's declared props
+(destructured prop, `props.x` member chain, loop item field, `Date | null`
+union) — an untyped, generic, or call-result receiver (`d().toISOString()`
+where `d` is a signal) has no evidence and is not flagged.
+
+#### Workaround
+
+```tsx
+// ✅ Defer to the client
+{/* @client */ createdAt.toISOString()}
+
+// ✅ Or format in the backend and pass a string prop
+function Post({ createdAt }: { createdAt: string }) {
+  return <div>{createdAt}</div>
+}
+```
+
+The string-prop variant moves the formatting to where full language power
+already exists — the backend that populates the template data (Go handler,
+Rails controller, …) formats the `Date` and passes the finished string. Note
+that a component-body local (`const iso = createdAt.toISOString()`) is NOT a
+workaround: it lowers to a template variable whose value the template
+backend cannot compute, and dies at render time the same way.
+
 ### BF023 — Missing Key in List
 
 **Trigger:** `.map()` loop without `key` prop.

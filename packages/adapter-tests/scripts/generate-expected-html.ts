@@ -8,6 +8,7 @@
  */
 
 import { HonoAdapter } from '@barefootjs/hono/adapter'
+import { conformancePins as honoConformancePins } from '@barefootjs/hono'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { normalizeHTML } from '../src/jsx-runner'
 import { indentHTML } from '../src/indent-html'
@@ -71,6 +72,14 @@ async function main() {
     }
     if (SKIP_AUTO_UPDATE.has(fixture.id)) {
       console.log(`⚠ Skipped (hand-curated): ${fixture.id}`)
+      skipped++
+      continue
+    }
+    // A fixture the REFERENCE adapter refuses at compile time has no
+    // renderable HTML to generate — its contract is the diagnostic,
+    // asserted by the conformance runner's expectedDiagnostics path.
+    if (honoConformancePins[fixture.id]?.length) {
+      console.log(`⚠ Skipped (diagnostics-pinned on the reference adapter): ${fixture.id}`)
       skipped++
       continue
     }
