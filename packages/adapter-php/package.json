@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/php",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "description": "BarefootJS engine-agnostic PHP runtime -- pluggable rendering backend; the shared basis for Twig, Blade and other PHP engine integrations",
   "type": "module",
   "files": [

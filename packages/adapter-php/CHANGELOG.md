@@ -1,5 +1,7 @@
 # @barefootjs/php
 
+## 0.20.0
+
 ## 0.19.1
 
 ### Patch Changes

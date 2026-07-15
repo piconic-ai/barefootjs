@@ -1,5 +1,33 @@
 # @barefootjs/jsx
 
+## 0.20.0
+
+### Minor Changes
+
+- 35945c6: Fix #2273: refuse a method call on a prop typed as a built-in host rich type (`Date`, `Map`, `Set`, `URL`, …) with no catalogued lowering, instead of silently transliterating it into template syntax that dies at request time.
+
+  `Date` props (and the other host rich types) previously lowered as an opaque passthrough: `createdAt.toISOString()` compiled cleanly and rendered correctly on Hono/CSR, but on the SSR text-template adapters transliterated verbatim into the target syntax (a Go template method-value panic, a Jinja `AttributeError`, …) — a failure only visible once someone actually rendered the page. `checkRichTypeMethodCalls` (`packages/jsx/src/rich-type-refusal.ts`) closes that gap at compile time: it walks every expression position the compiler already lowers into a template and refuses with BF021 as soon as a call's receiver is provably a host rich type (`Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, `URL`, `URLSearchParams`, `RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function`) with no catalogued lowering. Verified against the full 2500+-unit `packages/jsx` suite and the `ui/components` corpus with zero false positives — the refusal only fires when `rich-type-evidence.ts`'s type resolution can _prove_ the receiver's type from `propsType`/`typeDefinitions`; any receiver it can't prove a type for (signal getter results, untyped/generic receivers, computed access, …) is silently allowed through, matching the existing BF021 filter/sort-comparator refusal's conservative-by-construction design.
+
+  Two exemptions keep the escape hatches intact:
+
+  - `/* @client */` opts the expression out of SSR lowering, same as every other BF021 shape.
+  - A call a registered lowering plugin claims (`lowering-registry.ts`, #2057) is exempt — cataloguing an individual rich-type API (e.g. `Date.prototype.toISOString`) is a plugin's job, not a change to this refusal. That catalogue is tracked separately as #2274.
+
+  All nine adapters' `conformance-pins.ts` now pin the new `date-method-uncatalogued` fixture to `{ code: 'BF021', severity: 'error' }` — including Hono, since the refusal runs ahead of `adapter.generate()` and applies even to adapters whose own runtime could otherwise evaluate the call.
+
+### Patch Changes
+
+- cba057d: Fix #2283: trace imports referenced only from module-level helper functions in the client-JS inliner.
+
+  The final import-usage scan ran before module-level constant/function bodies were substituted into the generated code, so an import used only inside a module-level helper (e.g. a pure helper extracted to module scope that calls a relative-import function) was invisible to the scan and silently dropped — producing a runtime `ReferenceError` in the browser even though `bf build`, `tsc`, and vitest all stayed green. Imports referenced from component-body closures were unaffected, since their code was already part of the scanned text.
+
+  Module-level declarations are now substituted first, so the usage scan sees the full generated code (including module-level helper bodies) before deciding which imports to keep.
+
+  The placeholder substitutions also now use the `String.replace` replacer-function form, so a helper body or import path containing a literal `$&`/`$1`/`$$` sequence is spliced in verbatim instead of being reinterpreted as a replacement pattern.
+
+- 92fea37: Fix #2282: loop-child reactive text now falls back to the Solid-style AST-flag classification, matching the loop-child reactive attribute path (#1673) and the top-level text path. Previously, a loop-item text expression read through a helper the string-level `classifyReactivity` heuristic couldn't see through (e.g. `labelAt(i)` where `const labelAt = (i) => labels()[i]`) silently kept its SSR value forever — no `createEffect` update, no console error — while a sibling reactive `className`/`style` on the same element kept updating correctly.
+  - @barefootjs/shared@0.20.0
+
 ## 0.19.1
 
 ### Patch Changes
