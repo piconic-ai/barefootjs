@@ -110,9 +110,12 @@ export function generateInitFunction(
     classification.moduleLevelSignals,
     classification.moduleLevelMemos,
   )
-  const codeWithModuleConstants = generatedCode.replace(MODULE_CONSTANTS_PLACEHOLDER, moduleConstantsCode)
+  // Replacer-function form: a plain replacement string would let literal
+  // `$&`/`$1`/`$$` sequences in user helper bodies or import paths be
+  // reinterpreted by `String.replace`'s special-pattern handling.
+  const codeWithModuleConstants = generatedCode.replace(MODULE_CONSTANTS_PLACEHOLDER, () => moduleConstantsCode)
   const allImportLines = resolveFinalImports(codeWithModuleConstants, ir, localImportPrefixes)
 
-  return codeWithModuleConstants.replace(IMPORT_PLACEHOLDER, allImportLines)
+  return codeWithModuleConstants.replace(IMPORT_PLACEHOLDER, () => allImportLines)
 }
 

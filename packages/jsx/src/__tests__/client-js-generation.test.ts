@@ -1192,6 +1192,35 @@ describe('Client JS generation', () => {
       // otherwise the browser throws `ReferenceError: computeSheetGeometry is not defined`.
       expect(content).toContain("import { computeSheetGeometry } from '../src/lib/sheetGeometry'")
     })
+
+    test('module-level helper body containing a literal "$&" is spliced in verbatim', () => {
+      // A plain-string second argument to String.replace() specially
+      // interprets `$&`/`$1`/`$$` — the placeholder-substitution step must
+      // use the replacer-function form so a helper body containing one of
+      // these sequences isn't corrupted (piconic-ai/barefootjs#2286 review).
+      const source = `
+        'use client'
+        import { createMemo } from '@barefootjs/client'
+
+        function formatMoney(amount: number) {
+          return '$&' + amount
+        }
+
+        export function Price(props: { amount: number }) {
+          const label = createMemo(() => formatMoney(props.amount))
+          return <div>{label()}</div>
+        }
+      `
+
+      const result = compileJSX(source, 'Price.tsx', { adapter })
+      expect(result.errors).toHaveLength(0)
+
+      const clientJs = result.files.find(f => f.type === 'clientJs')
+      expect(clientJs).toBeDefined()
+      const content = clientJs!.content
+
+      expect(content).toContain("'$&' + amount")
+    })
   })
 
   describe('child component value/boolean prop binding', () => {
