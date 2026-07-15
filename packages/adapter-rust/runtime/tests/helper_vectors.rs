@@ -45,6 +45,31 @@ fn obj(v: &JsValue, key: &str) -> JsValue {
     v.as_object().and_then(|m| m.get(key)).cloned().unwrap_or(JsValue::Null)
 }
 
+/// Materializes the `{"$date": "<ISO>"}` native-date arg sentinel (#2288)
+/// into this runtime's own `JsValue::Date`, so `date()`'s native-receiver
+/// branch (not just its ISO-string branch) is exercised. Recurses through
+/// arrays/objects the same shape the Perl port's `normalize_arg` walks,
+/// since a vector's `args` may nest the sentinel inside a higher-order
+/// projection payload. Panics on an unparseable `$date` string -- the
+/// corpus is generated from a fixed set of known-good ISO instants, so a
+/// parse failure here means the harness itself is broken, not the case
+/// under test.
+fn materialize_arg(v: &JsonValue) -> JsValue {
+    if let Some(o) = v.as_object() {
+        if let Some(iso) = o.get("$date").and_then(|d| d.as_str()) {
+            if o.len() == 1 {
+                let ms = date::parse_iso8601(iso).unwrap_or_else(|| panic!("materialize_arg: invalid $date {iso:?}"));
+                return JsValue::Date(ms);
+            }
+        }
+        return JsValue::Object(o.iter().map(|(k, x)| (k.clone(), materialize_arg(x))).collect());
+    }
+    if let Some(a) = v.as_array() {
+        return JsValue::Array(a.iter().map(materialize_arg).collect());
+    }
+    JsValue::from_json(v)
+}
+
 /// Mirrors `test_helper_vectors.py`'s `_truthy_pred`.
 fn truthy_pred(item: &JsValue, field: &str) -> bool {
     runtime::js_truthy(&obj(item, field))
@@ -305,7 +330,7 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
         let note = case["note"].as_str().unwrap();
         let key = format!("{fn_name}/{note}");
         let raw_args = case["args"].as_array().cloned().unwrap_or_default();
-        let args: Vec<JsValue> = raw_args.iter().map(JsValue::from_json).collect();
+        let args: Vec<JsValue> = raw_args.iter().map(materialize_arg).collect();
         let expect = &case["expect"];
 
         if let Some(reason) = div_file.unsupported.get(fn_name) {

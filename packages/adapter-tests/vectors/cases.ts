@@ -77,13 +77,22 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   arr: (...elements: unknown[]) => elements,
   filter_truthy: (a: unknown[]) => a.filter(Boolean),
 
-  // `Date` method lowering (#2274, spec entry "date"): the receiver arrives
-  // as an ISO-8601 string in the vectors (the JSON-encodable form the
-  // string-accepting half of the helper's contract exercises); the
-  // reference constructs the real `Date` and dispatches the named zero-arg
-  // method, so every backend is held to genuine JS `Date` semantics
-  // (including the pre-1970 / leap-day / far-future edge instants below).
-  date: (recv: string, op: string) => (new Date(recv) as unknown as Record<string, () => unknown>)[op](),
+  // `Date` method lowering (#2274, spec entry "date"). recv is an ISO-8601
+  // string OR a `{"$date": "<ISO>"}` envelope that each harness materializes
+  // into its NATIVE date type (both dispatch against the same instant). A nil
+  // or unparseable receiver degrades to the helper's documented zero value
+  // ('' for toISOString, 0 otherwise) — the server-side tolerance every
+  // backend implements, now oracle-normative so the corpus pins it.
+  date: (recv: unknown, op: string) => {
+    const raw =
+      recv !== null && typeof recv === 'object' && '$date' in recv
+        ? (recv as { $date: string }).$date
+        : recv
+    if (raw === null || raw === undefined) return op === 'toISOString' ? '' : 0
+    const d = new Date(raw as string)
+    if (Number.isNaN(d.getTime())) return op === 'toISOString' ? '' : 0
+    return (d as unknown as Record<string, () => unknown>)[op]()
+  },
 
   // searchParams() env-signal reader (#1922). The reference is the real
   // URLSearchParams.get the client runtime uses, so the template backends'
@@ -496,6 +505,60 @@ export const cases: HelperCase[] = [
   { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCSeconds'], note: 'far-future instant: getUTCSeconds' },
   { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getTime'], note: 'far-future instant: getTime at the four-digit-year boundary' },
   { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'toISOString'], note: 'far-future instant: toISOString round-trips the instant' },
+
+  // Same 4×8 grid, receiver in the `{"$date": "<ISO>"}` envelope each
+  // harness materializes into its NATIVE date type (#2288) — every backend's
+  // native-typed branch (Go time.Time, Ruby Time, Python datetime, PHP
+  // DateTimeInterface, Perl BarefootJS::Date, Rust JsValue::Date) dispatches
+  // against the same instant as its string-receiver sibling above, so the
+  // expects are identical; only the receiver shape differs.
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getUTCFullYear'], note: 'native epoch 0: getUTCFullYear' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getUTCMonth'], note: 'native epoch 0: getUTCMonth' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getUTCDate'], note: 'native epoch 0: getUTCDate' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getUTCHours'], note: 'native epoch 0: getUTCHours' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getUTCMinutes'], note: 'native epoch 0: getUTCMinutes' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getUTCSeconds'], note: 'native epoch 0: getUTCSeconds' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'getTime'], note: 'native epoch 0: getTime' },
+  { fn: 'date', args: [{ $date: '1970-01-01T00:00:00.000Z' }, 'toISOString'], note: 'native epoch 0: toISOString' },
+
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getUTCFullYear'], note: 'native pre-1970 instant: getUTCFullYear' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getUTCMonth'], note: 'native pre-1970 instant: getUTCMonth' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getUTCDate'], note: 'native pre-1970 instant: getUTCDate' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getUTCHours'], note: 'native pre-1970 instant: getUTCHours' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getUTCMinutes'], note: 'native pre-1970 instant: getUTCMinutes' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getUTCSeconds'], note: 'native pre-1970 instant: getUTCSeconds' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'getTime'], note: 'native pre-1970 instant: getTime is negative with a nonzero-ms floor-division trap' },
+  { fn: 'date', args: [{ $date: '1969-07-20T20:17:40.123Z' }, 'toISOString'], note: 'native pre-1970 instant: toISOString' },
+
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getUTCFullYear'], note: 'native leap day: getUTCFullYear' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getUTCMonth'], note: 'native leap day: getUTCMonth' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getUTCDate'], note: 'native leap day: getUTCDate is 29' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getUTCHours'], note: 'native leap day: getUTCHours at the last hour of the day' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getUTCMinutes'], note: 'native leap day: getUTCMinutes' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getUTCSeconds'], note: 'native leap day: getUTCSeconds' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'getTime'], note: 'native leap day: getTime' },
+  { fn: 'date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'toISOString'], note: 'native leap day: toISOString' },
+
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCFullYear'], note: 'native far-future instant: getUTCFullYear' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCMonth'], note: 'native far-future instant: getUTCMonth' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCDate'], note: 'native far-future instant: getUTCDate' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCHours'], note: 'native far-future instant: getUTCHours' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCMinutes'], note: 'native far-future instant: getUTCMinutes' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCSeconds'], note: 'native far-future instant: getUTCSeconds' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getTime'], note: 'native far-future instant: getTime at the four-digit-year boundary' },
+  { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'toISOString'], note: 'native far-future instant: toISOString' },
+
+  // Nil/malformed receiver fallback (#2288): every backend's `date()`
+  // degrades to the zero value instead of crashing mid-render or (worse)
+  // silently defaulting to "now" — this was implemented on all six backends
+  // but pinned by no vector until now.
+  { fn: 'date', args: [null, 'toISOString'], note: 'nil receiver: toISOString degrades to empty string' },
+  { fn: 'date', args: [null, 'getTime'], note: 'nil receiver: getTime degrades to 0' },
+  { fn: 'date', args: [null, 'getUTCFullYear'], note: 'nil receiver: accessor degrades to 0' },
+  { fn: 'date', args: [null, 'getUTCMonth'], note: 'nil receiver: second accessor degrades to 0' },
+  { fn: 'date', args: ['not-a-date', 'toISOString'], note: 'malformed receiver: toISOString degrades to empty string' },
+  { fn: 'date', args: ['not-a-date', 'getTime'], note: 'malformed receiver: getTime degrades to 0' },
+  { fn: 'date', args: ['not-a-date', 'getUTCFullYear'], note: 'malformed receiver: accessor degrades to 0' },
 
   { fn: 'every', args: [[{ done: true }, { done: true }], 'done'], note: 'all truthy fields' },
   { fn: 'every', args: [[{ done: true }, { done: false }], 'done'], note: 'one falsy field fails' },

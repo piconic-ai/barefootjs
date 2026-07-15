@@ -126,6 +126,23 @@ function bfv_bind_reduce(BarefootJS $bf, $recv, $op, $keyKind, $key, $rtype, $in
 }
 
 /**
+ * Materializes the `{"$date": "<ISO>"}` native-date arg sentinel (#2288)
+ * into a real DateTimeImmutable, so `date`'s native-receiver branch (not
+ * just its ISO-string branch) is exercised. Recurses through arrays the
+ * same shape the Perl port's normalize_arg walks, since a vector's `args`
+ * may nest the sentinel inside a higher-order projection payload.
+ */
+function bfv_materialize(array $args): array
+{
+    return array_map(function ($a) {
+        if (is_array($a) && array_keys($a) === ['$date']) {
+            return new \DateTimeImmutable($a['$date']);
+        }
+        return is_array($a) ? bfv_materialize($a) : $a;
+    }, $args);
+}
+
+/**
  * Dispatch one vector case's `fn` to the exact runtime call shape a
  * compiled template would emit. Throws for helper ids with no PHP binding
  * (fail loudly rather than silently skip) and lets underlying runtime
@@ -286,7 +303,7 @@ $seenDeclarations = [];
 foreach ($doc['cases'] as $case) {
     $fn = $case['fn'];
     $note = $case['note'];
-    $args = $case['args'];
+    $args = bfv_materialize($case['args']);
     $expect = $case['expect'];
     $key = "{$fn}/{$note}";
 

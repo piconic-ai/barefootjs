@@ -23,6 +23,7 @@ monorepo checkout), matching the Perl/Go harnesses' `skip_all` policy.
 from __future__ import annotations
 
 import builtins
+import datetime
 import json
 import math
 import os
@@ -87,6 +88,22 @@ def _bind_reduce(recv, op, key_kind, key, rtype, init, direction):
         recv,
         {"op": op, "key_kind": key_kind, "key": key, "type": rtype, "init": seed, "direction": direction},
     )
+
+
+def _materialize_arg(v):
+    """Materializes the `{"$date": "<ISO>"}` native-date arg sentinel
+    (#2288) into a real `datetime`, so `date`'s native-receiver branch (not
+    just its ISO-string branch) is exercised. Recurses through lists/dicts
+    the same shape the Perl port's `normalize_arg` walks, since a vector's
+    `args` may nest the sentinel inside a higher-order projection payload."""
+    if isinstance(v, list):
+        return [_materialize_arg(x) for x in v]
+    if isinstance(v, dict) and list(v) == ["$date"]:
+        s = v["$date"]
+        return datetime.datetime.fromisoformat(s[:-1] + "+00:00" if s.endswith("Z") else s)
+    if isinstance(v, dict):
+        return {k: _materialize_arg(x) for k, x in v.items()}
+    return v
 
 
 def _bind_flat_map_tuple(recv, *flat):
@@ -241,7 +258,8 @@ class HelperVectorsTest(unittest.TestCase):
         seen_declarations = set()
 
         for case in doc["cases"]:
-            fn, note, args, expect = case["fn"], case["note"], case["args"], case["expect"]
+            fn, note, expect = case["fn"], case["note"], case["expect"]
+            args = [_materialize_arg(a) for a in case["args"]]
             key = f"{fn}/{note}"
             with self.subTest(key=key):
                 if fn in UNSUPPORTED:

@@ -308,6 +308,13 @@ recognizes; every accessor and `getTime` render as an **integer**
 always millisecond precision (`.SSSZ`), always UTC. `getUTCMonth` is
 **0-based**, matching JS (`new Date('2024-01-01').getUTCMonth()` →
 `0`), not the 1-based convention several host date libraries use.
+A `nil`/unset or unparseable `recv` is normative, not a per-backend
+tolerance: it degrades to the documented zero value — `''` for
+`toISOString`, `0` for every accessor and `getTime` — rather than
+crashing mid-render or (for `new Date(null)`-style behavior) silently
+resolving to "now". The golden vectors pin this fallback, plus a
+native-typed `recv` (the backend's own date/time type, not the
+ISO-8601 string form), for every backend (#2288).
 
 ### Higher-order: canonical projection form
 

@@ -700,9 +700,13 @@ sub date ($self, $recv, $op) {
 # `BarefootJS::Date` (unwraps `epoch_ms` directly) or an ISO-8601 string
 # (`YYYY-MM-DDTHH:MM:SS[.sss]Z`, the exact shape every ISO string this
 # runtime itself ever produces via `toISOString` above, and the shape the
-# golden vectors exercise). `Time::Local::timegm` (core, like `POSIX`)
-# converts the broken-down UTC fields to epoch SECONDS correctly across the
-# full pre-1970/post-2038 range on a 64-bit `time_t` build; the optional
+# golden vectors exercise). `Time::Local::timegm_modern` (core since
+# Time::Local 1.27, like `POSIX`) converts the broken-down UTC fields to
+# epoch SECONDS correctly across the full pre-1970/post-2038 range on a
+# 64-bit `time_t` build; unlike the legacy `timegm`, it takes `$y` as a
+# literal calendar year with no two-digit-year windowing heuristic — the
+# regex above always captures a 4-digit year, so that heuristic would only
+# ever be a latent footgun here, never a real branch. The optional
 # millisecond group defaults to 0. Returns `undef` for anything else
 # (unparsable string, wrong type) so `date` can apply its documented
 # zero-value fallback instead of dying mid-render.
@@ -714,7 +718,7 @@ sub _date_epoch_ms ($recv) {
     return undef unless defined $recv;
     return undef unless $recv =~ /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{3}))?Z\z/;
     my ($y, $mon, $day, $h, $min, $s, $ms) = ($1, $2, $3, $4, $5, $6, $7 // 0);
-    my $epoch_s = Time::Local::timegm($s, $min, $h, $day, $mon - 1, $y);
+    my $epoch_s = Time::Local::timegm_modern($s, $min, $h, $day, $mon - 1, $y);
     return $epoch_s * 1000 + $ms;
 }
 

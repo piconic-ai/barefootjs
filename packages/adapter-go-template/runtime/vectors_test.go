@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // vectorsPath points at the golden vectors generated from the JS
@@ -324,6 +325,18 @@ func normalizeVectorValue(v any) any {
 				case "-Infinity":
 					return math.Inf(-1)
 				}
+			}
+			// Native-date arg sentinel (#2288): {"$date": "<ISO>"},
+			// materialized into the runtime's own time.Time so Date()'s
+			// native-receiver branch (not just its string branch) is
+			// exercised. Parse failure panics rather than silently
+			// falling through to the zero-value branch under test.
+			if s, ok := x["$date"].(string); ok {
+				t, err := time.Parse(time.RFC3339Nano, s)
+				if err != nil {
+					panic(err)
+				}
+				return t
 			}
 		}
 		for k := range x {

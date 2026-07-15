@@ -38,6 +38,15 @@ bun run generate:eval-vectors
   arrays/objects thereof.
 - A non-finite number in an `expect` value uses the reserved sentinel
   `{"$num": "NaN" | "Infinity" | "-Infinity"}`.
+- A native-date `args` value uses the reserved sentinel `{"$date":
+  "<ISO-8601>"}` (the `date` helper's cases only, #2288). Each
+  harness materializes it into its own native date/time type (Go
+  `time.Time`, Ruby `Time`, Python `datetime`, PHP
+  `DateTimeImmutable`, Perl `BarefootJS::Date`, Rust
+  `JsValue::Date`) before binding — exercising `date()`'s
+  native-receiver branch, not just its ISO-string branch. Its
+  `expect` is identical to the equivalent plain-ISO-string case,
+  since both receiver shapes dispatch against the same instant.
 - JS `undefined` in an `expect` value encodes as `null` (backends have
   a single absent value).
 - `args` (and the evaluator's `env`) must stay finite — non-finite
