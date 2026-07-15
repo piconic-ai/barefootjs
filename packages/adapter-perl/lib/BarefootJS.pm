@@ -853,8 +853,8 @@ sub is_element ($self, $v) {
     return 0 unless ref($v) eq 'HASH';
     my ($has_tag, $has_props) = (0, 0);
     for my $key (keys %$v) {
-        $has_tag = 1 if lc($key) eq 'tag';
-        $has_props = 1 if lc($key) eq 'props';
+        $has_tag = 1 if CORE::lc($key) eq 'tag';
+        $has_props = 1 if CORE::lc($key) eq 'props';
     }
     return ($has_tag && $has_props) ? 1 : 0;
 }
