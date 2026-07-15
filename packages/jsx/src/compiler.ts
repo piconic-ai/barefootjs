@@ -24,6 +24,7 @@ import { applyCssLayerPrefix } from './css-layer-prefixer.ts'
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
+import { checkRichTypeMethodCalls } from './rich-type-refusal.ts'
 
 /**
  * Extended compile options with required adapter
@@ -137,6 +138,7 @@ function compileMultipleComponents(
     }
 
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
+    checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
 
     if (options.cssLayerPrefix) {
       applyCssLayerPrefix(componentIR, options.cssLayerPrefix)
@@ -615,6 +617,7 @@ export function compileJSX(
 
   // Pre-compute client JS analysis for adapter optimization
   componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
+  checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
 
   // Cross-file @client signal sources: identify which import sources
   // need `.client.js` path rewriting in the client bundle.

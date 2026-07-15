@@ -384,6 +384,7 @@ import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 // object const; every Twig-family adapter used to bake the const's
 // literal into each iteration instead of reading the loop's own item.
 import { fixture as loopParamShadowsRecordConst } from './loop-param-shadows-record-const'
+import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 
 import type { JSXFixture } from '../src/types'
 
@@ -663,4 +664,5 @@ export const jsxFixtures: JSXFixture[] = [
   filterWrapperPropsReachable,
   filterParamNameDiffers,
   loopParamShadowsRecordConst,
+  dateMethodUncatalogued,
 ]

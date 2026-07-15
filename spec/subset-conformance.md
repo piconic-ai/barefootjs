@@ -166,19 +166,31 @@ single fixture cannot witness.
 
 ## Date: first catalogued rich type
 
-Current state (verified 2026-07): `Date` props are a **silent passthrough** —
-no diagnostic; the prop lowers to `interface{}` (Go), and method calls are
-transliterated mechanically (`createdAt.toISOString()` →
-`{{.CreatedAt.ToISOString}}`), which fails at Go render time while CSR renders
-correctly. This violates principle 2 (loud boundary) and is the motivating
-specimen for this document.
+Original state (verified 2026-07, before #2273): `Date` props were a **silent
+passthrough** — no diagnostic; the prop lowered to `interface{}` (Go), and
+method calls were transliterated mechanically (`createdAt.toISOString()` →
+`{{.CreatedAt.ToISOString}}`), which failed at Go render time while CSR
+rendered correctly. This violated principle 2 (loud boundary) and was the
+motivating specimen for this document.
+
+Current state (#2273): a method call on a prop provably typed as `Date` (or
+any other host rich type — `Map`, `Set`, `URL`, …) with no catalogued
+lowering now refuses at compile time with BF021 instead of silently
+transliterating. The prop itself still lowers to `interface{}` (Go) /
+untyped elsewhere when not method-called — only the specific "method call
+with no lowering" shape is closed. Cataloguing individual methods (the
+"Catalogue via the lowering-plugin registry" bullet below) is unaffected
+follow-up work (#2274): closing the passthrough and cataloguing methods are
+separate, independently-landable steps.
 
 Target design:
 
 - **Close the passthrough first**: a method call on a prop whose type has no
   known lowering becomes a diagnostic (BF021 class; may stage through a
   warning if the accidental "mirror-method host type" contract turns out to
-  have users).
+  have users). **Landed** (#2273): `checkRichTypeMethodCalls`
+  (`packages/jsx/src/rich-type-refusal.ts`) refuses at compile time — see
+  "Current state" below.
 - **Catalogue via the lowering-plugin registry**
   (`packages/jsx/src/lowering-registry.ts`) as a default-applied builtin —
   backend-neutral `LoweringNode` per catalogued method, rendered natively by
@@ -196,7 +208,7 @@ convention as `spec/adapter-architecture.md`):
 
 | Component | Landed | Gap |
 |-----------|--------|-----|
-| Normative subset | `ParsedExpr` union + exhaustive adapter switches (drift-defence); array-method / sort-comparator catalogues; builtin lowering registry; BF021/BF101 loud-refusal policy + growing-only rule (`spec/compiler.md`); `/* @client */` escape | Pieces are scattered across spec/types/catalogues with no single normative declaration; `ParsedExpr` lacks `object-literal` (adapter-architecture Roadmap A); the boundary is not fully loud — the Date silent passthrough proves unknown-type method calls pass undiagnosed; the data-domain axiom exists only in this document |
+| Normative subset | `ParsedExpr` union + exhaustive adapter switches (drift-defence); array-method / sort-comparator catalogues; builtin lowering registry; BF021/BF101 loud-refusal policy + growing-only rule (`spec/compiler.md`); `/* @client */` escape; **the Date silent-passthrough hole is closed** — a method call on a prop provably typed as a host rich type (`Date`, `Map`, …) with no catalogued lowering now refuses with BF021 at compile time instead of passing undiagnosed (`checkRichTypeMethodCalls`, #2273) | Pieces are scattered across spec/types/catalogues with no single normative declaration; `ParsedExpr` lacks `object-literal` (adapter-architecture Roadmap A); the data-domain axiom exists only in this document |
 | Canonical reference (JS render) | Hono/JS render is the *de facto* reference: snapshot generation renders expectations through it; `referenceAdapter`/`referenceRender` HTML-diff suite exists; determinism landed (#1494) | No *declaration* of canonical status (`referenceAdapter` is optional — the reference is still positioned as one adapter among eleven); oracle comparison runs at one evaluation point per fixture, not live × multiple data points |
 | Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No PR-vs-nightly tiering (the catalogue added ~200 real-backend renders per adapter job); catalogue exclusions await their unblockers (unions/objects → member enumeration, floats → #2168-class, `Date` → roadmap 4 — destructured optionals graduated: #2259 restored analyzer parity and the catalogue now derives for them) |
 | Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`) | No generated `kind × axis × adapter` support matrix yet — but its fixture-side half now exists: the computed coverage ledger (`coverage-map.json` + `PARSED_EXPR_KINDS` registry + freshness/floor meta-tests) supplies the kind/axis denominators; joining them against per-adapter pass/skip is the remaining work |

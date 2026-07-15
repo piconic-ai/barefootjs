@@ -163,6 +163,42 @@ const byPrice = (a, b) => a.price - b.price
 ))}
 ```
 
+#### Host rich-typed prop method calls (#2273)
+
+**Trigger:** A method call on a prop provably typed as a built-in host rich
+type — `Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, `URL`, `URLSearchParams`,
+`RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function` — with no
+catalogued lowering.
+
+```tsx
+// ❌ BF021 — Date.prototype.toISOString has no catalogued lowering
+function Post({ createdAt }: { createdAt: Date }) {
+  return <div>{createdAt.toISOString()}</div>
+}
+```
+
+The receiver's type must be provable from the component's declared props
+(destructured prop, `props.x` member chain, loop item field, `Date | null`
+union) — an untyped, generic, or call-result receiver (`d().toISOString()`
+where `d` is a signal) has no evidence and is not flagged.
+
+#### Workaround
+
+```tsx
+// ✅ Defer to the client
+{/* @client */ createdAt.toISOString()}
+
+// ✅ Or pre-compute server-side
+function Post({ createdAt }: { createdAt: Date }) {
+  const iso = createdAt.toISOString()
+  return <div>{iso}</div>
+}
+```
+
+The `iso` variant works because the method call now happens in component-body
+scope (an init statement), not in a template-lowered position — the compiler
+never has to translate `.toISOString()` into the target template's syntax.
+
 ### BF023 — Missing Key in List
 
 **Trigger:** `.map()` loop without `key` prop.

@@ -1458,6 +1458,17 @@
         "text"
       ]
     },
+    "date-method-uncatalogued": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "deep-nesting": {
       "kinds": [
         "call",
@@ -4051,13 +4062,13 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 155,
+    "call": 156,
     "conditional": 18,
-    "identifier": 233,
+    "identifier": 234,
     "index-access": 12,
     "literal": 194,
     "logical": 41,
-    "member": 115,
+    "member": 116,
     "object-literal": 41,
     "template-literal": 27,
     "unary": 22,

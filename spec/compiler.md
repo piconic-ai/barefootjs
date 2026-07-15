@@ -817,7 +817,7 @@ symbol of each JSX tag through to the resolver; tracked as a follow-up.
 | BF001 | Missing 'use client' directive |
 | BF003 | Client component importing server component |
 | BF011 | Module-level reactive declaration without `/* @client */` |
-| BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation) |
+| BF021 | Unsupported JSX pattern (e.g., filter predicate or sort comparator too complex for template compilation; method call on a host rich-typed prop with no catalogued lowering, #2273) |
 | BF023 | Missing `key` attribute in `.map()` loop — root JSX element has no `key` prop |
 | BF024 | Missing `key` attribute in nested `.map()` loop — inner loop root JSX element has no `key` prop |
 | BF025 | Unsupported destructure shape in `.map()` callback (computed property key — rest elements have been supported since #1244/#1309) |
@@ -938,6 +938,27 @@ The accumulator must be the binary expression's left operand (`acc + x`, not `x 
 When `@client` is present, the compiler skips template generation for that expression without emitting an error.
 
 This applies equally to **attribute bindings**, not just child/text expressions: `data-x={/* @client */ pred(item)}` defers the attribute to hydration. The adapters omit a `clientOnly` attribute from SSR (so the unsupported-expression lowering is never reached → no BF101/BF102), and the client runtime sets/patches it in a mount effect. This makes the BF102 remediation accurate for components whose reactive state is expressed purely as attributes (the Calendar case in #1966 / #1467).
+
+### Method calls on host rich-typed props (BF021, #2273)
+
+A method call on a prop typed as a built-in **host rich type** — `Date`, `Map`, `Set`, `WeakMap`, `WeakSet`, `URL`, `URLSearchParams`, `RegExp`, `Promise`, `Error`, `Symbol`, `BigInt`, `Function` — has no catalogued lowering in any adapter: there is no structural IR representation for `Date.prototype.toISOString` the way there is for a plain object field or an `Array.prototype` method. Left unchecked, such a call used to transliterate verbatim into the target template's own dot-call syntax and die at request time (a Go template method-value panic, a Jinja `AttributeError`, …) — once per adapter, only once someone actually rendered the page. `checkRichTypeMethodCalls` (`packages/jsx/src/rich-type-refusal.ts`) closes that gap at compile time instead, refusing with BF021 as soon as the receiver's declared type is provably one of the host types above:
+
+```
+error[BF021]: Expression cannot be compiled to marked template: method '.toISOString()' on prop 'createdAt' of host type 'Date' has no catalogued lowering.
+
+  --> src/components/Post.tsx:3:22
+   |
+ 3 |   return <div>{createdAt.toISOString()}</div>
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Add /* @client */ to evaluate this expression on the client only, or pre-compute the value server-side.
+```
+
+The refusal is deliberately conservative — it only fires when the receiver's type is **provable** from the component's own `propsType` / `typeDefinitions` (a destructured prop, a `props.x` member chain, a loop item's field, with union-of-nullable stripped: `Date | null` → `Date`). Any receiver shape it can't prove a type for — a signal getter's call result (`d().toISOString()`), an untyped or generic-parameter (`T`) receiver, a computed/index access — resolves to "no evidence" and is silently allowed through, never misdiagnosed. Two exemptions:
+
+- **`/* @client */`** — the expression already opts out of SSR lowering, exactly as for the filter/sort BF021 shapes above.
+- **A registered lowering plugin claims the call** — `checkRichTypeMethodCalls` checks the same `matchLoweringCall` seam every adapter's call lowering goes through (`lowering-registry.ts`, #2057). Cataloguing a rich-type API (e.g. a `Date.toISOString()` → ISO-string lowering) is a plugin, not a change to this module — see #2274.
+- **An in-file type declaration shadows the host name** (`interface Date { … }` in the same file) — the local declaration wins; only a same-file shadow is recognized, not an imported type that happens to reuse the name.
 
 ### Known limitations — methods that don't lower to the template adapters
 
