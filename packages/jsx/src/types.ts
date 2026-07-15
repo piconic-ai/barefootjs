@@ -90,6 +90,15 @@ export interface ParamInfo {
   defaultContainsArrow?: boolean
   /** When true, the parameter is a rest spread (`...args`) — emit must prepend `...`. */
   isRest?: boolean
+  /**
+   * Source property name for an aliased destructured prop (`{ createdAt: c }`
+   * → name: 'c', sourceName: 'createdAt'). Set ONLY when the binding renames —
+   * an un-aliased binding leaves it unset so existing IR shapes/snapshots are
+   * untouched. Consumers keying into `propsType.properties` must use
+   * `sourceName ?? name` (the param's own `type` degrades to `unknown` for
+   * non-primitive props — `collectMemberTypes`' primitives-only gate).
+   */
+  sourceName?: string
 }
 
 // =============================================================================

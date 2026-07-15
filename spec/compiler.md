@@ -954,7 +954,7 @@ error[BF021]: Expression cannot be compiled to marked template: method '.toISOSt
    = help: Add /* @client */ to evaluate this expression on the client only, or pre-compute the value server-side.
 ```
 
-The refusal is deliberately conservative — it only fires when the receiver's type is **provable** from the component's own `propsType` / `typeDefinitions` (a destructured prop, a `props.x` member chain, a loop item's field, with union-of-nullable stripped: `Date | null` → `Date`). Any receiver shape it can't prove a type for — a signal getter's call result (`d().toISOString()`), an untyped or generic-parameter (`T`) receiver, a computed/index access — resolves to "no evidence" and is silently allowed through, never misdiagnosed. Two exemptions:
+The refusal is deliberately conservative — it only fires when the receiver's type is **provable** from the component's own `propsType` / `typeDefinitions` (a destructured prop, a `props.x` member chain, a loop item's field, with union-of-nullable stripped: `Date | null` → `Date`). Any receiver shape it can't prove a type for — a signal getter's call result (`d().toISOString()`), an untyped or generic-parameter (`T`) receiver, a computed/index access — resolves to "no evidence" and is silently allowed through, never misdiagnosed. Three exemptions:
 
 - **`/* @client */`** — the expression already opts out of SSR lowering, exactly as for the filter/sort BF021 shapes above.
 - **A registered lowering plugin claims the call** — `checkRichTypeMethodCalls` checks the same `matchLoweringCall` seam every adapter's call lowering goes through (`lowering-registry.ts`, #2057). Cataloguing a rich-type API (e.g. a `Date.toISOString()` → ISO-string lowering) is a plugin, not a change to this module — see #2274.

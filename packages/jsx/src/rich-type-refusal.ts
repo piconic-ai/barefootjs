@@ -50,6 +50,10 @@ const EMPTY_BINDINGS: Bindings = new Map()
  * than attaching it, and additionally skips anything under `/* @client *\/`.
  */
 export function checkRichTypeMethodCalls(root: IRNode, metadata: IRMetadata, errors: CompilerError[]): void {
+  // Every evidence chain roots at propsType (bare prop, props.x, loop item of
+  // a prop array) — with no props type there is nothing to prove, so skip the
+  // walk (and the matcher preparation / on-demand template-part parses).
+  if (!metadata.propsType) return
   const matchers = prepareLoweringMatchers(metadata)
   const seen = new Set<string>()
   walkNode(root, metadata, EMPTY_BINDINGS, matchers, errors, seen)
@@ -59,11 +63,24 @@ function isLoweringClaimed(matchers: readonly LoweringMatcher[], callee: ParsedE
   return matchers.some((m) => m(callee, args) !== null)
 }
 
-/** Best-effort dotted-path text for the diagnostic message's `prop '<path>'`. */
+/** Best-effort dotted-path text for the diagnostic message's receiver description. */
 function describeReceiverPath(expr: ParsedExpr): string {
   if (expr.kind === 'identifier') return expr.name
   if (expr.kind === 'member' && !expr.computed) return `${describeReceiverPath(expr.object)}.${expr.property}`
   return '<expression>'
+}
+
+/**
+ * Whether the receiver path roots at a prop (bare destructured prop or a
+ * `props.x` chain) rather than a locally-bound name (loop item, arrow param).
+ * Decides whether the diagnostic may call the receiver a "prop" — a loop
+ * item's `i.at` is prop-DERIVED but not itself a prop, and naming it one
+ * would misdirect the fix toward the props type.
+ */
+function receiverRootIsProp(expr: ParsedExpr, bindings: Bindings): boolean {
+  let root = expr
+  while (root.kind === 'member' && !root.computed) root = root.object
+  return root.kind === 'identifier' && !bindings.has(root.name)
 }
 
 function pushDiagnostic(
@@ -72,15 +89,17 @@ function pushDiagnostic(
   loc: SourceLocation,
   method: string,
   receiverPath: string,
+  isProp: boolean,
   typeName: string,
 ): void {
-  const key = `${loc.start.line}:${loc.start.column}:${method}`
+  const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${method}`
   if (seen.has(key)) return
   seen.add(key)
+  const receiver = isProp ? `prop '${receiverPath}'` : `'${receiverPath}'`
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
-    message: `Expression cannot be compiled to marked template: method '.${method}()' on prop '${receiverPath}' of host type '${typeName}' has no catalogued lowering.`,
+    message: `Expression cannot be compiled to marked template: method '.${method}()' on ${receiver} of host type '${typeName}' has no catalogued lowering.`,
     loc,
     suggestion: {
       message: 'Add /* @client */ to evaluate this expression on the client only, or pre-compute the value server-side.',
@@ -114,7 +133,15 @@ function checkExpr(
           const typeName = baseTypeName(receiverType.raw)
           const inFileShadow = meta.typeDefinitions.some((d) => d.name === typeName)
           if (HOST_RICH_TYPE_NAMES.has(typeName) && !inFileShadow && !isLoweringClaimed(matchers, expr.callee, expr.args)) {
-            pushDiagnostic(errors, seen, loc, expr.callee.property, describeReceiverPath(expr.callee.object), typeName)
+            pushDiagnostic(
+              errors,
+              seen,
+              loc,
+              expr.callee.property,
+              describeReceiverPath(expr.callee.object),
+              receiverRootIsProp(expr.callee.object, bindings),
+              typeName,
+            )
           }
         }
       }
@@ -269,6 +296,10 @@ function walkNode(
       break
     }
     case 'conditional':
+      // A clientOnly conditional's branches never reach any template (the
+      // whole expression defers to hydrate), so walking them would flag calls
+      // whose own suggested remediation — /* @client */ — is already applied.
+      if (node.clientOnly) break
       walkNode(node.whenTrue, meta, bindings, matchers, errors, seen)
       walkNode(node.whenFalse, meta, bindings, matchers, errors, seen)
       break

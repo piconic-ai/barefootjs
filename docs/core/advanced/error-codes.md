@@ -188,16 +188,18 @@ where `d` is a signal) has no evidence and is not flagged.
 // ✅ Defer to the client
 {/* @client */ createdAt.toISOString()}
 
-// ✅ Or pre-compute server-side
-function Post({ createdAt }: { createdAt: Date }) {
-  const iso = createdAt.toISOString()
-  return <div>{iso}</div>
+// ✅ Or format in the backend and pass a string prop
+function Post({ createdAt }: { createdAt: string }) {
+  return <div>{createdAt}</div>
 }
 ```
 
-The `iso` variant works because the method call now happens in component-body
-scope (an init statement), not in a template-lowered position — the compiler
-never has to translate `.toISOString()` into the target template's syntax.
+The string-prop variant moves the formatting to where full language power
+already exists — the backend that populates the template data (Go handler,
+Rails controller, …) formats the `Date` and passes the finished string. Note
+that a component-body local (`const iso = createdAt.toISOString()`) is NOT a
+workaround: it lowers to a template variable whose value the template
+backend cannot compute, and dies at render time the same way.
 
 ### BF023 — Missing Key in List
 

@@ -88,8 +88,44 @@ describe('rich-type method-call refusal — fires (BF021)', () => {
     `)
     expect(errors).toHaveLength(1)
     expect(errors[0].message).toContain("'.getTime()'")
-    expect(errors[0].message).toContain("'i.at'")
+    // A loop item is prop-DERIVED but not itself a prop — the message must
+    // not call it one (only bare / props-object receivers earn "prop").
+    expect(errors[0].message).toContain("on 'i.at'")
+    expect(errors[0].message).not.toContain("prop 'i.at'")
     expect(errors[0].message).toContain("'Date'")
+  })
+
+  test('renamed destructured prop ({ createdAt: c })', () => {
+    const errors = bf021(`
+      export function Foo({ createdAt: c }: { createdAt: Date }) {
+        return <div>{c.toISOString()}</div>
+      }
+    `)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toContain("'.toISOString()'")
+    expect(errors[0].message).toContain("prop 'c'")
+    expect(errors[0].message).toContain("'Date'")
+  })
+
+  test('conditional-branch call without @client', () => {
+    const errors = bf021(`
+      export function Foo({ d }: { d: Date | null }) {
+        return <div>{d && <span>{d.toISOString()}</span>}</div>
+      }
+    `)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toContain("'.toISOString()'")
+  })
+
+  test('two distinct receivers at the same expression report separately', () => {
+    const errors = bf021(`
+      export function Foo({ a, b }: { a: Date; b: Date }) {
+        return <div>{a.getTime() + b.getTime()}</div>
+      }
+    `)
+    expect(errors).toHaveLength(2)
+    expect(errors[0].message).toContain("prop 'a'")
+    expect(errors[1].message).toContain("prop 'b'")
   })
 
   test('Date in component-prop position', () => {
@@ -133,6 +169,25 @@ describe('rich-type method-call refusal — silent (no BF021)', () => {
     const errors = bf021(`
       export function Foo({ createdAt }: { createdAt: Date }) {
         return <div>{/* @client */ createdAt.toISOString()}</div>
+      }
+    `)
+    expect(errors).toHaveLength(0)
+  })
+
+  test('/* @client */-wrapped conditional branch', () => {
+    const errors = bf021(`
+      export function Foo({ d }: { d: Date | null }) {
+        return <div>{/* @client */ d && <span>{d.toISOString()}</span>}</div>
+      }
+    `)
+    expect(errors).toHaveLength(0)
+  })
+
+  test('module const sharing a propsType field name (object-props mode)', () => {
+    const errors = bf021(`
+      const version = 'v1'
+      export function Foo(props: { version: Map<string, string> }) {
+        return <div>{version.toUpperCase()}</div>
       }
     `)
     expect(errors).toHaveLength(0)

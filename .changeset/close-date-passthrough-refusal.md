@@ -1,5 +1,14 @@
 ---
 "@barefootjs/jsx": minor
+"@barefootjs/hono": patch
+"@barefootjs/go-template": patch
+"@barefootjs/jinja": patch
+"@barefootjs/rust": patch
+"@barefootjs/twig": patch
+"@barefootjs/blade": patch
+"@barefootjs/erb": patch
+"@barefootjs/mojolicious": patch
+"@barefootjs/xslate": patch
 ---
 
 Fix #2273: refuse a method call on a prop typed as a built-in host rich type (`Date`, `Map`, `Set`, `URL`, …) with no catalogued lowering, instead of silently transliterating it into template syntax that dies at request time.

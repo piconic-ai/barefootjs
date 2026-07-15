@@ -142,5 +142,5 @@ export const conformancePins: ConformancePins = {
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of
   // `adapter.generate()`), not an adapter-specific gap, so it is pinned
   // identically across every adapter package including Hono.
-  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2273' }],
+  'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2274' }],
 }

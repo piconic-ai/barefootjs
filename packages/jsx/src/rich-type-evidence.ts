@@ -20,6 +20,17 @@ import type { ParsedExpr } from './expression-parser.ts'
  * this point — the adapters have no structural representation for `Date`,
  * `Map`, etc., only for the primitives/arrays/plain-objects the IR already
  * lowers. Names only (no generic args) — compare against `baseTypeName`.
+ *
+ * Two shapes deliberately escape this catalogue (conservative misses, not
+ * bugs — a miss only skips a refusal, never misdiagnoses):
+ *   - keyword-typed `bigint` / `symbol` annotations lower to
+ *     `{ kind: 'unknown' }` in `typeNodeToTypeInfo` (only the object-form
+ *     `BigInt` / `Symbol` type references reach `kind: 'interface'` and
+ *     match here);
+ *   - a local alias of a host type (`type Timestamp = Date`) resolves to
+ *     the alias NAME — `derefNamedType` only fills in `properties` from a
+ *     declaration, it never rewrites `raw` to the alias target — so the
+ *     catalogue lookup sees `Timestamp`, not `Date`.
  */
 export const HOST_RICH_TYPE_NAMES: ReadonlySet<string> = new Set([
   'Date',
@@ -48,7 +59,7 @@ export function baseTypeName(raw: string): string {
   return (idx === -1 ? raw : raw.slice(0, idx)).trim()
 }
 
-type EvidenceMetadata = Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'typeDefinitions'>
+type EvidenceMetadata = Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'propsParams' | 'typeDefinitions'>
 
 /**
  * Collapse a union to its single non-nullish arm (`Date | null` → `Date`),
@@ -107,11 +118,11 @@ function lookupProperty(objType: TypeInfo | null, propName: string, meta: Eviden
 
 /**
  * Resolve the TypeInfo of a receiver expression, using only propsType /
- * typeDefinitions and the caller-supplied local bindings. `bindings` maps a
- * name to its known type — or explicitly to `null` for a shadow the caller
- * has proven carries no evidence (e.g. an arrow param, a loop item whose
- * array type isn't known). A `bindings` hit always wins over the props
- * fallback, matching JS lexical shadowing.
+ * propsParams / typeDefinitions and the caller-supplied local bindings.
+ * `bindings` maps a name to its known type — or explicitly to `null` for a
+ * shadow the caller has proven carries no evidence (e.g. an arrow param, a
+ * loop item whose array type isn't known). A `bindings` hit always wins over
+ * the props fallback, matching JS lexical shadowing.
  *
  * Only two `ParsedExpr` shapes carry evidence: a bare identifier and a
  * non-computed member access. Everything else (calls, computed/index
@@ -124,8 +135,21 @@ export function resolveReceiverType(
 ): TypeInfo | null {
   if (expr.kind === 'identifier') {
     if (bindings.has(expr.name)) return stripUnion(bindings.get(expr.name) ?? null)
-    if (meta.propsObjectName !== null && expr.name === meta.propsObjectName) return stripUnion(meta.propsType)
-    return lookupProperty(meta.propsType, expr.name, meta)
+    if (meta.propsObjectName !== null) {
+      // Object-props mode: props are only reachable through the props object,
+      // so a bare identifier is never a prop — treating every name that
+      // happens to match a propsType field as one would misattribute module
+      // consts / imports that share a field's name.
+      return expr.name === meta.propsObjectName ? stripUnion(meta.propsType) : null
+    }
+    // Destructured mode: only a declared param binding is a prop (membership
+    // via propsParams, which carries LOCAL names — including rename targets).
+    // The TYPE must come from propsType.properties keyed by the SOURCE prop
+    // name: propsParams' own `type` degrades to `unknown` for non-primitive
+    // props (`collectMemberTypes`' primitives-only gate).
+    const param = meta.propsParams.find((p) => p.name === expr.name && !p.isRest)
+    if (!param) return null
+    return lookupProperty(meta.propsType, param.sourceName ?? param.name, meta)
   }
   if (expr.kind === 'member' && !expr.computed) {
     const objType = resolveReceiverType(expr.object, meta, bindings)
