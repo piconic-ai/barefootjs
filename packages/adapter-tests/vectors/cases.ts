@@ -77,6 +77,14 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   arr: (...elements: unknown[]) => elements,
   filter_truthy: (a: unknown[]) => a.filter(Boolean),
 
+  // `Date` method lowering (#2274, spec entry "date"): the receiver arrives
+  // as an ISO-8601 string in the vectors (the JSON-encodable form the
+  // string-accepting half of the helper's contract exercises); the
+  // reference constructs the real `Date` and dispatches the named zero-arg
+  // method, so every backend is held to genuine JS `Date` semantics
+  // (including the pre-1970 / leap-day / far-future edge instants below).
+  date: (recv: string, op: string) => (new Date(recv) as unknown as Record<string, () => unknown>)[op](),
+
   // searchParams() env-signal reader (#1922). The reference is the real
   // URLSearchParams.get the client runtime uses, so the template backends'
   // per-request readers (Go bf.SearchParams.Get / Perl
@@ -447,6 +455,47 @@ export const cases: HelperCase[] = [
   { fn: 'filter_truthy', args: [[0, 1, '', 2, null, 'a']], note: 'drops the JS falsy set' },
   { fn: 'filter_truthy', args: [['x', 'y']], note: 'all truthy passes through' },
   { fn: 'filter_truthy', args: [[0, '', null]], note: 'all falsy yields []' },
+
+  // `date(recv, op)` (#2274) — near-full grid of the 8 catalogued zero-arg
+  // ops across 4 pinned instants: the Unix epoch, a pre-1970 instant with a
+  // nonzero millisecond component (the floor-division trap a naive
+  // negative-epoch/1000 truncation gets wrong), a leap day, and a
+  // four-digit-year-boundary far-future instant.
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getUTCFullYear'], note: 'epoch 0: getUTCFullYear' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getUTCMonth'], note: 'epoch 0: getUTCMonth is 0-based (January)' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getUTCDate'], note: 'epoch 0: getUTCDate' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getUTCHours'], note: 'epoch 0: getUTCHours' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getUTCMinutes'], note: 'epoch 0: getUTCMinutes' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getUTCSeconds'], note: 'epoch 0: getUTCSeconds' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'getTime'], note: 'epoch 0: getTime is exactly 0' },
+  { fn: 'date', args: ['1970-01-01T00:00:00.000Z', 'toISOString'], note: 'epoch 0: toISOString round-trips the instant' },
+
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getUTCFullYear'], note: 'pre-1970 instant: getUTCFullYear' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getUTCMonth'], note: 'pre-1970 instant: getUTCMonth' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getUTCDate'], note: 'pre-1970 instant: getUTCDate' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getUTCHours'], note: 'pre-1970 instant: getUTCHours' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getUTCMinutes'], note: 'pre-1970 instant: getUTCMinutes' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getUTCSeconds'], note: 'pre-1970 instant: getUTCSeconds' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'getTime'], note: 'pre-1970 instant: getTime is negative with a nonzero-ms floor-division trap' },
+  { fn: 'date', args: ['1969-07-20T20:17:40.123Z', 'toISOString'], note: 'pre-1970 instant: toISOString round-trips the instant' },
+
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getUTCFullYear'], note: 'leap day: getUTCFullYear' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getUTCMonth'], note: 'leap day: getUTCMonth is 0-based (February)' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getUTCDate'], note: 'leap day: getUTCDate is 29' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getUTCHours'], note: 'leap day: getUTCHours at the last hour of the day' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getUTCMinutes'], note: 'leap day: getUTCMinutes' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getUTCSeconds'], note: 'leap day: getUTCSeconds' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'getTime'], note: 'leap day: getTime' },
+  { fn: 'date', args: ['2024-02-29T23:59:59.999Z', 'toISOString'], note: 'leap day: toISOString round-trips the instant' },
+
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCFullYear'], note: 'far-future instant: getUTCFullYear' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCMonth'], note: 'far-future instant: getUTCMonth is 0-based (December)' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCDate'], note: 'far-future instant: getUTCDate' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCHours'], note: 'far-future instant: getUTCHours' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCMinutes'], note: 'far-future instant: getUTCMinutes' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getUTCSeconds'], note: 'far-future instant: getUTCSeconds' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'getTime'], note: 'far-future instant: getTime at the four-digit-year boundary' },
+  { fn: 'date', args: ['9999-12-31T23:59:59.999Z', 'toISOString'], note: 'far-future instant: toISOString round-trips the instant' },
 
   { fn: 'every', args: [[{ done: true }, { done: true }], 'done'], note: 'all truthy fields' },
   { fn: 'every', args: [[{ done: true }, { done: false }], 'done'], note: 'one falsy field fails' },

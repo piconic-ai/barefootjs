@@ -78,7 +78,7 @@ function isNullishArm(t: TypeInfo): boolean {
   return t.kind === 'unknown' && (t.raw === 'null' || t.raw === 'undefined')
 }
 
-function stripUnion(type: TypeInfo | null): TypeInfo | null {
+export function stripUnion(type: TypeInfo | null): TypeInfo | null {
   if (!type || type.kind !== 'union' || !type.unionTypes) return type
   const nonNullish = type.unionTypes.filter((t) => !isNullishArm(t))
   return nonNullish.length === 1 ? stripUnion(nonNullish[0]) : type
@@ -93,7 +93,7 @@ function stripUnion(type: TypeInfo | null): TypeInfo | null {
  * reference, which `typeNodeToTypeInfo` intentionally resolves to
  * `{ kind: 'interface', raw }` with no member walk of its own.
  */
-function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo {
+export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo {
   if (type.kind !== 'interface') return type
   if (type.properties && type.properties.length > 0) return type
   const name = baseTypeName(type.raw)

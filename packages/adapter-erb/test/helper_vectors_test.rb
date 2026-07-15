@@ -81,6 +81,7 @@ class HelperVectorsTest < Minitest::Test
     'max' => ->(a, b) { BF.max(a, b) },
     'abs' => ->(v) { BF.abs(v) },
     'to_fixed' => ->(*a) { BF.to_fixed(*a) },
+    'date' => ->(recv, op) { BF.date(recv, op) },
 
     'lower' => ->(s) { BF.lc(s) },
     'upper' => ->(s) { BF.uc(s) },

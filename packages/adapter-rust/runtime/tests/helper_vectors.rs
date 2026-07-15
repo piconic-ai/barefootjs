@@ -24,6 +24,7 @@
 //! `tests/vector-divergences.json`.
 
 use barefootjs::backend_minijinja;
+use barefootjs::date;
 use barefootjs::num::{self, JsValue};
 use barefootjs::runtime;
 use barefootjs::SearchParams;
@@ -123,6 +124,7 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
             let digits = if args.len() > 1 { num::to_f64(&a(1)) as i32 } else { 0 };
             JsValue::String(num::to_fixed(runtime::js_number(&a(0)), digits))
         }
+        "date" => date::date(&a(0), a(1).as_str().unwrap_or("")),
         "lower" => JsValue::String(runtime::js_string(&a(0)).to_lowercase()),
         "upper" => JsValue::String(runtime::js_string(&a(0)).to_uppercase()),
         "trim" => JsValue::String(runtime::trim(&a(0))),
@@ -237,6 +239,11 @@ fn py_truthy(v: &JsValue) -> bool {
         JsValue::String(s) => !s.is_empty(),
         JsValue::Array(a) => !a.is_empty(),
         JsValue::Object(o) => !o.is_empty(),
+        // Unreachable: no binding in this file ever returns a
+        // `JsValue::Date` (`date()` itself always returns `Number` or
+        // `String`, per its own return type) -- kept exhaustive since
+        // `JsValue` is a shared enum.
+        JsValue::Date(_) => true,
     }
 }
 

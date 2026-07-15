@@ -150,6 +150,7 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'max': return $bf->max($args[0], $args[1]);
         case 'abs': return $bf->abs($args[0]);
         case 'to_fixed': return $bf->to_fixed(...$args);
+        case 'date': return $bf->date($args[0], $args[1]);
         case 'lower': return $bf->lc($args[0]);
         case 'upper': return $bf->uc($args[0]);
         case 'trim': return $bf->trim($args[0]);

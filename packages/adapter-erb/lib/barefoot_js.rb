@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'set'
+require 'time'
 require 'barefoot_js/evaluator'
 require 'barefoot_js/search_params'
 
@@ -479,6 +480,31 @@ module BarefootJS
     def abs(value)
       n = number(value)
       nan_number?(n) ? n : n.abs
+    end
+
+    # `date(recv, op)` -- zero-arg `Date.prototype` method lowering (#2274,
+    # spec entry "date"). `recv` arrives as either this runtime's own `Time`
+    # or an ISO-8601 String (a template prop may carry either depending on
+    # how the host populated it), so both normalize through `Time.iso8601`
+    # / `#utc` to the same instant before dispatch. `#mon` is 1-based in
+    # Ruby; only `getUTCMonth` subtracts 1 to match JS's 0-based month.
+    # `getTime` sums whole milliseconds from `tv_sec`/`tv_nsec` rather than
+    # rounding a Float ms value -- `tv_nsec` is always the non-negative
+    # sub-second remainder (Ruby normalizes `Time`'s internal rational),
+    # even for a pre-epoch instant, so integer division here stays exact.
+    def date(recv, op)
+      t = (recv.is_a?(Time) ? recv : Time.iso8601(recv.to_s)).utc
+      case op
+      when 'getUTCFullYear' then t.year
+      when 'getUTCMonth' then t.mon - 1
+      when 'getUTCDate' then t.day
+      when 'getUTCHours' then t.hour
+      when 'getUTCMinutes' then t.min
+      when 'getUTCSeconds' then t.sec
+      when 'getTime' then (t.tv_sec * 1000) + (t.tv_nsec / 1_000_000)
+      when 'toISOString' then t.strftime('%Y-%m-%dT%H:%M:%S.%LZ')
+      else 0
+      end
     end
 
     # -----------------------------------------------------------------

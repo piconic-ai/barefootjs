@@ -70,6 +70,7 @@ site below):
 
 from __future__ import annotations
 
+import datetime
 import functools
 import math
 import re
@@ -471,6 +472,12 @@ def _numeric_value(v: Any) -> float:
     if isinstance(v, str):
         return parse_number_literal(v) if looks_like_number(v) else 0.0
     return 0.0
+
+
+# Epoch anchor for `date()`'s `getTime` -- an aware UTC `datetime` so
+# subtraction from any other aware `datetime` (any tzinfo) yields the correct
+# instant delta regardless of the operand's own offset.
+_DATE_EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
 
 
 def _derive_stash_from_defaults(defaults: dict, props: dict) -> dict:
@@ -892,6 +899,44 @@ class BarefootJS:
         """`Math.abs()` (#2168 math-methods)."""
         n = js_number(value)
         return n if _is_nan(n) else abs(n)
+
+    def date(self, recv: Any, op: str) -> Any:
+        """`date(recv, op)` -- zero-arg `Date.prototype` method lowering
+        (#2274, spec entry "date"). `recv` arrives as either this runtime's
+        own `datetime` or an ISO-8601 string (a template prop may carry
+        either depending on how the host populated it); `datetime.
+        fromisoformat` accepts the `Z` UTC suffix directly (Python 3.11+).
+        A naive `datetime` is treated as already-UTC (this runtime never
+        produces one); an aware one converts via `astimezone` so a
+        non-UTC-offset input still dispatches against the right instant.
+        `.month` is 1-based in Python; only `getUTCMonth` subtracts 1 to
+        match JS's 0-based month. `getTime` divides the exact `timedelta`
+        from the epoch by a 1ms `timedelta` (floor division on an exact
+        `timedelta` ratio) rather than rounding a float ms value, so a
+        pre-epoch instant stays exact."""
+        dt = recv if isinstance(recv, datetime.datetime) else datetime.datetime.fromisoformat(str(recv))
+        dt = dt.replace(tzinfo=datetime.timezone.utc) if dt.tzinfo is None else dt.astimezone(datetime.timezone.utc)
+        if op == "getUTCFullYear":
+            return dt.year
+        if op == "getUTCMonth":
+            return dt.month - 1
+        if op == "getUTCDate":
+            return dt.day
+        if op == "getUTCHours":
+            return dt.hour
+        if op == "getUTCMinutes":
+            return dt.minute
+        if op == "getUTCSeconds":
+            return dt.second
+        if op == "getTime":
+            return (dt - _DATE_EPOCH) // datetime.timedelta(milliseconds=1)
+        if op == "toISOString":
+            return (
+                f"{dt.year:04d}-{dt.month:02d}-{dt.day:02d}T"
+                f"{dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}."
+                f"{dt.microsecond // 1000:03d}Z"
+            )
+        return 0
 
     # -----------------------------------------------------------------
     # Array / String method helpers (#1448 Tier A)

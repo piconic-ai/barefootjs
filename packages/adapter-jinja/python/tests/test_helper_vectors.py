@@ -121,6 +121,7 @@ BINDINGS = {
     "max": bf.max,
     "abs": bf.abs,
     "to_fixed": lambda *a: bf.to_fixed(*a),
+    "date": lambda recv, op: bf.date(recv, op),
     "lower": bf.lc,
     "upper": bf.uc,
     "trim": bf.trim,

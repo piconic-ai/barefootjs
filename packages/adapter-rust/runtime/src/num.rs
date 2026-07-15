@@ -94,6 +94,16 @@ pub enum JsValue {
     /// contract for free, in one place, rather than re-sorting at the
     /// JSON-encoding boundary.
     Object(BTreeMap<String, JsValue>),
+    /// This runtime's own native `Date` receiver shape for `date()`'s
+    /// zero-arg method lowering (spec/template-helpers.md "date", #2274) --
+    /// a signed epoch-MILLISECOND integer (never a float), so a pre-1970
+    /// instant round-trips exactly with no rounding risk. The other half of
+    /// `date()`'s receiver contract, an ISO-8601 `String`, needs no
+    /// dedicated variant since [`JsValue::String`] already carries it; see
+    /// `date::epoch_ms_of`. JSON can't spell this type (`from_json` never
+    /// produces one); `to_json` renders it via its `toISOString` form,
+    /// matching JS `JSON.stringify(date)`.
+    Date(i64),
 }
 
 impl JsValue {
@@ -159,6 +169,9 @@ impl JsValue {
             JsValue::Object(o) => {
                 JsonValue::Object(o.iter().map(|(k, v)| (k.clone(), v.to_json())).collect())
             }
+            // Matches JS `JSON.stringify(date)`, which calls the date's own
+            // `toJSON` -> `toISOString`.
+            JsValue::Date(ms) => JsonValue::String(crate::date::format_iso8601(*ms)),
         }
     }
 }
