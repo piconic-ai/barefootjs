@@ -725,9 +725,24 @@ final class BarefootJS
      */
     public function date($recv, string $op)
     {
-        $d = $recv instanceof \DateTimeInterface
-            ? \DateTimeImmutable::createFromInterface($recv)
-            : new \DateTimeImmutable($this->string($recv));
+        // A nil or unparseable receiver degrades to the zero value the
+        // Go / Rust / Perl helpers document (empty string for toISOString,
+        // 0 otherwise). Without this an empty string would silently become
+        // `new DateTimeImmutable('')` = the current time (non-deterministic
+        // render), and a malformed string would throw mid-render.
+        if ($recv instanceof \DateTimeInterface) {
+            $d = \DateTimeImmutable::createFromInterface($recv);
+        } else {
+            $s = $this->string($recv);
+            if ($s === '') {
+                return $op === 'toISOString' ? '' : 0;
+            }
+            try {
+                $d = new \DateTimeImmutable($s);
+            } catch (\Exception $e) {
+                return $op === 'toISOString' ? '' : 0;
+            }
+        }
         $d = $d->setTimezone(new \DateTimeZone('UTC'));
         switch ($op) {
             case 'getUTCFullYear': return (int) $d->format('Y');

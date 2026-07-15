@@ -904,17 +904,30 @@ class BarefootJS:
         """`date(recv, op)` -- zero-arg `Date.prototype` method lowering
         (#2274, spec entry "date"). `recv` arrives as either this runtime's
         own `datetime` or an ISO-8601 string (a template prop may carry
-        either depending on how the host populated it); `datetime.
-        fromisoformat` accepts the `Z` UTC suffix directly (Python 3.11+).
-        A naive `datetime` is treated as already-UTC (this runtime never
-        produces one); an aware one converts via `astimezone` so a
-        non-UTC-offset input still dispatches against the right instant.
-        `.month` is 1-based in Python; only `getUTCMonth` subtracts 1 to
-        match JS's 0-based month. `getTime` divides the exact `timedelta`
-        from the epoch by a 1ms `timedelta` (floor division on an exact
-        `timedelta` ratio) rather than rounding a float ms value, so a
-        pre-epoch instant stays exact."""
-        dt = recv if isinstance(recv, datetime.datetime) else datetime.datetime.fromisoformat(str(recv))
+        either depending on how the host populated it). A naive `datetime`
+        is treated as already-UTC (this runtime never produces one); an
+        aware one converts via `astimezone` so a non-UTC-offset input still
+        dispatches against the right instant. `.month` is 1-based in
+        Python; only `getUTCMonth` subtracts 1 to match JS's 0-based month.
+        `getTime` divides the exact `timedelta` from the epoch by a 1ms
+        `timedelta` (floor division on an exact `timedelta` ratio) rather
+        than rounding a float ms value, so a pre-epoch instant stays
+        exact."""
+        if isinstance(recv, datetime.datetime):
+            dt = recv
+        else:
+            # `fromisoformat` only learned the bare `Z` suffix in 3.11 but
+            # accepts an explicit `+00:00` offset since 3.7, so a `>=3.10`
+            # install parses the same string once rewritten. A nil or
+            # unparseable receiver degrades to the zero value the Go / Rust
+            # / Perl helpers document, not a render-time crash.
+            s = str(recv)
+            if s.endswith("Z"):
+                s = s[:-1] + "+00:00"
+            try:
+                dt = datetime.datetime.fromisoformat(s)
+            except ValueError:
+                return "" if op == "toISOString" else 0
         dt = dt.replace(tzinfo=datetime.timezone.utc) if dt.tzinfo is None else dt.astimezone(datetime.timezone.utc)
         if op == "getUTCFullYear":
             return dt.year

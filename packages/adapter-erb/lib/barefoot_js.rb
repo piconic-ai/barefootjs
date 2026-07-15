@@ -493,7 +493,21 @@ module BarefootJS
     # sub-second remainder (Ruby normalizes `Time`'s internal rational),
     # even for a pre-epoch instant, so integer division here stays exact.
     def date(recv, op)
-      t = (recv.is_a?(Time) ? recv : Time.iso8601(recv.to_s)).utc
+      # A nil or unparseable receiver degrades to the zero value the
+      # Go / Rust / Perl helpers document (empty string for toISOString,
+      # 0 otherwise), rather than raising mid-render.
+      t =
+        if recv.is_a?(Time)
+          recv
+        else
+          begin
+            Time.iso8601(recv.to_s)
+          rescue ArgumentError
+            nil
+          end
+        end
+      return (op == 'toISOString' ? '' : 0) if t.nil?
+      t = t.utc
       case op
       when 'getUTCFullYear' then t.year
       when 'getUTCMonth' then t.mon - 1
