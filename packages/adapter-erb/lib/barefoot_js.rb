@@ -198,6 +198,14 @@ module BarefootJS
       "<!--bf-scope:#{scope_id}#{host_segment}#{props_json}-->"
     end
 
+    # Paired end marker for `scope_comment`, emitted after the fragment's
+    # last top-level node. No host/props segments -- the client only needs
+    # the scope id to close the boundary (#2289).
+    def scope_comment_end
+      scope_id = _scope_id || ''
+      "<!--bf-/scope:#{scope_id}-->"
+    end
+
     # -----------------------------------------------------------------
     # Script Registration
     # -----------------------------------------------------------------

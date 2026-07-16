@@ -946,6 +946,13 @@ impl BfInstance {
         format!("<!--bf-scope:{}{host_segment}{props_json}-->", self.scope_id)
     }
 
+    /// Paired end marker for `scope_comment`, emitted after the fragment's
+    /// last top-level node. No host/props segments -- the client only needs
+    /// the scope id to close the boundary (#2289).
+    fn scope_comment_end(&self) -> String {
+        format!("<!--bf-/scope:{}-->", self.scope_id)
+    }
+
     fn provide_context(&self, name: &str, value: JsValue) {
         self.session.context_stacks.lock().unwrap().entry(name.to_string()).or_default().push(value);
     }
@@ -1291,6 +1298,7 @@ impl Object for BfInstance {
             "text_start" => Ok(safe(format!("<!--bf:{}-->", js_string(a(0))))),
             "text_end" => Ok(safe("<!--/-->".to_string())),
             "scope_comment" => Ok(safe(self.scope_comment())),
+            "scope_comment_end" => Ok(safe(self.scope_comment_end())),
 
             // -- Script registration ---------------------------------------
             "register_script" => {

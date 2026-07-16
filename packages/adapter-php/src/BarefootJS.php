@@ -312,6 +312,16 @@ final class BarefootJS
         return "<!--bf-scope:{$scopeId}{$hostSegment}{$propsJson}-->";
     }
 
+    /** Paired end marker for scope_comment above. Bounds the scope's sibling
+     * range so client-side queries from a fragment-rooted scope don't leak
+     * onto later siblings owned by the parent (#2289). No `|h=`/`|m=`/props
+     * segments — the client only needs the scope id to find the matching end. */
+    public function scope_comment_end(): string
+    {
+        $scopeId = $this->_scope_id() ?? '';
+        return "<!--bf-/scope:{$scopeId}-->";
+    }
+
     // -----------------------------------------------------------------
     // Script Registration
     // -----------------------------------------------------------------

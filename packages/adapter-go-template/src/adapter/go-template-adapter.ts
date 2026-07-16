@@ -6003,8 +6003,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private renderFragment(fragment: IRFragment): string {
     const children = this.renderChildren(fragment.children)
     if (fragment.needsScopeComment) {
-      // Comment-based scope marker for fragment roots.
-      return `{{bfScopeComment .}}${children}`
+      // Comment-based scope marker for fragment roots. The end marker
+      // bounds the scope range so client-side queries don't leak onto
+      // later siblings (#2289).
+      return `{{bfScopeComment .}}${children}{{bfScopeCommentEnd .}}`
     }
     return children
   }

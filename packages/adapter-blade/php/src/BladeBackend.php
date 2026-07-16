@@ -53,9 +53,9 @@ use Illuminate\View\FileViewFinder;
  * `{!! !!}` needed at THAT call site; call sites that receive an ordinary
  * PHP string this runtime does NOT wrap (e.g. `hydration_attrs()`,
  * `text_start()`/`text_end()`, `comment()`, `scope_comment()`,
- * `render_child()`'s return value) must use the compiler's `{!! ... !!}`
- * raw-echo form instead (mirrors Twig's explicit `| raw` filter at those
- * same call sites). `ENT_QUOTES` emits NAMED entity forms
+ * `scope_comment_end()`, `render_child()`'s return value) must use the
+ * compiler's `{!! ... !!}` raw-echo form instead (mirrors Twig's explicit
+ * `| raw` filter at those same call sites). `ENT_QUOTES` emits NAMED entity forms
  * (`&quot;`/`&#039;`), same byte-form difference as Twig's default escaper
  * relative to Perl/Go/markupsafe's numeric forms (`&#34;`/`&#39;`) -- the
  * adapter-tests harness's `normalizeHTML` canonicalizes entity forms before

@@ -1606,6 +1606,52 @@ func TestScopeCommentPropagatesError(t *testing.T) {
 	}
 }
 
+// #2289: a fragment root has no wrapping element to bound the client's
+// scope query, so the begin marker alone lets the range leak onto later
+// siblings. ScopeCommentEnd must carry the SAME scope id ScopeComment used,
+// with no `|h=`/`|m=`/props segment, so the client's exact-match boundary
+// check (getCommentScopeBoundary) can close the range.
+func TestScopeCommentEndMatchesBeginScopeID(t *testing.T) {
+	type props struct {
+		BfIsRoot bool
+		ScopeID  string
+	}
+	p := props{BfIsRoot: true, ScopeID: "Wrapper_abc123"}
+
+	begin, err := ScopeComment(p)
+	if err != nil {
+		t.Fatalf("ScopeComment: unexpected err: %v", err)
+	}
+	end := ScopeCommentEnd(p)
+
+	wantEnd := template.HTML("<!--bf-/scope:Wrapper_abc123-->")
+	if end != wantEnd {
+		t.Errorf("ScopeCommentEnd = %q, want %q", end, wantEnd)
+	}
+	if !strings.HasPrefix(string(begin), "<!--bf-scope:Wrapper_abc123") {
+		t.Errorf("ScopeComment = %q, want prefix bf-scope:Wrapper_abc123", begin)
+	}
+}
+
+func TestScopeCommentEndChildComponent(t *testing.T) {
+	// A child (non-root) fragment carries |h=/|m= on the BEGIN marker only
+	// — ScopeCommentEnd never emits that segment, matching the Hono
+	// wrapWithScopeComment reference (`bf-/scope:<scopeId>`, no host/mount).
+	type props struct {
+		BfIsRoot bool
+		ScopeID  string
+		BfParent string
+		BfMount  string
+	}
+	p := props{BfIsRoot: false, ScopeID: "child_s1", BfParent: "Wrapper_abc123", BfMount: "s1"}
+
+	end := ScopeCommentEnd(p)
+	want := template.HTML("<!--bf-/scope:child_s1-->")
+	if end != want {
+		t.Errorf("ScopeCommentEnd = %q, want %q", end, want)
+	}
+}
+
 func TestString(t *testing.T) {
 	if got := String(42); got != "42" {
 		t.Errorf("String(42) = %v, want 42", got)

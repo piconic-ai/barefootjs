@@ -10,7 +10,7 @@
  * region, so they are collected from the whole parsed document.
  */
 
-import { BF_HOST, BF_PROPS, BF_REGION, BF_SCOPE, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
+import { BF_HOST, BF_PROPS, BF_REGION, BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 import type { RouterState } from './types.ts'
 
 /** Parse a fetched page's HTML into a detached document. */
@@ -123,6 +123,10 @@ function stripVolatileHydration(root: Element): void {
       normalizePropsAttr(node as Element)
     } else if ((node as Comment).data.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
       ;(node as Comment).data = normalizeScopeComment((node as Comment).data)
+    } else if ((node as Comment).data.startsWith(BF_SCOPE_COMMENT_END_PREFIX)) {
+      // End markers carry only the per-render-random scope id — blank it
+      // whole so paired begin/end comments normalize consistently.
+      ;(node as Comment).data = BF_SCOPE_COMMENT_END_PREFIX
     }
   }
 }

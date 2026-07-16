@@ -8,16 +8,18 @@ comment markers, autoescaping, and `spread_attrs`.
 
 Jinja idiom note: helpers that return already-safe HTML syntax but are NOT
 wrapped by the backend's `mark_raw` (`scope_attr`, `hydration_attrs`,
-`text_start`, `text_end`, `comment`, `scope_comment`) need an explicit
-`| safe` filter at the call site -- the Jinja-syntax equivalent of Kolon's
-`| mark_raw` pipe seen in the Perl port's `render.t`. `spread_attrs` already
-returns a `markupsafe.Markup` value (via `backend.mark_raw`), so it needs no
-filter, matching the Perl template's call site exactly.
+`text_start`, `text_end`, `comment`, `scope_comment`, `scope_comment_end`)
+need an explicit `| safe` filter at the call site -- the Jinja-syntax
+equivalent of Kolon's `| mark_raw` pipe seen in the Perl port's `render.t`.
+`spread_attrs` already returns a `markupsafe.Markup` value (via
+`backend.mark_raw`), so it needs no filter, matching the Perl template's
+call site exactly.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,6 +32,17 @@ WIDGET_TEMPLATE = (
     "count: {{ bf.text_start('s0') | safe }}{{ count }}{{ bf.text_end() | safe }} "
     "<span {{ bf.spread_attrs(attrs) }}>{{ label }}</span>"
     "</div>"
+)
+
+# A fragment-rooted component template, matching what `renderFragment` emits
+# for `fragment.needsScopeComment` (#2289): the begin marker precedes the
+# fragment's children, the end marker follows its last top-level node so the
+# client's range query has a lower bound and doesn't leak onto later
+# siblings owned by the parent.
+FRAGMENT_TEMPLATE = (
+    "{{ bf.scope_comment() | safe }}"
+    "<button>add</button><p>hint</p>"
+    "{{ bf.scope_comment_end() | safe }}"
 )
 
 
@@ -96,6 +109,38 @@ class RenderTest(unittest.TestCase):
         self.bf.register_child_renderer("child", child_renderer)
         out = self.backend.render_named("parent", self.bf, {})
         self.assertEqual(out, "parent:[c1:hi]")
+
+    def test_scope_comment_end_marker_pairs_with_begin(self):
+        """#2289: the end marker closes the fragment's scope range with the
+        SAME scope id as the begin marker, and no host/props segment."""
+        template_dir = Path(self._tmpdir.name)
+        (template_dir / "fragment.jinja").write_text(FRAGMENT_TEMPLATE, encoding="utf-8")
+        out = self.backend.render_named("fragment", self.bf, {})
+
+        self.assertIn("<!--bf-scope:Widget_test-->", out)
+        self.assertIn("<!--bf-/scope:Widget_test-->", out)
+        # End marker follows the fragment's last top-level node.
+        self.assertTrue(out.endswith("<!--bf-/scope:Widget_test-->"))
+
+        begin_id = re.search(r"<!--bf-scope:([^|>-]+)", out).group(1)
+        end_id = re.search(r"<!--bf-/scope:([^>-]+)-->", out).group(1)
+        self.assertEqual(begin_id, end_id)
+
+    def test_scope_comment_end_carries_no_host_or_props_segment(self):
+        """Unlike `scope_comment`, the end marker never carries `|h=`/`|m=`
+        or a props JSON segment -- the client only needs the scope id to
+        confirm the range closes (#2289)."""
+        template_dir = Path(self._tmpdir.name)
+        (template_dir / "fragment_child.jinja").write_text(FRAGMENT_TEMPLATE, encoding="utf-8")
+
+        child_bf = BarefootJS(None, {"backend": self.backend})
+        child_bf._scope_id("Widget_test_s2")
+        child_bf._bf_parent("Widget_test")
+        child_bf._bf_mount("s2")
+        out = self.backend.render_named("fragment_child", child_bf, {})
+
+        self.assertIn("<!--bf-scope:Widget_test_s2|h=Widget_test|m=s2-->", out)
+        self.assertIn("<!--bf-/scope:Widget_test_s2-->", out)
 
 
 if __name__ == "__main__":

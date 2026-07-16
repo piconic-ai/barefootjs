@@ -1179,7 +1179,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   private renderFragment(fragment: IRFragment): string {
     const children = this.renderChildren(fragment.children)
     if (fragment.needsScopeComment) {
-      return `<: $bf.scope_comment() | mark_raw :>${children}`
+      // End marker bounds the scope's sibling range — without it, queries
+      // from the fragment scope leak onto later siblings owned by the
+      // parent (#2289).
+      return `<: $bf.scope_comment() | mark_raw :>${children}<: $bf.scope_comment_end() | mark_raw :>`
     }
     return children
   }

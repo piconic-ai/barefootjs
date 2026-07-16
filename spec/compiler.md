@@ -383,6 +383,26 @@ rendered outside the compiler pipeline. See piconic-ai/barefootjs#1915.
    slot identity moves to (bf-h, bf-m) and root distinction moves to bf-r.
    The runtime no longer checks for the `~` prefix anywhere.
 
+   **Fragment scope comments (#2289).** A component whose root is a JSX
+   Fragment has no element to carry `bf-s`, so its scope is declared by a
+   comment pair around its top-level siblings:
+
+   ```
+   <!--bf-scope:<scopeId>[|h=<host>|m=<slot>][|<propsJson>]--> …roots… <!--bf-/scope:<scopeId>-->
+   ```
+
+   The `h=`/`m=` segment is present on slot-attached children only (the
+   comment-scope analogue of the (bf-h, bf-m) pair); the client runtime
+   resolves such children by the `<parentScopeId>_<slotId>` scope id
+   (`findCommentChildScope`) so `initChild` delivers live props — the props
+   JSON in the marker only carries the JSON-safe subset for walker-owned
+   root fragments. The end marker bounds the scope's sibling range
+   (`getCommentScopeBoundary`); it is optional for backward compatibility —
+   HTML from an adapter runtime that predates it falls back to the
+   next-`bf-scope:`-comment / end-of-parent heuristic, which can leak
+   queries onto later siblings. Every adapter must emit the pair from the
+   same scope id.
+
 2. **Client JS**: Minimal JavaScript for reactivity
    - Uses `createEffect` for reactive updates
    - Event delegation for lists

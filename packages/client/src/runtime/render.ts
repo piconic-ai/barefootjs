@@ -6,7 +6,7 @@
  * never import this module.
  */
 
-import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 import { setParentScopeId } from './component.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { getComponentInit } from './registry.ts'
@@ -119,6 +119,9 @@ export function render(
   for (const node of Array.from(tpl.content.childNodes)) {
     container.appendChild(node)
   }
+  // Close the range so scope queries never leak past the fragment's last
+  // root (mirrors the SSR end marker, #2289).
+  container.appendChild(document.createComment(`${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}`))
 
   const proxyEl = rootElements[0]
   commentScopeRegistry.set(proxyEl, { commentNode, scopeId })

@@ -656,6 +656,13 @@ class BarefootJS:
             props_json = "|" + self.backend.encode_json(props)
         return f"<!--bf-scope:{scope_id}{host_segment}{props_json}-->"
 
+    def scope_comment_end(self) -> str:
+        """Paired end marker for `scope_comment`, emitted after the
+        fragment's last top-level node. No host/props segments -- the
+        client only needs the scope id to close the boundary (#2289)."""
+        scope_id = self._scope_id() or ""
+        return f"<!--bf-/scope:{scope_id}-->"
+
     # -----------------------------------------------------------------
     # Script Registration
     # -----------------------------------------------------------------

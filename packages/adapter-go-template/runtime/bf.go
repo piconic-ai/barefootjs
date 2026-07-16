@@ -168,7 +168,8 @@ func FuncMap() template.FuncMap {
 		"bf_with_children": WithChildren,
 
 		// Scope comment for fragment roots
-		"bfScopeComment": ScopeComment,
+		"bfScopeComment":    ScopeComment,
+		"bfScopeCommentEnd": ScopeCommentEnd,
 
 		// JSX intrinsic-element spread lowering (#1407)
 		"bf_spread_attrs": SpreadAttrs,
@@ -2459,6 +2460,18 @@ func ScopeComment(props interface{}) (template.HTML, error) {
 		propsJSON = "|" + string(pJSON)
 	}
 	return template.HTML("<!--bf-scope:" + scopeID + hostSegment + propsJSON + "-->"), nil
+}
+
+// ScopeCommentEnd emits the paired end marker for a fragment-rooted scope
+// (#2289): a fragment root has no single wrapping element to bound the
+// client's scope query, so the range leaks onto later siblings without an
+// explicit terminator. Carries only the scope id — no `|h=`/`|m=`/props
+// segment, unlike ScopeComment — since the client only needs it to confirm
+// the range closes on the matching scope (getCommentScopeBoundary in
+// packages/client/src/runtime/scope.ts).
+func ScopeCommentEnd(props interface{}) template.HTML {
+	scopeID := getStringField(props, "ScopeID")
+	return template.HTML("<!--bf-/scope:" + scopeID + "-->")
 }
 
 // TemplateFuncMap returns the helpers that need access to the executing

@@ -32,6 +32,7 @@ $testFiles = [
     'test_omit.php',
     'test_props_attr.php',
     'test_render_child.php',
+    'test_scope_comment.php',
 ];
 
 $results = [];
