@@ -488,6 +488,40 @@
       }
     }
   ],
+  "date-catalogued": [
+    {
+      "name": "gen:createdAt:epoch",
+      "props": {
+        "createdAt": {
+          "$date": "1970-01-01T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "gen:createdAt:pre-1970",
+      "props": {
+        "createdAt": {
+          "$date": "1969-07-20T20:17:40.123Z"
+        }
+      }
+    },
+    {
+      "name": "gen:createdAt:leap-day",
+      "props": {
+        "createdAt": {
+          "$date": "2024-02-29T12:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "gen:createdAt:year-9999",
+      "props": {
+        "createdAt": {
+          "$date": "9999-12-31T23:59:59.999Z"
+        }
+      }
+    }
+  ],
   "default-props": [
     {
       "name": "gen:label:absent",

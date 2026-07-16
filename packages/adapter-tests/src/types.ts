@@ -98,7 +98,14 @@ export type InteractionStep =
 export interface JSXDataPoint {
   /** Short unique name within the fixture, e.g. `'empty-label'`. */
   name: string
-  /** Props for this evaluation point (JSON data domain only). */
+  /**
+   * Props for this evaluation point. Inside the JSON data domain (finite
+   * numbers, strings, booleans, `null`, arrays, plain objects) plus the
+   * catalogued rich type `Date` (#2274) — a real `Date` instance here, or,
+   * for the JSON-serialized generated catalogue, a `{ $date: ISO }` envelope
+   * that `data-point-conformance.ts` materializes back into a `Date` before
+   * either render leg (a `Date` cannot survive the committed JSON artifact).
+   */
   props: Record<string, unknown>
 }
 
@@ -219,18 +226,25 @@ export function normalizeExpectedHtml(html: string): string {
 }
 
 /**
- * Assert a data-point prop value stays inside the JSON data domain
- * (`spec/subset-conformance.md`): finite numbers, strings, booleans,
- * `null`, arrays, and plain objects. Everything else — `undefined`,
- * `NaN`/`Infinity`, functions, `Date`, class instances — cannot cross
- * the host-language boundary and fails loudly at fixture-definition
+ * Assert a data-point prop value stays inside the supported data domain
+ * (`spec/subset-conformance.md`): the JSON data domain — finite numbers,
+ * strings, booleans, `null`, arrays, and plain objects — plus the
+ * catalogued rich type `Date` (#2274), the first host type with a
+ * cross-backend lowering (`date-lowering.ts`) and runtime helper. A valid
+ * `Date` instance is admitted directly (an `Invalid Date` is refused — it
+ * cannot survive `toISOString` transport); the `{ $date: ISO }` envelope the
+ * generated catalogue uses is admitted as the plain object it is, but only
+ * after its instant is validated up front (materialized into a `Date` at
+ * render time). Everything else —
+ * `undefined`, `NaN`/`Infinity`, functions, other class instances — cannot
+ * cross the host-language boundary and fails loudly at fixture-definition
  * time rather than as a confusing render divergence.
  */
 function assertJsonDomain(fixtureId: string, pointName: string, value: unknown, path: string): void {
   const fail = (why: string): never => {
     throw new Error(
       `[${fixtureId}] dataPoint '${pointName}': props${path} ${why} — ` +
-        `outside the JSON data domain (see spec/subset-conformance.md). ` +
+        `outside the supported data domain (see spec/subset-conformance.md). ` +
         `Omit the key to express an absent optional prop.`,
     )
   }
@@ -255,14 +269,36 @@ function assertJsonDomain(fixtureId: string, pointName: string, value: unknown, 
     value.forEach((v, i) => assertJsonDomain(fixtureId, pointName, v, `${path}[${i}]`))
     return
   }
+  // `Date` is the first catalogued rich type (#2274): admitted as a real
+  // instance. An `Invalid Date` is refused, though — the harness transports a
+  // Date as `value.toISOString()`, which throws `RangeError` on a NaN instant
+  // (and the JS oracle throws the same evaluating the accessor), so it can
+  // never round-trip. The #2288 zero-value fallback is a *runtime* helper
+  // contract for a nil/malformed native value at request time; this
+  // definition-time gate never reaches it.
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) fail('is an Invalid Date')
+    return
+  }
   const proto = Object.getPrototypeOf(value)
   if (proto !== Object.prototype && proto !== null) {
     const ctor = (value as object).constructor?.name ?? 'unknown'
-    fail(
-      `is a ${ctor} instance${ctor === 'Date' ? ' (Date joins the catalogued data domain in a later roadmap stage)' : ''}`,
-    )
+    fail(`is a ${ctor} instance`)
   }
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+  const entries = Object.entries(value as Record<string, unknown>)
+  // The `{ $date: ISO }` transport envelope (materialized into a `Date` at
+  // render time): validate the instant up front so a bad ISO string is a
+  // deterministic fixture-definition error, not a `RangeError` surfacing deep
+  // in a prop-baker's `toISOString()` — the same contract as a real
+  // `Invalid Date` above.
+  if (entries.length === 1 && entries[0][0] === '$date') {
+    const iso = entries[0][1]
+    if (typeof iso !== 'string' || Number.isNaN(new Date(iso).getTime())) {
+      fail(`is a { $date } envelope with an unparseable ISO string (${JSON.stringify(iso)})`)
+    }
+    return
+  }
+  for (const [k, v] of entries) {
     assertJsonDomain(fixtureId, pointName, v, `${path}.${k}`)
   }
 }

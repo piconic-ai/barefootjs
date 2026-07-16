@@ -243,6 +243,15 @@ describe('CSR Conformance Tests', () => {
     //     first element in CSR, while SSR carries the scope on a
     //     `<!--bf-scope:...-->` comment the normalizer strips.
     'nested-fragments',
+    // #2292 (known-limitation): the `Date` catalogued lowering (#2274) is
+    // applied on the SSR/template side only — `ir-to-client-js` emits the
+    // raw `_p.createdAt.toISOString()` call, and the hydration payload
+    // delivers the `Date` prop as its ISO STRING (JSON `toJSON`), so the
+    // CSR path throws `toISOString is not a function`. SSR is correct on
+    // every adapter (oracle data-point conformance); client-JS Date support
+    // is tracked separately.
+    //   https://github.com/piconic-ai/barefootjs/issues/2292
+    'date-catalogued',
   ])
 
   for (const fixture of jsxFixtures) {

@@ -76,6 +76,28 @@ export interface RunDataPointConformanceOptions {
 
 type GateResult = 'pass' | 'fail' | 'unavailable'
 
+/**
+ * Revive `{ $date: ISO }` envelopes into real `Date` instances, recursing
+ * through arrays and plain objects. The catalogued `Date` data type (#2274)
+ * cannot survive the committed `generated-data-points.json` artifact as a
+ * `Date`, so the generated catalogue and any hand-declared point may carry
+ * the same `{ $date: ISO }` envelope the vector harnesses use (#2288); this
+ * normalizes both that envelope and an already-real `Date` to a `Date`
+ * before either render leg. The JS oracle then answers `.getUTCFullYear()`
+ * on a genuine `Date`, and each adapter's prop-baker sees an `instanceof
+ * Date` value to transport as its ISO string. Runs after `structuredClone`,
+ * which preserves both a `Date` and a plain-object envelope.
+ */
+function materializeDates(value: unknown): unknown {
+  if (value instanceof Date || value === null || typeof value !== 'object') return value
+  if (Array.isArray(value)) return value.map(materializeDates)
+  const entries = Object.entries(value as Record<string, unknown>)
+  if (entries.length === 1 && entries[0][0] === '$date' && typeof entries[0][1] === 'string') {
+    return new Date(entries[0][1])
+  }
+  return Object.fromEntries(entries.map(([k, v]) => [k, materializeDates(v)]))
+}
+
 function canonical(html: string): string {
   return stripConditionalMarkersForCrossAdapter(normalizeHTML(html))
 }
@@ -86,8 +108,10 @@ function renderOptions(fixture: JSXFixture, adapter: TemplateAdapter, props: Rec
     adapter,
     // Same prop-mutation isolation as the JSX suite: a fixture source
     // that mutates its props (`.sort()`, `.reverse()`) must not poison
-    // the shared fixture object across renders.
-    props: props !== undefined ? structuredClone(props) : undefined,
+    // the shared fixture object across renders. `materializeDates` then
+    // turns any `{ $date: ISO }` envelope into a real `Date` (#2274) so
+    // both the oracle and the adapter under test see the same instant.
+    props: props !== undefined ? (materializeDates(structuredClone(props)) as Record<string, unknown>) : undefined,
     components: fixture.components,
     componentModules: fixture.componentModules,
     componentName: fixture.componentName,

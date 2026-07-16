@@ -30,8 +30,13 @@
  *   catalogue stays BMP so a new string prop doesn't mint eight skips;
  * - union / object / interface / function-typed props — value synthesis
  *   needs member enumeration (unions) or required-field construction
- *   (objects);
- * - `Date` — joins the data domain in roadmap stage 4.
+ *   (objects).
+ *
+ * The catalogued rich type `Date` (#2274) IS synthesized: a `Date`-typed
+ * param yields the same adversarial instants as the golden-vector grid,
+ * carried as `{ $date: ISO }` envelopes (a `Date` cannot survive the
+ * committed JSON artifact) that `data-point-conformance.ts` materializes
+ * back into a `Date` before each render leg.
  */
 
 import { compileJSX } from '@barefootjs/jsx'
@@ -56,7 +61,36 @@ interface PropParam {
   type: {
     kind: string
     primitive?: string
+    /** Original TS type string; for a `Date` prop this is `'Date'`. */
+    raw?: string
   }
+}
+
+/** Strip any generic arguments from a raw type string (`Foo<Bar>` → `Foo`). */
+function baseTypeName(raw: string): string {
+  const idx = raw.indexOf('<')
+  return (idx === -1 ? raw : raw.slice(0, idx)).trim()
+}
+
+/**
+ * Replace every real `Date` with a `{ $date: ISO }` envelope, recursing
+ * through arrays and plain objects. Generated points are serialized into the
+ * committed `generated-data-points.json`, which cannot hold a `Date`; the
+ * envelope round-trips as a plain object and is materialized back into a
+ * `Date` at render time (`data-point-conformance.ts`). Normalizing the base
+ * props here also keeps a `Date` carried from `fixture.props` into a point
+ * that varies some OTHER prop envelope-shaped, so the freshness deepEquals
+ * (a real `Date` in memory vs a string in the JSON) can never diverge.
+ */
+function toDateEnvelopes(value: unknown): unknown {
+  if (value instanceof Date) return { $date: value.toISOString() }
+  if (Array.isArray(value)) return value.map(toDateEnvelopes)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, toDateEnvelopes(v)]),
+    )
+  }
+  return value
 }
 
 function catalogValuesFor(param: PropParam): CatalogValue[] {
@@ -84,6 +118,19 @@ function catalogValuesFor(param: PropParam): CatalogValue[] {
     }
   } else if (param.type.kind === 'array') {
     values.push({ tag: 'empty', value: [] })
+  } else if (param.type.kind === 'interface' && param.type.raw && baseTypeName(param.type.raw) === 'Date') {
+    // Catalogued rich type (#2274). Envelopes — not real Dates — so the
+    // point survives the committed JSON artifact; the conformance runner
+    // materializes them back. The instants mirror the golden-vector
+    // adversarial grid (vectors/cases.ts): the epoch, a pre-1970 instant
+    // with nonzero ms (the negative-epoch floor-division trap), a leap day,
+    // and the four-digit-year boundary.
+    values.push(
+      { tag: 'epoch', value: { $date: '1970-01-01T00:00:00.000Z' } },
+      { tag: 'pre-1970', value: { $date: '1969-07-20T20:17:40.123Z' } },
+      { tag: 'leap-day', value: { $date: '2024-02-29T12:00:00.000Z' } },
+      { tag: 'year-9999', value: { $date: '9999-12-31T23:59:59.999Z' } },
+    )
   }
   return values
 }
@@ -127,10 +174,14 @@ export function generateDataPointsForFixture(fixture: JSXFixture): JSXDataPoint[
   if (!ir) return []
   const propsParams: PropParam[] = ir.metadata?.propsParams ?? []
 
-  const base = fixture.props ?? {}
+  // Envelope-normalize up front: a `Date` in the primary props (or a
+  // declared point) becomes a `{ $date: ISO }` envelope so every generated
+  // point is JSON-clean and the dedup keys compare like-for-like against a
+  // Date-typed catalogue value (also an envelope).
+  const base = toDateEnvelopes(fixture.props ?? {}) as Record<string, unknown>
   const seen = new Set<string>([
     stableStringify(base),
-    ...(fixture.dataPoints ?? []).map(p => stableStringify(p.props)),
+    ...(fixture.dataPoints ?? []).map(p => stableStringify(toDateEnvelopes(p.props))),
   ])
 
   const points: JSXDataPoint[] = []

@@ -570,6 +570,15 @@ function toPyLiteral(value: unknown): string {
   if (typeof value === 'string') return pyStr(value)
   if (typeof value === 'number') return pyNumber(value)
   if (typeof value === 'boolean') return value ? 'True' : 'False'
+  if (value instanceof Date) {
+    // A Date prop crosses the language boundary as its ISO-8601 string —
+    // the shared `date()` runtime helper (#2274/#2288) accepts an ISO
+    // string as well as a native `datetime`. MUST come before the generic
+    // `value && typeof value === 'object'` branch below, which would
+    // otherwise `Object.entries()` a Date's (non-enumerable) internals
+    // into an empty dict literal, silently erasing the value.
+    return pyStr(value.toISOString())
+  }
   if (Array.isArray(value)) {
     return `[${value.map(toPyLiteral).join(', ')}]`
   }
