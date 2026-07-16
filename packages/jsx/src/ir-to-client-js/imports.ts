@@ -17,6 +17,10 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'tAfter',
   // Profile mode (#1690, SR3) — turn-boundary markers around event handlers.
   'beginTurn', 'endTurn',
+  // Catalogued `Date` lowering (#2274/#2292) — the client counterpart to
+  // every SSR adapter's `date` runtime helper (`date-lowering.ts`'s
+  // `datePlugin`).
+  'date',
 ] as const
 
 /** @deprecated Use RUNTIME_IMPORT_CANDIDATES */

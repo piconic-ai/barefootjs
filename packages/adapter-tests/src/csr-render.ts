@@ -306,6 +306,20 @@ function styleToCss(value) {
   }
   return parts.join(';') || null
 }
+// Mirror @barefootjs/client/runtime/date.ts: the catalogued \`Date\` lowering
+// (#2274/#2292) helper. \`recv\` is a real Date OR the ISO-string form a
+// Date-typed prop arrives as post-hydration/JSON; a nil or unparseable
+// receiver degrades to the zero value instead of throwing. The harness
+// strips imports and stubs the runtime itself (like escapeAttr/spreadAttrs
+// above), so \`date(...)\` calls in generated template/init code need this
+// mock or every date-catalogued fixture fails with "date is not defined".
+function date(recv, op) {
+  const zero = op === 'toISOString' ? '' : 0
+  if (recv === null || recv === undefined) return zero
+  const d = recv instanceof Date ? recv : new Date(recv)
+  if (Number.isNaN(d.getTime())) return zero
+  return d[op]()
+}
 
 // --- Execute client JS (registers templates via hydrate()) ---
 ${strippedCode}
