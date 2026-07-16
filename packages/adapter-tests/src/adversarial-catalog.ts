@@ -28,15 +28,23 @@
  *   the harness, not as a semantic divergence;
  * - astral-plane strings — pinned per-adapter by hand (#2255); the
  *   catalogue stays BMP so a new string prop doesn't mint eight skips;
- * - union / object / interface / function-typed props — value synthesis
- *   needs member enumeration (unions) or required-field construction
- *   (objects).
+ * - function-typed props — no value to synthesize (a function can't cross
+ *   the JSON data domain);
+ * - a non-literal union (e.g. a member typed as bare `string`) or a
+ *   required object field with no good default (`unknown`, a function) —
+ *   see `parseLiteralRaw` / `leafValue`'s `UNSYNTHESIZABLE` sentinel.
  *
  * The catalogued rich type `Date` (#2274) IS synthesized: a `Date`-typed
  * param yields the same adversarial instants as the golden-vector grid,
  * carried as `{ $date: ISO }` envelopes (a `Date` cannot survive the
  * committed JSON artifact) that `data-point-conformance.ts` materializes
  * back into a `Date` before each render leg.
+ *
+ * Union- and object-typed props (#2277) ARE synthesized too: a
+ * literal-string/boolean/null/numeric union member yields one point per
+ * member (capped — see `UNION_MEMBER_CAP`); an object/interface type yields
+ * a required-fields-only "minimal" point plus one "present" variant per
+ * optional field (one field at a time, no cross-product).
  */
 
 import { compileJSX } from '@barefootjs/jsx'
@@ -52,18 +60,35 @@ interface CatalogValue {
   value: unknown | typeof ABSENT
 }
 
+/**
+ * Matches the IR's `TypeInfo` shape (structurally) — widened for #2277 to
+ * also carry `unionTypes` (union members) and `properties` (object/interface
+ * fields), the same two fields `TypeInfo` itself declares
+ * (`packages/jsx/src/types.ts`). Kept as its own interface (not `TypeInfo`
+ * imported directly) because the catalogue only reads a handful of fields
+ * and structural matching is what the rest of this module already relies on.
+ */
+interface PropParamType {
+  kind: string
+  primitive?: string
+  /** Original TS type string; for a `Date` prop this is `'Date'`. */
+  raw?: string
+  /** Union members (`kind: 'union'`) — mirrors `TypeInfo.unionTypes`. */
+  unionTypes?: PropParamType[]
+  /**
+   * Object/interface fields (`kind: 'object'`, or `kind: 'interface'` for a
+   * resolved local interface) — mirrors `TypeInfo.properties`.
+   */
+  properties?: Array<{ name: string; type: PropParamType; optional: boolean }>
+}
+
 /** Matches the IR's `ParamInfo`/`TypeInfo` shapes (structurally). */
 interface PropParam {
   name: string
   optional: boolean
   isRest?: boolean
   defaultValue?: string
-  type: {
-    kind: string
-    primitive?: string
-    /** Original TS type string; for a `Date` prop this is `'Date'`. */
-    raw?: string
-  }
+  type: PropParamType
 }
 
 /** Strip any generic arguments from a raw type string (`Foo<Bar>` → `Foo`). */
@@ -91,6 +116,138 @@ function toDateEnvelopes(value: unknown): unknown {
     )
   }
   return value
+}
+
+/**
+ * Cap on how many union members get their own catalogue point (#2277). A
+ * wide literal-string union (a day-of-week / locale-code / status-enum
+ * type) would otherwise mint one `gen:` point per member and dominate the
+ * generated corpus for a single prop. Above the cap, a deterministic
+ * first-6/last-6 sample is kept instead — both ends of the declared order,
+ * which is where a boundary regression (first/last case handled specially
+ * in a `switch`) is most likely to show up.
+ */
+const UNION_MEMBER_CAP = 12
+
+/**
+ * Parse a union member's `raw` TS type string (e.g. `"'top'"`, `'true'`,
+ * `'42'`) into the JS literal value it denotes. This is NOT a TS/JS syntax
+ * parse of source code — `raw` here is a short, self-contained data string
+ * (a single literal-type spelling out of `TypeInfo.unionTypes[].raw`), not
+ * a program to parse, so a small regex-driven check is fine.
+ *
+ * Returns `{ ok: false }` for a non-literal member (a bare `string`,
+ * `number`, an object/interface member, etc.) — there is no single value
+ * to synthesize for those, so the caller skips them and the member stays
+ * uncovered (v1 scope, same as a whole non-literal union does today).
+ */
+function parseLiteralRaw(raw: string): { ok: true; value: string | number | boolean | null } | { ok: false } {
+  const trimmed = raw.trim()
+  if (trimmed.length >= 2) {
+    const quote = trimmed[0]
+    if ((quote === "'" || quote === '"') && trimmed[trimmed.length - 1] === quote) {
+      return { ok: true, value: trimmed.slice(1, -1) }
+    }
+  }
+  if (trimmed === 'true') return { ok: true, value: true }
+  if (trimmed === 'false') return { ok: true, value: false }
+  if (trimmed === 'null') return { ok: true, value: null }
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return { ok: true, value: Number(trimmed) }
+  return { ok: false }
+}
+
+/**
+ * Short, stable slug for a union member's catalogue tag. A safe
+ * `[a-zA-Z0-9_-]+` string value is used directly (readable point names like
+ * `gen:placement:union:top`); anything else (numbers, booleans, null, or a
+ * string with characters that would make an awkward tag) falls back to the
+ * member's declared index.
+ */
+function unionMemberTag(value: string | number | boolean | null, index: number): string {
+  if (typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value)) return value
+  return String(index)
+}
+
+/**
+ * Sentinel meaning "this shape can't be synthesized safely" — propagated up
+ * from `leafValue`/`synthesizeMinimal` when a REQUIRED field has no good
+ * default (an `unknown`/function-typed field, or a union with zero
+ * parseable literal members). A half-valid object — every field but one
+ * defaulted — would be worse than no generated point at all: it could
+ * silently exercise a lowering with a bogus value for a field the fixture
+ * never intended to vary. The caller drops the whole object instead.
+ */
+const UNSYNTHESIZABLE = Symbol('unsynthesizable')
+
+/** Cap on nested-object recursion depth (#2277) — mirrors the wide-union cap's
+ * purpose: bound the work for a pathological deeply-nested prop type rather
+ * than recursing arbitrarily. A field still nested at the cap gets `{}`
+ * (an empty object is JSON-clean and doesn't force the whole point to be
+ * dropped) instead of `UNSYNTHESIZABLE`. */
+const OBJECT_DEPTH_CAP = 3
+
+/**
+ * A minimal, JSON-clean leaf value for a single field's `TypeInfo`, used to
+ * populate a required object field (or an optional field's "present"
+ * variant). Recurses into nested objects up to `OBJECT_DEPTH_CAP`. Returns
+ * `UNSYNTHESIZABLE` for a type with no good default — see the sentinel's
+ * docstring.
+ */
+function leafValue(type: PropParamType, depth: number): unknown | typeof UNSYNTHESIZABLE {
+  if (type.kind === 'primitive') {
+    switch (type.primitive) {
+      case 'string':
+        return ''
+      case 'number':
+        return 0
+      case 'boolean':
+        return false
+      case 'null':
+      case 'undefined':
+        return null
+      default:
+        return UNSYNTHESIZABLE
+    }
+  }
+  if (type.kind === 'array') return []
+  if (type.kind === 'interface' && type.raw && baseTypeName(type.raw) === 'Date') {
+    return { $date: '1970-01-01T00:00:00.000Z' }
+  }
+  if (type.kind === 'union' && type.unionTypes) {
+    for (const member of type.unionTypes) {
+      if (!member.raw) continue
+      const parsed = parseLiteralRaw(member.raw)
+      if (parsed.ok) return parsed.value
+    }
+    return UNSYNTHESIZABLE
+  }
+  if ((type.kind === 'object' || type.kind === 'interface') && type.properties) {
+    if (depth >= OBJECT_DEPTH_CAP) return {}
+    return synthesizeMinimal(type.properties, depth + 1)
+  }
+  return UNSYNTHESIZABLE
+}
+
+/**
+ * Build the minimal object for a set of fields: every REQUIRED field gets a
+ * `leafValue`; optional fields are OMITTED (the "present" variant is added
+ * separately, one field at a time — see the `object:+<field>` points in
+ * `catalogValuesFor`). Returns `UNSYNTHESIZABLE` if any required field
+ * can't be synthesized, so the caller emits no object points at all rather
+ * than a half-valid value.
+ */
+function synthesizeMinimal(
+  properties: Array<{ name: string; type: PropParamType; optional: boolean }>,
+  depth: number,
+): Record<string, unknown> | typeof UNSYNTHESIZABLE {
+  const out: Record<string, unknown> = {}
+  for (const prop of properties) {
+    if (prop.optional) continue
+    const value = leafValue(prop.type, depth)
+    if (value === UNSYNTHESIZABLE) return UNSYNTHESIZABLE
+    out[prop.name] = value
+  }
+  return out
 }
 
 function catalogValuesFor(param: PropParam): CatalogValue[] {
@@ -131,6 +288,48 @@ function catalogValuesFor(param: PropParam): CatalogValue[] {
       { tag: 'leap-day', value: { $date: '2024-02-29T12:00:00.000Z' } },
       { tag: 'year-9999', value: { $date: '9999-12-31T23:59:59.999Z' } },
     )
+  } else if (param.type.kind === 'union' && param.type.unionTypes) {
+    // Catalogued rich type (#2277). Each parseable literal member (string /
+    // boolean / null / numeric) becomes its own point; a non-literal member
+    // (a bare `string`, an object arm, …) is skipped — it has no single
+    // value to synthesize, so it stays uncovered (v1 scope).
+    const parsed: Array<{ index: number; value: string | number | boolean | null }> = []
+    param.type.unionTypes.forEach((member, index) => {
+      if (!member.raw) return
+      const result = parseLiteralRaw(member.raw)
+      if (result.ok) parsed.push({ index, value: result.value })
+    })
+    // Wide-union cap: first 6 + last 6 by declared index (see
+    // UNION_MEMBER_CAP's docstring).
+    const sampled = parsed.length > UNION_MEMBER_CAP ? [...parsed.slice(0, 6), ...parsed.slice(-6)] : parsed
+    const usedTags = new Set<string>()
+    for (const { index, value } of sampled) {
+      let tag = unionMemberTag(value, index)
+      if (usedTags.has(tag)) tag = `${tag}-${index}` // defensive: keep tags unique within the param
+      usedTags.add(tag)
+      values.push({ tag: `union:${tag}`, value })
+    }
+  } else if (
+    (param.type.kind === 'object' || param.type.kind === 'interface') &&
+    param.type.properties &&
+    !(param.type.raw && baseTypeName(param.type.raw) === 'Date')
+  ) {
+    // Catalogued rich type (#2277). `synthesizeMinimal` builds the
+    // required-fields-only shape; each OPTIONAL field additionally gets a
+    // "present" variant (one field at a time — no cross-product). If the
+    // minimal shape itself can't be synthesized (a required field with no
+    // good default), emit nothing for this param rather than a half-valid
+    // object.
+    const minimal = synthesizeMinimal(param.type.properties, 0)
+    if (minimal !== UNSYNTHESIZABLE) {
+      values.push({ tag: 'object:minimal', value: minimal })
+      for (const prop of param.type.properties) {
+        if (!prop.optional) continue
+        const presentValue = leafValue(prop.type, 0)
+        if (presentValue === UNSYNTHESIZABLE) continue
+        values.push({ tag: `object:+${prop.name}`, value: { ...minimal, [prop.name]: presentValue } })
+      }
+    }
   }
   return values
 }
