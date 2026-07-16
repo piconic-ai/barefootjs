@@ -233,8 +233,9 @@ export function normalizeExpectedHtml(html: string): string {
  * cross-backend lowering (`date-lowering.ts`) and runtime helper. A valid
  * `Date` instance is admitted directly (an `Invalid Date` is refused — it
  * cannot survive `toISOString` transport); the `{ $date: ISO }` envelope the
- * generated catalogue uses is a plain object and passes as one (it is
- * materialized into a `Date` at render time). Everything else —
+ * generated catalogue uses is admitted as the plain object it is, but only
+ * after its instant is validated up front (materialized into a `Date` at
+ * render time). Everything else —
  * `undefined`, `NaN`/`Infinity`, functions, other class instances — cannot
  * cross the host-language boundary and fails loudly at fixture-definition
  * time rather than as a confusing render divergence.
@@ -243,7 +244,7 @@ function assertJsonDomain(fixtureId: string, pointName: string, value: unknown, 
   const fail = (why: string): never => {
     throw new Error(
       `[${fixtureId}] dataPoint '${pointName}': props${path} ${why} — ` +
-        `outside the JSON data domain (see spec/subset-conformance.md). ` +
+        `outside the supported data domain (see spec/subset-conformance.md). ` +
         `Omit the key to express an absent optional prop.`,
     )
   }
@@ -284,7 +285,20 @@ function assertJsonDomain(fixtureId: string, pointName: string, value: unknown, 
     const ctor = (value as object).constructor?.name ?? 'unknown'
     fail(`is a ${ctor} instance`)
   }
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+  const entries = Object.entries(value as Record<string, unknown>)
+  // The `{ $date: ISO }` transport envelope (materialized into a `Date` at
+  // render time): validate the instant up front so a bad ISO string is a
+  // deterministic fixture-definition error, not a `RangeError` surfacing deep
+  // in a prop-baker's `toISOString()` — the same contract as a real
+  // `Invalid Date` above.
+  if (entries.length === 1 && entries[0][0] === '$date') {
+    const iso = entries[0][1]
+    if (typeof iso !== 'string' || Number.isNaN(new Date(iso).getTime())) {
+      fail(`is a { $date } envelope with an unparseable ISO string (${JSON.stringify(iso)})`)
+    }
+    return
+  }
+  for (const [k, v] of entries) {
     assertJsonDomain(fixtureId, pointName, v, `${path}.${k}`)
   }
 }

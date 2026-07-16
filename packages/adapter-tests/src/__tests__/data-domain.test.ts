@@ -65,6 +65,21 @@ describe('assertJsonDomain: Date admission (#2274)', () => {
     ).not.toThrow()
   })
 
+  test('refuses a { $date } envelope with an unparseable ISO string', () => {
+    // Validated up front so a bad ISO is a deterministic definition-time
+    // error, not a RangeError deep in a prop-baker's toISOString().
+    expect(() =>
+      createFixture({
+        id: 'domain-date-bad-envelope',
+        description: 'malformed envelope is refused',
+        source: dateSource,
+        props: { createdAt: new Date('2024-01-01T00:00:00.000Z') },
+        dataPoints: [{ name: 'bad', props: { createdAt: { $date: 'not-a-date' } } }],
+        expectedHtml: '<time bf-s="test" bf="s1"><!--bf:s0-->x<!--/--></time>',
+      }),
+    ).toThrow(/\$date.*unparseable ISO/)
+  })
+
   test('still refuses a non-Date class instance', () => {
     expect(() =>
       createFixture({
