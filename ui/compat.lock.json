@@ -2103,16 +2103,6 @@
           ]
         }
       },
-      "object-catalogued": {
-        "go-template": {
-          "kind": "render",
-          "reason": "inline object-prop member access renders empty (untyped Cfg field) — #2299"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "inline object-prop member access renders empty — #2299"
-        }
-      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",

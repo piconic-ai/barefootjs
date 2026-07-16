@@ -355,6 +355,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private primeCompileState(ir: ComponentIR): void {
     this.state.propsObjectName = ir.metadata.propsObjectName
     this.state.restPropsName = ir.metadata.restPropsName ?? null
+    // Inline-object-typed props (`cfg: { id: number }`) bake as
+    // `map[string]interface{}`; `member()` routes a nested access on them
+    // through `bf_get` rather than an exact-case dot path (#2299).
+    this.state.objectTypedPropNames = new Set(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => p.type.kind === 'object')
+        .map(p => p.name),
+    )
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
     // #2208 fable review: every name a `.map()`/`.filter()` loop callback
@@ -658,6 +666,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return this.isMapRootedContextChain(node.object)
     }
     return false
+  }
+
+  /**
+   * True when `node` is a non-computed member chain rooted in an
+   * inline-object-typed prop (`props.cfg` where `cfg: { id: number }`, an
+   * `objectTypedPropNames` entry — #2299). Such a prop is a
+   * `map[string]interface{}` Input field, so a nested `.id` must go through
+   * the case-tolerant `bf_get` (like `isMapRootedContextChain`), not an
+   * exact-case dot path that would `MapIndex("ID")` a JS-cased-`"id"` map and
+   * render empty. Recurses: once map-rooted, every further hop reads off an
+   * `interface{}` value with no static struct, so it stays map-rooted.
+   */
+  private isMapRootedPropChain(node: ParsedExpr): boolean {
+    if (node.kind !== 'member' || node.computed) return false
+    const obj = node.object
+    if (obj.kind === 'identifier' && obj.name === this.state.propsObjectName) {
+      return this.state.objectTypedPropNames.has(node.property)
+    }
+    return this.isMapRootedPropChain(obj)
   }
 
   /** Go type for a context-consumer field, from its `createContext` default's type. */
@@ -3574,6 +3601,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // variant's docstring for the multi-hop caveat.
     if (optional) {
       return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(goFieldNameForKey(property))}`
+    }
+    // A plain member access rooted in an inline-object-typed prop
+    // (`props.cfg.id`, #2299) reads off a `map[string]interface{}` field:
+    // route through the case-tolerant `bf_get` with the JS-cased key (the map
+    // is baked with source-cased keys), not the exact-case `.Cfg.ID` dot path
+    // below that would `MapIndex("ID")` a `"id"` map and render empty. Placed
+    // after the `length`/`optional` special cases so it only intercepts the
+    // otherwise-untyped dot access.
+    if (this.isMapRootedPropChain(object)) {
+      return `bf_get ${wrapIfMultiToken(obj)} ${JSON.stringify(property)}`
     }
     return `${obj}.${goFieldNameForKey(property)}`
   }
