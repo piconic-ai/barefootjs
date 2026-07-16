@@ -187,6 +187,53 @@ const _kindRegistryIsExhaustive: MissingFromKindRegistry extends never ? true : 
 void _kindRegistryIsExhaustive
 
 /**
+ * Runtime registry of the catalogued `array-method` names — the positive
+ * counterpart to `UNSUPPORTED_METHODS`'s negative gate, and the denominator
+ * the coverage ledger's array-method floor test (`coverage-map.test.ts`)
+ * requires a covering fixture for. This is the catalogue half of the
+ * change-time coupling rule (`spec/subset-conformance.md` / `CLAUDE.md`):
+ * the exhaustiveness pin below makes adding a method to the `array-method`
+ * union without listing it here a compile error, and the floor test then
+ * makes shipping a listed method with no fixture a test failure.
+ */
+export const ARRAY_METHOD_NAMES = [
+  'join',
+  'includes',
+  'indexOf',
+  'lastIndexOf',
+  'at',
+  'concat',
+  'slice',
+  'reverse',
+  'toReversed',
+  'toLowerCase',
+  'toUpperCase',
+  'trim',
+  'trimStart',
+  'trimEnd',
+  'toFixed',
+  'split',
+  'startsWith',
+  'endsWith',
+  'replace',
+  'replaceAll',
+  'repeat',
+  'padStart',
+  'padEnd',
+  'flat',
+] as const satisfies ReadonlyArray<Extract<ParsedExpr, { kind: 'array-method' }>['method']>
+
+// Exhaustiveness pin: adding a method to the `array-method` union (either
+// variant) without listing it in `ARRAY_METHOD_NAMES` fails to compile here
+// (same drift defence as `PARSED_EXPR_KINDS`).
+type MissingFromArrayMethodRegistry = Exclude<
+  Extract<ParsedExpr, { kind: 'array-method' }>['method'],
+  (typeof ARRAY_METHOD_NAMES)[number]
+>
+const _arrayMethodRegistryIsExhaustive: MissingFromArrayMethodRegistry extends never ? true : never = true
+void _arrayMethodRegistryIsExhaustive
+
+/**
  * One property of an `object-literal` `ParsedExpr`. The key is the
  * resolved (non-computed) property name — for `{ a: 1 }` and shorthand
  * `{ a }` it is `a`; for `{ 'a-b': 1 }` it is `a-b`. Computed keys

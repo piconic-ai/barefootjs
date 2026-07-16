@@ -213,9 +213,15 @@ convention as `spec/adapter-architecture.md`):
 | Shared conformance | `run-adapter-conformance.ts` single mandatory entry point ("forgot to wire the suite" is impossible); 182 fixtures + marker conformance + template primitives + render contract; real-backend execution with `normalizeHTML`; `props` injection; **the `dataPoints` oracle suite (roadmap 1)** — gate-ordered, live-oracle, JSON-domain-validated, piloted on `nullish-coalescing-text` (found #2248 — since fixed via nillable lowering + `bf_nullish` — and a Go harness string-escaping bug on its first run) | No PR-vs-nightly tiering (the catalogue added ~200 real-backend renders per adapter job); catalogue exclusions await their unblockers (unions/objects → member enumeration, floats → #2168-class) — `Date` graduated (#2274, the first catalogued rich type: SSR lowering, oracle data points, and client-JS lowering all landed) and destructured optionals graduated (#2259, analyzer parity restored), so the catalogue now derives for both |
 | Declared skips | Typed skip sets (`skipJsx`, `skipTemplatePrimitives`, `skipMarkerConformance`, `expectedDiagnostics`, and now `skipDataPoints` — its first entries pinned #2248 on the Go adapter until the fix landed and removed them, completing one full ledger round-trip) with issue-link discipline; `known-limitation` label; `@barefootjs/compat` component×adapter compile matrix (`compat.lock.json`); and the generated `kind × axis × adapter` support matrix (`support-matrix.lock.json`, #2275) — the coverage ledger (`coverage-map.json` + `PARSED_EXPR_KINDS` registry + freshness/floor meta-tests) supplies the kind/axis denominators, joined against each adapter's pins/divergences, published on the docs compatibility-matrix page and held by a CI drift gate | Attribution is fixture-granular — a construct's `pass/total` counts the fixtures that exercise it (pins are per-fixture, not per-construct), so the ratio, not a binary verdict, is the queryable signal |
 
-Cross-cutting gap: the change-time coupling rule (subset extensions merge
-only with fixtures in the same PR) is not yet written into any contribution
-convention.
+Cross-cutting: the change-time coupling rule (subset extensions merge only
+with fixtures in the same PR) is written into `CLAUDE.md`'s Testing section
+(#2276) so agent-driven PRs pick it up automatically. Its *kind* and
+*array-method-catalogue* halves are additionally enforced mechanically
+(the `PARSED_EXPR_KINDS` and `ARRAY_METHOD_NAMES` exhaustiveness pins + the
+coverage-ledger floor tests, which demand a covering fixture or a documented
+allowlist entry); other extensions — a builtin lowering plugin, a
+sort-comparator form — have no positive registry to floor-test against, so
+for those the written rule is the only backstop.
 
 ## Roadmap
 
