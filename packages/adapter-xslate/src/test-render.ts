@@ -566,6 +566,15 @@ function toPerlLiteral(value: unknown): string {
   // JS booleans → JSON::PP sentinels so `spread_attrs` can detect them
   // via `ref()` and apply boolean-attr semantics.
   if (typeof value === 'boolean') return value ? 'JSON::PP::true' : 'JSON::PP::false'
+  if (value instanceof Date) {
+    // A Date prop crosses the language boundary as its ISO-8601 string —
+    // the shared `date()` runtime helper (#2274/#2288) accepts an ISO
+    // string as well as a native Perl date type. MUST come before the
+    // generic `value && typeof value === 'object'` branch below, which
+    // would otherwise `Object.entries()` a Date's (non-enumerable)
+    // internals into an empty hashref literal, silently erasing the value.
+    return perlSingleQuote(value.toISOString())
+  }
   if (Array.isArray(value)) {
     return `[${value.map(toPerlLiteral).join(', ')}]`
   }

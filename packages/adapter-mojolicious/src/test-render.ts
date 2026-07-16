@@ -711,6 +711,15 @@ function toPerlLiteral(value: unknown): string {
   // 0/1 would conflate genuine numeric values with booleans and
   // turn `disabled: false` into `disabled="0"` (#1413 review).
   if (typeof value === 'boolean') return value ? 'Mojo::JSON::true' : 'Mojo::JSON::false'
+  if (value instanceof Date) {
+    // A Date prop crosses the language boundary as its ISO-8601 string —
+    // the shared `date()` runtime helper (#2274/#2288) accepts an ISO
+    // string as well as a native Perl date type. MUST come before the
+    // generic `value && typeof value === 'object'` branch below, which
+    // would otherwise `Object.entries()` a Date's (non-enumerable)
+    // internals into an empty hashref literal, silently erasing the value.
+    return perlSingleQuote(value.toISOString())
+  }
   // Array → Perl arrayref literal, recursing so element types are
   // serialised correctly. Previously this returned the literal `[]`
   // — fine when the only caller was the spread-bag initial-value

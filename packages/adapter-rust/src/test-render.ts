@@ -529,6 +529,15 @@ function buildVars(
  * uniformly rather than threading the transform through each builder.
  */
 function encodeSpecials(value: unknown): unknown {
+  if (value instanceof Date) {
+    // A Date prop crosses the language boundary as its ISO-8601 string —
+    // the shared `date()` runtime helper (#2274/#2288) accepts an ISO
+    // string as well as a native `chrono` date type. MUST come before the
+    // generic object branch below, which REBUILDS the object via
+    // `Object.entries()` — a Date's fields are non-enumerable, so that
+    // rebuild would silently erase it into `{}`.
+    return value.toISOString()
+  }
   if (typeof value === 'number') {
     if (Number.isNaN(value)) return { __bf_special: 'nan' }
     if (value === Infinity) return { __bf_special: 'inf' }

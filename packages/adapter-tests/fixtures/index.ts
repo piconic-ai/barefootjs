@@ -385,6 +385,7 @@ import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 // literal into each iteration instead of reading the loop's own item.
 import { fixture as loopParamShadowsRecordConst } from './loop-param-shadows-record-const'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
+import { fixture as dateCatalogued } from './date-catalogued'
 
 import type { JSXFixture } from '../src/types'
 
@@ -665,4 +666,5 @@ export const jsxFixtures: JSXFixture[] = [
   filterParamNameDiffers,
   loopParamShadowsRecordConst,
   dateMethodUncatalogued,
+  dateCatalogued,
 ]

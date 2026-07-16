@@ -704,6 +704,15 @@ function buildGoPropsInit(
       lines.push(`\t\t${goField}: ${value},`)
     } else if (typeof value === 'boolean') {
       lines.push(`\t\t${goField}: ${value},`)
+    } else if (value instanceof Date) {
+      // A Date prop crosses the language boundary as its ISO-8601 string;
+      // the field's unresolved fallback type (`interface{}`/`any`) holds a
+      // string fine, and the shared `date()` runtime helper (#2274/#2288)
+      // accepts an ISO string as well as the backend's native date type.
+      // MUST come before `Array.isArray`/plain-object below — those would
+      // otherwise rebuild/inspect a Date's (non-enumerable) internals and
+      // silently erase it.
+      lines.push(`\t\t${goField}: ${goStringLit(value.toISOString())},`)
     } else if (Array.isArray(value)) {
       // Array → Go slice literal. Fixtures that exercise array-receiver
       // methods (`items.every(...)`, `items.join(' - ')`, etc. — #1448
@@ -788,6 +797,7 @@ function goSliceElemType(
  */
 function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string): string {
   const entries = arr.map(v => {
+    if (v instanceof Date) return goStringLit(v.toISOString())
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return goStructLiteral(v as Record<string, unknown>, elemType)
     }
@@ -812,6 +822,7 @@ function goTypedSliceLiteralFromArray(arr: unknown[], elemType: string): string 
  */
 function goTypedMapSliceLiteralFromArray(arr: unknown[], elemType: string): string {
   const entries = arr.map(v => {
+    if (v instanceof Date) return goStringLit(v.toISOString())
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return goMapLiteralFromObject(v as Record<string, unknown>, true)
     }
@@ -853,6 +864,7 @@ function goStructLiteral(obj: Record<string, unknown>, typeName: string): string
     if (typeof v === 'string') fields.push(`${goField}: ${goStringLit(v)}`)
     else if (typeof v === 'number' || typeof v === 'boolean') fields.push(`${goField}: ${v}`)
     else if (v === null) fields.push(`${goField}: nil`)
+    else if (v instanceof Date) fields.push(`${goField}: ${goStringLit(v.toISOString())}`)
     else if (Array.isArray(v)) fields.push(`${goField}: ${goArrayLiteralFromArray(v)}`)
     else if (v && typeof v === 'object') fields.push(`${goField}: ${goMapLiteralFromObject(v as Record<string, unknown>, true)}`)
   }
@@ -866,6 +878,7 @@ function goArrayLiteralFromArray(arr: unknown[]): string {
     else if (typeof v === 'number') entries.push(String(v))
     else if (typeof v === 'boolean') entries.push(String(v))
     else if (v === null) entries.push('nil')
+    else if (v instanceof Date) entries.push(goStringLit(v.toISOString()))
     else if (Array.isArray(v)) entries.push(goArrayLiteralFromArray(v))
     else if (v && typeof v === 'object') {
       // Objects inside arrays are accessed via Go-struct-style
@@ -904,6 +917,7 @@ function goMapLiteralFromObject(
     else if (typeof v === 'number') entries.push(`${key}: ${v}`)
     else if (typeof v === 'boolean') entries.push(`${key}: ${v}`)
     else if (v === null) entries.push(`${key}: nil`)
+    else if (v instanceof Date) entries.push(`${key}: ${goStringLit(v.toISOString())}`)
     else if (Array.isArray(v)) {
       // Array-valued field inside an object-in-array (e.g. the `tags`
       // of `items.flatMap(i => i.tags)`). Without this branch the field
