@@ -1,5 +1,38 @@
 # @barefootjs/mojolicious
 
+## 0.21.0
+
+### Patch Changes
+
+- 1b782c2: Extend #2274 (Date as the first catalogued rich type) into the oracle
+  conformance harness: a `Date`-typed prop can now be a data-point value,
+  rendered through every backend and compared live against the JS reference.
+
+  - The adapter test-render prop-bakers transport a `Date` prop as its
+    ISO-8601 string, which each backend's shipped `date` runtime helper
+    parses — source-literal emitters (Go, Python/Jinja, Perl/Xslate+Mojo)
+    gain an explicit `Date` branch; the JSON-payload serializers (Rust's
+    `encodeSpecials`, and Ruby/PHP which stringify props directly) carry the
+    ISO string through `Date.prototype.toJSON`.
+  - `assertJsonDomain` admits the catalogued `Date` type (a real instance, or
+    the `{ $date: ISO }` envelope the generated catalogue uses so a `Date`
+    survives the committed JSON artifact); the data-point runner materializes
+    the envelope back into a `Date` before both render legs, and the
+    type-derived adversarial catalogue synthesizes the epoch / pre-1970 /
+    leap-day / four-digit-year grid for any `Date`-typed prop.
+  - New `date-catalogued` fixture with data points covering `toISOString()`
+    and `getUTCFullYear()`.
+
+- ea50cdc: Fix #2289: a fragment-rooted child component (`'use client'` component returning `<>…</>`) now hydrates with its parent's live props — callbacks and reactive getters included — instead of silently losing every function-valued prop.
+
+  - `@barefootjs/client`: `$c` / `findSsrScopeBySlotIn` gain a comment-scope fallback (`findCommentChildScope`) that resolves a child declared by a `<!--bf-scope:<parentId>_<slotId>|h=…|m=…-->` marker, registers its proxy element, and hands it to `initChild` — so the child's init runs with the parent's real prop object rather than never running at all (the props JSON in the marker only ever carried the JSON-safe subset). `getCommentScopeBoundary` now honours a paired `<!--bf-/scope:<scopeId>-->` end marker so a fragment scope's queries stop at its real last root instead of leaking onto later parent-owned siblings (the reported misattached-aria symptom); HTML without the end marker falls back to the old heuristic.
+  - `@barefootjs/shared`: new `BF_SCOPE_COMMENT_END_PREFIX` constant.
+  - `@barefootjs/hono`, `@barefootjs/go-template`, `@barefootjs/erb`, `@barefootjs/jinja`, `@barefootjs/twig`, `@barefootjs/xslate`, `@barefootjs/mojolicious`, `@barefootjs/blade`, `@barefootjs/rust`, `@barefootjs/php`, `@barefootjs/perl`: fragment-rooted templates emit the paired `bf-/scope` end marker after the fragment's last root.
+  - `@barefootjs/router`: region diffing normalizes the new end marker's volatile scope id.
+
+- Updated dependencies [ea50cdc]
+  - @barefootjs/shared@0.21.0
+
 ## 0.20.0
 
 ### Patch Changes
