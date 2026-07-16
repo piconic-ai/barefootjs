@@ -105,6 +105,22 @@ export const BF_PARENT_OWNED_PREFIX = '^'
 /** Comment-based scope marker prefix: `<!--bf-scope:ComponentName_abc123-->` */
 export const BF_SCOPE_COMMENT_PREFIX = 'bf-scope:'
 
+/**
+ * Comment-based scope END marker prefix: `<!--bf-/scope:ComponentName_abc123-->`.
+ *
+ * Paired with BF_SCOPE_COMMENT_PREFIX: emitted after a fragment root's last
+ * top-level node, carrying the same scope id as the opening marker. Without
+ * it a fragment scope's DOM range has no lower bound — it runs to the next
+ * `bf-scope:` comment or the end of the parent element — so queries from a
+ * fragment-rooted child could match unrelated later siblings owned by the
+ * parent (#2289). Follows the `bf-loop` / `bf-/loop` pairing convention.
+ *
+ * The runtime treats the end marker as optional (SSR HTML rendered by an
+ * older adapter runtime falls back to the unbounded-range heuristic), so
+ * adapters can adopt it independently.
+ */
+export const BF_SCOPE_COMMENT_END_PREFIX = 'bf-/scope:'
+
 /** Loop boundary start prefix: comments are `<!--bf-loop:<markerId>-->`. */
 export const BF_LOOP_START = 'bf-loop'
 

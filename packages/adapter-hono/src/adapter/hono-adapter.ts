@@ -1078,18 +1078,21 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   }
 
   /**
-   * Wrap `body` in a fragment-rooted scope comment.
-   * Shape (matches `hydrate.ts::hydrateCommentScope`):
-   *   root:  <!--bf-scope:<scopeId>|<propsJson>-->
-   *   child: <!--bf-scope:<scopeId>|h=<host>|m=<slot>|<propsJson>-->
+   * Wrap `body` in a fragment-rooted scope comment pair.
+   * Shape (matches `hydrate.ts::hydrateCommentScope` / `scope.ts::getCommentScopeBoundary`):
+   *   root:  <!--bf-scope:<scopeId>|<propsJson>-->…<!--bf-/scope:<scopeId>-->
+   *   child: <!--bf-scope:<scopeId>|h=<host>|m=<slot>|<propsJson>-->…<!--bf-/scope:<scopeId>-->
    * `<scopeId>` stays at the front so child detection can anchor on `|h=`.
+   * The end marker bounds the scope's sibling range — without it, queries
+   * from the fragment scope leak onto later siblings owned by the parent
+   * (#2289).
    */
   private wrapWithScopeComment(body: string): string {
     const hostExpr = '${__bfParent ? `|h=${__bfParent}|m=${__bfMount}` : ""}'
     const propsExpr = this.currentComponentHasProps
       ? '${__bfPropsJson ? `|${__bfPropsJson}` : ""}'
       : ''
-    return `<>{bfComment(\`scope:\${__scopeId}${hostExpr}${propsExpr}\`)}${body}</>`
+    return `<>{bfComment(\`scope:\${__scopeId}${hostExpr}${propsExpr}\`)}${body}{bfComment(\`/scope:\${__scopeId}\`)}</>`
   }
 
   // ===========================================================================

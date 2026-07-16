@@ -11,7 +11,7 @@
  */
 
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
-import { cssEscape } from './query.ts'
+import { cssEscape, findCommentChildScope } from './query.ts'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-
@@ -62,5 +62,14 @@ export function findSsrScopeBySlotIn(
 
   const suffixSelector = `[${BF_SCOPE}$="_${slotId}"]`
   if (selfMatch && parent.matches(suffixSelector)) return parent as HTMLElement
-  return parent.querySelector(suffixSelector) as HTMLElement | null
+  const bySuffix = parent.querySelector(suffixSelector) as HTMLElement | null
+  if (bySuffix) return bySuffix
+
+  // Fragment-root child: its scope is a bf-scope: comment, not an element
+  // carrying (bf-h, bf-m) — resolve the comment's proxy element (#2289).
+  return findCommentChildScope(
+    parent,
+    parentBfs ? [parentBfs] : [],
+    slotId,
+  ) as HTMLElement | null
 }

@@ -272,6 +272,15 @@ sub scope_comment ($self) {
     return "<!--bf-scope:$scope_id$host_segment$props_json-->";
 }
 
+# Paired end marker for scope_comment above. Bounds the scope's sibling
+# range so client-side queries from a fragment-rooted scope don't leak
+# onto later siblings owned by the parent (#2289). No `|h=`/`|m=`/props
+# segments — the client only needs the scope id to find the matching end.
+sub scope_comment_end ($self) {
+    my $scope_id = $self->_scope_id // '';
+    return "<!--bf-/scope:$scope_id-->";
+}
+
 # ---------------------------------------------------------------------------
 # Script Registration
 # ---------------------------------------------------------------------------

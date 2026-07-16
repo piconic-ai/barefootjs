@@ -529,3 +529,41 @@ function Widget({ rows }: { rows: { x: string }[] }) {
     expect(template).toContain("bf.string(cfg['x'])")
   })
 })
+
+// A fragment-rooted component (top-level `<>...</>` return) has no single
+// wrapping element to bound the client's scope query, so `renderFragment`
+// brackets its children with a comment-based scope marker pair instead of
+// element attributes. Without the end marker, a range query anchored on the
+// begin marker has no lower bound and leaks onto later siblings owned by
+// the parent (#2289). Mirrors the hono/xslate/mojo/go/erb adapters' fix —
+// see `wrapWithScopeComment` in packages/adapter-hono/src/adapter/hono-adapter.ts.
+describe('JinjaAdapter - fragment-root scope comment end marker (#2289)', () => {
+  test('renderFragment brackets a multi-root fragment with paired begin/end scope_comment calls', () => {
+    const { template } = compileAndGenerate(`
+export function ChildFragment() {
+  return <><button>add</button><p>hint</p></>
+}
+`)
+    expect(template).toContain('{{ bf.scope_comment() | safe }}')
+    expect(template).toContain('{{ bf.scope_comment_end() | safe }}')
+    // Begin marker precedes the children; end marker follows the fragment's
+    // last top-level node -- both read the same `bf._scope_id()` at render
+    // time, so the emitted scope ids are identical by construction.
+    const beginIdx = template.indexOf('bf.scope_comment() | safe')
+    const buttonIdx = template.indexOf('<button>')
+    const pIdx = template.indexOf('<p>')
+    const endIdx = template.indexOf('bf.scope_comment_end() | safe')
+    expect(beginIdx).toBeLessThan(buttonIdx)
+    expect(buttonIdx).toBeLessThan(pIdx)
+    expect(pIdx).toBeLessThan(endIdx)
+  })
+
+  test('a non-fragment (single element) root does NOT get scope_comment_end (element attrs bound the scope instead)', () => {
+    const { template } = compileAndGenerate(`
+export function Child() {
+  return <div>hi</div>
+}
+`)
+    expect(template).not.toContain('scope_comment')
+  })
+})

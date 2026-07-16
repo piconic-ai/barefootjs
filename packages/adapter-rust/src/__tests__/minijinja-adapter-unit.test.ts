@@ -530,3 +530,28 @@ function Widget({ rows }: { rows: { x: string }[] }) {
     expect(template).toContain('bf.string(cfg.x)')
   })
 })
+
+describe('MinijinjaAdapter - fragment-root scope comment end marker (#2289)', () => {
+  // A fragment-rooted component (multiple top-level nodes) uses a
+  // comment-based scope marker instead of a real DOM element, so it needs a
+  // paired end marker after the last top-level node -- otherwise
+  // client-side queries from this scope leak onto later siblings owned by
+  // the parent. See `scope_comment_end` in `runtime/src/runtime.rs`.
+  test('emits a bf-/scope end marker with the same scope id as the begin marker', () => {
+    const { template } = compileAndGenerate(`
+export function Wrapper({ children }: { children?: any }) {
+  return (
+    <>
+      <div>Header</div>
+      {children}
+    </>
+  )
+}
+`)
+    expect(template).toContain('{{ bf.scope_comment() | safe }}')
+    expect(template).toContain('{{ bf.scope_comment_end() | safe }}')
+    expect(template.indexOf('bf.scope_comment()')).toBeLessThan(
+      template.indexOf('bf.scope_comment_end()'),
+    )
+  })
+})

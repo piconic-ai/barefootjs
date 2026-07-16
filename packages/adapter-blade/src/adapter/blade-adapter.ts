@@ -1384,7 +1384,10 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   private renderFragment(fragment: IRFragment): string {
     const children = this.renderChildren(fragment.children)
     if (fragment.needsScopeComment) {
-      return `{!! $bf->scope_comment() !!}${children}`
+      // End marker bounds the scope's sibling range — without it, queries
+      // from the fragment scope leak onto later siblings owned by the
+      // parent (#2289).
+      return `{!! $bf->scope_comment() !!}${children}{!! $bf->scope_comment_end() !!}`
     }
     return children
   }

@@ -1260,7 +1260,10 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   private renderFragment(fragment: IRFragment): string {
     const children = this.renderChildren(fragment.children)
     if (fragment.needsScopeComment) {
-      return `{{ bf.scope_comment() | raw }}${children}`
+      // End marker bounds the scope's sibling range — without it, queries
+      // from the fragment scope leak onto later siblings owned by the
+      // parent (#2289).
+      return `{{ bf.scope_comment() | raw }}${children}{{ bf.scope_comment_end() | raw }}`
     }
     return children
   }

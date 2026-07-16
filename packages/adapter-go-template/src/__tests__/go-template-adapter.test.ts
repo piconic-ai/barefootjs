@@ -2191,6 +2191,50 @@ export function ConditionalComponent(props: { variant: string }) {
       const scopeCommentCount = (template.match(/\{\{bfScopeComment \.\}\}/g) ?? []).length
       expect(scopeCommentCount).toBeGreaterThanOrEqual(2)
     })
+
+    test('non-transparent fragment root outputs paired begin/end scope comments (#2289)', () => {
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function Wrapper({ children }) {
+  const [open, setOpen] = createSignal(false)
+  return (
+    <>
+      <div>Header</div>
+      {children}
+    </>
+  )
+}
+`)
+      // The end marker closes the scope range so a later sibling's markup
+      // isn't swept into this fragment's client-side query (#2289).
+      expect(result.template).toContain('{{bfScopeComment .}}')
+      expect(result.template).toContain('{{bfScopeCommentEnd .}}')
+      // Both markers are driven off the same context (`.`), so they carry
+      // the same ScopeID at render time — assert ordering: end follows the
+      // fragment's rendered children, not interleaved with them.
+      const beginIndex = result.template.indexOf('{{bfScopeComment .}}')
+      const endIndex = result.template.indexOf('{{bfScopeCommentEnd .}}')
+      expect(beginIndex).toBeGreaterThanOrEqual(0)
+      expect(endIndex).toBeGreaterThan(beginIndex)
+    })
+
+    test('transparent fragment root (single children passthrough) does NOT output scope comments', () => {
+      // <>{children}</> is transparent (jsx-to-ir.ts) — scope is carried by
+      // the child's own markup, so no begin/end pair should be emitted.
+      const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function DialogRoot({ children }) {
+  const [open, setOpen] = createSignal(false)
+  return <>{children}</>
+}
+`)
+      expect(result.template).not.toContain('bfScopeComment')
+      expect(result.template).not.toContain('bfScopeCommentEnd')
+    })
   })
 
   describe('script registration - asset paths', () => {

@@ -130,6 +130,66 @@ export function ThemeLabel() { const theme = useContext(ThemeContext); return <s
   })
 })
 
+describe('ErbAdapter - fragment-root scope comment end marker (#2289)', () => {
+  // A fragment-rooted component (multiple top-level nodes) uses a
+  // comment-based scope marker instead of a real DOM element, so it needs a
+  // paired end marker after the last top-level node -- otherwise
+  // client-side queries from this scope leak onto later siblings owned by
+  // the parent. See `scope_comment_end` in `lib/barefoot_js.rb`.
+  test('template emits both bf.scope_comment and bf.scope_comment_end, in order', () => {
+    const { template } = compileAndGenerate(`
+export function Wrapper({ children }: { children?: any }) {
+  return (
+    <>
+      <div>Header</div>
+      {children}
+    </>
+  )
+}
+`)
+    expect(template).toContain('<%= bf.scope_comment %>')
+    expect(template).toContain('<%= bf.scope_comment_end %>')
+    expect(template.indexOf('<%= bf.scope_comment %>')).toBeLessThan(
+      template.indexOf('<%= bf.scope_comment_end %>'),
+    )
+  })
+
+  // Renders through real Ruby (`bf.scope_comment` / `bf.scope_comment_end`
+  // both read `_scope_id` at render time) to confirm the two markers carry
+  // the SAME scope id -- a template-level check can only see that both
+  // calls are present, not that they agree at render time.
+  test('rendered HTML pairs bf-scope and bf-/scope with the same scope id', async () => {
+    let html: string
+    try {
+      html = await renderErbComponent({
+        source: `
+export function Wrapper({ children }: { children?: any }) {
+  return (
+    <>
+      <div>Header</div>
+      {children}
+    </>
+  )
+}
+`,
+        adapter: new ErbAdapter(),
+      })
+    } catch (err) {
+      if (err instanceof ErbNotAvailableError) {
+        console.log(`Skipping [scope-comment-end]: ${err.message}`)
+        return
+      }
+      throw err
+    }
+    const begin = html.match(/<!--bf-scope:([^|]*?)(?:\||-->)/)
+    const end = html.match(/<!--bf-\/scope:([^>]*)-->/)
+    expect(begin).not.toBeNull()
+    expect(end).not.toBeNull()
+    expect(end![1]).toBe(begin![1])
+    expect(html.indexOf(begin![0])).toBeLessThan(html.indexOf(end![0]))
+  })
+})
+
 describe('ErbAdapter - prop-derived memo SSR seeding (#1297)', () => {
   test('seeds a prop-derived memo from the prop var', () => {
     const { template } = compileAndGenerate(`

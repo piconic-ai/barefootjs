@@ -492,11 +492,91 @@ function $cSingle(scope: Element | null, id: string): Element | null {
     // Precise match found nothing. Check if scope itself matches the short suffix
     // (fragment root / inlined component where scope IS the child).
     if (scope.matches?.(`[${BF_SCOPE}$="_${cleanId}"]`)) return scope
-    return null
+    // Fragment-root child: no element carries the child's scope id — it is
+    // declared by a bf-scope: comment instead (#2289).
+    return findCommentChildScope(scope, parentScopeIds, cleanId)
   }
 
   // Fallback: no parent scope ID available — use short suffix match (best-effort)
   return findChildScope(scope, `[${BF_SCOPE}$="_${cleanId}"]`)
+    ?? findCommentChildScope(scope, [], cleanId)
+}
+
+/**
+ * Resolve a comment-anchored child scope (fragment-root child, #2289).
+ *
+ * A child component whose root is a JSX Fragment has no element carrying
+ * `bf-s`/`bf-h`/`bf-m` — its scope is declared by a
+ * `<!--bf-scope:<parentId>_<slotId>|h=...|m=...-->` comment. The element
+ * selectors in `$cSingle` / `findSsrScopeBySlotIn` can never match it, so
+ * without this fallback the parent's `initChild(...)` receives `null` and
+ * the child is never initialized: every callback prop dies silently and
+ * no reactive update ever reaches the child.
+ *
+ * Matches on the scope id embedded in the comment (`<parentId>_<slotId>`,
+ * the same convention the element path's `[bf-s$="<parentId>_<slotId>"]`
+ * selector relies on) rather than on the `|h=`/`|m=` segments — the scope
+ * id is the first `|`-free token, so matching it cannot be confused by
+ * props JSON that happens to contain `|h=`.
+ *
+ * On match, the proxy element (first element sibling after the comment,
+ * falling back to the comment's parent) is registered in
+ * `commentScopeRegistry` so the child's own `$`/`$t` queries walk the
+ * comment range — the same wiring `hydrateCommentScope` performs for
+ * walker-owned root fragments.
+ */
+export function findCommentChildScope(
+  scope: Element,
+  parentIds: readonly string[],
+  slotId: string,
+): Element | null {
+  for (const comment of commentsInScope(scope)) {
+    const id = parseCommentScopeId(comment.nodeValue ?? '', BF_SCOPE_COMMENT_PREFIX)
+    if (!id) continue
+    const matches = parentIds.length > 0
+      ? parentIds.some(parentId => id === `${parentId}_${slotId}`)
+      : id.endsWith(`_${slotId}`) && !NESTED_SLOT_SUFFIX.test(id)
+    if (!matches) continue
+
+    const proxyEl = nextElementSibling(comment) ?? comment.parentElement
+    if (!proxyEl) return null
+    commentScopeRegistry.set(proxyEl, { commentNode: comment, scopeId: id })
+    return proxyEl
+  }
+  return null
+}
+
+/**
+ * Enumerate comment nodes in a scope's DOM range: the comment-scope
+ * sibling range for comment-anchored scopes, the element subtree
+ * otherwise. Mirrors candidatesInScope's notion of "where the scope's
+ * content lives", but yields comments instead of elements.
+ */
+function* commentsInScope(scope: Element): Generator<Comment> {
+  const commentInfo = commentScopeRegistry.get(scope)
+
+  if (commentInfo) {
+    const boundary = getCommentScopeBoundary(commentInfo.commentNode)
+    let node: Node | null = commentInfo.commentNode.nextSibling
+    while (node && node !== boundary) {
+      if (node.nodeType === Node.COMMENT_NODE) {
+        yield node as Comment
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        yield* commentsUnder(node as Element)
+      }
+      node = node.nextSibling
+    }
+    return
+  }
+
+  yield* commentsUnder(scope)
+}
+
+function* commentsUnder(root: Element): Generator<Comment> {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT)
+  while (walker.nextNode()) {
+    yield walker.currentNode as Comment
+  }
 }
 
 /**

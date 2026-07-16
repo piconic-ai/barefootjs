@@ -93,6 +93,37 @@ function compileAndGenerate(source: string, adapter?: MojoAdapter) {
 // Mojo-Specific Tests
 // =============================================================================
 
+describe('MojoAdapter - fragment scope comment begin/end pairing (#2289)', () => {
+  // A fragment-rooted component's scope comment needs a paired END marker
+  // immediately after its last top-level node — without it, client-side
+  // queries from the fragment scope leak onto later siblings owned by the
+  // parent. `wrapWithScopeComment`'s Hono shape is the reference; this
+  // pins the Mojo `renderFragment` mirror.
+  test('emits bf->scope_comment before and bf->scope_comment_end after the fragment children', () => {
+    const { template } = compileAndGenerate(`
+export function FragmentDemo() {
+  return <><span>A</span><span>B</span></>
+}
+`)
+    expect(template).toContain('<%== bf->scope_comment %>')
+    expect(template).toContain('<%== bf->scope_comment_end %>')
+    expect(template.indexOf('bf->scope_comment %')).toBeLessThan(template.indexOf('bf->scope_comment_end %'))
+    // The end marker directly follows the fragment's rendered children —
+    // no other node interposes between the last child and the end marker.
+    const endIdx = template.indexOf('bf->scope_comment_end')
+    expect(template.slice(endIdx - 40, endIdx)).toContain('<span>B</span>')
+  })
+
+  test('does not emit the end marker for a non-fragment (single-root) component', () => {
+    const { template } = compileAndGenerate(`
+export function Single() {
+  return <div>A</div>
+}
+`)
+    expect(template).not.toContain('scope_comment')
+  })
+})
+
 describe('MojoAdapter - conditional inline-object spread (textarea aria-describedby)', () => {
   // `{...(cond ? { 'aria-describedby': cond } : {})}` lowers to a Perl
   // inline ternary of hashrefs so the falsy `{}` branch OMITS the key

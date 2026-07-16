@@ -95,6 +95,37 @@ function compileAndGenerate(source: string) {
 // Xslate-Specific Tests
 // =============================================================================
 
+describe('XslateAdapter - fragment scope comment begin/end pairing (#2289)', () => {
+  // A fragment-rooted component's scope comment needs a paired END marker
+  // immediately after its last top-level node — without it, client-side
+  // queries from the fragment scope leak onto later siblings owned by the
+  // parent. `wrapWithScopeComment`'s Hono shape is the reference; this
+  // pins the Kolon `renderFragment` mirror.
+  test('emits scope_comment before and scope_comment_end after the fragment children', () => {
+    const { template } = compileAndGenerate(`
+export function FragmentDemo() {
+  return <><span>A</span><span>B</span></>
+}
+`)
+    expect(template).toContain('$bf.scope_comment() | mark_raw')
+    expect(template).toContain('$bf.scope_comment_end() | mark_raw')
+    expect(template.indexOf('scope_comment()')).toBeLessThan(template.indexOf('scope_comment_end()'))
+    // The end marker directly follows the fragment's rendered children —
+    // no other node interposes between the last child and the end marker.
+    const endIdx = template.indexOf('scope_comment_end()')
+    expect(template.slice(endIdx - 40, endIdx)).toContain('<span>B</span>')
+  })
+
+  test('does not emit the end marker for a non-fragment (single-root) component', () => {
+    const { template } = compileAndGenerate(`
+export function Single() {
+  return <div>A</div>
+}
+`)
+    expect(template).not.toContain('scope_comment')
+  })
+})
+
 describe('XslateAdapter - SSR context propagation (#1297)', () => {
   // `<Ctx.Provider value>` brackets its children with inline provide/revoke
   // calls (both return '' so the `<: … :>` discards them); descendant

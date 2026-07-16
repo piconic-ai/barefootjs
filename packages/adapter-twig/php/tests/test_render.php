@@ -87,6 +87,21 @@ bf_test('spread_attrs renders raw with sorted keys', function () use ($backend, 
     bf_assert(str_contains($out, '<span class="c" id="n">'), "got: {$out}");
 });
 
+// Fragment-rooted scope comment pair (#2289): `renderFragment`'s Twig
+// output shape -- begin marker, children, end marker -- rendered through
+// real Twig so the `| raw` filter chain is exercised, not just the
+// underlying PHP methods (see the runtime-level pin in
+// packages/adapter-php/tests/test_scope_comment.php).
+file_put_contents($tmpDir . '/frag.twig', '{{ bf.scope_comment() | raw }}<span>A</span><span>{{ count }}</span>{{ bf.scope_comment_end() | raw }}');
+
+bf_test('fragment scope: begin/end markers pair with the same scope id', function () use ($backend, $tmpDir) {
+    $fragBf = new BarefootJS(null, ['backend' => $backend]);
+    $fragBf->_scope_id('FragmentDemo_test');
+    $out = $backend->render_named('frag', $fragBf, ['count' => 3]);
+    bf_assert(str_starts_with($out, '<!--bf-scope:FragmentDemo_test-->'), "expected leading begin marker, got: {$out}");
+    bf_assert(str_ends_with($out, '<!--bf-/scope:FragmentDemo_test-->'), "expected trailing end marker, got: {$out}");
+});
+
 bf_test('backend unit operations', function () use ($backend) {
     bf_assert_eq($backend->materialize('plain'), 'plain');
     bf_assert_eq($backend->materialize(fn () => 'lazy'), 'lazy');
