@@ -30,6 +30,7 @@ import {
   type SourceLocation,
   type TypeInfo,
   type OriginInfo,
+  type IRMetadata,
   isReactiveOrigin,
   AttrValueOf,
 } from './types.ts'
@@ -46,6 +47,9 @@ import {
 } from './prop-rewrite.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
+import { createStringProtector } from './ir-to-client-js/html-template.ts'
+import { datePlugin, DATE_METHODS } from './date-lowering.ts'
+import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
@@ -164,6 +168,13 @@ interface TransformContext {
    * aliased `import { Async as Boundary }` maps `<Boundary>` to the built-in.
    */
   _clientBuiltinTags?: Map<string, ClientBuiltinTag>
+  /**
+   * Cached `datePlugin` matcher (#2292), bound once to this component's
+   * metadata. `undefined` = not yet computed; `null` = computed and
+   * inactive (this component's props never reach a `Date`, `datePlugin`'s
+   * own `prepare` gate). See `getDateLoweringMatcher`.
+   */
+  _dateLoweringMatcher?: LoweringMatcher | null
 }
 
 /**
@@ -286,13 +297,124 @@ function exprHasFunctionCalls(expr: ts.Expression): boolean {
 }
 
 /**
+ * Bind (and cache on `ctx`) `datePlugin`'s matcher (#2292) for this
+ * component. Reuses the SAME `LoweringPlugin` the SSR adapters bind via
+ * `prepareLoweringMatchers` — not a re-implementation of its receiver-type
+ * resolution — so a call lowers on the client iff `datePlugin` would lower
+ * it on the SSR path (parity is mandatory per #2292).
+ *
+ * `datePlugin.prepare` only reads `propsType` / `propsObjectName` /
+ * `propsParams` / `typeDefinitions` off its `IRMetadata` parameter (see
+ * `rich-type-evidence.ts`'s `EvidenceMetadata` — the `Pick` of exactly
+ * those four fields). `ctx.analyzer` carries live, fully-populated values
+ * for all four by the time any expression is transformed (analysis runs
+ * to completion before `jsxToIR`'s AST walk begins), so a slice of just
+ * those fields is sufficient — the cast bridges that narrower shape to
+ * the wider `IRMetadata` parameter type every lowering plugin declares.
+ */
+function getDateLoweringMatcher(ctx: TransformContext): LoweringMatcher | null {
+  if (ctx._dateLoweringMatcher === undefined) {
+    const a = ctx.analyzer
+    const metadataSlice: Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'propsParams' | 'typeDefinitions'> = {
+      propsType: a.propsType,
+      propsObjectName: a.propsObjectName,
+      propsParams: a.propsParams,
+      typeDefinitions: a.typeDefinitions,
+    }
+    ctx._dateLoweringMatcher = datePlugin.prepare(metadataSlice as unknown as IRMetadata)
+  }
+  return ctx._dateLoweringMatcher
+}
+
+/**
+ * Client-side counterpart to `datePlugin` (#2274 was SSR-only; #2292
+ * closes the gap). The client emitter (`ir-to-client-js/`) emits raw,
+ * prop-rewritten source strings and never consults the lowering registry
+ * (its module doc) — so left alone, a Date-typed prop's catalogued
+ * accessor call leaks through as `_p.createdAt.toISOString()`, which
+ * throws at hydration: props are JSON round-tripped with no type-aware
+ * revival (`hydrate.ts`'s `parseProps`), so the prop arrives as its ISO
+ * string, not a `Date` instance.
+ *
+ * Walks `expr`'s AST for zero-arg calls to a `DATE_METHODS` name (a cheap
+ * syntactic pre-filter) and confirms each candidate against the SAME
+ * `datePlugin` matcher the SSR adapters use, via `tsNodeToParsedExpr` —
+ * the identical receiver-type resolution, not a re-implementation, so a
+ * call lowers here iff it would lower on the SSR path. A match splices
+ * `date(<receiver>, "<op>")` in place of the raw call; `imports.ts`'s
+ * `detectUsedImports` regex-scans the emitted `date(` call against
+ * `RUNTIME_IMPORT_CANDIDATES` to auto-import the runtime helper.
+ *
+ * The splice is a plain (non-global) text `.replace` per candidate, run
+ * in AST (left-to-right, source) order — not a JS-parsing regex, since
+ * every candidate span comes from walking `expr`'s real AST first. This
+ * is safe specifically because any call the matcher accepts has, by
+ * construction, no TS-only syntax anywhere in its own span: the matcher
+ * only resolves evidence through a bare identifier or a non-computed
+ * member chain (`resolveReceiverType`'s two supported `ParsedExpr`
+ * shapes), and the call itself takes zero arguments. So `ctx.getJS` of
+ * that one sub-node — which strips only type syntax — is guaranteed
+ * byte-identical to its raw source slice, and thus guaranteed to appear
+ * verbatim as a contiguous substring of `text` regardless of unrelated
+ * type-stripping elsewhere in the enclosing expression. String-literal
+ * spans in `text` are protected first (`createStringProtector`) so a
+ * coincidentally-identical string constant can never be mistaken for a
+ * call site.
+ */
+function lowerDateCalls(text: string, expr: ts.Node, ctx: TransformContext): string {
+  const matcher = getDateLoweringMatcher(ctx)
+  if (!matcher) return text
+
+  const candidates: ts.CallExpression[] = []
+  function visit(n: ts.Node) {
+    if (
+      ts.isCallExpression(n) &&
+      n.arguments.length === 0 &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      !n.expression.questionDotToken &&
+      DATE_METHODS.has(n.expression.name.text)
+    ) {
+      candidates.push(n)
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(expr)
+  if (candidates.length === 0) return text
+
+  const { protect, restore } = createStringProtector()
+  let result = protect(text)
+  for (const call of candidates) {
+    const propAccess = call.expression as ts.PropertyAccessExpression
+    const node = matcher(tsNodeToParsedExpr(propAccess), [])
+    if (!node || node.kind !== 'helper-call' || node.helper !== 'date') continue
+    const op = propAccess.name.text
+    const receiverText = ctx.getJS(propAccess.expression)
+    const matchText = ctx.getJS(call)
+    // Replacer-function form: a `$` sequence in `receiverText` (a prop named
+    // `$1`, say) would otherwise be reinterpreted as a `String.replace`
+    // pattern token and corrupt the output (repo precedent, #2285).
+    result = result.replace(matchText, () => `date(${receiverText}, "${op}")`)
+  }
+  return restore(result)
+}
+
+/**
  * Rewrite bare destructured prop references in expression text.
  * Thin wrapper that caches prop names on ctx and delegates to the shared core.
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
+  // #2292: lower a Date-typed prop's catalogued accessor call BEFORE the
+  // bare-prop-name rewrite below, so the receiver identifier still picks
+  // up the usual `_p.` prefix (destructured mode) or falls through to the
+  // CSR template emitter's separate `props.` → `_p.` rewrite
+  // (`html-template.ts`'s `transformExpr`, props-object mode). Runs
+  // unconditionally — ahead of the `propNames` gate — because Date
+  // evidence comes from `ctx.analyzer.propsType`, independent of whether
+  // this component destructures its props.
+  const dateLowered = lowerDateCalls(text, expr, ctx)
   let propNames = getDestructuredPropNames(ctx)
-  if (!propNames) return undefined
+  if (!propNames) return dateLowered === text ? undefined : dateLowered
   // #2222: a name bound as an enclosing loop callback's item/index param
   // refers to the loop binding, not the prop, at THIS transform position —
   // `ctx.loopParams` is the live loop-param set (destructured binding
@@ -303,7 +425,7 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // its set on ctx and must not be mutated.
   if (ctx.loopParams.size > 0) {
     const filtered = new Set([...propNames].filter(n => !ctx.loopParams.has(n)))
-    if (filtered.size === 0) return undefined
+    if (filtered.size === 0) return dateLowered === text ? undefined : dateLowered
     propNames = filtered
   }
   // #1425: union any prop refs that `expr` reaches via branch-local
@@ -316,7 +438,7 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // `_branchScopePropDeps` at branch entry; here we just walk `expr`
   // for references to those locals and union the matching dep sets.
   const extraPropRefs = collectBranchLocalPropRefsViaSubstitution(expr, ctx)
-  return rewriteBarePropRefsCore(text, expr, propNames, extraPropRefs)
+  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs)
 }
 
 /**

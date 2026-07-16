@@ -175,6 +175,8 @@ function createContext(
     propsParams: ir.metadata.propsParams,
     propsObjectName: ir.metadata.propsObjectName,
     restPropsName: ir.metadata.restPropsName,
+    propsType: ir.metadata.propsType,
+    typeDefinitions: ir.metadata.typeDefinitions,
 
     interactiveElements: [],
     dynamicElements: [],

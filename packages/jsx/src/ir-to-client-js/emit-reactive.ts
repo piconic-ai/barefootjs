@@ -4,11 +4,15 @@
  * client-only expressions, and reactive component prop bindings.
  */
 
-import type { AttrMeta } from '../types.ts'
+import ts from 'typescript'
+import type { AttrMeta, IRMetadata } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
-import { createTemplateAwareStringProtector } from './html-template.ts'
+import { createTemplateAwareStringProtector, createStringProtector } from './html-template.ts'
+import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
+import { tsNodeToParsedExpr } from '../expression-parser.ts'
+import type { LoweringMatcher } from '../lowering-registry.ts'
 
 /**
  * Profile mode (#1690, SR3/SR4): the id appended to a DOM-binding effect so the
@@ -95,8 +99,100 @@ export function rewriteDestructuredPropsInExpr(expr: string, ctx: ClientJsContex
   return restore(result)
 }
 
+/**
+ * Bind `datePlugin`'s matcher (#2292) for this component's reactive-text
+ * emission. Reads the same four `EvidenceMetadata` fields
+ * (`rich-type-evidence.ts`) `jsx-to-ir.ts`'s `getDateLoweringMatcher` reads
+ * off the analyzer for the STATIC template path, so a prop-method call
+ * re-evaluated inside a `createEffect` lowers to the `date` helper under
+ * the exact same evidence the static template and every SSR adapter use.
+ * `ctx.propsType` is optional on `ClientJsContext` (threaded through only
+ * for this purpose, `index.ts`'s `createContext`); a context predating
+ * #2292 — or a hand-built test fixture — simply carries no Date evidence,
+ * so this returns null and callers emit the expression unchanged.
+ */
+function getReactiveDateLoweringMatcher(ctx: ClientJsContext): LoweringMatcher | null {
+  if (!ctx.propsType) return null
+  const metadataSlice: Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'propsParams' | 'typeDefinitions'> = {
+    propsType: ctx.propsType,
+    propsObjectName: ctx.propsObjectName,
+    propsParams: ctx.propsParams,
+    typeDefinitions: ctx.typeDefinitions ?? [],
+  }
+  return datePlugin.prepare(metadataSlice as unknown as IRMetadata)
+}
+
+/**
+ * Reactive-path counterpart to `jsx-to-ir.ts`'s `lowerDateCalls` (#2292):
+ * without this, a Date-typed prop's catalogued accessor call re-evaluated
+ * inside `createEffect` (the Solid-style wrap-by-default fallback for any
+ * expression containing a function call, #937) still called the RAW
+ * `.toISOString()` / etc. on the hydrated STRING prop value and threw —
+ * the static template alone wasn't enough to fix hydration.
+ *
+ * `expr` here (`IRExpression.expr`, threaded through
+ * `ctx.dynamicElements`) is ALREADY the bare-identifier source form the
+ * SAME `createEffect` body closes over via the destructured-prop shim
+ * (`const createdAt = _p.createdAt ?? {}` at the top of `init()`) — so
+ * unlike the static-template path, the receiver does NOT need a `_p.`
+ * prefix: swapping the raw call for `date(<receiver>, "<op>")` is enough.
+ *
+ * No live `ts.Node` survives into this phase (`expr` is a plain string),
+ * so this re-parses it fresh via `ts.createSourceFile` — the same
+ * technique `expression-parser.ts`'s `parseExpression` uses — rather than
+ * a regex scan (per CLAUDE.md's structural-parsing rule): every candidate
+ * span comes from walking the freshly-parsed AST, and `matcher(...)` is
+ * the SAME `datePlugin` matcher the static path and every SSR adapter
+ * bind, so a call lowers here iff it would lower there too.
+ */
+function lowerDateCallsInReactiveExpr(expr: string, matcher: LoweringMatcher | null): string {
+  if (!matcher) return expr
+  let sourceFile: ts.SourceFile
+  try {
+    sourceFile = ts.createSourceFile('__reactive_expr__.ts', `(${expr});`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  } catch {
+    return expr
+  }
+  const stmt = sourceFile.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return expr
+  const root = ts.isParenthesizedExpression(stmt.expression) ? stmt.expression.expression : stmt.expression
+
+  const candidates: ts.CallExpression[] = []
+  const visit = (n: ts.Node): void => {
+    if (
+      ts.isCallExpression(n) &&
+      n.arguments.length === 0 &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      !n.expression.questionDotToken &&
+      DATE_METHODS.has(n.expression.name.text)
+    ) {
+      candidates.push(n)
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(root)
+  if (candidates.length === 0) return expr
+
+  const { protect, restore } = createStringProtector()
+  let result = protect(expr)
+  for (const call of candidates) {
+    const propAccess = call.expression as ts.PropertyAccessExpression
+    const node = matcher(tsNodeToParsedExpr(propAccess), [])
+    if (!node || node.kind !== 'helper-call' || node.helper !== 'date') continue
+    const op = propAccess.name.text
+    const receiverText = propAccess.expression.getText(sourceFile)
+    const matchText = call.getText(sourceFile)
+    // Replacer-function form: a `$` sequence in `receiverText` would
+    // otherwise be reinterpreted as a `String.replace` pattern token and
+    // corrupt the output (repo precedent, #2285).
+    result = result.replace(matchText, () => `date(${receiverText}, "${op}")`)
+  }
+  return restore(result)
+}
+
 /** Emit createEffect blocks that update text nodes for reactive expressions. */
 export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): void {
+  const dateLoweringMatcher = getReactiveDateLoweringMatcher(ctx)
   // Group elements by expression to consolidate effects with same dependencies
   const byExpression = new Map<string, typeof ctx.dynamicElements>()
   for (const elem of ctx.dynamicElements) {
@@ -107,7 +203,8 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
     byExpression.get(key)!.push(elem)
   }
 
-  for (const [expr, elems] of byExpression) {
+  for (const [rawExpr, elems] of byExpression) {
+    const expr = lowerDateCallsInReactiveExpr(rawExpr, dateLoweringMatcher)
     // Separate conditional vs non-conditional elements
     const conditionalElems = elems.filter(e => e.insideConditional)
     const normalElems = elems.filter(e => !e.insideConditional)

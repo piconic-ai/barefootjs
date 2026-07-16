@@ -20,6 +20,8 @@ import type {
   ParamInfo,
   CompilerError,
   ImportInfo,
+  TypeInfo,
+  TypeDefinition,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 import type { SkeletonSlotPaths } from './html-template.ts'
@@ -67,6 +69,19 @@ export interface ClientJsContext {
   propsParams: ParamInfo[]
   propsObjectName: string | null
   restPropsName: string | null
+  /**
+   * Threaded through (alongside `propsParams` above) so the reactive-effect
+   * emitter can bind its own `datePlugin` matcher (#2292) — see
+   * `emit-reactive.ts`'s `getReactiveDateLoweringMatcher`. Mirrors the
+   * `EvidenceMetadata` slice (`rich-type-evidence.ts`) the SSR adapters and
+   * `jsx-to-ir.ts`'s static-template lowering both consult; nothing else in
+   * this file reads a Date-typed prop's shape. Optional (rather than a hard
+   * requirement alongside `propsParams`) so existing hand-built
+   * `ClientJsContext` test fixtures that predate #2292 keep type-checking
+   * without every call site listing these two fields.
+   */
+  propsType?: TypeInfo | null
+  typeDefinitions?: TypeDefinition[]
 
   // Collected elements
   interactiveElements: InteractiveElement[]
