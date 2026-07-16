@@ -19,7 +19,7 @@
 import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { PARSED_EXPR_KINDS } from '@barefootjs/jsx'
+import { PARSED_EXPR_KINDS, ARRAY_METHOD_NAMES } from '@barefootjs/jsx'
 import { computeCoverageMap } from '../coverage-map'
 
 /**
@@ -34,6 +34,15 @@ const UNCOVERED_KIND_ALLOWLIST: Record<string, string> = {
   // regex falls through to `unsupported` at parse time.
   regex: 'no fixture exercises the trailing-slash String.replace pattern',
 }
+
+/**
+ * Catalogued `array-method` names allowed to stay uncovered, each with the
+ * reason — the catalogue-half floor's counterpart to
+ * `UNCOVERED_KIND_ALLOWLIST`. Empty today: every method in
+ * `ARRAY_METHOD_NAMES` has a covering fixture. A method that gains a fixture
+ * while listed here becomes STALE and fails the no-stale test until deleted.
+ */
+const UNCOVERED_ARRAY_METHOD_ALLOWLIST: Partial<Record<(typeof ARRAY_METHOD_NAMES)[number], string>> = {}
 
 const MAP_PATH = resolve(import.meta.dir, '../../coverage-map.json')
 
@@ -74,6 +83,27 @@ describe('coverage ledger', () => {
   test('no stale allowlist entries (covered kinds must graduate)', () => {
     const stale = Object.keys(UNCOVERED_KIND_ALLOWLIST).filter(
       kind => (recomputed.kindCounts[kind] ?? 0) > 0,
+    )
+    expect(stale).toEqual([])
+  })
+
+  // Catalogue-half floor (#2276): every catalogued `array-method` name is
+  // exercised by ≥1 fixture, or carries a documented exclusion. Mirrors the
+  // kind floor — the mechanical backstop for the change-time coupling rule
+  // on the largest catalogue, since (unlike kinds) an `array-method`
+  // variant has no exhaustive adapter switch that would otherwise force it.
+  test('every catalogued array-method is exercised by ≥1 fixture or documented uncovered', () => {
+    const holes = ARRAY_METHOD_NAMES.filter(
+      method =>
+        !recomputed.axisCounts[`array-method:${method}`] &&
+        !(method in UNCOVERED_ARRAY_METHOD_ALLOWLIST),
+    )
+    expect(holes).toEqual([])
+  })
+
+  test('no stale array-method allowlist entries (covered methods must graduate)', () => {
+    const stale = Object.keys(UNCOVERED_ARRAY_METHOD_ALLOWLIST).filter(
+      method => (recomputed.axisCounts[`array-method:${method}`] ?? 0) > 0,
     )
     expect(stale).toEqual([])
   })

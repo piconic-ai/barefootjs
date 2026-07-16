@@ -52,6 +52,8 @@ Quick decision guide:
 
 Tracked limitations across the compiler, adapters, and runtime live under the [`known-limitation`](https://github.com/piconic-ai/barefootjs/labels/known-limitation) label — that label URL is the source of truth. Adapter-internal declarations (`skipJsx`, `skipFixtures`, `expectedDiagnostics`) carry a docstring pointer back to the per-issue URL.
 
+**A subset extension merges only with fixtures in the same PR** (`spec/subset-conformance.md`'s change-time coupling rule — TC39's stage-4 analogue). Widening what the compiler accepts — a new `ParsedExpr` kind or field, a catalogue entry (an `array-method` member, a sort-comparator form), or a builtin lowering plugin — means adding at least one conformance fixture (`packages/adapter-tests/fixtures/`) that exercises it in the **same** PR; the feature and its coverage land together, never in separate steps. The *kind* and *array-method-catalogue* halves are mechanically backstopped — a new `PARSED_EXPR_KINDS` member or `array-method` union method fails its exhaustiveness pin (`expression-parser.ts`), then a coverage-ledger floor test (`coverage-map.test.ts`) demands a covering fixture or a documented allowlist exclusion. Other extensions — a builtin lowering plugin, a sort-comparator form — have no positive registry to floor-test against, so for those this written rule is the **only** backstop — do not skip it.
+
 Workflow for editing a UI component:
 1. Run `bun run bf docs <component>` (and `bf debug graph <component>` if `"use client"`) for the API surface.
 2. Add or update the IR test (red).
