@@ -95,8 +95,13 @@ function escapeCell(text: string): string {
  * below (per gapped cell) so both link formats stay identical.
  */
 function formatIssueLinks(issues: string[], fallbackLabel: string): string {
-  if (issues.length === 0) return `[known limitation](${fallbackLabel})`
-  return issues.map((url) => `[#${url.split('/').pop()}](${url})`).join(', ')
+  // Dedupe + code-unit sort HERE (matching the lockfiles' issue ordering) so
+  // both callers are deterministic from one place: `collectLegend` feeds
+  // Set-insertion-ordered URLs, and the construct-support cells feed already-
+  // flattened gap URLs — neither is pre-sorted at the call site.
+  const unique = [...new Set(issues)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  if (unique.length === 0) return `[known limitation](${fallbackLabel})`
+  return unique.map((url) => `[#${url.split('/').pop()}](${url})`).join(', ')
 }
 
 /** Render one matrix cell as a Markdown fragment. */
@@ -262,7 +267,10 @@ function supportCellMarkdown(cell: SupportMatrixCell | undefined): string {
   const ratio = `${cell.pass}/${cell.total}`
   const gaps = cell.gaps ?? []
   if (gaps.length === 0) return ratio
-  const issues = [...new Set(gaps.flatMap((gap) => gap.issues))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  // `formatIssueLinks` dedupes + sorts, so just flatten every gapped
+  // fixture's issues here (several fixtures gapped by the same diagnostic
+  // repeat its URL — the helper collapses them).
+  const issues = gaps.flatMap((gap) => gap.issues)
   return `${ratio} (${formatIssueLinks(issues, supportMatrix.knownLimitationLabel)})`
 }
 
