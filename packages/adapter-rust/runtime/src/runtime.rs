@@ -43,9 +43,10 @@
 //!     operator it emits.
 
 use crate::backend_minijinja;
+use crate::date;
 use crate::evaluator;
 use crate::num::{self, JsValue};
-use minijinja::value::{from_args, Enumerator, Kwargs, Object, Value as MjValue, ValueKind};
+use minijinja::value::{from_args, Enumerator, Kwargs, Object, ObjectRepr, Value as MjValue, ValueKind};
 use minijinja::{Error, ErrorKind, State};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -111,6 +112,11 @@ pub fn js_string(v: &JsValue) -> String {
             .collect::<Vec<_>>()
             .join(","),
         JsValue::Object(_) => "[object Object]".to_string(),
+        // No JS `Date.prototype.toString()` port (that format -- e.g. "Fri
+        // Jul 20 1969 20:17:40 GMT+0000" -- is out of this catalogue's
+        // scope, #2274); `toISOString` is the one Date->string shape the
+        // spec defines, so a bare `bf.string(date)` uses it too.
+        JsValue::Date(ms) => date::format_iso8601(*ms),
     }
 }
 
@@ -125,6 +131,9 @@ pub fn js_number(v: &JsValue) -> f64 {
         JsValue::Number(n) => *n,
         JsValue::String(s) => if num::looks_like_number(s) { num::parse_number_literal(s) } else { f64::NAN },
         JsValue::Array(_) | JsValue::Object(_) => f64::NAN,
+        // `Number(date)` mirrors JS `Date`'s default `valueOf` coercion:
+        // the epoch-ms count itself.
+        JsValue::Date(ms) => *ms as f64,
     }
 }
 
@@ -137,6 +146,7 @@ pub fn js_truthy(v: &JsValue) -> bool {
         JsValue::Number(n) => !n.is_nan() && *n != 0.0, // not NaN, not zero
         JsValue::String(s) => !s.is_empty(),          // incl. the JS-truthy "0"
         JsValue::Array(_) | JsValue::Object(_) => true,
+        JsValue::Date(_) => true, // a JS Date object is always truthy
     }
 }
 
@@ -440,13 +450,13 @@ fn is_numeric_like(v: &JsValue) -> bool {
         JsValue::Null | JsValue::Bool(_) => false,
         JsValue::Number(_) => true,
         JsValue::String(s) => num::looks_like_number(s),
-        JsValue::Array(_) | JsValue::Object(_) => false,
+        JsValue::Array(_) | JsValue::Object(_) | JsValue::Date(_) => false,
     }
 }
 
 fn numeric_value(v: &JsValue) -> f64 {
     match v {
-        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => 0.0,
+        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) | JsValue::Date(_) => 0.0,
         JsValue::Bool(b) => if *b { 1.0 } else { 0.0 },
         JsValue::Number(n) => *n,
         JsValue::String(s) => if num::looks_like_number(s) { num::parse_number_literal(s) } else { 0.0 },
@@ -1075,6 +1085,14 @@ impl BfInstance {
 // ---------------------------------------------------------------------------
 
 pub fn mj_to_js(v: &MjValue) -> JsValue {
+    // A `JsDate`-wrapped native Date prop (see that struct's docstring)
+    // isn't a Seq/Map/Iterable, so it would otherwise fall into the
+    // catch-all `_ => JsValue::Null` below, silently losing the receiver
+    // `date()` needs -- checked first, ahead of the generic `v.kind()`
+    // dispatch.
+    if let Some(d) = v.downcast_object_ref::<JsDate>() {
+        return JsValue::Date(d.0);
+    }
     match v.kind() {
         ValueKind::Undefined | ValueKind::None => JsValue::Null,
         ValueKind::Bool => JsValue::Bool(v.is_true()),
@@ -1148,6 +1166,39 @@ pub fn js_to_mj(v: &JsValue) -> MjValue {
             let map: BTreeMap<String, MjValue> = o.iter().map(|(k, v)| (k.clone(), js_to_mj(v))).collect();
             MjValue::from(map)
         }
+        JsValue::Date(ms) => MjValue::from_object(JsDate(*ms)),
+    }
+}
+
+/// This runtime's own native "Date" value, wrapped as a minijinja
+/// `Object` so a host can seed a template var with a real Date-typed
+/// receiver instead of always going through `date()`'s ISO-8601-string
+/// contract half (spec/template-helpers.md "date", #2274; mirrors the Go
+/// runtime's `time.Time` / the Ruby runtime's `Time` as the "native"
+/// receiver shape). Carries nothing but the epoch-ms integer
+/// `JsValue::Date` already carries -- `mj_to_js`/`js_to_mj` above
+/// round-trip it losslessly via `downcast_object_ref`/`from_object`.
+#[derive(Debug)]
+struct JsDate(i64);
+
+impl Object for JsDate {
+    fn repr(self: &Arc<Self>) -> ObjectRepr {
+        ObjectRepr::Plain
+    }
+
+    // A JS `Date` object is always truthy, like every other object.
+    fn is_true(self: &Arc<Self>) -> bool {
+        true
+    }
+
+    fn render(self: &Arc<Self>, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+    where
+        Self: Sized + 'static,
+    {
+        // `toISOString` is the one Date->string shape this catalogue
+        // defines (see `js_string`'s `JsValue::Date` arm); a bare
+        // interpolation of a native Date value uses the same shape.
+        write!(f, "{}", date::format_iso8601(self.0))
     }
 }
 
@@ -1272,6 +1323,13 @@ impl Object for BfInstance {
             "max" => Ok(MjValue::from(num::js_max(js_number(a(0)), js_number(a(1))))),
             "abs" => Ok(MjValue::from(num::js_abs(js_number(a(0))))),
             "to_fixed" => Ok(MjValue::from(num::to_fixed(js_number(a(0)), num::to_f64(a(1)) as i32))),
+            // `date(recv, op)` -- zero-arg `Date.prototype` method
+            // lowering (spec/template-helpers.md "date", #2274). `recv` is
+            // either a `JsDate`-wrapped native receiver (already converted
+            // to `JsValue::Date` by `mj_to_js` above) or an ISO-8601
+            // string; `date::date` normalizes and dispatches both. `op`
+            // stays a plain string arg, never routed through `js_number`.
+            "date" => Ok(js_to_mj(&date::date(a(0), a(1).as_str().unwrap_or("")))),
 
             // -- Array / string method helpers (#1448 Tier A) ------------------
             "includes" => Ok(MjValue::from(includes(a(0), a(1)))),

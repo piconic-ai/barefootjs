@@ -24,6 +24,8 @@ import {
   collectReactiveGetterNames,
 } from './analyzer-context.ts'
 import { createError, createWarning, ErrorCodes } from './errors.ts'
+import { baseTypeName } from './rich-type-evidence.ts'
+import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
 import fs from 'node:fs'
 
@@ -3174,9 +3176,24 @@ function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
 ): Map<string, { type: TypeInfo | null; optional: boolean }> | null {
+  // #2150 originally restricted this gate to string/number/boolean only,
+  // because a non-primitive TypeInfo here used to mean "the typed adapters
+  // will emit an unchecked scalar assertion (`in.X.(int)`) that panics" for
+  // a shape the template layer has no representation for. That reasoning
+  // does NOT extend to a rich type with a CATALOGUED lowering (#2274: `Date`
+  // → the `date` helper): its propsParams TypeInfo is consumed only as
+  // call-site evidence for `resolveReceiverType` (rich-type-evidence.ts) —
+  // never emitted as a concrete field type (`typeInfoToGo`'s `interface`
+  // case falls through to `interface{}` for an unbacked host name exactly
+  // as `unknown` already did) — so there is no assertion to panic. Gating on
+  // `CATALOGUED_RICH_TYPE_NAMES` specifically (not `HOST_RICH_TYPE_NAMES`
+  // wholesale) keeps an un-catalogued rich type (`Map`, `Set`, …) at
+  // `unknown`, i.e. avoids resurrecting the #2150 mistake for a shape no
+  // lowering plugin exists for yet.
   const isResolvablePrimitive = (info: TypeInfo): boolean =>
-    info.kind === 'primitive' &&
-    (info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean')
+    (info.kind === 'primitive' &&
+      (info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean')) ||
+    (info.kind === 'interface' && CATALOGUED_RICH_TYPE_NAMES.has(baseTypeName(info.raw)))
 
   const fromMembers = (
     members: ts.NodeArray<ts.TypeElement>

@@ -707,6 +707,61 @@ final class BarefootJS
         return is_nan($n) ? $n : abs($n);
     }
 
+    /**
+     * `date($recv, $op)` -- zero-arg `Date.prototype` method lowering
+     * (#2274, spec entry "date"). `$recv` arrives as either this runtime's
+     * own `\DateTimeInterface` or an ISO-8601 string (a template prop may
+     * carry either depending on how the host populated it); both normalize
+     * to a UTC `DateTimeImmutable` before dispatch. PHP's month accessor
+     * (`n`) is 1-based; only `getUTCMonth` subtracts 1 to match JS's
+     * 0-based month. `getTime` sums whole milliseconds from
+     * `getTimestamp()` (whole seconds) and `format('v')` -- the ALWAYS
+     * non-negative 0-999 sub-second remainder PHP's `DateTime` already
+     * normalizes, even for a pre-epoch instant -- rather than
+     * `format('Uv')`, which string-CONCATENATES `U` and `v` and produces a
+     * garbage value for a negative timestamp (verified against a live PHP
+     * 8.4 interpreter: `(new DateTimeImmutable('1969-07-20T20:17:40.123Z'))
+     * ->format('Uv')` is `"-14182940123"`, not the correct `-14182939877`).
+     */
+    public function date($recv, string $op)
+    {
+        // A nil or unparseable receiver degrades to the zero value the
+        // Go / Rust / Perl helpers document (empty string for toISOString,
+        // 0 otherwise). Without this an empty string would silently become
+        // `new DateTimeImmutable('')` = the current time (non-deterministic
+        // render), and a malformed string would throw mid-render.
+        if ($recv instanceof \DateTimeInterface) {
+            $d = \DateTimeImmutable::createFromInterface($recv);
+        } else {
+            $s = $this->string($recv);
+            if ($s === '') {
+                return $op === 'toISOString' ? '' : 0;
+            }
+            try {
+                $d = new \DateTimeImmutable($s);
+            } catch (\Throwable $e) {
+                // \Throwable, not \Exception: a malformed string throws
+                // DateMalformedStringException (an Exception), but under
+                // Xdebug the exception's dynamic-property enrichment raises
+                // a bare Error (not an Exception) on PHP >= 8.2 — degrade
+                // on any Throwable so the render survives either way.
+                return $op === 'toISOString' ? '' : 0;
+            }
+        }
+        $d = $d->setTimezone(new \DateTimeZone('UTC'));
+        switch ($op) {
+            case 'getUTCFullYear': return (int) $d->format('Y');
+            case 'getUTCMonth': return (int) $d->format('n') - 1;
+            case 'getUTCDate': return (int) $d->format('j');
+            case 'getUTCHours': return (int) $d->format('H');
+            case 'getUTCMinutes': return (int) $d->format('i');
+            case 'getUTCSeconds': return (int) $d->format('s');
+            case 'getTime': return ($d->getTimestamp() * 1000) + (int) $d->format('v');
+            case 'toISOString': return $d->format('Y-m-d\TH:i:s.v\Z');
+            default: return 0;
+        }
+    }
+
     // -----------------------------------------------------------------
     // Array / String method helpers (#1448 Tier A)
     // -----------------------------------------------------------------

@@ -7,6 +7,7 @@ use feature 'signatures';
 no warnings 'experimental::signatures';
 
 use POSIX ();
+use Time::Local ();
 use Scalar::Util qw(looks_like_number weaken);
 use BarefootJS::Evaluator ();
 
@@ -662,6 +663,65 @@ sub abs ($self, $value) {
     return CORE::abs($n);
 }
 
+# `date($recv, $op)` -- zero-arg `Date.prototype` method lowering (#2274,
+# spec entry "date"). `$recv` arrives as either a `BarefootJS::Date` (this
+# runtime's own epoch-ms wrapper, below) or an ISO-8601 string (a template
+# prop may carry either depending on how the host populated it); both
+# normalize to a single epoch-ms integer via `_date_epoch_ms` before
+# dispatch. `gmtime`'s `mon` field (index 4) is ALREADY 0-based in Perl
+# (unlike every other backend's native month accessor), so — uniquely among
+# this catalogue's ports — `getUTCMonth` needs NO -1. `getTime` is the exact
+# epoch-ms integer already carried by `$recv`/parsed from the string, so it
+# needs no float rounding even for a pre-epoch instant.
+sub date ($self, $recv, $op) {
+    my $ms = _date_epoch_ms($recv);
+    return $op eq 'toISOString' ? '' : 0 unless defined $ms;
+    return $ms if $op eq 'getTime';
+
+    # Floor (not truncate) toward -Infinity: Perl's `/` truncates toward
+    # zero, which would round a negative ms value (e.g. -14182939877) up to
+    # the wrong whole second (-14182939 instead of -14182940).
+    my $sec = POSIX::floor($ms / 1000);
+    my $msec = $ms - ($sec * 1000);
+    my @t = gmtime($sec);    # (sec,min,hour,mday,mon,year,...) -- mon is 0-based
+
+    return $t[5] + 1900 if $op eq 'getUTCFullYear';
+    return $t[4]        if $op eq 'getUTCMonth';    # already 0-based, no -1
+    return $t[3]         if $op eq 'getUTCDate';
+    return $t[2]         if $op eq 'getUTCHours';
+    return $t[1]         if $op eq 'getUTCMinutes';
+    return $t[0]         if $op eq 'getUTCSeconds';
+    return POSIX::strftime('%Y-%m-%dT%H:%M:%S', @t) . sprintf('.%03dZ', $msec)
+        if $op eq 'toISOString';
+    return 0;
+}
+
+# Normalizes a `date()` receiver to a single epoch-ms integer: a
+# `BarefootJS::Date` (unwraps `epoch_ms` directly) or an ISO-8601 string
+# (`YYYY-MM-DDTHH:MM:SS[.sss]Z`, the exact shape every ISO string this
+# runtime itself ever produces via `toISOString` above, and the shape the
+# golden vectors exercise). `Time::Local::timegm_modern` (core since
+# Time::Local 1.27, like `POSIX`) converts the broken-down UTC fields to
+# epoch SECONDS correctly across the full pre-1970/post-2038 range on a
+# 64-bit `time_t` build; unlike the legacy `timegm`, it takes `$y` as a
+# literal calendar year with no two-digit-year windowing heuristic — the
+# regex above always captures a 4-digit year, so that heuristic would only
+# ever be a latent footgun here, never a real branch. The optional
+# millisecond group defaults to 0. Returns `undef` for anything else
+# (unparsable string, wrong type) so `date` can apply its documented
+# zero-value fallback instead of dying mid-render.
+sub _date_epoch_ms ($recv) {
+    if (ref($recv) eq 'BarefootJS::Date') {
+        return $recv->{epoch_ms};
+    }
+    return undef if ref($recv);
+    return undef unless defined $recv;
+    return undef unless $recv =~ /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{3}))?Z\z/;
+    my ($y, $mon, $day, $h, $min, $s, $ms) = ($1, $2, $3, $4, $5, $6, $7 // 0);
+    my $epoch_s = Time::Local::timegm_modern($s, $min, $h, $day, $mon - 1, $y);
+    return $epoch_s * 1000 + $ms;
+}
+
 # ---------------------------------------------------------------------------
 # Array / String method helpers (#1448 Tier A)
 # ---------------------------------------------------------------------------
@@ -797,8 +857,8 @@ sub is_element ($self, $v) {
     return 0 unless ref($v) eq 'HASH';
     my ($has_tag, $has_props) = (0, 0);
     for my $key (keys %$v) {
-        $has_tag = 1 if lc($key) eq 'tag';
-        $has_props = 1 if lc($key) eq 'props';
+        $has_tag = 1 if CORE::lc($key) eq 'tag';
+        $has_props = 1 if CORE::lc($key) eq 'props';
     }
     return ($has_tag && $has_props) ? 1 : 0;
 }
@@ -1791,6 +1851,24 @@ sub spread_attrs ($self, $bag) {
     # returns a Mojo::ByteStream).
     return $self->backend->mark_raw(CORE::join(' ', @parts));
 }
+
+# ---------------------------------------------------------------------------
+# BarefootJS::Date -- this runtime's native date/time type, holding a single
+# epoch-ms integer. Exists so a Perl host can hand `date()` (above) a real
+# typed value instead of always going through the ISO-8601 string half of
+# the helper's contract (mirrors the Go runtime's `time.Time` / the Ruby
+# runtime's `Time` as the "native" receiver shape in spec/template-helpers.md
+# "date"). Deliberately minimal: one field, one constructor -- this is a
+# value wrapper, not a full calendar API.
+# ---------------------------------------------------------------------------
+package BarefootJS::Date;
+
+sub new {
+    my ($class, $epoch_ms) = @_;
+    return bless { epoch_ms => $epoch_ms }, $class;
+}
+
+package BarefootJS;
 
 1;
 __END__

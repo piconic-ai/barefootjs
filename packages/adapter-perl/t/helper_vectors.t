@@ -91,6 +91,7 @@ my %bindings = (
     max    => sub { $bf->max($_[0], $_[1]) },
     abs    => sub { $bf->abs($_[0]) },
     to_fixed => sub { $bf->to_fixed(@_) },
+    date     => sub { $bf->date($_[0], $_[1]) },
 
     # The Mojo renderer emits native lc()/uc(); Xslate emits $bf.lc /
     # $bf.uc. The helper methods wrap CORE::lc/uc, so binding them
@@ -263,11 +264,20 @@ done_testing;
 # Production Perl template data has no boolean type — the adapters pass
 # 1/0 where JS has true/false — so JSON::PP boolean objects in vector
 # ARGS are lowered to 1/0 before reaching a binding. Expects keep their
-# boolean identity (vector_ok compares those by truthiness).
+# boolean identity (vector_ok compares those by truthiness). A HASH whose
+# only key is `$date` is the native-date arg sentinel (#2288): materialize
+# it into a `BarefootJS::Date` (reusing `_date_epoch_ms`'s own ISO parse,
+# rather than re-deriving epoch-ms here) so `date()`'s native-receiver
+# branch is exercised, not just its ISO-string branch.
 sub normalize_arg {
     my ($v) = @_;
     return [ map { normalize_arg($_) } @$v ] if ref $v eq 'ARRAY';
-    return { map { $_ => normalize_arg($v->{$_}) } keys %$v } if ref $v eq 'HASH';
+    if (ref $v eq 'HASH') {
+        my @keys = keys %$v;
+        return BarefootJS::Date->new(BarefootJS::_date_epoch_ms($v->{'$date'}))
+            if @keys == 1 && $keys[0] eq '$date';
+        return { map { $_ => normalize_arg($v->{$_}) } @keys };
+    }
     return JSON::PP::is_bool($v) ? ($v ? 1 : 0) : $v;
 }
 

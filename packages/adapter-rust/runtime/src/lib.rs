@@ -7,6 +7,7 @@
 //! documented divergences.
 
 pub mod backend_minijinja;
+pub mod date;
 pub mod evaluator;
 pub mod manifest;
 pub mod num;

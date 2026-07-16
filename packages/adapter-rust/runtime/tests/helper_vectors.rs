@@ -24,6 +24,7 @@
 //! `tests/vector-divergences.json`.
 
 use barefootjs::backend_minijinja;
+use barefootjs::date;
 use barefootjs::num::{self, JsValue};
 use barefootjs::runtime;
 use barefootjs::SearchParams;
@@ -42,6 +43,31 @@ fn divergences_path() -> PathBuf {
 
 fn obj(v: &JsValue, key: &str) -> JsValue {
     v.as_object().and_then(|m| m.get(key)).cloned().unwrap_or(JsValue::Null)
+}
+
+/// Materializes the `{"$date": "<ISO>"}` native-date arg sentinel (#2288)
+/// into this runtime's own `JsValue::Date`, so `date()`'s native-receiver
+/// branch (not just its ISO-string branch) is exercised. Recurses through
+/// arrays/objects the same shape the Perl port's `normalize_arg` walks,
+/// since a vector's `args` may nest the sentinel inside a higher-order
+/// projection payload. Panics on an unparseable `$date` string -- the
+/// corpus is generated from a fixed set of known-good ISO instants, so a
+/// parse failure here means the harness itself is broken, not the case
+/// under test.
+fn materialize_arg(v: &JsonValue) -> JsValue {
+    if let Some(o) = v.as_object() {
+        if let Some(iso) = o.get("$date").and_then(|d| d.as_str()) {
+            if o.len() == 1 {
+                let ms = date::parse_iso8601(iso).unwrap_or_else(|| panic!("materialize_arg: invalid $date {iso:?}"));
+                return JsValue::Date(ms);
+            }
+        }
+        return JsValue::Object(o.iter().map(|(k, x)| (k.clone(), materialize_arg(x))).collect());
+    }
+    if let Some(a) = v.as_array() {
+        return JsValue::Array(a.iter().map(materialize_arg).collect());
+    }
+    JsValue::from_json(v)
 }
 
 /// Mirrors `test_helper_vectors.py`'s `_truthy_pred`.
@@ -123,6 +149,7 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
             let digits = if args.len() > 1 { num::to_f64(&a(1)) as i32 } else { 0 };
             JsValue::String(num::to_fixed(runtime::js_number(&a(0)), digits))
         }
+        "date" => date::date(&a(0), a(1).as_str().unwrap_or("")),
         "lower" => JsValue::String(runtime::js_string(&a(0)).to_lowercase()),
         "upper" => JsValue::String(runtime::js_string(&a(0)).to_uppercase()),
         "trim" => JsValue::String(runtime::trim(&a(0))),
@@ -237,6 +264,11 @@ fn py_truthy(v: &JsValue) -> bool {
         JsValue::String(s) => !s.is_empty(),
         JsValue::Array(a) => !a.is_empty(),
         JsValue::Object(o) => !o.is_empty(),
+        // Unreachable: no binding in this file ever returns a
+        // `JsValue::Date` (`date()` itself always returns `Number` or
+        // `String`, per its own return type) -- kept exhaustive since
+        // `JsValue` is a shared enum.
+        JsValue::Date(_) => true,
     }
 }
 
@@ -298,7 +330,7 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
         let note = case["note"].as_str().unwrap();
         let key = format!("{fn_name}/{note}");
         let raw_args = case["args"].as_array().cloned().unwrap_or_default();
-        let args: Vec<JsValue> = raw_args.iter().map(JsValue::from_json).collect();
+        let args: Vec<JsValue> = raw_args.iter().map(materialize_arg).collect();
         let expect = &case["expect"];
 
         if let Some(reason) = div_file.unsupported.get(fn_name) {

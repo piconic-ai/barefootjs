@@ -7,15 +7,35 @@
  * time. `checkRichTypeMethodCalls` (rich-type-refusal.ts) is wired into
  * `compileJSX` (not the bare analyzer/jsxToIR pipeline other BF021 tests in
  * this directory use), so these tests go through `compileJSX` directly.
+ *
+ * This suite intentionally exercises the refusal against an EMPTY plugin
+ * registry (only the "registry-claimed call is exempt" test opts a plugin
+ * back in, and cleans up after itself) — `Date`/`Map`/… calls here must
+ * still have no catalogued lowering for the fires/silent split below to mean
+ * anything. `bun test` runs every file in one process, and a sibling file
+ * that imports the package entry (`../index`) registers the real built-ins
+ * (`queryHref`, `date`, #2274) as a global side effect — including `date`,
+ * which legitimately claims `.toISOString()`. Snapshot + clear + restore
+ * around the whole file so this suite's result never depends on which other
+ * test files happened to run first in the same process.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { compileJSX } from '../compiler'
 import { ErrorCodes } from '../errors'
 import { TestAdapter } from '../adapters/test-adapter'
 import { registerLoweringPlugin, __resetLoweringPluginsForTest, getLoweringPlugins, type LoweringPlugin } from '../lowering-registry'
 
 const adapter = new TestAdapter()
+
+let savedPlugins: readonly LoweringPlugin[]
+beforeAll(() => {
+  savedPlugins = getLoweringPlugins()
+  __resetLoweringPluginsForTest([])
+})
+afterAll(() => {
+  __resetLoweringPluginsForTest(savedPlugins)
+})
 
 function bf021(source: string, filePath = 'Test.tsx') {
   const result = compileJSX(source, filePath, { adapter })

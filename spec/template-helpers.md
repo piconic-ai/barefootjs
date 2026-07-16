@@ -291,6 +291,31 @@ Array-literal lowering `[a, b, …]` — variadic construction in order.
 JS `arr.filter(Boolean)`: keeps elements truthy under `Boolean(x)` —
 note the string `"0"` is truthy in JS.
 
+### date
+
+`date(recv, op)` — the lowering target for a zero-arg call on a
+`Date`-typed prop (`createdAt.toISOString()`, #2274). JS reference
+semantics: `(d, op) => (d instanceof Date ? d : new Date(d))[op]()`.
+`recv` accepts either the backend's own native date/time type or an
+ISO-8601 string — a template value may arrive as either depending on
+how the host framework populated props, so the helper normalizes
+both to the same instant before dispatching `op`. `op` is one of
+`getUTCFullYear` / `getUTCMonth` / `getUTCDate` / `getUTCHours` /
+`getUTCMinutes` / `getUTCSeconds` / `getTime` / `toISOString` — the
+zero-arg `Date.prototype` subset the compiler's lowering plugin
+recognizes; every accessor and `getTime` render as an **integer**
+(no decimal point), and `toISOString` renders the exact JS shape —
+always millisecond precision (`.SSSZ`), always UTC. `getUTCMonth` is
+**0-based**, matching JS (`new Date('2024-01-01').getUTCMonth()` →
+`0`), not the 1-based convention several host date libraries use.
+A `nil`/unset or unparseable `recv` is normative, not a per-backend
+tolerance: it degrades to the documented zero value — `''` for
+`toISOString`, `0` for every accessor and `getTime` — rather than
+crashing mid-render or (for `new Date(null)`-style behavior) silently
+resolving to "now". The golden vectors pin this fallback, plus a
+native-typed `recv` (the backend's own date/time type, not the
+ISO-8601 string form), for every backend (#2288).
+
 ### Higher-order: canonical projection form
 
 Closures can't ride in JSON, so higher-order entries use the compiled

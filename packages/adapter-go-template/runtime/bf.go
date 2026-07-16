@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -63,6 +64,10 @@ func FuncMap() template.FuncMap {
 		// (include, key, value) triples → "base?k=v&…", mirroring a
 		// URLSearchParams builder with guarded `.set()` calls.
 		"bf_query": Query,
+
+		// Date method lowering (#2274, spec entry "date"): the lowering
+		// target for a zero-arg call on a Date-typed prop.
+		"bf_date": Date,
 
 		// JSON / numeric primitives — JS-compat callees registered on
 		// the Go adapter's `templatePrimitives` map (#1188).
@@ -252,6 +257,77 @@ func Query(base string, triples ...any) string {
 		b.WriteString(formEscape(p.val))
 	}
 	return base + b.String()
+}
+
+// Date implements the `date` helper (spec/template-helpers.md, #2274) — the
+// lowering target for a zero-arg call on a Date-typed prop
+// (`createdAt.toISOString()`). recv accepts the runtime's own `time.Time` /
+// `*time.Time` (however the host framework populated the prop) OR an
+// ISO-8601 string (the wire form a JSON-sourced prop arrives as); either is
+// normalized to UTC before dispatching op, matching the client `Date`'s own
+// instant semantics regardless of which shape reaches this helper. A nil /
+// unparsable receiver yields this runtime's zero value for the requested op
+// (0 for every numeric accessor, "" for toISOString) rather than panicking
+// mid-render — the same tolerance `String`/`Number` already extend to a nil
+// prop. `getUTCMonth` subtracts 1: Go's `time.Month` is 1-based, JS's is not
+// (spec entry "date" is explicit that JS wins here).
+func Date(recv any, op string) any {
+	t, ok := toTime(recv)
+	if !ok {
+		if op == "toISOString" {
+			return ""
+		}
+		return 0
+	}
+	t = t.UTC()
+	switch op {
+	case "getUTCFullYear":
+		return t.Year()
+	case "getUTCMonth":
+		return int(t.Month()) - 1
+	case "getUTCDate":
+		return t.Day()
+	case "getUTCHours":
+		return t.Hour()
+	case "getUTCMinutes":
+		return t.Minute()
+	case "getUTCSeconds":
+		return t.Second()
+	case "getTime":
+		return t.UnixMilli()
+	case "toISOString":
+		return t.Format("2006-01-02T15:04:05.000Z")
+	default:
+		return 0
+	}
+}
+
+// toTime normalizes a `Date` helper receiver to a `time.Time`: the runtime's
+// own `time.Time` / `*time.Time`, or an ISO-8601 string parsed with
+// `time.RFC3339Nano` (accepts both the `Z`-suffixed and numeric-offset
+// forms, and any sub-second precision — including the millisecond precision
+// every value this runtime itself ever produces via `toISOString` above).
+// Anything else (nil, an unparsable string, an unrelated type) reports !ok
+// so `Date` can apply its documented zero-value fallback instead of
+// panicking.
+func toTime(recv any) (time.Time, bool) {
+	switch v := recv.(type) {
+	case time.Time:
+		return v, true
+	case *time.Time:
+		if v == nil {
+			return time.Time{}, false
+		}
+		return *v, true
+	case string:
+		t, err := time.Parse(time.RFC3339Nano, v)
+		if err != nil {
+			return time.Time{}, false
+		}
+		return t, true
+	default:
+		return time.Time{}, false
+	}
 }
 
 // asStringSlice reports whether v is a query *array* value and, if so, returns

@@ -306,6 +306,14 @@ pub fn to_number(v: &JsValue) -> f64 {
             }
         }
         JsValue::Array(_) | JsValue::Object(_) => f64::NAN,
+        // Unreachable in practice: this evaluator only ever sees `JsValue`s
+        // decoded from a `serde_json::Value` ParsedExpr tree or produced by
+        // its own arithmetic, and JSON can't spell a `Date` (see the `num`
+        // module docstring) -- kept exhaustive rather than `unreachable!()`
+        // since `JsValue` is a shared, cross-module enum. `valueOf`-style
+        // (matches `runtime::js_number`'s `JsValue::Date` arm) for
+        // consistency if that ever changes.
+        JsValue::Date(ms) => *ms as f64,
     }
 }
 
@@ -335,6 +343,10 @@ pub fn to_string(v: &JsValue) -> String {
             .collect::<Vec<_>>()
             .join(","),
         JsValue::Object(_) => "[object Object]".to_string(),
+        // Unreachable in practice -- see `to_number`'s `JsValue::Date` arm
+        // above. `toISOString` is the one Date->string shape this
+        // catalogue defines (matches `runtime::js_string`).
+        JsValue::Date(ms) => crate::date::format_iso8601(*ms),
     }
 }
 
@@ -345,6 +357,10 @@ pub fn truthy(v: &JsValue) -> bool {
         JsValue::Number(n) => !n.is_nan() && *n != 0.0, // nonzero and not NaN
         JsValue::String(s) => !s.is_empty(),          // incl. the truthy "0"
         JsValue::Array(_) | JsValue::Object(_) => true,
+        // Unreachable in practice -- see `to_number`'s `JsValue::Date` arm
+        // above. A JS Date object is always truthy, like every other
+        // object.
+        JsValue::Date(_) => true,
     }
 }
 

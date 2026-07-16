@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // vectorsPath points at the golden vectors generated from the JS
@@ -132,6 +133,7 @@ var vectorBindings = map[string]func(args []any) any{
 		return NewSearchParams(args[0].(string)).Get(args[1].(string))
 	},
 	"query":      func(args []any) any { return Query(args[0].(string), args[1:]...) },
+	"date":       func(args []any) any { return Date(args[0], args[1].(string)) },
 	"every":      func(args []any) any { return Every(args[0], args[1].(string)) },
 	"some":       func(args []any) any { return Some(args[0], args[1].(string)) },
 	"filter":     func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },
@@ -323,6 +325,18 @@ func normalizeVectorValue(v any) any {
 				case "-Infinity":
 					return math.Inf(-1)
 				}
+			}
+			// Native-date arg sentinel (#2288): {"$date": "<ISO>"},
+			// materialized into the runtime's own time.Time so Date()'s
+			// native-receiver branch (not just its string branch) is
+			// exercised. Parse failure panics rather than silently
+			// falling through to the zero-value branch under test.
+			if s, ok := x["$date"].(string); ok {
+				t, err := time.Parse(time.RFC3339Nano, s)
+				if err != nil {
+					panic(err)
+				}
+				return t
 			}
 		}
 		for k := range x {

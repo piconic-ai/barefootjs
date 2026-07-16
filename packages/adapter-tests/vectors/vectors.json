@@ -2192,6 +2192,709 @@
       "note": "all falsy yields []"
     },
     {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getUTCFullYear"
+      ],
+      "expect": 1970,
+      "note": "epoch 0: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getUTCMonth"
+      ],
+      "expect": 0,
+      "note": "epoch 0: getUTCMonth is 0-based (January)"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getUTCDate"
+      ],
+      "expect": 1,
+      "note": "epoch 0: getUTCDate"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getUTCHours"
+      ],
+      "expect": 0,
+      "note": "epoch 0: getUTCHours"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getUTCMinutes"
+      ],
+      "expect": 0,
+      "note": "epoch 0: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getUTCSeconds"
+      ],
+      "expect": 0,
+      "note": "epoch 0: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "getTime"
+      ],
+      "expect": 0,
+      "note": "epoch 0: getTime is exactly 0"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "toISOString"
+      ],
+      "expect": "1970-01-01T00:00:00.000Z",
+      "note": "epoch 0: toISOString round-trips the instant"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getUTCFullYear"
+      ],
+      "expect": 1969,
+      "note": "pre-1970 instant: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getUTCMonth"
+      ],
+      "expect": 6,
+      "note": "pre-1970 instant: getUTCMonth"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getUTCDate"
+      ],
+      "expect": 20,
+      "note": "pre-1970 instant: getUTCDate"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getUTCHours"
+      ],
+      "expect": 20,
+      "note": "pre-1970 instant: getUTCHours"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getUTCMinutes"
+      ],
+      "expect": 17,
+      "note": "pre-1970 instant: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getUTCSeconds"
+      ],
+      "expect": 40,
+      "note": "pre-1970 instant: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "getTime"
+      ],
+      "expect": -14182939877,
+      "note": "pre-1970 instant: getTime is negative with a nonzero-ms floor-division trap"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "toISOString"
+      ],
+      "expect": "1969-07-20T20:17:40.123Z",
+      "note": "pre-1970 instant: toISOString round-trips the instant"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getUTCFullYear"
+      ],
+      "expect": 2024,
+      "note": "leap day: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getUTCMonth"
+      ],
+      "expect": 1,
+      "note": "leap day: getUTCMonth is 0-based (February)"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getUTCDate"
+      ],
+      "expect": 29,
+      "note": "leap day: getUTCDate is 29"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getUTCHours"
+      ],
+      "expect": 23,
+      "note": "leap day: getUTCHours at the last hour of the day"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getUTCMinutes"
+      ],
+      "expect": 59,
+      "note": "leap day: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getUTCSeconds"
+      ],
+      "expect": 59,
+      "note": "leap day: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "getTime"
+      ],
+      "expect": 1709251199999,
+      "note": "leap day: getTime"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "toISOString"
+      ],
+      "expect": "2024-02-29T23:59:59.999Z",
+      "note": "leap day: toISOString round-trips the instant"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getUTCFullYear"
+      ],
+      "expect": 9999,
+      "note": "far-future instant: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getUTCMonth"
+      ],
+      "expect": 11,
+      "note": "far-future instant: getUTCMonth is 0-based (December)"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getUTCDate"
+      ],
+      "expect": 31,
+      "note": "far-future instant: getUTCDate"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getUTCHours"
+      ],
+      "expect": 23,
+      "note": "far-future instant: getUTCHours"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getUTCMinutes"
+      ],
+      "expect": 59,
+      "note": "far-future instant: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getUTCSeconds"
+      ],
+      "expect": 59,
+      "note": "far-future instant: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "getTime"
+      ],
+      "expect": 253402300799999,
+      "note": "far-future instant: getTime at the four-digit-year boundary"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "toISOString"
+      ],
+      "expect": "9999-12-31T23:59:59.999Z",
+      "note": "far-future instant: toISOString round-trips the instant"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getUTCFullYear"
+      ],
+      "expect": 1970,
+      "note": "native epoch 0: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getUTCMonth"
+      ],
+      "expect": 0,
+      "note": "native epoch 0: getUTCMonth"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getUTCDate"
+      ],
+      "expect": 1,
+      "note": "native epoch 0: getUTCDate"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getUTCHours"
+      ],
+      "expect": 0,
+      "note": "native epoch 0: getUTCHours"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getUTCMinutes"
+      ],
+      "expect": 0,
+      "note": "native epoch 0: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getUTCSeconds"
+      ],
+      "expect": 0,
+      "note": "native epoch 0: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "getTime"
+      ],
+      "expect": 0,
+      "note": "native epoch 0: getTime"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "toISOString"
+      ],
+      "expect": "1970-01-01T00:00:00.000Z",
+      "note": "native epoch 0: toISOString"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getUTCFullYear"
+      ],
+      "expect": 1969,
+      "note": "native pre-1970 instant: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getUTCMonth"
+      ],
+      "expect": 6,
+      "note": "native pre-1970 instant: getUTCMonth"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getUTCDate"
+      ],
+      "expect": 20,
+      "note": "native pre-1970 instant: getUTCDate"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getUTCHours"
+      ],
+      "expect": 20,
+      "note": "native pre-1970 instant: getUTCHours"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getUTCMinutes"
+      ],
+      "expect": 17,
+      "note": "native pre-1970 instant: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getUTCSeconds"
+      ],
+      "expect": 40,
+      "note": "native pre-1970 instant: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "getTime"
+      ],
+      "expect": -14182939877,
+      "note": "native pre-1970 instant: getTime is negative with a nonzero-ms floor-division trap"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "toISOString"
+      ],
+      "expect": "1969-07-20T20:17:40.123Z",
+      "note": "native pre-1970 instant: toISOString"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getUTCFullYear"
+      ],
+      "expect": 2024,
+      "note": "native leap day: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getUTCMonth"
+      ],
+      "expect": 1,
+      "note": "native leap day: getUTCMonth"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getUTCDate"
+      ],
+      "expect": 29,
+      "note": "native leap day: getUTCDate is 29"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getUTCHours"
+      ],
+      "expect": 23,
+      "note": "native leap day: getUTCHours at the last hour of the day"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getUTCMinutes"
+      ],
+      "expect": 59,
+      "note": "native leap day: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getUTCSeconds"
+      ],
+      "expect": 59,
+      "note": "native leap day: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "getTime"
+      ],
+      "expect": 1709251199999,
+      "note": "native leap day: getTime"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "toISOString"
+      ],
+      "expect": "2024-02-29T23:59:59.999Z",
+      "note": "native leap day: toISOString"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getUTCFullYear"
+      ],
+      "expect": 9999,
+      "note": "native far-future instant: getUTCFullYear"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getUTCMonth"
+      ],
+      "expect": 11,
+      "note": "native far-future instant: getUTCMonth"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getUTCDate"
+      ],
+      "expect": 31,
+      "note": "native far-future instant: getUTCDate"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getUTCHours"
+      ],
+      "expect": 23,
+      "note": "native far-future instant: getUTCHours"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getUTCMinutes"
+      ],
+      "expect": 59,
+      "note": "native far-future instant: getUTCMinutes"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getUTCSeconds"
+      ],
+      "expect": 59,
+      "note": "native far-future instant: getUTCSeconds"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "getTime"
+      ],
+      "expect": 253402300799999,
+      "note": "native far-future instant: getTime at the four-digit-year boundary"
+    },
+    {
+      "fn": "date",
+      "args": [
+        {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "toISOString"
+      ],
+      "expect": "9999-12-31T23:59:59.999Z",
+      "note": "native far-future instant: toISOString"
+    },
+    {
+      "fn": "date",
+      "args": [
+        null,
+        "toISOString"
+      ],
+      "expect": "",
+      "note": "nil receiver: toISOString degrades to empty string"
+    },
+    {
+      "fn": "date",
+      "args": [
+        null,
+        "getTime"
+      ],
+      "expect": 0,
+      "note": "nil receiver: getTime degrades to 0"
+    },
+    {
+      "fn": "date",
+      "args": [
+        null,
+        "getUTCFullYear"
+      ],
+      "expect": 0,
+      "note": "nil receiver: accessor degrades to 0"
+    },
+    {
+      "fn": "date",
+      "args": [
+        null,
+        "getUTCMonth"
+      ],
+      "expect": 0,
+      "note": "nil receiver: second accessor degrades to 0"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "not-a-date",
+        "toISOString"
+      ],
+      "expect": "",
+      "note": "malformed receiver: toISOString degrades to empty string"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "not-a-date",
+        "getTime"
+      ],
+      "expect": 0,
+      "note": "malformed receiver: getTime degrades to 0"
+    },
+    {
+      "fn": "date",
+      "args": [
+        "not-a-date",
+        "getUTCFullYear"
+      ],
+      "expect": 0,
+      "note": "malformed receiver: accessor degrades to 0"
+    },
+    {
       "fn": "every",
       "args": [
         [

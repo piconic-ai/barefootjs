@@ -3,6 +3,7 @@
 require 'minitest/autorun'
 require 'json'
 require 'set'
+require 'time'
 require 'barefoot_js'
 
 # Golden helper vectors generated from the JS reference implementations
@@ -50,6 +51,19 @@ class HelperVectorsTest < Minitest::Test
     ->(item) { item.is_a?(Hash) && item[key] == value }
   end
 
+  # Materializes the `{"$date": "<ISO>"}` native-date arg sentinel (#2288)
+  # into a real `Time`, so `date`'s native-receiver branch (not just its
+  # ISO-string branch) is exercised -- recurses through arrays/hashes the
+  # same shape `normalize_arg` walks in the Perl port, since a vector's
+  # `args` may nest the sentinel inside a higher-order projection payload.
+  def self.materialize_arg(v)
+    return v.map { |x| materialize_arg(x) } if v.is_a?(Array)
+    return Time.iso8601(v[:"$date"]) if v.is_a?(Hash) && v.keys == [:"$date"]
+    return v.transform_values { |x| materialize_arg(x) } if v.is_a?(Hash)
+
+    v
+  end
+
   # One binding per canonical helper id in the spec catalogue, bound to the
   # exact code shape a compiled ERB template would execute on this backend.
   # Where the adapter would lower an operation to a native Ruby operator/
@@ -81,6 +95,7 @@ class HelperVectorsTest < Minitest::Test
     'max' => ->(a, b) { BF.max(a, b) },
     'abs' => ->(v) { BF.abs(v) },
     'to_fixed' => ->(*a) { BF.to_fixed(*a) },
+    'date' => ->(recv, op) { BF.date(recv, op) },
 
     'lower' => ->(s) { BF.lc(s) },
     'upper' => ->(s) { BF.uc(s) },
@@ -199,7 +214,7 @@ class HelperVectorsTest < Minitest::Test
         refute_nil bind, "no Ruby binding for helper '#{fn}' -- add it to BINDINGS in #{__FILE__}"
         next unless bind
 
-        args = vector_case[:args]
+        args = vector_case[:args].map { |a| self.class.materialize_arg(a) }
         got = nil
         err = nil
         begin
