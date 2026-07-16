@@ -1458,6 +1458,17 @@
         "text"
       ]
     },
+    "date-catalogued": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-method-uncatalogued": {
       "kinds": [
         "call",
@@ -4062,13 +4073,13 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 156,
+    "call": 157,
     "conditional": 18,
-    "identifier": 234,
+    "identifier": 235,
     "index-access": 12,
     "literal": 194,
     "logical": 41,
-    "member": 116,
+    "member": 117,
     "object-literal": 41,
     "template-literal": 27,
     "unary": 22,
