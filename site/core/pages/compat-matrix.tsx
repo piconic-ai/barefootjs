@@ -16,6 +16,7 @@ import type { Hono } from 'hono'
 import { renderMarkdown } from '../lib/markdown'
 import { getDocsNavLinks } from '../lib/navigation'
 import lock from '../../../ui/compat.lock.json' with { type: 'json' }
+import supportMatrixLock from '../../../ui/support-matrix.lock.json' with { type: 'json' }
 
 const SLUG = 'advanced/compatibility-matrix'
 const TITLE = 'Compatibility Matrix'
@@ -56,8 +57,46 @@ interface CompatLock {
 
 const compat = lock as CompatLock
 
+/** One `kind` or `axis` construct's covering-fixture total and its per-adapter cells (`ui/support-matrix.lock.json`). */
+interface SupportMatrixGap {
+  fixture: string
+  issues: string[]
+}
+
+interface SupportMatrixCell {
+  pass: number
+  total: number
+  gaps?: SupportMatrixGap[]
+}
+
+interface SupportMatrixConstruct {
+  total: number
+  cells: Record<string, SupportMatrixCell>
+}
+
+interface SupportMatrixLock {
+  note: string
+  knownLimitationLabel: string
+  adapters: string[]
+  kinds: Record<string, SupportMatrixConstruct>
+  axes: Record<string, SupportMatrixConstruct>
+}
+
+const supportMatrix = supportMatrixLock as SupportMatrixLock
+
 function escapeCell(text: string): string {
   return text.replace(/\|/g, '\\|')
+}
+
+/**
+ * Deduped, sorted issue URLs as `#NNNN` links, falling back to the repo-
+ * wide known-limitation label when none exist. Shared by `buildLegend`
+ * (compat matrix, per diagnostic code) and the construct-support section
+ * below (per gapped cell) so both link formats stay identical.
+ */
+function formatIssueLinks(issues: string[], fallbackLabel: string): string {
+  if (issues.length === 0) return `[known limitation](${fallbackLabel})`
+  return issues.map((url) => `[#${url.split('/').pop()}](${url})`).join(', ')
 }
 
 /** Render one matrix cell as a Markdown fragment. */
@@ -129,10 +168,7 @@ function buildLegend(): string {
   return entries
     .map(({ code, severity, issues }) => {
       const label = severity === 'warning' ? `⚠ \`${code}\`` : `\`${code}\``
-      const links = issues.length > 0
-        ? issues.map((url) => `[#${url.split('/').pop()}](${url})`).join(', ')
-        : `[known limitation](${compat.knownLimitationLabel})`
-      return `- ${label} — ${links}`
+      return `- ${label} — ${formatIssueLinks(issues, compat.knownLimitationLabel)}`
     })
     .join('\n')
 }
@@ -215,12 +251,67 @@ ${buildFixtureDetails(fd)}
 `
 }
 
+/**
+ * Render one construct-support cell as `pass/total`, plus linked tracking
+ * issues when the construct has gaps on this adapter. Deduped across every
+ * gapped fixture in the cell — a common case is several fixtures gapped by
+ * the same pinned diagnostic, which would otherwise repeat its issue link.
+ */
+function supportCellMarkdown(cell: SupportMatrixCell | undefined): string {
+  if (!cell) return '?'
+  const ratio = `${cell.pass}/${cell.total}`
+  const gaps = cell.gaps ?? []
+  if (gaps.length === 0) return ratio
+  const issues = [...new Set(gaps.flatMap((gap) => gap.issues))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  return `${ratio} (${formatIssueLinks(issues, supportMatrix.knownLimitationLabel)})`
+}
+
+/** One `construct × adapter` table — shared by the "By kind" and "By axis" tables. */
+function buildSupportTable(records: Record<string, SupportMatrixConstruct>): string {
+  const adapters = supportMatrix.adapters
+  const names = Object.keys(records).sort()
+  const header = `| Construct | ${adapters.join(' | ')} |`
+  const divider = `| --- | ${adapters.map(() => '---').join(' | ')} |`
+  const rows = names.map((name) => {
+    const cells = adapters.map((adapter) => supportCellMarkdown(records[name]?.cells[adapter]))
+    return `| \`${escapeCell(name)}\` | ${cells.join(' | ')} |`
+  })
+  return [header, divider, ...rows].join('\n')
+}
+
+/**
+ * Construct-level drill-down: every `ParsedExpr` kind (`identifier`,
+ * `call`, `literal`, ...) and every finer-grained axis within a kind
+ * (`binary:===`, `literal:string`, `array-method:includes`, ...) against
+ * the shared conformance corpus. Complements the component matrix above —
+ * that one answers "does this whole component compile clean", this one
+ * answers "of the fixtures that exercise construct X, how many are clean".
+ */
+function buildSupportMatrixSection(): string {
+  return `
+## Construct Support (kind × axis)
+
+${supportMatrix.note}
+
+**Read this as a ratio, not a binary.** \`conformancePins\` and \`renderDivergences\` are attributed to a whole **fixture** (a component), not to the individual construct — a gapped fixture is usually a complex component that happens to exercise many common kinds and axes alongside the one shape it exists to pin down. A construct showing \`137/138\` has exactly one gapped fixture contributing to it, not 137 broken cases. A construct with \`total: 0\` (currently just \`regex\`) has no fixture exercising it yet.
+
+### By kind
+
+${buildSupportTable(supportMatrix.kinds)}
+
+### By axis
+
+${buildSupportTable(supportMatrix.axes)}
+`
+}
+
 function buildMarkdown(): string {
   const componentNames = Object.keys(compat.components).sort()
   const summary = buildSummary(componentNames)
   const table = buildTable(componentNames)
   const legend = buildLegend()
   const fixtureSection = buildFixtureSection()
+  const supportMatrixSection = buildSupportMatrixSection()
 
   return `# ${TITLE}
 
@@ -238,9 +329,12 @@ Each diagnostic code below links to the known-limitation issue(s) tracking it. C
 
 ${legend}
 ${fixtureSection}
+${supportMatrixSection}
 ## Data Source
 
 This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
+
+The construct-support section above is generated from the committed [\`ui/support-matrix.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/support-matrix.lock.json), regenerated with \`bun run support-matrix:lock\` and drift-checked in CI alongside the component matrix.
 `
 }
 

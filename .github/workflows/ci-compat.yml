@@ -6,10 +6,12 @@ on:
     paths:
       - 'ui/components/**'
       - 'ui/compat.lock.json'
+      - 'ui/support-matrix.lock.json'
       - 'packages/jsx/**'
       - 'packages/client/**'
       - 'packages/cli/**'
       - 'packages/compat/**'
+      - 'packages/adapter-tests/coverage-map.json'
       - 'packages/adapter-erb/**'
       - 'packages/adapter-go-template/**'
       - 'packages/adapter-hono/**'
@@ -23,10 +25,12 @@ on:
     paths:
       - 'ui/components/**'
       - 'ui/compat.lock.json'
+      - 'ui/support-matrix.lock.json'
       - 'packages/jsx/**'
       - 'packages/client/**'
       - 'packages/cli/**'
       - 'packages/compat/**'
+      - 'packages/adapter-tests/coverage-map.json'
       - 'packages/adapter-erb/**'
       - 'packages/adapter-go-template/**'
       - 'packages/adapter-hono/**'
@@ -90,5 +94,15 @@ jobs:
         run: |
           if ! git diff --exit-code -- ui/compat.lock.json; then
             echo "::error::ui/compat.lock.json is out of date. Run 'bun run compat:lock' locally and commit the result."
+            exit 1
+          fi
+
+      - name: Regenerate support matrix lockfile
+        run: bun run support-matrix:lock
+
+      - name: Check support matrix for drift
+        run: |
+          if ! git diff --exit-code -- ui/support-matrix.lock.json; then
+            echo "::error::ui/support-matrix.lock.json is out of date. Run 'bun run support-matrix:lock' locally and commit the result."
             exit 1
           fi

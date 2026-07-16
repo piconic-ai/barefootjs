@@ -28,6 +28,7 @@
     "meta:extract": "bun run packages/cli/src/index.ts meta extract",
     "compat": "bun run packages/compat/src/cli.ts",
     "compat:lock": "bun run packages/compat/src/cli.ts --all --json --out ui/compat.lock.json",
+    "support-matrix:lock": "bun run packages/compat/src/support-matrix-cli.ts",
     "bf": "bun run packages/cli/src/index.ts",
     "lint": "biome check",
     "prepare": "simple-git-hooks"
