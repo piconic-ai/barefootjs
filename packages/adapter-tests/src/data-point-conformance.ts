@@ -47,8 +47,54 @@ const generatedPoints: Record<string, JSXDataPoint[]> = JSON.parse(
   readFileSync(resolve(import.meta.dir, '../generated-data-points.json'), 'utf8'),
 )
 
-function pointsForFixture(fixture: JSXFixture): JSXDataPoint[] {
+/**
+ * PR-vs-nightly cost tiering (#2278). The generated adversarial points grow
+ * with every catalogue extension (#2274 Date rows, #2277 union/object) and
+ * each is a real-backend process spawn on the native adapters. `pr` runs a
+ * bounded, deterministic sample of generated points (declared points always
+ * run); `full` runs everything. Default is `full` — only CI's per-adapter
+ * PR/push jobs opt into `pr` (the nightly `schedule` run stays `full`), so a
+ * local `bun test` always exercises the whole matrix.
+ */
+const DATA_POINT_TIER: 'pr' | 'full' = process.env.BF_DATA_POINT_TIER === 'pr' ? 'pr' : 'full'
+
+/** PR-tier cap on GENERATED points per fixture; declared points are never capped. */
+const PR_TIER_GENERATED_CAP = 3
+
+/**
+ * Deterministic even-spread sample of at most `PR_TIER_GENERATED_CAP`
+ * generated points. Stride sampling across the declared order keeps both
+ * ends plus the middle, so the PR tier probes a spread of a fixture's
+ * generated axes rather than only the first few. Index-based (no RNG) so a
+ * PR-tier failure reproduces exactly.
+ */
+export function sampleGeneratedPoints(
+  points: readonly JSXDataPoint[],
+  cap = PR_TIER_GENERATED_CAP,
+): JSXDataPoint[] {
+  if (points.length <= cap) return [...points]
+  const out: JSXDataPoint[] = []
+  for (let i = 0; i < cap; i++) out.push(points[Math.floor((i * points.length) / cap)])
+  return out
+}
+
+/**
+ * Every point a fixture defines — declared plus every generated one. The
+ * skip-ledger's universe: a `skipDataPoints` entry for a point the PR tier
+ * happens to sample out must still count as valid (not an orphan).
+ */
+function allPointsForFixture(fixture: JSXFixture): JSXDataPoint[] {
   return [...(fixture.dataPoints ?? []), ...(generatedPoints[fixture.id] ?? [])]
+}
+
+/**
+ * The points to actually RUN under the current tier: declared points always,
+ * generated points fully on `full` or a deterministic sample on `pr`.
+ */
+function runPointsForFixture(fixture: JSXFixture): JSXDataPoint[] {
+  const generated = generatedPoints[fixture.id] ?? []
+  const gen = DATA_POINT_TIER === 'pr' ? sampleGeneratedPoints(generated) : generated
+  return [...(fixture.dataPoints ?? []), ...gen]
 }
 
 export interface RunDataPointConformanceOptions {
@@ -119,13 +165,31 @@ function renderOptions(fixture: JSXFixture, adapter: TemplateAdapter, props: Rec
 }
 
 export function runDataPointConformance(opts: RunDataPointConformanceOptions): void {
+  // No silent cap (#2278): when the PR tier defers generated points, say so
+  // loudly — how many ran vs. how many the nightly full-matrix run covers.
+  if (DATA_POINT_TIER === 'pr') {
+    let total = 0
+    let kept = 0
+    for (const f of jsxFixtures) {
+      const g = generatedPoints[f.id] ?? []
+      total += g.length
+      kept += sampleGeneratedPoints(g).length
+    }
+    if (total - kept > 0) {
+      console.warn(
+        `[${opts.name}] data-point tier=pr: all declared + ${kept}/${total} generated points; ` +
+          `${total - kept} deferred to the nightly full-matrix run (BF_DATA_POINT_TIER=full runs all).`,
+      )
+    }
+  }
+
   // Skip-ledger rot protection: every skip entry must name a point that
-  // actually exists (declared or generated). Without this, a catalogue
-  // or fixture change silently orphans the entry and the divergence it
-  // documents stops being pinned anywhere.
+  // actually exists (declared or generated). Validated against the FULL
+  // universe (`allPointsForFixture`), not the tier-sampled run set, so a
+  // skip for a point the PR tier defers isn't mistaken for an orphan.
   if (opts.skipDataPoints) {
     const validKeys = new Set(
-      jsxFixtures.flatMap(f => pointsForFixture(f).map(p => `${f.id}:${p.name}`)),
+      jsxFixtures.flatMap(f => allPointsForFixture(f).map(p => `${f.id}:${p.name}`)),
     )
     const orphans = [...opts.skipDataPoints].filter(k => !validKeys.has(k))
     if (orphans.length > 0) {
@@ -137,7 +201,7 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
   }
 
   const fixtures = jsxFixtures.filter(
-    f => pointsForFixture(f).length > 0 && !opts.skipFixtures.has(f.id),
+    f => allPointsForFixture(f).length > 0 && !opts.skipFixtures.has(f.id),
   )
   if (fixtures.length === 0) return
 
@@ -164,7 +228,7 @@ export function runDataPointConformance(opts: RunDataPointConformanceOptions): v
           return gate
         }
 
-        for (const point of pointsForFixture(fixture)) {
+        for (const point of runPointsForFixture(fixture)) {
           if (opts.skipDataPoints?.has(`${fixture.id}:${point.name}`)) continue
 
           test(

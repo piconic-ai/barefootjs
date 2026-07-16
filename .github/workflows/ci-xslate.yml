@@ -20,6 +20,13 @@ on:
       - 'packages/adapter-xslate/**'
       - 'packages/adapter-tests/**'
       - '.github/workflows/ci-xslate.yml'
+  # Nightly full-matrix data-point conformance (#2278): PR/push runs the
+  # fast `pr` tier (sampled generated points); the scheduled run exercises
+  # every generated point (BF_DATA_POINT_TIER below). `workflow_dispatch`
+  # allows a manual full run.
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,6 +34,11 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # PR/push run the fast sampled data-point tier; the nightly `schedule`
+    # (and a manual `workflow_dispatch`) run the full generated-point matrix
+    # (#2278).
+    env:
+      BF_DATA_POINT_TIER: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'pr' }}
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
