@@ -141,3 +141,81 @@ export function D({ items }: { items?: Todo[] }) {
     expect(names).toContain('gen:a:markup')
   })
 })
+
+/**
+ * Union- and object-typed synthesis (#2277) — mirrors the Date catalogue's
+ * own probe (`data-domain.test.ts`). Both probes use `props: Type` (not
+ * destructured): only that path resolves the full `TypeInfo` (`unionTypes`
+ * / `properties`) the catalogue reads — `collectMemberTypes`'
+ * primitives-only gate degrades a destructured non-primitive member to
+ * `unknown` (see `union-catalogued.ts` / `object-catalogued.ts`'s
+ * docstrings).
+ */
+describe('union catalogue synthesis (#2277)', () => {
+  const fixture = createFixture({
+    id: 'catalog-unit-union',
+    description: 'union catalogue probe',
+    source: `
+function Probe(props: { placement?: 'top' | 'right' | 'bottom' }) {
+  return <div>{props.placement}</div>
+}
+export { Probe }
+`,
+    props: { placement: 'top' },
+    expectedHtml: '<div bf-s="test">placeholder</div>',
+  })
+  const points = generateDataPointsForFixture(fixture)
+  const byName = new Map(points.map(p => [p.name, p.props]))
+
+  test('emits one gen:<param>:union:<member> point per literal member', () => {
+    expect(byName.get('gen:placement:union:right')).toEqual({ placement: 'right' })
+    expect(byName.get('gen:placement:union:bottom')).toEqual({ placement: 'bottom' })
+    // 'top' reproduces the primary props verbatim — deduped, not a bug.
+    expect(byName.has('gen:placement:union:top')).toBe(false)
+  })
+
+  test('optional union prop also gets the absent point', () => {
+    const absent = byName.get('gen:placement:absent')
+    expect(absent).toEqual({})
+    expect(Object.hasOwn(absent as object, 'placement')).toBe(false)
+  })
+
+  test('every generated point is JSON-clean (round-trips unchanged)', () => {
+    for (const [, props] of byName) {
+      expect(JSON.parse(JSON.stringify(props))).toEqual(props)
+    }
+  })
+})
+
+describe('object catalogue synthesis (#2277)', () => {
+  const fixture = createFixture({
+    id: 'catalog-unit-object',
+    description: 'object catalogue probe',
+    source: `
+function Probe(props: { cfg: { id: number; label?: string } }) {
+  return <div>{props.cfg.id}</div>
+}
+export { Probe }
+`,
+    props: { cfg: { id: 5, label: 'hi' } },
+    expectedHtml: '<div bf-s="test">placeholder</div>',
+  })
+  const points = generateDataPointsForFixture(fixture)
+  const byName = new Map(points.map(p => [p.name, p.props]))
+
+  test('emits object:minimal — required fields only, optionals omitted', () => {
+    const minimal = byName.get('gen:cfg:object:minimal') as { cfg: Record<string, unknown> } | undefined
+    expect(minimal).toEqual({ cfg: { id: 0 } })
+    expect(Object.hasOwn(minimal!.cfg, 'label')).toBe(false)
+  })
+
+  test('emits one object:+<field> point per optional field', () => {
+    expect(byName.get('gen:cfg:object:+label')).toEqual({ cfg: { id: 0, label: '' } })
+  })
+
+  test('every generated point is JSON-clean (round-trips unchanged)', () => {
+    for (const [, props] of byName) {
+      expect(JSON.parse(JSON.stringify(props))).toEqual(props)
+    }
+  })
+})

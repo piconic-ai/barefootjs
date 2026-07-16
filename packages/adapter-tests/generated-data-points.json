@@ -925,6 +925,25 @@
       }
     }
   ],
+  "object-catalogued": [
+    {
+      "name": "gen:cfg:object:minimal",
+      "props": {
+        "cfg": {
+          "id": 0
+        }
+      }
+    },
+    {
+      "name": "gen:cfg:object:+label",
+      "props": {
+        "cfg": {
+          "id": 0,
+          "label": ""
+        }
+      }
+    }
+  ],
   "pre-whitespace": [
     {
       "name": "gen:snippet:empty",
@@ -1815,6 +1834,20 @@
       "props": {
         "className": "",
         "__instanceId": "Toggle_test"
+      }
+    }
+  ],
+  "union-catalogued": [
+    {
+      "name": "gen:placement:union:right",
+      "props": {
+        "placement": "right"
+      }
+    },
+    {
+      "name": "gen:placement:union:bottom",
+      "props": {
+        "placement": "bottom"
       }
     }
   ]

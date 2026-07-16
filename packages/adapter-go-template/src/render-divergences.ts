@@ -17,6 +17,14 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
+  // `object-catalogued` (#2277): an inline object-typed prop (`cfg: { id:
+  // number; label?: string }`) doesn't synthesize a named Go struct, so the
+  // `Cfg` field is untyped and `.Cfg.Id` / `.Cfg.Label` render empty. The
+  // object-synthesis data points still run the oracle on the dynamic
+  // backends + Hono; graduating means giving an inline object prop a real
+  // struct so nested member access resolves.
+  // https://github.com/piconic-ai/barefootjs/issues/2299
+  'object-catalogued': 'inline object-prop member access renders empty (untyped Cfg field) — #2299',
   // `todo-app-ssr` no longer diverges (#2209). Two parts: (1) `.Todos`
   // (the loop's DATUM slice) is already seeded straight from the caller's
   // Input — the constructor derives it from `initialTodos`, and `[]Todo`

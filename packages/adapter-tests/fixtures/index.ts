@@ -386,6 +386,11 @@ import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 import { fixture as loopParamShadowsRecordConst } from './loop-param-shadows-record-const'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateCatalogued } from './date-catalogued'
+// #2277: the union- and object-typed catalogue extensions to the
+// type-derived adversarial catalogue (`adversarial-catalog.ts`), mirroring
+// the landed Date catalogue work above.
+import { fixture as unionCatalogued } from './union-catalogued'
+import { fixture as objectCatalogued } from './object-catalogued'
 
 import type { JSXFixture } from '../src/types'
 
@@ -667,4 +672,6 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamShadowsRecordConst,
   dateMethodUncatalogued,
   dateCatalogued,
+  unionCatalogued,
+  objectCatalogued,
 ]

@@ -2575,6 +2575,16 @@
         "text"
       ]
     },
+    "object-catalogued": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "object-entries-map": {
       "kinds": [
         "identifier"
@@ -4041,6 +4051,17 @@
         "text"
       ]
     },
+    "union-catalogued": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "untyped-props-reads": {
       "kinds": [
         "array-literal",
@@ -4075,11 +4096,11 @@
     "binary": 67,
     "call": 157,
     "conditional": 18,
-    "identifier": 235,
+    "identifier": 237,
     "index-access": 12,
     "literal": 194,
     "logical": 41,
-    "member": 117,
+    "member": 119,
     "object-literal": 41,
     "template-literal": 27,
     "unary": 22,

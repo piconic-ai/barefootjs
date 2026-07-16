@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 253,
+    "totalFixtures": 255,
     "fixtures": {
       "dangerous-inner-html-dynamic": {
         "blade": {
@@ -2101,6 +2101,16 @@
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2038"
           ]
+        }
+      },
+      "object-catalogued": {
+        "go-template": {
+          "kind": "render",
+          "reason": "inline object-prop member access renders empty (untyped Cfg field) — #2299"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "inline object-prop member access renders empty — #2299"
         }
       },
       "static-array-from-props": {
