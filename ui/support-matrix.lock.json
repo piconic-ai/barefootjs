@@ -1192,15 +1192,15 @@
       }
     },
     "literal": {
-      "total": 194,
+      "total": 195,
       "cells": {
         "hono": {
-          "pass": 194,
-          "total": 194
+          "pass": 195,
+          "total": 195
         },
         "blade": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1209,8 +1209,8 @@
           ]
         },
         "erb": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1221,8 +1221,8 @@
           ]
         },
         "go-template": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1231,8 +1231,8 @@
           ]
         },
         "jinja": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1243,8 +1243,8 @@
           ]
         },
         "minijinja": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1255,8 +1255,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1265,8 +1265,8 @@
           ]
         },
         "twig": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1275,8 +1275,8 @@
           ]
         },
         "xslate": {
-          "pass": 193,
-          "total": 194,
+          "pass": 194,
+          "total": 195,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -1655,15 +1655,15 @@
       }
     },
     "object-literal": {
-      "total": 41,
+      "total": 42,
       "cells": {
         "hono": {
-          "pass": 41,
-          "total": 41
+          "pass": 42,
+          "total": 42
         },
         "blade": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1678,8 +1678,8 @@
           ]
         },
         "erb": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1696,8 +1696,8 @@
           ]
         },
         "go-template": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1712,8 +1712,8 @@
           ]
         },
         "jinja": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1730,8 +1730,8 @@
           ]
         },
         "minijinja": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1748,8 +1748,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1764,8 +1764,8 @@
           ]
         },
         "twig": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -1780,8 +1780,8 @@
           ]
         },
         "xslate": {
-          "pass": 39,
-          "total": 41,
+          "pass": 40,
+          "total": 42,
           "gaps": [
             {
               "fixture": "dangerous-inner-html-dynamic",
@@ -3775,15 +3775,15 @@
       }
     },
     "literal:string": {
-      "total": 138,
+      "total": 139,
       "cells": {
         "hono": {
-          "pass": 138,
-          "total": 138
+          "pass": 139,
+          "total": 139
         },
         "blade": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3792,8 +3792,8 @@
           ]
         },
         "erb": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3804,8 +3804,8 @@
           ]
         },
         "go-template": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3814,8 +3814,8 @@
           ]
         },
         "jinja": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3826,8 +3826,8 @@
           ]
         },
         "minijinja": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3838,8 +3838,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3848,8 +3848,8 @@
           ]
         },
         "twig": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -3858,8 +3858,8 @@
           ]
         },
         "xslate": {
-          "pass": 137,
-          "total": 138,
+          "pass": 138,
+          "total": 139,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",

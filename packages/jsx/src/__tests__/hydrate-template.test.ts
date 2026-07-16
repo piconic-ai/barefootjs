@@ -201,13 +201,18 @@ describe('hydrate() template generation for signal-bearing components', () => {
     // Icon is used as a child → gets CSR fallback with template
     expect(content).toMatch(/hydrate\('Icon',.*template:/)
 
-    // String literals 'size-4', 'size-6', 'size-8' must NOT be corrupted
-    // by the constant `size` being inlined into them
-    expect(content).toContain("'size-4'")
-    expect(content).toContain("'size-6'")
-    expect(content).toContain("'size-8'")
+    // String literals size-4/6/8 must NOT be corrupted by the constant `size`
+    // being inlined into them. A bare `class={sizeClasses[size]}` is now lifted
+    // into the same `lookup` part the `${sizeClasses[size]}` template-literal
+    // form produces (#2300), so the record inlines as a JSON-serialized object
+    // (`{"sm": "size-4", …}[size]`) with double-quoted values — the literals
+    // stay intact, which is exactly what this guard checks.
+    expect(content).toContain('"size-4"')
+    expect(content).toContain('"size-6"')
+    expect(content).toContain('"size-8"')
     // The word 'size' inside 'size-4' should not be replaced with the constant value
     expect(content).not.toMatch(/'\(props\.size/)
+    expect(content).not.toMatch(/"\(props\.size/)
   })
 
   test('block-body memo with local decls: wraps body in IIFE instead of dropping decls', () => {

@@ -4618,6 +4618,35 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
       }
     }
 
+    // Bare `class={record[key]}` (#2300): an element access whose base is a
+    // local const object-literal `Record` indexed by a prop, written directly
+    // as the attribute value rather than inside a template literal. Lift it
+    // into the SAME `lookup` part the `${record[key]}` template-literal form
+    // produces (`tryResolveTemplateSpanFromConst` handles both), so every
+    // adapter renders it through the shared, already-working lookup path
+    // instead of a raw index-access that the typed / strict backends (Go,
+    // minijinja, ERB, Jinja) mishandle for a function-local const — it is not
+    // a prop field, so those emit an unpopulated `.Record`/nil lookup and the
+    // class renders empty (or errors). `tryResolveTemplateSpanFromConst`
+    // returns null for anything but the `IDENT[KEY]` → all-string-`Record`
+    // shape, so any other element access falls through to the bare-expression
+    // path unchanged.
+    // Only a DYNAMIC key qualifies (a prop reference, the #2300 shape). A
+    // static string / numeric literal key (`paths['icon']`) stays on the
+    // bare-expression path — the adapters already resolve a constant-key index,
+    // and it must remain a plain `expression` attr (jsx-to-ir regression pin),
+    // not a single-case `lookup`.
+    if (
+      ts.isElementAccessExpression(expr) &&
+      !ts.isStringLiteralLike(expr.argumentExpression) &&
+      !ts.isNumericLiteral(expr.argumentExpression)
+    ) {
+      const parts = tryResolveTemplateSpanFromConst(expr, ctx)
+      if (parts) {
+        return AttrValueOf.template(parts)
+      }
+    }
+
     // `className={classes}` where `classes` is a local const bound to
     // a template literal — resolve the template literal here and let
     // adapters render the structured form. This is the cva-style
