@@ -1,5 +1,42 @@
 # @barefootjs/jsx
 
+## 0.21.0
+
+### Minor Changes
+
+- 10fa0df: Close #2292: apply the catalogued `Date` lowering (#2274) on the client-JS
+  (CSR) path, not just SSR. A `Date`-typed prop's zero-arg accessor call
+  (`createdAt.toISOString()`, `createdAt.getUTCFullYear()`, …) now works after
+  hydration instead of throwing.
+
+  - `@barefootjs/client` gains a `date(recv, op)` runtime helper (importable
+    from `@barefootjs/client/runtime`), the client counterpart to every SSR
+    adapter's `date` helper. `recv` tolerates a real `Date` OR the ISO-8601
+    string a Date-typed prop arrives as post-hydration (props are JSON
+    round-tripped with no type-aware revival); a nil/unparseable receiver
+    degrades to the documented zero value (`''` for `toISOString`, else `0`)
+    rather than throwing. Semantics match the SSR runtimes byte-for-byte
+    (0-based `getUTCMonth`, UTC millisecond `toISOString`).
+  - `@barefootjs/jsx`: the client emitter now lowers the same calls
+    `datePlugin` lowers on the SSR side — reusing the exact `datePlugin`
+    matcher (not a re-implementation), so SSR and CSR stay in parity — on both
+    the static template path (`jsx-to-ir.ts`) and the reactive
+    `createEffect` path (`ir-to-client-js/emit-reactive.ts`), emitting
+    `date(<recv>, "<op>")` and auto-importing the runtime helper. A call
+    lowers on the client iff it lowers on the server.
+
+- 495a18f: Add #2274: a `date` catalogue entry lowering a zero-arg `Date.prototype` method call on a `Date`-typed prop (`createdAt.toISOString()`, `updatedAt.getUTCFullYear()`, …) to a backend-neutral `helper-call` LoweringNode instead of refusing it as an uncatalogued rich-type method call (#2273's `checkRichTypeMethodCalls` now exempts it).
+
+  - `@barefootjs/jsx`: `date-lowering.ts` registers the `date` builtin lowering plugin recognizing `getUTCFullYear` / `getUTCMonth` / `getUTCDate` / `getUTCHours` / `getUTCMinutes` / `getUTCSeconds` / `getTime` / `toISOString`; the analyzer widens a destructured `Date`-typed prop's rich-type evidence so the plugin (and the #2273 refusal) can see through the destructure.
+  - `@barefootjs/go-template`, `@barefootjs/erb`, `@barefootjs/jinja`, `@barefootjs/php`, `@barefootjs/perl`, `@barefootjs/rust`: each runtime gains a `date(recv, op)` helper (`bf_date` / `bf.date` / `BarefootJS::Date` / `barefootjs.date`) accepting either the backend's own native date/time value or an ISO-8601 string, normalizing both to the same instant before dispatching `op` — pinned against the JS-normative golden vectors (epoch 0, a pre-1970 instant, a leap day, and the four-digit-year boundary). `getUTCMonth` is 0-based, matching JS; every accessor and `getTime` render as an integer; `toISOString` always renders millisecond precision, UTC.
+
+  The Rust runtime additionally gains a hand-rolled proleptic-Gregorian calendar (`date.rs`, Hinnant's `civil_from_days`/`days_from_civil`) and a `JsValue::Date`/`minijinja::Value` native receiver shape — no new crate dependency.
+
+### Patch Changes
+
+- Updated dependencies [ea50cdc]
+  - @barefootjs/shared@0.21.0
+
 ## 0.20.0
 
 ### Minor Changes

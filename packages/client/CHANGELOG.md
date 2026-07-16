@@ -1,5 +1,42 @@
 # @barefootjs/client
 
+## 0.21.0
+
+### Minor Changes
+
+- 10fa0df: Close #2292: apply the catalogued `Date` lowering (#2274) on the client-JS
+  (CSR) path, not just SSR. A `Date`-typed prop's zero-arg accessor call
+  (`createdAt.toISOString()`, `createdAt.getUTCFullYear()`, …) now works after
+  hydration instead of throwing.
+
+  - `@barefootjs/client` gains a `date(recv, op)` runtime helper (importable
+    from `@barefootjs/client/runtime`), the client counterpart to every SSR
+    adapter's `date` helper. `recv` tolerates a real `Date` OR the ISO-8601
+    string a Date-typed prop arrives as post-hydration (props are JSON
+    round-tripped with no type-aware revival); a nil/unparseable receiver
+    degrades to the documented zero value (`''` for `toISOString`, else `0`)
+    rather than throwing. Semantics match the SSR runtimes byte-for-byte
+    (0-based `getUTCMonth`, UTC millisecond `toISOString`).
+  - `@barefootjs/jsx`: the client emitter now lowers the same calls
+    `datePlugin` lowers on the SSR side — reusing the exact `datePlugin`
+    matcher (not a re-implementation), so SSR and CSR stay in parity — on both
+    the static template path (`jsx-to-ir.ts`) and the reactive
+    `createEffect` path (`ir-to-client-js/emit-reactive.ts`), emitting
+    `date(<recv>, "<op>")` and auto-importing the runtime helper. A call
+    lowers on the client iff it lowers on the server.
+
+### Patch Changes
+
+- ea50cdc: Fix #2289: a fragment-rooted child component (`'use client'` component returning `<>…</>`) now hydrates with its parent's live props — callbacks and reactive getters included — instead of silently losing every function-valued prop.
+
+  - `@barefootjs/client`: `$c` / `findSsrScopeBySlotIn` gain a comment-scope fallback (`findCommentChildScope`) that resolves a child declared by a `<!--bf-scope:<parentId>_<slotId>|h=…|m=…-->` marker, registers its proxy element, and hands it to `initChild` — so the child's init runs with the parent's real prop object rather than never running at all (the props JSON in the marker only ever carried the JSON-safe subset). `getCommentScopeBoundary` now honours a paired `<!--bf-/scope:<scopeId>-->` end marker so a fragment scope's queries stop at its real last root instead of leaking onto later parent-owned siblings (the reported misattached-aria symptom); HTML without the end marker falls back to the old heuristic.
+  - `@barefootjs/shared`: new `BF_SCOPE_COMMENT_END_PREFIX` constant.
+  - `@barefootjs/hono`, `@barefootjs/go-template`, `@barefootjs/erb`, `@barefootjs/jinja`, `@barefootjs/twig`, `@barefootjs/xslate`, `@barefootjs/mojolicious`, `@barefootjs/blade`, `@barefootjs/rust`, `@barefootjs/php`, `@barefootjs/perl`: fragment-rooted templates emit the paired `bf-/scope` end marker after the fragment's last root.
+  - `@barefootjs/router`: region diffing normalizes the new end marker's volatile scope id.
+
+- Updated dependencies [ea50cdc]
+  - @barefootjs/shared@0.21.0
+
 ## 0.20.0
 
 ### Patch Changes
