@@ -14,6 +14,19 @@ export const COMPAT_NOTE =
 
 export const KNOWN_LIMITATION_LABEL = 'https://github.com/piconic-ai/barefootjs/labels/known-limitation'
 
+/**
+ * The compat determinism contract's adapter-column ordering: `hono`
+ * (the reference adapter) always leads, the remainder sorts alphabetically
+ * by code-unit (never `localeCompare` — see the module docstring). Shared
+ * by `buildCompatReport` and `packages/compat/src/support-matrix.ts` so
+ * both committed lockfiles agree on column order.
+ */
+export function compareAdapterIds(a: string, b: string): number {
+  if (a === 'hono') return b === 'hono' ? 0 : -1
+  if (b === 'hono') return 1
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 /** A `CompatCell` as it appears in the report: `diagnostics` omitted entirely when empty. */
 export interface CompatReportCell {
   ok: boolean
@@ -139,11 +152,7 @@ export function buildCompatReport(
   // `hono` is the reference adapter — the conformance suite compares every
   // other adapter's render against it — so it always leads the columns;
   // the remainder stays alphabetical.
-  const adapters = [...adapterIds].sort((a, b) => {
-    if (a === 'hono') return b === 'hono' ? 0 : -1
-    if (b === 'hono') return 1
-    return a < b ? -1 : a > b ? 1 : 0
-  })
+  const adapters = [...adapterIds].sort(compareAdapterIds)
 
   const components: CompatReport['components'] = {}
   for (const name of Object.keys(cells).sort()) {
