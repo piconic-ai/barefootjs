@@ -47,7 +47,7 @@ import {
 } from './prop-rewrite.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
-import { createStringProtector } from './ir-to-client-js/html-template.ts'
+import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
@@ -356,10 +356,13 @@ function getDateLoweringMatcher(ctx: TransformContext): LoweringMatcher | null {
  * that one sub-node — which strips only type syntax — is guaranteed
  * byte-identical to its raw source slice, and thus guaranteed to appear
  * verbatim as a contiguous substring of `text` regardless of unrelated
- * type-stripping elsewhere in the enclosing expression. String-literal
- * spans in `text` are protected first (`createStringProtector`) so a
- * coincidentally-identical string constant can never be mistaken for a
- * call site.
+ * type-stripping elsewhere in the enclosing expression. String spans in
+ * `text` are protected first (`createTemplateAwareStringProtector` — both
+ * quoted strings AND template-literal *static* segments, leaving `${…}`
+ * interpolations exposed) so a coincidentally-identical string constant —
+ * e.g. a backtick `` `createdAt.toISOString()` `` sitting before the real
+ * call — can never be mistaken for a call site by the non-global
+ * `.replace`.
  */
 function lowerDateCalls(text: string, expr: ts.Node, ctx: TransformContext): string {
   const matcher = getDateLoweringMatcher(ctx)
@@ -381,7 +384,7 @@ function lowerDateCalls(text: string, expr: ts.Node, ctx: TransformContext): str
   visit(expr)
   if (candidates.length === 0) return text
 
-  const { protect, restore } = createStringProtector()
+  const { protect, restore } = createTemplateAwareStringProtector()
   let result = protect(text)
   for (const call of candidates) {
     const propAccess = call.expression as ts.PropertyAccessExpression

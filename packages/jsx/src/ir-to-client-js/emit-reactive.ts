@@ -9,7 +9,7 @@ import type { AttrMeta, IRMetadata } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
-import { createTemplateAwareStringProtector, createStringProtector } from './html-template.ts'
+import { createTemplateAwareStringProtector } from './html-template.ts'
 import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
@@ -173,7 +173,11 @@ function lowerDateCallsInReactiveExpr(expr: string, matcher: LoweringMatcher | n
   visit(root)
   if (candidates.length === 0) return expr
 
-  const { protect, restore } = createStringProtector()
+  // Template-aware: protect quoted strings AND template-literal static
+  // segments (leaving `${…}` interpolations exposed) so the non-global
+  // `.replace` can't rewrite a backtick constant that coincidentally
+  // matches the call text before the real call site (Copilot review, #2294).
+  const { protect, restore } = createTemplateAwareStringProtector()
   let result = protect(expr)
   for (const call of candidates) {
     const propAccess = call.expression as ts.PropertyAccessExpression

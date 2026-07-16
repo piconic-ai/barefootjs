@@ -186,3 +186,47 @@ describe('BF021 exemption via the real datePlugin (#2274 seam)', () => {
     ).toBe(1)
   })
 })
+
+describe('client-JS lowering (#2292)', () => {
+  function clientJs(src: string): string {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.files.find((f) => f.type === 'clientJs')!.content
+  }
+
+  test('lowers a Date-typed prop accessor call to the date() runtime helper', () => {
+    const js = clientJs(`
+      export function Foo({ createdAt }: { createdAt: Date }) {
+        return <div>{createdAt.toISOString()}</div>
+      }
+    `)
+    expect(js).toContain('date(_p.createdAt, "toISOString")')
+    // auto-imported from the runtime barrel (imports.ts RUNTIME_IMPORT_CANDIDATES)
+    expect(js).toMatch(/import\s*\{[^}]*\bdate\b[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
+  })
+
+  test('leaves a non-Date receiver method call raw (parity: only what datePlugin claims)', () => {
+    const js = clientJs(`
+      export function Foo({ label }: { label: string }) {
+        return <div>{label.toUpperCase()}</div>
+      }
+    `)
+    expect(js).not.toContain('date(')
+    expect(js).toContain('toUpperCase()')
+  })
+
+  test('protects a template-literal static segment that matches the call text (#2294)', () => {
+    // The real call is in the ${…} interpolation; an identical-looking run
+    // of text sits in the static segment. Template-aware string protection
+    // must keep the non-global .replace from rewriting the static text
+    // before the real call site (Copilot review).
+    const js = clientJs(`
+      export function Foo({ createdAt }: { createdAt: Date }) {
+        return <div>{\`createdAt.toISOString() = \${createdAt.toISOString()}\`}</div>
+      }
+    `)
+    // the real (interpolated) call is lowered
+    expect(js).toContain('date(_p.createdAt, "toISOString")')
+    // the static segment is preserved verbatim, not rewritten to date(...)
+    expect(js).toContain('createdAt.toISOString() = ')
+  })
+})
