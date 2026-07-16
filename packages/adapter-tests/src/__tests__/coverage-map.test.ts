@@ -42,7 +42,7 @@ const UNCOVERED_KIND_ALLOWLIST: Record<string, string> = {
  * `ARRAY_METHOD_NAMES` has a covering fixture. A method that gains a fixture
  * while listed here becomes STALE and fails the no-stale test until deleted.
  */
-const UNCOVERED_ARRAY_METHOD_ALLOWLIST: Record<string, string> = {}
+const UNCOVERED_ARRAY_METHOD_ALLOWLIST: Partial<Record<(typeof ARRAY_METHOD_NAMES)[number], string>> = {}
 
 const MAP_PATH = resolve(import.meta.dir, '../../coverage-map.json')
 
