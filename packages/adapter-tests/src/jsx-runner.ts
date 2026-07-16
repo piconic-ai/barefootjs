@@ -167,11 +167,12 @@ export function normalizeHTML(html: string): string {
     // locator distinction (#1249). Other adapters don't emit it, so strip
     // for cross-adapter conformance comparisons.
     .replace(/\s*bf-r=""/g, '')
-    // Strip Hono's scope-init comments (`<!--bf-scope:...-->`) and their
-    // paired end markers (`<!--bf-/scope:...-->`, #2289). Same
-    // motivation as the bf-h / bf-m strips above: only Hono's
-    // JS-runtime hydration path uses them, so removing them keeps
-    // cross-adapter conformance comparisons apples-to-apples.
+    // Strip fragment scope-comment pairs (`<!--bf-scope:...-->` /
+    // `<!--bf-/scope:...-->`, #2289). Every adapter emits them for
+    // fragment-rooted components, but the scope id embedded in each is
+    // per-render volatile (random suffix), so they can never byte-match
+    // across adapters — strip both markers to keep cross-adapter
+    // conformance comparisons apples-to-apples.
     .replace(/<!--bf-\/?scope:[^>]*-->/g, '')
     // Normalize child scope ID prefix: bf-s="~parentId_sN" → bf-s="parentId_sN"
     .replace(/bf-s="~([^"]*)"/g, 'bf-s="$1"')
