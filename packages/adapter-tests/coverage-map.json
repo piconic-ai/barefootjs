@@ -2101,6 +2101,16 @@
         "text"
       ]
     },
+    "local-record-union-index": {
+      "kinds": [
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "logical-and": {
       "kinds": [
         "call",
@@ -4098,10 +4108,10 @@
     "conditional": 18,
     "identifier": 237,
     "index-access": 12,
-    "literal": 194,
+    "literal": 195,
     "logical": 41,
     "member": 119,
-    "object-literal": 41,
+    "object-literal": 42,
     "template-literal": 27,
     "unary": 22,
     "unsupported": 21
@@ -4144,7 +4154,7 @@
     "literal:boolean": 37,
     "literal:null": 22,
     "literal:number": 85,
-    "literal:string": 138,
+    "literal:string": 139,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,
