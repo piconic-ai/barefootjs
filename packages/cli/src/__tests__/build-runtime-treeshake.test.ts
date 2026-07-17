@@ -400,6 +400,47 @@ describe('build() runtime tree-shaking', () => {
     }
   })
 
+  // #2309 (layout variant): the same warm-cache drop happens on a project
+  // whose `outputLayout.runtime` differs from `outputLayout.clientJs` — step
+  // 6c then rewrites the runtime import to a path WITH an intermediate
+  // directory segment (`../runtime/barefoot.js`, not a pure `../barefoot.js`),
+  // which the collector must also recognize.
+  test('warm-cache rebuild keeps exports when outputLayout.runtime differs from clientJs (#2309)', async () => {
+    const projectDir = makeTmpDir('warmcache-layout-src')
+    const outDir = makeTmpDir('warmcache-layout-out')
+    try {
+      writeFixtureDist(projectDir)
+      writeComponent(projectDir, 'Counter', ['createSignal', 'onMount'])
+
+      const layout = { templates: 'components', clientJs: 'components', runtime: 'runtime' }
+      const runtimePath = resolve(outDir, 'runtime/barefoot.js')
+
+      // 1. Fresh build: onMount kept, and the component's runtime import was
+      //    rewritten to the intermediate-dir relative form.
+      const first = await build(makeConfig(projectDir, outDir, { clientOnly: false, outputLayout: layout }))
+      expect(first.errorCount).toBe(0)
+      expect(first.compiledCount).toBe(1)
+      const firstContent = readFileSync(runtimePath, 'utf8')
+      expectHasFn(firstContent, 'onMount')
+
+      const clientJs = readFileSync(resolve(outDir, 'components/Counter.client.js'), 'utf8')
+      expect(clientJs).toContain('runtime/barefoot.js')
+      expect(clientJs).not.toContain('@barefootjs/client')
+
+      // 2. Warm rebuild: Counter served from cache. onMount must survive.
+      const second = await build(makeConfig(projectDir, outDir, { clientOnly: false, outputLayout: layout }))
+      expect(second.errorCount).toBe(0)
+      expect(second.cachedCount).toBe(1)
+      expect(second.compiledCount).toBe(0)
+      const secondContent = readFileSync(runtimePath, 'utf8')
+      expectHasFn(secondContent, 'onMount')
+      expect(secondContent.length).toBe(firstContent.length)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
   test("switching runtimeBundle from 'treeshake' to 'treeshake-exact' regenerates barefoot.js even with unchanged sources", async () => {
     const projectDir = makeTmpDir('exact-switch-src')
     const outDir = makeTmpDir('exact-switch-out')

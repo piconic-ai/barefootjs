@@ -32,11 +32,18 @@ export function isBarefootClientSpecifier(spec: string): boolean {
 
 /**
  * Relative specifier pointing at an emitted `barefoot.js` runtime bundle —
- * `./barefoot.js`, `../barefoot.js`, `../../barefoot.js`, etc. This is the
- * shape `rewriteBarefootClientSpecifiers` (build.ts step 6c) rewrites every
- * `@barefootjs/client*` import to in the FINAL on-disk client JS.
+ * the shape `rewriteBarefootClientSpecifiers` (build.ts step 6c) rewrites
+ * every `@barefootjs/client*` import to in the FINAL on-disk client JS. That
+ * step computes the path with `relative(dirname(clientFile), runtimeFile)`,
+ * so it is a relative path (always leading `./` or `../`) whose LAST segment
+ * is `barefoot.js` but which may carry intermediate directory segments when
+ * `outputLayout.runtime` differs from `outputLayout.clientJs` (e.g.
+ * `../runtime/barefoot.js`, `./components/runtime/barefoot.js`) — not only
+ * the pure `../…/barefoot.js` case of the default layout. Matching the whole
+ * family is safe: a false positive here only over-keeps a name (or trips the
+ * full-runtime fallback when the name isn't a real export), never drops one.
  */
-const EMITTED_RUNTIME_REL = /^(?:\.\.?\/)+barefoot\.js$/
+const EMITTED_RUNTIME_REL = /^\.\.?\/(?:[^'"\n]*\/)?barefoot\.js$/
 
 /**
  * True for either representation of the client runtime that appears in

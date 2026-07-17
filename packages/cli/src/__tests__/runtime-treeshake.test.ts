@@ -44,6 +44,17 @@ describe('isEmittedRuntimeSpecifier', () => {
     expect(isEmittedRuntimeSpecifier('../../../barefoot.js')).toBe(true)
   })
 
+  test('matches the emitted path with intermediate dirs (outputLayout.runtime ≠ clientJs)', () => {
+    // When `outputLayout.runtime` differs from `outputLayout.clientJs`, step 6c
+    // computes `relative(clientDir, runtimeDir/barefoot.js)`, which carries an
+    // intermediate directory segment. The collector must still recognize it or
+    // a warm-cache rebuild silently drops exports for such projects (#2309).
+    expect(isEmittedRuntimeSpecifier('../runtime/barefoot.js')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('./runtime/barefoot.js')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('./components/runtime/barefoot.js')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('../../assets/js/barefoot.js')).toBe(true)
+  })
+
   test('does not match unrelated or partially-overlapping specifiers', () => {
     expect(isEmittedRuntimeSpecifier('@barefootjs/chart')).toBe(false)
     expect(isEmittedRuntimeSpecifier('@barefootjs/client-extra')).toBe(false)
@@ -186,6 +197,17 @@ describe('collectUsedRuntimeExports', () => {
 
   test('flags a dynamic import() of the runtime as unsafe', () => {
     const result = collectUsedRuntimeExports(`async function f() { const m = await import('@barefootjs/client/runtime'); m.hydrate() }\n`)
+    expect(result.unsafe).toBe(true)
+    expect(result.reasons[0]).toContain('dynamic import')
+  })
+
+  test('flags a dynamic import() of the runtime in cached relative form as unsafe (#2309 parity)', () => {
+    // On a warm rebuild a cached file's `import('@barefootjs/client/runtime')`
+    // is already rewritten by step 6c to `import('../barefoot.js')`. Without
+    // recognizing the relative form the collector would lose the unsafe flag
+    // and tree-shake past a dynamic import that forces the full-runtime
+    // fallback on a fresh build.
+    const result = collectUsedRuntimeExports(`async function f() { const m = await import('../barefoot.js'); m.hydrate() }\n`)
     expect(result.unsafe).toBe(true)
     expect(result.reasons[0]).toContain('dynamic import')
   })
