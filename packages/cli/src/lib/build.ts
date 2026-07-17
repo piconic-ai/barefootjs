@@ -959,10 +959,14 @@ export async function build(
   //     those names plus the always-kept public mount API
   //     (`ALWAYS_KEEP_RUNTIME_EXPORTS`) — unless `runtimeMode ===
   //     'treeshake-exact'`, which drops that always-kept set (perf, #2143
-  //     gap 4). Must run BEFORE step 6c below: 6c
-  //     rewrites `@barefootjs/client*` specifiers to a relative
-  //     `./barefoot.js` path, and the collector's AST walk matches on the
-  //     original bare specifier.
+  //     gap 4). Runs BEFORE step 6c, though the collector no longer depends
+  //     on the ordering: on a FRESH build the files it scans still carry the
+  //     original bare `@barefootjs/client*` specifier (6c hasn't rewritten
+  //     them yet), but on a WARM-CACHE build a cached component's file is
+  //     already in 6c's rewritten relative `../barefoot.js` form from a prior
+  //     build — so `collectUsedRuntimeExports` matches BOTH shapes via
+  //     `isEmittedRuntimeSpecifier`, or the warm rebuild would silently drop
+  //     exports only cached components import (#2309).
   //
   //     Scans `nextEntries` (every current-build source's recorded
   //     `outputs`) rather than `manifest`: in `clientOnly` (CSR) projects —

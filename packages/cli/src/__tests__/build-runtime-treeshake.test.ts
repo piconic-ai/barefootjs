@@ -353,6 +353,94 @@ describe('build() runtime tree-shaking', () => {
     }
   })
 
+  // #2309: warm-cache rebuild must keep every export the cached components
+  // still import. On the FIRST (SSR) build, step 6c rewrites each component's
+  // client JS import of `@barefootjs/client*` to a relative `./barefoot.js`
+  // path. On a warm rebuild the components are served from cache and their
+  // on-disk client JS is already in that rewritten form — so the tree-shake
+  // collector at step 6d must recognize the relative `barefoot.js` specifier,
+  // not just the bare package one, or it collects nothing for those files and
+  // silently drops exports (e.g. `__bfSlot`) that break hydration at load.
+  test('warm-cache SSR rebuild keeps exports that cached components still import (#2309)', async () => {
+    const projectDir = makeTmpDir('warmcache-src')
+    const outDir = makeTmpDir('warmcache-out')
+    try {
+      writeFixtureDist(projectDir)
+      // `onMount` is tree-shakeable (not always-kept, not compiler-injected):
+      // it survives only because the component actually imports it, which
+      // makes it the perfect canary for the drop this bug causes.
+      writeComponent(projectDir, 'Counter', ['createSignal', 'onMount'])
+
+      // 1. Fresh build (empty cache): everything compiles, onMount is kept.
+      const first = await build(makeConfig(projectDir, outDir, { clientOnly: false }))
+      expect(first.errorCount).toBe(0)
+      expect(first.compiledCount).toBe(1)
+      const firstContent = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
+      expectHasFn(firstContent, 'onMount')
+
+      // Sanity: the first build did rewrite the component's runtime import to
+      // the relative `./barefoot.js` form — the precondition for the bug.
+      const clientJs = readFileSync(resolve(outDir, 'components/Counter.client.js'), 'utf8')
+      expect(clientJs).toContain('barefoot.js')
+      expect(clientJs).not.toContain('@barefootjs/client')
+
+      // 2. Warm rebuild, no source change: Counter is served from cache and
+      // never recompiled. barefoot.js must STILL contain onMount.
+      const second = await build(makeConfig(projectDir, outDir, { clientOnly: false }))
+      expect(second.errorCount).toBe(0)
+      expect(second.cachedCount).toBe(1)
+      expect(second.compiledCount).toBe(0)
+      const secondContent = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
+      expectHasFn(secondContent, 'onMount')
+      // The keep-set didn't shrink between the two builds.
+      expect(secondContent.length).toBe(firstContent.length)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
+  // #2309 (layout variant): the same warm-cache drop happens on a project
+  // whose `outputLayout.runtime` differs from `outputLayout.clientJs` — step
+  // 6c then rewrites the runtime import to a path WITH an intermediate
+  // directory segment (`../runtime/barefoot.js`, not a pure `../barefoot.js`),
+  // which the collector must also recognize.
+  test('warm-cache rebuild keeps exports when outputLayout.runtime differs from clientJs (#2309)', async () => {
+    const projectDir = makeTmpDir('warmcache-layout-src')
+    const outDir = makeTmpDir('warmcache-layout-out')
+    try {
+      writeFixtureDist(projectDir)
+      writeComponent(projectDir, 'Counter', ['createSignal', 'onMount'])
+
+      const layout = { templates: 'components', clientJs: 'components', runtime: 'runtime' }
+      const runtimePath = resolve(outDir, 'runtime/barefoot.js')
+
+      // 1. Fresh build: onMount kept, and the component's runtime import was
+      //    rewritten to the intermediate-dir relative form.
+      const first = await build(makeConfig(projectDir, outDir, { clientOnly: false, outputLayout: layout }))
+      expect(first.errorCount).toBe(0)
+      expect(first.compiledCount).toBe(1)
+      const firstContent = readFileSync(runtimePath, 'utf8')
+      expectHasFn(firstContent, 'onMount')
+
+      const clientJs = readFileSync(resolve(outDir, 'components/Counter.client.js'), 'utf8')
+      expect(clientJs).toContain('runtime/barefoot.js')
+      expect(clientJs).not.toContain('@barefootjs/client')
+
+      // 2. Warm rebuild: Counter served from cache. onMount must survive.
+      const second = await build(makeConfig(projectDir, outDir, { clientOnly: false, outputLayout: layout }))
+      expect(second.errorCount).toBe(0)
+      expect(second.cachedCount).toBe(1)
+      expect(second.compiledCount).toBe(0)
+      const secondContent = readFileSync(runtimePath, 'utf8')
+      expectHasFn(secondContent, 'onMount')
+      expect(secondContent.length).toBe(firstContent.length)
+    } finally {
+      rmSync(projectDir, { recursive: true, force: true })
+      rmSync(outDir, { recursive: true, force: true })
+    }
+  })
+
   test("switching runtimeBundle from 'treeshake' to 'treeshake-exact' regenerates barefoot.js even with unchanged sources", async () => {
     const projectDir = makeTmpDir('exact-switch-src')
     const outDir = makeTmpDir('exact-switch-out')
