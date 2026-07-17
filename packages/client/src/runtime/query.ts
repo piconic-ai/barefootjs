@@ -270,9 +270,16 @@ function isInsideNestedCommentScope(element: Element, scope: Element): boolean {
  * and a nested child mounted earlier in its DOM (compiler slot IDs are
  * assigned independently per component file, so collisions are expected)
  * makes `qsa()` return the child's element instead of the component's own.
+ *
+ * Deliberately does NOT reject `element` itself for carrying `bf-s`
+ * (unlike `belongsToScope`'s own-scope check) — `qsa()` doubles as the
+ * lookup for a nested child component's *own* scope root (e.g. compiled
+ * `qsa(parentScope, '[bf-h="X"][bf-m="sN"], [bf-s$="_sN"]')` calls feeding
+ * `initChild()`), and that target legitimately carries `bf-s`. Only an
+ * *intermediate* `bf-s` between `element` and `root` — i.e. `element`
+ * nested inside some other, unrelated child scope — disqualifies it.
  */
 function isInsideNestedChildScope(element: Element, root: Element): boolean {
-  if (element.hasAttribute(BF_SCOPE)) return true
   let current: Node = element
   while (current !== root) {
     const parent: Node | null = current.parentNode

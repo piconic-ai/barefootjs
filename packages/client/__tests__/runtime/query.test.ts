@@ -797,4 +797,35 @@ describe('qsa', () => {
     const own = document.querySelector('[bf="s2"]')
     expect(qsa(scope, '[bf="s2"]')).toBe(own)
   })
+
+  // qsa() doubles as the child-scope-resolution lookup for compiled
+  // component-loop / branch-nested-child code (feeding initChild()) — its
+  // target legitimately carries bf-s itself. The nested-child-scope skip
+  // above must reject only an *intermediate* bf-s between the candidate and
+  // the search root, never the candidate's own bf-s, or these calls break.
+  test('still finds a direct bf-s child scope by prefix selector (child-scope resolution)', () => {
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <div bf-s="Counter_xyz">child content</div>
+      </div>
+    `
+    const parent = document.querySelector('[bf-s="Parent_abc"]')!
+    const child = document.querySelector('[bf-s="Counter_xyz"]')
+    expect(qsa(parent, '[bf-s^="Counter_"]')).toBe(child)
+  })
+
+  test('finds a host-marked nested child via the [bf-h][bf-m] clause even when its own bf-s is a bare Name_rand (not "_sN"-suffixed)', () => {
+    // Real compiled shape: a branch/component-loop nested child's bf-s is
+    // its own generated id (not anchored to the parent's slot number), so
+    // the comma selector's `[bf-s$="_sN"]` fallback clause doesn't match —
+    // only the primary `[bf-h][bf-m]` clause does.
+    document.body.innerHTML = `
+      <div bf-s="Toggle_test">
+        <div bf-s="ToggleItem_rc62ve" bf-h="Toggle_test" bf-m="s0">item</div>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Toggle_test"]')!
+    const child = document.querySelector('[bf-s="ToggleItem_rc62ve"]')
+    expect(qsa(scope, '[bf-h="Toggle_test"][bf-m="s0"], [bf-s$="_s0"]')).toBe(child)
+  })
 })
