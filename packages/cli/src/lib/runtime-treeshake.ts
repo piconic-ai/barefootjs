@@ -30,6 +30,31 @@ export function isBarefootClientSpecifier(spec: string): boolean {
   return spec === '@barefootjs/client' || spec.startsWith('@barefootjs/client/')
 }
 
+/**
+ * Relative specifier pointing at an emitted `barefoot.js` runtime bundle —
+ * `./barefoot.js`, `../barefoot.js`, `../../barefoot.js`, etc. This is the
+ * shape `rewriteBarefootClientSpecifiers` (build.ts step 6c) rewrites every
+ * `@barefootjs/client*` import to in the FINAL on-disk client JS.
+ */
+const EMITTED_RUNTIME_REL = /^(?:\.\.?\/)+barefoot\.js$/
+
+/**
+ * True for either representation of the client runtime that appears in
+ * *emitted* client JS: the bare `@barefootjs/client*` specifier (fresh
+ * compiler output, before step 6c rewrites it) OR the relative
+ * `../barefoot.js` path (the final on-disk form after 6c).
+ *
+ * The collector must recognize both because it scans the on-disk output
+ * files: a CACHED component's file was already rewritten to the relative
+ * form on a PRIOR build, so a warm-cache rebuild that only matched the bare
+ * specifier would see zero runtime imports for it and silently drop exports
+ * only cached components use (e.g. `__bfSlot`), breaking hydration. See
+ * piconic-ai/barefootjs#2309.
+ */
+export function isEmittedRuntimeSpecifier(spec: string): boolean {
+  return isBarefootClientSpecifier(spec) || EMITTED_RUNTIME_REL.test(spec)
+}
+
 export interface RuntimeImportCollection {
   /** Original (imported, not local-alias) export names referenced via a named import. */
   names: Set<string>
@@ -52,7 +77,10 @@ function emptyCollection(): RuntimeImportCollection {
 
 /**
  * Walk one emitted client JS (or bundled entry) file's AST and collect the
- * named `@barefootjs/client*` imports it references.
+ * named runtime imports it references — matching both the bare
+ * `@barefootjs/client*` specifier (fresh compiler output) and the relative
+ * `../barefoot.js` path a cached file was rewritten to on a prior build (see
+ * `isEmittedRuntimeSpecifier`).
  *
  * `sourceLabel` is used only for diagnostics (parse-failure / unsafe-import
  * messages), not for resolution.
@@ -60,10 +88,13 @@ function emptyCollection(): RuntimeImportCollection {
 export function collectUsedRuntimeExports(code: string, sourceLabel = '<input>'): RuntimeImportCollection {
   const result = emptyCollection()
 
-  // Nothing to walk if the specifier text doesn't even appear — cheap
+  // Nothing to walk if neither the bare `@barefootjs/client` specifier nor
+  // the emitted relative `barefoot.js` runtime path even appears — cheap
   // short-circuit for the common case (most files) before paying for a
   // full AST parse. Mirrors the pre-scan in `mergeDuplicateNamedImports`.
-  if (!code.includes('@barefootjs/client')) return result
+  // Both substrings are checked because a cached component's on-disk file
+  // imports the runtime via `../barefoot.js`, not the bare specifier (#2309).
+  if (!code.includes('@barefootjs/client') && !code.includes('barefoot.js')) return result
 
   let sourceFile: ts.SourceFile
   try {
@@ -77,7 +108,7 @@ export function collectUsedRuntimeExports(code: string, sourceLabel = '<input>')
   const visit = (node: ts.Node): void => {
     if (ts.isImportDeclaration(node)) {
       const spec = node.moduleSpecifier
-      if (ts.isStringLiteral(spec) && isBarefootClientSpecifier(spec.text)) {
+      if (ts.isStringLiteral(spec) && isEmittedRuntimeSpecifier(spec.text)) {
         const clause = node.importClause
         if (!clause) {
           // Side-effect import (`import '@barefootjs/client/runtime'`) — no
@@ -110,7 +141,7 @@ export function collectUsedRuntimeExports(code: string, sourceLabel = '<input>')
       node.expression.kind === ts.SyntaxKind.ImportKeyword
     ) {
       const arg = node.arguments[0]
-      if (arg && ts.isStringLiteral(arg) && isBarefootClientSpecifier(arg.text)) {
+      if (arg && ts.isStringLiteral(arg) && isEmittedRuntimeSpecifier(arg.text)) {
         result.unsafe = true
         result.reasons.push(`dynamic import("${arg.text}") in ${sourceLabel}`)
       }

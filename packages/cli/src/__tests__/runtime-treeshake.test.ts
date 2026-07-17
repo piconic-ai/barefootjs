@@ -7,6 +7,7 @@ import {
   buildRuntimeBundle,
   collectUsedRuntimeExports,
   isBarefootClientSpecifier,
+  isEmittedRuntimeSpecifier,
   mergeRuntimeImportCollections,
 } from '../lib/runtime-treeshake'
 
@@ -27,6 +28,35 @@ describe('isBarefootClientSpecifier', () => {
   })
 })
 
+// ── isEmittedRuntimeSpecifier ────────────────────────────────────────────
+
+describe('isEmittedRuntimeSpecifier', () => {
+  test('matches the bare package and every subpath (like isBarefootClientSpecifier)', () => {
+    expect(isEmittedRuntimeSpecifier('@barefootjs/client')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('@barefootjs/client/runtime')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('@barefootjs/client/reactive')).toBe(true)
+  })
+
+  test('matches the emitted relative barefoot.js path at any nesting depth', () => {
+    expect(isEmittedRuntimeSpecifier('./barefoot.js')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('../barefoot.js')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('../../barefoot.js')).toBe(true)
+    expect(isEmittedRuntimeSpecifier('../../../barefoot.js')).toBe(true)
+  })
+
+  test('does not match unrelated or partially-overlapping specifiers', () => {
+    expect(isEmittedRuntimeSpecifier('@barefootjs/chart')).toBe(false)
+    expect(isEmittedRuntimeSpecifier('@barefootjs/client-extra')).toBe(false)
+    expect(isEmittedRuntimeSpecifier('some-other-package')).toBe(false)
+    // A relative path that merely ends in a differently-named file, or that
+    // has extra path segments after barefoot.js, is not the runtime bundle.
+    expect(isEmittedRuntimeSpecifier('./barefoot.css')).toBe(false)
+    expect(isEmittedRuntimeSpecifier('./my-barefoot.js')).toBe(false)
+    expect(isEmittedRuntimeSpecifier('../barefoot.js/index.js')).toBe(false)
+    expect(isEmittedRuntimeSpecifier('barefoot.js')).toBe(false)
+  })
+})
+
 // ── collectUsedRuntimeExports ────────────────────────────────────────────
 
 describe('collectUsedRuntimeExports', () => {
@@ -43,6 +73,41 @@ describe('collectUsedRuntimeExports', () => {
     const b = collectUsedRuntimeExports(`import { createMemo } from '@barefootjs/client/reactive'\n`)
     expect([...a.names]).toEqual(['hydrate'])
     expect([...b.names]).toEqual(['createMemo'])
+  })
+
+  test('collects named imports from the emitted relative ../barefoot.js path (warm-cache rebuild, #2309)', () => {
+    // A cached component's on-disk client JS was already rewritten by step 6c
+    // on a prior build to import the runtime via a relative `../barefoot.js`
+    // path. The collector must still see its runtime imports — otherwise a
+    // warm-cache rebuild drops exports only cached components use.
+    const result = collectUsedRuntimeExports(
+      `import { $, $t, __bfSlot, createComponent, hydrate } from '../barefoot.js'\nhydrate('Reader', () => {})\n`
+    )
+    expect([...result.names].sort()).toEqual(['$', '$t', '__bfSlot', 'createComponent', 'hydrate'])
+    expect(result.unsafe).toBe(false)
+  })
+
+  test('collects named imports from a nested ./barefoot.js path', () => {
+    const result = collectUsedRuntimeExports(
+      `import { insert } from './barefoot.js'\n`
+    )
+    expect([...result.names]).toEqual(['insert'])
+  })
+
+  test('a minified cached file (no whitespace) importing from ../barefoot.js still collects names', () => {
+    const result = collectUsedRuntimeExports(
+      `import{__bfSlot as s,hydrate as h}from"../barefoot.js";h("X",()=>{});\n`
+    )
+    expect([...result.names].sort()).toEqual(['__bfSlot', 'hydrate'])
+    expect(result.unsafe).toBe(false)
+  })
+
+  test('does not false-match a relative path that is not the runtime bundle', () => {
+    const result = collectUsedRuntimeExports(
+      `import { helper } from './barefoot-utils.js'\nimport { other } from './lib/barefoot.js/mod.js'\n`
+    )
+    expect(result.names.size).toBe(0)
+    expect(result.unsafe).toBe(false)
   })
 
   test('resolves aliased named imports to the original (imported) name', () => {
