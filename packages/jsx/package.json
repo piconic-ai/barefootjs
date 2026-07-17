@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/jsx",
-  "version": "0.21.3",
+  "version": "0.21.4",
   "description": "JSX compiler for BarefootJS - transforms JSX to server HTML + client JS",
   "type": "module",
   "main": "./src/index.ts",

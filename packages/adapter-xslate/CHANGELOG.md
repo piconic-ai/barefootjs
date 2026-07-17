@@ -1,5 +1,11 @@
 # @barefootjs/xslate
 
+## 0.21.4
+
+### Patch Changes
+
+- @barefootjs/shared@0.21.4
+
 ## 0.21.3
 
 ### Patch Changes
