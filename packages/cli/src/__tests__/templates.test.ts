@@ -485,6 +485,10 @@ describe('adapter registry', () => {
     expect(gitignore).toContain('public/components/')
     expect(gitignore).toContain('public/.buildcache.json')
     expect(gitignore).toContain('public/.bfemit.json')
+    // `--watch` dev-reload sentinel (`public/.dev/build-id`) — build
+    // output, not source. Other adapters ignore `dist/` wholesale so
+    // their `.dev/` is already covered; only Hono needs it named.
+    expect(gitignore).toContain('public/.dev/')
     // Negative guard: hand-written starter assets must NOT be ignored.
     expect(gitignore).not.toMatch(/^public\/styles\.css/m)
     expect(gitignore).not.toMatch(/^public\/tokens\.css/m)
