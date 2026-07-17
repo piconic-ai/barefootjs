@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/form",
-  "version": "0.21.2",
+  "version": "0.21.3",
   "description": "Signal-based form management for BarefootJS",
   "type": "module",
   "main": "./dist/index.js",
