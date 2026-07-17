@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/erb",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "description": "ERB (Embedded Ruby) adapter for BarefootJS — compiles IR to .erb templates and ships the Ruby rendering backend; runs under any Rack app (Sinatra, Rails)",
   "type": "module",
   "main": "./dist/index.js",
