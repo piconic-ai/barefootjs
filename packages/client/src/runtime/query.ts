@@ -485,8 +485,17 @@ export function qsa(el: Element | null, selector: string): Element | null {
     return qsaChildScope(el, selector)
   }
   if (el.matches(selector)) return el
+
+  // Fast path: the overwhelmingly common case has no nested-child-scope
+  // collision, so a single querySelector() (matching the old behavior)
+  // resolves it without the cost of enumerating every match. Only fall
+  // back to the full querySelectorAll() scan — needed to skip past a
+  // rejected candidate to the next DOM-order match — when the first hit
+  // actually turns out to belong to a nested child scope.
+  const first = el.querySelector(selector)
+  if (!first || !isInsideNestedChildScope(first, el)) return first
   for (const candidate of el.querySelectorAll(selector)) {
-    if (!isInsideNestedChildScope(candidate, el)) return candidate
+    if (candidate !== first && !isInsideNestedChildScope(candidate, el)) return candidate
   }
   return null
 }
