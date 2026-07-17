@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/blade",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "description": "Laravel Blade (PHP) adapter for BarefootJS — compiles IR to .blade.php templates and ships the PHP BarefootJS rendering runtime on illuminate/view standalone",
   "type": "module",
   "main": "./dist/index.js",
