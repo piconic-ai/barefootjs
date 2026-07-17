@@ -7,7 +7,7 @@
  */
 
 import { createEffect, untrack } from '@barefootjs/client/reactive'
-import { find, commentsInScope } from './query.ts'
+import { find, findCondTarget, commentsInScope } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
 import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
 import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
@@ -342,7 +342,7 @@ function autoFocusConditionalElement(region: CondRegion, id: string): void {
   requestAnimationFrame(() => {
     const condEl = region.anchor
       ? findCondElInRange(region.anchor, id)
-      : find(region.bindScope, `[${BF_COND}="${id}"]`)
+      : findCondTarget(region.bindScope, `[${BF_COND}="${id}"]`)
     if (condEl) {
       const autofocusEl = condEl.matches('[autofocus]')
         ? condEl
@@ -422,7 +422,7 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
 
   const condEl = region.anchor
     ? findCondElInRange(region.anchor, id)
-    : find(scope, `[${BF_COND}="${id}"]`)
+    : findCondTarget(scope, `[${BF_COND}="${id}"]`)
 
   const endMarker = `bf-cond-end:${id}`
 
@@ -491,12 +491,16 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
  * Update element conditional (single element with bf-c)
  */
 function updateElementConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
-  // find() (not a bare querySelector) so a comment-scope proxy's top-level
-  // sibling conditionals resolve the same way they do on first hydration —
-  // see the identical fix in updateFragmentConditional above.
+  // findCondTarget (not a bare querySelector, and not find()'s
+  // belongsToScope-gated search) so a comment-scope proxy's top-level
+  // sibling conditionals resolve the same way they do on first hydration,
+  // while a regular scope keeps the laxer, unfiltered descendant search —
+  // a conditional branch's own content routinely nests a child component
+  // (find() would wrongly reject anything inside one; see findCondTarget's
+  // doc comment in query.ts).
   const condEl = region.anchor
     ? findCondElInRange(region.anchor, id)
-    : find(region.bindScope, `[${BF_COND}="${id}"]`)
+    : findCondTarget(region.bindScope, `[${BF_COND}="${id}"]`)
   if (!condEl) return
 
   const { html, slots } = result

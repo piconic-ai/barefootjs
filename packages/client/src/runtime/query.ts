@@ -346,6 +346,39 @@ export function find(
 }
 
 /**
+ * Find a conditional's own target (a `bf-c="id"` element, for `insert.ts`)
+ * within `scope`'s content range.
+ *
+ * Deliberately narrower than `find()`: for a regular (non-comment) scope,
+ * this is a **plain, unfiltered** `scope.querySelector(selector)` — not
+ * `find()`'s `belongsToScope`-gated search. A conditional branch's own
+ * rendered content routinely includes a nested child component (e.g. a
+ * `<Textarea>` inside an `editing ? <div>…</div> : …` branch within a loop
+ * item), and `belongsToScope` rejects any candidate whose nearest `bf-s`
+ * ancestor isn't `scope` itself — which is *always* true for something
+ * inside a nested child's own scope. Using `find()` here previously broke
+ * exactly that shape (piconic-ai/barefootjs#2313's first attempt, caught by
+ * the `site/ui` e2e suite's `SocialThreadDemo` comment-editing test).
+ *
+ * A comment-scope proxy (fragment-root component) still gets the
+ * comment-range-bounded, nested-fragment-excluding search — the same rule
+ * `find()`'s comment branch uses — since that IS what's needed to walk past
+ * a fragment-root's own top-level siblings correctly (#2312).
+ */
+export function findCondTarget(scope: Element, selector: string): Element | null {
+  const commentInfo = commentScopeRegistry.get(scope)
+  if (!commentInfo) {
+    return scope.querySelector(selector)
+  }
+  for (const candidate of candidatesInScope(scope, selector)) {
+    if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
+    const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
+    if (!nearestScope || !isInCommentScopeRange(nearestScope, commentInfo.commentNode)) return candidate
+  }
+  return null
+}
+
+/**
  * Search in portals owned by a scope.
  */
 function findInPortals(scopeId: string, selector: string): Element | null {
