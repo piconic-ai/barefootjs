@@ -351,14 +351,19 @@ export function find(
  *
  * Deliberately narrower than `find()`: for a regular (non-comment) scope,
  * this is a **plain, unfiltered** `scope.querySelector(selector)` — not
- * `find()`'s `belongsToScope`-gated search. A conditional branch's own
- * rendered content routinely includes a nested child component (e.g. a
- * `<Textarea>` inside an `editing ? <div>…</div> : …` branch within a loop
- * item), and `belongsToScope` rejects any candidate whose nearest `bf-s`
- * ancestor isn't `scope` itself — which is *always* true for something
- * inside a nested child's own scope. Using `find()` here previously broke
- * exactly that shape (piconic-ai/barefootjs#2313's first attempt, caught by
- * the `site/ui` e2e suite's `SocialThreadDemo` comment-editing test).
+ * `find()`'s `belongsToScope`-gated search. `belongsToScope` accepts a
+ * candidate only if `candidate.closest('[bf-s]')` is *exactly* `scope` —
+ * which can never hold when `scope` itself carries no `bf-s`. That's the
+ * common case for `insert()`'s `region.bindScope`: a `mapArray` loop item's
+ * cloned template root (e.g. a `.comment-item` `<div>`) is keyed by
+ * `data-key` for reconciliation, not given its own `bf-s`, so any `bf-c`
+ * conditional inside that item would be rejected outright by
+ * `belongsToScope` — not because of any nested-child-scope subtlety, just
+ * because `scope` itself isn't `bf-s`-addressable. Using `find()` here
+ * previously broke exactly that shape (piconic-ai/barefootjs#2313's first
+ * attempt, caught by the `site/ui` e2e suite's `SocialThreadDemo`
+ * comment-editing test — a per-comment `editing` conditional inside a
+ * `sortedComments().map(...)` loop item with no `bf-s` of its own).
  *
  * A comment-scope proxy (fragment-root component) still gets the
  * comment-range-bounded, nested-fragment-excluding search — the same rule

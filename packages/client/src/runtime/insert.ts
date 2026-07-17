@@ -491,13 +491,12 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
  * Update element conditional (single element with bf-c)
  */
 function updateElementConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
-  // findCondTarget (not a bare querySelector, and not find()'s
-  // belongsToScope-gated search) so a comment-scope proxy's top-level
-  // sibling conditionals resolve the same way they do on first hydration,
-  // while a regular scope keeps the laxer, unfiltered descendant search —
-  // a conditional branch's own content routinely nests a child component
-  // (find() would wrongly reject anything inside one; see findCondTarget's
-  // doc comment in query.ts).
+  // findCondTarget, not find(): for a comment-scope proxy it resolves a
+  // top-level sibling conditional the same way first hydration does, but
+  // for a regular scope it's a plain scope.querySelector(...) — not
+  // find()'s belongsToScope-gated search, which requires scope itself to
+  // carry bf-s (a mapArray loop item's cloned root usually doesn't; see
+  // findCondTarget's doc comment in query.ts).
   const condEl = region.anchor
     ? findCondElInRange(region.anchor, id)
     : findCondTarget(region.bindScope, `[${BF_COND}="${id}"]`)
