@@ -609,8 +609,17 @@ export function findCommentChildScope(
  * sibling range for comment-anchored scopes, the element subtree
  * otherwise. Mirrors candidatesInScope's notion of "where the scope's
  * content lives", but yields comments instead of elements.
+ *
+ * Exported for `insert.ts`'s branch-swap path (`updateFragmentConditional`),
+ * which otherwise walked `scope`'s own descendants with a bare
+ * `document.createTreeWalker` — never finding a conditional's
+ * `bf-cond-start:`/`bf-cond-end:` markers when they sit as a *sibling* of
+ * the scope's comment-scope proxy rather than nested inside it (true for
+ * any fragment-root component's own top-level conditional, since the proxy
+ * is one specific top-level element and the conditional's markers may be
+ * others). See piconic-ai/sora's `ListSidebar` for the real-world repro.
  */
-function* commentsInScope(scope: Element): Generator<Comment> {
+export function* commentsInScope(scope: Element): Generator<Comment> {
   const commentInfo = commentScopeRegistry.get(scope)
 
   if (commentInfo) {

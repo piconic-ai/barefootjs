@@ -376,6 +376,93 @@ describe('insert', () => {
     })
   })
 
+  // A fragment-root component's runtime scope is a comment-scope *proxy*
+  // element — one specific top-level sibling picked to anchor lookups, per
+  // `commentScopeRegistry`. A conditional's own markers can land as a
+  // *different* top-level sibling of that same proxy (not nested inside
+  // it) — e.g. piconic-ai/sora's `ListSidebar`, where a stable `<aside>`
+  // is the proxy and a reopen-button conditional sits alongside it as a
+  // sibling. `updateFragmentConditional`/`updateElementConditional`/
+  // `autoFocusConditionalElement` used to search only the *descendants* of
+  // `scope` (`document.createTreeWalker(scope, ...)` / `scope.querySelector`),
+  // so they never found such a conditional's markers — the branch silently
+  // froze on whatever rendered at first hydration, forever, no error.
+  describe('conditional as a top-level sibling of a comment-scope proxy', () => {
+    test('fragment-conditional branch swap finds markers outside the proxy element', async () => {
+      const { commentScopeRegistry } = await import('../../src/runtime/scope.ts')
+
+      document.body.innerHTML =
+        '<div bf-s="Parent_abc">' +
+        '<!--bf-scope:Parent_abc_s1|h=Parent_abc|m=s1-->' +
+        '<aside>sidebar content</aside>' +
+        '<!--bf-cond-start:c1--><!--bf-cond-end:c1-->' +
+        '<!--bf-/scope:Parent_abc_s1-->' +
+        '</div>'
+
+      const container = document.querySelector('[bf-s="Parent_abc"]')!
+      const comment = Array.from(container.childNodes).find(
+        (n) => n.nodeType === 8 && n.nodeValue?.startsWith('bf-scope:')
+      ) as Comment
+      const proxy = container.querySelector('aside')!
+      commentScopeRegistry.set(proxy, { commentNode: comment, scopeId: 'Parent_abc_s1' })
+
+      const [show, setShow] = createSignal(false)
+
+      insert(
+        proxy,
+        'c1',
+        show,
+        { template: () => '<!--bf-cond-start:c1--><button>reopen</button><!--bf-cond-end:c1-->', bindEvents: () => {} },
+        { template: () => '<!--bf-cond-start:c1--><!--bf-cond-end:c1-->', bindEvents: () => {} }
+      )
+
+      expect(container.querySelector('button')).toBeNull()
+
+      setShow(true)
+      expect(container.querySelector('button')?.textContent).toBe('reopen')
+
+      setShow(false)
+      expect(container.querySelector('button')).toBeNull()
+    })
+
+    test('element-conditional branch swap finds the bf-c element outside the proxy', async () => {
+      const { commentScopeRegistry } = await import('../../src/runtime/scope.ts')
+
+      document.body.innerHTML =
+        '<div bf-s="Parent_def">' +
+        '<!--bf-scope:Parent_def_s1|h=Parent_def|m=s1-->' +
+        '<aside>sidebar content</aside>' +
+        '<span bf-c="c2">off</span>' +
+        '<!--bf-/scope:Parent_def_s1-->' +
+        '</div>'
+
+      const container = document.querySelector('[bf-s="Parent_def"]')!
+      const comment = Array.from(container.childNodes).find(
+        (n) => n.nodeType === 8 && n.nodeValue?.startsWith('bf-scope:')
+      ) as Comment
+      const proxy = container.querySelector('aside')!
+      commentScopeRegistry.set(proxy, { commentNode: comment, scopeId: 'Parent_def_s1' })
+
+      const [show, setShow] = createSignal(false)
+
+      insert(
+        proxy,
+        'c2',
+        show,
+        { template: () => '<span bf-c="c2">on</span>', bindEvents: () => {} },
+        { template: () => '<span bf-c="c2">off</span>', bindEvents: () => {} }
+      )
+
+      expect(container.querySelector('[bf-c="c2"]')?.textContent).toBe('off')
+
+      setShow(true)
+      expect(container.querySelector('[bf-c="c2"]')?.textContent).toBe('on')
+
+      setShow(false)
+      expect(container.querySelector('[bf-c="c2"]')?.textContent).toBe('off')
+    })
+  })
+
   // Contract documented on `BranchConfig.template` in insert.ts.
   describe('template purity contract', () => {
     test('isFragmentCond probe does not leak signal reads to a surrounding effect', () => {

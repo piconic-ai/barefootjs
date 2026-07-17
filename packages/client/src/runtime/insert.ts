@@ -7,7 +7,7 @@
  */
 
 import { createEffect, untrack } from '@barefootjs/client/reactive'
-import { find } from './query.ts'
+import { find, commentsInScope } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
 import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
 import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
@@ -342,7 +342,7 @@ function autoFocusConditionalElement(region: CondRegion, id: string): void {
   requestAnimationFrame(() => {
     const condEl = region.anchor
       ? findCondElInRange(region.anchor, id)
-      : region.bindScope.querySelector(`[${BF_COND}="${id}"]`)
+      : find(region.bindScope, `[${BF_COND}="${id}"]`)
     if (condEl) {
       const autofocusEl = condEl.matches('[autofocus]')
         ? condEl
@@ -406,10 +406,15 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
   if (region.anchor) {
     startComment = findCondStartInRange(region.anchor, id)
   } else {
-    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
-    while (walker.nextNode()) {
-      if (walker.currentNode.nodeValue === startMarker) {
-        startComment = walker.currentNode as Comment
+    // commentsInScope is comment-scope-aware: for a fragment-root
+    // component's scope (a comment-scope proxy element), it walks the
+    // proxy's *sibling* range rather than only `scope`'s own descendants —
+    // required when this conditional's markers are themselves a top-level
+    // sibling of the proxy, not nested inside it (a bare TreeWalker(scope)
+    // never finds them, silently freezing the branch after first render).
+    for (const comment of commentsInScope(scope)) {
+      if (comment.nodeValue === startMarker) {
+        startComment = comment
         break
       }
     }
@@ -417,7 +422,7 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
 
   const condEl = region.anchor
     ? findCondElInRange(region.anchor, id)
-    : scope.querySelector(`[${BF_COND}="${id}"]`)
+    : find(scope, `[${BF_COND}="${id}"]`)
 
   const endMarker = `bf-cond-end:${id}`
 
@@ -486,9 +491,12 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
  * Update element conditional (single element with bf-c)
  */
 function updateElementConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
+  // find() (not a bare querySelector) so a comment-scope proxy's top-level
+  // sibling conditionals resolve the same way they do on first hydration —
+  // see the identical fix in updateFragmentConditional above.
   const condEl = region.anchor
     ? findCondElInRange(region.anchor, id)
-    : region.bindScope.querySelector(`[${BF_COND}="${id}"]`)
+    : find(region.bindScope, `[${BF_COND}="${id}"]`)
   if (!condEl) return
 
   const { html, slots } = result
