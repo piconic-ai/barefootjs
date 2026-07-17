@@ -1,5 +1,26 @@
 # @barefootjs/go-template
 
+## 0.21.1
+
+### Patch Changes
+
+- 3f7be3d: Fix #2299: an inline-object-typed prop's nested member access
+  (`props.cfg.id` where `cfg: { id: number }`) now renders correctly on the
+  typed struct backends instead of empty. The inline object type bakes as an
+  untyped map (`map[string]interface{}` on Go), so an exact-case dot path
+  (`.Cfg.ID`) missed the JS-cased map key. The Go adapter now routes such a
+  chain through the case-tolerant `bf_get` runtime getter; Rust already
+  rendered it correctly. The `object-catalogued` render divergence is removed
+  from both adapters, so the object-synthesis data points now run the oracle
+  comparison on every backend.
+- f3ec45d: Pin `object-catalogued` (#2277) as a render divergence on the two typed
+  struct backends. An inline object-typed prop's nested member access
+  (`props.cfg.id`) renders empty on Go and Rust because the inline object type
+  doesn't synthesize a named struct/typed field — tracked as #2299. The
+  object-synthesis data points still run the oracle comparison on Hono and
+  every dynamic backend (Ruby/Python/PHP/Perl).
+  - @barefootjs/shared@0.21.1
+
 ## 0.21.0
 
 ### Patch Changes
