@@ -10,6 +10,14 @@
 //   2. Update `our $VERSION` in every Perl module listed under `modules`.
 //   3. Insert the versioned entry immediately after {{$NEXT}} in Changes,
 //      keeping the placeholder in place for the next release cycle.
+//   4. Bump the version floor of each cpanfile dependency listed under
+//      `cpanfileRequires` to the same release. The backend dists render
+//      templates that call same-release BarefootJS runtime methods, so an
+//      unversioned (or stale) `requires 'BarefootJS'` lets CPAN install
+//      against an older runtime that lacks them — see #2305, where
+//      BarefootJS-Backend-Xslate 0.21.0 failed on testers with a BarefootJS
+//      that predated scope_comment_end. All Perl dists ship from one fixed
+//      changeset group, so the same-version floor always exists on CPAN.
 
 import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -17,7 +25,14 @@ import { join } from 'path';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-const PACKAGES = [
+interface PerlPackage {
+  dir: string;
+  modules: string[];
+  /** cpanfile deps whose version floor tracks this dist's own release. */
+  cpanfileRequires?: string[];
+}
+
+const PACKAGES: PerlPackage[] = [
   {
     dir: 'packages/adapter-perl',
     modules: [
@@ -32,12 +47,14 @@ const PACKAGES = [
       'lib/BarefootJS/Backend/Mojo.pm',
       'lib/Mojolicious/Plugin/BarefootJS/DevReload.pm',
     ],
+    cpanfileRequires: ['BarefootJS'],
   },
   {
     dir: 'packages/adapter-xslate',
     modules: [
       'lib/BarefootJS/Backend/Xslate.pm',
     ],
+    cpanfileRequires: ['BarefootJS'],
   },
 ];
 
@@ -72,6 +89,24 @@ for (const pkg of PACKAGES) {
       writeFileSync(modulePath, updated);
       console.log(`Updated $VERSION → ${version} in ${mod}`);
     }
+  }
+
+  // Keep cpanfile dependency floors in lockstep with the release, so a dist
+  // can never declare a BarefootJS older than the runtime methods its
+  // generated templates call (#2305).
+  if (pkg.cpanfileRequires?.length) {
+    const cpanfilePath = join(pkgDir, 'cpanfile');
+    let cpanfile = readFileSync(cpanfilePath, 'utf8');
+    for (const dep of pkg.cpanfileRequires) {
+      const pattern = new RegExp(`^requires '${dep}'.*;$`, 'm');
+      if (!pattern.test(cpanfile)) {
+        console.warn(`[warn] requires '${dep}' not found in ${pkg.dir}/cpanfile — skipping`);
+        continue;
+      }
+      cpanfile = cpanfile.replace(pattern, `requires '${dep}', '${version}';`);
+      console.log(`Updated cpanfile requires ${dep} → ${version} in ${pkg.dir}`);
+    }
+    writeFileSync(cpanfilePath, cpanfile);
   }
 
   // Insert the versioned entry immediately after {{$NEXT}}, keeping the
