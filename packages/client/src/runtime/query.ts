@@ -346,6 +346,44 @@ export function find(
 }
 
 /**
+ * Find a conditional's own target (a `bf-c="id"` element, for `insert.ts`)
+ * within `scope`'s content range.
+ *
+ * Deliberately narrower than `find()`: for a regular (non-comment) scope,
+ * this is a **plain, unfiltered** `scope.querySelector(selector)` — not
+ * `find()`'s `belongsToScope`-gated search. `belongsToScope` accepts a
+ * candidate only if `candidate.closest('[bf-s]')` is *exactly* `scope` —
+ * which can never hold when `scope` itself carries no `bf-s`. That's the
+ * common case for `insert()`'s `region.bindScope`: a `mapArray` loop item's
+ * cloned template root (e.g. a `.comment-item` `<div>`) is keyed by
+ * `data-key` for reconciliation, not given its own `bf-s`, so any `bf-c`
+ * conditional inside that item would be rejected outright by
+ * `belongsToScope` — not because of any nested-child-scope subtlety, just
+ * because `scope` itself isn't `bf-s`-addressable. Using `find()` here
+ * previously broke exactly that shape (piconic-ai/barefootjs#2313's first
+ * attempt, caught by the `site/ui` e2e suite's `SocialThreadDemo`
+ * comment-editing test — a per-comment `editing` conditional inside a
+ * `sortedComments().map(...)` loop item with no `bf-s` of its own).
+ *
+ * A comment-scope proxy (fragment-root component) still gets the
+ * comment-range-bounded, nested-fragment-excluding search — the same rule
+ * `find()`'s comment branch uses — since that IS what's needed to walk past
+ * a fragment-root's own top-level siblings correctly (#2312).
+ */
+export function findCondTarget(scope: Element, selector: string): Element | null {
+  const commentInfo = commentScopeRegistry.get(scope)
+  if (!commentInfo) {
+    return scope.querySelector(selector)
+  }
+  for (const candidate of candidatesInScope(scope, selector)) {
+    if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
+    const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
+    if (!nearestScope || !isInCommentScopeRange(nearestScope, commentInfo.commentNode)) return candidate
+  }
+  return null
+}
+
+/**
  * Search in portals owned by a scope.
  */
 function findInPortals(scopeId: string, selector: string): Element | null {
@@ -609,8 +647,17 @@ export function findCommentChildScope(
  * sibling range for comment-anchored scopes, the element subtree
  * otherwise. Mirrors candidatesInScope's notion of "where the scope's
  * content lives", but yields comments instead of elements.
+ *
+ * Exported for `insert.ts`'s branch-swap path (`updateFragmentConditional`),
+ * which otherwise walked `scope`'s own descendants with a bare
+ * `document.createTreeWalker` — never finding a conditional's
+ * `bf-cond-start:`/`bf-cond-end:` markers when they sit as a *sibling* of
+ * the scope's comment-scope proxy rather than nested inside it (true for
+ * any fragment-root component's own top-level conditional, since the proxy
+ * is one specific top-level element and the conditional's markers may be
+ * others). See piconic-ai/sora's `ListSidebar` for the real-world repro.
  */
-function* commentsInScope(scope: Element): Generator<Comment> {
+export function* commentsInScope(scope: Element): Generator<Comment> {
   const commentInfo = commentScopeRegistry.get(scope)
 
   if (commentInfo) {
