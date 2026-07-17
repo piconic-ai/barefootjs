@@ -1,5 +1,15 @@
 # @barefootjs/cli
 
+## 0.21.3
+
+### Patch Changes
+
+- 1715e34: Ignore `public/.dev/` in the Hono scaffold's generated `.gitignore`. The `--watch` dev-reload sentinel (`public/.dev/build-id`, written by `bf build --watch` after every successful rebuild) is build output, not source. Every other adapter ignores its `dist/` outDir wholesale, so their `.dev/` is already covered; Hono's outDir _is_ the committed `public/`, so it names generated children (`public/components/`, `public/.buildcache.json`, `public/.bfemit.json`) explicitly and was missing the sentinel — leaving new scaffolds staging `public/.dev/build-id` on their first `git add`.
+- 1bc5ae8: Fix #2309: `bf build` with a warm cache over-tree-shook `barefoot.js`, dropping runtime exports (e.g. `__bfSlot`) that cached client components still imported and breaking all hydration at module load (`does not provide an export named '__bfSlot'`). The step-6d tree-shake collector scans each emitted `*.client.js` on disk, but a cached component's file was already rewritten on a prior build (step 6c) from `@barefootjs/client*` to a relative `../barefoot.js` import — a form the collector's bare-specifier match never recognized, so a warm rebuild collected zero runtime imports for those files and shipped a smaller keep-set than a fresh build. The collector now recognizes the emitted relative `barefoot.js` runtime specifier — at any nesting depth and including an intermediate directory segment when `outputLayout.runtime` differs from `outputLayout.clientJs` (e.g. `../runtime/barefoot.js`) — as well as the bare `@barefootjs/client*` one, so `barefoot.js` satisfies every emitted client bundle regardless of cache state or output layout. This also preserves the unsafe-import (full-runtime) fallback for a dynamic `import()` of the runtime whose specifier was rewritten to the relative form. Removes the need for the `bf build --force` workaround.
+- Updated dependencies [69ae86b]
+  - @barefootjs/client@0.21.3
+  - @barefootjs/shared@0.21.3
+
 ## 0.21.2
 
 ### Patch Changes

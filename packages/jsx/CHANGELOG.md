@@ -1,5 +1,11 @@
 # @barefootjs/jsx
 
+## 0.21.3
+
+### Patch Changes
+
+- @barefootjs/shared@0.21.3
+
 ## 0.21.2
 
 ### Patch Changes
