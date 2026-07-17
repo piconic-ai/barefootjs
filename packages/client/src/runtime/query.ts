@@ -252,6 +252,48 @@ function isInsideNestedCommentScope(element: Element, scope: Element): boolean {
 }
 
 /**
+ * True if `element` sits inside a nested child component's own scope
+ * boundary somewhere on the path up to `root` — a plain `[bf-s]` element
+ * (a regular child component's root) or a fragment-rooted child's
+ * comment-scope range mounted as a sibling along that path.
+ *
+ * Generalizes `isInsideNestedCommentScope` (which only catches the
+ * comment-scope case) to also catch plain `bf-s` boundaries, for `qsa()`
+ * — the loose, unfiltered sibling of `find()`'s `belongsToScope`-gated
+ * search. Unlike `belongsToScope`, this walks up to `root` by object
+ * identity rather than requiring `root` itself to carry `bf-s`: `qsa()`'s
+ * roots include `insert()`'s whole-component branch scope (which does
+ * carry `bf-s`) but also loop-item template clones (which normally don't),
+ * so a `.closest('[bf-s]') === root` check can't be reused here.
+ *
+ * Without this, a slot number that happens to collide between a component
+ * and a nested child mounted earlier in its DOM (compiler slot IDs are
+ * assigned independently per component file, so collisions are expected)
+ * makes `qsa()` return the child's element instead of the component's own.
+ *
+ * Deliberately does NOT reject `element` itself for carrying `bf-s`
+ * (unlike `belongsToScope`'s own-scope check) — `qsa()` doubles as the
+ * lookup for a nested child component's *own* scope root (e.g. compiled
+ * `qsa(parentScope, '[bf-h="X"][bf-m="sN"], [bf-s$="_sN"]')` calls feeding
+ * `initChild()`), and that target legitimately carries `bf-s`. Only an
+ * *intermediate* `bf-s` between `element` and `root` — i.e. `element`
+ * nested inside some other, unrelated child scope — disqualifies it.
+ */
+function isInsideNestedChildScope(element: Element, root: Element): boolean {
+  let current: Node = element
+  while (current !== root) {
+    const parent: Node | null = current.parentNode
+    if (!parent) return false
+    if (parent !== root && parent.nodeType === Node.ELEMENT_NODE && (parent as Element).hasAttribute(BF_SCOPE)) {
+      return true
+    }
+    if (isTopLevelCommentScopeNode(current)) return true
+    current = parent
+  }
+  return false
+}
+
+/**
  * True if `node` falls inside a `<!--bf-scope:...-->` … `<!--bf-/scope:...-->`
  * range among its own siblings — i.e. `node` is (or is inside) a top-level
  * element of a fragment-rooted child mounted as `node`'s sibling. Single
@@ -409,6 +451,12 @@ function findInPortals(scopeId: string, selector: string): Element | null {
  * then its descendants. Unlike querySelector() which only searches descendants,
  * this also matches the root element.
  *
+ * Descendant candidates that fall inside a nested child component's own
+ * scope are skipped (`isInsideNestedChildScope`) — compiler slot IDs
+ * (`bf="sN"`) are assigned independently per component file, so a slot
+ * number can coincidentally collide between `el`'s own template and a
+ * child component mounted somewhere inside it (#2316).
+ *
  * Used by compiler-generated code for event binding and attribute updates
  * on loop items where the target may be the loop item's root element itself.
  */
@@ -437,7 +485,19 @@ export function qsa(el: Element | null, selector: string): Element | null {
     return qsaChildScope(el, selector)
   }
   if (el.matches(selector)) return el
-  return el.querySelector(selector)
+
+  // Fast path: the overwhelmingly common case has no nested-child-scope
+  // collision, so a single querySelector() (matching the old behavior)
+  // resolves it without the cost of enumerating every match. Only fall
+  // back to the full querySelectorAll() scan — needed to skip past a
+  // rejected candidate to the next DOM-order match — when the first hit
+  // actually turns out to belong to a nested child scope.
+  const first = el.querySelector(selector)
+  if (!first || !isInsideNestedChildScope(first, el)) return first
+  for (const candidate of el.querySelectorAll(selector)) {
+    if (candidate !== first && !isInsideNestedChildScope(candidate, el)) return candidate
+  }
+  return null
 }
 
 /** Split a CSS selector list on top-level commas, ignoring commas inside

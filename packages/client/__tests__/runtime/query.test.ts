@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
-import { findScope, find, $, $c, $t } from '../../src/runtime/query'
+import { findScope, find, $, $c, $t, qsa } from '../../src/runtime/query'
 import { hydratedScopes } from '../../src/runtime/hydration-state'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
@@ -730,5 +730,102 @@ describe('$t', () => {
     expect(t0?.nodeValue).toBe('')
     expect(t1).not.toBeNull()
     expect(t1?.nodeValue).toBe('')
+  })
+})
+
+describe('qsa', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('self-match still returns the root when it matches the selector', () => {
+    document.body.innerHTML = `<div bf-s="Demo_abc" bf="s4"></div>`
+    const scope = document.querySelector('[bf-s="Demo_abc"]')!
+    expect(qsa(scope, '[bf="s4"]')).toBe(scope)
+  })
+
+  test('finds a plain descendant slot with no nested child in the way', () => {
+    document.body.innerHTML = `
+      <div bf-s="Demo_abc">
+        <span bf="s4"></span>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Demo_abc"]')!
+    const target = document.querySelector('[bf="s4"]')
+    expect(qsa(scope, '[bf="s4"]')).toBe(target)
+  })
+
+  test('#2316: skips a nested child component\'s coincidentally same-numbered slot', () => {
+    // Mirrors EditorMain/WordTable: a parent scope's own bf="s4" slot
+    // (page-meter-fill) collides with a nested child component's own
+    // locally-numbered bf="s4" slot (WordTable's "Front" <th>), which
+    // renders earlier in DOM order. qsa() must skip the child's element
+    // and find the parent's own.
+    document.body.innerHTML = `
+      <section bf-s="EditorMain_abc">
+        <div class="editor-body">
+          <div class="word-table-wrap" bf-s="EditorMain_abc_s0">
+            <table>
+              <thead>
+                <tr><th bf="s4">Front</th></tr>
+              </thead>
+            </table>
+          </div>
+          <div class="page-meter">
+            <div class="page-meter-fill" bf="s4"></div>
+          </div>
+        </div>
+      </section>
+    `
+    const scope = document.querySelector('[bf-s="EditorMain_abc"]')!
+    const fill = document.querySelector('.page-meter-fill')
+    const found = qsa(scope, '[bf="s4"]')
+    expect(found).toBe(fill)
+    expect(found?.className).toBe('page-meter-fill')
+  })
+
+  test('finds a slot after a nested child scope when both are present in DOM order', () => {
+    document.body.innerHTML = `
+      <section bf-s="Parent_abc">
+        <div bf-s="Parent_abc_s0">
+          <span bf="s1"></span>
+        </div>
+        <span bf="s2">own slot</span>
+      </section>
+    `
+    const scope = document.querySelector('[bf-s="Parent_abc"]')!
+    const own = document.querySelector('[bf="s2"]')
+    expect(qsa(scope, '[bf="s2"]')).toBe(own)
+  })
+
+  // qsa() doubles as the child-scope-resolution lookup for compiled
+  // component-loop / branch-nested-child code (feeding initChild()) — its
+  // target legitimately carries bf-s itself. The nested-child-scope skip
+  // above must reject only an *intermediate* bf-s between the candidate and
+  // the search root, never the candidate's own bf-s, or these calls break.
+  test('still finds a direct bf-s child scope by prefix selector (child-scope resolution)', () => {
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <div bf-s="Counter_xyz">child content</div>
+      </div>
+    `
+    const parent = document.querySelector('[bf-s="Parent_abc"]')!
+    const child = document.querySelector('[bf-s="Counter_xyz"]')
+    expect(qsa(parent, '[bf-s^="Counter_"]')).toBe(child)
+  })
+
+  test('finds a host-marked nested child via the [bf-h][bf-m] clause even when its own bf-s is a bare Name_rand (not "_sN"-suffixed)', () => {
+    // Real compiled shape: a branch/component-loop nested child's bf-s is
+    // its own generated id (not anchored to the parent's slot number), so
+    // the comma selector's `[bf-s$="_sN"]` fallback clause doesn't match —
+    // only the primary `[bf-h][bf-m]` clause does.
+    document.body.innerHTML = `
+      <div bf-s="Toggle_test">
+        <div bf-s="ToggleItem_rc62ve" bf-h="Toggle_test" bf-m="s0">item</div>
+      </div>
+    `
+    const scope = document.querySelector('[bf-s="Toggle_test"]')!
+    const child = document.querySelector('[bf-s="ToggleItem_rc62ve"]')
+    expect(qsa(scope, '[bf-h="Toggle_test"][bf-m="s0"], [bf-s$="_s0"]')).toBe(child)
   })
 })
