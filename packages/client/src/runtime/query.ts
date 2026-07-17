@@ -8,7 +8,7 @@
 
 import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
-import { BF_SCOPE, BF_SLOT, BF_PORTAL_OWNER, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SLOT, BF_PORTAL_OWNER, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
 /** CSS attribute-value escape with a fallback for environments lacking CSS.escape. */
 export const cssEscape: (s: string) => string =
@@ -222,7 +222,59 @@ function belongsToScope(element: Element, scope: Element): boolean {
 
   // Check if nearest scope matches
   const nearestScope = element.closest(`[${BF_SCOPE}]`)
-  return nearestScope === scope
+  if (nearestScope !== scope) return false
+
+  // A fragment-rooted child mounted between `element` and `scope` has no
+  // `bf-s` element of its own (#2302) — `closest()` walks straight past it
+  // to `scope`, so a slot search on `scope` can wrongly claim a descendant
+  // that actually belongs to that nested child's comment scope. Reject it.
+  return !isInsideNestedCommentScope(element, scope)
+}
+
+/**
+ * True if some ancestor of `element` (strictly below `scope`) is a
+ * top-level node of a fragment-rooted child's `<!--bf-scope:...-->` range —
+ * i.e. `element` structurally belongs to a nested child component even
+ * though that child has no `bf-s`-attributed element for `.closest()` to
+ * stop at, and regardless of whether `commentScopeRegistry` has registered
+ * it yet (a parent's own slot lookups can run before its child-scope
+ * lookups register the child, #2302).
+ */
+function isInsideNestedCommentScope(element: Element, scope: Element): boolean {
+  let current: Node = element
+  while (current !== scope) {
+    const parent: Node | null = current.parentNode
+    if (!parent) return false
+    if (isTopLevelCommentScopeNode(current)) return true
+    current = parent
+  }
+  return false
+}
+
+/**
+ * True if `node` falls inside a `<!--bf-scope:...-->` … `<!--bf-/scope:...-->`
+ * range among its own siblings — i.e. `node` is (or is inside) a top-level
+ * element of a fragment-rooted child mounted as `node`'s sibling. Single
+ * left-to-right pass over the sibling list with a nesting depth counter, so
+ * a nested child's own begin/end pair doesn't prematurely close an outer
+ * one. Missing end markers (older SSR output) leave depth un-decremented,
+ * matching `getCommentScopeBoundary`'s legacy end-of-parent fallback.
+ */
+function isTopLevelCommentScopeNode(node: Node): boolean {
+  const parent = node.parentNode
+  if (!parent) return false
+  let depth = 0
+  let sib: Node | null = parent.firstChild
+  while (sib) {
+    if (sib === node) return depth > 0
+    if (sib.nodeType === Node.COMMENT_NODE) {
+      const value = (sib as Comment).nodeValue ?? ''
+      if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) depth++
+      else if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX) && depth > 0) depth--
+    }
+    sib = sib.nextSibling
+  }
+  return false
 }
 
 /**
@@ -271,10 +323,16 @@ export function find(
     if (ignoreScope) return candidate
     if (commentInfo) {
       // Comment scope: top-level siblings in the comment range are always
-      // accepted (even if they have bf-s, like proxy elements). Descendants
-      // are accepted only if not inside a nested bf-s scope.
+      // accepted (even if they have bf-s, like proxy elements). A descendant
+      // nested inside one of those siblings is accepted unless a *nested*
+      // child scope sits between it and this one — i.e. its nearest bf-s
+      // ancestor falls within this comment's own sibling range. An ancestor
+      // bf-s element outside that range doesn't disqualify the candidate:
+      // a fragment-root child mounted inside a normal parent island always
+      // has one, and `.closest()` alone can't tell the two apart (#2302).
       if (candidate.parentElement === commentInfo.commentNode.parentElement) return candidate
-      if (!candidate.closest(`[${BF_SCOPE}]`)) return candidate
+      const nearestScope = candidate.closest(`[${BF_SCOPE}]`)
+      if (!nearestScope || !isInCommentScopeRange(nearestScope, commentInfo.commentNode)) return candidate
     } else {
       if (belongsToScope(candidate, scope)) return candidate
     }
