@@ -4618,16 +4618,18 @@ function getAttributeValue(attr: ts.JsxAttribute, ctx: TransformContext): AttrVa
       }
     }
 
-    // Bare `class={record[key]}` (#2300): an element access whose base is a
+    // Bare `attr={record[key]}` (#2300): an element access whose base is a
     // local const object-literal `Record` indexed by a prop, written directly
-    // as the attribute value rather than inside a template literal. Lift it
+    // as ANY string-attribute value rather than inside a template literal
+    // (`class={record[key]}` is the motivating class-composition case, but this
+    // is attribute-agnostic — it fires for any qualifying attribute). Lift it
     // into the SAME `lookup` part the `${record[key]}` template-literal form
     // produces (`tryResolveTemplateSpanFromConst` handles both), so every
     // adapter renders it through the shared, already-working lookup path
     // instead of a raw index-access that the typed / strict backends (Go,
     // minijinja, ERB, Jinja) mishandle for a function-local const — it is not
     // a prop field, so those emit an unpopulated `.Record`/nil lookup and the
-    // class renders empty (or errors). `tryResolveTemplateSpanFromConst`
+    // value renders empty (or errors). `tryResolveTemplateSpanFromConst`
     // returns null for anything but the `IDENT[KEY]` → all-string-`Record`
     // shape, so any other element access falls through to the bare-expression
     // path unchanged.
