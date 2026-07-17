@@ -919,7 +919,7 @@
           ]
         },
         "go-template": {
-          "pass": 230,
+          "pass": 231,
           "total": 237,
           "gaps": [
             {
@@ -945,10 +945,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2038"
               ]
-            },
-            {
-              "fixture": "object-catalogued",
-              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1003,7 +999,7 @@
           ]
         },
         "minijinja": {
-          "pass": 230,
+          "pass": 231,
           "total": 237,
           "gaps": [
             {
@@ -1029,10 +1025,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2038"
               ]
-            },
-            {
-              "fixture": "object-catalogued",
-              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1467,7 +1459,7 @@
           ]
         },
         "go-template": {
-          "pass": 113,
+          "pass": 114,
           "total": 119,
           "gaps": [
             {
@@ -1487,10 +1479,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2038"
               ]
-            },
-            {
-              "fixture": "object-catalogued",
-              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1539,7 +1527,7 @@
           ]
         },
         "minijinja": {
-          "pass": 113,
+          "pass": 114,
           "total": 119,
           "gaps": [
             {
@@ -1559,10 +1547,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2038"
               ]
-            },
-            {
-              "fixture": "object-catalogued",
-              "issues": []
             },
             {
               "fixture": "static-array-from-props",

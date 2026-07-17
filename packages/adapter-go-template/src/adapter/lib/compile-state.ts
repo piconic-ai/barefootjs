@@ -96,6 +96,16 @@ export class CompileState {
   contextConsumers: ContextConsumer[] = []
 
   /**
+   * Names of props whose type is an inline object literal (`cfg: { id:
+   * number }`) — they lower to a `map[string]interface{}` Input field
+   * (`typeInfoToGo`'s 'object' case), not a named struct, so a nested member
+   * access (`props.cfg.id`) must route through the case-tolerant `bf_get`
+   * runtime getter instead of an exact-case Go-template dot path (#2299). See
+   * `member()`'s `isMapRootedPropChain` branch.
+   */
+  objectTypedPropNames: Set<string> = new Set()
+
+  /**
    * Local binding names the request-scoped `searchParams()` env signal is
    * imported under (handles `import { searchParams as sp }`).
    */

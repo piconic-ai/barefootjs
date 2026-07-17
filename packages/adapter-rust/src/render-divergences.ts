@@ -17,12 +17,6 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  // `object-catalogued` (#2277): same typed-backend gap as Go — an inline
-  // object-typed prop's nested member access (`props.cfg.id`) renders empty
-  // through the `bf-render` minijinja binary. The object-synthesis data
-  // points still run the oracle on the dynamic backends + Hono.
-  // https://github.com/piconic-ai/barefootjs/issues/2299
-  'object-catalogued': 'inline object-prop member access renders empty — #2299',
   // `todo-app` / `todo-app-ssr` no longer diverge (#2209) — the shared
   // `evaluateSignalInit` (`@barefootjs/jsx`, sandboxed real-JS evaluation
   // instead of a fixed regex-shape catalogue) now correctly seeds `todos`
