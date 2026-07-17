@@ -1,8 +1,7 @@
 requires 'perl', '5.020';
-# Floor kept in lockstep with this dist's own version by
-# scripts/sync-perl-versions.ts — templates compiled by @barefootjs/xslate
-# call same-release BarefootJS runtime methods (e.g. scope_comment_end,
-# added in 0.21.0), so an older installed BarefootJS fails at render time.
+# Not hand-maintained: scripts/sync-perl-versions.ts pins this to the dist's
+# own release. A looser floor breaks at render time — generated templates
+# call same-release BarefootJS runtime methods.
 requires 'BarefootJS', '0.21.0';
 requires 'Text::Xslate', '3.4.0';
 # JSON::PP is a core module (default encoder).
