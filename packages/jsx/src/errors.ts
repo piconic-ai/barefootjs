@@ -89,6 +89,7 @@ export const ErrorCodes = {
   UNRECOGNIZED_REACTIVE_FACTORY: 'BF110',
   REACTIVE_FACTORY_RENAME_UNSUPPORTED: 'BF111',
   REACTIVE_FACTORY_MODULE_CAPTURE: 'BF112',
+  REACTIVE_FACTORY_IMPORT_COLLISION: 'BF113',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -178,6 +179,11 @@ const errorMessages: Record<ErrorCode, string> = {
     'body cannot be inlined into the component file. Move those helpers into the ' +
     'component file, pass them to the factory as parameters, or define the factory ' +
     'in the component file.',
+
+  [ErrorCodes.REACTIVE_FACTORY_IMPORT_COLLISION]:
+    'Inlining an imported reactive factory requires re-importing one of its helper ' +
+    'imports into this file, but that name is already bound here to something else. ' +
+    "Rename the conflicting binding in this file, or alias the import in the factory's own file.",
 }
 
 // =============================================================================

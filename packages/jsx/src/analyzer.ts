@@ -23,7 +23,7 @@ import {
   isArrowComponentFunction,
   collectReactiveGetterNames,
 } from './analyzer-context.ts'
-import { createError, createWarning, ErrorCodes } from './errors.ts'
+import { createError, createWarning, ErrorCodes, type ErrorCode } from './errors.ts'
 import { baseTypeName } from './rich-type-evidence.ts'
 import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
@@ -3996,6 +3996,56 @@ function buildEntryImportIndex(
 }
 
 /**
+ * Every value-binding name anywhere in the entry file (imports, variable
+ * declarations at any depth, function/class/enum names, function
+ * parameters) — used by the #2332 re-provisioned-import collision check
+ * (BF113). Deliberately over-broad: the inlined factory body lands INSIDE a
+ * component function, where any nested binding (params, destructures,
+ * locals) would silently shadow a top-level import injected by this round.
+ * A scan limited to top-level bindings would miss that, so any hit anywhere
+ * in the file declines re-provisioning with a loud BF113 rather than
+ * risking a silent shadow — matching `moduleCaptureCheck`'s stated failure-
+ * direction philosophy (loud build error over silent runtime break).
+ */
+function collectEntryBindingNames(sf: ts.SourceFile): Set<string> {
+  const names = new Set<string>()
+  function visit(node: ts.Node): void {
+    if (ts.isImportDeclaration(node) && node.importClause) {
+      if (node.importClause.name) names.add(node.importClause.name.text)
+      const namedBindings = node.importClause.namedBindings
+      if (namedBindings && ts.isNamedImports(namedBindings)) {
+        // Type-only specifiers still occupy the identifier at the TS level.
+        for (const el of namedBindings.elements) names.add(el.name.text)
+      }
+      if (namedBindings && ts.isNamespaceImport(namedBindings)) {
+        names.add(namedBindings.name.text)
+      }
+    }
+    if (ts.isVariableDeclaration(node)) {
+      const out: string[] = []
+      addBindingNames(node.name, out)
+      for (const n of out) names.add(n)
+    }
+    if (
+      (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isEnumDeclaration(node)) &&
+      node.name
+    ) {
+      names.add(node.name.text)
+    }
+    if (ts.isFunctionLike(node)) {
+      for (const p of node.parameters) {
+        const out: string[] = []
+        addBindingNames(p.name, out)
+        for (const n of out) names.add(n)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return names
+}
+
+/**
  * Cross-file half of the factory prescan (#2325 round 2): resolve factories
  * defined in a relative-imported helper file so `const { count } =
  * createCounter(0)` inlines the same way whether `createCounter` lives in
@@ -4071,7 +4121,11 @@ function prescanImportedReactiveFactories(
   if (importsToCheck.length === 0) return
 
   // #2332 — computed once per entry file, shared across all helper files.
+  const entryBindingNames = collectEntryBindingNames(entrySourceFile)
   const entryImportIndex = buildEntryImportIndex(entrySourceFile, filePath)
+  // localName -> planned injection identity; a later factory requiring the
+  // same name from a DIFFERENT (targetKey, exportedName) is a collision.
+  const plannedInjections = new Map<string, { targetKey: string; exportedName: string }>()
 
   for (const { src, specs } of importsToCheck) {
     const resolved = resolveRelativeImportToFile(src, filePath)
@@ -4179,8 +4233,13 @@ function prescanImportedReactiveFactories(
           // ref resolves to a component-relative specifier (or passes
           // through unchanged for bare/npm specifiers); a ref already
           // satisfied by an identical top-level import in the component
-          // file is dropped rather than injected (would redeclare it).
+          // file is dropped rather than injected (would redeclare it). A
+          // ref whose local name collides with a DIFFERENT existing/planned
+          // binding declines with BF113 — `pending` is only merged into
+          // `plannedInjections` on full factory success (§3.4), so a
+          // factory that declines mid-loop reserves nothing.
           const required: RequiredFactoryImport[] = []
+          const pending: Array<[string, { targetKey: string; exportedName: string }]> = []
           let declinedEntry: DeclinedReactiveFactory | null = null
           for (const ref of capture.importedRefs) {
             let specifier: string
@@ -4204,16 +4263,33 @@ function prescanImportedReactiveFactories(
               specifier = ref.source // bare/npm specifier — unchanged (#2332 test 2)
               targetKey = ref.source
             }
+            // Already satisfied by an identical top-level import in the
+            // component file — injecting again would redeclare the binding.
             const existing = entryImportIndex.get(ref.localName)
             if (existing && existing.targetKey === targetKey && existing.exportedName === ref.exportedName) {
-              continue // already satisfied by an identical top-level import
+              continue
             }
+            const planned = plannedInjections.get(ref.localName)
+            const collides =
+              (existing !== undefined) ||
+              (planned !== undefined && (planned.targetKey !== targetKey || planned.exportedName !== ref.exportedName)) ||
+              (planned === undefined && entryBindingNames.has(ref.localName))
+            if (collides) {
+              declinedEntry = {
+                code: 'BF113',
+                detail: `'${ref.localName}' from '${specifier}'`,
+                loc: det.info.loc,
+              }
+              break
+            }
+            pending.push([ref.localName, { targetKey, exportedName: ref.exportedName }])
             required.push({ localName: ref.localName, exportedName: ref.exportedName, specifier })
           }
           if (declinedEntry) {
             result.declined.set(spec.local, declinedEntry)
             break
           }
+          for (const [name, id] of pending) plannedInjections.set(name, id)
           det.info.sourceFilePath = resolved
           if (required.length > 0) det.info.requiredImports = required
           result.factories.set(spec.local, det.info)
@@ -4776,11 +4852,12 @@ function escapeRegex(s: string): string {
 /**
  * Build the diagnostic for a call site whose callee was recognised but
  * declined for inlining (#2325 — cross-file factories that rename their
- * return properties, or capture their own module scope). BF112's wording is
- * specific to module-scope capture; every other declined reason (currently
- * only BF111 — non-shorthand return properties) shares BF111's generic
- * "cannot be inlined: <detail>" phrasing, matching the wording used for the
- * tuple call-site path.
+ * return properties or capture their own module scope; #2332 — a
+ * re-provisioned helper import collides with an existing binding). BF112
+ * and BF113's wording is specific to their respective failure; every other
+ * declined reason (currently only BF111 — non-shorthand return properties)
+ * shares BF111's generic "cannot be inlined: <detail>" phrasing, matching
+ * the wording used for the tuple call-site path.
  */
 function declinedFactoryMessage(callee: string, d: DeclinedReactiveFactory): string {
   if (d.code === 'BF112') {
@@ -4790,7 +4867,24 @@ function declinedFactoryMessage(callee: string, d: DeclinedReactiveFactory): str
       `pass them as factory arguments, or inline the factory here.`
     )
   }
+  if (d.code === 'BF113') {
+    return (
+      `Reactive factory '${callee}' cannot be inlined: it needs ${d.detail} ` +
+      `imported into this file, but that name is already bound here to something ` +
+      `else. Rename the conflicting binding in this file, or alias the import in ` +
+      `the factory's own file (import { x as y }).`
+    )
+  }
   return `Reactive factory '${callee}' cannot be inlined: ${d.detail}.`
+}
+
+/** Diagnostic code for a declined reactive-factory call site (#2325 / #2332). */
+function declinedFactoryErrorCode(code: DeclinedReactiveFactory['code']): ErrorCode {
+  switch (code) {
+    case 'BF112': return ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
+    case 'BF113': return ErrorCodes.REACTIVE_FACTORY_IMPORT_COLLISION
+    default: return ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED
+  }
 }
 
 /**
@@ -4832,9 +4926,7 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
         const declinedEntry = ctx.declinedReactiveFactories.get(callee)
         if (declinedEntry) {
           ctx.errors.push(createError(
-            declinedEntry.code === 'BF112'
-              ? ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
-              : ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED,
+            declinedFactoryErrorCode(declinedEntry.code),
             loc,
             { severity: 'error', message: declinedFactoryMessage(callee, declinedEntry) }
           ))
@@ -4892,8 +4984,8 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
  * covers the previously-silent object-destructure failure modes: an
  * unrecognised callee, a tuple factory destructured as an object, a rename/
  * default/rest destructure of a shorthand-only factory, an unknown
- * property, a declined (BF111/BF112) factory, or an uninspectable import
- * that looks reactive-factory-shaped by name.
+ * property, a declined (BF111/BF112/BF113) factory, or an uninspectable
+ * import that looks reactive-factory-shaped by name.
  */
 function validateObjectFactoryDestructure(
   ctx: AnalyzerContext,
@@ -4955,9 +5047,7 @@ function validateObjectFactoryDestructure(
   const declinedEntry = ctx.declinedReactiveFactories.get(callee)
   if (declinedEntry) {
     ctx.errors.push(createError(
-      declinedEntry.code === 'BF112'
-        ? ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
-        : ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED,
+      declinedFactoryErrorCode(declinedEntry.code),
       loc,
       { severity: 'error', message: declinedFactoryMessage(callee, declinedEntry) }
     ))

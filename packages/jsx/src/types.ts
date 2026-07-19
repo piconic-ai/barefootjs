@@ -1521,11 +1521,12 @@ export interface RequiredFactoryImport {
 /**
  * A helper that was recognized as a would-be reactive factory but declined
  * for inlining (#2325). Recorded so validateReactiveFactoryCalls can emit
- * the specific diagnostic (BF111 rename / BF112 module-scope capture) at
- * the call site instead of the generic BF110.
+ * the specific diagnostic (BF111 rename / BF112 module-scope capture /
+ * BF113 re-provisioned-import name collision) at the call site instead of
+ * the generic BF110.
  */
 export interface DeclinedReactiveFactory {
-  code: 'BF111' | 'BF112'
+  code: 'BF111' | 'BF112' | 'BF113'
   /** Detail spliced into the call-site message (e.g. offending identifier list). */
   detail: string
   /** Definition site (in the helper file for cross-file declines). */

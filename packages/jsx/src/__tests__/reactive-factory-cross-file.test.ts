@@ -344,6 +344,34 @@ export function Pair() {
     expect((clientJs!.content.match(/from '\.\.\/lib\/mathmod'/g) ?? []).length).toBe(1)
   })
 
+  test('matrix 4: local-name collision with a re-provisioned import declines with BF113', () => {
+    const consumerSource = `'use client'
+import { useDouble } from '../hooks/useDouble'
+
+function doubleIt(): number {
+  return 1
+}
+
+export function Collide() {
+  const { value, bump } = useDouble(21)
+  return <button onClick={bump}>{value()} {doubleIt()}</button>
+}
+`
+    const consumerPath = writeFixture('components/Collide.tsx', consumerSource)
+    const ctx = analyzeComponent(consumerSource, consumerPath, 'Collide')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf113 = result.errors.find(e => e.code === 'BF113')
+    expect(bf113).toBeDefined()
+    expect(bf113!.message).toContain('doubleIt')
+    expect(bf113!.message).toContain('../lib/mathmod')
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    if (clientJs) {
+      expect(clientJs.content).not.toContain(`from '../lib/mathmod'`)
+    }
+  })
+
   test('matrix 5b: default-import reference stays BF112, not re-provisioned', () => {
     writeFixture('lib/mathmod-default.ts', `export default {
   doubleIt(x: number): number {
