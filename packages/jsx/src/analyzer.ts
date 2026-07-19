@@ -4085,6 +4085,12 @@ function prescanImportedReactiveFactories(
       }
     }
 
+    // Module-scope bindings the helper file declares — an inlined factory
+    // body must not reference any of these (#2325 §4h / BF112), since
+    // inlining moves the body into the component file where they don't
+    // exist.
+    const moduleBindings = collectHelperModuleValueBindings(helperSf)
+
     for (const spec of specs) {
       if (alreadyKnown(spec.local)) continue
 
@@ -4105,17 +4111,110 @@ function prescanImportedReactiveFactories(
         case 'declined':
           result.declined.set(spec.local, det.declined)
           break
-        case 'factory':
-          // Module-scope capture guard (BF112) lands in a follow-up commit
-          // (#2325 §4h) — at this point in the sequence a captured factory
-          // still inlines with a dangling reference to its helper-module
-          // scope, which is acceptable mid-sequence but not the final state.
-          det.info.sourceFilePath = resolved
-          result.factories.set(spec.local, det.info)
+        case 'factory': {
+          const offending = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
+          if (offending.length > 0) {
+            result.declined.set(spec.local, {
+              code: 'BF112',
+              detail: `'${offending.join("', '")}'`,
+              loc: det.info.loc,
+            })
+          } else {
+            det.info.sourceFilePath = resolved
+            result.factories.set(spec.local, det.info)
+          }
           break
+        }
       }
     }
   }
+}
+
+/**
+ * Value bindings at the helper file's module scope that an inlined factory
+ * body must not capture (#2325 §4h / BF112): top-level const/let/var,
+ * function/class/enum names, and value import specifiers — EXCEPT imports
+ * from '@barefootjs/client' / '@barefootjs/client/runtime'. Those are
+ * re-provisioned from usage by the client-JS emitter regardless of where
+ * the call that used them textually came from (`resolveFinalImports` /
+ * `detectUsedImports` regex-scan the *generated* code, not the consumer's
+ * source imports — see #2325 spec C1), so an inlined body calling
+ * `createSignal` is never a capture even though the helper file itself
+ * imports it. Type-only imports/declarations carry no runtime binding and
+ * are excluded.
+ */
+function collectHelperModuleValueBindings(sf: ts.SourceFile): Set<string> {
+  const names = new Set<string>()
+  for (const stmt of sf.statements) {
+    if (ts.isVariableStatement(stmt)) {
+      const out: string[] = []
+      for (const decl of stmt.declarationList.declarations) {
+        addBindingNames(decl.name, out)
+      }
+      for (const n of out) names.add(n)
+      continue
+    }
+    if (
+      (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isEnumDeclaration(stmt)) &&
+      stmt.name
+    ) {
+      names.add(stmt.name.text)
+      continue
+    }
+    if (ts.isImportDeclaration(stmt)) {
+      if (stmt.importClause?.isTypeOnly) continue
+      if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+      const src = stmt.moduleSpecifier.text
+      if (src === '@barefootjs/client' || src === '@barefootjs/client/runtime') continue
+      if (stmt.importClause?.name) names.add(stmt.importClause.name.text)
+      const namedBindings = stmt.importClause?.namedBindings
+      if (namedBindings && ts.isNamedImports(namedBindings)) {
+        for (const el of namedBindings.elements) {
+          if (el.isTypeOnly) continue
+          names.add(el.name.text)
+        }
+      }
+      if (namedBindings && ts.isNamespaceImport(namedBindings)) {
+        names.add(namedBindings.name.text)
+      }
+    }
+  }
+  return names
+}
+
+/**
+ * Free identifiers of a reactive-factory body that resolve to bindings at
+ * its own module scope (#2325 §4h / BF112) — references the inlined body
+ * would silently lose once spliced into the component file. Returns the
+ * offending names sorted, for stable diagnostic text.
+ *
+ * Known accepted limitation: `extractFreeIdentifiersFromNode` only scope-
+ * tracks arrow-function parameters, not nested `function` declarations'
+ * parameters or nested-block declarations — a body-nested binding that
+ * happens to shadow a helper-module binding could false-positive into
+ * BF112. Acceptable: the failure direction is a loud build error on a rare
+ * shape, never a silent runtime break.
+ */
+function moduleCaptureCheck(
+  fn: ts.FunctionDeclaration,
+  info: ReactiveFactoryInfo,
+  moduleBindings: Set<string>,
+  selfName: string
+): string[] {
+  if (!fn.body) return []
+  const free = extractFreeIdentifiersFromNode(fn.body)
+  const exclude = new Set<string>(info.params)
+  for (const b of info.localBindings) exclude.add(b)
+  for (const r of info.returnTupleIdentifiers) exclude.add(r)
+  for (const p of REACTIVE_PRIMITIVES) exclude.add(p)
+  exclude.add(selfName)
+
+  const offending: string[] = []
+  for (const id of free) {
+    if (exclude.has(id)) continue
+    if (moduleBindings.has(id)) offending.push(id)
+  }
+  return offending.sort()
 }
 
 /**

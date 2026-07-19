@@ -146,4 +146,94 @@ export function Counter() {
     const result = compileJSX(consumerSource, consumerPath, { adapter })
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
   })
+
+  test('non-relative import object-destructure emits BF110 (uninspectable-import heuristic)', () => {
+    const consumerSource = `'use client'
+import { useStore } from '@app/hooks'
+
+export function Comp() {
+  const { value, setValue } = useStore(0)
+  return <button onClick={() => setValue(value() + 1)}>{value()}</button>
+}
+`
+    const consumerPath = writeFixture('non-relative-consumer.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+    expect(bf110!.message).toContain('useStore')
+  })
+
+  test('module-scope capture → BF112: helper-local function reference blocks inlining', () => {
+    writeFixture('hooks-capture.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+const KEY = 'stored-value'
+
+function readStored() {
+  return KEY.length
+}
+
+export function useStoredCounter() {
+  const [count, setCount] = createSignal(readStored())
+  return { count, setCount }
+}
+`)
+    const consumerSource = `'use client'
+import { useStoredCounter } from './hooks-capture'
+
+export function Counter() {
+  const { count, setCount } = useStoredCounter()
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+`
+    const consumerPath = writeFixture('counter-capture.tsx', consumerSource)
+
+    const ctx = analyzeComponent(consumerSource, consumerPath, 'Counter')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf112 = result.errors.find(e => e.code === 'BF112')
+    expect(bf112).toBeDefined()
+    expect(bf112!.message).toContain('readStored')
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    if (clientJs) {
+      expect(clientJs.content).not.toContain('readStored')
+    }
+  })
+
+  test('reactive-primitive-free helper: tuple destructure gets BF110, object destructure stays silent (cleanFactoryImports)', () => {
+    writeFixture('hooks-clean.tsx', `
+export function makePair(a: number, b: number) {
+  return [a, b] as const
+}
+export function makeConfig(a: number, b: number) {
+  return { a, b }
+}
+`)
+    const tupleConsumerSource = `'use client'
+import { makePair } from './hooks-clean'
+
+export function Pair() {
+  const [x, y] = makePair(1, 2)
+  return <p>{x} {y}</p>
+}
+`
+    const tupleConsumerPath = writeFixture('pair-consumer.tsx', tupleConsumerSource)
+    const tupleResult = compileJSX(tupleConsumerSource, tupleConsumerPath, { adapter })
+    expect(tupleResult.errors.find(e => e.code === 'BF110')).toBeDefined()
+
+    const objectConsumerSource = `'use client'
+import { makeConfig } from './hooks-clean'
+
+export function Config() {
+  const { a, b } = makeConfig(1, 2)
+  return <p>{a} {b}</p>
+}
+`
+    const objectConsumerPath = writeFixture('config-consumer.tsx', objectConsumerSource)
+    const objectResult = compileJSX(objectConsumerSource, objectConsumerPath, { adapter })
+    expect(objectResult.errors.find(e => e.code === 'BF110')).toBeUndefined()
+    expect(objectResult.errors.find(e => e.code === 'BF111')).toBeUndefined()
+  })
 })
