@@ -592,6 +592,26 @@ export function Check(props: { checked?: boolean }) {
       expect(types).toContain('C: checked,')
     })
 
+    test('flips a bare TEXT-POSITION optional scalar prop to interface{} (#2267)', () => {
+      // The trigger nobody pinned directly until #2327: an optional
+      // no-default primitive consumed as bare `{props.X}` text (no `??`, no
+      // omittable attribute, no presence check) flips to interface{} so an
+      // absent prop renders '' like JS undefined instead of the Go zero
+      // value / `<no value>`. This is the exact shape behind
+      // integrations' PostArticle prevTitle/nextTitle — the regen drift
+      // #2327 tracked. The required sibling stays a concrete string.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+export function Pager(props: { prevSlug: string; prevTitle?: string }) {
+  return <div>{props.prevSlug ? <a>{props.prevTitle}</a> : ''}</div>
+}
+`)
+      const result = adapter.generate(ir)
+      const types = result.types!
+      expect(types).toContain('PrevTitle interface{}')
+      expect(types).toContain('PrevSlug string')
+    })
+
     test('hoists the DESTRUCTURED `x ?? N` seed via signal.parsed (#2259)', () => {
       // Destructured components have no `propsObjectName`, so the seed's
       // prop reference is a bare identifier — matched structurally on the

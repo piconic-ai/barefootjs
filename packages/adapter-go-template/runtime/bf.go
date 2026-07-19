@@ -60,6 +60,7 @@ func FuncMap() template.FuncMap {
 		"bf_pad_start":   PadStart,
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
+		"bf_ternary":     Ternary,
 
 		// URL query builder (#1897 PostList href helpers): conditional
 		// (include, key, value) triples → "base?k=v&…", mirroring a
@@ -1240,6 +1241,22 @@ func Join(items any, sep string) string {
 		parts[i] = toString(v.Index(i).Interface())
 	}
 	return strings.Join(parts, sep)
+}
+
+// Ternary returns a when cond is true, else b — the pipeline-position
+// counterpart of a template {{if}} action. Go templates have no
+// expression-level conditional, so a conditional value sitting in
+// ARGUMENT position (a lowering-node helper arg, e.g. the #2324 union
+// stage's locale→pattern ternary) cannot be emitted as an {{if}}
+// fragment; the adapter renders it as `(bf_ternary <cond> <a> <b>)`
+// instead. Both branches are evaluated (function-call semantics) —
+// fine for the value shapes the emitter feeds it, wrong for anything
+// with side effects, which template values never have.
+func Ternary(cond bool, a, b any) any {
+	if cond {
+		return a
+	}
+	return b
 }
 
 // String returns the string form of v. Mirrors JS `String(v)` for

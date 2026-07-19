@@ -11,7 +11,7 @@ import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
 import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
-import { toLocaleDatePlugin } from '../to-locale-date-lowering.ts'
+import { toLocaleDatePlugin, patternArgToClientJs } from '../to-locale-date-lowering.ts'
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 
@@ -182,7 +182,9 @@ function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher
     )
     if (!node || node.kind !== 'helper-call' || node.helper !== 'format_date') continue
     const [, patternArg, tzArg] = node.args
-    if (patternArg?.kind !== 'literal' || tzArg?.kind !== 'literal') continue
+    if (!patternArg || tzArg?.kind !== 'literal') continue
+    const patternJs = patternArgToClientJs(patternArg, call.arguments[0].getText(sourceFile))
+    if (patternJs === null) continue
     const receiverText = propAccess.expression.getText(sourceFile)
     const matchText = call.getText(sourceFile)
     // The call text contains string literals (placeholders in the protected
@@ -191,7 +193,7 @@ function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher
     result = replaceProtectedCall(
       result,
       matchText,
-      () => `formatDate(${receiverText}, ${JSON.stringify(patternArg.value)}, ${JSON.stringify(tzArg.value)})`,
+      () => `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)})`,
     )
   }
   return restore(result)
