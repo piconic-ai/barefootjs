@@ -1495,6 +1495,21 @@
         "text"
       ]
     },
+    "date-tolocale-union": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "deep-nesting": {
       "kinds": [
         "call",
@@ -4145,14 +4160,14 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 160,
+    "call": 161,
     "conditional": 18,
-    "identifier": 240,
+    "identifier": 241,
     "index-access": 12,
-    "literal": 198,
+    "literal": 199,
     "logical": 41,
-    "member": 120,
-    "object-literal": 43,
+    "member": 121,
+    "object-literal": 44,
     "template-literal": 27,
     "unary": 22,
     "unsupported": 21
@@ -4195,7 +4210,7 @@
     "literal:boolean": 37,
     "literal:null": 22,
     "literal:number": 86,
-    "literal:string": 141,
+    "literal:string": 142,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

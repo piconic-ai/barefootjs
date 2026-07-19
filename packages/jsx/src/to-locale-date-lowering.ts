@@ -19,12 +19,21 @@
  *     `rich-type-refusal.ts`, whose gate exempts exactly what a registered
  *     plugin claims).
  *
+ * A NON-literal locale is admitted in exactly one shape (#2324's
+ * union-typed-locale stage): a REQUIRED prop whose TS type is a closed
+ * string-literal union (`locale: 'en-US' | 'ja-JP'`). Every member's pattern
+ * resolves at build time and the pattern argument lowers to a ternary over
+ * the runtime value — runtime locale switching, still zero runtime CLDR.
+ * The type IS the contract: TS keeps the runtime value inside the union.
+ *
  * Deliberately NOT lowered (decline → loud BF021, never a silent guess):
  *   - zero-arg / locale-only calls — they read the host's locale and/or
  *     timezone, the implicit-environment hole #2273 closed;
- *   - a non-literal locale (`props.locale`) — build-time CLDR resolution is
- *     impossible; the app's i18n layer owns locale → pattern there, feeding
- *     `formatDate` directly;
+ *   - an OPEN-typed runtime locale (`locale: string`) — build-time CLDR
+ *     resolution is impossible; the app's i18n layer owns locale → pattern
+ *     there, feeding `formatDate` directly. An OPTIONAL union prop also
+ *     declines: `undefined` at runtime makes real `toLocaleDateString` read
+ *     the host locale, which no frozen pattern table can reproduce;
  *   - an IANA `timeZone` name — couples output to the host's tzdata version
  *     (only `'UTC'` and fixed `±HH:MM` offsets are deterministic);
  *   - options beyond `timeZone` (`dateStyle`, `month: 'long'`, …) — the
@@ -34,7 +43,7 @@
  *     `ar-SA`: islamic-umalqura calendar, arabic-indic digits).
  */
 
-import type { IRMetadata } from './types.ts'
+import type { IRMetadata, TypeInfo } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 import type { LoweringNode, LoweringPlugin } from './lowering-registry.ts'
 import { resolveReceiverType, baseTypeName } from './rich-type-evidence.ts'
@@ -131,6 +140,54 @@ function derivePattern(locale: string): string | null {
  * `date-lowering.ts`'s `matchDateCall` exactly (prop-rooted, `Date`-typed,
  * no in-file type shadow, `EMPTY_BINDINGS`).
  */
+/** A quoted string-literal union member's value, or null when the member is anything else. */
+function unionMemberLiteral(member: TypeInfo): string | null {
+  const m = /^'([^'\\]*)'$|^"([^"\\]*)"$/.exec(member.raw.trim())
+  return m ? (m[1] ?? m[2]) : null
+}
+
+/**
+ * Resolve a NON-literal `locale` argument to its closed set of string-literal
+ * union members (#2324's union-typed-locale stage), or null to decline.
+ * Admitted shapes: a bare identifier bound to a prop, or a
+ * `props.<name>` member — both checkable for optionality against
+ * `propsType.properties`, which matters because an OPTIONAL union prop can be
+ * `undefined` at runtime, and real `toLocaleDateString(undefined, …)` falls
+ * back to the HOST locale (the implicit-environment read this plugin exists
+ * to rule out) while the lowered pattern table cannot. The prop must be
+ * required and every union member a quoted string literal.
+ */
+function resolveLocaleUnionMembers(locale: ParsedExpr, metadata: IRMetadata): string[] | null {
+  let propName: string | null = null
+  if (locale.kind === 'identifier') {
+    propName = locale.name
+  } else if (
+    locale.kind === 'member' &&
+    !locale.computed &&
+    locale.object.kind === 'identifier' &&
+    locale.object.name === (metadata.propsObjectName ?? 'props')
+  ) {
+    propName = locale.property
+  }
+  if (!propName) return null
+  const target = propName
+  const prop = metadata.propsType?.properties?.find(
+    (p) => p.name === target || metadata.propsParams?.some((pp) => pp.name === target && (pp.sourceName ?? pp.name) === p.name),
+  )
+  if (!prop || prop.optional) return null
+  const type = prop.type
+  if (type.kind !== 'union' || !type.unionTypes || type.unionTypes.length === 0) return null
+  const members: string[] = []
+  for (const member of type.unionTypes) {
+    const value = unionMemberLiteral(member)
+    if (value === null) return null
+    members.push(value)
+  }
+  return members
+}
+
+const strLit = (value: string): ParsedExpr => ({ kind: 'literal', value, literalType: 'string' })
+
 export function matchToLocaleDateStringCall(
   callee: ParsedExpr,
   args: readonly ParsedExpr[],
@@ -139,7 +196,6 @@ export function matchToLocaleDateStringCall(
   if (callee.kind !== 'member' || callee.computed) return null
   if (callee.property !== 'toLocaleDateString' || args.length !== 2) return null
   const [locale, options] = args
-  if (locale.kind !== 'literal' || locale.literalType !== 'string') return null
   if (options.kind !== 'object-literal' || options.properties.length !== 1) return null
   const prop = options.properties[0]
   if (prop.key !== 'timeZone') return null
@@ -153,17 +209,67 @@ export function matchToLocaleDateStringCall(
   if (typeName !== 'Date') return null
   if (metadata.typeDefinitions.some((d) => d.name === typeName)) return null
 
-  const pattern = resolveLocaleDatePattern(String(locale.value))
-  if (pattern === null) return null
+  // Literal locale: resolve one pattern at build time.
+  if (locale.kind === 'literal' && locale.literalType === 'string') {
+    const pattern = resolveLocaleDatePattern(String(locale.value))
+    if (pattern === null) return null
+    return {
+      kind: 'helper-call',
+      helper: 'format_date',
+      args: [callee.object, strLit(pattern), strLit(tz)],
+    }
+  }
+
+  // Union-typed locale (#2324's union stage): a REQUIRED prop typed as a
+  // closed string-literal union resolves every member's pattern at build
+  // time and lowers the pattern argument to a right-folded ternary over the
+  // runtime locale value — runtime locale switching with zero runtime CLDR.
+  // (A TS-typed value can't leave the union, so the final alternate needs no
+  // guard; equal patterns collapse the ternary away entirely.)
+  const members = resolveLocaleUnionMembers(locale, metadata)
+  if (!members) return null
+  const patterns: string[] = []
+  for (const member of members) {
+    const pattern = resolveLocaleDatePattern(member)
+    if (pattern === null) return null
+    patterns.push(pattern)
+  }
+  let patternExpr: ParsedExpr = strLit(patterns[patterns.length - 1])
+  if (new Set(patterns).size > 1) {
+    for (let i = patterns.length - 2; i >= 0; i--) {
+      patternExpr = {
+        kind: 'conditional',
+        test: { kind: 'binary', op: '===', left: locale, right: strLit(members[i]) },
+        consequent: strLit(patterns[i]),
+        alternate: patternExpr,
+      }
+    }
+  }
   return {
     kind: 'helper-call',
     helper: 'format_date',
-    args: [
-      callee.object,
-      { kind: 'literal', value: pattern, literalType: 'string' },
-      { kind: 'literal', value: tz, literalType: 'string' },
-    ],
+    args: [callee.object, patternExpr, strLit(tz)],
   }
+}
+
+/**
+ * Render a matched node's PATTERN argument as client-JS text for the
+ * #2292-style rewrite sites (`jsx-to-ir.ts` / `emit-reactive.ts`). A literal
+ * pattern stringifies directly; the union stage's right-folded ternary
+ * re-serializes against `localeText` — the rewrite site's own source text
+ * for the locale argument, so downstream prop-prefix rewrites treat it like
+ * any other reference. Returns null for any shape this module didn't build
+ * (the caller then leaves the expression raw rather than guessing).
+ */
+export function patternArgToClientJs(patternArg: ParsedExpr, localeText: string): string | null {
+  if (patternArg.kind === 'literal') return JSON.stringify(patternArg.value)
+  if (patternArg.kind !== 'conditional') return null
+  const t = patternArg.test
+  if (t.kind !== 'binary' || t.op !== '===' || t.right.kind !== 'literal') return null
+  if (patternArg.consequent.kind !== 'literal') return null
+  const rest = patternArgToClientJs(patternArg.alternate, localeText)
+  if (rest === null) return null
+  return `${localeText} === ${JSON.stringify(t.right.value)} ? ${JSON.stringify(patternArg.consequent.value)} : ${rest}`
 }
 
 export const toLocaleDatePlugin: LoweringPlugin = {

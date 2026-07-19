@@ -118,6 +118,89 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
   })
 })
 
+describe('union-typed locale (#2324 union stage)', () => {
+  const UNION_SRC = `
+function Foo({ createdAt, locale }: { createdAt: Date; locale: 'en-US' | 'ja-JP' }) {
+  return <div>{createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`
+
+  test('a required closed string-literal union lowers to a ternary pattern', () => {
+    const md = metadata(UNION_SRC)
+    const { callee, args } = callParts(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(callee, args, md)).toEqual({
+      kind: 'helper-call',
+      helper: 'format_date',
+      args: [
+        { kind: 'identifier', name: 'createdAt' },
+        {
+          kind: 'conditional',
+          test: {
+            kind: 'binary',
+            op: '===',
+            left: { kind: 'identifier', name: 'locale' },
+            right: { kind: 'literal', value: 'en-US', literalType: 'string' },
+          },
+          consequent: { kind: 'literal', value: 'M/D/YYYY', literalType: 'string' },
+          alternate: { kind: 'literal', value: 'YYYY/M/D', literalType: 'string' },
+        },
+        { kind: 'literal', value: 'UTC', literalType: 'string' },
+      ],
+    })
+  })
+
+  test('members sharing one pattern collapse the ternary to a literal', () => {
+    const md = metadata(`
+function Foo({ createdAt, locale }: { createdAt: Date; locale: 'en-US' | 'en' }) {
+  return <div>{createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`)
+    const { callee, args } = callParts(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(callee, args, md)).toMatchObject({
+      helper: 'format_date',
+      args: [
+        { kind: 'identifier', name: 'createdAt' },
+        { kind: 'literal', value: 'M/D/YYYY' },
+        { kind: 'literal', value: 'UTC' },
+      ],
+    })
+  })
+
+  test('declines an OPTIONAL union prop (undefined would read the host locale)', () => {
+    const md = metadata(`
+function Foo({ createdAt, locale }: { createdAt: Date; locale?: 'en-US' | 'ja-JP' }) {
+  return <div>{/* @client */ createdAt.toLocaleDateString(locale ?? 'en-US', { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`)
+    const { callee, args } = callParts(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(callee, args, md)).toBeNull()
+  })
+
+  test('declines a union containing an unrepresentable member', () => {
+    const md = metadata(`
+function Foo({ createdAt, locale }: { createdAt: Date; locale: 'en-US' | 'ar-SA' }) {
+  return <div>{/* @client */ createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`)
+    const { callee, args } = callParts(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(callee, args, md)).toBeNull()
+  })
+
+  test('compiles clean (no BF021) and rewrites client JS to a ternary formatDate', () => {
+    const result = compile(UNION_SRC)
+    expect(result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)).toEqual([])
+    const js = result.files.find((f) => f.type === 'clientJs')!.content
+    expect(js).toContain(
+      'formatDate(_p.createdAt, _p.locale === "en-US" ? "M/D/YYYY" : "YYYY/M/D", "UTC")',
+    )
+    expect(js).not.toContain('toLocaleDateString')
+  })
+})
+
 describe('BF021 exemption round trip (#2273 seam)', () => {
   test('the claimed literal shape compiles clean; the runtime-locale shape still fires BF021', () => {
     const clean = compile(DATE_PROP_SRC)

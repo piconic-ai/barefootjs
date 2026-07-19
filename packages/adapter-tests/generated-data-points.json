@@ -556,6 +556,35 @@
       }
     }
   ],
+  "date-tolocale-union": [
+    {
+      "name": "gen:createdAt:epoch",
+      "props": {
+        "createdAt": {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "locale": "en-US"
+      }
+    },
+    {
+      "name": "gen:createdAt:pre-1970",
+      "props": {
+        "createdAt": {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "locale": "en-US"
+      }
+    },
+    {
+      "name": "gen:createdAt:year-9999",
+      "props": {
+        "createdAt": {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "locale": "en-US"
+      }
+    }
+  ],
   "default-props": [
     {
       "name": "gen:label:absent",

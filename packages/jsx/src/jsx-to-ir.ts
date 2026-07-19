@@ -49,7 +49,7 @@ import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironme
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
-import { toLocaleDatePlugin } from './to-locale-date-lowering.ts'
+import { toLocaleDatePlugin, patternArgToClientJs } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
@@ -463,7 +463,9 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
     )
     if (!node || node.kind !== 'helper-call' || node.helper !== 'format_date') continue
     const [, patternArg, tzArg] = node.args
-    if (patternArg?.kind !== 'literal' || tzArg?.kind !== 'literal') continue
+    if (!patternArg || tzArg?.kind !== 'literal') continue
+    const patternJs = patternArgToClientJs(patternArg, ctx.getJS(call.arguments[0]))
+    if (patternJs === null) continue
     const receiverText = ctx.getJS(propAccess.expression)
     const matchText = ctx.getJS(call)
     // Unlike `lowerDateCalls`' zero-arg needle, this call text CONTAINS
@@ -473,7 +475,7 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
     result = replaceProtectedCall(
       result,
       matchText,
-      () => `formatDate(${receiverText}, ${JSON.stringify(patternArg.value)}, ${JSON.stringify(tzArg.value)})`,
+      () => `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)})`,
     )
   }
   return restore(result)
