@@ -3897,7 +3897,10 @@ interface PrescanResult {
  * the reactive-factory shape (single `return [a, b, ...]` / `return { a, b
  * }` exit + at least one reactive primitive call in the body). Returns a
  * map from factory name to its metadata, and the parsed source file for
- * call-site rewriting.
+ * call-site rewriting. Also resolves factories defined in a relative-
+ * imported helper file (#2325, see `prescanImportedReactiveFactories`) —
+ * every `analyzeComponent` caller gets cross-file resolution with no call-
+ * site changes elsewhere.
  */
 function prescanReactiveFactoriesInSource(
   source: string,
@@ -3937,7 +3940,182 @@ function prescanReactiveFactoriesInSource(
 
   ts.forEachChild(sourceFile, visitTop)
 
-  return { factories, declined, reactiveShaped, cleanFactoryImports, sourceFile }
+  const result: PrescanResult = { factories, declined, reactiveShaped, cleanFactoryImports, sourceFile }
+  prescanImportedReactiveFactories(sourceFile, filePath, result)
+  return result
+}
+
+/**
+ * Cross-file half of the factory prescan (#2325 round 2): resolve factories
+ * defined in a relative-imported helper file so `const { count } =
+ * createCounter(0)` inlines the same way whether `createCounter` lives in
+ * this file or in `./hooks`. Mutates `result`'s maps in place.
+ *
+ * Perf: gated on a candidate-callee set collected from the ALREADY-parsed
+ * entry AST (no regex over source text, per CONTRIBUTING.md's "never parse
+ * imports with regex" rule) — files with no tuple/object-destructured call
+ * at all skip every filesystem access below. A second cheap gate (does the
+ * helper file's raw text contain any `REACTIVE_PRIMITIVES` substring) skips
+ * the AST parse of helper files that plainly aren't reactive; this is a
+ * skip-gate over content, not an import parse, so it doesn't run afoul of
+ * that same rule.
+ *
+ * Name-collision precedence: a same-file factory/declined/reactive-shaped
+ * entry always wins over a same-named cross-file import — every write
+ * below is guarded on the name being unclaimed in all three buckets.
+ */
+function prescanImportedReactiveFactories(
+  entrySourceFile: ts.SourceFile,
+  filePath: string,
+  result: PrescanResult
+): void {
+  // 1. Candidate gate: names destructured (tuple or object) from a direct
+  //    call-expression initializer, anywhere in the file. Cheap AST walk,
+  //    no filesystem access.
+  const candidateCallees = new Set<string>()
+  function collectCandidates(node: ts.Node): void {
+    if (
+      ts.isVariableDeclaration(node) &&
+      (ts.isArrayBindingPattern(node.name) || ts.isObjectBindingPattern(node.name)) &&
+      node.initializer &&
+      ts.isCallExpression(node.initializer) &&
+      ts.isIdentifier(node.initializer.expression)
+    ) {
+      candidateCallees.add(node.initializer.expression.text)
+    }
+    ts.forEachChild(node, collectCandidates)
+  }
+  collectCandidates(entrySourceFile)
+  if (candidateCallees.size === 0) return
+
+  // 2. Relative imports whose named specifiers overlap the candidate set.
+  interface CandidateSpec {
+    /** Name exported from the helper file. */
+    exported: string
+    /** Local (call-site) binding name — the key every result map uses. */
+    local: string
+  }
+  const importsToCheck: { src: string; specs: CandidateSpec[] }[] = []
+  for (const stmt of entrySourceFile.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    const src = stmt.moduleSpecifier.text
+    // Mirrors `scanImportedClientSignals`'s restriction to relative
+    // specifiers — non-relative (bare/aliased) imports resolve through
+    // bundler / tsconfig-paths configuration this layer doesn't consume.
+    if (!src.startsWith('./') && !src.startsWith('../')) continue
+    if (stmt.importClause?.isTypeOnly) continue
+    const namedBindings = stmt.importClause?.namedBindings
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) continue
+
+    const specs: CandidateSpec[] = []
+    for (const el of namedBindings.elements) {
+      if (el.isTypeOnly) continue
+      const local = el.name.text
+      if (!candidateCallees.has(local)) continue
+      specs.push({ exported: (el.propertyName ?? el.name).text, local })
+    }
+    if (specs.length === 0) continue
+    importsToCheck.push({ src, specs })
+  }
+  if (importsToCheck.length === 0) return
+
+  for (const { src, specs } of importsToCheck) {
+    const resolved = resolveRelativeImportToFile(src, filePath)
+    // Unresolvable — left alone here; the name-heuristic BF110 branch in
+    // validateReactiveFactoryCalls handles it at validation time.
+    if (!resolved) continue
+
+    let content: string
+    try {
+      content = fs.readFileSync(resolved, 'utf8')
+    } catch {
+      continue
+    }
+
+    const alreadyKnown = (name: string): boolean =>
+      result.factories.has(name) || result.declined.has(name) || result.reactiveShaped.has(name)
+
+    // Cheap text-level skip-gate (not an import/JS parse — see docstring):
+    // a helper file with no reactive-primitive substring anywhere cannot
+    // define a reactive factory, so skip parsing it entirely.
+    const hasAnyPrimitiveText = [...REACTIVE_PRIMITIVES].some(p => content.includes(p))
+    if (!hasAnyPrimitiveText) {
+      for (const spec of specs) {
+        if (!alreadyKnown(spec.local)) result.cleanFactoryImports.add(spec.local)
+      }
+      continue
+    }
+
+    const helperSf = ts.createSourceFile(
+      resolved + '.prescan',
+      content,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX
+    )
+
+    // Map exported name -> module-scope FunctionDeclaration via the AST.
+    const localFns = new Map<string, ts.FunctionDeclaration>()
+    const exportedFns = new Map<string, ts.FunctionDeclaration>()
+    for (const stmt of helperSf.statements) {
+      if (ts.isFunctionDeclaration(stmt) && stmt.name && stmt.body) {
+        localFns.set(stmt.name.text, stmt)
+        const hasExportModifier = stmt.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
+        const hasDefaultModifier = stmt.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword) ?? false
+        if (hasExportModifier && !hasDefaultModifier) {
+          exportedFns.set(stmt.name.text, stmt)
+        }
+      }
+    }
+    // `export { f }` / `export { f as g }` — keyed by the EXTERNAL export name.
+    for (const stmt of helperSf.statements) {
+      if (
+        ts.isExportDeclaration(stmt) &&
+        stmt.exportClause &&
+        ts.isNamedExports(stmt.exportClause) &&
+        !stmt.moduleSpecifier &&
+        !stmt.isTypeOnly
+      ) {
+        for (const el of stmt.exportClause.elements) {
+          if (el.isTypeOnly) continue
+          const fn = localFns.get((el.propertyName ?? el.name).text)
+          if (fn) exportedFns.set(el.name.text, fn)
+        }
+      }
+    }
+
+    for (const spec of specs) {
+      if (alreadyKnown(spec.local)) continue
+
+      const fn = exportedFns.get(spec.exported)
+      if (!fn) {
+        result.cleanFactoryImports.add(spec.local)
+        continue
+      }
+      const det = detectReactiveFactory(fn, helperSf, resolved)
+      if (!det) {
+        result.cleanFactoryImports.add(spec.local)
+        continue
+      }
+      switch (det.kind) {
+        case 'reactive-shaped':
+          result.reactiveShaped.add(spec.local)
+          break
+        case 'declined':
+          result.declined.set(spec.local, det.declined)
+          break
+        case 'factory':
+          // Module-scope capture guard (BF112) lands in a follow-up commit
+          // (#2325 §4h) — at this point in the sequence a captured factory
+          // still inlines with a dangling reference to its helper-module
+          // scope, which is acceptable mid-sequence but not the final state.
+          det.info.sourceFilePath = resolved
+          result.factories.set(spec.local, det.info)
+          break
+      }
+    }
+  }
 }
 
 /**
