@@ -1,5 +1,13 @@
 # @barefootjs/go-template
 
+## 0.22.0
+
+### Patch Changes
+
+- 0034de7: Repoint conformance-pin tracking URLs at open successor issues (#2319, #2320, #2321) — the previous trackers (#2215, #2038, #2087) are closed. Metadata only: no diagnostic codes, severities, or refusal behavior change.
+- fdc5b3e: Add `formatDate(date, pattern, timeZone)` (#2324): a pure-function date formatter with explicit inputs — pattern tokens `YYYY`/`MM`/`M`/`DD`/`D`, timezone `'UTC'` or a fixed `±HH:MM` offset — exported from `@barefootjs/client` and catalogued as the backend-neutral `format_date` template helper. SSR adapters lower the call through the builtin lowering-plugin registry and render it natively on every backend (Go, Ruby, Perl, PHP, Python, Rust) with byte-identical, golden-vector-pinned output; no locale, timezone database, or ICU data is consulted anywhere.
+  - @barefootjs/shared@0.22.0
+
 ## 0.21.4
 
 ### Patch Changes

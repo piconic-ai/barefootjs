@@ -1,5 +1,12 @@
 # @barefootjs/xslate
 
+## 0.22.0
+
+### Patch Changes
+
+- 0034de7: Repoint conformance-pin tracking URLs at open successor issues (#2319, #2320, #2321) — the previous trackers (#2215, #2038, #2087) are closed. Metadata only: no diagnostic codes, severities, or refusal behavior change.
+  - @barefootjs/shared@0.22.0
+
 ## 0.21.4
 
 ### Patch Changes
