@@ -98,6 +98,26 @@ jobs:
       - name: Build integrations/echo
         run: cd integrations/echo && bun run build
 
+      # #2327: generated components.go must not drift from the compiler.
+      # `bun run build` regenerates into the working tree and the E2E below
+      # runs against that fresh output, so a stale COMMITTED file used to
+      # pass CI silently (how the #2267 interface{} flip went unregenerated
+      # for four integrations). chi/gin/nethttp are built here only to feed
+      # the drift check — echo carries the E2E coverage. Same gate pattern
+      # as ci-compat.yml's lockfile drift check.
+      - name: Build remaining Go integrations (drift-check inputs)
+        run: |
+          (cd integrations/chi && bun run build)
+          (cd integrations/gin && bun run build)
+          (cd integrations/nethttp && bun run build)
+
+      - name: Check generated components.go for drift
+        run: |
+          if ! git diff --exit-code -- integrations/chi/components.go integrations/echo/components.go integrations/gin/components.go integrations/nethttp/components.go; then
+            echo "::error::integrations/*/components.go are out of date. Run 'bun run build' in each Go integration and commit the result."
+            exit 1
+          fi
+
       - name: Download Go dependencies
         run: cd integrations/echo && go mod download
 
