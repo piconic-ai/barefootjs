@@ -54,4 +54,11 @@ describe('formatDate', () => {
     expect(formatDate('not a date', 'YYYY-MM-DD')).toBe('')
     expect(formatDate(new Date(Number.NaN), 'YYYY-MM-DD')).toBe('')
   })
+
+  test('nil receiver renders the empty string, not epoch 0', () => {
+    // `new Date(null)` is epoch 0 — the explicit guard is what keeps the
+    // normative nil → '' contract (and parity with every backend port).
+    expect(formatDate(null as unknown as Date, 'YYYY-MM-DD')).toBe('')
+    expect(formatDate(undefined as unknown as Date, 'YYYY-MM-DD')).toBe('')
+  })
 })

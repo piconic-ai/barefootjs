@@ -467,9 +467,9 @@ type PostArticleInput struct {
 	Total int
 	Base string
 	PrevSlug string
-	PrevTitle interface{}
+	PrevTitle string
 	NextSlug string
-	NextTitle interface{}
+	NextTitle string
 }
 
 // PostArticleProps is the props type for the PostArticle component.
@@ -490,9 +490,9 @@ type PostArticleProps struct {
 	Total int `json:"total"`
 	Base string `json:"base"`
 	PrevSlug string `json:"prevSlug"`
-	PrevTitle interface{} `json:"prevTitle"`
+	PrevTitle string `json:"prevTitle"`
 	NextSlug string `json:"nextSlug"`
-	NextTitle interface{} `json:"nextTitle"`
+	NextTitle string `json:"nextTitle"`
 	LikeButtonSlot9 LikeButtonProps `json:"-"`
 	ReadingTimerSlot10 ReadingTimerProps `json:"-"`
 	NowPlayingSlot11 NowPlayingProps `json:"-"`

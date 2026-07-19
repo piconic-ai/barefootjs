@@ -35,6 +35,11 @@ function pad2(n: number): string {
 }
 
 export function formatDate(date: Date | string, pattern: string, timeZone = 'UTC'): string {
+  // Explicit nullish guard: `new Date(null)` is epoch 0, not Invalid Date,
+  // so without this a nil receiver would format 1970-01-01 instead of the
+  // contract's '' (spec/template-helpers.md "format_date", golden vector
+  // "nil receiver renders the empty string").
+  if (date === null || date === undefined) return ''
   const d = date instanceof Date ? date : new Date(date)
   const t = d.getTime()
   if (Number.isNaN(t)) return ''

@@ -325,6 +325,9 @@ function date(recv, op) {
 // own \`import { formatDate } from '@barefootjs/client'\` is stripped with
 // every other import, so the call in template/init code needs this mirror.
 function formatDate(dateArg, pattern, timeZone = 'UTC') {
+  // Nullish guard mirrors the client implementation: new Date(null) is
+  // epoch 0, not Invalid Date, and the contract renders nil as ''.
+  if (dateArg === null || dateArg === undefined) return ''
   const d = dateArg instanceof Date ? dateArg : new Date(dateArg)
   const t = d.getTime()
   if (Number.isNaN(t)) return ''
