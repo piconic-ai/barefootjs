@@ -1853,6 +1853,19 @@
         "text"
       ]
     },
+    "format-date": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "fragment": {
       "kinds": [
         "call",
@@ -4104,11 +4117,11 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 157,
+    "call": 158,
     "conditional": 18,
-    "identifier": 237,
+    "identifier": 238,
     "index-access": 12,
-    "literal": 195,
+    "literal": 196,
     "logical": 41,
     "member": 119,
     "object-literal": 42,
@@ -4154,7 +4167,7 @@
     "literal:boolean": 37,
     "literal:null": 22,
     "literal:number": 85,
-    "literal:string": 139,
+    "literal:string": 140,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

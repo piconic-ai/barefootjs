@@ -320,6 +320,33 @@ function date(recv, op) {
   if (Number.isNaN(d.getTime())) return zero
   return d[op]()
 }
+// Mirror @barefootjs/client's formatDate (#2324): the pure-function date
+// formatter. Same stripped-imports reasoning as \`date\` above — the user's
+// own \`import { formatDate } from '@barefootjs/client'\` is stripped with
+// every other import, so the call in template/init code needs this mirror.
+function formatDate(dateArg, pattern, timeZone = 'UTC') {
+  // Nullish guard mirrors the client implementation: new Date(null) is
+  // epoch 0, not Invalid Date, and the contract renders nil as ''.
+  if (dateArg === null || dateArg === undefined) return ''
+  const d = dateArg instanceof Date ? dateArg : new Date(dateArg)
+  const t = d.getTime()
+  if (Number.isNaN(t)) return ''
+  const m = /^([+-])(\\d{2}):(\\d{2})$/.exec(timeZone)
+  const offsetMinutes = m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0
+  const s = new Date(t + offsetMinutes * 60_000)
+  const year = s.getUTCFullYear()
+  const yyyy = (year < 0 ? '-' : '') + String(Math.abs(year)).padStart(4, '0')
+  const month = s.getUTCMonth() + 1
+  const day = s.getUTCDate()
+  const pad2 = (n) => String(n).padStart(2, '0')
+  return pattern.replace(/YYYY|MM|DD|M|D/g, (token) =>
+    token === 'YYYY' ? yyyy
+      : token === 'MM' ? pad2(month)
+      : token === 'M' ? String(month)
+      : token === 'DD' ? pad2(day)
+      : String(day),
+  )
+}
 
 // --- Execute client JS (registers templates via hydrate()) ---
 ${strippedCode}

@@ -17,6 +17,7 @@ import { registerLoweringPlugin } from './lowering-registry.ts'
 import { queryHrefLocalNames } from './adapters/env-signal.ts'
 import { matchQueryHrefCall } from './query-href-lowering.ts'
 import { datePlugin } from './date-lowering.ts'
+import { formatDatePlugin } from './format-date-lowering.ts'
 
 /**
  * `queryHref(base, { … })` — the pure URL-query builder (#2042). Its runtime
@@ -42,7 +43,11 @@ export const queryHrefPlugin: LoweringPlugin = {
 }
 
 /** Every plugin the compiler ships and applies by default. */
-export const BUILTIN_LOWERING_PLUGINS: readonly LoweringPlugin[] = [queryHrefPlugin, datePlugin]
+export const BUILTIN_LOWERING_PLUGINS: readonly LoweringPlugin[] = [
+  queryHrefPlugin,
+  datePlugin,
+  formatDatePlugin,
+]
 
 /**
  * Register the built-in plugins into the shared registry. Called for its side

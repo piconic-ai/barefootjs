@@ -92,6 +92,7 @@ my %bindings = (
     abs    => sub { $bf->abs($_[0]) },
     to_fixed => sub { $bf->to_fixed(@_) },
     date     => sub { $bf->date($_[0], $_[1]) },
+    format_date => sub { $bf->format_date($_[0], $_[1], $_[2]) },
 
     # The Mojo renderer emits native lc()/uc(); Xslate emits $bf.lc /
     # $bf.uc. The helper methods wrap CORE::lc/uc, so binding them

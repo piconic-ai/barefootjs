@@ -96,6 +96,7 @@ class HelperVectorsTest < Minitest::Test
     'abs' => ->(v) { BF.abs(v) },
     'to_fixed' => ->(*a) { BF.to_fixed(*a) },
     'date' => ->(recv, op) { BF.date(recv, op) },
+    'format_date' => ->(recv, pattern, tz) { BF.format_date(recv, pattern, tz) },
 
     'lower' => ->(s) { BF.lc(s) },
     'upper' => ->(s) { BF.uc(s) },

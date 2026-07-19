@@ -316,6 +316,37 @@ resolving to "now". The golden vectors pin this fallback, plus a
 native-typed `recv` (the backend's own date/time type, not the
 ISO-8601 string form), for every backend (#2288).
 
+### format_date
+
+`format_date(recv, pattern, tz)` — the lowering target for a
+`formatDate(date, pattern, timeZone)` call (`@barefootjs/client`,
+#2324): the pure-function date formatter whose inputs are all
+explicit, so the output is a deterministic function of its arguments
+— no host locale, no host timezone, no ICU/CLDR data anywhere.
+
+`recv` follows the `date` helper's receiver contract exactly: the
+backend's own native date/time type or an ISO-8601 string, both
+normalized to the same instant; a `nil`/unset or unparseable `recv`
+renders `''` (normative zero value, never a crash and never "now").
+
+`pattern` is scanned longest-match for the token set `YYYY` / `MM` /
+`M` / `DD` / `D`; every other character passes through literally
+(`'YYYY年M月D日'` works). `YYYY` is the zero-padded-to-4 year with a
+`-` prefix for negative years; `MM`/`DD` zero-pad to 2; `M`/`D` are
+bare. The v1 token set is date-only and numeric — locale-dependent
+fields (month/weekday names) are a deliberate later stage of #2324
+(they need framework-owned name tables), and per-locale *pattern
+selection* is the app's i18n layer's job, not the helper's.
+
+`tz` is `'UTC'` or a fixed offset matching `±HH:MM` (`'+09:00'`,
+`'-05:30'`). The helper is **total**: any other value — including
+IANA zone names, which would couple output to the host's tzdata
+version — normalizes to `'UTC'`, so every backend degrades
+identically instead of diverging. Offset application is pure
+arithmetic: shift the instant by the offset, then read UTC fields
+(the shifted UTC clock face is the local clock face at that offset),
+so a `+09:00` on `2024-01-01T23:00Z` renders `2024-01-02`.
+
 ### Higher-order: canonical projection form
 
 Closures can't ride in JSON, so higher-order entries use the compiled

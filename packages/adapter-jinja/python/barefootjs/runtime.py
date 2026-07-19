@@ -958,6 +958,85 @@ class BarefootJS:
             )
         return 0
 
+    _FORMAT_DATE_TZ_RE = re.compile(r"^([+-])(\d{2}):(\d{2})$")
+    _FORMAT_DATE_TOKEN_RE = re.compile(r"YYYY|MM|DD|M|D")
+
+    def format_date(self, recv: Any, pattern: str, tz: str) -> str:
+        """`format_date(recv, pattern, tz)` -- the lowering target for a
+        `formatDate(date, pattern, timeZone)` call (#2324, spec entry
+        "format_date"). `recv` follows the same receiver contract as `date`
+        above -- this runtime's own `datetime` or an ISO-8601 string; a nil
+        or unparseable receiver renders `''` (never a crash, never "now").
+        Mirrors packages/client/src/format-date.ts byte-for-byte.
+
+        `tz` is `'UTC'` or a fixed offset matching `±HH:MM`. The helper is
+        total: any other value -- an IANA zone name, a malformed offset --
+        normalizes to a zero-minute shift (UTC), so every backend degrades
+        identically instead of dragging in host tzdata. This is pure
+        arithmetic (`_FORMAT_DATE_TZ_RE` + an epoch-ms shift), never
+        `zoneinfo`. The shifted instant's UTC calendar fields are what the
+        pattern tokens read -- the shifted UTC clock face IS the local
+        clock face at that offset. The shift and field derivation run on
+        integers (Hinnant civil-from-days), NOT on a shifted `datetime`:
+        a positive offset on 9999-12-31 lands in year 10000, past
+        `datetime.max`, and must render `10000-…` like the JS reference
+        instead of overflowing (golden vector "positive offset pushes the
+        far-future instant past year 9999").
+
+        `pattern` is scanned longest-match over `YYYY|MM|DD|M|D`
+        (`_FORMAT_DATE_TOKEN_RE`, alternation ordered so the 2/4-char
+        tokens win before their single-char prefixes); every other
+        character -- including multi-byte ones like 年/月/日 -- passes
+        through literally. `YYYY` is `abs(year)` zero-padded to 4 digits,
+        `-`-prefixed for a negative year; `MM`/`DD` zero-pad to 2; `M`/`D`
+        are bare."""
+        if isinstance(recv, datetime.datetime):
+            dt = recv
+        else:
+            s = str(recv)
+            if s.endswith("Z"):
+                s = s[:-1] + "+00:00"
+            try:
+                dt = datetime.datetime.fromisoformat(s)
+            except ValueError:
+                return ""
+        dt = dt.replace(tzinfo=datetime.timezone.utc) if dt.tzinfo is None else dt.astimezone(datetime.timezone.utc)
+        m = self._FORMAT_DATE_TZ_RE.match(tz)
+        offset_minutes = 0
+        if m:
+            offset_minutes = (-1 if m.group(1) == "-" else 1) * (int(m.group(2)) * 60 + int(m.group(3)))
+        delta = dt - _DATE_EPOCH
+        epoch_ms = (delta.days * 86_400 + delta.seconds) * 1_000 + delta.microseconds // 1_000
+        shifted_ms = epoch_ms + offset_minutes * 60_000
+        # Hinnant civil-from-days over Python's floor division (exact for
+        # negative epochs and for days past datetime.max).
+        z = shifted_ms // 86_400_000 + 719_468
+        era = z // 146_097
+        doe = z - era * 146_097
+        yoe = (doe - doe // 1_460 + doe // 36_524 - doe // 146_096) // 365
+        doy = doe - (365 * yoe + yoe // 4 - yoe // 100)
+        mp = (5 * doy + 2) // 153
+        day = doy - (153 * mp + 2) // 5 + 1
+        month = mp + 3 if mp < 10 else mp - 9
+        year = yoe + era * 400 + (1 if month <= 2 else 0)
+        yyyy = ("-" if year < 0 else "") + f"{abs(year):04d}"
+
+        def _sub(match: "re.Match[str]") -> str:
+            token = match.group(0)
+            if token == "YYYY":
+                return yyyy
+            if token == "MM":
+                return f"{month:02d}"
+            if token == "M":
+                return str(month)
+            if token == "DD":
+                return f"{day:02d}"
+            if token == "D":
+                return str(day)
+            return token
+
+        return self._FORMAT_DATE_TOKEN_RE.sub(_sub, pattern)
+
     # -----------------------------------------------------------------
     # Array / String method helpers (#1448 Tier A)
     # -----------------------------------------------------------------

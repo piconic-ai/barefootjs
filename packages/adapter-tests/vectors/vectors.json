@@ -2832,6 +2832,170 @@
       "note": "native far-future instant: toISOString"
     },
     {
+      "fn": "format_date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "YYYY-MM-DD",
+        "UTC"
+      ],
+      "expect": "1970-01-01",
+      "note": "epoch 0: zero-padded tokens"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "YYYY/M/D",
+        "UTC"
+      ],
+      "expect": "1970/1/1",
+      "note": "epoch 0: bare tokens"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "YYYY-MM-DD",
+        "UTC"
+      ],
+      "expect": "1969-07-20",
+      "note": "pre-1970 instant with nonzero ms"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-02-29T23:59:59.999Z",
+        "DD.MM.YYYY",
+        "UTC"
+      ],
+      "expect": "29.02.2024",
+      "note": "leap day, reordered zero-padded tokens"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "YYYY-MM-DD",
+        "UTC"
+      ],
+      "expect": "9999-12-31",
+      "note": "far-future four-digit-year boundary"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "0001-01-05T00:00:00.000Z",
+        "YYYY/M/D",
+        "UTC"
+      ],
+      "expect": "0001/1/5",
+      "note": "year 1 zero-pads YYYY to 4 digits"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-01-01T23:00:00.000Z",
+        "YYYY-MM-DD",
+        "+09:00"
+      ],
+      "expect": "2024-01-02",
+      "note": "positive offset crosses the date boundary forward"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-01-01T01:00:00.000Z",
+        "YYYY-MM-DD",
+        "-05:30"
+      ],
+      "expect": "2023-12-31",
+      "note": "negative half-hour offset crosses the date boundary backward"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-01-05T00:00:00.000Z",
+        "YYYY年M月D日",
+        "UTC"
+      ],
+      "expect": "2024年1月5日",
+      "note": "non-token characters pass through literally"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-01-01T23:00:00.000Z",
+        "YYYY-MM-DD",
+        "Asia/Tokyo"
+      ],
+      "expect": "2024-01-01",
+      "note": "IANA zone name normalizes to UTC (total function)"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-01-01T23:00:00.000Z",
+        "YYYY-MM-DD",
+        "+9:00"
+      ],
+      "expect": "2024-01-01",
+      "note": "malformed offset normalizes to UTC (total function)"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "YYYY-MM-DD",
+        "+09:00"
+      ],
+      "expect": "10000-01-01",
+      "note": "positive offset pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        null,
+        "YYYY-MM-DD",
+        "UTC"
+      ],
+      "expect": "",
+      "note": "nil receiver renders the empty string"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "not a date",
+        "YYYY-MM-DD",
+        "UTC"
+      ],
+      "expect": "",
+      "note": "unparseable receiver renders the empty string"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        {
+          "$date": "2024-02-29T23:59:59.999Z"
+        },
+        "YYYY-MM-DD",
+        "UTC"
+      ],
+      "expect": "2024-02-29",
+      "note": "native leap-day receiver formats like its string sibling"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        {
+          "$date": "2024-01-01T23:00:00.000Z"
+        },
+        "YYYY/M/D",
+        "+09:00"
+      ],
+      "expect": "2024/1/2",
+      "note": "native receiver with offset crosses the date boundary"
+    },
+    {
       "fn": "date",
       "args": [
         null,

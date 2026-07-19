@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -68,6 +69,11 @@ func FuncMap() template.FuncMap {
 		// Date method lowering (#2274, spec entry "date"): the lowering
 		// target for a zero-arg call on a Date-typed prop.
 		"bf_date": Date,
+
+		// formatDate(date, pattern, tz) lowering (#2324, spec entry
+		// "format_date"): the total, locale-free date-pattern formatter —
+		// see FormatDate's docstring for the full contract.
+		"bf_format_date": FormatDate,
 
 		// JSON / numeric primitives — JS-compat callees registered on
 		// the Go adapter's `templatePrimitives` map (#1188).
@@ -301,6 +307,86 @@ func Date(recv any, op string) any {
 	default:
 		return 0
 	}
+}
+
+// tzOffsetRE matches a fixed UTC offset `±HH:MM` (`'+09:00'`, `'-05:30'`) —
+// the ONLY `tz` shape FormatDate treats as non-UTC (mirrors OFFSET_RE in
+// packages/client/src/format-date.ts).
+var tzOffsetRE = regexp.MustCompile(`^([+-])(\d{2}):(\d{2})$`)
+
+// formatDateTokenRE is the longest-match pattern-token alternation (mirrors
+// TOKEN_RE in packages/client/src/format-date.ts). Order matters: MM before
+// M and DD before D so the 2-char token wins at a position where either
+// could match — Go's regexp, like JS's, resolves alternation leftmost-first
+// (not POSIX leftmost-longest), so listing the longer alternative first is
+// what makes "MM" consume both characters instead of two "M" matches.
+var formatDateTokenRE = regexp.MustCompile(`YYYY|MM|DD|M|D`)
+
+// FormatDate implements the `format_date` helper (#2324, spec entry
+// "format_date") — the lowering target for `formatDate(date, pattern, tz)`
+// (packages/client/src/format-date.ts, the JS-normative reference this must
+// match byte-for-byte). Total and deterministic: no locale, no host
+// timezone, no "now".
+//
+// recv: same receiver contract as the `date` helper above — the runtime's
+// own `time.Time` / `*time.Time`, or an ISO-8601 string — normalized via
+// `toTime`. A nil / unparseable receiver returns "" (never panics).
+//
+// tz: a fixed UTC offset `±HH:MM` shifts the instant by
+// sign*(HH*60+MM) minutes; ANY other value — "UTC", an IANA zone name
+// ("Asia/Tokyo"), or a malformed offset ("+9:00") — normalizes to a
+// zero-minute shift (UTC), so every backend degrades identically instead of
+// dragging in host tzdata. The shifted instant's UTC calendar fields (not
+// the original instant's) are what pattern tokens read — the shifted UTC
+// clock face IS the local clock face at that offset, same reasoning as the
+// JS reference.
+//
+// pattern: longest-match token substitution (`YYYY|MM|DD|M|D`); every other
+// character — including multi-byte ones like 年/月/日 — passes through
+// literally. `YYYY` is `abs(year)` zero-padded to 4 digits, `-`-prefixed for
+// a negative year; `MM`/`DD` zero-pad to 2; `M`/`D` are bare.
+func FormatDate(recv any, pattern string, tz string) string {
+	t, ok := toTime(recv)
+	if !ok {
+		return ""
+	}
+	offsetMinutes := 0
+	if m := tzOffsetRE.FindStringSubmatch(tz); m != nil {
+		hh, _ := strconv.Atoi(m[2])
+		mm, _ := strconv.Atoi(m[3])
+		offsetMinutes = hh*60 + mm
+		if m[1] == "-" {
+			offsetMinutes = -offsetMinutes
+		}
+	}
+	shifted := t.UTC().Add(time.Duration(offsetMinutes) * time.Minute)
+	year := shifted.Year()
+	month := int(shifted.Month())
+	day := shifted.Day()
+	absYear := year
+	if absYear < 0 {
+		absYear = -absYear
+	}
+	yyyy := fmt.Sprintf("%04d", absYear)
+	if year < 0 {
+		yyyy = "-" + yyyy
+	}
+	return formatDateTokenRE.ReplaceAllStringFunc(pattern, func(token string) string {
+		switch token {
+		case "YYYY":
+			return yyyy
+		case "MM":
+			return fmt.Sprintf("%02d", month)
+		case "M":
+			return strconv.Itoa(month)
+		case "DD":
+			return fmt.Sprintf("%02d", day)
+		case "D":
+			return strconv.Itoa(day)
+		default:
+			return token
+		}
+	})
 }
 
 // toTime normalizes a `Date` helper receiver to a `time.Time`: the runtime's

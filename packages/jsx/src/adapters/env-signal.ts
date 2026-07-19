@@ -117,7 +117,7 @@ export function importsSearchParams(metadata: IRMetadata): boolean {
 export function queryHrefLocalNames(metadata: IRMetadata): Set<string> {
   const names = new Set<string>()
   for (const imp of metadata.imports) {
-    if (!QUERY_HREF_SOURCES.has(imp.source) || imp.isTypeOnly) continue
+    if (!CLIENT_HELPER_SOURCES.has(imp.source) || imp.isTypeOnly) continue
     for (const s of imp.specifiers) {
       if (s.isTypeOnly || s.isNamespace || s.isDefault) continue
       if (s.name === 'queryHref') names.add(s.alias ?? s.name)
@@ -126,11 +126,34 @@ export function queryHrefLocalNames(metadata: IRMetadata): Set<string> {
   return names
 }
 
-/** Entry points that re-export `queryHref` (main + the runtime re-export). */
-const QUERY_HREF_SOURCES: ReadonlySet<string> = new Set([
+/**
+ * Entry points that re-export the pure client helpers with an SSR lowering
+ * (`queryHref` #2042, `formatDate` #2324) — the main entry and the runtime
+ * re-export. Importing from either must enable the lowering.
+ */
+const CLIENT_HELPER_SOURCES: ReadonlySet<string> = new Set([
   '@barefootjs/client',
   '@barefootjs/client/runtime',
 ])
+
+/**
+ * The local binding name(s) that `formatDate` is imported under in this
+ * component (#2324) — the pure-function date formatter an adapter lowers to
+ * its `format_date` helper (spec/template-helpers.md). Same resolution rules
+ * as {@link queryHrefLocalNames}: matched by exported name, gated on the LOCAL
+ * alias, accepted from both the main entry and the runtime re-export.
+ */
+export function formatDateLocalNames(metadata: IRMetadata): Set<string> {
+  const names = new Set<string>()
+  for (const imp of metadata.imports) {
+    if (!CLIENT_HELPER_SOURCES.has(imp.source) || imp.isTypeOnly) continue
+    for (const s of imp.specifiers) {
+      if (s.isTypeOnly || s.isNamespace || s.isDefault) continue
+      if (s.name === 'formatDate') names.add(s.alias ?? s.name)
+    }
+  }
+  return names
+}
 
 /**
  * Recognise a `<binding>().<method>(<args>)` env-signal method call from a

@@ -731,6 +731,61 @@ sub _date_epoch_ms ($recv) {
     return $epoch_s * 1000 + $ms;
 }
 
+# `format_date($recv, $pattern, $tz)` -- pure, explicit-timezone date
+# formatter (#2324, spec entry "format_date"). Same receiver contract as
+# `date` (a `BarefootJS::Date`, an ISO-8601 string, or undef/unparseable ->
+# ''), then pure pattern substitution over the shifted instant. Mirrors
+# packages/client/src/format-date.ts byte-for-byte -- deterministic, no
+# locale, no host TZ, no `time()`.
+#
+# `$tz` is either a fixed offset `±HH:MM` or anything else (including
+# 'UTC', IANA zone names, and malformed offsets like '+9:00'), which all
+# normalize to UTC (offset 0) -- a total function so every backend
+# degrades identically instead of dragging in host tzdata.
+#
+# The shifted instant's UTC calendar fields come from the same
+# floor-toward-negative-infinity + `gmtime` discipline as `date` above
+# (Perl's `/` truncates toward zero, which mis-floors negative ms), and
+# `gmtime`'s 0-based `mon` needs +1 here (unlike `getUTCMonth` in `date`,
+# because the pattern token `M`/`MM` is the 1-based JS `Date` display
+# month, not the raw accessor value).
+#
+# Token substitution mirrors the JS reference exactly: `s///ge` over the
+# `YYYY|MM|DD|M|D` alternation (longest-match order so `MM` binds before
+# `M`), any other character (including multi-byte literals) passes
+# through untouched. `YYYY` is `abs(year)` zero-padded to (at least) 4
+# digits, `-`-prefixed when the year is negative; `MM`/`DD` zero-pad to 2;
+# `M`/`D` are bare.
+sub format_date ($self, $recv, $pattern, $tz) {
+    my $ms = _date_epoch_ms($recv);
+    return '' unless defined $ms;
+
+    my $offset_minutes = 0;
+    if ($tz =~ /^([+-])(\d{2}):(\d{2})$/) {
+        $offset_minutes = ($1 eq '-' ? -1 : 1) * ($2 * 60 + $3);
+    }
+
+    my $shifted = $ms + $offset_minutes * 60_000;
+    my $sec = POSIX::floor($shifted / 1000);
+    my @t = gmtime($sec);    # (sec,min,hour,mday,mon,year,...) -- mon is 0-based
+
+    my $year  = $t[5] + 1900;
+    my $month = $t[4] + 1;    # 1-based JS display month, unlike getUTCMonth in `date`
+    my $day   = $t[3];
+    my $yyyy  = ($year < 0 ? '-' : '') . sprintf('%04d', CORE::abs($year));
+    my $mm    = sprintf('%02d', $month);
+    my $dd    = sprintf('%02d', $day);
+
+    (my $out = $pattern) =~ s/YYYY|MM|DD|M|D/
+        $&  eq 'YYYY' ? $yyyy
+      : $&  eq 'MM'   ? $mm
+      : $&  eq 'DD'   ? $dd
+      : $&  eq 'M'    ? $month
+      :                 $day
+    /gex;
+    return $out;
+}
+
 # ---------------------------------------------------------------------------
 # Array / String method helpers (#1448 Tier A)
 # ---------------------------------------------------------------------------

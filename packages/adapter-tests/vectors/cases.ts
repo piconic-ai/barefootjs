@@ -94,6 +94,47 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
     return (d as unknown as Record<string, () => unknown>)[op]()
   },
 
+  // `formatDate(date, pattern, timeZone)` lowering (#2324, spec entry
+  // "format_date"). Same receiver contract as `date` (ISO-8601 string or
+  // `{"$date": …}` envelope; nil/unparseable → ''), then pure pattern
+  // substitution over the shifted instant. Mirrors
+  // packages/client/src/format-date.ts — the canonical helper arity is 3
+  // (the compiler lowering always supplies tz, defaulting 'UTC').
+  format_date: (recv: unknown, pattern: string, tz: string) => {
+    const raw =
+      recv !== null && typeof recv === 'object' && '$date' in recv
+        ? (recv as { $date: string }).$date
+        : recv
+    if (raw === null || raw === undefined) return ''
+    const d = new Date(raw as string)
+    const t = d.getTime()
+    if (Number.isNaN(t)) return ''
+    const m = /^([+-])(\d{2}):(\d{2})$/.exec(tz)
+    const offsetMinutes = m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0
+    const s = new Date(t + offsetMinutes * 60_000)
+    const year = s.getUTCFullYear()
+    const yyyy = (year < 0 ? '-' : '') + String(Math.abs(year)).padStart(4, '0')
+    const month = s.getUTCMonth() + 1
+    const day = s.getUTCDate()
+    const pad2 = (n: number) => String(n).padStart(2, '0')
+    return pattern.replace(/YYYY|MM|DD|M|D/g, (token) => {
+      switch (token) {
+        case 'YYYY':
+          return yyyy
+        case 'MM':
+          return pad2(month)
+        case 'M':
+          return String(month)
+        case 'DD':
+          return pad2(day)
+        case 'D':
+          return String(day)
+        default:
+          return token
+      }
+    })
+  },
+
   // searchParams() env-signal reader (#1922). The reference is the real
   // URLSearchParams.get the client runtime uses, so the template backends'
   // per-request readers (Go bf.SearchParams.Get / Perl
@@ -547,6 +588,29 @@ export const cases: HelperCase[] = [
   { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getUTCSeconds'], note: 'native far-future instant: getUTCSeconds' },
   { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'getTime'], note: 'native far-future instant: getTime at the four-digit-year boundary' },
   { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'toISOString'], note: 'native far-future instant: toISOString' },
+
+  // `format_date(recv, pattern, tz)` (#2324) — the pinned instants of the
+  // `date` grid crossed with every v1 token, literal passthrough, the two
+  // date-boundary-crossing fixed offsets, and the total-function tz
+  // normalization (IANA names / malformed offsets degrade to UTC on every
+  // backend identically). Canonical arity is 3 — the lowering always
+  // supplies tz.
+  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY-MM-DD', 'UTC'], note: 'epoch 0: zero-padded tokens' },
+  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY/M/D', 'UTC'], note: 'epoch 0: bare tokens' },
+  { fn: 'format_date', args: ['1969-07-20T20:17:40.123Z', 'YYYY-MM-DD', 'UTC'], note: 'pre-1970 instant with nonzero ms' },
+  { fn: 'format_date', args: ['2024-02-29T23:59:59.999Z', 'DD.MM.YYYY', 'UTC'], note: 'leap day, reordered zero-padded tokens' },
+  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', 'UTC'], note: 'far-future four-digit-year boundary' },
+  { fn: 'format_date', args: ['0001-01-05T00:00:00.000Z', 'YYYY/M/D', 'UTC'], note: 'year 1 zero-pads YYYY to 4 digits' },
+  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+09:00'], note: 'positive offset crosses the date boundary forward' },
+  { fn: 'format_date', args: ['2024-01-01T01:00:00.000Z', 'YYYY-MM-DD', '-05:30'], note: 'negative half-hour offset crosses the date boundary backward' },
+  { fn: 'format_date', args: ['2024-01-05T00:00:00.000Z', 'YYYY年M月D日', 'UTC'], note: 'non-token characters pass through literally' },
+  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', 'Asia/Tokyo'], note: 'IANA zone name normalizes to UTC (total function)' },
+  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+9:00'], note: 'malformed offset normalizes to UTC (total function)' },
+  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', '+09:00'], note: 'positive offset pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)' },
+  { fn: 'format_date', args: [null, 'YYYY-MM-DD', 'UTC'], note: 'nil receiver renders the empty string' },
+  { fn: 'format_date', args: ['not a date', 'YYYY-MM-DD', 'UTC'], note: 'unparseable receiver renders the empty string' },
+  { fn: 'format_date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'YYYY-MM-DD', 'UTC'], note: 'native leap-day receiver formats like its string sibling' },
+  { fn: 'format_date', args: [{ $date: '2024-01-01T23:00:00.000Z' }, 'YYYY/M/D', '+09:00'], note: 'native receiver with offset crosses the date boundary' },
 
   // Nil/malformed receiver fallback (#2288): every backend's `date()`
   // degrades to the zero value instead of crashing mid-render or (worse)

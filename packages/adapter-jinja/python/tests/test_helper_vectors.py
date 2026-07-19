@@ -139,6 +139,7 @@ BINDINGS = {
     "abs": bf.abs,
     "to_fixed": lambda *a: bf.to_fixed(*a),
     "date": lambda recv, op: bf.date(recv, op),
+    "format_date": lambda recv, pattern, tz: bf.format_date(recv, pattern, tz),
     "lower": bf.lc,
     "upper": bf.uc,
     "trim": bf.trim,
