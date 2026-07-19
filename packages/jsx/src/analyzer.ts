@@ -4707,6 +4707,22 @@ function validateObjectFactoryDestructure(
 ): void {
   const factory = ctx.reactiveFactories.get(callee)
   if (factory) {
+    // Return-shape mismatch takes priority over element-form validation: a
+    // tuple-return factory destructured as an object is *never* valid,
+    // regardless of whether the object pattern happens to use shorthand or
+    // a rename/default/rest element — always point the caller at positional
+    // destructuring (BF110) instead of the shorthand-only guidance below
+    // (BF111), which only makes sense for genuinely object-return factories.
+    if (factory.returnKind === 'tuple') {
+      ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
+        severity: 'error',
+        message:
+          `'${callee}' is a reactive factory that returns a tuple — destructure ` +
+          `it positionally: const [${factory.returnTupleIdentifiers.join(', ')}] = ${callee}(...)`,
+      }))
+      return
+    }
+
     const hasUnsupportedElement = pattern.elements.some(
       el => !!el.propertyName || !!el.initializer || !!el.dotDotDotToken || !ts.isIdentifier(el.name)
     )
@@ -4717,16 +4733,6 @@ function validateObjectFactoryDestructure(
           `Object destructure of reactive factory '${callee}' uses a property ` +
           `rename, default, or rest element; only shorthand destructuring of ` +
           `{ ${factory.returnTupleIdentifiers.join(', ')} } is supported.`,
-      }))
-      return
-    }
-
-    if (factory.returnKind === 'tuple') {
-      ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
-        severity: 'error',
-        message:
-          `'${callee}' is a reactive factory that returns a tuple — destructure ` +
-          `it positionally: const [${factory.returnTupleIdentifiers.join(', ')}] = ${callee}(...)`,
       }))
       return
     }

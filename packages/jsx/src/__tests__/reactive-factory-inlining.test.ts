@@ -417,6 +417,37 @@ describe('Object-return reactive factories (#2325)', () => {
     expect(bf111).toBeDefined()
   })
 
+  test('BF110 (not BF111): object destructure with a rename of a TUPLE-return factory reports the tuple mismatch', () => {
+    // A tuple-return factory destructured as an object is never valid,
+    // regardless of whether the object pattern is shorthand or uses a
+    // rename/default/rest element — it should always get the "this
+    // factory returns a tuple" BF110 message, not the shorthand-only
+    // BF111 guidance (which only makes sense for object-return factories).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function createCounter(initial: number) {
+        const [count, setCount] = createSignal(initial)
+        return [count, setCount] as const
+      }
+
+      export function Counter() {
+        const { count: c, setCount } = createCounter(0)
+        return <button onClick={() => setCount(c() + 1)}>{c()}</button>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(source, 'Counter.tsx', { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+    expect(bf110!.message).toContain('returns a tuple')
+    expect(result.errors.find(e => e.code === 'BF111')).toBeUndefined()
+  })
+
   test('guard: plain-function object destructure is not flagged (false-positive guard)', () => {
     const source = `
       'use client'
