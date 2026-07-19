@@ -1930,7 +1930,12 @@ export async function collectRelativeImportDeps(
   const baseDir = dirname(entryPath)
   const seen = new Set<string>()
   const results: string[] = []
-  const EXT_CANDIDATES = ['.tsx', '.ts', '/index.tsx', '/index.ts']
+  // Mirrors the analyzer's own `resolveRelativeImportToFile` probe list
+  // (packages/jsx/src/analyzer.ts) so a factory helper authored as `.jsx`/
+  // `.js` — not just `.tsx`/`.ts` — is tracked as a dependency too;
+  // otherwise editing such a helper wouldn't invalidate the importer's
+  // build-cache entry (#2325).
+  const EXT_CANDIDATES = ['.tsx', '.ts', '.jsx', '.js', '/index.tsx', '/index.ts', '/index.jsx', '/index.js']
 
   for (const match of sourceContent.matchAll(RELATIVE_IMPORT_SCAN_RE)) {
     const rel = match[1]

@@ -355,6 +355,26 @@ describe('collectRelativeImportDeps', () => {
     expect(deps).toEqual([resolve(testDir, 'foo.ts')])
     cleanup()
   })
+
+  // #2325: a factory-helper file authored as plain `.js`/`.jsx` (not
+  // `.tsx`/`.ts`) must be tracked as a dependency too, so editing it
+  // invalidates the importer's build-cache entry.
+  test('resolves `./foo` to ./foo.js when a file exists', async () => {
+    setup()
+    writeFileSync(resolve(testDir, 'foo.js'), 'export const x = 1')
+    const deps = await collectRelativeImportDeps(entry, `import { x } from './foo'`)
+    expect(deps).toEqual([resolve(testDir, 'foo.js')])
+    cleanup()
+  })
+
+  test('resolves `./dir` to ./dir/index.jsx when dir exists with an index file', async () => {
+    setup()
+    mkdirSync(resolve(testDir, 'dir'))
+    writeFileSync(resolve(testDir, 'dir/index.jsx'), 'export const x = 1')
+    const deps = await collectRelativeImportDeps(entry, `import { x } from './dir'`)
+    expect(deps).toEqual([resolve(testDir, 'dir/index.jsx')])
+    cleanup()
+  })
 })
 
 // ── vendorChunkFilename ──────────────────────────────────────────────────
