@@ -1,5 +1,16 @@
 # @barefootjs/jsx
 
+## 0.22.0
+
+### Minor Changes
+
+- fdc5b3e: Add `formatDate(date, pattern, timeZone)` (#2324): a pure-function date formatter with explicit inputs — pattern tokens `YYYY`/`MM`/`M`/`DD`/`D`, timezone `'UTC'` or a fixed `±HH:MM` offset — exported from `@barefootjs/client` and catalogued as the backend-neutral `format_date` template helper. SSR adapters lower the call through the builtin lowering-plugin registry and render it natively on every backend (Go, Ruby, Perl, PHP, Python, Rust) with byte-identical, golden-vector-pinned output; no locale, timezone database, or ICU data is consulted anywhere.
+- 094d08e: Literal-locale `toLocaleDateString` sugar (#2324 slice 2): `date.toLocaleDateString('ja-JP', { timeZone: 'UTC' })` on a `Date`-typed prop — with a compile-time-literal locale and an explicit `'UTC'`/`±HH:MM` timeZone — now compiles. The compiler resolves the locale's default date pattern once at build time and lowers to the existing `format_date` helper on the SSR path and to `formatDate(...)` on the client-JS path, so output is byte-identical across all backends and the browser with no runtime ICU anywhere. Implicit-environment shapes (zero-arg, locale-only, runtime locale, IANA zone names) keep refusing with BF021, whose message now points at the explicit-input forms.
+
+### Patch Changes
+
+- @barefootjs/shared@0.22.0
+
 ## 0.21.4
 
 ### Patch Changes

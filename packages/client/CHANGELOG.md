@@ -1,5 +1,15 @@
 # @barefootjs/client
 
+## 0.22.0
+
+### Minor Changes
+
+- fdc5b3e: Add `formatDate(date, pattern, timeZone)` (#2324): a pure-function date formatter with explicit inputs — pattern tokens `YYYY`/`MM`/`M`/`DD`/`D`, timezone `'UTC'` or a fixed `±HH:MM` offset — exported from `@barefootjs/client` and catalogued as the backend-neutral `format_date` template helper. SSR adapters lower the call through the builtin lowering-plugin registry and render it natively on every backend (Go, Ruby, Perl, PHP, Python, Rust) with byte-identical, golden-vector-pinned output; no locale, timezone database, or ICU data is consulted anywhere.
+
+### Patch Changes
+
+- @barefootjs/shared@0.22.0
+
 ## 0.21.4
 
 ### Patch Changes
