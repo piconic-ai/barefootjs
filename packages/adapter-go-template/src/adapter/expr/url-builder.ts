@@ -66,6 +66,69 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
 }
 
 /**
+ * Lower a `conditional` (ternary) ParsedExpr to the pipeline-position
+ * `(bf_ternary <test> <consequent> <alternate>)` form (#2335). Go
+ * `text/template` is the only backend without an expression-level
+ * conditional, so a ternary sitting in VALUE position — a helper-call arg, a
+ * template-literal interpolation, an attribute value, or a boolean
+ * sub-condition — cannot be an `{{if}}…{{end}}` action fragment (a parse error
+ * inside a pipeline, and a silent branch-discard in condition position). This
+ * is the single lowering every such position shares; each caller passes the
+ * ternary's three child nodes directly (the ParsedExpr emitter hands them over
+ * unwrapped).
+ *
+ *   - branches are quoted VALUES, recursing so a right-folded chain
+ *     (`a ? x : b ? y : z`) nests as `(bf_ternary … (bf_ternary …))`.
+ *   - the test is coerced to a real Go `bool` (see `lowerTernaryTest`).
+ *
+ * NOT for the text-position `IRConditional` (`renderConditional`), whose
+ * branches are arbitrary markup, not values.
+ */
+export function lowerTernary(
+  ctx: GoEmitContext,
+  test: ParsedExpr,
+  consequent: ParsedExpr,
+  alternate: ParsedExpr,
+): string {
+  const t = lowerTernaryTest(ctx, test)
+  return `(bf_ternary ${t} ${lowerTernaryOperand(ctx, consequent)} ${lowerTernaryOperand(ctx, alternate)})`
+}
+
+/**
+ * A ternary branch in value position: a nested ternary recurses to another
+ * `bf_ternary`; anything else lowers to its Go value (parenthesised when
+ * multi-token so it stays one argument). String branches become quoted,
+ * html/template-escaped values — not the bare unquoted text the old `{{if}}`
+ * fragment path emitted — which is exactly right for the value positions this
+ * is reached for.
+ */
+function lowerTernaryOperand(ctx: GoEmitContext, n: ParsedExpr): string {
+  if (n.kind === 'conditional') {
+    return lowerTernary(ctx, n.test, n.consequent, n.alternate)
+  }
+  return wrapIfMultiToken(ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n))
+}
+
+/**
+ * Lower a ternary TEST to a Go bool. `Ternary`'s first parameter is typed
+ * `bool` and is NOT truthiness-coerced the way `{{if}}` is, so a non-bool test
+ * (`x` where x is a string/number, `a && b`, …) fed in raw would fail the
+ * runtime type assertion. A comparison / `!x` / bool literal already renders
+ * to a bool via the generic emitter and passes through; every other shape is
+ * wrapped `bf_truthy <value>`, which mirrors JS `Boolean(x)` (the runtime's
+ * `isTruthy`) across string / number / bool / nil uniformly — the general
+ * counterpart of `lowerUrlGuard`'s string-only `ne <value> ""`.
+ */
+function lowerTernaryTest(ctx: GoEmitContext, test: ParsedExpr): string {
+  const go = wrapIfMultiToken(ctx.convertExpressionToGo(stringifyParsedExpr(test), undefined, test))
+  const isBoolShape =
+    (test.kind === 'binary' && BOOL_COMPARISON_OPS.has(test.op)) ||
+    (test.kind === 'unary' && test.op === '!') ||
+    (test.kind === 'literal' && test.literalType === 'boolean')
+  return isBoolShape ? go : `(bf_truthy ${go})`
+}
+
+/**
  * Lower a helper call to a Go template expression, or null when no registered
  * plugin recognises it (→ the generic lowering). Matchers — including the
  * built-in `queryHref` plugin (#2042) — are bound to the component metadata at
@@ -114,19 +177,17 @@ function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | nu
   const lowerExpr = (n: ParsedExpr): string =>
     ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
   // A `conditional` in ARGUMENT position cannot go through the generic
-  // emitter: its `conditional` method renders an `{{if}}…{{end}}` action
-  // fragment (text position only), which is a parse error inside a
-  // pipeline ("unexpected { in parenthesized pipeline"). Render it as the
-  // pipeline-position `bf_ternary` runtime helper instead, recursing so a
-  // right-folded chain (the #2324 union stage's locale→pattern table)
-  // nests as `(bf_ternary <cond> <a> (bf_ternary …))`.
-  const lowerArg = (n: ParsedExpr): string => {
-    if (n.kind === 'conditional') {
-      const test = wrapIfMultiToken(lowerExpr(n.test))
-      return `(bf_ternary ${test} ${lowerArg(n.consequent)} ${lowerArg(n.alternate)})`
-    }
-    return wrapIfMultiToken(lowerExpr(n))
-  }
+  // emitter: its `conditional` method would render an `{{if}}…{{end}}` action
+  // fragment (a parse error inside a pipeline, "unexpected { in parenthesized
+  // pipeline"). Route it through the shared `bf_ternary` lowering — the same
+  // pipeline-position form the `conditional()` emitter and the condition-
+  // expression emitter now use (#2335) — so a right-folded chain (the #2324
+  // union stage's locale→pattern table) nests as
+  // `(bf_ternary <cond> <a> (bf_ternary …))`.
+  const lowerArg = (n: ParsedExpr): string =>
+    n.kind === 'conditional'
+      ? lowerTernary(ctx, n.test, n.consequent, n.alternate)
+      : wrapIfMultiToken(lowerExpr(n))
   if (node.kind === 'helper-call') {
     const args = node.args.map(a => lowerArg(a))
     return [helper, ...args].join(' ')

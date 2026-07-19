@@ -122,7 +122,7 @@ import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChil
 import { analyzeBakeableStaticElementLoop } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
-import { lowerRegisteredCall } from "./expr/url-builder.ts"
+import { lowerRegisteredCall, lowerTernary } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -3784,21 +3784,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       : null
   }
 
-  // JSX-level ternaries (`{expr ? a : b}`) are handled at the IR level as
-  // IRConditional (via convertConditionToGo → renderConditionExpr). This method
-  // is only reached for ternaries nested inside other ParsedExpr trees (e.g.
-  // template-literal interpolation), where the test is always a simple pipeline
-  // expression (runtime helpers, not template blocks).
+  // JSX-level ternaries (`{expr ? a : b}`) in TEXT position are handled at the
+  // IR level as IRConditional (via convertConditionToGo → renderConditionExpr →
+  // renderConditional). This method is only reached for ternaries nested inside
+  // other ParsedExpr trees in VALUE position (e.g. template-literal
+  // interpolation, an attribute value), where both branches are values.
+  //
+  // #2335: emit the pipeline-position `(bf_ternary …)` form — the same lowering
+  // helper-call args (`lowerArg`) and boolean sub-conditions
+  // (`renderConditionExpr`) now share — instead of a text-position
+  // `{{if}}…{{end}}` action fragment. Callers wrap the returned pipeline in
+  // `{{…}}` via the normal expression path (it no longer `{{`-leads, so
+  // `isTemplateFragment` correctly declines it). `emit` is unused: the shared
+  // lowering re-derives each child's Go form (branches as quoted values, the
+  // test coerced to a real bool) rather than the generic emit.
   conditional(
     test: ParsedExpr,
     consequent: ParsedExpr,
     alternate: ParsedExpr,
-    emit: (e: ParsedExpr) => string,
+    _emit: (e: ParsedExpr) => string,
   ): string {
-    const t = emit(test)
-    const c = this.renderConditionalBranch(consequent)
-    const a = this.renderConditionalBranch(alternate)
-    return `{{if ${t}}}${c}{{else}}${a}{{end}}`
+    return lowerTernary(this.emitCtx, test, consequent, alternate)
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
@@ -4763,24 +4769,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Render a branch of a conditional expression. String literals render as bare
-   * text (no quotes); nested conditionals render as complete `{{if}}…{{end}}`
-   * blocks; everything else is wrapped in `{{...}}`.
-   */
-  private renderConditionalBranch(expr: ParsedExpr): string {
-    if (expr.kind === 'literal' && expr.literalType === 'string') {
-      return String(expr.value)
-    }
-    if (expr.kind === 'conditional') {
-      const test = this.renderParsedExpr(expr.test)
-      const consequent = this.renderConditionalBranch(expr.consequent)
-      const alternate = this.renderConditionalBranch(expr.alternate)
-      return `{{if ${test}}}${consequent}{{else}}${alternate}{{end}}`
-    }
-    return `{{${this.renderParsedExpr(expr)}}}`
-  }
-
-  /**
    * Whether a ParsedExpr renders to a Go template function call (`len .X`,
    * `bf_add .A .B`) that needs parentheses when used as an argument to a
    * comparison operator (eq, gt, lt, …).
@@ -5369,8 +5357,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
 
       case 'conditional': {
-        const test = this.renderConditionExpr(expr.test)
-        return test
+        // #2335: a ternary used as (part of) a boolean sub-condition —
+        // `(x ? y : z) && w`, `!(a ? b : c)` — must lower FAITHFULLY. The old
+        // code returned only the lowered `test`, silently discarding both
+        // branches (a `(x ? y : z)` collapsed to `x`) — not refused, silently
+        // wrong. Emit the pipeline-position `(bf_ternary <test> <y> <z>)`
+        // value; the enclosing condition (`{{if}}`, `and`/`or`, `not`)
+        // truthiness-checks its result, exactly as it would the JS ternary's.
+        return plain(lowerTernary(this.emitCtx, expr.test, expr.consequent, expr.alternate))
       }
 
       case 'template-literal':
@@ -6111,8 +6105,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           const body = `${name}="{{${valueExpr}}}"`
           return `${preamble}{{if ${goCond}}}${body}{{end}}`
         }
-        // Inline Go template syntax with embedded `{{...}}` actions.
-        return `${name}="${this.renderParsedExpr(parsed)}"`
+        // #2335: the ternary lowers to the pipeline-position `(bf_ternary …)`
+        // value (no longer a `{{if}}…{{end}}` fragment), so wrap it in a single
+        // `{{…}}` action inside the attribute string — `name="{{bf_ternary …}}"`.
+        return `${name}="{{${this.renderParsedExpr(parsed)}}}"`
       }
       if (parsed.kind === 'template-literal') {
         // Inline Go template syntax with embedded `{{...}}` actions.
