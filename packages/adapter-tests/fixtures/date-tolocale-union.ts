@@ -40,8 +40,6 @@ export { DateToLocaleUnion }
     { name: 'ja-jp-leap', props: { createdAt: new Date('2024-02-29T12:00:00.000Z'), locale: 'ja-JP' } },
   ],
   expectedHtml: `
-    <div bf-s="test">
-      <time bf="s1"><!--bf:s0-->3/5/2024<!--/--></time>
-    </div>
+    <div bf-s="test"><time bf="s1"><!--bf:s0-->3/5/2024<!--/--></time></div>
   `,
 })
