@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/rust",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "minijinja (Rust) adapter for BarefootJS — compiles IR to .j2 templates and ships a Rust rendering runtime (packages/adapter-rust/runtime/); runs under any Rust web framework (axum, etc.)",
   "type": "module",
   "main": "./dist/index.js",
