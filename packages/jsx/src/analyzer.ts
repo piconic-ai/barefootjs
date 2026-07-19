@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
@@ -231,6 +231,15 @@ export function analyzeComponent(
 
   const ctx = createAnalyzerContext(sourceFile, filePath)
   ctx.checker = checker
+
+  // Reactive-factory prescan results (#931, #2325 cross-file + object-
+  // return round 2) — same-file and relative-imported factories, plus the
+  // declined / reactive-shaped buckets `validateReactiveFactoryCalls` uses
+  // to emit a specific diagnostic instead of the generic BF110.
+  ctx.reactiveFactories = prescan.factories
+  ctx.declinedReactiveFactories = prescan.declined
+  ctx.reactiveShapedHelpers = prescan.reactiveShaped
+  ctx.cleanFactoryImports = prescan.cleanFactoryImports
 
   // BF050 — surface "no shared Program supplied for type-based reactivity
   // classification" as a diagnostic so callers can fail strict builds
@@ -4292,10 +4301,36 @@ function escapeRegex(s: string): string {
 // =============================================================================
 
 /**
- * Scan a compiled component context for tuple-destructures whose callee is
- * neither `createSignal` / `createMemo` nor an inlinable reactive factory.
- * These are the silent-failure shapes that produced broken client JS prior
- * to factory inlining — emit BF110 so users get a clear message instead.
+ * Build the diagnostic for a call site whose callee was recognised but
+ * declined for inlining (#2325 — cross-file factories that rename their
+ * return properties, or capture their own module scope). BF112's wording is
+ * specific to module-scope capture; every other declined reason (currently
+ * only BF111 — non-shorthand return properties) shares BF111's generic
+ * "cannot be inlined: <detail>" phrasing, matching the wording used for the
+ * tuple call-site path.
+ */
+function declinedFactoryMessage(callee: string, d: DeclinedReactiveFactory): string {
+  if (d.code === 'BF112') {
+    return (
+      `Reactive factory '${callee}' references ${d.detail} from its own module ` +
+      `scope and cannot be inlined. Move the referenced helper(s) into this file, ` +
+      `pass them as factory arguments, or inline the factory here.`
+    )
+  }
+  return `Reactive factory '${callee}' cannot be inlined: ${d.detail}.`
+}
+
+/**
+ * Scan a compiled component context for destructures (tuple or object)
+ * whose callee is neither `createSignal` / `createMemo` nor an inlinable
+ * reactive factory. These are the silent-failure shapes that produced
+ * broken client JS prior to factory inlining — emit BF110 (unrecognised
+ * shape), BF111 (unsupported rename), or BF112 (module-scope capture) so
+ * users get a clear message instead.
+ *
+ * Only walks top-level component-body statements, matching the scope the
+ * inliner itself operates on (#931) — a factory call inside a nested block
+ * is out of scope for both inlining and this diagnostic.
  */
 export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
   if (!ctx.componentNode) return
@@ -4307,42 +4342,193 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
   for (const stmt of body.statements) {
     if (!ts.isVariableStatement(stmt)) continue
     for (const decl of stmt.declarationList.declarations) {
-      if (!ts.isArrayBindingPattern(decl.name)) continue
       if (!decl.initializer || !ts.isCallExpression(decl.initializer)) continue
       if (!ts.isIdentifier(decl.initializer.expression)) continue
       const callee = decl.initializer.expression.text
-      if (callee === 'createSignal' || callee === 'createMemo') continue
-      // Env-signal factories (`createSearchParams`, #2057) are `createSignal`-
-      // shaped and recognised structurally — a valid tuple destructure. Resolve
-      // via the same path as recognition (`resolveEnvSignalKey`) so an aliased
-      // import (`import { createSearchParams as csp }`) is accepted here too,
-      // rather than falling through to a spurious BF110.
-      if (resolveEnvSignalKey(decl.initializer, ctx)) continue
-      // Inlined factories were rewritten away before this analysis, so
-      // anything still matching the shape is a destructure of an
-      // unrecognised callee (imported helper, ad-hoc tuple fn, factory
-      // with arity mismatch).
-      ctx.errors.push(
-        createError(
-          ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY,
-          getSourceLocation(stmt, ctx.sourceFile, ctx.filePath),
-          {
+      const loc = getSourceLocation(stmt, ctx.sourceFile, ctx.filePath)
+
+      if (ts.isArrayBindingPattern(decl.name)) {
+        if (callee === 'createSignal' || callee === 'createMemo') continue
+        // Env-signal factories (`createSearchParams`, #2057) are `createSignal`-
+        // shaped and recognised structurally — a valid tuple destructure. Resolve
+        // via the same path as recognition (`resolveEnvSignalKey`) so an aliased
+        // import (`import { createSearchParams as csp }`) is accepted here too,
+        // rather than falling through to a spurious BF110.
+        if (resolveEnvSignalKey(decl.initializer, ctx)) continue
+
+        const declinedEntry = ctx.declinedReactiveFactories.get(callee)
+        if (declinedEntry) {
+          ctx.errors.push(createError(
+            declinedEntry.code === 'BF112'
+              ? ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
+              : ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED,
+            loc,
+            { severity: 'error', message: declinedFactoryMessage(callee, declinedEntry) }
+          ))
+          continue
+        }
+
+        const objectFactory = ctx.reactiveFactories.get(callee)
+        if (objectFactory && objectFactory.returnKind === 'object') {
+          ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
             severity: 'error',
             message:
-              `Tuple destructuring of '${callee}(...)': this helper is not a ` +
-              `recognised reactive factory (createSignal / createMemo / a ` +
-              `same-file helper that wraps them with a single \`return [a, b, ...]\`).`,
-            suggestion: {
+              `'${callee}' is a reactive factory that returns an object — destructure ` +
+              `it with a matching object pattern: const { ${objectFactory.returnTupleIdentifiers.join(', ')} } = ${callee}(...)`,
+          }))
+          continue
+        }
+
+        // Inlined factories were rewritten away before this analysis, so
+        // anything still matching the shape is a destructure of an
+        // unrecognised callee (imported helper, ad-hoc tuple fn, factory
+        // with arity mismatch).
+        ctx.errors.push(
+          createError(
+            ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY,
+            loc,
+            {
+              severity: 'error',
               message:
-                `Inline the createSignal call at the call site, or move the ` +
-                `helper into this file as a function that returns a tuple of ` +
-                `identifiers at its single exit point.`,
-            },
-          }
+                `Tuple destructuring of '${callee}(...)': this helper is not a ` +
+                `recognised reactive factory (createSignal / createMemo / a ` +
+                `same-file helper that wraps them with a single \`return [a, b, ...]\`).`,
+              suggestion: {
+                message:
+                  `Inline the createSignal call at the call site, or move the ` +
+                  `helper into this file as a function that returns a tuple of ` +
+                  `identifiers at its single exit point.`,
+              },
+            }
+          )
         )
-      )
+        continue
+      }
+
+      if (ts.isObjectBindingPattern(decl.name)) {
+        validateObjectFactoryDestructure(ctx, decl.name, callee, loc)
+      }
     }
   }
+}
+
+/**
+ * Object-destructure half of `validateReactiveFactoryCalls` (#2325). Split
+ * out so the tuple path above stays a straight read of the pre-#2325 logic
+ * (the tuple diagnostics are pinned by pre-existing tests) while this path
+ * covers the previously-silent object-destructure failure modes: an
+ * unrecognised callee, a tuple factory destructured as an object, a rename/
+ * default/rest destructure of a shorthand-only factory, an unknown
+ * property, a declined (BF111/BF112) factory, or an uninspectable import
+ * that looks reactive-factory-shaped by name.
+ */
+function validateObjectFactoryDestructure(
+  ctx: AnalyzerContext,
+  pattern: ts.ObjectBindingPattern,
+  callee: string,
+  loc: SourceLocation
+): void {
+  const factory = ctx.reactiveFactories.get(callee)
+  if (factory) {
+    const hasUnsupportedElement = pattern.elements.some(
+      el => !!el.propertyName || !!el.initializer || !!el.dotDotDotToken || !ts.isIdentifier(el.name)
+    )
+    if (hasUnsupportedElement) {
+      ctx.errors.push(createError(ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED, loc, {
+        severity: 'error',
+        message:
+          `Object destructure of reactive factory '${callee}' uses a property ` +
+          `rename, default, or rest element; only shorthand destructuring of ` +
+          `{ ${factory.returnTupleIdentifiers.join(', ')} } is supported.`,
+      }))
+      return
+    }
+
+    if (factory.returnKind === 'tuple') {
+      ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
+        severity: 'error',
+        message:
+          `'${callee}' is a reactive factory that returns a tuple — destructure ` +
+          `it positionally: const [${factory.returnTupleIdentifiers.join(', ')}] = ${callee}(...)`,
+      }))
+      return
+    }
+
+    const unknown = pattern.elements
+      .map(el => (ts.isIdentifier(el.name) ? el.name.text : ''))
+      .filter(name => name && !factory.returnTupleIdentifiers.includes(name))
+    if (unknown.length > 0) {
+      const label = unknown.length === 1 ? 'property' : 'properties'
+      ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
+        severity: 'error',
+        message:
+          `Object destructure of reactive factory '${callee}' references ${label} ` +
+          `'${unknown.join("', '")}' not present in its return { ${factory.returnTupleIdentifiers.join(', ')} }.`,
+      }))
+      return
+    }
+
+    // Shorthand object pattern that matches the factory's return shape —
+    // already inlined; nothing to report.
+    return
+  }
+
+  const declinedEntry = ctx.declinedReactiveFactories.get(callee)
+  if (declinedEntry) {
+    ctx.errors.push(createError(
+      declinedEntry.code === 'BF112'
+        ? ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
+        : ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED,
+      loc,
+      { severity: 'error', message: declinedFactoryMessage(callee, declinedEntry) }
+    ))
+    return
+  }
+
+  if (ctx.reactiveShapedHelpers.has(callee)) {
+    ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
+      severity: 'error',
+      message:
+        `Object destructure of '${callee}(...)': this helper wraps a reactive ` +
+        `primitive but does not match the inlinable factory shape (single ` +
+        '`return { a, b }` of shorthand identifiers at its one exit point).',
+    }))
+    return
+  }
+
+  // Proven non-reactive import (helper file resolved, read, and found to
+  // export nothing reactive-shaped under this name) — silent, correctly
+  // (C2: an ordinary object destructure must not become a false positive).
+  if (ctx.cleanFactoryImports.has(callee)) return
+
+  // Last resort: an import the compiler cannot inspect (non-relative or
+  // unresolvable path) whose name looks like a hook/factory. Name-based
+  // heuristic only — false negatives here fall through to silence, which
+  // matches this file's ordinary-object-destructure default (C2).
+  let matchedImportSource: string | null = null
+  for (const imp of ctx.imports) {
+    if (imp.isTypeOnly) continue
+    const spec = imp.specifiers.find(s => !s.isTypeOnly && (s.alias ?? s.name) === callee)
+    if (spec) {
+      matchedImportSource = imp.source
+      break
+    }
+  }
+  if (
+    matchedImportSource !== null &&
+    !matchedImportSource.startsWith('@barefootjs/') &&
+    /^(use|create)[A-Z]/.test(callee)
+  ) {
+    ctx.errors.push(createError(ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY, loc, {
+      severity: 'error',
+      message:
+        `Object destructure of imported '${callee}(...)': the compiler cannot ` +
+        `inspect this import (non-relative or unresolvable path), so if it wraps ` +
+        `createSignal/createMemo the destructured bindings will not be reactive. Move ` +
+        `the helper to a relative-imported file or inline its body.`,
+    }))
+  }
+  // Otherwise: ordinary object destructure of unrelated code — leave untouched (C2).
 }
 
 // =============================================================================

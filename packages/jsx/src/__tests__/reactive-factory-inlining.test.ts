@@ -349,4 +349,105 @@ describe('Object-return reactive factories (#2325)', () => {
     const result = compileJSX(source, 'Counter.tsx', { adapter })
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
   })
+
+  test('BF110: object destructure of an unknown imported callee emits a diagnostic', () => {
+    // Regression-locks the closed silent-failure hole: an unresolvable
+    // relative import whose name looks reactive-factory-shaped.
+    const source = `
+      'use client'
+      import { useExternal } from './external'
+
+      export function Gadget() {
+        const { value, setValue } = useExternal('key')
+        return <button onClick={() => setValue('x')}>{value()}</button>
+      }
+    `
+
+    const result = compileJSX(source, 'Gadget.tsx', { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+    expect(bf110!.message).toContain('useExternal')
+  })
+
+  test('BF111: non-shorthand factory return emits a diagnostic, no inlining', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function createCounter(initial: number) {
+        const [count, setCount] = createSignal(initial)
+        return { count: count, setCount }
+      }
+
+      export function Counter() {
+        const { count, setCount } = createCounter(0)
+        return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(source, 'Counter.tsx', { adapter })
+    const bf111 = result.errors.find(e => e.code === 'BF111')
+    expect(bf111).toBeDefined()
+  })
+
+  test('BF111: non-shorthand call-site destructure of a shorthand factory emits a diagnostic, no inlining', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      function createCounter(initial: number) {
+        const [count, setCount] = createSignal(initial)
+        return { count, setCount }
+      }
+
+      export function Counter() {
+        const { count: c, setCount } = createCounter(0)
+        return <button onClick={() => setCount(c() + 1)}>{c()}</button>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(source, 'Counter.tsx', { adapter })
+    const bf111 = result.errors.find(e => e.code === 'BF111')
+    expect(bf111).toBeDefined()
+  })
+
+  test('guard: plain-function object destructure is not flagged (false-positive guard)', () => {
+    const source = `
+      'use client'
+
+      function parseConfig() {
+        return { data: 42 }
+      }
+
+      export function Comp() {
+        const { data } = parseConfig()
+        return <p>{data}</p>
+      }
+    `
+
+    const result = compileJSX(source, 'Comp.tsx', { adapter })
+    expect(result.errors.find(e => e.code === 'BF110')).toBeUndefined()
+    expect(result.errors.find(e => e.code === 'BF111')).toBeUndefined()
+  })
+
+  test('guard: object destructure of a @barefootjs-scoped import is not flagged (false-positive guard)', () => {
+    const source = `
+      'use client'
+      import { loadItems } from '@barefootjs/something'
+
+      export function Comp() {
+        const { items } = loadItems()
+        return <p>{items}</p>
+      }
+    `
+
+    const result = compileJSX(source, 'Comp.tsx', { adapter })
+    expect(result.errors.find(e => e.code === 'BF110')).toBeUndefined()
+  })
 })

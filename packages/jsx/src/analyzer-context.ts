@@ -22,6 +22,7 @@ import type {
   ParamInfo,
   PropertyInfo,
   ReactiveFactoryInfo,
+  DeclinedReactiveFactory,
 } from './types.ts'
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
 
@@ -146,15 +147,26 @@ export interface AnalyzerContext {
   /** Maps multi-return JSX helper functions for conditional inlining at call sites. */
   jsxMultiReturnFunctions: Map<string, MultiReturnJsxInfo>
   /**
-   * Maps function names to reactive-factory info (#931). A reactive factory
-   * is a same-file helper whose body declares reactive primitives and
-   * returns a tuple of identifiers, e.g.
+   * Maps factory-call-site-local names to reactive-factory info (#931,
+   * #2325). A reactive factory is a helper whose body declares reactive
+   * primitives and returns a tuple or shorthand-object of identifiers, e.g.
    *   `function createCounter(initial) { const [c,s] = createSignal(initial); return [c, s] as const }`.
    * When a component destructures the result of a factory call, the factory
    * body is inlined at the call site so the compiler sees ordinary
-   * `createSignal` declarations.
+   * `createSignal` declarations. Populated by `analyzeComponent` from the
+   * factory prescan (same-file declarations plus relative-imported
+   * factories resolved by `prescanImportedReactiveFactories`); consumed by
+   * `validateReactiveFactoryCalls`.
    */
   reactiveFactories: Map<string, ReactiveFactoryInfo>
+  /** Factories recognized but declined for inlining, keyed by call-site-local name (#2325). */
+  declinedReactiveFactories: Map<string, DeclinedReactiveFactory>
+  /** Module-scope helpers (same-file or resolved import) whose body contains a
+   *  reactive primitive call but whose shape is not an inlinable factory. */
+  reactiveShapedHelpers: Set<string>
+  /** Imported destructured-callee names whose helper file was resolved, read,
+   *  and found reactive-free / factory-free — proven safe to leave alone. */
+  cleanFactoryImports: Set<string>
   /**
    * Intermediate `const s = createSignal(...)` tuples awaiting `s[0]`/`s[1]`
    * extraction. Flushed into `signals` at the end of visitComponentBody.
@@ -247,6 +259,9 @@ export function createAnalyzerContext(
     jsxFunctions: new Map(),
     jsxMultiReturnFunctions: new Map(),
     reactiveFactories: new Map(),
+    declinedReactiveFactories: new Map(),
+    reactiveShapedHelpers: new Set(),
+    cleanFactoryImports: new Set(),
     signalTupleRefs: new Map(),
 
     propsType: null,
