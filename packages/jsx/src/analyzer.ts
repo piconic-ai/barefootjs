@@ -4112,7 +4112,13 @@ function prescanImportedReactiveFactories(
           result.declined.set(spec.local, det.declined)
           break
         case 'factory': {
-          const offending = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
+          // #2332 prep: behavior-preserving shim — still decline BF112 on
+          // ANY module-scope reference (local or a re-importable helper
+          // import), byte-identical message text to before the split.
+          // Re-provisioning imported refs instead of declining lands in a
+          // later commit.
+          const capture = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
+          const offending = [...capture.captured, ...capture.importedRefs.map(r => r.localName)].sort()
           if (offending.length > 0) {
             result.declined.set(spec.local, {
               code: 'BF112',
@@ -4131,34 +4137,56 @@ function prescanImportedReactiveFactories(
 }
 
 /**
- * Value bindings at the helper file's module scope that an inlined factory
- * body must not capture (#2325 §4h / BF112): top-level const/let/var,
- * function/class/enum names, and value import specifiers — EXCEPT imports
- * from '@barefootjs/client' / '@barefootjs/client/runtime'. Those are
- * re-provisioned from usage by the client-JS emitter regardless of where
- * the call that used them textually came from (`resolveFinalImports` /
- * `detectUsedImports` regex-scan the *generated* code, not the consumer's
- * source imports — see #2325 spec C1), so an inlined body calling
- * `createSignal` is never a capture even though the helper file itself
- * imports it. Type-only imports/declarations carry no runtime binding and
- * are excluded.
+ * Value bindings at the helper file's module scope, split by whether they
+ * have a re-importable module of their own (#2332).
+ *
+ * `local` bindings — top-level const/let/var, function/class/enum names,
+ * plus default-import and namespace-import names — have no module a
+ * component file could re-import them from, so an inlined factory body
+ * referencing one unconditionally declines with BF112 (#2325 §4h): moving
+ * the body into the component file would leave a dangling reference.
+ *
+ * `imported` bindings — the helper file's own named value imports — CAN be
+ * re-provisioned: the component file can import the same binding under the
+ * same specifier (#2332). These are collected here (keyed by the helper
+ * file's local name) but are NOT captures; `moduleCaptureCheck` below
+ * reports them separately from `local` hits so the caller can decide
+ * whether to re-import rather than unconditionally decline.
+ *
+ * EXCEPT in both cases: imports from '@barefootjs/client' /
+ * '@barefootjs/client/runtime'. Those are re-provisioned from usage by the
+ * client-JS emitter regardless of where the call that used them textually
+ * came from (`resolveFinalImports` / `detectUsedImports` regex-scan the
+ * *generated* code, not the consumer's source imports — see #2325 spec C1),
+ * so an inlined body calling `createSignal` is never a capture even though
+ * the helper file itself imports it. Type-only imports/declarations carry
+ * no runtime binding and are excluded.
  */
-function collectHelperModuleValueBindings(sf: ts.SourceFile): Set<string> {
-  const names = new Set<string>()
+interface HelperModuleBindings {
+  /** Declared directly in the helper file — unconditional BF112 capture. */
+  local: Set<string>
+  /** Named value-import specifiers, keyed by helper-file local name —
+   *  re-provisionable into the component file (#2332). */
+  imported: Map<string, { source: string; exportedName: string }>
+}
+
+function collectHelperModuleValueBindings(sf: ts.SourceFile): HelperModuleBindings {
+  const local = new Set<string>()
+  const imported = new Map<string, { source: string; exportedName: string }>()
   for (const stmt of sf.statements) {
     if (ts.isVariableStatement(stmt)) {
       const out: string[] = []
       for (const decl of stmt.declarationList.declarations) {
         addBindingNames(decl.name, out)
       }
-      for (const n of out) names.add(n)
+      for (const n of out) local.add(n)
       continue
     }
     if (
       (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isEnumDeclaration(stmt)) &&
       stmt.name
     ) {
-      names.add(stmt.name.text)
+      local.add(stmt.name.text)
       continue
     }
     if (ts.isImportDeclaration(stmt)) {
@@ -4166,42 +4194,62 @@ function collectHelperModuleValueBindings(sf: ts.SourceFile): Set<string> {
       if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
       const src = stmt.moduleSpecifier.text
       if (src === '@barefootjs/client' || src === '@barefootjs/client/runtime') continue
-      if (stmt.importClause?.name) names.add(stmt.importClause.name.text)
+      // Default/namespace imports stay hard BF112 (#2332 scope decision):
+      // no single named export to re-provision under one local name.
+      if (stmt.importClause?.name) local.add(stmt.importClause.name.text)
       const namedBindings = stmt.importClause?.namedBindings
       if (namedBindings && ts.isNamedImports(namedBindings)) {
         for (const el of namedBindings.elements) {
           if (el.isTypeOnly) continue
-          names.add(el.name.text)
+          imported.set(el.name.text, { source: src, exportedName: (el.propertyName ?? el.name).text })
         }
       }
       if (namedBindings && ts.isNamespaceImport(namedBindings)) {
-        names.add(namedBindings.name.text)
+        local.add(namedBindings.name.text)
       }
     }
   }
-  return names
+  return { local, imported }
+}
+
+/**
+ * Categorized free-identifier references of a reactive-factory body into
+ * its own module scope (#2332): `captured` are unconditional BF112 hits
+ * (helper-local bindings — the body would dangle if inlined verbatim);
+ * `importedRefs` are references to the helper file's own named value
+ * imports, which the caller may re-provision into the component file
+ * instead of declining (§3.4 in the #2332 spec).
+ */
+interface ModuleCaptureResult {
+  /** Free refs resolving to helper-local bindings (BF112), sorted. */
+  captured: string[]
+  /** Free refs resolving to the helper's own named value imports, sorted by localName. */
+  importedRefs: Array<{ localName: string; source: string; exportedName: string }>
 }
 
 /**
  * Free identifiers of a reactive-factory body that resolve to bindings at
- * its own module scope (#2325 §4h / BF112) — references the inlined body
- * would silently lose once spliced into the component file. Returns the
- * offending names sorted, for stable diagnostic text.
+ * its own module scope (#2325 §4h / BF112, #2332) — references the inlined
+ * body would silently lose once spliced into the component file, unless
+ * re-provisioned as an import. Returns `captured` (unconditional BF112) and
+ * `importedRefs` (re-provisionable) separately, each sorted for stable
+ * diagnostic/injection text.
  *
  * Known accepted limitation: `extractFreeIdentifiersFromNode` only scope-
  * tracks arrow-function parameters, not nested `function` declarations'
  * parameters or nested-block declarations — a body-nested binding that
  * happens to shadow a helper-module binding could false-positive into
- * BF112. Acceptable: the failure direction is a loud build error on a rare
- * shape, never a silent runtime break.
+ * BF112 or `importedRefs`. Acceptable: the failure direction is always a
+ * loud build error (BF112/BF113) or a redundant-but-harmless injected
+ * import, never a silent dangling reference.
  */
 function moduleCaptureCheck(
   fn: ts.FunctionDeclaration,
   info: ReactiveFactoryInfo,
-  moduleBindings: Set<string>,
+  moduleBindings: HelperModuleBindings,
   selfName: string
-): string[] {
-  if (!fn.body) return []
+): ModuleCaptureResult {
+  if (!fn.body) return { captured: [], importedRefs: [] }
   const free = extractFreeIdentifiersFromNode(fn.body)
   const exclude = new Set<string>(info.params)
   for (const b of info.localBindings) exclude.add(b)
@@ -4209,12 +4257,20 @@ function moduleCaptureCheck(
   for (const p of REACTIVE_PRIMITIVES) exclude.add(p)
   exclude.add(selfName)
 
-  const offending: string[] = []
+  const captured: string[] = []
+  const importedRefs: ModuleCaptureResult['importedRefs'] = []
   for (const id of free) {
     if (exclude.has(id)) continue
-    if (moduleBindings.has(id)) offending.push(id)
+    if (moduleBindings.local.has(id)) {
+      captured.push(id)
+      continue
+    }
+    const imp = moduleBindings.imported.get(id)
+    if (imp) importedRefs.push({ localName: id, source: imp.source, exportedName: imp.exportedName })
   }
-  return offending.sort()
+  captured.sort()
+  importedRefs.sort((a, b) => (a.localName < b.localName ? -1 : 1))
+  return { captured, importedRefs }
 }
 
 /**
