@@ -1,5 +1,5 @@
 package BarefootJS::Backend::Xslate;
-our $VERSION = "0.21.4";
+our $VERSION = "0.23.0";
 use strict;
 use warnings;
 use utf8;
