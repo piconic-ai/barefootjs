@@ -149,31 +149,39 @@ function unionMemberLiteral(member: TypeInfo): string | null {
 /**
  * Resolve a NON-literal `locale` argument to its closed set of string-literal
  * union members (#2324's union-typed-locale stage), or null to decline.
- * Admitted shapes: a bare identifier bound to a prop, or a
- * `props.<name>` member — both checkable for optionality against
- * `propsType.properties`, which matters because an OPTIONAL union prop can be
- * `undefined` at runtime, and real `toLocaleDateString(undefined, …)` falls
- * back to the HOST locale (the implicit-environment read this plugin exists
- * to rule out) while the lowered pattern table cannot. The prop must be
- * required and every union member a quoted string literal.
+ * Prop-rooting follows `resolveReceiverType`'s rules exactly, per props
+ * mode (Copilot review on #2331 — the looser first cut could mis-identify a
+ * same-named LOCAL binding as the prop):
+ *   - object-props mode (`propsObjectName` set): ONLY a
+ *     `<propsObjectName>.<name>` member — a bare identifier is never a prop
+ *     there;
+ *   - destructured mode: ONLY a bare identifier that is one of
+ *     `propsParams` (resolved through `sourceName` for aliased bindings) —
+ *     there is no props object to member-access.
+ * The prop must be REQUIRED (an optional union can be `undefined` at
+ * runtime, and real `toLocaleDateString(undefined, …)` falls back to the
+ * HOST locale — the implicit-environment read this plugin exists to rule
+ * out) and every union member a quoted string literal.
  */
 function resolveLocaleUnionMembers(locale: ParsedExpr, metadata: IRMetadata): string[] | null {
-  let propName: string | null = null
-  if (locale.kind === 'identifier') {
-    propName = locale.name
-  } else if (
-    locale.kind === 'member' &&
-    !locale.computed &&
-    locale.object.kind === 'identifier' &&
-    locale.object.name === (metadata.propsObjectName ?? 'props')
-  ) {
-    propName = locale.property
+  let sourcePropName: string | null = null
+  if (metadata.propsObjectName) {
+    if (
+      locale.kind === 'member' &&
+      !locale.computed &&
+      locale.object.kind === 'identifier' &&
+      locale.object.name === metadata.propsObjectName
+    ) {
+      sourcePropName = locale.property
+    }
+  } else if (locale.kind === 'identifier') {
+    const name = locale.name
+    const param = metadata.propsParams?.find((pp) => pp.name === name)
+    if (param) sourcePropName = param.sourceName ?? param.name
   }
-  if (!propName) return null
-  const target = propName
-  const prop = metadata.propsType?.properties?.find(
-    (p) => p.name === target || metadata.propsParams?.some((pp) => pp.name === target && (pp.sourceName ?? pp.name) === p.name),
-  )
+  if (!sourcePropName) return null
+  const target = sourcePropName
+  const prop = metadata.propsType?.properties?.find((p) => p.name === target)
   if (!prop || prop.optional) return null
   const type = prop.type
   if (type.kind !== 'union' || !type.unionTypes || type.unionTypes.length === 0) return null

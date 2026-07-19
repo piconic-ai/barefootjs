@@ -168,6 +168,33 @@ export { Foo }
     })
   })
 
+  test('object-props mode: accepts props.<name>, declines a bare identifier (never a prop there)', () => {
+    const md = metadata(`
+export function Foo(props: { createdAt: Date; locale: 'en-US' | 'ja-JP' }) {
+  return <div>{props.createdAt.toLocaleDateString(props.locale, { timeZone: 'UTC' })}</div>
+}
+`)
+    const member = callParts(`props.createdAt.toLocaleDateString(props.locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(member.callee, member.args, md)).toMatchObject({
+      helper: 'format_date',
+      args: [
+        expect.anything(),
+        { kind: 'conditional' },
+        { kind: 'literal', value: 'UTC' },
+      ],
+    })
+    // A bare `locale` identifier in object-props mode is a LOCAL binding,
+    // not the prop — even when a same-named prop exists (Copilot, #2331).
+    const bare = callParts(`props.createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(bare.callee, bare.args, md)).toBeNull()
+  })
+
+  test('destructured mode: declines a props.<name> member (no props object exists)', () => {
+    const md = metadata(UNION_SRC)
+    const { callee, args } = callParts(`createdAt.toLocaleDateString(props.locale, { timeZone: 'UTC' })`)
+    expect(matchToLocaleDateStringCall(callee, args, md)).toBeNull()
+  })
+
   test('declines an OPTIONAL union prop (undefined would read the host locale)', () => {
     const md = metadata(`
 function Foo({ createdAt, locale }: { createdAt: Date; locale?: 'en-US' | 'ja-JP' }) {
