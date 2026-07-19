@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
@@ -3871,14 +3871,24 @@ export const REACTIVE_PRIMITIVES = new Set([
 
 interface PrescanResult {
   factories: Map<string, ReactiveFactoryInfo>
+  /** Factories recognized but declined for inlining (#2325). */
+  declined: Map<string, DeclinedReactiveFactory>
+  /** Module-scope helpers whose body wraps a reactive primitive but whose
+   *  shape is not an inlinable factory (#2325). */
+  reactiveShaped: Set<string>
+  /** Imported destructured-callee names whose helper file was resolved,
+   *  read, and found reactive-free / factory-free (#2325, filled by
+   *  `prescanImportedReactiveFactories`). */
+  cleanFactoryImports: Set<string>
   sourceFile: ts.SourceFile
 }
 
 /**
  * Scan a source string for module-level function declarations that match
- * the reactive-factory shape (single `return [a, b, ...]` exit + at least
- * one reactive primitive call in the body). Returns a map from factory
- * name to its metadata, and the parsed source file for call-site rewriting.
+ * the reactive-factory shape (single `return [a, b, ...]` / `return { a, b
+ * }` exit + at least one reactive primitive call in the body). Returns a
+ * map from factory name to its metadata, and the parsed source file for
+ * call-site rewriting.
  */
 function prescanReactiveFactoriesInSource(
   source: string,
@@ -3892,11 +3902,25 @@ function prescanReactiveFactoriesInSource(
     ts.ScriptKind.TSX
   )
   const factories = new Map<string, ReactiveFactoryInfo>()
+  const declined = new Map<string, DeclinedReactiveFactory>()
+  const reactiveShaped = new Set<string>()
+  const cleanFactoryImports = new Set<string>()
 
   function visitTop(node: ts.Node): void {
     if (ts.isFunctionDeclaration(node) && node.name && node.body) {
-      const info = detectReactiveFactory(node, sourceFile, filePath)
-      if (info) factories.set(node.name.text, info)
+      const det = detectReactiveFactory(node, sourceFile, filePath)
+      if (!det) return
+      switch (det.kind) {
+        case 'factory':
+          factories.set(node.name.text, det.info)
+          break
+        case 'declined':
+          declined.set(node.name.text, det.declined)
+          break
+        case 'reactive-shaped':
+          reactiveShaped.add(node.name.text)
+          break
+      }
     }
     // Not recursing into function bodies: factory helpers are at module
     // scope only for this round (issue #931 "In scope" §1).
@@ -3904,46 +3928,33 @@ function prescanReactiveFactoriesInSource(
 
   ts.forEachChild(sourceFile, visitTop)
 
-  return { factories, sourceFile }
+  return { factories, declined, reactiveShaped, cleanFactoryImports, sourceFile }
 }
+
+/**
+ * Classification result for a module-level function that might be a
+ * reactive-factory helper (#2325). `null` means the function has no
+ * reactive-primitive call anywhere in its body, so it isn't reactive-
+ * related at all — every other case implies at least one such call.
+ */
+type FactoryDetection =
+  | { kind: 'factory'; info: ReactiveFactoryInfo }
+  | { kind: 'declined'; declined: DeclinedReactiveFactory }
+  | { kind: 'reactive-shaped' } // wraps a reactive primitive but shape unsupported
+  | null
 
 function detectReactiveFactory(
   node: ts.FunctionDeclaration,
   sourceFile: ts.SourceFile,
   filePath: string
-): ReactiveFactoryInfo | null {
+): FactoryDetection {
   if (!node.body || !node.name) return null
 
-  // Require: exactly one top-level `return` whose argument is an array
-  // literal of plain identifiers (optionally wrapped in `as const` / parens).
-  let tupleReturn: ts.ArrayLiteralExpression | null = null
-  let returnCount = 0
-  for (const stmt of node.body.statements) {
-    if (!ts.isReturnStatement(stmt)) continue
-    returnCount++
-    if (!stmt.expression) return null
-    let expr: ts.Expression = stmt.expression
-    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-    // Accept `... as const` / `<const>...`
-    if (ts.isAsExpression(expr)) expr = expr.expression
-    if (ts.isTypeAssertionExpression(expr)) expr = expr.expression
-    if (!ts.isArrayLiteralExpression(expr)) return null
-    tupleReturn = expr
-  }
-  if (returnCount !== 1 || !tupleReturn) return null
-
-  // Every element must be a plain identifier (no spreads, computed,
-  // call expressions). Otherwise the caller-side rename would not be sound.
-  const returnTupleIdentifiers: string[] = []
-  for (const el of tupleReturn.elements) {
-    if (!ts.isIdentifier(el)) return null
-    returnTupleIdentifiers.push(el.text)
-  }
-  if (returnTupleIdentifiers.length === 0) return null
-
   // Body must contain at least one reactive primitive call so that the
-  // factory is actually the right thing to inline (not just a tuple-returning
-  // helper that happens to look similar).
+  // factory is actually the right thing to inline (not just a helper that
+  // happens to look similar). Checked FIRST: a function with zero reactive
+  // calls is not reactive-related in any way, so it is out of scope for
+  // every diagnostic below, not just "not a factory".
   let hasReactiveCall = false
   function checkForReactive(n: ts.Node): void {
     if (hasReactiveCall) return
@@ -3956,6 +3967,60 @@ function detectReactiveFactory(
   }
   checkForReactive(node.body)
   if (!hasReactiveCall) return null
+
+  const loc = getSourceLocation(node, sourceFile, filePath)
+
+  // Require exactly one top-level `return`, whose argument (after unwrapping
+  // parens / `as const` / type-assertion) is a tuple (array literal) or a
+  // shorthand-object literal.
+  let returnExpr: ts.Expression | null = null
+  let returnCount = 0
+  for (const stmt of node.body.statements) {
+    if (!ts.isReturnStatement(stmt)) continue
+    returnCount++
+    if (!stmt.expression) return { kind: 'reactive-shaped' }
+    let expr: ts.Expression = stmt.expression
+    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+    // Accept `... as const` / `<const>...`
+    if (ts.isAsExpression(expr)) expr = expr.expression
+    if (ts.isTypeAssertionExpression(expr)) expr = expr.expression
+    returnExpr = expr
+  }
+  if (returnCount !== 1 || !returnExpr) return { kind: 'reactive-shaped' }
+
+  const returnTupleIdentifiers: string[] = []
+  let returnKind: 'tuple' | 'object'
+
+  if (ts.isArrayLiteralExpression(returnExpr)) {
+    returnKind = 'tuple'
+    // Every element must be a plain identifier (no spreads, computed,
+    // call expressions). Otherwise the caller-side rename would not be sound.
+    for (const el of returnExpr.elements) {
+      if (!ts.isIdentifier(el)) return { kind: 'reactive-shaped' }
+      returnTupleIdentifiers.push(el.text)
+    }
+    if (returnTupleIdentifiers.length === 0) return { kind: 'reactive-shaped' }
+  } else if (ts.isObjectLiteralExpression(returnExpr)) {
+    returnKind = 'object'
+    const hasNonShorthand = returnExpr.properties.some(p => !ts.isShorthandPropertyAssignment(p))
+    if (hasNonShorthand) {
+      return {
+        kind: 'declined',
+        declined: {
+          code: 'BF111',
+          detail: `return object of '${node.name.text}' uses non-shorthand properties`,
+          loc,
+        },
+      }
+    }
+    for (const p of returnExpr.properties) {
+      // Every property already proven ts.isShorthandPropertyAssignment above.
+      returnTupleIdentifiers.push((p as ts.ShorthandPropertyAssignment).name.text)
+    }
+    if (returnTupleIdentifiers.length === 0) return { kind: 'reactive-shaped' }
+  } else {
+    return { kind: 'reactive-shaped' }
+  }
 
   // Collect local bindings in the factory body for identifier hygiene at
   // inlining time. Only direct-child declarations of the block are
@@ -3972,26 +4037,35 @@ function detectReactiveFactory(
   }
 
   // Serialize the body without the outer braces and without the return
-  // statement — the return tuple is dissolved into caller-named identifiers.
+  // statement — the return tuple/object is dissolved into caller-named
+  // identifiers.
   const bodyStatements = node.body.statements
     .filter(s => !ts.isReturnStatement(s))
     .map(s => s.getText(sourceFile))
     .join('\n')
 
-  const params = node.parameters.map(p => {
-    if (ts.isIdentifier(p.name)) return p.name.text
+  const params: string[] = []
+  for (const p of node.parameters) {
+    if (ts.isIdentifier(p.name)) {
+      params.push(p.name.text)
+      continue
+    }
     // Destructured params are uncommon for this helper shape and out of
-    // initial scope; return a placeholder so we can skip the factory.
-    return ''
-  })
-  if (params.some(p => p === '')) return null
+    // initial scope; the factory still wraps a reactive primitive, so
+    // classify it as reactive-shaped rather than silently ignoring it.
+    return { kind: 'reactive-shaped' }
+  }
 
   return {
-    params,
-    bodySource: bodyStatements,
-    returnTupleIdentifiers,
-    localBindings,
-    loc: getSourceLocation(node, sourceFile, filePath),
+    kind: 'factory',
+    info: {
+      params,
+      bodySource: bodyStatements,
+      returnTupleIdentifiers,
+      returnKind,
+      localBindings,
+      loc,
+    },
   }
 }
 
@@ -4052,16 +4126,33 @@ function rewriteFactoryCallsInSource(
   }
 
   function maybeRewriteDecl(stmt: ts.VariableStatement, decl: ts.VariableDeclaration): void {
-    if (!ts.isArrayBindingPattern(decl.name)) return
     if (!decl.initializer || !ts.isCallExpression(decl.initializer)) return
     if (!ts.isIdentifier(decl.initializer.expression)) return
     const factoryName = decl.initializer.expression.text
     const factory = factories.get(factoryName)
     if (!factory) return
 
+    if (ts.isArrayBindingPattern(decl.name)) {
+      if (factory.returnKind !== 'tuple') return
+      rewriteTupleDecl(stmt, decl.name, decl.initializer, factory)
+      return
+    }
+    if (ts.isObjectBindingPattern(decl.name)) {
+      if (factory.returnKind !== 'object') return
+      rewriteObjectDecl(stmt, decl.name, decl.initializer, factory)
+      return
+    }
+  }
+
+  function rewriteTupleDecl(
+    stmt: ts.VariableStatement,
+    pattern: ts.ArrayBindingPattern,
+    call: ts.CallExpression,
+    factory: ReactiveFactoryInfo
+  ): void {
     // Arity check — bail out on mismatch so the analyzer can report BF110
     // on the untouched source.
-    const elements = decl.name.elements
+    const elements = pattern.elements
     if (elements.length !== factory.returnTupleIdentifiers.length) return
 
     // Caller-side identifier names (one per tuple slot). Omitted slots
@@ -4073,17 +4164,74 @@ function rewriteFactoryCallsInSource(
       callerNames.push(el.name.text)
     }
 
-    const argTexts = decl.initializer.arguments.map(a => a.getText(sourceFile))
+    // Exclude params + every return-tuple identifier from suffix-renaming
+    // (they're renamed to caller names below instead).
+    const excludeFromSuffixRename = new Set<string>(factory.params)
+    for (const r of factory.returnTupleIdentifiers) excludeFromSuffixRename.add(r)
+
+    const renameReturnToCallerNames = new Map<string, string>()
+    for (let i = 0; i < factory.returnTupleIdentifiers.length; i++) {
+      renameReturnToCallerNames.set(factory.returnTupleIdentifiers[i], callerNames[i])
+    }
+
+    inlineFactoryCallAtSite(stmt, factory, call.arguments, excludeFromSuffixRename, renameReturnToCallerNames)
+  }
+
+  function rewriteObjectDecl(
+    stmt: ts.VariableStatement,
+    pattern: ts.ObjectBindingPattern,
+    call: ts.CallExpression,
+    factory: ReactiveFactoryInfo
+  ): void {
+    // Shorthand destructuring only (no renames/defaults/rest) of names the
+    // factory actually returns. Anything else bails so the analyzer can
+    // report BF110/BF111 on the untouched source. Subset destructures are
+    // allowed — a caller may destructure fewer than all returned names.
+    const destructured = new Set<string>()
+    for (const el of pattern.elements) {
+      if (el.dotDotDotToken) return
+      if (el.propertyName) return
+      if (el.initializer) return
+      if (!ts.isIdentifier(el.name)) return
+      if (!factory.returnTupleIdentifiers.includes(el.name.text)) return
+      destructured.add(el.name.text)
+    }
+
+    // Exclude params + the destructured names from suffix-renaming (caller
+    // name already equals the property name under shorthand, C4). Returned
+    // names the caller did NOT destructure are ordinary internal locals and
+    // DO get suffix-renamed — otherwise two subset calls of the same
+    // factory collide on the undestructured name.
+    const excludeFromSuffixRename = new Set<string>(factory.params)
+    for (const d of destructured) excludeFromSuffixRename.add(d)
+
+    // No return-name→caller-name rename step: identity under shorthand.
+    inlineFactoryCallAtSite(stmt, factory, call.arguments, excludeFromSuffixRename, null)
+  }
+
+  /**
+   * Shared inlining tail for both return shapes: suffix-rename internal
+   * bindings not in `excludeFromSuffixRename`, splice argument expressions
+   * in for parameters, optionally rename return identifiers to caller
+   * names (tuple path only — see C4 for why the object path passes null),
+   * and push the resulting edit for this call site.
+   */
+  function inlineFactoryCallAtSite(
+    stmt: ts.VariableStatement,
+    factory: ReactiveFactoryInfo,
+    args: ts.NodeArray<ts.Expression>,
+    excludeFromSuffixRename: Set<string>,
+    renameReturnToCallerNames: Map<string, string> | null
+  ): void {
+    const argTexts = args.map(a => a.getText(sourceFile))
     const thisCallIndex = callSiteIndex++
     const suffix = `_bf${thisCallIndex}`
 
     // Apply renames to the factory body source.
     let body = factory.bodySource
-    // 1. Suffix-rename internal bindings (exclude params + return tuple
-    //    + caller names to avoid collisions).
+    // 1. Suffix-rename internal bindings.
     const internalRenames = new Set<string>(factory.localBindings)
-    for (const p of factory.params) internalRenames.delete(p)
-    for (const r of factory.returnTupleIdentifiers) internalRenames.delete(r)
+    for (const ex of excludeFromSuffixRename) internalRenames.delete(ex)
     for (const name of internalRenames) {
       body = body.replace(new RegExp(`\\b${escapeRegex(name)}\\b`, 'g'), name + suffix)
     }
@@ -4098,11 +4246,11 @@ function rewriteFactoryCallsInSource(
       const wrapped = atomicArg.test(a.trim()) ? a.trim() : `(${a})`
       body = body.replace(new RegExp(`\\b${escapeRegex(p)}\\b`, 'g'), wrapped)
     }
-    // 3. Return tuple identifiers → caller destructure names.
-    for (let i = 0; i < factory.returnTupleIdentifiers.length; i++) {
-      const n = factory.returnTupleIdentifiers[i]
-      const caller = callerNames[i]
-      body = body.replace(new RegExp(`\\b${escapeRegex(n)}\\b`, 'g'), caller)
+    // 3. Return identifiers → caller destructure names (tuple path only).
+    if (renameReturnToCallerNames) {
+      for (const [n, caller] of renameReturnToCallerNames) {
+        body = body.replace(new RegExp(`\\b${escapeRegex(n)}\\b`, 'g'), caller)
+      }
     }
 
     edits.push({
