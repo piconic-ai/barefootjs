@@ -12,7 +12,7 @@ import { createFixture } from '../src/types'
  * supports a fully dynamic, even signal-reactive, `__html` — see
  * `packages/jsx/src/__tests__/dangerously-set-inner-html.test.ts` and
  * `compiler-stress-1244.test.ts`), so this is purely a template-adapter
- * gap. Tracked as a deliberate follow-up, not a bug: #2215.
+ * gap. Tracked as a deliberate follow-up, not a bug: #2319 (successor to #2215).
  */
 export const fixture = createFixture({
   id: 'dangerous-inner-html-dynamic',

@@ -41,12 +41,16 @@ export const conformancePins: ConformancePins = {
   // building loud, so `renderLoop` raises BF101 for a bare-identifier loop
   // array bound to such a const. See the `renderLoop` comment at the check
   // site; Jinja / ERB apply the same narrow check for the same reason.
-  'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+  'static-array-from-props': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+  ],
   // Same computed-const array as above — the destructure param itself no
   // longer contributes a diagnostic, and BF103 (sibling-imported child
   // component in the loop body) no longer fires either now that the
   // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
-  'static-array-from-props-with-component': [{ code: 'BF101', severity: 'error' }],
+  'static-array-from-props-with-component': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+  ],
   // (`style-3-signals` graduated alongside `style-object-dynamic` — see note
   // above; the `style={{ … }}` object now lowers to a CSS string.)
   // (`tagged-template-classname` graduated by #2092 — the tag resolves
@@ -60,12 +64,12 @@ export const conformancePins: ConformancePins = {
   // instead of lossy. The `/* @client */` twin
   // (`filter-nested-callback-predicate-client`) has no pin here: it must
   // render clean on every adapter, which asserts the suppression contract.
-  // https://github.com/piconic-ai/barefootjs/issues/2038
+  // Faithful lowering tracked: https://github.com/piconic-ai/barefootjs/issues/2320 (successor to #2038)
   'filter-nested-callback-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2038' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   'filter-nested-find-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2038' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   // #1310 / #2087: rest destructure in .map() callback. `isLowerableLoopDestructure`
   // now admits every shape this fixture family exercises — each fixed/rest
@@ -135,8 +139,8 @@ export const conformancePins: ConformancePins = {
   // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
   // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
   // A dynamic/signal-derived value still refuses with BF101 — see the
-  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2215).
-  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2215' }],
+  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2319, successor to #2215).
+  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2319' }],
   // #2273: a method call on a prop typed as a built-in host rich type
   // (Date, Map, …) has no catalogued lowering in any adapter — this is a
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of

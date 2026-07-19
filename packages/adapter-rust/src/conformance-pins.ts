@@ -42,15 +42,15 @@ export const conformancePins: ConformancePins = {
   // diagnostic (mirrors adapter-jinja's identical check). Fixing the
   // underlying gap (computed-array-from-props as a loop source) is out of
   // scope for #2087; tracked as a follow-up at
-  // https://github.com/piconic-ai/barefootjs/issues/2087.
+  // https://github.com/piconic-ai/barefootjs/issues/2321.
   'static-array-from-props': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2087' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
   ],
   // BF101 (unresolvable computed loop array, see above) fires; BF103
   // (imported child in the loop body) no longer does now that the
   // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
   'static-array-from-props-with-component': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2087' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
   ],
   // Rest-destructure `.map()` callbacks (#2087 Phase B): every shape now
   // lowers natively — fixed bindings at any depth/shape via a chained
@@ -80,12 +80,12 @@ export const conformancePins: ConformancePins = {
   // lossy, same as xslate. The `/* @client */` twin
   // (`filter-nested-callback-predicate-client`) has no pin here: it must
   // render clean on every adapter, which asserts the suppression contract.
-  // https://github.com/piconic-ai/barefootjs/issues/2038
+  // Faithful lowering tracked: https://github.com/piconic-ai/barefootjs/issues/2320 (successor to #2038)
   'filter-nested-callback-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2038' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   'filter-nested-find-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2038' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   // NB: TOP-LEVEL `.find` / `.findIndex` / `.findLast` / `.findLastIndex`
   // (text position) are NOT pinned here — like xslate (unlike mojo, which
@@ -101,8 +101,8 @@ export const conformancePins: ConformancePins = {
   // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
   // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
   // A dynamic/signal-derived value still refuses with BF101 — see the
-  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2215).
-  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2215' }],
+  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2319, successor to #2215).
+  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2319' }],
   // #2273: a method call on a prop typed as a built-in host rich type
   // (Date, Map, …) has no catalogued lowering in any adapter — this is a
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of

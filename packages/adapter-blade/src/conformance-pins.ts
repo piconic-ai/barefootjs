@@ -29,11 +29,15 @@ export const conformancePins: ConformancePins = {
   // can't bind as a template variable — refused loudly with BF101 (same
   // check and policy as Jinja / ERB) instead of silently iterating zero
   // times over an unbound name.
-  'static-array-from-props': [{ code: 'BF101', severity: 'error' }],
+  'static-array-from-props': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+  ],
   // BF101 (computed local-const loop array, as above) fires; BF103
   // (imported child in the loop body) no longer does now that the
   // conformance harness passes `siblingTemplatesRegistered: true` (#2205).
-  'static-array-from-props-with-component': [{ code: 'BF101', severity: 'error' }],
+  'static-array-from-props-with-component': [
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2321' },
+  ],
   // #2087 Phase B: every `.map()` destructure shape in the shared corpus
   // now lowers on Blade via an `@php(...)` local built from the binding's
   // structured `segments` path (`bladeLoopBindingAccessor` in
@@ -63,12 +67,12 @@ export const conformancePins: ConformancePins = {
   // lossy, same as Jinja. The `/* @client */` twin
   // (`filter-nested-callback-predicate-client`) has no pin here: it must
   // render clean on every adapter, which asserts the suppression contract.
-  // https://github.com/piconic-ai/barefootjs/issues/2038
+  // Faithful lowering tracked: https://github.com/piconic-ai/barefootjs/issues/2320 (successor to #2038)
   'filter-nested-callback-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2038' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   'filter-nested-find-predicate': [
-    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2038' },
+    { code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2320' },
   ],
   // NB: TOP-LEVEL `.find` / `.findIndex` / `.findLast` / `.findLastIndex`
   // (text position) are NOT pinned here — like Jinja (unlike mojo, which
@@ -84,8 +88,8 @@ export const conformancePins: ConformancePins = {
   // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
   // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
   // A dynamic/signal-derived value still refuses with BF101 — see the
-  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2215).
-  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2215' }],
+  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2319, successor to #2215).
+  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2319' }],
   // #2273: a method call on a prop typed as a built-in host rich type
   // (Date, Map, …) has no catalogued lowering in any adapter — this is a
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of
