@@ -26,6 +26,8 @@ import { createFixture } from '../src/types'
  * param (`([id, t]) => ...`). Adapters that can't lower either
  * declare the matching diagnostics via `expectedDiagnostics` on
  * their own test file (#1266).
+ * The remaining template-adapter refusal (computed component-scope const as
+ * the loop source) is tracked in #2321.
  */
 export const fixture = createFixture({
   id: 'static-array-from-props-with-component',

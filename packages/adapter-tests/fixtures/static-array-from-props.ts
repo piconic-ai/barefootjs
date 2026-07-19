@@ -17,6 +17,8 @@ import { createFixture } from '../src/types'
  * surfaced as parse errors at request time. Adapters that refuse this
  * shape assert the corresponding diagnostic via `expectedDiagnostics`
  * on their own test file (#1266).
+ * The remaining template-adapter refusal (computed component-scope const as
+ * the loop source) is tracked in #2321.
  */
 export const fixture = createFixture({
   id: 'static-array-from-props',

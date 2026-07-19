@@ -11,6 +11,7 @@ import { createFixture } from '../src/types'
  *   - Hono / CSR evaluate JS natively and render the chain faithfully.
  *   - Go template / Mojo / Xslate surface a loud BF101 (declared via each
  *     adapter's `expectedDiagnostics`) instead of a silent lossy rewrite.
+ * Faithful SSR lowering for the nested callback is tracked in #2320.
  */
 export const fixture = createFixture({
   id: 'filter-nested-find-predicate',

@@ -8,7 +8,7 @@ import { createFixture } from '../src/types'
  * that language's own template metacharacters), so this renders correctly
  * on every adapter, not just Hono. The DYNAMIC (non-literal) case is a
  * separate fixture — `dangerous-inner-html-dynamic` — which still refuses
- * with BF101 on every template adapter (tracked: #2215).
+ * with BF101 on every template adapter (tracked: #2319).
  */
 export const fixture = createFixture({
   id: 'dangerous-inner-html',

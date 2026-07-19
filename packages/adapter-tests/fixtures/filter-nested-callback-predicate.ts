@@ -16,6 +16,7 @@ import { createFixture } from '../src/types'
  *   - Go template / Xslate have no faithful nested form and now surface a
  *     loud BF101 (declared via those adapters' `expectedDiagnostics`)
  *     instead of the silent lossy lambda.
+ * Faithful SSR lowering for the nested callback is tracked in #2320.
  */
 export const fixture = createFixture({
   id: 'filter-nested-callback-predicate',
