@@ -36,11 +36,18 @@
  *     the host locale, which no frozen pattern table can reproduce;
  *   - an IANA `timeZone` name — couples output to the host's tzdata version
  *     (only `'UTC'` and fixed `±HH:MM` offsets are deterministic);
- *   - options beyond `timeZone` (`dateStyle`, `month: 'long'`, …) — the
- *     name-table stage of #2324, not this slice;
- *   - a locale whose default format needs anything beyond numeric
- *     year/month/day in latin digits on the gregorian calendar (e.g.
- *     `ar-SA`: islamic-umalqura calendar, arabic-indic digits).
+ *   - an options bag the probe cannot reproduce EXACTLY in the token+table
+ *     vocabulary — era, dayPeriod, 2-digit year, narrow name forms,
+ *     non-literal option values ("faithful or loud", never approximate);
+ *   - a locale/options combination needing non-latin digits or a
+ *     non-gregorian calendar (e.g. `ar-SA`: islamic-umalqura, arabic-indic
+ *     digits).
+ *
+ * Options beyond `timeZone` ARE admitted when literal (#2334): the compiler
+ * probes the exact bag with `formatToParts`; month/weekday NAME parts
+ * resolve to the `MMMM`/`MMM`/`dddd`/`ddd` tokens plus the 38-slot name
+ * table shipped as an ordinary array argument — the backend receives
+ * values, never locale knowledge.
  */
 
 import type { IRMetadata, TypeInfo } from './types.ts'
@@ -68,68 +75,150 @@ export const TO_LOCALE_TZ_RE = /^(?:UTC|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/
  */
 const PROBE_UTC = new Date(Date.UTC(2001, 1, 3))
 
-/** Build-time cache: locale tag → derived pattern (or null = not representable). */
-const patternCache = new Map<string, string | null>()
+/**
+ * The 38-slot `names` table layout (spec/template-helpers.md "format_date"):
+ * [0..11] wide months, [12..23] abbreviated months, [24..30] wide weekdays
+ * (Sunday-first), [31..37] abbreviated weekdays.
+ */
+export interface LocaleDateFormat {
+  pattern: string
+  /** The 38-slot table, present iff `pattern` contains a name token. */
+  names: string[] | null
+}
+
+/** Build-time caches: locale tag (+ options key) → derived result (null = not representable). */
+const formatCache = new Map<string, LocaleDateFormat | null>()
+const namesCache = new Map<string, string[] | null>()
 
 /**
- * Resolve a locale literal to its default date pattern in the v1
- * `format_date` token language (`YYYY`/`MM`/`M`/`DD`/`D` + literal text), or
- * null when the locale's default format is not representable. The gate is
- * structural, not an allowlist: the format must resolve to the gregorian
- * calendar in latin digits and consist solely of numeric year/month/day
- * parts (4-digit year) plus separator literals that cannot collide with the
- * token alphabet. `en-US` → `M/D/YYYY`, `ja-JP` → `YYYY/M/D`, `en-GB` →
- * `DD/MM/YYYY`, `de-DE` → `D.M.YYYY`; `ar-SA` (islamic-umalqura/arab) and
- * any 2-digit-year or era/weekday-bearing default → null.
+ * Derive a locale's 38-slot name table from the build machine's own ICU —
+ * the compiler is the only owner of locale data; backends receive the
+ * values as an ordinary array argument and stay type-only (#2334).
+ * Sunday-first weekday order matches `Date.prototype.getUTCDay`.
  */
-export function resolveLocaleDatePattern(locale: string): string | null {
-  const cached = patternCache.get(locale)
+function deriveLocaleNames(locale: string): string[] | null {
+  const cached = namesCache.get(locale)
   if (cached !== undefined) return cached
-  const derived = derivePattern(locale)
-  patternCache.set(locale, derived)
+  let derived: string[] | null
+  try {
+    const part = (options: Intl.DateTimeFormatOptions, utc: number, type: string): string => {
+      const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(new Date(utc))
+      const found = parts.find((p) => p.type === type)
+      if (!found || !found.value) throw new Error('missing part')
+      return found.value
+    }
+    const months = (width: 'long' | 'short') =>
+      Array.from({ length: 12 }, (_, m) => part({ month: width }, Date.UTC(2001, m, 15), 'month'))
+    // 2023-01-01 was a Sunday; day offsets walk Sunday..Saturday.
+    const weekdays = (width: 'long' | 'short') =>
+      Array.from({ length: 7 }, (_, d) => part({ weekday: width }, Date.UTC(2023, 0, 1 + d), 'weekday'))
+    derived = [...months('long'), ...months('short'), ...weekdays('long'), ...weekdays('short')]
+  } catch {
+    derived = null
+  }
+  namesCache.set(locale, derived)
   return derived
 }
 
-function derivePattern(locale: string): string | null {
+/**
+ * Back-compat convenience over {@link resolveLocaleDateFormat}: the
+ * default-options pattern (numeric-only or it doesn't resolve — the default
+ * date format of every locale is name-free, so `names` is always null here).
+ */
+export function resolveLocaleDatePattern(locale: string): string | null {
+  return resolveLocaleDateFormat(locale, {})?.pattern ?? null
+}
+
+/**
+ * Resolve (locale, probe options) to a `format_date` pattern — and, when the
+ * probed format contains month/weekday NAMES, the 38-slot table those tokens
+ * read (#2334). The fidelity contract: the result is exactly what the user's
+ * `toLocaleDateString(locale, options)` evaluates to under the build
+ * machine's ECMA-402 — reproduce it exactly or decline (null), never
+ * approximate. The gate is structural, not an allowlist: gregorian calendar,
+ * latin digits, and every part must be a numeric 4-digit year / numeric or
+ * named month / numeric day / named weekday / non-colliding literal.
+ * `en-US` default → `M/D/YYYY`; `en-US` + `{dateStyle:'long'}` → `MMMM D,
+ * YYYY` + names; `ja-JP` + `{dateStyle:'long'}` → `YYYY年M月D日` (numeric —
+ * no names needed, which the probe discovers naturally); era / dayPeriod /
+ * 2-digit-year / non-latn digits → null.
+ */
+export function resolveLocaleDateFormat(
+  locale: string,
+  probeOptions: Record<string, string>,
+): LocaleDateFormat | null {
+  const key = `${locale}|${JSON.stringify(probeOptions, Object.keys(probeOptions).sort())}`
+  const cached = formatCache.get(key)
+  if (cached !== undefined) return cached
+  const derived = deriveFormat(locale, probeOptions)
+  formatCache.set(key, derived)
+  return derived
+}
+
+function deriveFormat(locale: string, probeOptions: Record<string, string>): LocaleDateFormat | null {
   let parts: Intl.DateTimeFormatPart[]
   try {
-    const dtf = new Intl.DateTimeFormat(locale, { timeZone: 'UTC' })
+    const dtf = new Intl.DateTimeFormat(locale, {
+      ...(probeOptions as Intl.DateTimeFormatOptions),
+      timeZone: 'UTC',
+    })
     const resolved = dtf.resolvedOptions()
     if (resolved.calendar !== 'gregory' || resolved.numberingSystem !== 'latn') return null
     parts = dtf.formatToParts(PROBE_UTC)
   } catch {
-    return null // invalid language tag
+    return null // invalid language tag or invalid/conflicting options
   }
+  // Probe instant 2001-02-03 is a Saturday in February: month index 1,
+  // weekday index 6 in the Sunday-first table.
+  const names = deriveLocaleNames(locale)
   let pattern = ''
+  let usesNames = false
   for (const part of parts) {
     switch (part.type) {
       case 'year':
-        if (part.value !== '2001') return null // 2-digit-year default has no v1 token
+        if (part.value !== '2001') return null // 2-digit-year form has no token
         pattern += 'YYYY'
         break
       case 'month':
         if (part.value === '2') pattern += 'M'
         else if (part.value === '02') pattern += 'MM'
-        else return null // name/narrow month — the later name-table stage
+        else if (names && part.value === names[1]) {
+          pattern += 'MMMM'
+          usesNames = true
+        } else if (names && part.value === names[12 + 1]) {
+          pattern += 'MMM'
+          usesNames = true
+        } else return null // narrow / unmatched month form
         break
       case 'day':
         if (part.value === '3') pattern += 'D'
         else if (part.value === '03') pattern += 'DD'
         else return null
         break
+      case 'weekday':
+        if (names && part.value === names[24 + 6]) {
+          pattern += 'dddd'
+          usesNames = true
+        } else if (names && part.value === names[31 + 6]) {
+          pattern += 'ddd'
+          usesNames = true
+        } else return null // narrow / unmatched weekday form
+        break
       case 'literal':
-        // A literal containing the token alphabet would be re-tokenized by
-        // the helper's scan; no real numeric-format separator does, but the
-        // gate must prove it rather than assume it.
-        if (/[YMD]/.test(part.value)) return null
+        // A literal colliding with the token alphabet would be re-tokenized
+        // by the helper's scan: any uppercase Y/M/D, or a lowercase run of
+        // three-plus `d`s (single/double `d` is not a token).
+        if (/[YMD]/.test(part.value) || /ddd/.test(part.value)) return null
         pattern += part.value
         break
       default:
-        return null // era, weekday, dayPeriod, … — not representable
+        return null // era, dayPeriod, … — not representable
     }
   }
-  if (!pattern.includes('YYYY') || !/M/.test(pattern) || !/D/.test(pattern)) return null
-  return pattern
+  // The probed format must actually be a date (guards a pathological
+  // options bag that yields, say, only a weekday).
+  if (!/YYYY|MMMM|MMM|MM|M/.test(pattern) && !/DD|D/.test(pattern)) return null
+  return { pattern, names: usesNames ? names : null }
 }
 
 /**
@@ -196,6 +285,39 @@ function resolveLocaleUnionMembers(locale: ParsedExpr, metadata: IRMetadata): st
 
 const strLit = (value: string): ParsedExpr => ({ kind: 'literal', value, literalType: 'string' })
 
+/** Array-literal ParsedExpr over string values (the `names` helper argument). */
+function strArr(values: readonly string[]): ParsedExpr {
+  return {
+    kind: 'array-literal',
+    elements: values.map((v) => strLit(v)),
+    raw: JSON.stringify(values),
+  } as ParsedExpr
+}
+
+/**
+ * Fold per-union-member values into a right-folded ternary over the runtime
+ * locale expression (last member needs no guard — the TS type keeps the
+ * value inside the union). Equal values collapse to the plain leaf.
+ */
+function foldMembers(
+  locale: ParsedExpr,
+  members: readonly string[],
+  leaves: readonly ParsedExpr[],
+  allEqual: boolean,
+): ParsedExpr {
+  let expr = leaves[leaves.length - 1]
+  if (allEqual) return expr
+  for (let i = leaves.length - 2; i >= 0; i--) {
+    expr = {
+      kind: 'conditional',
+      test: { kind: 'binary', op: '===', left: locale, right: strLit(members[i]) },
+      consequent: leaves[i],
+      alternate: expr,
+    }
+  }
+  return expr
+}
+
 export function matchToLocaleDateStringCall(
   callee: ParsedExpr,
   args: readonly ParsedExpr[],
@@ -204,12 +326,25 @@ export function matchToLocaleDateStringCall(
   if (callee.kind !== 'member' || callee.computed) return null
   if (callee.property !== 'toLocaleDateString' || args.length !== 2) return null
   const [locale, options] = args
-  if (options.kind !== 'object-literal' || options.properties.length !== 1) return null
-  const prop = options.properties[0]
-  if (prop.key !== 'timeZone') return null
-  if (prop.value.kind !== 'literal' || prop.value.literalType !== 'string') return null
-  const tz = String(prop.value.value)
-  if (!TO_LOCALE_TZ_RE.test(tz)) return null
+  // Options bag: `timeZone` is REQUIRED (a literal 'UTC' | valid ±HH:MM —
+  // its omission would read the host timezone); every OTHER key rides into
+  // the Intl probe as-is when its value is a string literal (#2334's
+  // fidelity rule: admit any literal options bag the probe can reproduce
+  // exactly, decline everything else — dateStyle, month/weekday forms, …).
+  if (options.kind !== 'object-literal') return null
+  let tz: string | null = null
+  const probeOptions: Record<string, string> = {}
+  for (const prop of options.properties) {
+    if (prop.value.kind !== 'literal' || prop.value.literalType !== 'string') return null
+    const value = String(prop.value.value)
+    if (prop.key === 'timeZone') {
+      if (!TO_LOCALE_TZ_RE.test(value)) return null
+      tz = value
+    } else {
+      probeOptions[prop.key] = value
+    }
+  }
+  if (tz === null) return null
 
   const receiverType = resolveReceiverType(callee.object, metadata, new Map())
   if (!receiverType || receiverType.kind !== 'interface') return null
@@ -217,46 +352,47 @@ export function matchToLocaleDateStringCall(
   if (typeName !== 'Date') return null
   if (metadata.typeDefinitions.some((d) => d.name === typeName)) return null
 
-  // Literal locale: resolve one pattern at build time.
+  // Literal locale: resolve one pattern (+ name table when the probed
+  // format contains month/weekday names) at build time.
   if (locale.kind === 'literal' && locale.literalType === 'string') {
-    const pattern = resolveLocaleDatePattern(String(locale.value))
-    if (pattern === null) return null
+    const format = resolveLocaleDateFormat(String(locale.value), probeOptions)
+    if (format === null) return null
     return {
       kind: 'helper-call',
       helper: 'format_date',
-      args: [callee.object, strLit(pattern), strLit(tz)],
+      args: [callee.object, strLit(format.pattern), strLit(tz), strArr(format.names ?? [])],
     }
   }
 
   // Union-typed locale (#2324's union stage): a REQUIRED prop typed as a
-  // closed string-literal union resolves every member's pattern at build
-  // time and lowers the pattern argument to a right-folded ternary over the
-  // runtime locale value — runtime locale switching with zero runtime CLDR.
-  // (A TS-typed value can't leave the union, so the final alternate needs no
-  // guard; equal patterns collapse the ternary away entirely.)
+  // closed string-literal union resolves every member's format at build
+  // time; the pattern AND names arguments each lower to a right-folded
+  // ternary over the runtime locale value — runtime locale switching with
+  // zero runtime CLDR.
   const members = resolveLocaleUnionMembers(locale, metadata)
   if (!members) return null
-  const patterns: string[] = []
+  const formats: LocaleDateFormat[] = []
   for (const member of members) {
-    const pattern = resolveLocaleDatePattern(member)
-    if (pattern === null) return null
-    patterns.push(pattern)
+    const format = resolveLocaleDateFormat(member, probeOptions)
+    if (format === null) return null
+    formats.push(format)
   }
-  let patternExpr: ParsedExpr = strLit(patterns[patterns.length - 1])
-  if (new Set(patterns).size > 1) {
-    for (let i = patterns.length - 2; i >= 0; i--) {
-      patternExpr = {
-        kind: 'conditional',
-        test: { kind: 'binary', op: '===', left: locale, right: strLit(members[i]) },
-        consequent: strLit(patterns[i]),
-        alternate: patternExpr,
-      }
-    }
-  }
+  const patterns = formats.map((f) => f.pattern)
+  const nameTables = formats.map((f) => JSON.stringify(f.names ?? []))
   return {
     kind: 'helper-call',
     helper: 'format_date',
-    args: [callee.object, patternExpr, strLit(tz)],
+    args: [
+      callee.object,
+      foldMembers(locale, members, patterns.map(strLit), new Set(patterns).size === 1),
+      strLit(tz),
+      foldMembers(
+        locale,
+        members,
+        formats.map((f) => strArr(f.names ?? [])),
+        new Set(nameTables).size === 1,
+      ),
+    ],
   }
 }
 
@@ -271,13 +407,24 @@ export function matchToLocaleDateStringCall(
  */
 export function patternArgToClientJs(patternArg: ParsedExpr, localeText: string): string | null {
   if (patternArg.kind === 'literal') return JSON.stringify(patternArg.value)
+  // The `names` argument's leaf (#2334): an array-literal of string literals.
+  if (patternArg.kind === 'array-literal') {
+    const values: string[] = []
+    for (const el of patternArg.elements) {
+      if (el.kind !== 'literal') return null
+      values.push(String(el.value))
+    }
+    return JSON.stringify(values)
+  }
   if (patternArg.kind !== 'conditional') return null
   const t = patternArg.test
   if (t.kind !== 'binary' || t.op !== '===' || t.right.kind !== 'literal') return null
-  if (patternArg.consequent.kind !== 'literal') return null
+  if (t.right.kind !== 'literal') return null
+  const cons = patternArgToClientJs(patternArg.consequent, localeText)
   const rest = patternArgToClientJs(patternArg.alternate, localeText)
-  if (rest === null) return null
-  return `${localeText} === ${JSON.stringify(t.right.value)} ? ${JSON.stringify(patternArg.consequent.value)} : ${rest}`
+  if (cons === null || rest === null) return null
+  if (patternArg.consequent.kind !== 'literal' && patternArg.consequent.kind !== 'array-literal') return null
+  return `${localeText} === ${JSON.stringify(t.right.value)} ? ${cons} : ${rest}`
 }
 
 export const toLocaleDatePlugin: LoweringPlugin = {

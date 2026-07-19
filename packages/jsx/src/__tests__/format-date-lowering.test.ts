@@ -54,21 +54,37 @@ export function P() { return <time>x</time> }
   })
 })
 
-describe('matchFormatDateCall (#2324)', () => {
-  test('lowers a 3-arg call as-is', () => {
+const EMPTY_NAMES = { kind: 'array-literal', elements: [], raw: '[]' }
+
+describe('matchFormatDateCall (#2324/#2334)', () => {
+  test('normalizes a 3-arg call to canonical arity 4 (empty names table)', () => {
     expect(matchFormatDateCall(CALLEE, [DATE_ARG, PATTERN_ARG, TZ_ARG], LOCALS)).toEqual({
       kind: 'helper-call',
       helper: 'format_date',
-      args: [DATE_ARG, PATTERN_ARG, TZ_ARG],
+      args: [DATE_ARG, PATTERN_ARG, TZ_ARG, EMPTY_NAMES as ParsedExpr],
     })
   })
 
-  test('normalizes a 2-arg call by supplying the UTC literal', () => {
+  test('normalizes a 2-arg call by supplying the UTC literal and empty names', () => {
     const node = matchFormatDateCall(CALLEE, [DATE_ARG, PATTERN_ARG], LOCALS)
     expect(node).toEqual({
       kind: 'helper-call',
       helper: 'format_date',
-      args: [DATE_ARG, PATTERN_ARG, { kind: 'literal', value: 'UTC', literalType: 'string' }],
+      args: [
+        DATE_ARG,
+        PATTERN_ARG,
+        { kind: 'literal', value: 'UTC', literalType: 'string' },
+        EMPTY_NAMES as ParsedExpr,
+      ],
+    })
+  })
+
+  test('a caller-supplied 4th (names) argument passes through', () => {
+    const namesArg: ParsedExpr = { kind: 'identifier', name: 'names' }
+    expect(matchFormatDateCall(CALLEE, [DATE_ARG, PATTERN_ARG, TZ_ARG, namesArg], LOCALS)).toEqual({
+      kind: 'helper-call',
+      helper: 'format_date',
+      args: [DATE_ARG, PATTERN_ARG, TZ_ARG, namesArg],
     })
   })
 
@@ -82,7 +98,7 @@ describe('matchFormatDateCall (#2324)', () => {
       ),
     ).toBeNull()
     expect(matchFormatDateCall(CALLEE, [DATE_ARG], LOCALS)).toBeNull()
-    expect(matchFormatDateCall(CALLEE, [DATE_ARG, PATTERN_ARG, TZ_ARG, TZ_ARG], LOCALS)).toBeNull()
+    expect(matchFormatDateCall(CALLEE, [DATE_ARG, PATTERN_ARG, TZ_ARG, TZ_ARG, TZ_ARG], LOCALS)).toBeNull()
   })
 
   test('the plugin prepares only for components that import formatDate', () => {

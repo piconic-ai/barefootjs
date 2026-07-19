@@ -1480,6 +1480,21 @@
         "text"
       ]
     },
+    "date-tolocale-datestyle": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-tolocale-literal": {
       "kinds": [
         "call",
@@ -4160,14 +4175,14 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 161,
+    "call": 162,
     "conditional": 18,
-    "identifier": 241,
+    "identifier": 242,
     "index-access": 12,
-    "literal": 199,
+    "literal": 200,
     "logical": 41,
-    "member": 121,
-    "object-literal": 44,
+    "member": 122,
+    "object-literal": 45,
     "template-literal": 27,
     "unary": 22,
     "unsupported": 21
@@ -4210,7 +4225,7 @@
     "literal:boolean": 37,
     "literal:null": 22,
     "literal:number": 86,
-    "literal:string": 142,
+    "literal:string": 143,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

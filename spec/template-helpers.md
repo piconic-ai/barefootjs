@@ -318,25 +318,38 @@ ISO-8601 string form), for every backend (#2288).
 
 ### format_date
 
-`format_date(recv, pattern, tz)` — the lowering target for a
-`formatDate(date, pattern, timeZone)` call (`@barefootjs/client`,
-#2324): the pure-function date formatter whose inputs are all
-explicit, so the output is a deterministic function of its arguments
-— no host locale, no host timezone, no ICU/CLDR data anywhere.
+`format_date(recv, pattern, tz, names)` — the lowering target for a
+`formatDate(date, pattern, timeZone, names?)` call
+(`@barefootjs/client`, #2324/#2334): the pure-function date formatter
+whose inputs are all explicit, so the output is a deterministic
+function of its arguments — no host locale, no host timezone, no
+ICU/CLDR data anywhere. Canonical arity is 4; the compiler lowering
+always supplies `tz` (default `'UTC'`) and `names` (default the empty
+table).
 
 `recv` follows the `date` helper's receiver contract exactly: the
 backend's own native date/time type or an ISO-8601 string, both
 normalized to the same instant; a `nil`/unset or unparseable `recv`
 renders `''` (normative zero value, never a crash and never "now").
 
-`pattern` is scanned longest-match for the token set `YYYY` / `MM` /
-`M` / `DD` / `D`; every other character passes through literally
-(`'YYYY年M月D日'` works). `YYYY` is the zero-padded-to-4 year with a
-`-` prefix for negative years; `MM`/`DD` zero-pad to 2; `M`/`D` are
-bare. The v1 token set is date-only and numeric — locale-dependent
-fields (month/weekday names) are a deliberate later stage of #2324
-(they need framework-owned name tables), and per-locale *pattern
-selection* is the app's i18n layer's job, not the helper's.
+`pattern` is scanned longest-match for the token set `YYYY` / `MMMM`
+/ `MMM` / `MM` / `DD` / `dddd` / `ddd` / `M` / `D`; every other
+character passes through literally (`'YYYY年M月D日'` works). `YYYY`
+is the zero-padded-to-4 year with a `-` prefix for negative years;
+`MM`/`DD` zero-pad to 2; `M`/`D` are bare.
+
+The NAME tokens (#2334) read the explicit `names` table — a flat
+string list in fixed layout: `[0..11]` wide months, `[12..23]`
+abbreviated months, `[24..30]` wide weekdays (Sunday-first, so the
+index IS the day-of-week), `[31..37]` abbreviated weekdays. `MMMM` /
+`MMM` index by month; `dddd` / `ddd` index by the day-of-week of the
+OFFSET-SHIFTED instant (epoch-days mod 7 anchored on 1970-01-01 =
+Thursday — floor division for pre-1970 instants). A name token
+indexing a missing/short table renders `''`. The backend never owns
+locale data: the values arrive as an ordinary array argument (the
+compiler derives them from its own ICU at build time, or the app's
+i18n layer passes them at the `formatDate` API level) — backends
+know the SHAPE, never the locale.
 
 `tz` is `'UTC'` or a fixed offset matching `±HH:MM` (`'+09:00'`,
 `'-05:30'`). The helper is **total**: any other value — including

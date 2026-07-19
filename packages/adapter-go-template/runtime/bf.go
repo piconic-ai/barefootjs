@@ -316,15 +316,42 @@ func Date(recv any, op string) any {
 var tzOffsetRE = regexp.MustCompile(`^([+-])(\d{2}):(\d{2})$`)
 
 // formatDateTokenRE is the longest-match pattern-token alternation (mirrors
-// TOKEN_RE in packages/client/src/format-date.ts). Order matters: MM before
-// M and DD before D so the 2-char token wins at a position where either
-// could match — Go's regexp, like JS's, resolves alternation leftmost-first
-// (not POSIX leftmost-longest), so listing the longer alternative first is
-// what makes "MM" consume both characters instead of two "M" matches.
-var formatDateTokenRE = regexp.MustCompile(`YYYY|MM|DD|M|D`)
+// TOKEN_RE in packages/client/src/format-date.ts). Order matters: MMMM
+// before MMM before MM before M (and dddd before ddd, DD before D) so the
+// longer token wins at a position where a shorter one could also match —
+// Go's regexp, like JS's, resolves alternation leftmost-first (not POSIX
+// leftmost-longest), so listing the longer alternative first is what makes
+// e.g. "MMMM" consume all four characters instead of "MM" + "MM".
+var formatDateTokenRE = regexp.MustCompile(`YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D`)
 
-// FormatDate implements the `format_date` helper (#2324, spec entry
-// "format_date") — the lowering target for `formatDate(date, pattern, tz)`
+// nameTable section offsets (#2334, mirrors MONTHS_WIDE / MONTHS_ABBR /
+// WEEKDAYS_WIDE / WEEKDAYS_ABBR in packages/client/src/format-date.ts).
+const (
+	monthsWide   = 0
+	monthsAbbr   = 12
+	weekdaysWide = 24
+	weekdaysAbbr = 31
+)
+
+// formatDateName reads a name-token table entry: index out of range, or a
+// non-string element, both render "" — the same total, zero-value
+// discipline as an unparseable date (mirrors the JS reference's
+// `names[index] ?? ""` fallback, where every table element the vectors ever
+// carry is a string).
+func formatDateName(names []any, index int) string {
+	if index < 0 || index >= len(names) {
+		return ""
+	}
+	s, ok := names[index].(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+// FormatDate implements the `format_date` helper (#2324, #2334, spec entry
+// "format_date") — the lowering target for
+// `formatDate(date, pattern, tz, names)`
 // (packages/client/src/format-date.ts, the JS-normative reference this must
 // match byte-for-byte). Total and deterministic: no locale, no host
 // timezone, no "now".
@@ -342,11 +369,19 @@ var formatDateTokenRE = regexp.MustCompile(`YYYY|MM|DD|M|D`)
 // clock face IS the local clock face at that offset, same reasoning as the
 // JS reference.
 //
-// pattern: longest-match token substitution (`YYYY|MM|DD|M|D`); every other
-// character — including multi-byte ones like 年/月/日 — passes through
-// literally. `YYYY` is `abs(year)` zero-padded to 4 digits, `-`-prefixed for
-// a negative year; `MM`/`DD` zero-pad to 2; `M`/`D` are bare.
-func FormatDate(recv any, pattern string, tz string) string {
+// names (#2334): a flat name table in fixed layout — `[0..11]` wide month
+// names, `[12..23]` abbreviated month names, `[24..30]` wide weekday names
+// (Sunday-first), `[31..37]` abbreviated weekday names. The caller owns the
+// values; this helper only indexes the table.
+//
+// pattern: longest-match token substitution
+// (`YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D`); every other character — including
+// multi-byte ones like 年/月/日 — passes through literally. `YYYY` is
+// `abs(year)` zero-padded to 4 digits, `-`-prefixed for a negative year;
+// `MM`/`DD` zero-pad to 2; `M`/`D` are bare; `MMMM`/`MMM` and `dddd`/`ddd`
+// read the `names` table (weekday computed on the offset-shifted instant,
+// Sunday-first, matching `time.Time.Weekday()`'s own Sunday=0 encoding).
+func FormatDate(recv any, pattern string, tz string, names []any) string {
 	t, ok := toTime(recv)
 	if !ok {
 		return ""
@@ -364,6 +399,7 @@ func FormatDate(recv any, pattern string, tz string) string {
 	year := shifted.Year()
 	month := int(shifted.Month())
 	day := shifted.Day()
+	weekday := int(shifted.Weekday()) // time.Sunday == 0, matching the table's Sunday-first layout
 	absYear := year
 	if absYear < 0 {
 		absYear = -absYear
@@ -376,6 +412,10 @@ func FormatDate(recv any, pattern string, tz string) string {
 		switch token {
 		case "YYYY":
 			return yyyy
+		case "MMMM":
+			return formatDateName(names, monthsWide+month-1)
+		case "MMM":
+			return formatDateName(names, monthsAbbr+month-1)
 		case "MM":
 			return fmt.Sprintf("%02d", month)
 		case "M":
@@ -384,6 +424,10 @@ func FormatDate(recv any, pattern string, tz string) string {
 			return fmt.Sprintf("%02d", day)
 		case "D":
 			return strconv.Itoa(day)
+		case "dddd":
+			return formatDateName(names, weekdaysWide+weekday)
+		case "ddd":
+			return formatDateName(names, weekdaysAbbr+weekday)
 		default:
 			return token
 		}

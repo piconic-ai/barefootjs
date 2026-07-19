@@ -324,7 +324,7 @@ function date(recv, op) {
 // formatter. Same stripped-imports reasoning as \`date\` above — the user's
 // own \`import { formatDate } from '@barefootjs/client'\` is stripped with
 // every other import, so the call in template/init code needs this mirror.
-function formatDate(dateArg, pattern, timeZone = 'UTC') {
+function formatDate(dateArg, pattern, timeZone = 'UTC', names = []) {
   // Nullish guard mirrors the client implementation: new Date(null) is
   // epoch 0, not Invalid Date, and the contract renders nil as ''.
   if (dateArg === null || dateArg === undefined) return ''
@@ -338,13 +338,19 @@ function formatDate(dateArg, pattern, timeZone = 'UTC') {
   const yyyy = (year < 0 ? '-' : '') + String(Math.abs(year)).padStart(4, '0')
   const month = s.getUTCMonth() + 1
   const day = s.getUTCDate()
+  const weekday = s.getUTCDay()
   const pad2 = (n) => String(n).padStart(2, '0')
-  return pattern.replace(/YYYY|MM|DD|M|D/g, (token) =>
+  const nameAt = (i) => names[i] ?? ''
+  return pattern.replace(/YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D/g, (token) =>
     token === 'YYYY' ? yyyy
+      : token === 'MMMM' ? nameAt(month - 1)
+      : token === 'MMM' ? nameAt(12 + month - 1)
       : token === 'MM' ? pad2(month)
       : token === 'M' ? String(month)
       : token === 'DD' ? pad2(day)
-      : String(day),
+      : token === 'D' ? String(day)
+      : token === 'dddd' ? nameAt(24 + weekday)
+      : nameAt(31 + weekday),
   )
 }
 

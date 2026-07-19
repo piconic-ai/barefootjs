@@ -188,12 +188,38 @@ fn parse_tz_offset(tz: &str) -> i64 {
     sign * (hh * 60 + mm)
 }
 
-/// `format_date(recv, pattern, tz)` -- the lowering target for a
-/// `formatDate(date, pattern, timeZone)` call (spec/template-helpers.md
-/// "format_date", #2324): a total, deterministic date-pattern formatter --
-/// no locale, no host timezone, no `SystemTime::now`. Mirrors
-/// `packages/client/src/format-date.ts` (the JS-normative reference) and
-/// the Go runtime's `FormatDate` byte-for-byte.
+/// `names`-table section offsets (#2334, mirrors `MONTHS_WIDE` /
+/// `MONTHS_ABBR` / `WEEKDAYS_WIDE` / `WEEKDAYS_ABBR` in
+/// `packages/client/src/format-date.ts` and the Go runtime's `bf.go`
+/// `monthsWide` / `monthsAbbr` / `weekdaysWide` / `weekdaysAbbr` constants).
+const MONTHS_WIDE: usize = 0;
+const MONTHS_ABBR: usize = 12;
+const WEEKDAYS_WIDE: usize = 24;
+const WEEKDAYS_ABBR: usize = 31;
+
+/// Read one `names` table entry (#2334): `names` is the runtime's own
+/// [`JsValue`] array value (whatever array shape `bf.arr`-equivalent
+/// template output materializes into -- see [`crate::runtime::mj_to_js`]'s
+/// `Seq`/`Iterable` arm, which is what a compiled minijinja template's
+/// 4th `format_date` argument becomes by the time it reaches here). A
+/// missing/out-of-range index, a non-array `names`, or a non-string
+/// element all render `""` -- the same total, zero-value discipline as an
+/// unparseable date, mirroring `names[index] ?? ''` in the JS reference
+/// (`packages/client/src/format-date.ts`'s `nameAt`) and `formatDateName`
+/// in the Go runtime's `bf.go`.
+fn name_at(names: &JsValue, index: usize) -> &str {
+    match names.as_array().and_then(|arr| arr.get(index)) {
+        Some(JsValue::String(s)) => s.as_str(),
+        _ => "",
+    }
+}
+
+/// `format_date(recv, pattern, tz, names)` -- the lowering target for a
+/// `formatDate(date, pattern, timeZone, names)` call
+/// (spec/template-helpers.md "format_date", #2324, #2334): a total,
+/// deterministic date-pattern formatter -- no locale, no host timezone, no
+/// `SystemTime::now`. Mirrors `packages/client/src/format-date.ts` (the
+/// JS-normative reference) and the Go runtime's `FormatDate` byte-for-byte.
 ///
 /// `recv` follows the `date` helper's receiver contract exactly (see
 /// [`epoch_ms_of`]): this runtime's own [`JsValue::Date`] or an ISO-8601
@@ -207,17 +233,29 @@ fn parse_tz_offset(tz: &str) -> i64 {
 /// fields (not the original instant's) are what the pattern tokens read --
 /// the shifted UTC clock face IS the local clock face at that offset.
 ///
+/// `names` (#2334) is a flat table in fixed layout: `[0..11]` wide month
+/// names, `[12..23]` abbreviated month names, `[24..30]` wide weekday names
+/// (Sunday-first), `[31..37]` abbreviated weekday names -- see [`name_at`].
+/// The caller owns the values (locale selection is not this function's
+/// job); this only indexes the table.
+///
 /// `pattern` is scanned left-to-right, longest-match, for the token set
-/// `YYYY|MM|DD|M|D` (checking the 4-char token before the 2-char tokens
-/// before the 1-char tokens at each position, the same alternation-order
-/// discipline the Go/JS ports use); every other character -- including
-/// multi-byte ones like 年/月/日 -- passes through literally. The scan
-/// advances by whole characters only (ASCII token matches consume exactly
-/// 1/2/4 ASCII bytes; the fallback branch consumes one full `char` via
-/// `len_utf8`), so slicing never lands mid-codepoint. `YYYY` is
-/// `abs(year)` zero-padded to 4 digits, `-`-prefixed for a negative year;
-/// `MM`/`DD` zero-pad to 2; `M`/`D` are bare.
-pub fn format_date(recv: &JsValue, pattern: &str, tz: &str) -> String {
+/// `YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D` (checking longer tokens before
+/// shorter ones at each position, the same alternation-order discipline the
+/// Go/JS ports use); every other character -- including multi-byte ones
+/// like 年/月/日 or 月-name table values -- passes through/renders
+/// literally. The scan advances by whole characters only (ASCII token
+/// matches consume exactly 1/2/4 ASCII bytes; the fallback branch consumes
+/// one full `char` via `len_utf8`), so slicing never lands mid-codepoint.
+/// `YYYY` is `abs(year)` zero-padded to 4 digits, `-`-prefixed for a
+/// negative year; `MM`/`DD` zero-pad to 2; `M`/`D` are bare. `MMMM`/`MMM`
+/// read `names[month-1]` / `names[12+month-1]`; `dddd`/`ddd` read
+/// `names[24+weekday]` / `names[31+weekday]`, where `weekday` (0 = Sunday)
+/// is derived from the shifted epoch day count via
+/// `(days + 4).rem_euclid(7)` -- 1970-01-01 (`days == 0`) is a Thursday,
+/// and `rem_euclid` (not `%`, which truncates toward zero in Rust) keeps
+/// the result in `[0, 6]` for a negative (pre-1970) `days` too.
+pub fn format_date(recv: &JsValue, pattern: &str, tz: &str, names: &JsValue) -> String {
     let ms = match epoch_ms_of(recv) {
         Some(ms) => ms,
         None => return String::new(),
@@ -227,6 +265,7 @@ pub fn format_date(recv: &JsValue, pattern: &str, tz: &str) -> String {
     let days = shifted.div_euclid(MS_PER_DAY);
     let (year, month, day) = civil_from_days(days);
     let yyyy = if year < 0 { format!("-{:04}", -year) } else { format!("{year:04}") };
+    let weekday = (days + 4).rem_euclid(7) as usize; // 0 = Sunday; epoch (days=0) is Thursday
 
     let mut out = String::with_capacity(pattern.len());
     let mut i = 0;
@@ -235,12 +274,24 @@ pub fn format_date(recv: &JsValue, pattern: &str, tz: &str) -> String {
         if rest.starts_with("YYYY") {
             out.push_str(&yyyy);
             i += 4;
+        } else if rest.starts_with("MMMM") {
+            out.push_str(name_at(names, MONTHS_WIDE + (month - 1) as usize));
+            i += 4;
+        } else if rest.starts_with("MMM") {
+            out.push_str(name_at(names, MONTHS_ABBR + (month - 1) as usize));
+            i += 3;
         } else if rest.starts_with("MM") {
             out.push_str(&format!("{month:02}"));
             i += 2;
         } else if rest.starts_with("DD") {
             out.push_str(&format!("{day:02}"));
             i += 2;
+        } else if rest.starts_with("dddd") {
+            out.push_str(name_at(names, WEEKDAYS_WIDE + weekday));
+            i += 4;
+        } else if rest.starts_with("ddd") {
+            out.push_str(name_at(names, WEEKDAYS_ABBR + weekday));
+            i += 3;
         } else if rest.starts_with('M') {
             out.push_str(&month.to_string());
             i += 1;

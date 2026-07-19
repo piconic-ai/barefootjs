@@ -399,6 +399,7 @@ import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as formatDate } from './format-date'
 import { fixture as dateToLocaleLiteral } from './date-tolocale-literal'
 import { fixture as dateToLocaleUnion } from './date-tolocale-union'
+import { fixture as dateToLocaleDateStyle } from './date-tolocale-datestyle'
 // #2277: the union- and object-typed catalogue extensions to the
 // type-derived adversarial catalogue (`adversarial-catalog.ts`), mirroring
 // the landed Date catalogue work above.
@@ -690,6 +691,7 @@ export const jsxFixtures: JSXFixture[] = [
   formatDate,
   dateToLocaleLiteral,
   dateToLocaleUnion,
+  dateToLocaleDateStyle,
   unionCatalogued,
   objectCatalogued,
 ]

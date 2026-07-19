@@ -96,7 +96,8 @@ class HelperVectorsTest < Minitest::Test
     'abs' => ->(v) { BF.abs(v) },
     'to_fixed' => ->(*a) { BF.to_fixed(*a) },
     'date' => ->(recv, op) { BF.date(recv, op) },
-    'format_date' => ->(recv, pattern, tz) { BF.format_date(recv, pattern, tz) },
+    # Canonical arity is 4 as of #2334 (names table for MMMM/MMM/dddd/ddd).
+    'format_date' => ->(recv, pattern, tz, names = []) { BF.format_date(recv, pattern, tz, names) },
 
     'lower' => ->(s) { BF.lc(s) },
     'upper' => ->(s) { BF.uc(s) },

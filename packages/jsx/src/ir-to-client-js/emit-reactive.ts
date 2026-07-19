@@ -181,10 +181,17 @@ function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher
       call.arguments.map((a) => tsNodeToParsedExpr(a)),
     )
     if (!node || node.kind !== 'helper-call' || node.helper !== 'format_date') continue
-    const [, patternArg, tzArg] = node.args
+    const [, patternArg, tzArg, namesArg] = node.args
     if (!patternArg || tzArg?.kind !== 'literal') continue
-    const patternJs = patternArgToClientJs(patternArg, call.arguments[0].getText(sourceFile))
+    const localeText = call.arguments[0].getText(sourceFile)
+    const patternJs = patternArgToClientJs(patternArg, localeText)
     if (patternJs === null) continue
+    // The names table (#2334) — omitted when empty, same as the static path.
+    let namesJs: string | null = null
+    if (namesArg && !(namesArg.kind === 'array-literal' && namesArg.elements.length === 0)) {
+      namesJs = patternArgToClientJs(namesArg, localeText)
+      if (namesJs === null) continue
+    }
     const receiverText = propAccess.expression.getText(sourceFile)
     const matchText = call.getText(sourceFile)
     // The call text contains string literals (placeholders in the protected
@@ -193,7 +200,8 @@ function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher
     result = replaceProtectedCall(
       result,
       matchText,
-      () => `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)})`,
+      () =>
+        `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)}${namesJs !== null ? `, ${namesJs}` : ''})`,
     )
   }
   return restore(result)
