@@ -96,13 +96,21 @@ function pushDiagnostic(
   if (seen.has(key)) return
   seen.add(key)
   const receiver = isProp ? `prop '${receiverPath}'` : `'${receiverPath}'`
+  // `toLocaleDateString` has a catalogued explicit-input form (#2324 slice
+  // 2) — point the fix at it instead of the generic escape hatches alone.
+  // The implicit-environment forms (zero-arg, locale-only, non-literal
+  // locale, IANA timeZone) stay refused by design.
+  const suggestion =
+    method === 'toLocaleDateString' && typeName === 'Date'
+      ? "Pass a literal locale and an explicit literal timeZone — .toLocaleDateString('ja-JP', { timeZone: 'UTC' }) (or a fixed '±HH:MM' offset) — to compile it to the format_date helper; for a runtime locale, resolve the pattern in your i18n layer and use formatDate(date, pattern, tz) from @barefootjs/client. Alternatively add /* @client */ or pre-compute server-side."
+      : 'Add /* @client */ to evaluate this expression on the client only, or pre-compute the value server-side.'
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
     message: `Expression cannot be compiled to marked template: method '.${method}()' on ${receiver} of host type '${typeName}' has no catalogued lowering.`,
     loc,
     suggestion: {
-      message: 'Add /* @client */ to evaluate this expression on the client only, or pre-compute the value server-side.',
+      message: suggestion,
     },
   })
 }

@@ -62,7 +62,7 @@ const EMPTY_BINDINGS: Bindings = new Map()
  * properties of the SAME named type aren't short-circuited against each
  * other.
  */
-function typeReachesDate(type: TypeInfo | null, meta: IRMetadata, seen: Set<string>): boolean {
+export function typeReachesDate(type: TypeInfo | null, meta: IRMetadata, seen: Set<string>): boolean {
   const stripped = stripUnion(type)
   if (!stripped) return false
   // `kind: 'object'` is an INLINE type literal (`{ createdAt: Date }` — the

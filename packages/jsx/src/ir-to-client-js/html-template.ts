@@ -75,21 +75,55 @@ export function splitTemplateInterpolations(inner: string): string[] {
 export function createTemplateAwareStringProtector(): {
   protect: (s: string) => string
   restore: (s: string) => string
+  replaceProtectedCall: (haystack: string, needle: string, replacement: () => string) => string
 } {
   const stash: string[] = []
   const save = (s: string) => { const i = stash.length; stash.push(s); return `__STRLIT_${i}__` }
+  const STRING_LIT_RE = /'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g
   const protect = (s: string): string => {
     s = s.replace(/`([^`]*)`/g, (_full, inner: string) => {
       const parts = splitTemplateInterpolations(inner)
       return '`' + parts.map(p => p.startsWith('${') ? p : save(p)).join('') + '`'
     })
-    s = s.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, m => save(m))
+    s = s.replace(STRING_LIT_RE, m => save(m))
     return s
   }
   const restore = (s: string): string => {
     return s.replace(/__STRLIT_(\d+)__/g, (_, i) => stash[Number(i)])
   }
-  return { protect, restore }
+  /**
+   * Replace one occurrence of `needle` (raw source text that may CONTAIN
+   * string literals, e.g. a `toLocaleDateString('en-US', { timeZone:
+   * 'UTC' })` call) inside an already-`protect`ed `haystack`. A plain
+   * `.replace(needle, …)` can't work there: the haystack's literals are
+   * `__STRLIT_i__` placeholders while the needle still carries quotes. The
+   * needle's literal segments become placeholder wildcards, and each
+   * candidate occurrence is verified against the stash CONTENT — so two
+   * same-shaped calls differing only in their literals (two locales in one
+   * expression) can't be cross-replaced, and a protected template-literal
+   * static segment (stashed wholesale) can never match (#2294's hazard
+   * class). Replaces the first verified occurrence only.
+   */
+  const replaceProtectedCall = (haystack: string, needle: string, replacement: () => string): string => {
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const litValues: string[] = []
+    let pattern = ''
+    let last = 0
+    for (const m of needle.matchAll(STRING_LIT_RE)) {
+      pattern += escape(needle.slice(last, m.index))
+      pattern += '__STRLIT_(\\d+)__'
+      litValues.push(m[0])
+      last = m.index + m[0].length
+    }
+    pattern += escape(needle.slice(last))
+    for (const m of haystack.matchAll(new RegExp(pattern, 'g'))) {
+      const verified = m.slice(1).every((idx, i) => stash[Number(idx)] === litValues[i])
+      if (!verified) continue
+      return haystack.slice(0, m.index) + replacement() + haystack.slice(m.index + m[0].length)
+    }
+    return haystack
+  }
+  return { protect, restore, replaceProtectedCall }
 }
 
 const VOID_ELEMENTS = new Set([

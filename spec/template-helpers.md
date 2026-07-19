@@ -347,6 +347,12 @@ arithmetic: shift the instant by the offset, then read UTC fields
 (the shifted UTC clock face is the local clock face at that offset),
 so a `+09:00` on `2024-01-01T23:00Z` renders `2024-01-02`.
 
+This helper is also the lowering target of the literal-locale
+`toLocaleDateString` sugar (#2324 slice 2): the compiler resolves a
+compile-time-literal locale's default date pattern once at build
+time and emits the same `format_date` call, so no new helper id is
+involved and no backend work follows from the sugar.
+
 ### Higher-order: canonical projection form
 
 Closures can't ride in JSON, so higher-order entries use the compiled

@@ -49,6 +49,7 @@ import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironme
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
+import { toLocaleDatePlugin } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
@@ -175,6 +176,11 @@ interface TransformContext {
    * own `prepare` gate). See `getDateLoweringMatcher`.
    */
   _dateLoweringMatcher?: LoweringMatcher | null
+  /**
+   * Cached `toLocaleDatePlugin` matcher (#2324 slice 2), same lifecycle as
+   * `_dateLoweringMatcher`. See `getToLocaleDateLoweringMatcher`.
+   */
+  _toLocaleDateLoweringMatcher?: LoweringMatcher | null
 }
 
 /**
@@ -326,6 +332,21 @@ function getDateLoweringMatcher(ctx: TransformContext): LoweringMatcher | null {
   return ctx._dateLoweringMatcher
 }
 
+/** `getDateLoweringMatcher`'s twin for `toLocaleDatePlugin` (#2324 slice 2) — same metadata slice, same cache lifecycle. */
+function getToLocaleDateLoweringMatcher(ctx: TransformContext): LoweringMatcher | null {
+  if (ctx._toLocaleDateLoweringMatcher === undefined) {
+    const a = ctx.analyzer
+    const metadataSlice: Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'propsParams' | 'typeDefinitions'> = {
+      propsType: a.propsType,
+      propsObjectName: a.propsObjectName,
+      propsParams: a.propsParams,
+      typeDefinitions: a.typeDefinitions,
+    }
+    ctx._toLocaleDateLoweringMatcher = toLocaleDatePlugin.prepare(metadataSlice as unknown as IRMetadata)
+  }
+  return ctx._toLocaleDateLoweringMatcher
+}
+
 /**
  * Client-side counterpart to `datePlugin` (#2274 was SSR-only; #2292
  * closes the gap). The client emitter (`ir-to-client-js/`) emits raw,
@@ -402,6 +423,63 @@ function lowerDateCalls(text: string, expr: ts.Node, ctx: TransformContext): str
 }
 
 /**
+ * `lowerDateCalls`' twin for the literal-locale `toLocaleDateString` sugar
+ * (#2324 slice 2). A call the SAME `toLocaleDatePlugin` matcher claims (so
+ * client and SSR lower under identical evidence, mandatory per #2292)
+ * rewrites to `formatDate(recv, "<pattern>", "<tz>")` — the pattern and tz
+ * literals come off the matched helper-call node, so the client renders the
+ * exact build-time-frozen pattern the templates render, and the ISO-string
+ * prop value the client actually holds post-hydration (no type-aware JSON
+ * revival) flows through `formatDate`'s string-receiver normalization
+ * instead of throwing on a raw `.toLocaleDateString()` string call.
+ */
+function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformContext): string {
+  const matcher = getToLocaleDateLoweringMatcher(ctx)
+  if (!matcher) return text
+
+  const candidates: ts.CallExpression[] = []
+  function visit(n: ts.Node) {
+    if (
+      ts.isCallExpression(n) &&
+      n.arguments.length === 2 &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      !n.expression.questionDotToken &&
+      n.expression.name.text === 'toLocaleDateString'
+    ) {
+      candidates.push(n)
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(expr)
+  if (candidates.length === 0) return text
+
+  const { protect, restore, replaceProtectedCall } = createTemplateAwareStringProtector()
+  let result = protect(text)
+  for (const call of candidates) {
+    const propAccess = call.expression as ts.PropertyAccessExpression
+    const node = matcher(
+      tsNodeToParsedExpr(propAccess),
+      call.arguments.map((a) => tsNodeToParsedExpr(a)),
+    )
+    if (!node || node.kind !== 'helper-call' || node.helper !== 'format_date') continue
+    const [, patternArg, tzArg] = node.args
+    if (patternArg?.kind !== 'literal' || tzArg?.kind !== 'literal') continue
+    const receiverText = ctx.getJS(propAccess.expression)
+    const matchText = ctx.getJS(call)
+    // Unlike `lowerDateCalls`' zero-arg needle, this call text CONTAINS
+    // string literals, which the protected haystack holds as placeholders —
+    // so the replacement must go through the protector's stash-verified
+    // matcher rather than a plain `.replace`.
+    result = replaceProtectedCall(
+      result,
+      matchText,
+      () => `formatDate(${receiverText}, ${JSON.stringify(patternArg.value)}, ${JSON.stringify(tzArg.value)})`,
+    )
+  }
+  return restore(result)
+}
+
+/**
  * Rewrite bare destructured prop references in expression text.
  * Thin wrapper that caches prop names on ctx and delegates to the shared core.
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
@@ -415,7 +493,7 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // unconditionally — ahead of the `propNames` gate — because Date
   // evidence comes from `ctx.analyzer.propsType`, independent of whether
   // this component destructures its props.
-  const dateLowered = lowerDateCalls(text, expr, ctx)
+  const dateLowered = lowerToLocaleDateCalls(lowerDateCalls(text, expr, ctx), expr, ctx)
   let propNames = getDestructuredPropNames(ctx)
   if (!propNames) return dateLowered === text ? undefined : dateLowered
   // #2222: a name bound as an enclosing loop callback's item/index param
