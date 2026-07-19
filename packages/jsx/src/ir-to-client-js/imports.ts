@@ -21,6 +21,10 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // every SSR adapter's `date` runtime helper (`date-lowering.ts`'s
   // `datePlugin`).
   'date',
+  // Literal-locale `toLocaleDateString` sugar (#2324 slice 2) — the client
+  // rewrite targets `formatDate(recv, pattern, tz)`, so the emitted code
+  // needs the runtime export when the component didn't import it itself.
+  'formatDate',
 ] as const
 
 /** @deprecated Use RUNTIME_IMPORT_CANDIDATES */

@@ -11,6 +11,7 @@ import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
 import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
+import { toLocaleDatePlugin } from '../to-locale-date-lowering.ts'
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 
@@ -122,6 +123,80 @@ function getReactiveDateLoweringMatcher(ctx: ClientJsContext): LoweringMatcher |
   return datePlugin.prepare(metadataSlice as unknown as IRMetadata)
 }
 
+/** `getReactiveDateLoweringMatcher`'s twin for `toLocaleDatePlugin` (#2324 slice 2). */
+function getReactiveToLocaleMatcher(ctx: ClientJsContext): LoweringMatcher | null {
+  if (!ctx.propsType) return null
+  const metadataSlice: Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'propsParams' | 'typeDefinitions'> = {
+    propsType: ctx.propsType,
+    propsObjectName: ctx.propsObjectName,
+    propsParams: ctx.propsParams,
+    typeDefinitions: ctx.typeDefinitions ?? [],
+  }
+  return toLocaleDatePlugin.prepare(metadataSlice as unknown as IRMetadata)
+}
+
+/**
+ * Reactive-path counterpart to `jsx-to-ir.ts`'s `lowerToLocaleDateCalls`
+ * (#2324 slice 2): rewrite a literal-locale `toLocaleDateString` call the
+ * SAME `toLocaleDatePlugin` matcher claims to `formatDate(recv, pattern,
+ * tz)` with the build-time-frozen pattern, for the same two reasons as the
+ * `date` rewrite above — the hydrated prop is an ISO STRING (a raw
+ * `.toLocaleDateString()` on it throws), and the client must render the
+ * frozen pattern, not the browser's own ICU output.
+ */
+function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher | null): string {
+  if (!matcher) return expr
+  let sourceFile: ts.SourceFile
+  try {
+    sourceFile = ts.createSourceFile('__reactive_expr__.ts', `(${expr});`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  } catch {
+    return expr
+  }
+  const stmt = sourceFile.statements[0]
+  if (!stmt || !ts.isExpressionStatement(stmt)) return expr
+  const root = ts.isParenthesizedExpression(stmt.expression) ? stmt.expression.expression : stmt.expression
+
+  const candidates: ts.CallExpression[] = []
+  const visit = (n: ts.Node): void => {
+    if (
+      ts.isCallExpression(n) &&
+      n.arguments.length === 2 &&
+      ts.isPropertyAccessExpression(n.expression) &&
+      !n.expression.questionDotToken &&
+      n.expression.name.text === 'toLocaleDateString'
+    ) {
+      candidates.push(n)
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(root)
+  if (candidates.length === 0) return expr
+
+  const { protect, restore, replaceProtectedCall } = createTemplateAwareStringProtector()
+  let result = protect(expr)
+  for (const call of candidates) {
+    const propAccess = call.expression as ts.PropertyAccessExpression
+    const node = matcher(
+      tsNodeToParsedExpr(propAccess),
+      call.arguments.map((a) => tsNodeToParsedExpr(a)),
+    )
+    if (!node || node.kind !== 'helper-call' || node.helper !== 'format_date') continue
+    const [, patternArg, tzArg] = node.args
+    if (patternArg?.kind !== 'literal' || tzArg?.kind !== 'literal') continue
+    const receiverText = propAccess.expression.getText(sourceFile)
+    const matchText = call.getText(sourceFile)
+    // The call text contains string literals (placeholders in the protected
+    // haystack) — go through the protector's stash-verified matcher, same
+    // as the static-path rewrite in jsx-to-ir.ts.
+    result = replaceProtectedCall(
+      result,
+      matchText,
+      () => `formatDate(${receiverText}, ${JSON.stringify(patternArg.value)}, ${JSON.stringify(tzArg.value)})`,
+    )
+  }
+  return restore(result)
+}
+
 /**
  * Reactive-path counterpart to `jsx-to-ir.ts`'s `lowerDateCalls` (#2292):
  * without this, a Date-typed prop's catalogued accessor call re-evaluated
@@ -197,6 +272,7 @@ function lowerDateCallsInReactiveExpr(expr: string, matcher: LoweringMatcher | n
 /** Emit createEffect blocks that update text nodes for reactive expressions. */
 export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): void {
   const dateLoweringMatcher = getReactiveDateLoweringMatcher(ctx)
+  const toLocaleMatcher = getReactiveToLocaleMatcher(ctx)
   // Group elements by expression to consolidate effects with same dependencies
   const byExpression = new Map<string, typeof ctx.dynamicElements>()
   for (const elem of ctx.dynamicElements) {
@@ -208,7 +284,10 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
   }
 
   for (const [rawExpr, elems] of byExpression) {
-    const expr = lowerDateCallsInReactiveExpr(rawExpr, dateLoweringMatcher)
+    const expr = lowerToLocaleCallsInReactiveExpr(
+      lowerDateCallsInReactiveExpr(rawExpr, dateLoweringMatcher),
+      toLocaleMatcher,
+    )
     // Separate conditional vs non-conditional elements
     const conditionalElems = elems.filter(e => e.insideConditional)
     const normalElems = elems.filter(e => !e.insideConditional)
