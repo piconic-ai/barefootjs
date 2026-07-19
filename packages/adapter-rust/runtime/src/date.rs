@@ -161,6 +161,101 @@ pub fn date(recv: &JsValue, op: &str) -> JsValue {
     }
 }
 
+/// Parse a fixed UTC offset `tz` matching `^([+-])(\d{2}):(\d{2})$` into
+/// signed minutes -- mirrors `OFFSET_RE` in
+/// `packages/client/src/format-date.ts` and `tzOffsetRE` in the Go
+/// runtime's `bf.go`. ANY other shape (`"UTC"`, an IANA zone name, a
+/// malformed offset like `"+9:00"`) is not this exact 6-byte
+/// sign/digit/digit/colon/digit/digit layout and normalizes to `0`
+/// minutes (UTC) -- byte/ascii-digit checks here, not a `regex` crate
+/// dependency (this crate's fixed dependency list excludes `regex`, same
+/// as this module's docstring notes for `chrono`).
+fn parse_tz_offset(tz: &str) -> i64 {
+    let b = tz.as_bytes();
+    if b.len() != 6 || b[3] != b':' {
+        return 0;
+    }
+    let sign = match b[0] {
+        b'+' => 1i64,
+        b'-' => -1i64,
+        _ => return 0,
+    };
+    if !b[1].is_ascii_digit() || !b[2].is_ascii_digit() || !b[4].is_ascii_digit() || !b[5].is_ascii_digit() {
+        return 0;
+    }
+    let hh = (b[1] - b'0') as i64 * 10 + (b[2] - b'0') as i64;
+    let mm = (b[4] - b'0') as i64 * 10 + (b[5] - b'0') as i64;
+    sign * (hh * 60 + mm)
+}
+
+/// `format_date(recv, pattern, tz)` -- the lowering target for a
+/// `formatDate(date, pattern, timeZone)` call (spec/template-helpers.md
+/// "format_date", #2324): a total, deterministic date-pattern formatter --
+/// no locale, no host timezone, no `SystemTime::now`. Mirrors
+/// `packages/client/src/format-date.ts` (the JS-normative reference) and
+/// the Go runtime's `FormatDate` byte-for-byte.
+///
+/// `recv` follows the `date` helper's receiver contract exactly (see
+/// [`epoch_ms_of`]): this runtime's own [`JsValue::Date`] or an ISO-8601
+/// string, both normalized to a single epoch-ms instant. A `None`
+/// (nil/unset or unparseable) receiver renders `""` -- unlike [`date`],
+/// there is no accessor/`getTime` numeric fallback here, since
+/// `format_date` always returns a string.
+///
+/// `tz` resolves via [`parse_tz_offset`]; the instant is shifted by
+/// `offset_minutes * 60_000` ms and the shifted instant's UTC calendar
+/// fields (not the original instant's) are what the pattern tokens read --
+/// the shifted UTC clock face IS the local clock face at that offset.
+///
+/// `pattern` is scanned left-to-right, longest-match, for the token set
+/// `YYYY|MM|DD|M|D` (checking the 4-char token before the 2-char tokens
+/// before the 1-char tokens at each position, the same alternation-order
+/// discipline the Go/JS ports use); every other character -- including
+/// multi-byte ones like 年/月/日 -- passes through literally. The scan
+/// advances by whole characters only (ASCII token matches consume exactly
+/// 1/2/4 ASCII bytes; the fallback branch consumes one full `char` via
+/// `len_utf8`), so slicing never lands mid-codepoint. `YYYY` is
+/// `abs(year)` zero-padded to 4 digits, `-`-prefixed for a negative year;
+/// `MM`/`DD` zero-pad to 2; `M`/`D` are bare.
+pub fn format_date(recv: &JsValue, pattern: &str, tz: &str) -> String {
+    let ms = match epoch_ms_of(recv) {
+        Some(ms) => ms,
+        None => return String::new(),
+    };
+    let offset_minutes = parse_tz_offset(tz);
+    let shifted = ms + offset_minutes * 60_000;
+    let days = shifted.div_euclid(MS_PER_DAY);
+    let (year, month, day) = civil_from_days(days);
+    let yyyy = if year < 0 { format!("-{:04}", -year) } else { format!("{year:04}") };
+
+    let mut out = String::with_capacity(pattern.len());
+    let mut i = 0;
+    while i < pattern.len() {
+        let rest = &pattern[i..];
+        if rest.starts_with("YYYY") {
+            out.push_str(&yyyy);
+            i += 4;
+        } else if rest.starts_with("MM") {
+            out.push_str(&format!("{month:02}"));
+            i += 2;
+        } else if rest.starts_with("DD") {
+            out.push_str(&format!("{day:02}"));
+            i += 2;
+        } else if rest.starts_with('M') {
+            out.push_str(&month.to_string());
+            i += 1;
+        } else if rest.starts_with('D') {
+            out.push_str(&day.to_string());
+            i += 1;
+        } else {
+            let ch = rest.chars().next().expect("i < pattern.len() guarantees a char remains");
+            out.push(ch);
+            i += ch.len_utf8();
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

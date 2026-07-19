@@ -529,6 +529,80 @@ module BarefootJS
       end
     end
 
+    # `tz` shapes FORMAT_DATE_OFFSET_RE matches: a fixed UTC offset `±HH:MM`
+    # (`'+09:00'`, `'-05:30'`) -- the ONLY non-UTC shape `format_date`
+    # recognizes (mirrors OFFSET_RE in packages/client/src/format-date.ts).
+    FORMAT_DATE_OFFSET_RE = /\A([+-])(\d{2}):(\d{2})\z/
+
+    # Longest-match pattern-token alternation (mirrors TOKEN_RE in
+    # packages/client/src/format-date.ts). Order matters: MM before M and DD
+    # before D so the 2-char token wins at a position where either could
+    # match -- Ruby's Onigmo engine, like JS's regex engine, resolves
+    # alternation leftmost-first (not POSIX leftmost-longest), so listing the
+    # longer alternative first is what makes "MM" consume both characters
+    # instead of two "M" matches.
+    FORMAT_DATE_TOKEN_RE = /YYYY|MM|DD|M|D/
+
+    # `format_date(recv, pattern, tz)` (#2324, spec entry "format_date" in
+    # spec/template-helpers.md) -- the lowering target for
+    # `formatDate(date, pattern, timeZone)` (packages/client/src/format-date.ts,
+    # the JS-normative reference this must match byte-for-byte). Total and
+    # deterministic: no locale, no host timezone, no `Time.now`.
+    #
+    # recv: the same receiver contract as `date` above -- a native `Time` or
+    # an ISO-8601 string, normalized identically. A nil / unparseable
+    # receiver renders '' (never raises mid-render).
+    #
+    # tz: a fixed UTC offset `±HH:MM` shifts the instant by
+    # sign*(HH*60+MM) minutes; ANY other value -- 'UTC', an IANA zone name
+    # ('Asia/Tokyo'), or a malformed offset ('+9:00') -- normalizes to a
+    # zero-minute shift (UTC), so every backend degrades identically instead
+    # of dragging in host tzdata. The shifted instant's UTC calendar fields
+    # (not the original instant's) are what pattern tokens read -- the
+    # shifted UTC clock face IS the local clock face at that offset. `Time`
+    # arithmetic here is exact (Ruby represents the instant as a Rational,
+    # not a floor-divided epoch-millis integer), so there's no pre-1970
+    # negative-epoch floor-division trap to dodge the way a naive
+    # epoch-millis-div-86400000 implementation would hit.
+    #
+    # pattern: longest-match token substitution (`YYYY|MM|DD|M|D`); every
+    # other character -- including multi-byte ones like 年/月/日 -- passes
+    # through literally. `YYYY` is `abs(year)` zero-padded to 4 digits,
+    # `-`-prefixed for a negative year; `MM`/`DD` zero-pad to 2; `M`/`D` are
+    # bare.
+    def format_date(recv, pattern, tz)
+      t =
+        if recv.is_a?(Time)
+          recv
+        else
+          begin
+            Time.iso8601(recv.to_s)
+          rescue ArgumentError
+            nil
+          end
+        end
+      return '' if t.nil?
+
+      m = FORMAT_DATE_OFFSET_RE.match(tz.to_s)
+      offset_minutes = m ? (m[1] == '-' ? -1 : 1) * ((m[2].to_i * 60) + m[3].to_i) : 0
+
+      shifted = (t.utc + (offset_minutes * 60)).utc
+      year = shifted.year
+      month = shifted.mon
+      day = shifted.mday
+      yyyy = (year.negative? ? '-' : '') + year.abs.to_s.rjust(4, '0')
+
+      pattern.gsub(FORMAT_DATE_TOKEN_RE) do |token|
+        case token
+        when 'YYYY' then yyyy
+        when 'MM' then format('%02d', month)
+        when 'M' then month.to_s
+        when 'DD' then format('%02d', day)
+        when 'D' then day.to_s
+        end
+      end
+    end
+
     # -----------------------------------------------------------------
     # Array / String method helpers
     # -----------------------------------------------------------------

@@ -1338,6 +1338,12 @@ impl Object for BfInstance {
             // string; `date::date` normalizes and dispatches both. `op`
             // stays a plain string arg, never routed through `js_number`.
             "date" => Ok(js_to_mj(&date::date(a(0), a(1).as_str().unwrap_or("")))),
+            // `format_date(recv, pattern, tz)` (spec/template-helpers.md
+            // "format_date", #2324) -- total, locale-free date-pattern
+            // formatting layered on the same `recv` normalization as
+            // `date` above. See `date::format_date`'s docstring for the
+            // full contract.
+            "format_date" => Ok(MjValue::from(date::format_date(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or("")))),
 
             // -- Array / string method helpers (#1448 Tier A) ------------------
             "includes" => Ok(MjValue::from(includes(a(0), a(1)))),

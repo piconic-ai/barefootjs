@@ -91,7 +91,7 @@ export type { ParsedExprEmitter, HigherOrderMethod, ArrayMethod, SortMethod, Lit
 export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
 export { evaluateSignalInit, tryEvaluateSignalInit, type SignalInitEvalResult } from './signal-init-eval.ts'
 export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
-export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
+export { importsSearchParams, searchParamsLocalNames, envSignalLocalNames, envSignalReaderFor, ENV_SIGNAL_READERS, queryHrefLocalNames, formatDateLocalNames, matchSearchParamsMethodCall } from './adapters/env-signal.ts'
 export type { EnvSignalReader } from './adapters/env-signal.ts'
 export { matchQueryHrefCall, queryHrefArgs, type QueryHrefCall, type QueryHrefTriple } from './query-href-lowering.ts'
 export {

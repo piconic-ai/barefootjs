@@ -49,6 +49,7 @@ export { forwardProps } from './forward-props.ts'
 export { unwrap } from './unwrap.ts'
 
 export { queryHref, type QueryParams, type QueryParamValue } from './query-href.ts'
+export { formatDate } from './format-date.ts'
 
 export { createContext, type Context } from './context.ts'
 

@@ -133,6 +133,25 @@ const QUERY_HREF_SOURCES: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * The local binding name(s) that `formatDate` is imported under in this
+ * component (#2324) — the pure-function date formatter an adapter lowers to
+ * its `format_date` helper (spec/template-helpers.md). Same resolution rules
+ * as {@link queryHrefLocalNames}: matched by exported name, gated on the LOCAL
+ * alias, accepted from both the main entry and the runtime re-export.
+ */
+export function formatDateLocalNames(metadata: IRMetadata): Set<string> {
+  const names = new Set<string>()
+  for (const imp of metadata.imports) {
+    if (!QUERY_HREF_SOURCES.has(imp.source) || imp.isTypeOnly) continue
+    for (const s of imp.specifiers) {
+      if (s.isTypeOnly || s.isNamespace || s.isDefault) continue
+      if (s.name === 'formatDate') names.add(s.alias ?? s.name)
+    }
+  }
+  return names
+}
+
+/**
  * Recognise a `<binding>().<method>(<args>)` env-signal method call from a
  * `call` node's callee + args, where `<binding>` is one of the local names
  * `searchParams` was imported under (`localNames`, from

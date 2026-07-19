@@ -168,6 +168,7 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'abs': return $bf->abs($args[0]);
         case 'to_fixed': return $bf->to_fixed(...$args);
         case 'date': return $bf->date($args[0], $args[1]);
+        case 'format_date': return $bf->format_date($args[0], $args[1], $args[2]);
         case 'lower': return $bf->lc($args[0]);
         case 'upper': return $bf->uc($args[0]);
         case 'trim': return $bf->trim($args[0]);

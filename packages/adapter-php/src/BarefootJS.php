@@ -772,6 +772,85 @@ final class BarefootJS
         }
     }
 
+    /**
+     * `format_date($recv, $pattern, $tz)` -- pure-function date formatter
+     * (#2324, spec entry "format_date"), mirroring
+     * packages/client/src/format-date.ts byte-for-byte. `$recv` shares
+     * `date()`'s receiver contract above (native `\DateTimeInterface` or an
+     * ISO-8601 string; a nil or unparseable receiver degrades to `''`,
+     * never throws). From there it's pure arithmetic, deliberately NOT
+     * PHP's timezone database: shift the epoch-ms instant by the offset,
+     * then read the shifted instant's own UTC calendar fields -- the
+     * shifted UTC clock face IS the local clock face at that offset. No
+     * locale, no host TZ, no time().
+     *
+     * `$tz` matches `/^([+-])(\d{2}):(\d{2})$/` or degrades to a zero
+     * offset (UTC) for ANY other value -- IANA zone names ('Asia/Tokyo'),
+     * bare 'UTC', and malformed offsets ('+9:00') alike -- so every
+     * backend degrades identically instead of diverging by way of its own
+     * tzdata.
+     *
+     * The epoch-ms -> seconds step floor-divides (rounds toward negative
+     * infinity), NOT `intdiv`'s truncate-toward-zero, so a pre-1970 instant
+     * lands on the correct calendar day after shifting; PHP's `@<seconds>`
+     * DateTimeImmutable constructor is always UTC, so no further
+     * setTimezone() is needed to read the shifted fields.
+     *
+     * Token substitution is `YYYY|MM|DD|M|D` (longest-match alternation
+     * order, `preg_replace_callback`); every other byte -- including
+     * multi-byte UTF-8 like `年`/`月`/`日` -- passes through literally since
+     * none of it can match the token alternation.
+     */
+    public function format_date($recv, string $pattern, string $tz): string
+    {
+        if ($recv instanceof \DateTimeInterface) {
+            $d = \DateTimeImmutable::createFromInterface($recv);
+        } else {
+            $s = $this->string($recv);
+            if ($s === '') {
+                return '';
+            }
+            try {
+                $d = new \DateTimeImmutable($s);
+            } catch (\Throwable $e) {
+                // \Throwable, not \Exception -- see date()'s matching catch
+                // above for why (Xdebug's dynamic-property enrichment can
+                // raise a bare Error on PHP >= 8.2).
+                return '';
+            }
+        }
+        $d = $d->setTimezone(new \DateTimeZone('UTC'));
+        $epochMs = ($d->getTimestamp() * 1000) + (int) $d->format('v');
+
+        $m = [];
+        $offsetMinutes = preg_match('/^([+-])(\d{2}):(\d{2})$/', $tz, $m)
+            ? ($m[1] === '-' ? -1 : 1) * ((int) $m[2] * 60 + (int) $m[3])
+            : 0;
+        $shiftedMs = $epochMs + $offsetMinutes * 60_000;
+
+        $shiftedSeconds = intdiv($shiftedMs, 1000);
+        if ($shiftedMs % 1000 !== 0 && $shiftedMs < 0) {
+            $shiftedSeconds--; // floor, not truncate, for a negative shifted instant
+        }
+        $shifted = new \DateTimeImmutable('@' . $shiftedSeconds);
+
+        $year = (int) $shifted->format('Y');
+        $yyyy = ($year < 0 ? '-' : '') . str_pad((string) abs($year), 4, '0', STR_PAD_LEFT);
+        $month = (int) $shifted->format('n');
+        $day = (int) $shifted->format('j');
+
+        return preg_replace_callback('/YYYY|MM|DD|M|D/', function ($matches) use ($yyyy, $month, $day) {
+            switch ($matches[0]) {
+                case 'YYYY': return $yyyy;
+                case 'MM': return str_pad((string) $month, 2, '0', STR_PAD_LEFT);
+                case 'M': return (string) $month;
+                case 'DD': return str_pad((string) $day, 2, '0', STR_PAD_LEFT);
+                case 'D': return (string) $day;
+                default: return $matches[0];
+            }
+        }, $pattern);
+    }
+
     // -----------------------------------------------------------------
     // Array / String method helpers (#1448 Tier A)
     // -----------------------------------------------------------------

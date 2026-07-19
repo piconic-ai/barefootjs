@@ -37,6 +37,9 @@ export {
   // no reactivity and runs unchanged during SSR, so the real export is
   // re-exported (not a stub).
   queryHref,
+  // Pure date formatter (#2324) — same story: no reactivity, runs unchanged
+  // during SSR, so the real export is re-exported (not a stub).
+  formatDate,
 } from '@barefootjs/client'
 
 export type {

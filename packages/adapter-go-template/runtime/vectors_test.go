@@ -132,8 +132,11 @@ var vectorBindings = map[string]func(args []any) any{
 	"search_params_get": func(args []any) any {
 		return NewSearchParams(args[0].(string)).Get(args[1].(string))
 	},
-	"query":      func(args []any) any { return Query(args[0].(string), args[1:]...) },
-	"date":       func(args []any) any { return Date(args[0], args[1].(string)) },
+	"query": func(args []any) any { return Query(args[0].(string), args[1:]...) },
+	"date":  func(args []any) any { return Date(args[0], args[1].(string)) },
+	"format_date": func(args []any) any {
+		return FormatDate(args[0], args[1].(string), args[2].(string))
+	},
 	"every":      func(args []any) any { return Every(args[0], args[1].(string)) },
 	"some":       func(args []any) any { return Some(args[0], args[1].(string)) },
 	"filter":     func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },

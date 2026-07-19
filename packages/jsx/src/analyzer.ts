@@ -1865,6 +1865,10 @@ const CLIENT_EXPORTS = new Set([
   // `searchParams`. Runs natively on the client; SSR adapters lower a
   // `queryHref(base, { … })` call to their query helper (go-template: `bf_query`).
   'queryHref',
+  // Pure date formatter (#2324). Runs natively on the client; SSR adapters
+  // lower a `formatDate(date, pattern, tz)` call to their `format_date`
+  // helper (spec/template-helpers.md).
+  'formatDate',
   // Compile-away JSX built-ins (#1915) — importing them is what scopes the
   // compiler's `<Async>` / `<Region>` recognition; the import is elided on emit.
   'Async', 'Region',
