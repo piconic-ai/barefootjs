@@ -113,8 +113,22 @@ function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | nu
   if (!helper) return null
   const lowerExpr = (n: ParsedExpr): string =>
     ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
+  // A `conditional` in ARGUMENT position cannot go through the generic
+  // emitter: its `conditional` method renders an `{{if}}…{{end}}` action
+  // fragment (text position only), which is a parse error inside a
+  // pipeline ("unexpected { in parenthesized pipeline"). Render it as the
+  // pipeline-position `bf_ternary` runtime helper instead, recursing so a
+  // right-folded chain (the #2324 union stage's locale→pattern table)
+  // nests as `(bf_ternary <cond> <a> (bf_ternary …))`.
+  const lowerArg = (n: ParsedExpr): string => {
+    if (n.kind === 'conditional') {
+      const test = wrapIfMultiToken(lowerExpr(n.test))
+      return `(bf_ternary ${test} ${lowerArg(n.consequent)} ${lowerArg(n.alternate)})`
+    }
+    return wrapIfMultiToken(lowerExpr(n))
+  }
   if (node.kind === 'helper-call') {
-    const args = node.args.map(a => wrapIfMultiToken(lowerExpr(a)))
+    const args = node.args.map(a => lowerArg(a))
     return [helper, ...args].join(' ')
   }
   // guard-list — `queryHref`-shaped. Inclusion mirrors the client exactly, where

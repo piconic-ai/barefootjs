@@ -162,4 +162,24 @@ export function P(props: { config: object }) {
     const { template } = generate(src)
     expect(template).not.toContain('bf_custom_serialize')
   })
+
+  test('a CONDITIONAL helper-call arg renders as pipeline-position bf_ternary, not an {{if}} action', () => {
+    // The #2324 union stage lowers a union-typed locale to a ternary
+    // pattern arg. Go templates have no expression-level conditional, and
+    // the generic emitter's `conditional` produces an `{{if}}…{{end}}`
+    // action FRAGMENT — a parse error inside a pipeline ("unexpected { in
+    // parenthesized pipeline", the exact CI failure this pins). Argument
+    // position must route through the bf_ternary runtime helper instead.
+    const src = `
+function P({ createdAt, locale }: { createdAt: Date; locale: 'en-US' | 'ja-JP' }) {
+  return <time>{createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</time>
+}
+export { P }
+`
+    const { template } = generate(src)
+    expect(template).toContain(
+      'bf_format_date .CreatedAt (bf_ternary (eq (bf_string .Locale) "en-US") "M/D/YYYY" "YYYY/M/D") "UTC"',
+    )
+    expect(template).not.toContain('({{if')
+  })
 })
