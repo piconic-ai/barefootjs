@@ -96,6 +96,11 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })`)).toBeNull()
     // non-literal timeZone
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: tz })`)).toBeNull()
+    // out-of-range fixed offsets: real toLocaleDateString throws RangeError
+    // on these, so lowering them would diverge from JS semantics
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: '+25:00' })`)).toBeNull()
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: '+99:99' })`)).toBeNull()
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: '-12:60' })`)).toBeNull()
     // options beyond timeZone: the name-table stage, not this slice
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'UTC', month: 'long' })`)).toBeNull()
     expect(match(`createdAt.toLocaleDateString('ja-JP', { dateStyle: 'long' })`)).toBeNull()

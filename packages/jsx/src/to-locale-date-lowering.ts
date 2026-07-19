@@ -40,8 +40,17 @@ import type { LoweringNode, LoweringPlugin } from './lowering-registry.ts'
 import { resolveReceiverType, baseTypeName } from './rich-type-evidence.ts'
 import { typeReachesDate } from './date-lowering.ts'
 
-/** `timeZone` literals the lowering admits: `'UTC'` or a fixed `±HH:MM` offset. */
-export const TO_LOCALE_TZ_RE = /^(?:UTC|[+-]\d{2}:\d{2})$/
+/**
+ * `timeZone` literals the lowering admits: `'UTC'` or a fixed `±HH:MM`
+ * offset **within ECMA-402's valid offset range** (hours 00–23, minutes
+ * 00–59). An out-of-range shape like `'+25:00'` or `'+99:99'` must DECLINE
+ * (→ BF021), not lower: real `toLocaleDateString` throws a RangeError on
+ * it, so compiling it would render a nonsense offset on the template
+ * adapters while the JS-native path (Hono, and the pre-rewrite semantics
+ * the sugar stands in for) crashes — the exact divergence the sugar exists
+ * to rule out.
+ */
+export const TO_LOCALE_TZ_RE = /^(?:UTC|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/
 
 /**
  * Probe instant for pattern derivation: 2001-02-03 UTC. Month and day are
