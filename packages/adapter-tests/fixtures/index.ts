@@ -1,4 +1,13 @@
 import { fixture as counter } from './counter'
+// Same-file reactive-factory helpers (#931, #2325): a helper wrapping
+// createSignal in a shorthand-object return inlines pre-analysis, so the
+// compiled output — and thus every adapter's marked template — must be
+// byte-identical to counter.ts's hand-written createSignal call. This is
+// the cross-adapter proof that #2325's object-return inlining generalizes
+// (the compiler unit tests already cover it against a single test
+// adapter; this fixture is what actually exercises Hono / Go / PHP /
+// Django / Rust / Ruby / Perl / ... through the shared harness).
+import { fixture as reactiveFactoryObjectReturn } from './reactive-factory-object-return'
 // Shared-component corpus (#1466): fixture-hydrate fixtures lifted
 // from `integrations/shared/components/` also participate in
 // cross-adapter HTML conformance so the same .tsx is guaranteed to
@@ -399,6 +408,7 @@ import type { JSXFixture } from '../src/types'
 
 export const jsxFixtures: JSXFixture[] = [
   counter,
+  reactiveFactoryObjectReturn,
   counterShared,
   toggleShared,
   conditionalReturnButton,

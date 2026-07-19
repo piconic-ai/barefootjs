@@ -2798,6 +2798,19 @@
         "text"
       ]
     },
+    "reactive-factory-object-return": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "reactive-prop-binding": {
       "kinds": [
         "call",
@@ -4132,11 +4145,11 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 159,
+    "call": 160,
     "conditional": 18,
-    "identifier": 239,
+    "identifier": 240,
     "index-access": 12,
-    "literal": 197,
+    "literal": 198,
     "logical": 41,
     "member": 120,
     "object-literal": 43,
@@ -4181,7 +4194,7 @@
     "binary:>=": 1,
     "literal:boolean": 37,
     "literal:null": 22,
-    "literal:number": 85,
+    "literal:number": 86,
     "literal:string": 141,
     "logical:&&": 7,
     "logical:??": 37,

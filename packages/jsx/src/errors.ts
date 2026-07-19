@@ -87,6 +87,8 @@ export const ErrorCodes = {
 
   // Reactive factory errors (BF110-BF119)
   UNRECOGNIZED_REACTIVE_FACTORY: 'BF110',
+  REACTIVE_FACTORY_RENAME_UNSUPPORTED: 'BF111',
+  REACTIVE_FACTORY_MODULE_CAPTURE: 'BF112',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -165,6 +167,17 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.UNRECOGNIZED_REACTIVE_FACTORY]:
     'Tuple destructuring of a non-reactive factory call. The compiler only recognizes createSignal / createMemo calls and same-file helpers that wrap them with a single `return [a, b]` exit.',
+
+  [ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED]:
+    'Reactive factory object return/destructure must use shorthand properties only. ' +
+    'Property renames (`{ lists: myLists }`), defaults, and rest elements are not ' +
+    'supported — destructure with the factory\'s own property names.',
+
+  [ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE]:
+    'Imported reactive factory references bindings from its own module scope, so its ' +
+    'body cannot be inlined into the component file. Move those helpers into the ' +
+    'component file, pass them to the factory as parameters, or define the factory ' +
+    'in the component file.',
 }
 
 // =============================================================================

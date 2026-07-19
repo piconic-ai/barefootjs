@@ -1474,14 +1474,37 @@ export interface ReactiveFactoryInfo {
    * return tuple removed. Identifiers are renamed at the call site.
    */
   bodySource: string
-  /** Identifier names inside the returned array literal, in order. */
+  /** Ordered return binding names (tuple elements or object shorthand property names). */
   returnTupleIdentifiers: string[]
+  /** Return shape: `[a, b] as const` (tuple) or `{ a, b }` shorthand object (#2325). */
+  returnKind: 'tuple' | 'object'
   /**
    * Names declared anywhere in the factory body (local bindings). Used by
    * the call-site inliner to apply unique-suffix renaming and keep
    * identifiers hygienic across repeat calls of the same factory.
    */
   localBindings: string[]
+  loc: SourceLocation
+  /**
+   * Absolute path of the defining file when the factory was resolved from a
+   * relative import (#2325). Undefined for same-file factories. Diagnostic
+   * detail only — name-collision precedence is enforced at merge time
+   * (local factories win), not by consulting this field.
+   */
+  sourceFilePath?: string
+}
+
+/**
+ * A helper that was recognized as a would-be reactive factory but declined
+ * for inlining (#2325). Recorded so validateReactiveFactoryCalls can emit
+ * the specific diagnostic (BF111 rename / BF112 module-scope capture) at
+ * the call site instead of the generic BF110.
+ */
+export interface DeclinedReactiveFactory {
+  code: 'BF111' | 'BF112'
+  /** Detail spliced into the call-site message (e.g. offending identifier list). */
+  detail: string
+  /** Definition site (in the helper file for cross-file declines). */
   loc: SourceLocation
 }
 
