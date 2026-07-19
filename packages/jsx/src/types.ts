@@ -1492,6 +1492,30 @@ export interface ReactiveFactoryInfo {
    * (local factories win), not by consulting this field.
    */
   sourceFilePath?: string
+  /**
+   * Imports to re-provision into the component file when this cross-file
+   * factory is inlined (#2332). Absent/empty for same-file factories and
+   * for factories whose body references no helper-file import. Entries
+   * already satisfied by an identical top-level import in the component
+   * file are dropped at prescan time.
+   */
+  requiredImports?: RequiredFactoryImport[]
+}
+
+/**
+ * An import the helper file holds that an inlined factory body references
+ * (#2332). Not a BF112 capture: the component file can import the same
+ * binding itself. Collected at prescan with the specifier ALREADY rewritten
+ * relative to the component file (or unchanged for bare/npm specifiers);
+ * the source rewriter injects one deduped import statement per specifier.
+ */
+export interface RequiredFactoryImport {
+  /** Local binding name as referenced inside the factory body. */
+  localName: string
+  /** Name exported by the target module (`import { exportedName as localName }`). */
+  exportedName: string
+  /** Component-file-relative specifier (`../lib/mathmod`), or the unchanged bare specifier. */
+  specifier: string
 }
 
 /**

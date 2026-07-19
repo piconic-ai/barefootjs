@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, SourceLocation } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
@@ -3946,6 +3946,56 @@ function prescanReactiveFactoriesInSource(
 }
 
 /**
+ * #2332 — portable component-relative import specifier for a resolved
+ * absolute helper-import target. Same `'.'`/`'./'` prefix convention as the
+ * CLI's buildRelativeImportRewriter (packages/cli/src/lib/build.ts); strips
+ * the resolved extension to match the codebase's extensionless-import
+ * style. Like `buildRelativeImportRewriter`, this does not normalize
+ * `path.relative`'s separators — on win32 that yields backslashes, a
+ * pre-existing exposure in the same convention, not fixed here.
+ */
+function toComponentRelativeSpecifier(resolvedAbs: string, componentFilePath: string): string {
+  let rel = path.relative(path.dirname(componentFilePath), resolvedAbs)
+  rel = rel.replace(/\.(tsx|ts|jsx|js)$/, '')
+  if (rel === '') rel = '.'
+  if (!rel.startsWith('.')) rel = './' + rel
+  return rel
+}
+
+/**
+ * localName -> identity of what the entry file's own top-level named value
+ * imports bind, for the satisfied-import dedupe check (#2332): if the
+ * component file already imports the exact binding a factory needs to
+ * re-provision, injecting it again would be a duplicate declaration rather
+ * than a shadow, so that case is skipped instead of injected. `targetKey` is
+ * the resolved absolute path for relative sources (or `unresolved:<source>`
+ * when probing fails) and the raw specifier for bare sources.
+ */
+function buildEntryImportIndex(
+  sf: ts.SourceFile,
+  filePath: string
+): Map<string, { targetKey: string; exportedName: string }> {
+  const index = new Map<string, { targetKey: string; exportedName: string }>()
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    if (stmt.importClause?.isTypeOnly) continue
+    const src = stmt.moduleSpecifier.text
+    const targetKey = src.startsWith('./') || src.startsWith('../')
+      ? (resolveRelativeImportToFile(src, filePath) ?? 'unresolved:' + src)
+      : src
+    const namedBindings = stmt.importClause?.namedBindings
+    if (namedBindings && ts.isNamedImports(namedBindings)) {
+      for (const el of namedBindings.elements) {
+        if (el.isTypeOnly) continue
+        index.set(el.name.text, { targetKey, exportedName: (el.propertyName ?? el.name).text })
+      }
+    }
+  }
+  return index
+}
+
+/**
  * Cross-file half of the factory prescan (#2325 round 2): resolve factories
  * defined in a relative-imported helper file so `const { count } =
  * createCounter(0)` inlines the same way whether `createCounter` lives in
@@ -4019,6 +4069,9 @@ function prescanImportedReactiveFactories(
     importsToCheck.push({ src, specs })
   }
   if (importsToCheck.length === 0) return
+
+  // #2332 — computed once per entry file, shared across all helper files.
+  const entryImportIndex = buildEntryImportIndex(entrySourceFile, filePath)
 
   for (const { src, specs } of importsToCheck) {
     const resolved = resolveRelativeImportToFile(src, filePath)
@@ -4112,23 +4165,58 @@ function prescanImportedReactiveFactories(
           result.declined.set(spec.local, det.declined)
           break
         case 'factory': {
-          // #2332 prep: behavior-preserving shim — still decline BF112 on
-          // ANY module-scope reference (local or a re-importable helper
-          // import), byte-identical message text to before the split.
-          // Re-provisioning imported refs instead of declining lands in a
-          // later commit.
           const capture = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
-          const offending = [...capture.captured, ...capture.importedRefs.map(r => r.localName)].sort()
-          if (offending.length > 0) {
+          if (capture.captured.length > 0) {
             result.declined.set(spec.local, {
               code: 'BF112',
-              detail: `'${offending.join("', '")}'`,
+              detail: `'${capture.captured.join("', '")}'`,
               loc: det.info.loc,
             })
-          } else {
-            det.info.sourceFilePath = resolved
-            result.factories.set(spec.local, det.info)
+            break
           }
+          // #2332 — re-provision the helper file's own named value imports
+          // that the factory body references, instead of declining. Each
+          // ref resolves to a component-relative specifier (or passes
+          // through unchanged for bare/npm specifiers); a ref already
+          // satisfied by an identical top-level import in the component
+          // file is dropped rather than injected (would redeclare it).
+          const required: RequiredFactoryImport[] = []
+          let declinedEntry: DeclinedReactiveFactory | null = null
+          for (const ref of capture.importedRefs) {
+            let specifier: string
+            let targetKey: string
+            if (ref.source.startsWith('./') || ref.source.startsWith('../')) {
+              // Resolve from the HELPER file's directory (`resolved` is its
+              // absolute path). Unresolvable → same posture as a local
+              // capture: nothing importable to re-provision (BF112).
+              const abs = resolveRelativeImportToFile(ref.source, resolved)
+              if (!abs) {
+                declinedEntry = {
+                  code: 'BF112',
+                  detail: `'${ref.localName}' (import '${ref.source}' did not resolve from the helper file)`,
+                  loc: det.info.loc,
+                }
+                break
+              }
+              specifier = toComponentRelativeSpecifier(abs, filePath)
+              targetKey = abs
+            } else {
+              specifier = ref.source // bare/npm specifier — unchanged (#2332 test 2)
+              targetKey = ref.source
+            }
+            const existing = entryImportIndex.get(ref.localName)
+            if (existing && existing.targetKey === targetKey && existing.exportedName === ref.exportedName) {
+              continue // already satisfied by an identical top-level import
+            }
+            required.push({ localName: ref.localName, exportedName: ref.exportedName, specifier })
+          }
+          if (declinedEntry) {
+            result.declined.set(spec.local, declinedEntry)
+            break
+          }
+          det.info.sourceFilePath = resolved
+          if (required.length > 0) det.info.requiredImports = required
+          result.factories.set(spec.local, det.info)
           break
         }
       }
@@ -4449,6 +4537,12 @@ function rewriteFactoryCallsInSource(
   type Edit = { start: number; end: number; replacement: string }
   const edits: Edit[] = []
   let callSiteIndex = 0
+  // #2332 — factories actually inlined in this walk (not merely present in
+  // `prescan.factories`; `maybeRewriteDecl` bails on arity mismatch/omitted
+  // elements/rename destructures without inlining), so their
+  // `requiredImports` can be re-provisioned without adding a dead import
+  // for a factory that was never actually spliced in.
+  const inlinedFactories = new Set<ReactiveFactoryInfo>()
 
   function visitStmt(node: ts.Node, inComponent: boolean): void {
     if (ts.isVariableStatement(node) && inComponent) {
@@ -4600,19 +4694,65 @@ function rewriteFactoryCallsInSource(
       end: stmt.getEnd(),
       replacement: body,
     })
+    inlinedFactories.add(factory)
   }
 
   visitStmt(sourceFile, false)
 
   if (edits.length === 0) return source
 
-  // Apply edits from bottom to top so earlier offsets stay valid.
+  // #2332 — one deduped import statement per specifier for every inlined
+  // cross-file factory's re-provisioned imports. Injected as a zero-width
+  // edit so the ordinary bottom-to-top splice below applies it; the result
+  // is indistinguishable from a hand-written import for every downstream
+  // consumer (ctx.imports → SSR templateImports AND client
+  // collectExternalImports both parse this same rewritten string).
+  const importsBySpecifier = new Map<string, Map<string, string>>() // specifier -> localName -> exportedName
+  for (const f of inlinedFactories) {
+    for (const r of f.requiredImports ?? []) {
+      let names = importsBySpecifier.get(r.specifier)
+      if (!names) { names = new Map(); importsBySpecifier.set(r.specifier, names) }
+      names.set(r.localName, r.exportedName) // same-key duplicates are identical by prescan construction
+    }
+  }
+  if (importsBySpecifier.size > 0) {
+    const lines = [...importsBySpecifier].map(([spec, names]) =>
+      `import { ${[...names].map(([local, exported]) =>
+        exported === local ? local : `${exported} as ${local}`).join(', ')} } from '${spec}'`)
+    const at = factoryImportInsertionOffset(sourceFile)
+    edits.push({ start: at, end: at, replacement: at === 0 ? lines.join('\n') + '\n' : '\n' + lines.join('\n') })
+  }
+
+  // Apply edits from bottom to top so earlier offsets stay valid. A factory
+  // with `requiredImports` is by definition imported, so the entry file has
+  // at least one import statement and `at` above lands strictly inside the
+  // import prologue — every call-site edit's start is strictly greater
+  // (separated at minimum by the statement break after the last import), so
+  // starts never tie and no sort tiebreak is needed.
   edits.sort((a, b) => b.start - a.start)
   let out = source
   for (const e of edits) {
     out = out.slice(0, e.start) + e.replacement + out.slice(e.end)
   }
   return out
+}
+
+/**
+ * Offset just after the last top-level import (else after the 'use client'
+ * directive, else 0) in the prescan source file — where re-provisioned
+ * factory imports are injected (#2332).
+ */
+function factoryImportInsertionOffset(sf: ts.SourceFile): number {
+  let lastImportEnd = -1
+  let directiveEnd = -1
+  for (const stmt of sf.statements) {
+    if (ts.isImportDeclaration(stmt)) { lastImportEnd = stmt.getEnd(); continue }
+    if (directiveEnd === -1 && ts.isExpressionStatement(stmt) &&
+        ts.isStringLiteral(stmt.expression) && stmt.expression.text === 'use client') {
+      directiveEnd = stmt.getEnd()
+    }
+  }
+  return lastImportEnd >= 0 ? lastImportEnd : directiveEnd >= 0 ? directiveEnd : 0
 }
 
 function isPascalCaseComponentFn(node: ts.Node): boolean {
