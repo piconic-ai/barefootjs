@@ -3950,12 +3950,14 @@ function prescanReactiveFactoriesInSource(
  * absolute helper-import target. Same `'.'`/`'./'` prefix convention as the
  * CLI's buildRelativeImportRewriter (packages/cli/src/lib/build.ts); strips
  * the resolved extension to match the codebase's extensionless-import
- * style. Like `buildRelativeImportRewriter`, this does not normalize
- * `path.relative`'s separators — on win32 that yields backslashes, a
- * pre-existing exposure in the same convention, not fixed here.
+ * style. Unlike `buildRelativeImportRewriter`, this normalizes
+ * `path.relative`'s separators to POSIX (`/`) — a backslash-separated
+ * specifier is not valid ESM syntax, so on win32 `path.relative`'s native
+ * output would inject a broken import rather than merely an unconventional
+ * one (Copilot review, PR #2338).
  */
 function toComponentRelativeSpecifier(resolvedAbs: string, componentFilePath: string): string {
-  let rel = path.relative(path.dirname(componentFilePath), resolvedAbs)
+  let rel = path.relative(path.dirname(componentFilePath), resolvedAbs).split(path.sep).join('/')
   rel = rel.replace(/\.(tsx|ts|jsx|js)$/, '')
   if (rel === '') rel = '.'
   if (!rel.startsWith('.')) rel = './' + rel
@@ -4792,9 +4794,19 @@ function rewriteFactoryCallsInSource(
     }
   }
   if (importsBySpecifier.size > 0) {
-    const lines = [...importsBySpecifier].map(([spec, names]) =>
-      `import { ${[...names].map(([local, exported]) =>
-        exported === local ? local : `${exported} as ${local}`).join(', ')} } from '${spec}'`)
+    // Sort specifiers and, within each, named-import entries by local name —
+    // `importsBySpecifier`/`inlinedFactories` iterate in incidental AST-
+    // traversal/insertion order, which would otherwise make this generated
+    // text order-unstable across unrelated refactors (Copilot review, PR
+    // #2338).
+    const lines = [...importsBySpecifier]
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([spec, names]) => {
+        const specifiers = [...names]
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([local, exported]) => (exported === local ? local : `${exported} as ${local}`))
+        return `import { ${specifiers.join(', ')} } from '${spec}'`
+      })
     const at = factoryImportInsertionOffset(sourceFile)
     edits.push({ start: at, end: at, replacement: at === 0 ? lines.join('\n') + '\n' : '\n' + lines.join('\n') })
   }

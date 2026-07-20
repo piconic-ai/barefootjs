@@ -344,6 +344,61 @@ export function Pair() {
     expect((clientJs!.content.match(/from '\.\.\/lib\/mathmod'/g) ?? []).length).toBe(1)
   })
 
+  test('re-provisioned imports are emitted in sorted order regardless of inlining order (Copilot review, PR #2338)', () => {
+    // `importsBySpecifier`/`inlinedFactories` are populated in AST-traversal/
+    // insertion order — deliberately adversarial here: the component calls
+    // the factory needing '../lib/zmod' BEFORE the one needing
+    // '../lib/amod', so insertion order is z-then-a. Emission must still be
+    // alphabetical (a-then-z), or the generated import block would be
+    // order-unstable across unrelated analyzer refactors.
+    writeFixture('lib/zmod.ts', `export function zHelper(x: number): number {
+  return x
+}
+`)
+    writeFixture('lib/amod.ts', `export function aHelper(x: number): number {
+  return x
+}
+`)
+    writeFixture('hooks/useZFactory.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { zHelper } from '../lib/zmod'
+
+export function useZFactory(initial: number) {
+  const [zValue, setZValue] = createSignal(zHelper(initial))
+  return { zValue, setZValue }
+}
+`)
+    writeFixture('hooks/useAFactory.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { aHelper } from '../lib/amod'
+
+export function useAFactory(initial: number) {
+  const [aValue, setAValue] = createSignal(aHelper(initial))
+  return { aValue, setAValue }
+}
+`)
+    const consumerSource = `'use client'
+import { useZFactory } from '../hooks/useZFactory'
+import { useAFactory } from '../hooks/useAFactory'
+
+export function Ordered() {
+  const { zValue } = useZFactory(1)
+  const { aValue } = useAFactory(2)
+  return <p>{zValue()} / {aValue()}</p>
+}
+`
+    const consumerPath = writeFixture('components/Ordered.tsx', consumerSource)
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    const amodIndex = clientJs!.content.indexOf("from '../lib/amod'")
+    const zmodIndex = clientJs!.content.indexOf("from '../lib/zmod'")
+    expect(amodIndex).toBeGreaterThan(-1)
+    expect(zmodIndex).toBeGreaterThan(-1)
+    expect(amodIndex).toBeLessThan(zmodIndex)
+  })
+
   test('matrix 4: local-name collision with a re-provisioned import declines with BF113', () => {
     const consumerSource = `'use client'
 import { useDouble } from '../hooks/useDouble'
