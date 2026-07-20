@@ -4598,15 +4598,22 @@ function detectReactiveFactory(
 
   const loc = getSourceLocation(node, sourceFile, filePath)
 
-  // Count `return`s ANYWHERE in the body, stopping at nested function
-  // boundaries (same rule as isMultiReturnJsxFunctionBody, #932) — a return
-  // inside an arrow/function-expression callback belongs to that callback.
-  // A return nested in if/try/loop blocks DOES count, so guard-clause
-  // factories are declassified instead of splicing an early `return` into
-  // the component's init function (#2341 BUG-3).
+  // Count `return`s ANYWHERE in the body, stopping at nested function-like
+  // boundaries (ts.isFunctionLike — functions, arrows, methods, accessors,
+  // and constructors; broader than isMultiReturnJsxFunctionBody's #932
+  // three-kind check, which only needs to catch JSX-returning callbacks and
+  // was never exercised against class/object methods) — a return inside a
+  // nested callback OR a class/object method declared in the factory body
+  // belongs to that inner scope, not this factory (Copilot review, PR
+  // #2342: the narrower check would misclassify a factory with, e.g., a
+  // helper class whose method contains a `return` as having multiple
+  // returns, declining it unnecessarily). A return nested in if/try/loop
+  // blocks DOES count, so guard-clause factories are declassified instead
+  // of splicing an early `return` into the component's init function
+  // (#2341 BUG-3).
   let totalReturnCount = 0
   function countReturns(n: ts.Node): void {
-    if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n)) return
+    if (ts.isFunctionLike(n)) return
     if (ts.isReturnStatement(n)) { totalReturnCount++; return }
     ts.forEachChild(n, countReturns)
   }
@@ -4819,13 +4826,25 @@ function detectReactiveFactory(
   // out exactly the identifier text it was collected for, or the
   // bottom-to-top splice in inlineFactoryCallAtSite would corrupt
   // unrelated text. Cheap (bounded by body size) — kept as a permanent
-  // guard against the offset math drifting under a future edit.
+  // guard against the offset math drifting under a future edit. Declines
+  // rather than throwing (Copilot review, PR #2342): compileJSX does not
+  // catch analyzer errors, so a thrown exception here would crash the
+  // whole compilation instead of failing one factory loudly-but-
+  // gracefully as a diagnostic — this should never trigger in practice,
+  // but the failure mode if it ever does must stay "loud decline," not
+  // "hard crash," matching this feature's whole design philosophy.
   for (const site of renameSites) {
     if (bodyStatements.slice(site.start, site.end) !== site.name) {
-      throw new Error(
-        `Internal error: reactive-factory rename-site offset mismatch for '${site.name}' ` +
-        `in '${node.name.text}' — expected bodyStatements[${site.start}:${site.end}] to equal '${site.name}'.`
-      )
+      return {
+        kind: 'declined',
+        declined: {
+          code: 'BF111',
+          detail:
+            `internal rename-site offset mismatch for '${site.name}' — this is a compiler bug, ` +
+            `please report it`,
+          loc,
+        },
+      }
     }
   }
 

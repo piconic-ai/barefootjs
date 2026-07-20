@@ -593,6 +593,41 @@ describe('Guard-clause / nested-return factories decline (#2341 BUG-3)', () => {
     expect(clientJs).toContain('createSignal')
   })
 
+  test('T4b: return inside an object-literal method does NOT decline (Copilot review, PR #2342)', () => {
+    // The nested-return boundary check originally stopped only at
+    // FunctionDeclaration/FunctionExpression/ArrowFunction, so a `return`
+    // inside an object-literal method (or a class method/accessor) declared
+    // in the factory body was incorrectly counted toward the total, wrongly
+    // declassifying an otherwise-inlinable factory. ts.isFunctionLike
+    // (methods/accessors/constructors, not just plain functions) fixes it.
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function createLogger(initial: number) {
+        const [n, setN] = createSignal(initial)
+        const logger = {
+          describe() {
+            if (n() > 0) return 'positive'
+            return 'non-positive'
+          },
+        }
+        return { n, setN, logger }
+      }
+      export function Counter() {
+        const { n, setN, logger } = createLogger(0)
+        return <button onClick={() => setN(n() + 1)}>{logger.describe()}</button>
+      }
+    `
+
+    const result = compileJSX(source, 'Counter.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+    expect(ctx.signals.length).toBe(1)
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    expect(clientJs).toContain('createSignal')
+    expect(clientJs).toContain("'positive'")
+  })
+
   describe('T5: cross-file guard-clause factory', () => {
     let fixtureDir: string
 
