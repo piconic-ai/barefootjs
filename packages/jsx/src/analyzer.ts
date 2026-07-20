@@ -4478,6 +4478,20 @@ function detectReactiveFactory(
 
   const loc = getSourceLocation(node, sourceFile, filePath)
 
+  // Count `return`s ANYWHERE in the body, stopping at nested function
+  // boundaries (same rule as isMultiReturnJsxFunctionBody, #932) — a return
+  // inside an arrow/function-expression callback belongs to that callback.
+  // A return nested in if/try/loop blocks DOES count, so guard-clause
+  // factories are declassified instead of splicing an early `return` into
+  // the component's init function (#2341 BUG-3).
+  let totalReturnCount = 0
+  function countReturns(n: ts.Node): void {
+    if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n)) return
+    if (ts.isReturnStatement(n)) { totalReturnCount++; return }
+    ts.forEachChild(n, countReturns)
+  }
+  ts.forEachChild(node.body, countReturns)
+
   // Require exactly one top-level `return`, whose argument (after unwrapping
   // parens / `as const` / type-assertion) is a tuple (array literal) or a
   // shorthand-object literal.
@@ -4494,7 +4508,12 @@ function detectReactiveFactory(
     if (ts.isTypeAssertionExpression(expr)) expr = expr.expression
     returnExpr = expr
   }
-  if (returnCount !== 1 || !returnExpr) return { kind: 'reactive-shaped' }
+  // `totalReturnCount === 1 && returnCount === 1` jointly guarantee the
+  // single return is a direct child of `node.body` (top-level returns are a
+  // subset of total) — so a guard-clause / try-catch / loop return
+  // declassifies the factory instead of silently producing an inert
+  // component (#2341 BUG-3).
+  if (totalReturnCount !== 1 || returnCount !== 1 || !returnExpr) return { kind: 'reactive-shaped' }
 
   const returnTupleIdentifiers: string[] = []
   let returnKind: 'tuple' | 'object'

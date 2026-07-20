@@ -10,7 +10,10 @@
  * for destructures of non-recognised factory shapes.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'fs'
+import { tmpdir } from 'os'
+import path from 'path'
 import { analyzeComponent } from '../analyzer'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
@@ -480,5 +483,161 @@ describe('Object-return reactive factories (#2325)', () => {
 
     const result = compileJSX(source, 'Comp.tsx', { adapter })
     expect(result.errors.find(e => e.code === 'BF110')).toBeUndefined()
+  })
+})
+
+describe('Guard-clause / nested-return factories decline (#2341 BUG-3)', () => {
+  test('T1: if-guard return declines with BF110, no inert splice (issue repro)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function useBounded(initial: number, max: number) {
+        const [n, setN] = createSignal(initial)
+        const bump = () => setN(Math.min(n() + 1, max))
+        if (initial > max) {
+          return { n, bump }
+        }
+        return { n, bump }
+      }
+      export function Bounded() {
+        const { n, bump } = useBounded(0, 10)
+        return <button onClick={bump}>{n()}</button>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Bounded.tsx')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(source, 'Bounded.tsx', { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+    expect(bf110!.message).toContain('useBounded')
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    if (clientJs) {
+      expect(clientJs.content).not.toContain('if (0 > 10)')
+    }
+  })
+
+  test('T2: return inside try/catch declines', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function useBounded(initial: number, max: number) {
+        const [n, setN] = createSignal(initial)
+        const bump = () => setN(Math.min(n() + 1, max))
+        try {
+          return { n, bump }
+        } catch {}
+        return { n, bump }
+      }
+      export function Bounded() {
+        const { n, bump } = useBounded(0, 10)
+        return <button onClick={bump}>{n()}</button>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Bounded.tsx')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(source, 'Bounded.tsx', { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+  })
+
+  test('T3: return inside a for-loop declines', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function useBounded(initial: number, max: number, seed: number[]) {
+        const [n, setN] = createSignal(initial)
+        const bump = () => setN(Math.min(n() + 1, max))
+        for (const x of seed) {
+          if (x < 0) return { n, bump }
+        }
+        return { n, bump }
+      }
+      export function Bounded() {
+        const { n, bump } = useBounded(0, 10, [1, 2, 3])
+        return <button onClick={bump}>{n()}</button>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Bounded.tsx')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(source, 'Bounded.tsx', { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+  })
+
+  test('T4: braced-arrow-callback returns do NOT decline (false-positive guard)', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function createCounter(initial: number) {
+        const [n, setN] = createSignal(initial)
+        const bump = () => { return setN(n() + 1) }
+        return { n, bump }
+      }
+      export function Counter() {
+        const { n, bump } = createCounter(0)
+        return <button onClick={bump}>{n()}</button>
+      }
+    `
+
+    const result = compileJSX(source, 'Counter.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const ctx = analyzeComponent(source, 'Counter.tsx')
+    expect(ctx.signals.length).toBe(1)
+    const clientJs = result.files.find(f => f.type === 'clientJs')!.content
+    expect(clientJs).toContain('createSignal')
+  })
+
+  describe('T5: cross-file guard-clause factory', () => {
+    let fixtureDir: string
+
+    beforeAll(() => {
+      fixtureDir = mkdtempSync(path.join(tmpdir(), 'bf-factory-guard-clause-'))
+    })
+
+    afterAll(() => {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    })
+
+    function writeFixture(name: string, content: string): string {
+      const p = path.join(fixtureDir, name)
+      mkdirSync(path.dirname(p), { recursive: true })
+      writeFileSync(p, content, 'utf8')
+      return p
+    }
+
+    test('guard-clause factory in an imported helper declines with BF110 (reactive-shaped path)', () => {
+      writeFixture('hooks-bounded.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function useBounded(initial: number, max: number) {
+  const [n, setN] = createSignal(initial)
+  const bump = () => setN(Math.min(n() + 1, max))
+  if (initial > max) {
+    return { n, bump }
+  }
+  return { n, bump }
+}
+`)
+      const consumerSource = `'use client'
+import { useBounded } from './hooks-bounded'
+
+export function Bounded() {
+  const { n, bump } = useBounded(0, 10)
+  return <button onClick={bump}>{n()}</button>
+}
+`
+      const consumerPath = writeFixture('bounded-consumer.tsx', consumerSource)
+
+      const result = compileJSX(consumerSource, consumerPath, { adapter })
+      const bf110 = result.errors.find(e => e.code === 'BF110')
+      expect(bf110).toBeDefined()
+      expect(bf110!.message).toContain('does not match the inlinable factory shape')
+    })
   })
 })
