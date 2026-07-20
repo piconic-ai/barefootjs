@@ -90,6 +90,7 @@ export const ErrorCodes = {
   REACTIVE_FACTORY_RENAME_UNSUPPORTED: 'BF111',
   REACTIVE_FACTORY_MODULE_CAPTURE: 'BF112',
   REACTIVE_FACTORY_IMPORT_COLLISION: 'BF113',
+  REACTIVE_FACTORY_PARAM_SHADOWED: 'BF114',
 } as const
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
@@ -184,6 +185,9 @@ const errorMessages: Record<ErrorCode, string> = {
     'Inlining an imported reactive factory requires re-importing one of its helper ' +
     'imports into this file, but that name is already bound here to something else. ' +
     "Rename the conflicting binding in this file, or alias the import in the factory's own file.",
+
+  [ErrorCodes.REACTIVE_FACTORY_PARAM_SHADOWED]:
+    'Reactive factory parameter is shadowed by a nested declaration inside the factory body, so argument substitution at the inline site would be ambiguous. Rename the inner binding so it does not collide with the parameter.',
 }
 
 // =============================================================================

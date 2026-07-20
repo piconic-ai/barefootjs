@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, SourceLocation } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
@@ -4047,18 +4047,56 @@ function collectEntryBindingNames(sf: ts.SourceFile): Set<string> {
   return names
 }
 
+// One `export ... from` hop is followed when resolving a re-exported name
+// (#2341 BUG-2) — a visited-set guards against cycles regardless, so
+// raising this later is safe without further changes.
+const MAX_REEXPORT_HOPS = 1
+
+/** A helper file's export surface, cached per absolute path for the
+ *  lifetime of one `prescanImportedReactiveFactories` call (#2341 BUG-2). */
+interface HelperFileInfo {
+  sf: ts.SourceFile
+  /** Module-scope function declarations exported under their external name
+   *  (own `export function`, or a local `export { f as g }`). */
+  exportedFns: Map<string, ts.FunctionDeclaration>
+  /** `export { a as b } from 'src'` re-exports, keyed by the EXTERNAL name
+   *  `b` — a barrel file's whole reason for existing (#2341 BUG-2). */
+  reexports: Map<string, { source: string; innerName: string }>
+  /** Any `export * from '...'` in this file — a named lookup that misses
+   *  `exportedFns`/`reexports` might still resolve through one of these, so
+   *  it can never be classified `'clean'`. (`export * as ns from` is a
+   *  `NamespaceExport` clause and is excluded: a named lookup can never
+   *  come through it.) */
+  hasStarReexport: boolean
+  moduleBindings: HelperModuleBindings
+}
+/** `'clean'` = read, parsed (or gate-skipped), and proven to define no
+ *  reactive factory under any name reachable from it. `null` = unreadable. */
+type LoadedHelper = HelperFileInfo | 'clean' | null
+type ExportLookup =
+  | { kind: 'fn'; fn: ts.FunctionDeclaration; file: HelperFileInfo; definingPath: string }
+  | { kind: 'clean' } // proven non-reactive under this name → cleanFactoryImports
+  | { kind: 'unknown' } // cannot prove → leave unclassified so the BF110 name heuristic still fires
+
 /**
  * Cross-file half of the factory prescan (#2325 round 2): resolve factories
  * defined in a relative-imported helper file so `const { count } =
  * createCounter(0)` inlines the same way whether `createCounter` lives in
- * this file or in `./hooks`. Mutates `result`'s maps in place.
+ * this file or in `./hooks`. Follows one `export ... from` hop so a barrel
+ * `index.ts` re-exporting the real helper resolves to the file that
+ * actually DEFINES it (#2341 BUG-2) — every classification (factory /
+ * declined / reactive-shaped / clean) and every downstream anchor (module-
+ * capture check, helper-import re-provisioning, `sourceFilePath`) is keyed
+ * off that defining file, never the barrel. Mutates `result`'s maps in
+ * place.
  *
  * Perf: gated on a candidate-callee set collected from the ALREADY-parsed
  * entry AST (no regex over source text, per CONTRIBUTING.md's "never parse
  * imports with regex" rule) — files with no tuple/object-destructured call
  * at all skip every filesystem access below. A second cheap gate (does the
- * helper file's raw text contain any `REACTIVE_PRIMITIVES` substring) skips
- * the AST parse of helper files that plainly aren't reactive; this is a
+ * helper file's raw text contain any `REACTIVE_PRIMITIVES` substring, or
+ * any `export ... from` re-export text) skips the AST parse of helper files
+ * that plainly define no factory and re-export nothing; this is a
  * skip-gate over content, not an import parse, so it doesn't run afoul of
  * that same rule.
  *
@@ -4129,45 +4167,42 @@ function prescanImportedReactiveFactories(
   // same name from a DIFFERENT (targetKey, exportedName) is a collision.
   const plannedInjections = new Map<string, { targetKey: string; exportedName: string }>()
 
-  for (const { src, specs } of importsToCheck) {
-    const resolved = resolveRelativeImportToFile(src, filePath)
-    // Unresolvable — left alone here; the name-heuristic BF110 branch in
-    // validateReactiveFactoryCalls handles it at validation time.
-    if (!resolved) continue
+  // #2341 BUG-2 — one read+parse per helper file per entry file, memoized
+  // across every spec/hop that touches it (a barrel is typically visited
+  // once per re-exported name it satisfies).
+  const helperCache = new Map<string, LoadedHelper>()
+
+  function loadHelperFile(abs: string): LoadedHelper {
+    const cached = helperCache.get(abs)
+    if (cached !== undefined) return cached
 
     let content: string
     try {
-      content = fs.readFileSync(resolved, 'utf8')
+      content = fs.readFileSync(abs, 'utf8')
     } catch {
-      continue
+      helperCache.set(abs, null)
+      return null
     }
-
-    const alreadyKnown = (name: string): boolean =>
-      result.factories.has(name) || result.declined.has(name) || result.reactiveShaped.has(name)
 
     // Cheap text-level skip-gate (not an import/JS parse — see docstring):
-    // a helper file with no reactive-primitive substring anywhere cannot
-    // define a reactive factory, so skip parsing it entirely.
+    // a file with no reactive-primitive substring AND no re-export gate
+    // text (`export` ... `from`) can neither define a reactive factory nor
+    // re-export one, so skip parsing it entirely. Substring checks only —
+    // false positives merely cause an AST parse whose outcome is still
+    // correct, they never cause a false 'clean'.
     const hasAnyPrimitiveText = [...REACTIVE_PRIMITIVES].some(p => content.includes(p))
-    if (!hasAnyPrimitiveText) {
-      for (const spec of specs) {
-        if (!alreadyKnown(spec.local)) result.cleanFactoryImports.add(spec.local)
-      }
-      continue
+    const hasReexportText = content.includes('export') && content.includes('from')
+    if (!hasAnyPrimitiveText && !hasReexportText) {
+      helperCache.set(abs, 'clean')
+      return 'clean'
     }
 
-    const helperSf = ts.createSourceFile(
-      resolved + '.prescan',
-      content,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TSX
-    )
+    const sf = ts.createSourceFile(abs + '.prescan', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 
     // Map exported name -> module-scope FunctionDeclaration via the AST.
     const localFns = new Map<string, ts.FunctionDeclaration>()
     const exportedFns = new Map<string, ts.FunctionDeclaration>()
-    for (const stmt of helperSf.statements) {
+    for (const stmt of sf.statements) {
       if (ts.isFunctionDeclaration(stmt) && stmt.name && stmt.body) {
         localFns.set(stmt.name.text, stmt)
         const hasExportModifier = stmt.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
@@ -4177,20 +4212,37 @@ function prescanImportedReactiveFactories(
         }
       }
     }
-    // `export { f }` / `export { f as g }` — keyed by the EXTERNAL export name.
-    for (const stmt of helperSf.statements) {
-      if (
-        ts.isExportDeclaration(stmt) &&
-        stmt.exportClause &&
-        ts.isNamedExports(stmt.exportClause) &&
-        !stmt.moduleSpecifier &&
-        !stmt.isTypeOnly
-      ) {
+
+    const reexports = new Map<string, { source: string; innerName: string }>()
+    let hasStarReexport = false
+    for (const stmt of sf.statements) {
+      if (!ts.isExportDeclaration(stmt) || stmt.isTypeOnly) continue
+      if (!stmt.moduleSpecifier) {
+        // `export { f }` / `export { f as g }` — keyed by the EXTERNAL export name.
+        if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+          for (const el of stmt.exportClause.elements) {
+            if (el.isTypeOnly) continue
+            const fn = localFns.get((el.propertyName ?? el.name).text)
+            if (fn) exportedFns.set(el.name.text, fn)
+          }
+        }
+        continue
+      }
+      if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+      if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+        // `export { a as b } from 'src'` — keyed by the EXTERNAL name `b`.
         for (const el of stmt.exportClause.elements) {
           if (el.isTypeOnly) continue
-          const fn = localFns.get((el.propertyName ?? el.name).text)
-          if (fn) exportedFns.set(el.name.text, fn)
+          reexports.set(el.name.text, {
+            source: stmt.moduleSpecifier.text,
+            innerName: (el.propertyName ?? el.name).text,
+          })
         }
+      } else if (!stmt.exportClause) {
+        // `export * from 'src'`. (`export * as ns from` carries a
+        // NamespaceExport clause here, not `undefined` — excluded on
+        // purpose: a named lookup can never come through it.)
+        hasStarReexport = true
       }
     }
 
@@ -4198,17 +4250,77 @@ function prescanImportedReactiveFactories(
     // body must not reference any of these (#2325 §4h / BF112), since
     // inlining moves the body into the component file where they don't
     // exist.
-    const moduleBindings = collectHelperModuleValueBindings(helperSf)
+    const moduleBindings = collectHelperModuleValueBindings(sf)
+
+    const info: HelperFileInfo = { sf, exportedFns, reexports, hasStarReexport, moduleBindings }
+    helperCache.set(abs, info)
+    return info
+  }
+
+  /**
+   * Resolve `exportedName` from the file at `abs`, following one
+   * `export ... from` hop through a barrel re-export (#2341 BUG-2).
+   * `visited` guards against self/indirect barrel cycles.
+   */
+  function lookupExportedFactory(
+    abs: string,
+    exportedName: string,
+    visited: Set<string>,
+    hopsLeft: number
+  ): ExportLookup {
+    if (visited.has(abs)) return { kind: 'unknown' }
+    visited.add(abs)
+
+    const file = loadHelperFile(abs)
+    if (file === null) return { kind: 'unknown' }
+    if (file === 'clean') return { kind: 'clean' }
+
+    const fn = file.exportedFns.get(exportedName)
+    if (fn) return { kind: 'fn', fn, file, definingPath: abs }
+
+    const re = file.reexports.get(exportedName)
+    if (re) {
+      if (hopsLeft <= 0) return { kind: 'unknown' }
+      // Non-relative re-export specifiers (`export { x } from 'pkg'`)
+      // resolve through bundler/tsconfig-paths configuration this layer
+      // doesn't consume — same restriction as direct imports.
+      if (!re.source.startsWith('./') && !re.source.startsWith('../')) return { kind: 'unknown' }
+      const target = resolveRelativeImportToFile(re.source, abs)
+      if (!target) return { kind: 'unknown' } // unresolvable re-export target: never mark clean
+      return lookupExportedFactory(target, re.innerName, visited, hopsLeft - 1)
+    }
+
+    // `export * from` might still reach this name through a file this
+    // layer doesn't enumerate — never clean. Otherwise the file was fully
+    // inspected and genuinely doesn't define or re-export this name.
+    if (file.hasStarReexport) return { kind: 'unknown' }
+    return { kind: 'clean' }
+  }
+
+  for (const { src, specs } of importsToCheck) {
+    const resolved = resolveRelativeImportToFile(src, filePath)
+    // Unresolvable — left alone here; the name-heuristic BF110 branch in
+    // validateReactiveFactoryCalls handles it at validation time.
+    if (!resolved) continue
+
+    const alreadyKnown = (name: string): boolean =>
+      result.factories.has(name) || result.declined.has(name) || result.reactiveShaped.has(name)
 
     for (const spec of specs) {
       if (alreadyKnown(spec.local)) continue
 
-      const fn = exportedFns.get(spec.exported)
-      if (!fn) {
+      const found = lookupExportedFactory(resolved, spec.exported, new Set<string>(), MAX_REEXPORT_HOPS)
+      if (found.kind === 'clean') {
         result.cleanFactoryImports.add(spec.local)
         continue
       }
-      const det = detectReactiveFactory(fn, helperSf, resolved)
+      if (found.kind === 'unknown') continue
+
+      const { fn, file, definingPath } = found
+      const helperSf = file.sf
+      const moduleBindings = file.moduleBindings
+
+      const det = detectReactiveFactory(fn, helperSf, definingPath)
       if (!det) {
         result.cleanFactoryImports.add(spec.local)
         continue
@@ -4221,6 +4333,9 @@ function prescanImportedReactiveFactories(
           result.declined.set(spec.local, det.declined)
           break
         case 'factory': {
+          // Module-capture check is anchored to the DEFINING file's own
+          // module bindings, not the barrel's (#2341 BUG-2) — the barrel
+          // itself contributes no bindings the inlined body could reference.
           const capture = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
           if (capture.captured.length > 0) {
             result.declined.set(spec.local, {
@@ -4247,10 +4362,12 @@ function prescanImportedReactiveFactories(
             let specifier: string
             let targetKey: string
             if (ref.source.startsWith('./') || ref.source.startsWith('../')) {
-              // Resolve from the HELPER file's directory (`resolved` is its
-              // absolute path). Unresolvable → same posture as a local
+              // Resolve from the DEFINING file's directory (#2341 BUG-2 —
+              // `definingPath` is the file that actually declares this
+              // import, which may differ from the barrel that was
+              // imported). Unresolvable → same posture as a local
               // capture: nothing importable to re-provision (BF112).
-              const abs = resolveRelativeImportToFile(ref.source, resolved)
+              const abs = resolveRelativeImportToFile(ref.source, definingPath)
               if (!abs) {
                 declinedEntry = {
                   code: 'BF112',
@@ -4292,7 +4409,10 @@ function prescanImportedReactiveFactories(
             break
           }
           for (const [name, id] of pending) plannedInjections.set(name, id)
-          det.info.sourceFilePath = resolved
+          // #2341 BUG-2 — anchored to the file that actually defines the
+          // factory, not the (possibly barrel) import path the component
+          // used to reach it.
+          det.info.sourceFilePath = definingPath
           if (required.length > 0) det.info.requiredImports = required
           result.factories.set(spec.local, det.info)
           break
@@ -4478,6 +4598,27 @@ function detectReactiveFactory(
 
   const loc = getSourceLocation(node, sourceFile, filePath)
 
+  // Count `return`s ANYWHERE in the body, stopping at nested function-like
+  // boundaries (ts.isFunctionLike — functions, arrows, methods, accessors,
+  // and constructors; broader than isMultiReturnJsxFunctionBody's #932
+  // three-kind check, which only needs to catch JSX-returning callbacks and
+  // was never exercised against class/object methods) — a return inside a
+  // nested callback OR a class/object method declared in the factory body
+  // belongs to that inner scope, not this factory (Copilot review, PR
+  // #2342: the narrower check would misclassify a factory with, e.g., a
+  // helper class whose method contains a `return` as having multiple
+  // returns, declining it unnecessarily). A return nested in if/try/loop
+  // blocks DOES count, so guard-clause factories are declassified instead
+  // of splicing an early `return` into the component's init function
+  // (#2341 BUG-3).
+  let totalReturnCount = 0
+  function countReturns(n: ts.Node): void {
+    if (ts.isFunctionLike(n)) return
+    if (ts.isReturnStatement(n)) { totalReturnCount++; return }
+    ts.forEachChild(n, countReturns)
+  }
+  ts.forEachChild(node.body, countReturns)
+
   // Require exactly one top-level `return`, whose argument (after unwrapping
   // parens / `as const` / type-assertion) is a tuple (array literal) or a
   // shorthand-object literal.
@@ -4494,7 +4635,12 @@ function detectReactiveFactory(
     if (ts.isTypeAssertionExpression(expr)) expr = expr.expression
     returnExpr = expr
   }
-  if (returnCount !== 1 || !returnExpr) return { kind: 'reactive-shaped' }
+  // `totalReturnCount === 1 && returnCount === 1` jointly guarantee the
+  // single return is a direct child of `node.body` (top-level returns are a
+  // subset of total) — so a guard-clause / try-catch / loop return
+  // declassifies the factory instead of silently producing an inert
+  // component (#2341 BUG-3).
+  if (totalReturnCount !== 1 || returnCount !== 1 || !returnExpr) return { kind: 'reactive-shaped' }
 
   const returnTupleIdentifiers: string[] = []
   let returnKind: 'tuple' | 'object'
@@ -4530,6 +4676,22 @@ function detectReactiveFactory(
     return { kind: 'reactive-shaped' }
   }
 
+  // Collect parameter names first — the rename-site walk below needs them
+  // as part of `relevantNames` and to detect param-shadowing declarations
+  // (BF114). Hoisted above local-binding/body-serialization collection
+  // (#2341 BUG-1); it has no dependency on either.
+  const params: string[] = []
+  for (const p of node.parameters) {
+    if (ts.isIdentifier(p.name)) {
+      params.push(p.name.text)
+      continue
+    }
+    // Destructured params are uncommon for this helper shape and out of
+    // initial scope; the factory still wraps a reactive primitive, so
+    // classify it as reactive-shaped rather than silently ignoring it.
+    return { kind: 'reactive-shaped' }
+  }
+
   // Collect local bindings in the factory body for identifier hygiene at
   // inlining time. Only direct-child declarations of the block are
   // considered — good enough for the typical helper shape.
@@ -4544,24 +4706,146 @@ function detectReactiveFactory(
     }
   }
 
+  // Names that call-site inlining may rename: params (substituted with
+  // arbitrary argument expressions), local bindings (suffix-renamed for
+  // per-call-site hygiene), and return identifiers (renamed to the
+  // caller's destructure names). Every other identifier in the body is
+  // left untouched — the #2341 BUG-1 fix for the old whole-body regex
+  // renames, which corrupted string/template literals, property keys,
+  // and `.prop` tails that merely happened to share a relevant name.
+  const relevantNames = new Set<string>([...params, ...localBindings, ...returnTupleIdentifiers])
+
+  const renameSites: FactoryRenameSite[] = []
+  let shadowedParam: string | null = null
+
+  /**
+   * Recursive AST walk collecting rename sites for one kept statement.
+   * `toBodyOffset` converts a position in `sourceFile` (this statement's
+   * original source) to an offset in the final joined `bodyStatements`
+   * string — see the join loop below for why this must stay a pure
+   * function of `stmtStart`/`base`.
+   */
+  function collectRenameSites(root: ts.Node, toBodyOffset: (pos: number) => number): void {
+    function push(id: ts.Identifier, form: 'plain' | 'shorthand'): void {
+      renameSites.push({
+        name: id.text,
+        start: toBodyOffset(id.getStart(sourceFile)),
+        end: toBodyOffset(id.getEnd()),
+        form,
+      })
+    }
+
+    function classify(id: ts.Identifier): void {
+      if (!relevantNames.has(id.text)) return
+      const p = id.parent
+      // Pure-key / non-reference positions — never rename:
+      if (ts.isPropertyAccessExpression(p) && p.name === id) return        // obj.name tail (incl. ?. chains)
+      if (ts.isPropertyAssignment(p) && p.name === id) return              // { name: v } key
+      if (ts.isBindingElement(p) && p.propertyName === id) return          // { name: local } pattern key
+      if ((ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) ||
+           ts.isSetAccessorDeclaration(p) || ts.isPropertyDeclaration(p) ||
+           ts.isEnumMember(p)) && p.name === id) return                    // member keys
+      if (ts.isJsxAttribute(p) && p.name === id) return                    // JSX attr name
+      if ((ts.isLabeledStatement(p) && p.label === id) ||
+          ((ts.isBreakStatement(p) || ts.isContinueStatement(p)) && p.label === id)) return
+      if ((ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxClosingElement(p)) &&
+          p.tagName === id && /^[a-z]/.test(id.text)) return               // intrinsic tag <div>
+
+      // Shorthand dual-role positions → expansion form (renaming must
+      // preserve the implied key): `{ name }` object literal / pattern.
+      if (ts.isShorthandPropertyAssignment(p) && p.name === id) { push(id, 'shorthand'); return }
+      if (ts.isBindingElement(p) && p.name === id && !p.propertyName &&
+          ts.isObjectBindingPattern(p.parent)) {
+        // ArrayBindingPattern trap: a tuple destructure element
+        // (`const [a, b] = ...`) ALSO has propertyName === undefined —
+        // the ts.isObjectBindingPattern(p.parent) check above is what
+        // keeps tuple elements out of the shorthand-expansion path.
+        if (params.includes(id.text)) shadowedParam = id.text            // decl of a param name → BF114
+        push(id, 'shorthand')
+        return
+      }
+
+      // Declaration-name positions → plain rename, but a param name
+      // re-declared here is a shadow: params are substituted with
+      // arbitrary argument expressions, so a shadowing declaration would
+      // receive an invalid left-hand side (BF114 declines instead).
+      const isDecl =
+        (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p) ||
+         ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) ||
+         ts.isClassDeclaration(p) || ts.isClassExpression(p)) && p.name === id
+      if (isDecl && params.includes(id.text)) shadowedParam = id.text
+
+      push(id, 'plain')                                                   // genuine value reference or decl
+    }
+
+    function visit(n: ts.Node): void {
+      // Never descend into type-land: annotations are stripped downstream,
+      // and splicing an argument EXPRESSION into a type position would be
+      // invalid JS.
+      if (ts.isTypeNode(n) || ts.isTypeParameterDeclaration(n) ||
+          ts.isTypeAliasDeclaration(n) || ts.isInterfaceDeclaration(n)) return
+      if (ts.isIdentifier(n)) { classify(n); return }                      // identifiers have no relevant children
+      ts.forEachChild(n, visit)
+    }
+
+    visit(root)
+  }
+
   // Serialize the body without the outer braces and without the return
   // statement — the return tuple/object is dissolved into caller-named
-  // identifiers.
-  const bodyStatements = node.body.statements
-    .filter(s => !ts.isReturnStatement(s))
-    .map(s => s.getText(sourceFile))
-    .join('\n')
+  // identifiers. `renameSites` is collected in this SAME loop so its
+  // offsets (relative to the joined `bodyStatements` string) can never
+  // drift from the join logic — this invariant is the single most fragile
+  // part of the rename mechanism (#2341 BUG-1): site collection and
+  // `bodyStatements` construction must use the identical statement filter,
+  // identical `getText` slices, and identical '\n' join.
+  const keptStatements = node.body.statements.filter(s => !ts.isReturnStatement(s))
+  const pieces: string[] = []
+  let base = 0
+  for (const stmt of keptStatements) {
+    const text = stmt.getText(sourceFile)
+    const stmtStart = stmt.getStart(sourceFile)
+    collectRenameSites(stmt, (pos) => pos - stmtStart + base)
+    pieces.push(text)
+    base += text.length + 1 // +1 for the '\n' join — MUST match the join below
+  }
+  const bodyStatements = pieces.join('\n')
 
-  const params: string[] = []
-  for (const p of node.parameters) {
-    if (ts.isIdentifier(p.name)) {
-      params.push(p.name.text)
-      continue
+  if (shadowedParam !== null) {
+    return {
+      kind: 'declined',
+      declined: {
+        code: 'BF114',
+        detail: `parameter '${shadowedParam}' of '${node.name.text}' is shadowed by a nested declaration inside the factory body`,
+        loc,
+      },
     }
-    // Destructured params are uncommon for this helper shape and out of
-    // initial scope; the factory still wraps a reactive primitive, so
-    // classify it as reactive-shaped rather than silently ignoring it.
-    return { kind: 'reactive-shaped' }
+  }
+
+  // Dev invariant: every collected site's [start, end) range must slice
+  // out exactly the identifier text it was collected for, or the
+  // bottom-to-top splice in inlineFactoryCallAtSite would corrupt
+  // unrelated text. Cheap (bounded by body size) — kept as a permanent
+  // guard against the offset math drifting under a future edit. Declines
+  // rather than throwing (Copilot review, PR #2342): compileJSX does not
+  // catch analyzer errors, so a thrown exception here would crash the
+  // whole compilation instead of failing one factory loudly-but-
+  // gracefully as a diagnostic — this should never trigger in practice,
+  // but the failure mode if it ever does must stay "loud decline," not
+  // "hard crash," matching this feature's whole design philosophy.
+  for (const site of renameSites) {
+    if (bodyStatements.slice(site.start, site.end) !== site.name) {
+      return {
+        kind: 'declined',
+        declined: {
+          code: 'BF111',
+          detail:
+            `internal rename-site offset mismatch for '${site.name}' — this is a compiler bug, ` +
+            `please report it`,
+          loc,
+        },
+      }
+    }
   }
 
   return {
@@ -4573,6 +4857,7 @@ function detectReactiveFactory(
       returnKind,
       localBindings,
       loc,
+      renameSites,
     },
   }
 }
@@ -4741,30 +5026,49 @@ function rewriteFactoryCallsInSource(
     const thisCallIndex = callSiteIndex++
     const suffix = `_bf${thisCallIndex}`
 
-    // Apply renames to the factory body source.
-    let body = factory.bodySource
-    // 1. Suffix-rename internal bindings.
-    const internalRenames = new Set<string>(factory.localBindings)
-    for (const ex of excludeFromSuffixRename) internalRenames.delete(ex)
-    for (const name of internalRenames) {
-      body = body.replace(new RegExp(`\\b${escapeRegex(name)}\\b`, 'g'), name + suffix)
+    // Merged rename map, one entry per old name → replacement text.
+    // Precedence (matches the pre-#2341 sequential-pass outcome): param
+    // substitution > return→caller rename > internal suffix rename — later
+    // `.set()` calls for the same key overwrite earlier ones below.
+    const renames = new Map<string, string>()
+    // 1. Suffix-rename internal bindings not excluded (tuple params/returns,
+    //    or object-path destructured names — see excludeFromSuffixRename's
+    //    callers).
+    for (const name of factory.localBindings) {
+      if (!excludeFromSuffixRename.has(name)) renames.set(name, name + suffix)
     }
-    // 2. Parameters → argument expressions. Atomic arguments (bare
+    // 2. Return identifiers → caller destructure names (tuple path only).
+    if (renameReturnToCallerNames) {
+      for (const [n, caller] of renameReturnToCallerNames) {
+        if (caller !== n) renames.set(n, caller) // identity rename = no-op, skip
+      }
+    }
+    // 3. Parameters → argument expressions. Atomic arguments (bare
     //    identifiers, numeric literals, string literals) are spliced
     //    directly; anything more complex is wrapped in parens to preserve
-    //    operator precedence at the splice site.
+    //    operator precedence at the splice site. Overwrites any same-name
+    //    return rename above — param substitution wins, as before #2341.
     const atomicArg = /^(?:[\w$.]+|'[^'\\]*'|"[^"\\]*"|-?\d+(?:\.\d+)?)$/
     for (let i = 0; i < factory.params.length; i++) {
       const p = factory.params[i]
-      const a = argTexts[i] ?? 'undefined'
-      const wrapped = atomicArg.test(a.trim()) ? a.trim() : `(${a})`
-      body = body.replace(new RegExp(`\\b${escapeRegex(p)}\\b`, 'g'), wrapped)
+      const a = (argTexts[i] ?? 'undefined').trim()
+      renames.set(p, atomicArg.test(a) ? a : `(${a})`)
     }
-    // 3. Return identifiers → caller destructure names (tuple path only).
-    if (renameReturnToCallerNames) {
-      for (const [n, caller] of renameReturnToCallerNames) {
-        body = body.replace(new RegExp(`\\b${escapeRegex(n)}\\b`, 'g'), caller)
-      }
+
+    // Apply the merged renames as a single bottom-to-top position splice
+    // over `bodySource`, using the sites collected once at detection time
+    // (#2341 BUG-1) — never a text search, so string/template-literal
+    // contents, property keys, `.prop` tails, and JSX intrinsic tags are
+    // never touched, and (unlike the old sequential regex passes) an
+    // argument expression already spliced in for an earlier site can never
+    // be re-scanned and corrupted by a later rename.
+    let body = factory.bodySource
+    for (let i = factory.renameSites.length - 1; i >= 0; i--) {
+      const site = factory.renameSites[i]
+      const repl = renames.get(site.name)
+      if (repl === undefined) continue
+      const text = site.form === 'shorthand' ? `${site.name}: ${repl}` : repl
+      body = body.slice(0, site.start) + text + body.slice(site.end)
     }
 
     edits.push({
@@ -4853,10 +5157,6 @@ function isPascalCaseComponentFn(node: ts.Node): boolean {
   return false
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 // =============================================================================
 // BF110 diagnostic (#931)
 // =============================================================================
@@ -4895,6 +5195,7 @@ function declinedFactoryErrorCode(code: DeclinedReactiveFactory['code']): ErrorC
   switch (code) {
     case 'BF112': return ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
     case 'BF113': return ErrorCodes.REACTIVE_FACTORY_IMPORT_COLLISION
+    case 'BF114': return ErrorCodes.REACTIVE_FACTORY_PARAM_SHADOWED
     default: return ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED
   }
 }

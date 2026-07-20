@@ -1455,6 +1455,19 @@ export interface NamedExportSpecifier {
   isTypeOnly: boolean
 }
 
+/** One identifier occurrence in a factory body that call-site inlining may
+ *  rename (#2341 BUG-1). Offsets are relative to ReactiveFactoryInfo.bodySource. */
+export interface FactoryRenameSite {
+  name: string
+  start: number
+  end: number
+  /** 'shorthand' = the identifier is simultaneously a property key and a
+   *  value/binding reference ({ name } literal, or { name } object-pattern
+   *  element). Renaming it must EXPAND to `name: <replacement>` to preserve
+   *  the key. 'plain' = ordinary reference or declaration name. */
+  form: 'plain' | 'shorthand'
+}
+
 /**
  * Reactive factory helper metadata (#931). Collected when a same-file
  * function matches the factory shape: exactly one top-level `return` whose
@@ -1500,6 +1513,14 @@ export interface ReactiveFactoryInfo {
    * file are dropped at prescan time.
    */
   requiredImports?: RequiredFactoryImport[]
+  /**
+   * Identifier occurrences within `bodySource` that call-site inlining may
+   * rename (#2341 BUG-1) — collected by the same AST walk that produces
+   * `bodySource`, so offsets stay in lockstep with the serialized text.
+   * Same-file and cross-file factories both get this (both flow through
+   * `detectReactiveFactory`).
+   */
+  renameSites: FactoryRenameSite[]
 }
 
 /**
@@ -1526,7 +1547,7 @@ export interface RequiredFactoryImport {
  * the generic BF110.
  */
 export interface DeclinedReactiveFactory {
-  code: 'BF111' | 'BF112' | 'BF113'
+  code: 'BF111' | 'BF112' | 'BF113' | 'BF114'
   /** Detail spliced into the call-site message (e.g. offending identifier list). */
   detail: string
   /** Definition site (in the helper file for cross-file declines). */
