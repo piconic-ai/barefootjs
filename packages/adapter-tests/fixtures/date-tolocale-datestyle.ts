@@ -13,7 +13,11 @@ import { createFixture } from '../src/types'
  *     2024-03-05 is a Tuesday; the offset-shifted weekday arithmetic is
  *     what the `weekday-shift` oracle point exercises);
  *   - ja-JP `dateStyle: 'long'` → `YYYY年M月D日`, numeric — the probe
- *     discovers no names are needed and ships an empty table.
+ *     discovers no names are needed and ships an empty table;
+ *   - ru-RU `dateStyle: 'long'` → `D MMMM YYYY г.` with the GENITIVE
+ *     month table (`марта`, not standalone `март`) — the context-inflected
+ *     name derivation from the #2336 Copilot review, two-point-verified
+ *     against real ICU at build time.
  *
  * Hono evaluates the real ECMA-402 call against the same build-machine ICU
  * the pattern+table were frozen from, so reference parity IS the fidelity
@@ -29,6 +33,7 @@ function DateToLocaleDateStyle({ createdAt }: { createdAt: Date }) {
       <time>{createdAt.toLocaleDateString('en-US', { dateStyle: 'long', timeZone: 'UTC' })}</time>
       <span>{createdAt.toLocaleDateString('en-US', { dateStyle: 'full', timeZone: 'UTC' })}</span>
       <span>{createdAt.toLocaleDateString('ja-JP', { dateStyle: 'long', timeZone: 'UTC' })}</span>
+      <span>{createdAt.toLocaleDateString('ru-RU', { dateStyle: 'long', timeZone: 'UTC' })}</span>
     </div>
   )
 }
@@ -50,6 +55,7 @@ export { DateToLocaleDateStyle }
       <time bf="s1"><!--bf:s0-->March 5, 2024<!--/--></time>
       <span bf="s3"><!--bf:s2-->Tuesday, March 5, 2024<!--/--></span>
       <span bf="s5"><!--bf:s4-->2024年3月5日<!--/--></span>
+      <span bf="s7"><!--bf:s6-->5 марта 2024 г.<!--/--></span>
     </div>
   `,
 })

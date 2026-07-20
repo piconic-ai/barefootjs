@@ -166,6 +166,26 @@ describe('name tokens via the options bag (#2334)', () => {
     })
   })
 
+  test('context-inflected month names pick the form the format actually uses (Copilot, #2336)', () => {
+    // Russian inflects month names by date context: dateStyle 'long'
+    // renders genitive `марта`, а month-only format nominative `март`.
+    // Each call site ships the table whose form ICU uses THERE, verified
+    // at a second instant so a probe-index coincidence can't slip through.
+    const long = match(`createdAt.toLocaleDateString('ru-RU', { dateStyle: 'long', timeZone: 'UTC' })`)
+    // NOTE: read args BEFORE any toMatchObject with expect.anything() —
+    // bun 1.3.11's toMatchObject MUTATES the received object, emptying
+    // entries an expect.anything() matched (minimal repro pinned in this
+    // PR's description; upstream bun bug).
+    const longNames = (long as { args: ParsedExpr[] }).args[3] as Extract<ParsedExpr, { kind: 'array-literal' }>
+    const longPattern = (long as { args: ParsedExpr[] }).args[1]
+    expect(longPattern).toEqual({ kind: 'literal', value: 'D MMMM YYYY г.', literalType: 'string' })
+    expect(longNames.elements[2]).toEqual({ kind: 'literal', value: 'марта', literalType: 'string' })
+
+    const monthOnly = match(`createdAt.toLocaleDateString('ru-RU', { month: 'long', timeZone: 'UTC' })`)
+    const standaloneNames = (monthOnly as { args: ParsedExpr[] }).args[3] as Extract<ParsedExpr, { kind: 'array-literal' }>
+    expect(standaloneNames.elements[2]).toEqual({ kind: 'literal', value: 'март', literalType: 'string' })
+  })
+
   test('unreproducible forms decline loudly: 2-digit year, era', () => {
     expect(match(`createdAt.toLocaleDateString('en-US', { dateStyle: 'short', timeZone: 'UTC' })`)).toBeNull()
     expect(match(`createdAt.toLocaleDateString('en-US', { era: 'short', year: 'numeric', timeZone: 'UTC' })`)).toBeNull()

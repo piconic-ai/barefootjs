@@ -91,32 +91,79 @@ const formatCache = new Map<string, LocaleDateFormat | null>()
 const namesCache = new Map<string, string[] | null>()
 
 /**
- * Derive a locale's 38-slot name table from the build machine's own ICU —
- * the compiler is the only owner of locale data; backends receive the
- * values as an ordinary array argument and stay type-only (#2334).
- * Sunday-first weekday order matches `Date.prototype.getUTCDay`.
+ * Name-derivation context (Copilot review on #2336): many locales inflect
+ * month (and sometimes weekday) names by DATE CONTEXT — Russian renders
+ * `{month:'long'}` alone as nominative `март` but `dateStyle:'long'` as
+ * genitive `марта`. So each section of the table is derived under BOTH a
+ * `formatting` probe (name alongside a day — the form full date styles
+ * use) and a `standalone` probe (name alone), and `deriveFormat` ships
+ * whichever table the probed output actually matches.
  */
-function deriveLocaleNames(locale: string): string[] | null {
-  const cached = namesCache.get(locale)
+type NameContext = 'formatting' | 'standalone'
+
+/**
+ * Derive a locale's 24 month names (12 wide + 12 abbreviated) under one
+ * {@link NameContext}, or null when any probe fails. The compiler is the
+ * only owner of locale data; backends receive the values as an ordinary
+ * array argument and stay type-only (#2334).
+ */
+function deriveMonthNames(locale: string, ctx: NameContext): string[] | null {
+  return deriveNamesCached(`${locale}|m|${ctx}`, () => {
+    const months = (width: 'long' | 'short') =>
+      Array.from({ length: 12 }, (_, m) =>
+        probePart(
+          locale,
+          ctx === 'formatting' ? { month: width, day: 'numeric' } : { month: width },
+          Date.UTC(2001, m, 15),
+          'month',
+        ),
+      )
+    return [...months('long'), ...months('short')]
+  })
+}
+
+/**
+ * Derive a locale's 14 weekday names (7 wide + 7 abbreviated,
+ * Sunday-first — matching `Date.prototype.getUTCDay`) under one context.
+ */
+function deriveWeekdayNames(locale: string, ctx: NameContext): string[] | null {
+  return deriveNamesCached(`${locale}|w|${ctx}`, () => {
+    // 2023-01-01 was a Sunday; day offsets walk Sunday..Saturday.
+    const weekdays = (width: 'long' | 'short') =>
+      Array.from({ length: 7 }, (_, d) =>
+        probePart(
+          locale,
+          ctx === 'formatting' ? { weekday: width, month: 'numeric', day: 'numeric' } : { weekday: width },
+          Date.UTC(2023, 0, 1 + d),
+          'weekday',
+        ),
+      )
+    return [...weekdays('long'), ...weekdays('short')]
+  })
+}
+
+function probePart(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+  utc: number,
+  type: string,
+): string {
+  const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(new Date(utc))
+  const found = parts.find((p) => p.type === type)
+  if (!found || !found.value) throw new Error('missing part')
+  return found.value
+}
+
+function deriveNamesCached(key: string, derive: () => string[]): string[] | null {
+  const cached = namesCache.get(key)
   if (cached !== undefined) return cached
   let derived: string[] | null
   try {
-    const part = (options: Intl.DateTimeFormatOptions, utc: number, type: string): string => {
-      const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(new Date(utc))
-      const found = parts.find((p) => p.type === type)
-      if (!found || !found.value) throw new Error('missing part')
-      return found.value
-    }
-    const months = (width: 'long' | 'short') =>
-      Array.from({ length: 12 }, (_, m) => part({ month: width }, Date.UTC(2001, m, 15), 'month'))
-    // 2023-01-01 was a Sunday; day offsets walk Sunday..Saturday.
-    const weekdays = (width: 'long' | 'short') =>
-      Array.from({ length: 7 }, (_, d) => part({ weekday: width }, Date.UTC(2023, 0, 1 + d), 'weekday'))
-    derived = [...months('long'), ...months('short'), ...weekdays('long'), ...weekdays('short')]
+    derived = derive()
   } catch {
     derived = null
   }
-  namesCache.set(locale, derived)
+  namesCache.set(key, derived)
   return derived
 }
 
@@ -155,10 +202,58 @@ export function resolveLocaleDateFormat(
   return derived
 }
 
+/**
+ * Second verification instant: 2001-05-13 UTC — a SUNDAY in MAY, so both
+ * the month and weekday indexes differ from {@link PROBE_UTC}'s. The
+ * chosen name tables are re-verified against the real ICU output at this
+ * instant, closing the coincidental-match hole: a table whose form only
+ * happens to agree with the probed format AT the probe month/weekday (but
+ * diverges elsewhere) would otherwise ship a silently-wrong name — the
+ * one failure class the fidelity rule ("reproduce exactly or decline")
+ * cannot tolerate (Copilot review on #2336).
+ */
+const VERIFY_UTC = new Date(Date.UTC(2001, 4, 13))
+
+/** Render `pattern` + `names` at a fixed calendar point — the compiler-side
+ *  mirror of the runtime token scan, used only for the VERIFY_UTC check. */
+function renderPatternAt(
+  pattern: string,
+  names: readonly string[],
+  y: number,
+  m: number,
+  d: number,
+  wd: number,
+): string {
+  const pad2 = (n: number) => String(n).padStart(2, '0')
+  return pattern.replace(/YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D/g, (token) => {
+    switch (token) {
+      case 'YYYY':
+        return String(y).padStart(4, '0')
+      case 'MMMM':
+        return names[m - 1] ?? ''
+      case 'MMM':
+        return names[12 + m - 1] ?? ''
+      case 'MM':
+        return pad2(m)
+      case 'M':
+        return String(m)
+      case 'DD':
+        return pad2(d)
+      case 'D':
+        return String(d)
+      case 'dddd':
+        return names[24 + wd] ?? ''
+      default:
+        return names[31 + wd] ?? ''
+    }
+  })
+}
+
 function deriveFormat(locale: string, probeOptions: Record<string, string>): LocaleDateFormat | null {
+  let dtf: Intl.DateTimeFormat
   let parts: Intl.DateTimeFormatPart[]
   try {
-    const dtf = new Intl.DateTimeFormat(locale, {
+    dtf = new Intl.DateTimeFormat(locale, {
       ...(probeOptions as Intl.DateTimeFormatOptions),
       timeZone: 'UTC',
     })
@@ -169,8 +264,20 @@ function deriveFormat(locale: string, probeOptions: Record<string, string>): Loc
     return null // invalid language tag or invalid/conflicting options
   }
   // Probe instant 2001-02-03 is a Saturday in February: month index 1,
-  // weekday index 6 in the Sunday-first table.
-  const names = deriveLocaleNames(locale)
+  // weekday index 6 in the Sunday-first table. Each name part is matched
+  // against BOTH derivation contexts (formatting first — full date styles
+  // use the in-context form) so context-inflecting locales (ru: `марта`
+  // vs `март`) resolve to the table whose form the format actually uses.
+  const monthTables: Array<string[] | null> = [
+    deriveMonthNames(locale, 'formatting'),
+    deriveMonthNames(locale, 'standalone'),
+  ]
+  const weekdayTables: Array<string[] | null> = [
+    deriveWeekdayNames(locale, 'formatting'),
+    deriveWeekdayNames(locale, 'standalone'),
+  ]
+  let monthTable: string[] | null = null
+  let weekdayTable: string[] | null = null
   let pattern = ''
   let usesNames = false
   for (const part of parts) {
@@ -179,31 +286,39 @@ function deriveFormat(locale: string, probeOptions: Record<string, string>): Loc
         if (part.value !== '2001') return null // 2-digit-year form has no token
         pattern += 'YYYY'
         break
-      case 'month':
-        if (part.value === '2') pattern += 'M'
-        else if (part.value === '02') pattern += 'MM'
-        else if (names && part.value === names[1]) {
-          pattern += 'MMMM'
-          usesNames = true
-        } else if (names && part.value === names[12 + 1]) {
-          pattern += 'MMM'
-          usesNames = true
-        } else return null // narrow / unmatched month form
+      case 'month': {
+        if (part.value === '2') {
+          pattern += 'M'
+          break
+        }
+        if (part.value === '02') {
+          pattern += 'MM'
+          break
+        }
+        const wide = monthTables.find((t) => t && part.value === t[1]) ?? null
+        const abbr = wide ? null : (monthTables.find((t) => t && part.value === t[12 + 1]) ?? null)
+        if (wide) pattern += 'MMMM'
+        else if (abbr) pattern += 'MMM'
+        else return null // narrow / unmatched month form
+        monthTable = wide ?? abbr
+        usesNames = true
         break
+      }
       case 'day':
         if (part.value === '3') pattern += 'D'
         else if (part.value === '03') pattern += 'DD'
         else return null
         break
-      case 'weekday':
-        if (names && part.value === names[24 + 6]) {
-          pattern += 'dddd'
-          usesNames = true
-        } else if (names && part.value === names[31 + 6]) {
-          pattern += 'ddd'
-          usesNames = true
-        } else return null // narrow / unmatched weekday form
+      case 'weekday': {
+        const wide = weekdayTables.find((t) => t && part.value === t[6]) ?? null
+        const abbr = wide ? null : (weekdayTables.find((t) => t && part.value === t[7 + 6]) ?? null)
+        if (wide) pattern += 'dddd'
+        else if (abbr) pattern += 'ddd'
+        else return null // narrow / unmatched weekday form
+        weekdayTable = wide ?? abbr
+        usesNames = true
         break
+      }
       case 'literal':
         // A literal colliding with the token alphabet would be re-tokenized
         // by the helper's scan: any uppercase Y/M/D, or a lowercase run of
@@ -218,7 +333,18 @@ function deriveFormat(locale: string, probeOptions: Record<string, string>): Loc
   // The probed format must actually be a date (guards a pathological
   // options bag that yields, say, only a weekday).
   if (!/YYYY|MMMM|MMM|MM|M/.test(pattern) && !/DD|D/.test(pattern)) return null
-  return { pattern, names: usesNames ? names : null }
+  if (!usesNames) return { pattern, names: null }
+  // Compose the shipped 38-slot table from whichever context matched each
+  // section (unused sections default to the formatting context).
+  const names = [
+    ...(monthTable ?? monthTables[0] ?? monthTables[1] ?? Array<string>(24).fill('')),
+    ...(weekdayTable ?? weekdayTables[0] ?? weekdayTables[1] ?? Array<string>(14).fill('')),
+  ]
+  // Two-point verification: reproduce the SECOND instant (Sunday, May 13)
+  // with the frozen pattern + table and byte-compare against real ICU. A
+  // probe-index coincidence between contexts cannot survive both points.
+  if (renderPatternAt(pattern, names, 2001, 5, 13, 0) !== dtf.format(VERIFY_UTC)) return null
+  return { pattern, names }
 }
 
 /**
