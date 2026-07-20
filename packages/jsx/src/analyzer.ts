@@ -4047,18 +4047,56 @@ function collectEntryBindingNames(sf: ts.SourceFile): Set<string> {
   return names
 }
 
+// One `export ... from` hop is followed when resolving a re-exported name
+// (#2341 BUG-2) — a visited-set guards against cycles regardless, so
+// raising this later is safe without further changes.
+const MAX_REEXPORT_HOPS = 1
+
+/** A helper file's export surface, cached per absolute path for the
+ *  lifetime of one `prescanImportedReactiveFactories` call (#2341 BUG-2). */
+interface HelperFileInfo {
+  sf: ts.SourceFile
+  /** Module-scope function declarations exported under their external name
+   *  (own `export function`, or a local `export { f as g }`). */
+  exportedFns: Map<string, ts.FunctionDeclaration>
+  /** `export { a as b } from 'src'` re-exports, keyed by the EXTERNAL name
+   *  `b` — a barrel file's whole reason for existing (#2341 BUG-2). */
+  reexports: Map<string, { source: string; innerName: string }>
+  /** Any `export * from '...'` in this file — a named lookup that misses
+   *  `exportedFns`/`reexports` might still resolve through one of these, so
+   *  it can never be classified `'clean'`. (`export * as ns from` is a
+   *  `NamespaceExport` clause and is excluded: a named lookup can never
+   *  come through it.) */
+  hasStarReexport: boolean
+  moduleBindings: HelperModuleBindings
+}
+/** `'clean'` = read, parsed (or gate-skipped), and proven to define no
+ *  reactive factory under any name reachable from it. `null` = unreadable. */
+type LoadedHelper = HelperFileInfo | 'clean' | null
+type ExportLookup =
+  | { kind: 'fn'; fn: ts.FunctionDeclaration; file: HelperFileInfo; definingPath: string }
+  | { kind: 'clean' } // proven non-reactive under this name → cleanFactoryImports
+  | { kind: 'unknown' } // cannot prove → leave unclassified so the BF110 name heuristic still fires
+
 /**
  * Cross-file half of the factory prescan (#2325 round 2): resolve factories
  * defined in a relative-imported helper file so `const { count } =
  * createCounter(0)` inlines the same way whether `createCounter` lives in
- * this file or in `./hooks`. Mutates `result`'s maps in place.
+ * this file or in `./hooks`. Follows one `export ... from` hop so a barrel
+ * `index.ts` re-exporting the real helper resolves to the file that
+ * actually DEFINES it (#2341 BUG-2) — every classification (factory /
+ * declined / reactive-shaped / clean) and every downstream anchor (module-
+ * capture check, helper-import re-provisioning, `sourceFilePath`) is keyed
+ * off that defining file, never the barrel. Mutates `result`'s maps in
+ * place.
  *
  * Perf: gated on a candidate-callee set collected from the ALREADY-parsed
  * entry AST (no regex over source text, per CONTRIBUTING.md's "never parse
  * imports with regex" rule) — files with no tuple/object-destructured call
  * at all skip every filesystem access below. A second cheap gate (does the
- * helper file's raw text contain any `REACTIVE_PRIMITIVES` substring) skips
- * the AST parse of helper files that plainly aren't reactive; this is a
+ * helper file's raw text contain any `REACTIVE_PRIMITIVES` substring, or
+ * any `export ... from` re-export text) skips the AST parse of helper files
+ * that plainly define no factory and re-export nothing; this is a
  * skip-gate over content, not an import parse, so it doesn't run afoul of
  * that same rule.
  *
@@ -4129,45 +4167,42 @@ function prescanImportedReactiveFactories(
   // same name from a DIFFERENT (targetKey, exportedName) is a collision.
   const plannedInjections = new Map<string, { targetKey: string; exportedName: string }>()
 
-  for (const { src, specs } of importsToCheck) {
-    const resolved = resolveRelativeImportToFile(src, filePath)
-    // Unresolvable — left alone here; the name-heuristic BF110 branch in
-    // validateReactiveFactoryCalls handles it at validation time.
-    if (!resolved) continue
+  // #2341 BUG-2 — one read+parse per helper file per entry file, memoized
+  // across every spec/hop that touches it (a barrel is typically visited
+  // once per re-exported name it satisfies).
+  const helperCache = new Map<string, LoadedHelper>()
+
+  function loadHelperFile(abs: string): LoadedHelper {
+    const cached = helperCache.get(abs)
+    if (cached !== undefined) return cached
 
     let content: string
     try {
-      content = fs.readFileSync(resolved, 'utf8')
+      content = fs.readFileSync(abs, 'utf8')
     } catch {
-      continue
+      helperCache.set(abs, null)
+      return null
     }
-
-    const alreadyKnown = (name: string): boolean =>
-      result.factories.has(name) || result.declined.has(name) || result.reactiveShaped.has(name)
 
     // Cheap text-level skip-gate (not an import/JS parse — see docstring):
-    // a helper file with no reactive-primitive substring anywhere cannot
-    // define a reactive factory, so skip parsing it entirely.
+    // a file with no reactive-primitive substring AND no re-export gate
+    // text (`export` ... `from`) can neither define a reactive factory nor
+    // re-export one, so skip parsing it entirely. Substring checks only —
+    // false positives merely cause an AST parse whose outcome is still
+    // correct, they never cause a false 'clean'.
     const hasAnyPrimitiveText = [...REACTIVE_PRIMITIVES].some(p => content.includes(p))
-    if (!hasAnyPrimitiveText) {
-      for (const spec of specs) {
-        if (!alreadyKnown(spec.local)) result.cleanFactoryImports.add(spec.local)
-      }
-      continue
+    const hasReexportText = content.includes('export') && content.includes('from')
+    if (!hasAnyPrimitiveText && !hasReexportText) {
+      helperCache.set(abs, 'clean')
+      return 'clean'
     }
 
-    const helperSf = ts.createSourceFile(
-      resolved + '.prescan',
-      content,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TSX
-    )
+    const sf = ts.createSourceFile(abs + '.prescan', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 
     // Map exported name -> module-scope FunctionDeclaration via the AST.
     const localFns = new Map<string, ts.FunctionDeclaration>()
     const exportedFns = new Map<string, ts.FunctionDeclaration>()
-    for (const stmt of helperSf.statements) {
+    for (const stmt of sf.statements) {
       if (ts.isFunctionDeclaration(stmt) && stmt.name && stmt.body) {
         localFns.set(stmt.name.text, stmt)
         const hasExportModifier = stmt.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
@@ -4177,20 +4212,37 @@ function prescanImportedReactiveFactories(
         }
       }
     }
-    // `export { f }` / `export { f as g }` — keyed by the EXTERNAL export name.
-    for (const stmt of helperSf.statements) {
-      if (
-        ts.isExportDeclaration(stmt) &&
-        stmt.exportClause &&
-        ts.isNamedExports(stmt.exportClause) &&
-        !stmt.moduleSpecifier &&
-        !stmt.isTypeOnly
-      ) {
+
+    const reexports = new Map<string, { source: string; innerName: string }>()
+    let hasStarReexport = false
+    for (const stmt of sf.statements) {
+      if (!ts.isExportDeclaration(stmt) || stmt.isTypeOnly) continue
+      if (!stmt.moduleSpecifier) {
+        // `export { f }` / `export { f as g }` — keyed by the EXTERNAL export name.
+        if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+          for (const el of stmt.exportClause.elements) {
+            if (el.isTypeOnly) continue
+            const fn = localFns.get((el.propertyName ?? el.name).text)
+            if (fn) exportedFns.set(el.name.text, fn)
+          }
+        }
+        continue
+      }
+      if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+      if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+        // `export { a as b } from 'src'` — keyed by the EXTERNAL name `b`.
         for (const el of stmt.exportClause.elements) {
           if (el.isTypeOnly) continue
-          const fn = localFns.get((el.propertyName ?? el.name).text)
-          if (fn) exportedFns.set(el.name.text, fn)
+          reexports.set(el.name.text, {
+            source: stmt.moduleSpecifier.text,
+            innerName: (el.propertyName ?? el.name).text,
+          })
         }
+      } else if (!stmt.exportClause) {
+        // `export * from 'src'`. (`export * as ns from` carries a
+        // NamespaceExport clause here, not `undefined` — excluded on
+        // purpose: a named lookup can never come through it.)
+        hasStarReexport = true
       }
     }
 
@@ -4198,17 +4250,77 @@ function prescanImportedReactiveFactories(
     // body must not reference any of these (#2325 §4h / BF112), since
     // inlining moves the body into the component file where they don't
     // exist.
-    const moduleBindings = collectHelperModuleValueBindings(helperSf)
+    const moduleBindings = collectHelperModuleValueBindings(sf)
+
+    const info: HelperFileInfo = { sf, exportedFns, reexports, hasStarReexport, moduleBindings }
+    helperCache.set(abs, info)
+    return info
+  }
+
+  /**
+   * Resolve `exportedName` from the file at `abs`, following one
+   * `export ... from` hop through a barrel re-export (#2341 BUG-2).
+   * `visited` guards against self/indirect barrel cycles.
+   */
+  function lookupExportedFactory(
+    abs: string,
+    exportedName: string,
+    visited: Set<string>,
+    hopsLeft: number
+  ): ExportLookup {
+    if (visited.has(abs)) return { kind: 'unknown' }
+    visited.add(abs)
+
+    const file = loadHelperFile(abs)
+    if (file === null) return { kind: 'unknown' }
+    if (file === 'clean') return { kind: 'clean' }
+
+    const fn = file.exportedFns.get(exportedName)
+    if (fn) return { kind: 'fn', fn, file, definingPath: abs }
+
+    const re = file.reexports.get(exportedName)
+    if (re) {
+      if (hopsLeft <= 0) return { kind: 'unknown' }
+      // Non-relative re-export specifiers (`export { x } from 'pkg'`)
+      // resolve through bundler/tsconfig-paths configuration this layer
+      // doesn't consume — same restriction as direct imports.
+      if (!re.source.startsWith('./') && !re.source.startsWith('../')) return { kind: 'unknown' }
+      const target = resolveRelativeImportToFile(re.source, abs)
+      if (!target) return { kind: 'unknown' } // unresolvable re-export target: never mark clean
+      return lookupExportedFactory(target, re.innerName, visited, hopsLeft - 1)
+    }
+
+    // `export * from` might still reach this name through a file this
+    // layer doesn't enumerate — never clean. Otherwise the file was fully
+    // inspected and genuinely doesn't define or re-export this name.
+    if (file.hasStarReexport) return { kind: 'unknown' }
+    return { kind: 'clean' }
+  }
+
+  for (const { src, specs } of importsToCheck) {
+    const resolved = resolveRelativeImportToFile(src, filePath)
+    // Unresolvable — left alone here; the name-heuristic BF110 branch in
+    // validateReactiveFactoryCalls handles it at validation time.
+    if (!resolved) continue
+
+    const alreadyKnown = (name: string): boolean =>
+      result.factories.has(name) || result.declined.has(name) || result.reactiveShaped.has(name)
 
     for (const spec of specs) {
       if (alreadyKnown(spec.local)) continue
 
-      const fn = exportedFns.get(spec.exported)
-      if (!fn) {
+      const found = lookupExportedFactory(resolved, spec.exported, new Set<string>(), MAX_REEXPORT_HOPS)
+      if (found.kind === 'clean') {
         result.cleanFactoryImports.add(spec.local)
         continue
       }
-      const det = detectReactiveFactory(fn, helperSf, resolved)
+      if (found.kind === 'unknown') continue
+
+      const { fn, file, definingPath } = found
+      const helperSf = file.sf
+      const moduleBindings = file.moduleBindings
+
+      const det = detectReactiveFactory(fn, helperSf, definingPath)
       if (!det) {
         result.cleanFactoryImports.add(spec.local)
         continue
@@ -4221,6 +4333,9 @@ function prescanImportedReactiveFactories(
           result.declined.set(spec.local, det.declined)
           break
         case 'factory': {
+          // Module-capture check is anchored to the DEFINING file's own
+          // module bindings, not the barrel's (#2341 BUG-2) — the barrel
+          // itself contributes no bindings the inlined body could reference.
           const capture = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
           if (capture.captured.length > 0) {
             result.declined.set(spec.local, {
@@ -4247,10 +4362,12 @@ function prescanImportedReactiveFactories(
             let specifier: string
             let targetKey: string
             if (ref.source.startsWith('./') || ref.source.startsWith('../')) {
-              // Resolve from the HELPER file's directory (`resolved` is its
-              // absolute path). Unresolvable → same posture as a local
+              // Resolve from the DEFINING file's directory (#2341 BUG-2 —
+              // `definingPath` is the file that actually declares this
+              // import, which may differ from the barrel that was
+              // imported). Unresolvable → same posture as a local
               // capture: nothing importable to re-provision (BF112).
-              const abs = resolveRelativeImportToFile(ref.source, resolved)
+              const abs = resolveRelativeImportToFile(ref.source, definingPath)
               if (!abs) {
                 declinedEntry = {
                   code: 'BF112',
@@ -4292,7 +4409,10 @@ function prescanImportedReactiveFactories(
             break
           }
           for (const [name, id] of pending) plannedInjections.set(name, id)
-          det.info.sourceFilePath = resolved
+          // #2341 BUG-2 — anchored to the file that actually defines the
+          // factory, not the (possibly barrel) import path the component
+          // used to reach it.
+          det.info.sourceFilePath = definingPath
           if (required.length > 0) det.info.requiredImports = required
           result.factories.set(spec.local, det.info)
           break

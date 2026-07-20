@@ -500,3 +500,290 @@ export function DoublerSelfImporting() {
     expect((clientJs!.content.match(/from '\.\.\/lib\/mathmod'/g) ?? []).length).toBe(1)
   })
 })
+
+describe('Barrel re-exports (#2341 BUG-2)', () => {
+  beforeAll(() => {
+    writeFixture('barrel/useToggle.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function useToggle(initial: boolean) {
+  const [on, setOn] = createSignal(initial)
+  return [on, setOn] as const
+}
+`)
+    writeFixture('barrel/index.ts', `export { useToggle } from './useToggle'
+`)
+  })
+
+  test('B1: factory reached through a barrel index.ts inlines (issue repro)', () => {
+    // `../barrel` has no extension and is not itself a file — this also
+    // exercises directory-index resolution (`./hooks` -> `hooks/index.ts`),
+    // already supported by `resolveRelativeImportToFile`.
+    const consumerSource = `'use client'
+import { useToggle } from '../barrel'
+
+export function Switch() {
+  const [on, setOn] = useToggle(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/Switch.tsx', consumerSource)
+
+    const ctx = analyzeComponent(consumerSource, consumerPath, 'Switch')
+    expect(ctx.signals.length).toBe(1)
+    expect(ctx.signals[0].getter).toBe('on')
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    expect(clientJs!.content).toContain('createSignal')
+    expect(clientJs!.content).not.toContain('../barrel')
+    expect(clientJs!.content).toMatch(/import\s*\{[^}]*createSignal[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
+  })
+
+  test('B2: barrel alias (export { useToggle as useFlip } from) inlines', () => {
+    writeFixture('barrel-alias/index.ts', `export { useToggle as useFlip } from '../barrel/useToggle'
+`)
+    const consumerSource = `'use client'
+import { useFlip } from '../barrel-alias'
+
+export function FlipSwitch() {
+  const [on, setOn] = useFlip(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/FlipSwitch.tsx', consumerSource)
+
+    const ctx = analyzeComponent(consumerSource, consumerPath, 'FlipSwitch')
+    expect(ctx.signals.length).toBe(1)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+  })
+
+  test('B3: barrel alias + consumer alias both resolve through the hop', () => {
+    const consumerSource = `'use client'
+import { useFlip as flip } from '../barrel-alias'
+
+export function FlipSwitch2() {
+  const [on, setOn] = flip(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/FlipSwitch2.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    expect(clientJs!.content).toContain('createSignal')
+  })
+
+  test('B4: export * from stays loud (BF110), never silently marked clean', () => {
+    writeFixture('barrel-star/index.ts', `export * from '../barrel/useToggle'
+`)
+    const consumerSource = `'use client'
+import { useToggle } from '../barrel-star'
+
+export function StarConsumer() {
+  const [on, setOn] = useToggle(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/StarConsumer.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+    expect(bf110!.message).toContain('useToggle')
+  })
+
+  test('B5: self-referential barrel does not loop', () => {
+    writeFixture('loop/index.ts', `export { useToggle } from './index'
+`)
+    const consumerSource = `'use client'
+import { useToggle } from '../loop'
+
+export function LoopConsumer() {
+  const [on, setOn] = useToggle(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/LoopConsumer.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+  })
+
+  test('B6: unresolvable re-export target stays loud, never cleanFactoryImports-silenced', () => {
+    writeFixture('barrel-missing/index.ts', `export { useToggle } from './missing'
+`)
+    const consumerSource = `'use client'
+import { useToggle } from '../barrel-missing'
+
+export function MissingConsumer() {
+  const [on, setOn] = useToggle(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/MissingConsumer.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+  })
+
+  test('B7: module-scope capture through a barrel still declines with BF112 (defining-file anchor)', () => {
+    // If the capture check were (incorrectly) anchored to the barrel file
+    // instead of the file that actually DEFINES the factory, `readStored`/
+    // `KEY` (declared only in useStoredCounter.tsx, not in the barrel's
+    // index.ts) would never be found as a capture, and the factory would
+    // wrongly inline with a dangling `readStored()` reference (#2341 BUG-2).
+    writeFixture('barrel-capture/useStoredCounter.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+const KEY = 'stored-value'
+
+function readStored() {
+  return KEY.length
+}
+
+export function useStoredCounter() {
+  const [count, setCount] = createSignal(readStored())
+  return { count, setCount }
+}
+`)
+    writeFixture('barrel-capture/index.ts', `export { useStoredCounter } from './useStoredCounter'
+`)
+    const consumerSource = `'use client'
+import { useStoredCounter } from '../barrel-capture'
+
+export function CaptureConsumer() {
+  const { count, setCount } = useStoredCounter()
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/CaptureConsumer.tsx', consumerSource)
+
+    const ctx = analyzeComponent(consumerSource, consumerPath, 'CaptureConsumer')
+    expect(ctx.signals.length).toBe(0)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf112 = result.errors.find(e => e.code === 'BF112')
+    expect(bf112).toBeDefined()
+    expect(bf112!.message).toContain('readStored')
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    if (clientJs) {
+      expect(clientJs.content).not.toContain('readStored')
+    }
+  })
+
+  test('B8: re-provisioned helper import is anchored to the defining file, not the barrel', () => {
+    // The barrel (`hooks2barrel/nested/index.ts`) and the file that
+    // actually defines `useDouble` (`hooks2/useDouble.tsx`) live at
+    // DIFFERENT depths — anchoring the re-provisioned `doubleIt` import to
+    // the barrel's directory instead of the defining file's directory
+    // would resolve to a nonexistent path (#2341 BUG-2).
+    writeFixture('lib2/mathmod.ts', `export function doubleIt(x: number): number {
+  return x * 2
+}
+`)
+    writeFixture('hooks2/useDouble.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { doubleIt } from '../lib2/mathmod'
+
+export function useDouble(initial: number) {
+  const [value, setValue] = createSignal(doubleIt(initial))
+  const bump = () => setValue(doubleIt(value()))
+  return { value, bump }
+}
+`)
+    writeFixture('hooks2barrel/nested/index.ts', `export { useDouble } from '../../hooks2/useDouble'
+`)
+    const consumerSource = `'use client'
+import { useDouble } from '../../hooks2barrel/nested'
+
+export function DoubleViaBarrel() {
+  const { value, bump } = useDouble(21)
+  return <button onClick={bump}>{value()}</button>
+}
+`
+    const consumerPath = writeFixture('components/deep/DoubleViaBarrel.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const clientJs = result.files.find(f => f.type === 'clientJs')
+    expect(clientJs).toBeDefined()
+    expect(clientJs!.content).toMatch(/from\s*'\.\.\/\.\.\/lib2\/mathmod'/)
+    expect(clientJs!.content).not.toContain('hooks2barrel')
+  })
+
+  test('B9: two barrel hops exceed MAX_REEXPORT_HOPS and stay loud', () => {
+    writeFixture('twohop-b/useToggle.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function useToggle(initial: boolean) {
+  const [on, setOn] = createSignal(initial)
+  return [on, setOn] as const
+}
+`)
+    writeFixture('twohop-b/index.ts', `export { useToggle } from './useToggle'
+`)
+    writeFixture('twohop-a/index.ts', `export { useToggle } from '../twohop-b'
+`)
+    const consumerSource = `'use client'
+import { useToggle } from '../twohop-a'
+
+export function TwoHopConsumer() {
+  const [on, setOn] = useToggle(false)
+  return <button onClick={() => setOn(!on())}>{on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/TwoHopConsumer.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf110 = result.errors.find(e => e.code === 'BF110')
+    expect(bf110).toBeDefined()
+  })
+
+  test('B10: mixed barrel (own factory + re-export) inlines both', () => {
+    // Pins exportedFns-before-reexports lookup order: `useLocal` is defined
+    // directly in index.ts, `useToggle` only reaches it via a re-export.
+    writeFixture('mixed/useToggle.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function useToggle(initial: boolean) {
+  const [on, setOn] = createSignal(initial)
+  return [on, setOn] as const
+}
+`)
+    writeFixture('mixed/index.ts', `'use client'
+import { createSignal } from '@barefootjs/client'
+
+export function useLocal(initial: number) {
+  const [count, setCount] = createSignal(initial)
+  return [count, setCount] as const
+}
+
+export { useToggle } from './useToggle'
+`)
+    const consumerSource = `'use client'
+import { useLocal, useToggle } from '../mixed'
+
+export function MixedConsumer() {
+  const [count, setCount] = useLocal(0)
+  const [on, setOn] = useToggle(false)
+  return <button onClick={() => { setCount(count() + 1); setOn(!on()) }}>{count()} {on() ? 'on' : 'off'}</button>
+}
+`
+    const consumerPath = writeFixture('barrel-consumer/MixedConsumer.tsx', consumerSource)
+
+    const ctx = analyzeComponent(consumerSource, consumerPath, 'MixedConsumer')
+    expect(ctx.signals.length).toBe(2)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+  })
+})
