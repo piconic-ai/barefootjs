@@ -2,7 +2,7 @@ requires 'perl', '5.020';
 # Not hand-maintained: scripts/sync-perl-versions.ts pins this to the dist's
 # own release. A looser floor breaks at render time — generated templates
 # call same-release BarefootJS runtime methods.
-requires 'BarefootJS', '0.24.1';
+requires 'BarefootJS', '0.25.0';
 requires 'Mojolicious', '9.0';
 
 on 'test' => sub {
