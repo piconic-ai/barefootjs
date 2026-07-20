@@ -11,7 +11,7 @@ import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
 import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
-import { toLocaleDatePlugin, patternArgToClientJs } from '../to-locale-date-lowering.ts'
+import { toLocaleDatePlugin, foldedArgToClientJs } from '../to-locale-date-lowering.ts'
 import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 
@@ -184,12 +184,12 @@ function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher
     const [, patternArg, tzArg, namesArg] = node.args
     if (!patternArg || tzArg?.kind !== 'literal') continue
     const localeText = call.arguments[0].getText(sourceFile)
-    const patternJs = patternArgToClientJs(patternArg, localeText)
+    const patternJs = foldedArgToClientJs(patternArg, localeText)
     if (patternJs === null) continue
     // The names table (#2334) — omitted when empty, same as the static path.
     let namesJs: string | null = null
     if (namesArg && !(namesArg.kind === 'array-literal' && namesArg.elements.length === 0)) {
-      namesJs = patternArgToClientJs(namesArg, localeText)
+      namesJs = foldedArgToClientJs(namesArg, localeText)
       if (namesJs === null) continue
     }
     const receiverText = propAccess.expression.getText(sourceFile)

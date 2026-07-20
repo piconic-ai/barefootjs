@@ -49,7 +49,7 @@ import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironme
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
-import { toLocaleDatePlugin, patternArgToClientJs } from './to-locale-date-lowering.ts'
+import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
@@ -465,13 +465,13 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
     const [, patternArg, tzArg, namesArg] = node.args
     if (!patternArg || tzArg?.kind !== 'literal') continue
     const localeText = ctx.getJS(call.arguments[0])
-    const patternJs = patternArgToClientJs(patternArg, localeText)
+    const patternJs = foldedArgToClientJs(patternArg, localeText)
     if (patternJs === null) continue
     // The names table (#2334) — omitted from the client call when empty
     // (the client function defaults to []).
     let namesJs: string | null = null
     if (namesArg && !(namesArg.kind === 'array-literal' && namesArg.elements.length === 0)) {
-      namesJs = patternArgToClientJs(namesArg, localeText)
+      namesJs = foldedArgToClientJs(namesArg, localeText)
       if (namesJs === null) continue
     }
     const receiverText = ctx.getJS(propAccess.expression)
