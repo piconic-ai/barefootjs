@@ -1,5 +1,11 @@
 # @barefootjs/mojolicious
 
+## 0.24.0
+
+### Patch Changes
+
+- @barefootjs/shared@0.24.0
+
 ## 0.23.0
 
 ### Patch Changes

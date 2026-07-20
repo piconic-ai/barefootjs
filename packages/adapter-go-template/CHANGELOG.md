@@ -1,5 +1,13 @@
 # @barefootjs/go-template
 
+## 0.24.0
+
+### Patch Changes
+
+- f7f955a: Month/weekday name tokens for date formatting (#2334). `formatDate` gains an explicit `names` table argument (flat 38-slot layout; the `format_date` helper's canonical arity is now 4) and the `MMMM`/`MMM`/`dddd`/`ddd` tokens. The `toLocaleDateString` sugar now admits ANY literal options bag — `{ dateStyle: 'long', timeZone: 'UTC' }`, `{ weekday: 'short', … }` — probing it at build time and shipping the derived pattern plus the name table into the compiled output as an ordinary array argument, so backends stay locale-data-free (type-only) and no runtime ICU/CLDR exists anywhere. Unreproducible forms (era, dayPeriod, 2-digit year, narrow names, non-latn digits) keep refusing loudly per the fidelity rule: reproduce the user's TSX exactly or decline, never approximate.
+- cfbfc49: Go adapter: unify value-position conditional lowering on the pipeline `bf_ternary` helper (#2335). The ParsedExpr `conditional()` emitter, boolean sub-conditions, and attribute-value ternaries now all lower to `(bf_ternary <test> <a> <b>)` instead of `{{if}}…{{end}}` action fragments, deleting the fragment special-casing. This also fixes a correctness bug: a ternary used as a boolean sub-condition (`(x ? y : z) && w`) previously returned only its `test`, silently discarding both branches; it now lowers faithfully. The ternary test is coerced to a real Go bool via the new `bf_truthy` runtime helper (JS `Boolean(x)` semantics) when it isn't already a comparison/negation.
+  - @barefootjs/shared@0.24.0
+
 ## 0.23.0
 
 ### Patch Changes
