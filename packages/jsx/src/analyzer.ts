@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, SourceLocation } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
@@ -23,7 +23,7 @@ import {
   isArrowComponentFunction,
   collectReactiveGetterNames,
 } from './analyzer-context.ts'
-import { createError, createWarning, ErrorCodes } from './errors.ts'
+import { createError, createWarning, ErrorCodes, type ErrorCode } from './errors.ts'
 import { baseTypeName } from './rich-type-evidence.ts'
 import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
@@ -3946,6 +3946,108 @@ function prescanReactiveFactoriesInSource(
 }
 
 /**
+ * #2332 — portable component-relative import specifier for a resolved
+ * absolute helper-import target. Same `'.'`/`'./'` prefix convention as the
+ * CLI's buildRelativeImportRewriter (packages/cli/src/lib/build.ts); strips
+ * the resolved extension to match the codebase's extensionless-import
+ * style. Unlike `buildRelativeImportRewriter`, this normalizes
+ * `path.relative`'s separators to POSIX (`/`) — a backslash-separated
+ * specifier is not valid ESM syntax, so on win32 `path.relative`'s native
+ * output would inject a broken import rather than merely an unconventional
+ * one (Copilot review, PR #2338).
+ */
+function toComponentRelativeSpecifier(resolvedAbs: string, componentFilePath: string): string {
+  let rel = path.relative(path.dirname(componentFilePath), resolvedAbs).split(path.sep).join('/')
+  rel = rel.replace(/\.(tsx|ts|jsx|js)$/, '')
+  if (rel === '') rel = '.'
+  if (!rel.startsWith('.')) rel = './' + rel
+  return rel
+}
+
+/**
+ * localName -> identity of what the entry file's own top-level named value
+ * imports bind, for the satisfied-import dedupe check (#2332): if the
+ * component file already imports the exact binding a factory needs to
+ * re-provision, injecting it again would be a duplicate declaration rather
+ * than a shadow, so that case is skipped instead of injected. `targetKey` is
+ * the resolved absolute path for relative sources (or `unresolved:<source>`
+ * when probing fails) and the raw specifier for bare sources.
+ */
+function buildEntryImportIndex(
+  sf: ts.SourceFile,
+  filePath: string
+): Map<string, { targetKey: string; exportedName: string }> {
+  const index = new Map<string, { targetKey: string; exportedName: string }>()
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    if (stmt.importClause?.isTypeOnly) continue
+    const src = stmt.moduleSpecifier.text
+    const targetKey = src.startsWith('./') || src.startsWith('../')
+      ? (resolveRelativeImportToFile(src, filePath) ?? 'unresolved:' + src)
+      : src
+    const namedBindings = stmt.importClause?.namedBindings
+    if (namedBindings && ts.isNamedImports(namedBindings)) {
+      for (const el of namedBindings.elements) {
+        if (el.isTypeOnly) continue
+        index.set(el.name.text, { targetKey, exportedName: (el.propertyName ?? el.name).text })
+      }
+    }
+  }
+  return index
+}
+
+/**
+ * Every value-binding name anywhere in the entry file (imports, variable
+ * declarations at any depth, function/class/enum names, function
+ * parameters) — used by the #2332 re-provisioned-import collision check
+ * (BF113). Deliberately over-broad: the inlined factory body lands INSIDE a
+ * component function, where any nested binding (params, destructures,
+ * locals) would silently shadow a top-level import injected by this round.
+ * A scan limited to top-level bindings would miss that, so any hit anywhere
+ * in the file declines re-provisioning with a loud BF113 rather than
+ * risking a silent shadow — matching `moduleCaptureCheck`'s stated failure-
+ * direction philosophy (loud build error over silent runtime break).
+ */
+function collectEntryBindingNames(sf: ts.SourceFile): Set<string> {
+  const names = new Set<string>()
+  function visit(node: ts.Node): void {
+    if (ts.isImportDeclaration(node) && node.importClause) {
+      if (node.importClause.name) names.add(node.importClause.name.text)
+      const namedBindings = node.importClause.namedBindings
+      if (namedBindings && ts.isNamedImports(namedBindings)) {
+        // Type-only specifiers still occupy the identifier at the TS level.
+        for (const el of namedBindings.elements) names.add(el.name.text)
+      }
+      if (namedBindings && ts.isNamespaceImport(namedBindings)) {
+        names.add(namedBindings.name.text)
+      }
+    }
+    if (ts.isVariableDeclaration(node)) {
+      const out: string[] = []
+      addBindingNames(node.name, out)
+      for (const n of out) names.add(n)
+    }
+    if (
+      (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isEnumDeclaration(node)) &&
+      node.name
+    ) {
+      names.add(node.name.text)
+    }
+    if (ts.isFunctionLike(node)) {
+      for (const p of node.parameters) {
+        const out: string[] = []
+        addBindingNames(p.name, out)
+        for (const n of out) names.add(n)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sf)
+  return names
+}
+
+/**
  * Cross-file half of the factory prescan (#2325 round 2): resolve factories
  * defined in a relative-imported helper file so `const { count } =
  * createCounter(0)` inlines the same way whether `createCounter` lives in
@@ -4019,6 +4121,13 @@ function prescanImportedReactiveFactories(
     importsToCheck.push({ src, specs })
   }
   if (importsToCheck.length === 0) return
+
+  // #2332 — computed once per entry file, shared across all helper files.
+  const entryBindingNames = collectEntryBindingNames(entrySourceFile)
+  const entryImportIndex = buildEntryImportIndex(entrySourceFile, filePath)
+  // localName -> planned injection identity; a later factory requiring the
+  // same name from a DIFFERENT (targetKey, exportedName) is a collision.
+  const plannedInjections = new Map<string, { targetKey: string; exportedName: string }>()
 
   for (const { src, specs } of importsToCheck) {
     const resolved = resolveRelativeImportToFile(src, filePath)
@@ -4112,17 +4221,80 @@ function prescanImportedReactiveFactories(
           result.declined.set(spec.local, det.declined)
           break
         case 'factory': {
-          const offending = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
-          if (offending.length > 0) {
+          const capture = moduleCaptureCheck(fn, det.info, moduleBindings, fn.name!.text)
+          if (capture.captured.length > 0) {
             result.declined.set(spec.local, {
               code: 'BF112',
-              detail: `'${offending.join("', '")}'`,
+              detail: `'${capture.captured.join("', '")}'`,
               loc: det.info.loc,
             })
-          } else {
-            det.info.sourceFilePath = resolved
-            result.factories.set(spec.local, det.info)
+            break
           }
+          // #2332 — re-provision the helper file's own named value imports
+          // that the factory body references, instead of declining. Each
+          // ref resolves to a component-relative specifier (or passes
+          // through unchanged for bare/npm specifiers); a ref already
+          // satisfied by an identical top-level import in the component
+          // file is dropped rather than injected (would redeclare it). A
+          // ref whose local name collides with a DIFFERENT existing/planned
+          // binding declines with BF113 — `pending` is only merged into
+          // `plannedInjections` on full factory success (§3.4), so a
+          // factory that declines mid-loop reserves nothing.
+          const required: RequiredFactoryImport[] = []
+          const pending: Array<[string, { targetKey: string; exportedName: string }]> = []
+          let declinedEntry: DeclinedReactiveFactory | null = null
+          for (const ref of capture.importedRefs) {
+            let specifier: string
+            let targetKey: string
+            if (ref.source.startsWith('./') || ref.source.startsWith('../')) {
+              // Resolve from the HELPER file's directory (`resolved` is its
+              // absolute path). Unresolvable → same posture as a local
+              // capture: nothing importable to re-provision (BF112).
+              const abs = resolveRelativeImportToFile(ref.source, resolved)
+              if (!abs) {
+                declinedEntry = {
+                  code: 'BF112',
+                  detail: `'${ref.localName}' (import '${ref.source}' did not resolve from the helper file)`,
+                  loc: det.info.loc,
+                }
+                break
+              }
+              specifier = toComponentRelativeSpecifier(abs, filePath)
+              targetKey = abs
+            } else {
+              specifier = ref.source // bare/npm specifier — unchanged (#2332 test 2)
+              targetKey = ref.source
+            }
+            // Already satisfied by an identical top-level import in the
+            // component file — injecting again would redeclare the binding.
+            const existing = entryImportIndex.get(ref.localName)
+            if (existing && existing.targetKey === targetKey && existing.exportedName === ref.exportedName) {
+              continue
+            }
+            const planned = plannedInjections.get(ref.localName)
+            const collides =
+              (existing !== undefined) ||
+              (planned !== undefined && (planned.targetKey !== targetKey || planned.exportedName !== ref.exportedName)) ||
+              (planned === undefined && entryBindingNames.has(ref.localName))
+            if (collides) {
+              declinedEntry = {
+                code: 'BF113',
+                detail: `'${ref.localName}' from '${specifier}'`,
+                loc: det.info.loc,
+              }
+              break
+            }
+            pending.push([ref.localName, { targetKey, exportedName: ref.exportedName }])
+            required.push({ localName: ref.localName, exportedName: ref.exportedName, specifier })
+          }
+          if (declinedEntry) {
+            result.declined.set(spec.local, declinedEntry)
+            break
+          }
+          for (const [name, id] of pending) plannedInjections.set(name, id)
+          det.info.sourceFilePath = resolved
+          if (required.length > 0) det.info.requiredImports = required
+          result.factories.set(spec.local, det.info)
           break
         }
       }
@@ -4131,34 +4303,56 @@ function prescanImportedReactiveFactories(
 }
 
 /**
- * Value bindings at the helper file's module scope that an inlined factory
- * body must not capture (#2325 §4h / BF112): top-level const/let/var,
- * function/class/enum names, and value import specifiers — EXCEPT imports
- * from '@barefootjs/client' / '@barefootjs/client/runtime'. Those are
- * re-provisioned from usage by the client-JS emitter regardless of where
- * the call that used them textually came from (`resolveFinalImports` /
- * `detectUsedImports` regex-scan the *generated* code, not the consumer's
- * source imports — see #2325 spec C1), so an inlined body calling
- * `createSignal` is never a capture even though the helper file itself
- * imports it. Type-only imports/declarations carry no runtime binding and
- * are excluded.
+ * Value bindings at the helper file's module scope, split by whether they
+ * have a re-importable module of their own (#2332).
+ *
+ * `local` bindings — top-level const/let/var, function/class/enum names,
+ * plus default-import and namespace-import names — have no module a
+ * component file could re-import them from, so an inlined factory body
+ * referencing one unconditionally declines with BF112 (#2325 §4h): moving
+ * the body into the component file would leave a dangling reference.
+ *
+ * `imported` bindings — the helper file's own named value imports — CAN be
+ * re-provisioned: the component file can import the same binding under the
+ * same specifier (#2332). These are collected here (keyed by the helper
+ * file's local name) but are NOT captures; `moduleCaptureCheck` below
+ * reports them separately from `local` hits so the caller can decide
+ * whether to re-import rather than unconditionally decline.
+ *
+ * EXCEPT in both cases: imports from '@barefootjs/client' /
+ * '@barefootjs/client/runtime'. Those are re-provisioned from usage by the
+ * client-JS emitter regardless of where the call that used them textually
+ * came from (`resolveFinalImports` / `detectUsedImports` regex-scan the
+ * *generated* code, not the consumer's source imports — see #2325 spec C1),
+ * so an inlined body calling `createSignal` is never a capture even though
+ * the helper file itself imports it. Type-only imports/declarations carry
+ * no runtime binding and are excluded.
  */
-function collectHelperModuleValueBindings(sf: ts.SourceFile): Set<string> {
-  const names = new Set<string>()
+interface HelperModuleBindings {
+  /** Declared directly in the helper file — unconditional BF112 capture. */
+  local: Set<string>
+  /** Named value-import specifiers, keyed by helper-file local name —
+   *  re-provisionable into the component file (#2332). */
+  imported: Map<string, { source: string; exportedName: string }>
+}
+
+function collectHelperModuleValueBindings(sf: ts.SourceFile): HelperModuleBindings {
+  const local = new Set<string>()
+  const imported = new Map<string, { source: string; exportedName: string }>()
   for (const stmt of sf.statements) {
     if (ts.isVariableStatement(stmt)) {
       const out: string[] = []
       for (const decl of stmt.declarationList.declarations) {
         addBindingNames(decl.name, out)
       }
-      for (const n of out) names.add(n)
+      for (const n of out) local.add(n)
       continue
     }
     if (
       (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isEnumDeclaration(stmt)) &&
       stmt.name
     ) {
-      names.add(stmt.name.text)
+      local.add(stmt.name.text)
       continue
     }
     if (ts.isImportDeclaration(stmt)) {
@@ -4166,42 +4360,62 @@ function collectHelperModuleValueBindings(sf: ts.SourceFile): Set<string> {
       if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
       const src = stmt.moduleSpecifier.text
       if (src === '@barefootjs/client' || src === '@barefootjs/client/runtime') continue
-      if (stmt.importClause?.name) names.add(stmt.importClause.name.text)
+      // Default/namespace imports stay hard BF112 (#2332 scope decision):
+      // no single named export to re-provision under one local name.
+      if (stmt.importClause?.name) local.add(stmt.importClause.name.text)
       const namedBindings = stmt.importClause?.namedBindings
       if (namedBindings && ts.isNamedImports(namedBindings)) {
         for (const el of namedBindings.elements) {
           if (el.isTypeOnly) continue
-          names.add(el.name.text)
+          imported.set(el.name.text, { source: src, exportedName: (el.propertyName ?? el.name).text })
         }
       }
       if (namedBindings && ts.isNamespaceImport(namedBindings)) {
-        names.add(namedBindings.name.text)
+        local.add(namedBindings.name.text)
       }
     }
   }
-  return names
+  return { local, imported }
+}
+
+/**
+ * Categorized free-identifier references of a reactive-factory body into
+ * its own module scope (#2332): `captured` are unconditional BF112 hits
+ * (helper-local bindings — the body would dangle if inlined verbatim);
+ * `importedRefs` are references to the helper file's own named value
+ * imports, which the caller may re-provision into the component file
+ * instead of declining (§3.4 in the #2332 spec).
+ */
+interface ModuleCaptureResult {
+  /** Free refs resolving to helper-local bindings (BF112), sorted. */
+  captured: string[]
+  /** Free refs resolving to the helper's own named value imports, sorted by localName. */
+  importedRefs: Array<{ localName: string; source: string; exportedName: string }>
 }
 
 /**
  * Free identifiers of a reactive-factory body that resolve to bindings at
- * its own module scope (#2325 §4h / BF112) — references the inlined body
- * would silently lose once spliced into the component file. Returns the
- * offending names sorted, for stable diagnostic text.
+ * its own module scope (#2325 §4h / BF112, #2332) — references the inlined
+ * body would silently lose once spliced into the component file, unless
+ * re-provisioned as an import. Returns `captured` (unconditional BF112) and
+ * `importedRefs` (re-provisionable) separately, each sorted for stable
+ * diagnostic/injection text.
  *
  * Known accepted limitation: `extractFreeIdentifiersFromNode` only scope-
  * tracks arrow-function parameters, not nested `function` declarations'
  * parameters or nested-block declarations — a body-nested binding that
  * happens to shadow a helper-module binding could false-positive into
- * BF112. Acceptable: the failure direction is a loud build error on a rare
- * shape, never a silent runtime break.
+ * BF112 or `importedRefs`. Acceptable: the failure direction is always a
+ * loud build error (BF112/BF113) or a redundant-but-harmless injected
+ * import, never a silent dangling reference.
  */
 function moduleCaptureCheck(
   fn: ts.FunctionDeclaration,
   info: ReactiveFactoryInfo,
-  moduleBindings: Set<string>,
+  moduleBindings: HelperModuleBindings,
   selfName: string
-): string[] {
-  if (!fn.body) return []
+): ModuleCaptureResult {
+  if (!fn.body) return { captured: [], importedRefs: [] }
   const free = extractFreeIdentifiersFromNode(fn.body)
   const exclude = new Set<string>(info.params)
   for (const b of info.localBindings) exclude.add(b)
@@ -4209,12 +4423,20 @@ function moduleCaptureCheck(
   for (const p of REACTIVE_PRIMITIVES) exclude.add(p)
   exclude.add(selfName)
 
-  const offending: string[] = []
+  const captured: string[] = []
+  const importedRefs: ModuleCaptureResult['importedRefs'] = []
   for (const id of free) {
     if (exclude.has(id)) continue
-    if (moduleBindings.has(id)) offending.push(id)
+    if (moduleBindings.local.has(id)) {
+      captured.push(id)
+      continue
+    }
+    const imp = moduleBindings.imported.get(id)
+    if (imp) importedRefs.push({ localName: id, source: imp.source, exportedName: imp.exportedName })
   }
-  return offending.sort()
+  captured.sort()
+  importedRefs.sort((a, b) => (a.localName < b.localName ? -1 : 1))
+  return { captured, importedRefs }
 }
 
 /**
@@ -4393,6 +4615,12 @@ function rewriteFactoryCallsInSource(
   type Edit = { start: number; end: number; replacement: string }
   const edits: Edit[] = []
   let callSiteIndex = 0
+  // #2332 — factories actually inlined in this walk (not merely present in
+  // `prescan.factories`; `maybeRewriteDecl` bails on arity mismatch/omitted
+  // elements/rename destructures without inlining), so their
+  // `requiredImports` can be re-provisioned without adding a dead import
+  // for a factory that was never actually spliced in.
+  const inlinedFactories = new Set<ReactiveFactoryInfo>()
 
   function visitStmt(node: ts.Node, inComponent: boolean): void {
     if (ts.isVariableStatement(node) && inComponent) {
@@ -4544,19 +4772,75 @@ function rewriteFactoryCallsInSource(
       end: stmt.getEnd(),
       replacement: body,
     })
+    inlinedFactories.add(factory)
   }
 
   visitStmt(sourceFile, false)
 
   if (edits.length === 0) return source
 
-  // Apply edits from bottom to top so earlier offsets stay valid.
+  // #2332 — one deduped import statement per specifier for every inlined
+  // cross-file factory's re-provisioned imports. Injected as a zero-width
+  // edit so the ordinary bottom-to-top splice below applies it; the result
+  // is indistinguishable from a hand-written import for every downstream
+  // consumer (ctx.imports → SSR templateImports AND client
+  // collectExternalImports both parse this same rewritten string).
+  const importsBySpecifier = new Map<string, Map<string, string>>() // specifier -> localName -> exportedName
+  for (const f of inlinedFactories) {
+    for (const r of f.requiredImports ?? []) {
+      let names = importsBySpecifier.get(r.specifier)
+      if (!names) { names = new Map(); importsBySpecifier.set(r.specifier, names) }
+      names.set(r.localName, r.exportedName) // same-key duplicates are identical by prescan construction
+    }
+  }
+  if (importsBySpecifier.size > 0) {
+    // Sort specifiers and, within each, named-import entries by local name —
+    // `importsBySpecifier`/`inlinedFactories` iterate in incidental AST-
+    // traversal/insertion order, which would otherwise make this generated
+    // text order-unstable across unrelated refactors (Copilot review, PR
+    // #2338).
+    const lines = [...importsBySpecifier]
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([spec, names]) => {
+        const specifiers = [...names]
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([local, exported]) => (exported === local ? local : `${exported} as ${local}`))
+        return `import { ${specifiers.join(', ')} } from '${spec}'`
+      })
+    const at = factoryImportInsertionOffset(sourceFile)
+    edits.push({ start: at, end: at, replacement: at === 0 ? lines.join('\n') + '\n' : '\n' + lines.join('\n') })
+  }
+
+  // Apply edits from bottom to top so earlier offsets stay valid. A factory
+  // with `requiredImports` is by definition imported, so the entry file has
+  // at least one import statement and `at` above lands strictly inside the
+  // import prologue — every call-site edit's start is strictly greater
+  // (separated at minimum by the statement break after the last import), so
+  // starts never tie and no sort tiebreak is needed.
   edits.sort((a, b) => b.start - a.start)
   let out = source
   for (const e of edits) {
     out = out.slice(0, e.start) + e.replacement + out.slice(e.end)
   }
   return out
+}
+
+/**
+ * Offset just after the last top-level import (else after the 'use client'
+ * directive, else 0) in the prescan source file — where re-provisioned
+ * factory imports are injected (#2332).
+ */
+function factoryImportInsertionOffset(sf: ts.SourceFile): number {
+  let lastImportEnd = -1
+  let directiveEnd = -1
+  for (const stmt of sf.statements) {
+    if (ts.isImportDeclaration(stmt)) { lastImportEnd = stmt.getEnd(); continue }
+    if (directiveEnd === -1 && ts.isExpressionStatement(stmt) &&
+        ts.isStringLiteral(stmt.expression) && stmt.expression.text === 'use client') {
+      directiveEnd = stmt.getEnd()
+    }
+  }
+  return lastImportEnd >= 0 ? lastImportEnd : directiveEnd >= 0 ? directiveEnd : 0
 }
 
 function isPascalCaseComponentFn(node: ts.Node): boolean {
@@ -4580,11 +4864,12 @@ function escapeRegex(s: string): string {
 /**
  * Build the diagnostic for a call site whose callee was recognised but
  * declined for inlining (#2325 — cross-file factories that rename their
- * return properties, or capture their own module scope). BF112's wording is
- * specific to module-scope capture; every other declined reason (currently
- * only BF111 — non-shorthand return properties) shares BF111's generic
- * "cannot be inlined: <detail>" phrasing, matching the wording used for the
- * tuple call-site path.
+ * return properties or capture their own module scope; #2332 — a
+ * re-provisioned helper import collides with an existing binding). BF112
+ * and BF113's wording is specific to their respective failure; every other
+ * declined reason (currently only BF111 — non-shorthand return properties)
+ * shares BF111's generic "cannot be inlined: <detail>" phrasing, matching
+ * the wording used for the tuple call-site path.
  */
 function declinedFactoryMessage(callee: string, d: DeclinedReactiveFactory): string {
   if (d.code === 'BF112') {
@@ -4594,7 +4879,24 @@ function declinedFactoryMessage(callee: string, d: DeclinedReactiveFactory): str
       `pass them as factory arguments, or inline the factory here.`
     )
   }
+  if (d.code === 'BF113') {
+    return (
+      `Reactive factory '${callee}' cannot be inlined: it needs ${d.detail} ` +
+      `imported into this file, but that name is already bound here to something ` +
+      `else. Rename the conflicting binding in this file, or alias the import in ` +
+      `the factory's own file (import { x as y }).`
+    )
+  }
   return `Reactive factory '${callee}' cannot be inlined: ${d.detail}.`
+}
+
+/** Diagnostic code for a declined reactive-factory call site (#2325 / #2332). */
+function declinedFactoryErrorCode(code: DeclinedReactiveFactory['code']): ErrorCode {
+  switch (code) {
+    case 'BF112': return ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
+    case 'BF113': return ErrorCodes.REACTIVE_FACTORY_IMPORT_COLLISION
+    default: return ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED
+  }
 }
 
 /**
@@ -4636,9 +4938,7 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
         const declinedEntry = ctx.declinedReactiveFactories.get(callee)
         if (declinedEntry) {
           ctx.errors.push(createError(
-            declinedEntry.code === 'BF112'
-              ? ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
-              : ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED,
+            declinedFactoryErrorCode(declinedEntry.code),
             loc,
             { severity: 'error', message: declinedFactoryMessage(callee, declinedEntry) }
           ))
@@ -4696,8 +4996,8 @@ export function validateReactiveFactoryCalls(ctx: AnalyzerContext): void {
  * covers the previously-silent object-destructure failure modes: an
  * unrecognised callee, a tuple factory destructured as an object, a rename/
  * default/rest destructure of a shorthand-only factory, an unknown
- * property, a declined (BF111/BF112) factory, or an uninspectable import
- * that looks reactive-factory-shaped by name.
+ * property, a declined (BF111/BF112/BF113) factory, or an uninspectable
+ * import that looks reactive-factory-shaped by name.
  */
 function validateObjectFactoryDestructure(
   ctx: AnalyzerContext,
@@ -4759,9 +5059,7 @@ function validateObjectFactoryDestructure(
   const declinedEntry = ctx.declinedReactiveFactories.get(callee)
   if (declinedEntry) {
     ctx.errors.push(createError(
-      declinedEntry.code === 'BF112'
-        ? ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
-        : ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED,
+      declinedFactoryErrorCode(declinedEntry.code),
       loc,
       { severity: 'error', message: declinedFactoryMessage(callee, declinedEntry) }
     ))
