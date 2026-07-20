@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/twig",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "description": "Twig (PHP) adapter for BarefootJS — compiles IR to .twig templates and ships the PHP BarefootJS rendering runtime; runs under any PHP web app (Slim, plain PHP, etc.)",
   "type": "module",
   "main": "./dist/index.js",
