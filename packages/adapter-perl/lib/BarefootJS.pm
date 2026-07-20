@@ -858,7 +858,13 @@ sub _format_date_zone_offset ($tz, $ms) {
         require DateTime::TimeZone;
         DateTime::TimeZone->new(name => $tz);
     };
-    die qq{format_date: unresolvable timeZone "$tz"} unless $zone;
+    if (!$zone) {
+        # Carry the underlying loader/constructor error: "unresolvable"
+        # covers both an unknown zone AND a broken/absent DateTime::TimeZone
+        # installation, and the two need different fixes.
+        my $cause = $@ ? " ($@)" : '';
+        die qq{format_date: unresolvable timeZone "$tz"$cause};
+    }
     return $zone->offset_for_datetime(
         BarefootJS::_TZProbe->new(POSIX::floor($ms / 1000)));
 }
