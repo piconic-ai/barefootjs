@@ -731,12 +731,12 @@ sub _date_epoch_ms ($recv) {
     return $epoch_s * 1000 + $ms;
 }
 
-# `format_date($recv, $pattern, $tz)` -- pure, explicit-timezone date
-# formatter (#2324, spec entry "format_date"). Same receiver contract as
-# `date` (a `BarefootJS::Date`, an ISO-8601 string, or undef/unparseable ->
-# ''), then pure pattern substitution over the shifted instant. Mirrors
-# packages/client/src/format-date.ts byte-for-byte -- deterministic, no
-# locale, no host TZ, no `time()`.
+# `format_date($recv, $pattern, $tz, $names)` -- pure, explicit-timezone
+# date formatter (#2324, #2334, spec entry "format_date"). Same receiver
+# contract as `date` (a `BarefootJS::Date`, an ISO-8601 string, or
+# undef/unparseable -> ''), then pure pattern substitution over the
+# shifted instant. Mirrors packages/client/src/format-date.ts
+# byte-for-byte -- deterministic, no locale, no host TZ, no `time()`.
 #
 # `$tz` is either a fixed offset `±HH:MM` or anything else (including
 # 'UTC', IANA zone names, and malformed offsets like '+9:00'), which all
@@ -748,15 +748,25 @@ sub _date_epoch_ms ($recv) {
 # (Perl's `/` truncates toward zero, which mis-floors negative ms), and
 # `gmtime`'s 0-based `mon` needs +1 here (unlike `getUTCMonth` in `date`,
 # because the pattern token `M`/`MM` is the 1-based JS `Date` display
-# month, not the raw accessor value).
+# month, not the raw accessor value). `gmtime`'s `wday` (element 6) is
+# already 0-based Sunday-first, matching JS `getUTCDay()` and the
+# `$names` table's weekday section layout -- both read off the same
+# offset-shifted `gmtime` call, so pre-1970 instants get the identical
+# floor-division-derived weekday as the numeric tokens.
+#
+# `$names` (#2334) is an arrayref of strings in fixed flat layout:
+# [0..11] wide months, [12..23] abbreviated months, [24..30] wide
+# weekdays (Sunday-first), [31..37] abbreviated weekdays. A name token
+# indexing a missing entry, or given an undef/short/absent table, renders
+# '' (defined-or guard) -- never dies.
 #
 # Token substitution mirrors the JS reference exactly: `s///ge` over the
-# `YYYY|MM|DD|M|D` alternation (longest-match order so `MM` binds before
-# `M`), any other character (including multi-byte literals) passes
-# through untouched. `YYYY` is `abs(year)` zero-padded to (at least) 4
-# digits, `-`-prefixed when the year is negative; `MM`/`DD` zero-pad to 2;
-# `M`/`D` are bare.
-sub format_date ($self, $recv, $pattern, $tz) {
+# `YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D` alternation (longest-match order so
+# e.g. `MMMM` binds before `MMM`/`MM`/`M`, `dddd` before `ddd`), any other
+# character (including multi-byte literals) passes through untouched.
+# `YYYY` is `abs(year)` zero-padded to (at least) 4 digits, `-`-prefixed
+# when the year is negative; `MM`/`DD` zero-pad to 2; `M`/`D` are bare.
+sub format_date ($self, $recv, $pattern, $tz, $names = []) {
     my $ms = _date_epoch_ms($recv);
     return '' unless defined $ms;
 
@@ -767,19 +777,25 @@ sub format_date ($self, $recv, $pattern, $tz) {
 
     my $shifted = $ms + $offset_minutes * 60_000;
     my $sec = POSIX::floor($shifted / 1000);
-    my @t = gmtime($sec);    # (sec,min,hour,mday,mon,year,...) -- mon is 0-based
+    my @t = gmtime($sec);    # (sec,min,hour,mday,mon,year,wday,...) -- mon/wday are 0-based
 
-    my $year  = $t[5] + 1900;
-    my $month = $t[4] + 1;    # 1-based JS display month, unlike getUTCMonth in `date`
-    my $day   = $t[3];
-    my $yyyy  = ($year < 0 ? '-' : '') . sprintf('%04d', CORE::abs($year));
-    my $mm    = sprintf('%02d', $month);
-    my $dd    = sprintf('%02d', $day);
+    my $year    = $t[5] + 1900;
+    my $month   = $t[4] + 1;    # 1-based JS display month, unlike getUTCMonth in `date`
+    my $day     = $t[3];
+    my $weekday = $t[6];        # 0 = Sunday, matching the $names table's Sunday-first layout
+    my $yyyy    = ($year < 0 ? '-' : '') . sprintf('%04d', CORE::abs($year));
+    my $mm      = sprintf('%02d', $month);
+    my $dd      = sprintf('%02d', $day);
+    my $name_at = sub ($index) { $names->[$index] // '' };
 
-    (my $out = $pattern) =~ s/YYYY|MM|DD|M|D/
+    (my $out = $pattern) =~ s/YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D/
         $&  eq 'YYYY' ? $yyyy
+      : $&  eq 'MMMM' ? $name_at->($month - 1)
+      : $&  eq 'MMM'  ? $name_at->(12 + $month - 1)
       : $&  eq 'MM'   ? $mm
       : $&  eq 'DD'   ? $dd
+      : $&  eq 'dddd' ? $name_at->(24 + $weekday)
+      : $&  eq 'ddd'  ? $name_at->(31 + $weekday)
       : $&  eq 'M'    ? $month
       :                 $day
     /gex;

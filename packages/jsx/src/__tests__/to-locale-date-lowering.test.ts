@@ -70,6 +70,7 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
         { kind: 'identifier', name: 'createdAt' },
         { kind: 'literal', value: 'M/D/YYYY', literalType: 'string' },
         { kind: 'literal', value: 'UTC', literalType: 'string' },
+        { kind: 'array-literal', elements: [], raw: '[]' },
       ],
     })
   })
@@ -82,6 +83,7 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
         { kind: 'identifier', name: 'createdAt' },
         { kind: 'literal', value: 'YYYY/M/D' },
         { kind: 'literal', value: '+09:00' },
+        { kind: 'array-literal', elements: [] },
       ],
     })
   })
@@ -101,9 +103,10 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: '+25:00' })`)).toBeNull()
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: '+99:99' })`)).toBeNull()
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: '-12:60' })`)).toBeNull()
-    // options beyond timeZone: the name-table stage, not this slice
-    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'UTC', month: 'long' })`)).toBeNull()
+    // an options bag WITHOUT timeZone still declines (host-TZ read)
     expect(match(`createdAt.toLocaleDateString('ja-JP', { dateStyle: 'long' })`)).toBeNull()
+    // a non-literal option value declines (unprobeable)
+    expect(match(`createdAt.toLocaleDateString('en-US', { timeZone: 'UTC', dateStyle: style })`)).toBeNull()
     // unrepresentable locale default
     expect(match(`createdAt.toLocaleDateString('ar-SA', { timeZone: 'UTC' })`)).toBeNull()
   })
@@ -115,6 +118,89 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
       }
     `)
     expect(toLocaleDatePlugin.prepare(stringMd)).toBeNull()
+  })
+})
+
+describe('name tokens via the options bag (#2334)', () => {
+  const md = metadata(DATE_PROP_SRC)
+
+  function match(expr: string) {
+    const { callee, args } = callParts(expr)
+    return matchToLocaleDateStringCall(callee, args, md)
+  }
+
+  test('dateStyle long resolves a named pattern plus the 38-slot table', () => {
+    const node = match(`createdAt.toLocaleDateString('en-US', { dateStyle: 'long', timeZone: 'UTC' })`)
+    expect(node).toMatchObject({
+      helper: 'format_date',
+      args: [
+        { kind: 'identifier', name: 'createdAt' },
+        { kind: 'literal', value: 'MMMM D, YYYY' },
+        { kind: 'literal', value: 'UTC' },
+        { kind: 'array-literal' },
+      ],
+    })
+    const names = (node as { args: ParsedExpr[] }).args[3] as Extract<ParsedExpr, { kind: 'array-literal' }>
+    expect(names.elements).toHaveLength(38)
+    expect(names.elements[2]).toEqual({ kind: 'literal', value: 'March', literalType: 'string' })
+    expect(names.elements[24]).toEqual({ kind: 'literal', value: 'Sunday', literalType: 'string' })
+  })
+
+  test('dateStyle full adds the weekday token; medium picks abbreviated names', () => {
+    expect(match(`createdAt.toLocaleDateString('en-US', { dateStyle: 'full', timeZone: 'UTC' })`)).toMatchObject({
+      args: [expect.anything(), { kind: 'literal', value: 'dddd, MMMM D, YYYY' }, expect.anything(), expect.anything()],
+    })
+    expect(match(`createdAt.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })`)).toMatchObject({
+      args: [expect.anything(), { kind: 'literal', value: 'MMM D, YYYY' }, expect.anything(), expect.anything()],
+    })
+  })
+
+  test("ja-JP's long form is numeric — the probe ships no table", () => {
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { dateStyle: 'long', timeZone: 'UTC' })`)).toMatchObject({
+      args: [
+        expect.anything(),
+        { kind: 'literal', value: 'YYYY年M月D日' },
+        { kind: 'literal', value: 'UTC' },
+        { kind: 'array-literal', elements: [] },
+      ],
+    })
+  })
+
+  test('context-inflected month names pick the form the format actually uses (Copilot, #2336)', () => {
+    // Russian inflects month names by date context: dateStyle 'long'
+    // renders genitive `марта`, а month-only format nominative `март`.
+    // Each call site ships the table whose form ICU uses THERE, verified
+    // at a second instant so a probe-index coincidence can't slip through.
+    const long = match(`createdAt.toLocaleDateString('ru-RU', { dateStyle: 'long', timeZone: 'UTC' })`)
+    // NOTE: read args BEFORE any toMatchObject with expect.anything() —
+    // bun 1.3.11's toMatchObject MUTATES the received object, emptying
+    // entries an expect.anything() matched (minimal repro pinned in this
+    // PR's description; upstream bun bug).
+    const longNames = (long as { args: ParsedExpr[] }).args[3] as Extract<ParsedExpr, { kind: 'array-literal' }>
+    const longPattern = (long as { args: ParsedExpr[] }).args[1]
+    expect(longPattern).toEqual({ kind: 'literal', value: 'D MMMM YYYY г.', literalType: 'string' })
+    expect(longNames.elements[2]).toEqual({ kind: 'literal', value: 'марта', literalType: 'string' })
+
+    const monthOnly = match(`createdAt.toLocaleDateString('ru-RU', { month: 'long', timeZone: 'UTC' })`)
+    const standaloneNames = (monthOnly as { args: ParsedExpr[] }).args[3] as Extract<ParsedExpr, { kind: 'array-literal' }>
+    expect(standaloneNames.elements[2]).toEqual({ kind: 'literal', value: 'март', literalType: 'string' })
+  })
+
+  test('unreproducible forms decline loudly: 2-digit year, era', () => {
+    expect(match(`createdAt.toLocaleDateString('en-US', { dateStyle: 'short', timeZone: 'UTC' })`)).toBeNull()
+    expect(match(`createdAt.toLocaleDateString('en-US', { era: 'short', year: 'numeric', timeZone: 'UTC' })`)).toBeNull()
+  })
+
+  test('client rewrite carries the names table', () => {
+    const result = compile(`
+export function Foo({ createdAt }: { createdAt: Date }) {
+  return <div>{createdAt.toLocaleDateString('en-US', { dateStyle: 'long', timeZone: 'UTC' })}</div>
+}
+`)
+    expect(result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)).toEqual([])
+    const js = result.files.find((f) => f.type === 'clientJs')!.content
+    expect(js).toContain('formatDate(_p.createdAt, "MMMM D, YYYY", "UTC", ["January","February"')
+    expect(js).not.toContain('toLocaleDateString')
   })
 })
 
@@ -146,6 +232,9 @@ export { Foo }
           alternate: { kind: 'literal', value: 'YYYY/M/D', literalType: 'string' },
         },
         { kind: 'literal', value: 'UTC', literalType: 'string' },
+        // both members are numeric-only, so the names tables are equal ([])
+        // and collapse to a single empty leaf
+        { kind: 'array-literal', elements: [], raw: '[]' },
       ],
     })
   })
@@ -164,6 +253,7 @@ export { Foo }
         { kind: 'identifier', name: 'createdAt' },
         { kind: 'literal', value: 'M/D/YYYY' },
         { kind: 'literal', value: 'UTC' },
+        { kind: 'array-literal', elements: [] },
       ],
     })
   })
@@ -181,6 +271,7 @@ export function Foo(props: { createdAt: Date; locale: 'en-US' | 'ja-JP' }) {
         expect.anything(),
         { kind: 'conditional' },
         { kind: 'literal', value: 'UTC' },
+        { kind: 'array-literal', elements: [] },
       ],
     })
     // A bare `locale` identifier in object-props mode is a LOCAL binding,

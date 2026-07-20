@@ -773,16 +773,16 @@ final class BarefootJS
     }
 
     /**
-     * `format_date($recv, $pattern, $tz)` -- pure-function date formatter
-     * (#2324, spec entry "format_date"), mirroring
-     * packages/client/src/format-date.ts byte-for-byte. `$recv` shares
-     * `date()`'s receiver contract above (native `\DateTimeInterface` or an
-     * ISO-8601 string; a nil or unparseable receiver degrades to `''`,
-     * never throws). From there it's pure arithmetic, deliberately NOT
-     * PHP's timezone database: shift the epoch-ms instant by the offset,
-     * then read the shifted instant's own UTC calendar fields -- the
-     * shifted UTC clock face IS the local clock face at that offset. No
-     * locale, no host TZ, no time().
+     * `format_date($recv, $pattern, $tz, $names = [])` -- pure-function date
+     * formatter (#2324 numeric tokens, #2334 name tokens, spec entry
+     * "format_date"), mirroring packages/client/src/format-date.ts
+     * byte-for-byte. `$recv` shares `date()`'s receiver contract above
+     * (native `\DateTimeInterface` or an ISO-8601 string; a nil or
+     * unparseable receiver degrades to `''`, never throws). From there it's
+     * pure arithmetic, deliberately NOT PHP's timezone database: shift the
+     * epoch-ms instant by the offset, then read the shifted instant's own
+     * UTC calendar fields -- the shifted UTC clock face IS the local clock
+     * face at that offset. No locale, no host TZ, no time().
      *
      * `$tz` matches `/^([+-])(\d{2}):(\d{2})$/` or degrades to a zero
      * offset (UTC) for ANY other value -- IANA zone names ('Asia/Tokyo'),
@@ -794,14 +794,27 @@ final class BarefootJS
      * infinity), NOT `intdiv`'s truncate-toward-zero, so a pre-1970 instant
      * lands on the correct calendar day after shifting; PHP's `@<seconds>`
      * DateTimeImmutable constructor is always UTC, so no further
-     * setTimezone() is needed to read the shifted fields.
+     * setTimezone() is needed to read the shifted fields. That same
+     * `@<seconds>` instant's `format('w')` gives 0-6 with 0 = Sunday
+     * directly -- matching JS `getUTCDay()` and this doc's Sunday-first
+     * table layout -- with no further remapping.
      *
-     * Token substitution is `YYYY|MM|DD|M|D` (longest-match alternation
-     * order, `preg_replace_callback`); every other byte -- including
-     * multi-byte UTF-8 like `年`/`月`/`日` -- passes through literally since
-     * none of it can match the token alternation.
+     * `$names` (#2334) is the caller-owned flat name table this function
+     * never derives from locale/ICU data: `[0..11]` wide month names,
+     * `[12..23]` abbreviated month names, `[24..30]` wide weekday names
+     * (Sunday-first), `[31..37]` abbreviated weekday names. A name token
+     * indexing a missing/short table renders `''`, same zero-value
+     * discipline as an unparseable date.
+     *
+     * Token substitution is `YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D` (longest-match
+     * alternation order, `preg_replace_callback`, mirroring the JS
+     * reference's `TOKEN_RE`); every other byte -- including multi-byte
+     * UTF-8 like `年`/`月`/`日` or table values like `月曜日` -- passes
+     * through literally (no `/u` modifier needed: every token is ASCII, so
+     * a multi-byte UTF-8 sequence can never match the token alternation and
+     * always survives untouched).
      */
-    public function format_date($recv, string $pattern, string $tz): string
+    public function format_date($recv, string $pattern, string $tz, array $names = []): string
     {
         if ($recv instanceof \DateTimeInterface) {
             $d = \DateTimeImmutable::createFromInterface($recv);
@@ -838,13 +851,23 @@ final class BarefootJS
         $yyyy = ($year < 0 ? '-' : '') . str_pad((string) abs($year), 4, '0', STR_PAD_LEFT);
         $month = (int) $shifted->format('n');
         $day = (int) $shifted->format('j');
+        $weekday = (int) $shifted->format('w'); // 0 = Sunday, matching the table's Sunday-first layout
 
-        return preg_replace_callback('/YYYY|MM|DD|M|D/', function ($matches) use ($yyyy, $month, $day) {
+        // `$names`-table section offsets (spec/template-helpers.md
+        // "format_date"), mirroring the JS reference's MONTHS_WIDE /
+        // MONTHS_ABBR / WEEKDAYS_WIDE / WEEKDAYS_ABBR constants (#2334).
+        $nameAt = static fn (int $index): string => $names[$index] ?? '';
+
+        return preg_replace_callback('/YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D/', function ($matches) use ($yyyy, $month, $day, $weekday, $nameAt) {
             switch ($matches[0]) {
                 case 'YYYY': return $yyyy;
+                case 'MMMM': return $nameAt($month - 1);
+                case 'MMM': return $nameAt(12 + $month - 1);
                 case 'MM': return str_pad((string) $month, 2, '0', STR_PAD_LEFT);
-                case 'M': return (string) $month;
                 case 'DD': return str_pad((string) $day, 2, '0', STR_PAD_LEFT);
+                case 'dddd': return $nameAt(24 + $weekday);
+                case 'ddd': return $nameAt(31 + $weekday);
+                case 'M': return (string) $month;
                 case 'D': return (string) $day;
                 default: return $matches[0];
             }

@@ -94,13 +94,17 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
     return (d as unknown as Record<string, () => unknown>)[op]()
   },
 
-  // `formatDate(date, pattern, timeZone)` lowering (#2324, spec entry
-  // "format_date"). Same receiver contract as `date` (ISO-8601 string or
-  // `{"$date": …}` envelope; nil/unparseable → ''), then pure pattern
-  // substitution over the shifted instant. Mirrors
-  // packages/client/src/format-date.ts — the canonical helper arity is 3
-  // (the compiler lowering always supplies tz, defaulting 'UTC').
-  format_date: (recv: unknown, pattern: string, tz: string) => {
+  // `formatDate(date, pattern, timeZone, names)` lowering (#2324/#2334,
+  // spec entry "format_date"). Same receiver contract as `date` (ISO-8601
+  // string or `{"$date": …}` envelope; nil/unparseable → ''), then pure
+  // pattern substitution over the shifted instant. Mirrors
+  // packages/client/src/format-date.ts — the canonical helper arity is 4
+  // (the compiler lowering always supplies tz and names, defaulting 'UTC'
+  // and []). `names` is the flat table: [0..11] wide months, [12..23]
+  // abbreviated months, [24..30] wide weekdays (Sunday-first, so the index
+  // IS the epoch-anchored day-of-week), [31..37] abbreviated weekdays; a
+  // name token over a missing/short table renders ''.
+  format_date: (recv: unknown, pattern: string, tz: string, names: readonly string[]) => {
     const raw =
       recv !== null && typeof recv === 'object' && '$date' in recv
         ? (recv as { $date: string }).$date
@@ -116,11 +120,17 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
     const yyyy = (year < 0 ? '-' : '') + String(Math.abs(year)).padStart(4, '0')
     const month = s.getUTCMonth() + 1
     const day = s.getUTCDate()
+    const weekday = s.getUTCDay()
     const pad2 = (n: number) => String(n).padStart(2, '0')
-    return pattern.replace(/YYYY|MM|DD|M|D/g, (token) => {
+    const nameAt = (index: number) => names[index] ?? ''
+    return pattern.replace(/YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D/g, (token) => {
       switch (token) {
         case 'YYYY':
           return yyyy
+        case 'MMMM':
+          return nameAt(month - 1)
+        case 'MMM':
+          return nameAt(12 + month - 1)
         case 'MM':
           return pad2(month)
         case 'M':
@@ -129,6 +139,10 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
           return pad2(day)
         case 'D':
           return String(day)
+        case 'dddd':
+          return nameAt(24 + weekday)
+        case 'ddd':
+          return nameAt(31 + weekday)
         default:
           return token
       }
@@ -595,22 +609,39 @@ export const cases: HelperCase[] = [
   // normalization (IANA names / malformed offsets degrade to UTC on every
   // backend identically). Canonical arity is 3 — the lowering always
   // supplies tz.
-  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY-MM-DD', 'UTC'], note: 'epoch 0: zero-padded tokens' },
-  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY/M/D', 'UTC'], note: 'epoch 0: bare tokens' },
-  { fn: 'format_date', args: ['1969-07-20T20:17:40.123Z', 'YYYY-MM-DD', 'UTC'], note: 'pre-1970 instant with nonzero ms' },
-  { fn: 'format_date', args: ['2024-02-29T23:59:59.999Z', 'DD.MM.YYYY', 'UTC'], note: 'leap day, reordered zero-padded tokens' },
-  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', 'UTC'], note: 'far-future four-digit-year boundary' },
-  { fn: 'format_date', args: ['0001-01-05T00:00:00.000Z', 'YYYY/M/D', 'UTC'], note: 'year 1 zero-pads YYYY to 4 digits' },
-  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+09:00'], note: 'positive offset crosses the date boundary forward' },
-  { fn: 'format_date', args: ['2024-01-01T01:00:00.000Z', 'YYYY-MM-DD', '-05:30'], note: 'negative half-hour offset crosses the date boundary backward' },
-  { fn: 'format_date', args: ['2024-01-05T00:00:00.000Z', 'YYYY年M月D日', 'UTC'], note: 'non-token characters pass through literally' },
-  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', 'Asia/Tokyo'], note: 'IANA zone name normalizes to UTC (total function)' },
-  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+9:00'], note: 'malformed offset normalizes to UTC (total function)' },
-  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', '+09:00'], note: 'positive offset pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)' },
-  { fn: 'format_date', args: [null, 'YYYY-MM-DD', 'UTC'], note: 'nil receiver renders the empty string' },
-  { fn: 'format_date', args: ['not a date', 'YYYY-MM-DD', 'UTC'], note: 'unparseable receiver renders the empty string' },
-  { fn: 'format_date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'YYYY-MM-DD', 'UTC'], note: 'native leap-day receiver formats like its string sibling' },
-  { fn: 'format_date', args: [{ $date: '2024-01-01T23:00:00.000Z' }, 'YYYY/M/D', '+09:00'], note: 'native receiver with offset crosses the date boundary' },
+  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY-MM-DD', 'UTC', []], note: 'epoch 0: zero-padded tokens' },
+  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY/M/D', 'UTC', []], note: 'epoch 0: bare tokens' },
+  { fn: 'format_date', args: ['1969-07-20T20:17:40.123Z', 'YYYY-MM-DD', 'UTC', []], note: 'pre-1970 instant with nonzero ms' },
+  { fn: 'format_date', args: ['2024-02-29T23:59:59.999Z', 'DD.MM.YYYY', 'UTC', []], note: 'leap day, reordered zero-padded tokens' },
+  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', 'UTC', []], note: 'far-future four-digit-year boundary' },
+  { fn: 'format_date', args: ['0001-01-05T00:00:00.000Z', 'YYYY/M/D', 'UTC', []], note: 'year 1 zero-pads YYYY to 4 digits' },
+  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+09:00', []], note: 'positive offset crosses the date boundary forward' },
+  { fn: 'format_date', args: ['2024-01-01T01:00:00.000Z', 'YYYY-MM-DD', '-05:30', []], note: 'negative half-hour offset crosses the date boundary backward' },
+  { fn: 'format_date', args: ['2024-01-05T00:00:00.000Z', 'YYYY年M月D日', 'UTC', []], note: 'non-token characters pass through literally' },
+  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', 'Asia/Tokyo', []], note: 'IANA zone name normalizes to UTC (total function)' },
+  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+9:00', []], note: 'malformed offset normalizes to UTC (total function)' },
+  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', '+09:00', []], note: 'positive offset pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)' },
+  { fn: 'format_date', args: [null, 'YYYY-MM-DD', 'UTC', []], note: 'nil receiver renders the empty string' },
+  { fn: 'format_date', args: ['not a date', 'YYYY-MM-DD', 'UTC', []], note: 'unparseable receiver renders the empty string' },
+  { fn: 'format_date', args: [{ $date: '2024-02-29T23:59:59.999Z' }, 'YYYY-MM-DD', 'UTC', []], note: 'native leap-day receiver formats like its string sibling' },
+  { fn: 'format_date', args: [{ $date: '2024-01-01T23:00:00.000Z' }, 'YYYY/M/D', '+09:00', []], note: 'native receiver with offset crosses the date boundary' },
+
+  // #2334 name tokens: MMMM/MMM (month names) and dddd/ddd (weekday names,
+  // Sunday-first) read the explicit flat table — [0..11] wide months,
+  // [12..23] abbreviated months, [24..30] wide weekdays, [31..37]
+  // abbreviated weekdays. Weekday is epoch-days mod 7 anchored on
+  // 1970-01-01 = Thursday — the pre-1970 case pins the floor-division
+  // discipline in every port. Tables here are explicit vector data, NOT
+  // derived from any locale machinery (backends are type-only, #2334).
+  { fn: 'format_date', args: ['2024-03-05T12:00:00.000Z', 'MMMM D, YYYY', 'UTC', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'wide month name from the table' },
+  { fn: 'format_date', args: ['2024-03-05T12:00:00.000Z', 'ddd, MMM D', 'UTC', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'abbreviated weekday + month names (2024-03-05 is a Tuesday)' },
+  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'dddd', 'UTC', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'epoch 0 weekday is Thursday — the mod-7 anchor' },
+  { fn: 'format_date', args: ['1969-07-20T20:17:40.123Z', 'dddd', 'UTC', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'pre-1970 weekday (Sunday) pins the negative-epoch floor-division path' },
+  { fn: 'format_date', args: ['2024-03-05T23:00:00.000Z', 'dddd', '+09:00', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'weekday follows the offset-shifted clock face (Tue 23:00Z + 09:00 = Wednesday)' },
+  { fn: 'format_date', args: ['2024-03-05T12:00:00.000Z', 'YYYY年MMMM', 'UTC', ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月','日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日','日','月','火','水','木','金','土']], note: 'multi-byte table values pass through byte-identically' },
+  { fn: 'format_date', args: ['2024-03-05T12:00:00.000Z', 'MMMM D', 'UTC', []], note: 'name token over an empty table renders the empty string' },
+  { fn: 'format_date', args: ['2024-03-05T12:00:00.000Z', 'dddd', 'UTC', ['only', 'two']], note: 'name token past a short table renders the empty string' },
+  { fn: 'format_date', args: ['2024-03-05T12:00:00.000Z', 'YYYY-MM-DD', 'UTC', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'numeric tokens ignore a supplied table' },
 
   // Nil/malformed receiver fallback (#2288): every backend's `date()`
   // degrades to the zero value instead of crashing mid-render or (worse)

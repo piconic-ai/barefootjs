@@ -2836,7 +2836,8 @@
       "args": [
         "1970-01-01T00:00:00.000Z",
         "YYYY-MM-DD",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "1970-01-01",
       "note": "epoch 0: zero-padded tokens"
@@ -2846,7 +2847,8 @@
       "args": [
         "1970-01-01T00:00:00.000Z",
         "YYYY/M/D",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "1970/1/1",
       "note": "epoch 0: bare tokens"
@@ -2856,7 +2858,8 @@
       "args": [
         "1969-07-20T20:17:40.123Z",
         "YYYY-MM-DD",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "1969-07-20",
       "note": "pre-1970 instant with nonzero ms"
@@ -2866,7 +2869,8 @@
       "args": [
         "2024-02-29T23:59:59.999Z",
         "DD.MM.YYYY",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "29.02.2024",
       "note": "leap day, reordered zero-padded tokens"
@@ -2876,7 +2880,8 @@
       "args": [
         "9999-12-31T23:59:59.999Z",
         "YYYY-MM-DD",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "9999-12-31",
       "note": "far-future four-digit-year boundary"
@@ -2886,7 +2891,8 @@
       "args": [
         "0001-01-05T00:00:00.000Z",
         "YYYY/M/D",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "0001/1/5",
       "note": "year 1 zero-pads YYYY to 4 digits"
@@ -2896,7 +2902,8 @@
       "args": [
         "2024-01-01T23:00:00.000Z",
         "YYYY-MM-DD",
-        "+09:00"
+        "+09:00",
+        []
       ],
       "expect": "2024-01-02",
       "note": "positive offset crosses the date boundary forward"
@@ -2906,7 +2913,8 @@
       "args": [
         "2024-01-01T01:00:00.000Z",
         "YYYY-MM-DD",
-        "-05:30"
+        "-05:30",
+        []
       ],
       "expect": "2023-12-31",
       "note": "negative half-hour offset crosses the date boundary backward"
@@ -2916,7 +2924,8 @@
       "args": [
         "2024-01-05T00:00:00.000Z",
         "YYYY年M月D日",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "2024年1月5日",
       "note": "non-token characters pass through literally"
@@ -2926,7 +2935,8 @@
       "args": [
         "2024-01-01T23:00:00.000Z",
         "YYYY-MM-DD",
-        "Asia/Tokyo"
+        "Asia/Tokyo",
+        []
       ],
       "expect": "2024-01-01",
       "note": "IANA zone name normalizes to UTC (total function)"
@@ -2936,7 +2946,8 @@
       "args": [
         "2024-01-01T23:00:00.000Z",
         "YYYY-MM-DD",
-        "+9:00"
+        "+9:00",
+        []
       ],
       "expect": "2024-01-01",
       "note": "malformed offset normalizes to UTC (total function)"
@@ -2946,7 +2957,8 @@
       "args": [
         "9999-12-31T23:59:59.999Z",
         "YYYY-MM-DD",
-        "+09:00"
+        "+09:00",
+        []
       ],
       "expect": "10000-01-01",
       "note": "positive offset pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)"
@@ -2956,7 +2968,8 @@
       "args": [
         null,
         "YYYY-MM-DD",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "",
       "note": "nil receiver renders the empty string"
@@ -2966,7 +2979,8 @@
       "args": [
         "not a date",
         "YYYY-MM-DD",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "",
       "note": "unparseable receiver renders the empty string"
@@ -2978,7 +2992,8 @@
           "$date": "2024-02-29T23:59:59.999Z"
         },
         "YYYY-MM-DD",
-        "UTC"
+        "UTC",
+        []
       ],
       "expect": "2024-02-29",
       "note": "native leap-day receiver formats like its string sibling"
@@ -2990,10 +3005,386 @@
           "$date": "2024-01-01T23:00:00.000Z"
         },
         "YYYY/M/D",
-        "+09:00"
+        "+09:00",
+        []
       ],
       "expect": "2024/1/2",
       "note": "native receiver with offset crosses the date boundary"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T12:00:00.000Z",
+        "MMMM D, YYYY",
+        "UTC",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "March 5, 2024",
+      "note": "wide month name from the table"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T12:00:00.000Z",
+        "ddd, MMM D",
+        "UTC",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "Tue, Mar 5",
+      "note": "abbreviated weekday + month names (2024-03-05 is a Tuesday)"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "1970-01-01T00:00:00.000Z",
+        "dddd",
+        "UTC",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "Thursday",
+      "note": "epoch 0 weekday is Thursday — the mod-7 anchor"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "1969-07-20T20:17:40.123Z",
+        "dddd",
+        "UTC",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "Sunday",
+      "note": "pre-1970 weekday (Sunday) pins the negative-epoch floor-division path"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T23:00:00.000Z",
+        "dddd",
+        "+09:00",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "Wednesday",
+      "note": "weekday follows the offset-shifted clock face (Tue 23:00Z + 09:00 = Wednesday)"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T12:00:00.000Z",
+        "YYYY年MMMM",
+        "UTC",
+        [
+          "1月",
+          "2月",
+          "3月",
+          "4月",
+          "5月",
+          "6月",
+          "7月",
+          "8月",
+          "9月",
+          "10月",
+          "11月",
+          "12月",
+          "1月",
+          "2月",
+          "3月",
+          "4月",
+          "5月",
+          "6月",
+          "7月",
+          "8月",
+          "9月",
+          "10月",
+          "11月",
+          "12月",
+          "日曜日",
+          "月曜日",
+          "火曜日",
+          "水曜日",
+          "木曜日",
+          "金曜日",
+          "土曜日",
+          "日",
+          "月",
+          "火",
+          "水",
+          "木",
+          "金",
+          "土"
+        ]
+      ],
+      "expect": "2024年3月",
+      "note": "multi-byte table values pass through byte-identically"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T12:00:00.000Z",
+        "MMMM D",
+        "UTC",
+        []
+      ],
+      "expect": " 5",
+      "note": "name token over an empty table renders the empty string"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T12:00:00.000Z",
+        "dddd",
+        "UTC",
+        [
+          "only",
+          "two"
+        ]
+      ],
+      "expect": "",
+      "note": "name token past a short table renders the empty string"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-03-05T12:00:00.000Z",
+        "YYYY-MM-DD",
+        "UTC",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "2024-03-05",
+      "note": "numeric tokens ignore a supplied table"
     },
     {
       "fn": "date",

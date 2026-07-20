@@ -462,10 +462,18 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
       call.arguments.map((a) => tsNodeToParsedExpr(a)),
     )
     if (!node || node.kind !== 'helper-call' || node.helper !== 'format_date') continue
-    const [, patternArg, tzArg] = node.args
+    const [, patternArg, tzArg, namesArg] = node.args
     if (!patternArg || tzArg?.kind !== 'literal') continue
-    const patternJs = patternArgToClientJs(patternArg, ctx.getJS(call.arguments[0]))
+    const localeText = ctx.getJS(call.arguments[0])
+    const patternJs = patternArgToClientJs(patternArg, localeText)
     if (patternJs === null) continue
+    // The names table (#2334) — omitted from the client call when empty
+    // (the client function defaults to []).
+    let namesJs: string | null = null
+    if (namesArg && !(namesArg.kind === 'array-literal' && namesArg.elements.length === 0)) {
+      namesJs = patternArgToClientJs(namesArg, localeText)
+      if (namesJs === null) continue
+    }
     const receiverText = ctx.getJS(propAccess.expression)
     const matchText = ctx.getJS(call)
     // Unlike `lowerDateCalls`' zero-arg needle, this call text CONTAINS
@@ -475,7 +483,8 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
     result = replaceProtectedCall(
       result,
       matchText,
-      () => `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)})`,
+      () =>
+        `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)}${namesJs !== null ? `, ${namesJs}` : ''})`,
     )
   }
   return restore(result)

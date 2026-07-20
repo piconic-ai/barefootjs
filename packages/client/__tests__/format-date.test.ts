@@ -61,4 +61,48 @@ describe('formatDate', () => {
     expect(formatDate(null as unknown as Date, 'YYYY-MM-DD')).toBe('')
     expect(formatDate(undefined as unknown as Date, 'YYYY-MM-DD')).toBe('')
   })
+
+  // #2334 name tokens. Flat table layout: [0..11] wide months, [12..23]
+  // abbreviated months, [24..30] wide weekdays (Sunday-first), [31..37]
+  // abbreviated weekdays.
+  const EN_NAMES = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+    'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat',
+  ]
+
+  test('name tokens read the explicit table (#2334)', () => {
+    // 2024-03-05 is a Tuesday.
+    const d = new Date('2024-03-05T12:00:00.000Z')
+    expect(formatDate(d, 'MMMM D, YYYY', 'UTC', EN_NAMES)).toBe('March 5, 2024')
+    expect(formatDate(d, 'ddd, MMM D', 'UTC', EN_NAMES)).toBe('Tue, Mar 5')
+    expect(formatDate(d, 'dddd', 'UTC', EN_NAMES)).toBe('Tuesday')
+  })
+
+  test('weekday follows the offset-shifted clock face', () => {
+    // 23:00Z Tuesday + 09:00 = Wednesday.
+    const d = new Date('2024-03-05T23:00:00.000Z')
+    expect(formatDate(d, 'dddd', '+09:00', EN_NAMES)).toBe('Wednesday')
+    expect(formatDate(d, 'dddd', 'UTC', EN_NAMES)).toBe('Tuesday')
+  })
+
+  test('epoch 0 is a Thursday (the mod-7 anchor every backend must match)', () => {
+    expect(formatDate(new Date(0), 'dddd', 'UTC', EN_NAMES)).toBe('Thursday')
+    // Pre-1970: 1969-07-20 was a Sunday (floor-division check for ports).
+    expect(formatDate(new Date('1969-07-20T20:17:40.123Z'), 'ddd', 'UTC', EN_NAMES)).toBe('Sun')
+  })
+
+  test('a name token over a missing/short table renders the empty string', () => {
+    const d = new Date('2024-03-05T12:00:00.000Z')
+    expect(formatDate(d, 'MMMM D', 'UTC')).toBe(' 5')
+    expect(formatDate(d, 'dddd', 'UTC', ['only', 'two'])).toBe('')
+  })
+
+  test('numeric tokens ignore the table entirely', () => {
+    const d = new Date('2024-03-05T12:00:00.000Z')
+    expect(formatDate(d, 'YYYY-MM-DD', 'UTC', EN_NAMES)).toBe('2024-03-05')
+  })
 })

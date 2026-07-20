@@ -21,11 +21,15 @@ import type { LoweringNode, LoweringPlugin } from './lowering-registry.ts'
 import { formatDateLocalNames } from './adapters/env-signal.ts'
 
 const UTC_LITERAL: ParsedExpr = { kind: 'literal', value: 'UTC', literalType: 'string' }
+const EMPTY_NAMES: ParsedExpr = { kind: 'array-literal', elements: [], raw: '[]' } as ParsedExpr
 
 /**
- * Recognise `formatDate(date, pattern[, timeZone])` against the component's
- * local import bindings, or decline (null): a non-identifier callee, a name
- * not bound to the `@barefootjs/client` import, or an arity outside 2–3.
+ * Recognise `formatDate(date, pattern[, timeZone[, names]])` against the
+ * component's local import bindings, or decline (null): a non-identifier
+ * callee, a name not bound to the `@barefootjs/client` import, or an arity
+ * outside 2–4. The canonical helper arity is 4 (#2334): omitted `timeZone` /
+ * `names` normalize to the `'UTC'` literal and the empty table the client
+ * function defaults to, so backend helpers stay fixed-arity.
  */
 export function matchFormatDateCall(
   callee: ParsedExpr,
@@ -33,11 +37,11 @@ export function matchFormatDateCall(
   locals: ReadonlySet<string>,
 ): LoweringNode | null {
   if (callee.kind !== 'identifier' || !locals.has(callee.name)) return null
-  if (args.length < 2 || args.length > 3) return null
+  if (args.length < 2 || args.length > 4) return null
   return {
     kind: 'helper-call',
     helper: 'format_date',
-    args: [args[0], args[1], args[2] ?? UTC_LITERAL],
+    args: [args[0], args[1], args[2] ?? UTC_LITERAL, args[3] ?? EMPTY_NAMES],
   }
 }
 

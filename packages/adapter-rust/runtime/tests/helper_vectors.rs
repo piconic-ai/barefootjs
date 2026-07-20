@@ -150,7 +150,7 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
             JsValue::String(num::to_fixed(runtime::js_number(&a(0)), digits))
         }
         "date" => date::date(&a(0), a(1).as_str().unwrap_or("")),
-        "format_date" => JsValue::String(date::format_date(&a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""))),
+        "format_date" => JsValue::String(date::format_date(&a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), &a(3))),
         "lower" => JsValue::String(runtime::js_string(&a(0)).to_lowercase()),
         "upper" => JsValue::String(runtime::js_string(&a(0)).to_uppercase()),
         "trim" => JsValue::String(runtime::trim(&a(0))),

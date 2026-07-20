@@ -959,15 +959,28 @@ class BarefootJS:
         return 0
 
     _FORMAT_DATE_TZ_RE = re.compile(r"^([+-])(\d{2}):(\d{2})$")
-    _FORMAT_DATE_TOKEN_RE = re.compile(r"YYYY|MM|DD|M|D")
+    _FORMAT_DATE_TOKEN_RE = re.compile(r"YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D")
 
-    def format_date(self, recv: Any, pattern: str, tz: str) -> str:
-        """`format_date(recv, pattern, tz)` -- the lowering target for a
-        `formatDate(date, pattern, timeZone)` call (#2324, spec entry
-        "format_date"). `recv` follows the same receiver contract as `date`
-        above -- this runtime's own `datetime` or an ISO-8601 string; a nil
-        or unparseable receiver renders `''` (never a crash, never "now").
-        Mirrors packages/client/src/format-date.ts byte-for-byte.
+    # `names`-table section offsets (spec/template-helpers.md "format_date",
+    # #2334) -- mirrors packages/client/src/format-date.ts's
+    # MONTHS_WIDE/MONTHS_ABBR/WEEKDAYS_WIDE/WEEKDAYS_ABBR constants.
+    _FORMAT_DATE_MONTHS_WIDE = 0
+    _FORMAT_DATE_MONTHS_ABBR = 12
+    _FORMAT_DATE_WEEKDAYS_WIDE = 24
+    _FORMAT_DATE_WEEKDAYS_ABBR = 31
+
+    def format_date(
+        self, recv: Any, pattern: str, tz: str, names: Optional[list] = None
+    ) -> str:
+        """`format_date(recv, pattern, tz, names)` -- the lowering target for
+        a `formatDate(date, pattern, timeZone, names)` call (#2324 numeric
+        tokens, #2334 name tokens; spec entry "format_date"). `recv` follows
+        the same receiver contract as `date` above -- this runtime's own
+        `datetime` or an ISO-8601 string; a nil or unparseable receiver
+        renders `''` (never a crash, never "now"). Mirrors
+        packages/client/src/format-date.ts byte-for-byte. Canonical arity is
+        4 -- the lowering always supplies `tz` and `names` (defaulting
+        `'UTC'` and `[]`).
 
         `tz` is `'UTC'` or a fixed offset matching `±HH:MM`. The helper is
         total: any other value -- an IANA zone name, a malformed offset --
@@ -981,15 +994,34 @@ class BarefootJS:
         a positive offset on 9999-12-31 lands in year 10000, past
         `datetime.max`, and must render `10000-…` like the JS reference
         instead of overflowing (golden vector "positive offset pushes the
-        far-future instant past year 9999").
+        far-future instant past year 9999"). The weekday used by `dddd`/
+        `ddd` comes from the SAME integer path -- `(shifted_ms // 86_400_000
+        + 4) % 7` (Python floor division; `+4` because epoch day 0,
+        1970-01-01, is a Thursday, and the table is Sunday-first so
+        `weekday == 0` must mean Sunday) -- rather than re-deriving it from
+        `yoe`/`doy`, so it stays correct across the same year-10000
+        overflow boundary the civil-from-days math above already handles.
 
-        `pattern` is scanned longest-match over `YYYY|MM|DD|M|D`
-        (`_FORMAT_DATE_TOKEN_RE`, alternation ordered so the 2/4-char
-        tokens win before their single-char prefixes); every other
-        character -- including multi-byte ones like 年/月/日 -- passes
-        through literally. `YYYY` is `abs(year)` zero-padded to 4 digits,
-        `-`-prefixed for a negative year; `MM`/`DD` zero-pad to 2; `M`/`D`
-        are bare."""
+        `pattern` is scanned longest-match over
+        `YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D` (`_FORMAT_DATE_TOKEN_RE`,
+        alternation ordered so longer tokens win before their shorter
+        prefixes); every other character -- including multi-byte ones like
+        年/月/日 -- passes through literally. `YYYY` is `abs(year)`
+        zero-padded to 4 digits, `-`-prefixed for a negative year; `MM`/`DD`
+        zero-pad to 2; `M`/`D` are bare. `MMMM`/`MMM` read `names[month-1]`
+        / `names[12+month-1]` (wide/abbreviated month name); `dddd`/`ddd`
+        read `names[24+weekday]` / `names[31+weekday]` (wide/abbreviated
+        weekday name, Sunday-first) -- `names` is the flat table documented
+        on the module's `formatDate` JS sibling: `[0..11]` wide months,
+        `[12..23]` abbreviated months, `[24..30]` wide weekdays, `[31..37]`
+        abbreviated weekdays. An index past the end of (or an altogether
+        missing) `names` table renders `''` for that token, never an
+        `IndexError`."""
+        names = names or []
+
+        def _name_at(index: int) -> str:
+            return names[index] if 0 <= index < len(names) else ""
+
         if isinstance(recv, datetime.datetime):
             dt = recv
         else:
@@ -1020,11 +1052,23 @@ class BarefootJS:
         month = mp + 3 if mp < 10 else mp - 9
         year = yoe + era * 400 + (1 if month <= 2 else 0)
         yyyy = ("-" if year < 0 else "") + f"{abs(year):04d}"
+        # Weekday from the SAME integer path as the civil-from-days fields
+        # above (NOT re-derived from yoe/doy) -- 0=Sunday, matching the
+        # table's Sunday-first layout. `(shifted_ms // 86_400_000)` is the
+        # signed epoch-day count (Python floor division, exact for negative
+        # epochs); `+4` anchors it since epoch day 0 (1970-01-01) is a
+        # Thursday.
+        days = shifted_ms // 86_400_000
+        weekday = (days + 4) % 7
 
         def _sub(match: "re.Match[str]") -> str:
             token = match.group(0)
             if token == "YYYY":
                 return yyyy
+            if token == "MMMM":
+                return _name_at(self._FORMAT_DATE_MONTHS_WIDE + month - 1)
+            if token == "MMM":
+                return _name_at(self._FORMAT_DATE_MONTHS_ABBR + month - 1)
             if token == "MM":
                 return f"{month:02d}"
             if token == "M":
@@ -1033,6 +1077,10 @@ class BarefootJS:
                 return f"{day:02d}"
             if token == "D":
                 return str(day)
+            if token == "dddd":
+                return _name_at(self._FORMAT_DATE_WEEKDAYS_WIDE + weekday)
+            if token == "ddd":
+                return _name_at(self._FORMAT_DATE_WEEKDAYS_ABBR + weekday)
             return token
 
         return self._FORMAT_DATE_TOKEN_RE.sub(_sub, pattern)

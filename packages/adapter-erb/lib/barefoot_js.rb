@@ -535,19 +535,28 @@ module BarefootJS
     FORMAT_DATE_OFFSET_RE = /\A([+-])(\d{2}):(\d{2})\z/
 
     # Longest-match pattern-token alternation (mirrors TOKEN_RE in
-    # packages/client/src/format-date.ts). Order matters: MM before M and DD
-    # before D so the 2-char token wins at a position where either could
-    # match -- Ruby's Onigmo engine, like JS's regex engine, resolves
-    # alternation leftmost-first (not POSIX leftmost-longest), so listing the
-    # longer alternative first is what makes "MM" consume both characters
-    # instead of two "M" matches.
-    FORMAT_DATE_TOKEN_RE = /YYYY|MM|DD|M|D/
+    # packages/client/src/format-date.ts). Order matters: Onigmo, like JS's
+    # regex engine, resolves alternation leftmost-first (not POSIX
+    # leftmost-longest), so every multi-char token must be listed before any
+    # shorter alternative it prefixes -- YYYY before (nothing shorter
+    # shares its prefix), MMMM before MMM before MM before M, DD before D,
+    # dddd before ddd. (#2334)
+    FORMAT_DATE_TOKEN_RE = /YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D/
 
-    # `format_date(recv, pattern, tz)` (#2324, spec entry "format_date" in
-    # spec/template-helpers.md) -- the lowering target for
-    # `formatDate(date, pattern, timeZone)` (packages/client/src/format-date.ts,
-    # the JS-normative reference this must match byte-for-byte). Total and
-    # deterministic: no locale, no host timezone, no `Time.now`.
+    # `names`-table section offsets (spec/template-helpers.md "format_date",
+    # #2334) -- mirrors MONTHS_WIDE/MONTHS_ABBR/WEEKDAYS_WIDE/WEEKDAYS_ABBR in
+    # packages/client/src/format-date.ts.
+    FORMAT_DATE_MONTHS_WIDE = 0
+    FORMAT_DATE_MONTHS_ABBR = 12
+    FORMAT_DATE_WEEKDAYS_WIDE = 24
+    FORMAT_DATE_WEEKDAYS_ABBR = 31
+
+    # `format_date(recv, pattern, tz, names)` (#2324/#2334, spec entry
+    # "format_date" in spec/template-helpers.md) -- the lowering target for
+    # `formatDate(date, pattern, timeZone, names)`
+    # (packages/client/src/format-date.ts, the JS-normative reference this
+    # must match byte-for-byte). Total and deterministic: no locale, no host
+    # timezone, no `Time.now`.
     #
     # recv: the same receiver contract as `date` above -- a native `Time` or
     # an ISO-8601 string, normalized identically. A nil / unparseable
@@ -563,14 +572,24 @@ module BarefootJS
     # arithmetic here is exact (Ruby represents the instant as a Rational,
     # not a floor-divided epoch-millis integer), so there's no pre-1970
     # negative-epoch floor-division trap to dodge the way a naive
-    # epoch-millis-div-86400000 implementation would hit.
+    # epoch-millis-div-86400000 implementation would hit; the shifted
+    # `Time#wday` (0 = Sunday) is likewise exact across the epoch boundary,
+    # so it doubles directly as the weekday-name table index.
     #
-    # pattern: longest-match token substitution (`YYYY|MM|DD|M|D`); every
-    # other character -- including multi-byte ones like 年/月/日 -- passes
-    # through literally. `YYYY` is `abs(year)` zero-padded to 4 digits,
-    # `-`-prefixed for a negative year; `MM`/`DD` zero-pad to 2; `M`/`D` are
-    # bare.
-    def format_date(recv, pattern, tz)
+    # names: the flat table (#2334) -- `[0..11]` wide months, `[12..23]`
+    # abbreviated months, `[24..30]` wide weekdays (Sunday-first, matching
+    # the shifted `Time#wday`), `[31..37]` abbreviated weekdays. The caller
+    # owns the values (locale selection is never this method's job). An
+    # index past a missing/short table renders '' rather than raising.
+    #
+    # pattern: longest-match token substitution
+    # (`YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D`); every other character --
+    # including multi-byte ones like 年/月/日 -- passes through literally.
+    # `YYYY` is `abs(year)` zero-padded to 4 digits, `-`-prefixed for a
+    # negative year; `MM`/`DD` zero-pad to 2; `M`/`D` are bare; `MMMM`/`MMM`
+    # read the month's wide/abbreviated name; `dddd`/`ddd` read the shifted
+    # weekday's wide/abbreviated name.
+    def format_date(recv, pattern, tz, names = [])
       t =
         if recv.is_a?(Time)
           recv
@@ -590,15 +609,21 @@ module BarefootJS
       year = shifted.year
       month = shifted.mon
       day = shifted.mday
+      weekday = shifted.wday # 0 = Sunday, matching the table's Sunday-first layout
       yyyy = (year.negative? ? '-' : '') + year.abs.to_s.rjust(4, '0')
+      name_at = ->(index) { (names[index] || '').to_s }
 
       pattern.gsub(FORMAT_DATE_TOKEN_RE) do |token|
         case token
         when 'YYYY' then yyyy
+        when 'MMMM' then name_at.call(FORMAT_DATE_MONTHS_WIDE + month - 1)
+        when 'MMM' then name_at.call(FORMAT_DATE_MONTHS_ABBR + month - 1)
         when 'MM' then format('%02d', month)
         when 'M' then month.to_s
         when 'DD' then format('%02d', day)
         when 'D' then day.to_s
+        when 'dddd' then name_at.call(FORMAT_DATE_WEEKDAYS_WIDE + weekday)
+        when 'ddd' then name_at.call(FORMAT_DATE_WEEKDAYS_ABBR + weekday)
         end
       end
     end
