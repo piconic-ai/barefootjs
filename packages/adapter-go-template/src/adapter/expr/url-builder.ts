@@ -176,14 +176,14 @@ function renderLoweringNode(ctx: GoEmitContext, node: LoweringNode): string | nu
   if (!helper) return null
   const lowerExpr = (n: ParsedExpr): string =>
     ctx.convertExpressionToGo(stringifyParsedExpr(n), undefined, n)
-  // A `conditional` in ARGUMENT position cannot go through the generic
-  // emitter: its `conditional` method would render an `{{if}}…{{end}}` action
-  // fragment (a parse error inside a pipeline, "unexpected { in parenthesized
-  // pipeline"). Route it through the shared `bf_ternary` lowering — the same
-  // pipeline-position form the `conditional()` emitter and the condition-
-  // expression emitter now use (#2335) — so a right-folded chain (the #2324
-  // union stage's locale→pattern table) nests as
-  // `(bf_ternary <cond> <a> (bf_ternary …))`.
+  // A `conditional` in ARGUMENT position lowers to the pipeline-position
+  // `(bf_ternary …)` form via the shared `lowerTernary` (#2335) — the same
+  // form the ParsedExpr `conditional()` emitter and the condition-expression
+  // emitter produce. Routing it here explicitly (rather than leaning on the
+  // generic `lowerExpr`, whose `conditional()` dispatch now reaches the very
+  // same helper) keeps the arg lowering self-contained and its intent local;
+  // `lowerTernary` itself right-folds a nested chain (the #2324 union stage's
+  // locale→pattern table) into `(bf_ternary <cond> <a> (bf_ternary …))`.
   const lowerArg = (n: ParsedExpr): string =>
     n.kind === 'conditional'
       ? lowerTernary(ctx, n.test, n.consequent, n.alternate)
