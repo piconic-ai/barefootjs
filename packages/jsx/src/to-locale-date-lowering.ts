@@ -523,33 +523,34 @@ export function matchToLocaleDateStringCall(
 }
 
 /**
- * Render a matched node's PATTERN argument as client-JS text for the
- * #2292-style rewrite sites (`jsx-to-ir.ts` / `emit-reactive.ts`). A literal
- * pattern stringifies directly; the union stage's right-folded ternary
- * re-serializes against `localeText` — the rewrite site's own source text
- * for the locale argument, so downstream prop-prefix rewrites treat it like
- * any other reference. Returns null for any shape this module didn't build
- * (the caller then leaves the expression raw rather than guessing).
+ * Render a matched node's helper argument — the pattern (`strLit` leaf) or
+ * the #2334 names table (`strArr` leaf), either possibly wrapped in
+ * `foldMembers`' right-folded ternary — as client-JS text for the
+ * #2292-style rewrite sites (`jsx-to-ir.ts` / `emit-reactive.ts`). Leaves
+ * stringify directly; a fold re-serializes its tests against `localeText` —
+ * the rewrite site's own source text for the locale argument, so downstream
+ * prop-prefix rewrites treat it like any other reference. Returns null for
+ * any shape this module didn't build (the caller then leaves the expression
+ * raw rather than guessing).
  */
-export function patternArgToClientJs(patternArg: ParsedExpr, localeText: string): string | null {
-  if (patternArg.kind === 'literal') return JSON.stringify(patternArg.value)
-  // The `names` argument's leaf (#2334): an array-literal of string literals.
-  if (patternArg.kind === 'array-literal') {
+export function foldedArgToClientJs(arg: ParsedExpr, localeText: string): string | null {
+  if (arg.kind === 'literal') return JSON.stringify(arg.value)
+  if (arg.kind === 'array-literal') {
     const values: string[] = []
-    for (const el of patternArg.elements) {
+    for (const el of arg.elements) {
       if (el.kind !== 'literal') return null
       values.push(String(el.value))
     }
     return JSON.stringify(values)
   }
-  if (patternArg.kind !== 'conditional') return null
-  const t = patternArg.test
+  if (arg.kind !== 'conditional') return null
+  const t = arg.test
   if (t.kind !== 'binary' || t.op !== '===' || t.right.kind !== 'literal') return null
-  if (t.right.kind !== 'literal') return null
-  const cons = patternArgToClientJs(patternArg.consequent, localeText)
-  const rest = patternArgToClientJs(patternArg.alternate, localeText)
+  // Right-fold shape: the consequent must be a leaf (only alternates nest).
+  if (arg.consequent.kind !== 'literal' && arg.consequent.kind !== 'array-literal') return null
+  const cons = foldedArgToClientJs(arg.consequent, localeText)
+  const rest = foldedArgToClientJs(arg.alternate, localeText)
   if (cons === null || rest === null) return null
-  if (patternArg.consequent.kind !== 'literal' && patternArg.consequent.kind !== 'array-literal') return null
   return `${localeText} === ${JSON.stringify(t.right.value)} ? ${cons} : ${rest}`
 }
 
