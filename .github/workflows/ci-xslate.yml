@@ -49,10 +49,11 @@ jobs:
           perl-version: '5.40'
 
       - name: Install Text::Xslate
-        # DateTime::TimeZone (#2344): the core runtime's tzdata source for
-        # named-IANA-zone resolution in format_date (fixture renders below
-        # go through the shared BarefootJS.pm runtime).
-        run: cpanm --notest Text::Xslate DateTime::TimeZone
+        # DateTime (#2344): pulls DateTime::TimeZone + DateTime::Duration, the
+        # core runtime's full chain for named-IANA-zone resolution in
+        # format_date (fixture renders below go through the shared
+        # BarefootJS.pm runtime).
+        run: cpanm --notest Text::Xslate DateTime
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun

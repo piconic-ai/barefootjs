@@ -3,7 +3,14 @@
   "knownLimitationLabel": "https://github.com/piconic-ai/barefootjs/labels/known-limitation",
   "adapters": [
     "hono",
-    "erb"
+    "blade",
+    "erb",
+    "go-template",
+    "jinja",
+    "minijinja",
+    "mojolicious",
+    "twig",
+    "xslate"
   ],
   "kinds": {
     "array-literal": {
@@ -13,10 +20,130 @@
           "pass": 54,
           "total": 54
         },
+        "blade": {
+          "pass": 52,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
         "erb": {
           "pass": 53,
           "total": 54,
           "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 52,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 52,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 52,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 53,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 52,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 52,
+          "total": 54,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -34,7 +161,35 @@
           "pass": 62,
           "total": 62
         },
+        "blade": {
+          "pass": 62,
+          "total": 62
+        },
         "erb": {
+          "pass": 62,
+          "total": 62
+        },
+        "go-template": {
+          "pass": 62,
+          "total": 62
+        },
+        "jinja": {
+          "pass": 62,
+          "total": 62
+        },
+        "minijinja": {
+          "pass": 62,
+          "total": 62
+        },
+        "mojolicious": {
+          "pass": 62,
+          "total": 62
+        },
+        "twig": {
+          "pass": 62,
+          "total": 62
+        },
+        "xslate": {
           "pass": 62,
           "total": 62
         }
@@ -47,10 +202,130 @@
           "pass": 55,
           "total": 55
         },
+        "blade": {
+          "pass": 53,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
         "erb": {
           "pass": 54,
           "total": 55,
           "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 53,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 53,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 53,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 54,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 53,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 53,
+          "total": 55,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -68,10 +343,172 @@
           "pass": 67,
           "total": 67
         },
+        "blade": {
+          "pass": 64,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
           "pass": 65,
           "total": 67,
           "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 64,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 64,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 64,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 65,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 64,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 64,
+          "total": 67,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -99,6 +536,42 @@
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            }
+          ]
+        },
+        "blade": {
+          "pass": 159,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
             }
           ]
@@ -132,6 +605,216 @@
               ]
             }
           ]
+        },
+        "go-template": {
+          "pass": 159,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 159,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 159,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 160,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 159,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 159,
+          "total": 164,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
         }
       }
     },
@@ -142,7 +825,35 @@
           "pass": 19,
           "total": 19
         },
+        "blade": {
+          "pass": 19,
+          "total": 19
+        },
         "erb": {
+          "pass": 19,
+          "total": 19
+        },
+        "go-template": {
+          "pass": 19,
+          "total": 19
+        },
+        "jinja": {
+          "pass": 19,
+          "total": 19
+        },
+        "minijinja": {
+          "pass": 19,
+          "total": 19
+        },
+        "mojolicious": {
+          "pass": 19,
+          "total": 19
+        },
+        "twig": {
+          "pass": 19,
+          "total": 19
+        },
+        "xslate": {
           "pass": 19,
           "total": 19
         }
@@ -159,6 +870,48 @@
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            }
+          ]
+        },
+        "blade": {
+          "pass": 238,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
             }
           ]
@@ -198,6 +951,252 @@
               ]
             }
           ]
+        },
+        "go-template": {
+          "pass": 238,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 238,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 238,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 239,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 238,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 238,
+          "total": 244,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
         }
       }
     },
@@ -208,7 +1207,35 @@
           "pass": 12,
           "total": 12
         },
+        "blade": {
+          "pass": 12,
+          "total": 12
+        },
         "erb": {
+          "pass": 12,
+          "total": 12
+        },
+        "go-template": {
+          "pass": 12,
+          "total": 12
+        },
+        "jinja": {
+          "pass": 12,
+          "total": 12
+        },
+        "minijinja": {
+          "pass": 12,
+          "total": 12
+        },
+        "mojolicious": {
+          "pass": 12,
+          "total": 12
+        },
+        "twig": {
+          "pass": 12,
+          "total": 12
+        },
+        "xslate": {
           "pass": 12,
           "total": 12
         }
@@ -221,7 +1248,91 @@
           "pass": 202,
           "total": 202
         },
+        "blade": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 201,
+          "total": 202,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 201,
           "total": 202,
           "gaps": [
@@ -242,7 +1353,91 @@
           "pass": 41,
           "total": 41
         },
+        "blade": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 40,
+          "total": 41,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 40,
           "total": 41,
           "gaps": [
@@ -267,6 +1462,42 @@
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            }
+          ]
+        },
+        "blade": {
+          "pass": 118,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
             }
           ]
@@ -300,6 +1531,216 @@
               ]
             }
           ]
+        },
+        "go-template": {
+          "pass": 118,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 118,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 118,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 119,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 118,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 118,
+          "total": 123,
+          "gaps": [
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2274"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
         }
       }
     },
@@ -310,7 +1751,133 @@
           "pass": 46,
           "total": 46
         },
+        "blade": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 44,
+          "total": 46,
+          "gaps": [
+            {
+              "fixture": "dangerous-inner-html-dynamic",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2319"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 44,
           "total": 46,
           "gaps": [
@@ -337,7 +1904,35 @@
           "pass": 0,
           "total": 0
         },
+        "blade": {
+          "pass": 0,
+          "total": 0
+        },
         "erb": {
+          "pass": 0,
+          "total": 0
+        },
+        "go-template": {
+          "pass": 0,
+          "total": 0
+        },
+        "jinja": {
+          "pass": 0,
+          "total": 0
+        },
+        "minijinja": {
+          "pass": 0,
+          "total": 0
+        },
+        "mojolicious": {
+          "pass": 0,
+          "total": 0
+        },
+        "twig": {
+          "pass": 0,
+          "total": 0
+        },
+        "xslate": {
           "pass": 0,
           "total": 0
         }
@@ -350,7 +1945,35 @@
           "pass": 27,
           "total": 27
         },
+        "blade": {
+          "pass": 27,
+          "total": 27
+        },
         "erb": {
+          "pass": 27,
+          "total": 27
+        },
+        "go-template": {
+          "pass": 27,
+          "total": 27
+        },
+        "jinja": {
+          "pass": 27,
+          "total": 27
+        },
+        "minijinja": {
+          "pass": 27,
+          "total": 27
+        },
+        "mojolicious": {
+          "pass": 27,
+          "total": 27
+        },
+        "twig": {
+          "pass": 27,
+          "total": 27
+        },
+        "xslate": {
           "pass": 27,
           "total": 27
         }
@@ -363,9 +1986,85 @@
           "pass": 22,
           "total": 22
         },
+        "blade": {
+          "pass": 21,
+          "total": 22,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
         "erb": {
           "pass": 22,
           "total": 22
+        },
+        "go-template": {
+          "pass": 21,
+          "total": 22,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 21,
+          "total": 22,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 21,
+          "total": 22,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 22,
+          "total": 22
+        },
+        "twig": {
+          "pass": 21,
+          "total": 22,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 21,
+          "total": 22,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
         }
       }
     },
@@ -376,7 +2075,133 @@
           "pass": 21,
           "total": 21
         },
+        "blade": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 19,
+          "total": 21,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 19,
           "total": 21,
           "gaps": [
@@ -405,7 +2230,35 @@
           "pass": 2,
           "total": 2
         },
+        "blade": {
+          "pass": 2,
+          "total": 2
+        },
         "erb": {
+          "pass": 2,
+          "total": 2
+        },
+        "go-template": {
+          "pass": 2,
+          "total": 2
+        },
+        "jinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "minijinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "twig": {
+          "pass": 2,
+          "total": 2
+        },
+        "xslate": {
           "pass": 2,
           "total": 2
         }
@@ -418,7 +2271,35 @@
           "pass": 2,
           "total": 2
         },
+        "blade": {
+          "pass": 2,
+          "total": 2
+        },
         "erb": {
+          "pass": 2,
+          "total": 2
+        },
+        "go-template": {
+          "pass": 2,
+          "total": 2
+        },
+        "jinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "minijinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "twig": {
+          "pass": 2,
+          "total": 2
+        },
+        "xslate": {
           "pass": 2,
           "total": 2
         }
@@ -431,7 +2312,35 @@
           "pass": 2,
           "total": 2
         },
+        "blade": {
+          "pass": 2,
+          "total": 2
+        },
         "erb": {
+          "pass": 2,
+          "total": 2
+        },
+        "go-template": {
+          "pass": 2,
+          "total": 2
+        },
+        "jinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "minijinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "twig": {
+          "pass": 2,
+          "total": 2
+        },
+        "xslate": {
           "pass": 2,
           "total": 2
         }
@@ -444,7 +2353,35 @@
           "pass": 4,
           "total": 4
         },
+        "blade": {
+          "pass": 4,
+          "total": 4
+        },
         "erb": {
+          "pass": 4,
+          "total": 4
+        },
+        "go-template": {
+          "pass": 4,
+          "total": 4
+        },
+        "jinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "minijinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "twig": {
+          "pass": 4,
+          "total": 4
+        },
+        "xslate": {
           "pass": 4,
           "total": 4
         }
@@ -457,7 +2394,35 @@
           "pass": 12,
           "total": 12
         },
+        "blade": {
+          "pass": 12,
+          "total": 12
+        },
         "erb": {
+          "pass": 12,
+          "total": 12
+        },
+        "go-template": {
+          "pass": 12,
+          "total": 12
+        },
+        "jinja": {
+          "pass": 12,
+          "total": 12
+        },
+        "minijinja": {
+          "pass": 12,
+          "total": 12
+        },
+        "mojolicious": {
+          "pass": 12,
+          "total": 12
+        },
+        "twig": {
+          "pass": 12,
+          "total": 12
+        },
+        "xslate": {
           "pass": 12,
           "total": 12
         }
@@ -470,7 +2435,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -483,7 +2476,35 @@
           "pass": 36,
           "total": 36
         },
+        "blade": {
+          "pass": 36,
+          "total": 36
+        },
         "erb": {
+          "pass": 36,
+          "total": 36
+        },
+        "go-template": {
+          "pass": 36,
+          "total": 36
+        },
+        "jinja": {
+          "pass": 36,
+          "total": 36
+        },
+        "minijinja": {
+          "pass": 36,
+          "total": 36
+        },
+        "mojolicious": {
+          "pass": 36,
+          "total": 36
+        },
+        "twig": {
+          "pass": 36,
+          "total": 36
+        },
+        "xslate": {
           "pass": 36,
           "total": 36
         }
@@ -496,7 +2517,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -509,7 +2558,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -522,7 +2599,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -535,7 +2640,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -548,7 +2681,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -561,7 +2722,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -574,7 +2763,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -587,7 +2804,35 @@
           "pass": 4,
           "total": 4
         },
+        "blade": {
+          "pass": 4,
+          "total": 4
+        },
         "erb": {
+          "pass": 4,
+          "total": 4
+        },
+        "go-template": {
+          "pass": 4,
+          "total": 4
+        },
+        "jinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "minijinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "twig": {
+          "pass": 4,
+          "total": 4
+        },
+        "xslate": {
           "pass": 4,
           "total": 4
         }
@@ -600,7 +2845,35 @@
           "pass": 2,
           "total": 2
         },
+        "blade": {
+          "pass": 2,
+          "total": 2
+        },
         "erb": {
+          "pass": 2,
+          "total": 2
+        },
+        "go-template": {
+          "pass": 2,
+          "total": 2
+        },
+        "jinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "minijinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "twig": {
+          "pass": 2,
+          "total": 2
+        },
+        "xslate": {
           "pass": 2,
           "total": 2
         }
@@ -613,7 +2886,35 @@
           "pass": 3,
           "total": 3
         },
+        "blade": {
+          "pass": 3,
+          "total": 3
+        },
         "erb": {
+          "pass": 3,
+          "total": 3
+        },
+        "go-template": {
+          "pass": 3,
+          "total": 3
+        },
+        "jinja": {
+          "pass": 3,
+          "total": 3
+        },
+        "minijinja": {
+          "pass": 3,
+          "total": 3
+        },
+        "mojolicious": {
+          "pass": 3,
+          "total": 3
+        },
+        "twig": {
+          "pass": 3,
+          "total": 3
+        },
+        "xslate": {
           "pass": 3,
           "total": 3
         }
@@ -626,7 +2927,35 @@
           "pass": 2,
           "total": 2
         },
+        "blade": {
+          "pass": 2,
+          "total": 2
+        },
         "erb": {
+          "pass": 2,
+          "total": 2
+        },
+        "go-template": {
+          "pass": 2,
+          "total": 2
+        },
+        "jinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "minijinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "twig": {
+          "pass": 2,
+          "total": 2
+        },
+        "xslate": {
           "pass": 2,
           "total": 2
         }
@@ -639,7 +2968,35 @@
           "pass": 4,
           "total": 4
         },
+        "blade": {
+          "pass": 4,
+          "total": 4
+        },
         "erb": {
+          "pass": 4,
+          "total": 4
+        },
+        "go-template": {
+          "pass": 4,
+          "total": 4
+        },
+        "jinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "minijinja": {
+          "pass": 4,
+          "total": 4
+        },
+        "mojolicious": {
+          "pass": 4,
+          "total": 4
+        },
+        "twig": {
+          "pass": 4,
+          "total": 4
+        },
+        "xslate": {
           "pass": 4,
           "total": 4
         }
@@ -652,7 +3009,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -665,7 +3050,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -678,7 +3091,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -691,7 +3132,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -704,7 +3173,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -717,7 +3214,35 @@
           "pass": 2,
           "total": 2
         },
+        "blade": {
+          "pass": 2,
+          "total": 2
+        },
         "erb": {
+          "pass": 2,
+          "total": 2
+        },
+        "go-template": {
+          "pass": 2,
+          "total": 2
+        },
+        "jinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "minijinja": {
+          "pass": 2,
+          "total": 2
+        },
+        "mojolicious": {
+          "pass": 2,
+          "total": 2
+        },
+        "twig": {
+          "pass": 2,
+          "total": 2
+        },
+        "xslate": {
           "pass": 2,
           "total": 2
         }
@@ -730,7 +3255,35 @@
           "pass": 9,
           "total": 9
         },
+        "blade": {
+          "pass": 9,
+          "total": 9
+        },
         "erb": {
+          "pass": 9,
+          "total": 9
+        },
+        "go-template": {
+          "pass": 9,
+          "total": 9
+        },
+        "jinja": {
+          "pass": 9,
+          "total": 9
+        },
+        "minijinja": {
+          "pass": 9,
+          "total": 9
+        },
+        "mojolicious": {
+          "pass": 9,
+          "total": 9
+        },
+        "twig": {
+          "pass": 9,
+          "total": 9
+        },
+        "xslate": {
           "pass": 9,
           "total": 9
         }
@@ -743,7 +3296,35 @@
           "pass": 9,
           "total": 9
         },
+        "blade": {
+          "pass": 9,
+          "total": 9
+        },
         "erb": {
+          "pass": 9,
+          "total": 9
+        },
+        "go-template": {
+          "pass": 9,
+          "total": 9
+        },
+        "jinja": {
+          "pass": 9,
+          "total": 9
+        },
+        "minijinja": {
+          "pass": 9,
+          "total": 9
+        },
+        "mojolicious": {
+          "pass": 9,
+          "total": 9
+        },
+        "twig": {
+          "pass": 9,
+          "total": 9
+        },
+        "xslate": {
           "pass": 9,
           "total": 9
         }
@@ -756,7 +3337,91 @@
           "pass": 17,
           "total": 17
         },
+        "blade": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 16,
+          "total": 17,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 16,
           "total": 17,
           "gaps": [
@@ -777,7 +3442,35 @@
           "pass": 11,
           "total": 11
         },
+        "blade": {
+          "pass": 11,
+          "total": 11
+        },
         "erb": {
+          "pass": 11,
+          "total": 11
+        },
+        "go-template": {
+          "pass": 11,
+          "total": 11
+        },
+        "jinja": {
+          "pass": 11,
+          "total": 11
+        },
+        "minijinja": {
+          "pass": 11,
+          "total": 11
+        },
+        "mojolicious": {
+          "pass": 11,
+          "total": 11
+        },
+        "twig": {
+          "pass": 11,
+          "total": 11
+        },
+        "xslate": {
           "pass": 11,
           "total": 11
         }
@@ -790,7 +3483,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -803,7 +3524,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -816,10 +3565,130 @@
           "pass": 30,
           "total": 30
         },
+        "blade": {
+          "pass": 28,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
         "erb": {
           "pass": 29,
           "total": 30,
           "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 28,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 28,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 28,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 29,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 28,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 28,
+          "total": 30,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -837,7 +3706,35 @@
           "pass": 11,
           "total": 11
         },
+        "blade": {
+          "pass": 11,
+          "total": 11
+        },
         "erb": {
+          "pass": 11,
+          "total": 11
+        },
+        "go-template": {
+          "pass": 11,
+          "total": 11
+        },
+        "jinja": {
+          "pass": 11,
+          "total": 11
+        },
+        "minijinja": {
+          "pass": 11,
+          "total": 11
+        },
+        "mojolicious": {
+          "pass": 11,
+          "total": 11
+        },
+        "twig": {
+          "pass": 11,
+          "total": 11
+        },
+        "xslate": {
           "pass": 11,
           "total": 11
         }
@@ -850,7 +3747,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -863,7 +3788,35 @@
           "pass": 38,
           "total": 38
         },
+        "blade": {
+          "pass": 38,
+          "total": 38
+        },
         "erb": {
+          "pass": 38,
+          "total": 38
+        },
+        "go-template": {
+          "pass": 38,
+          "total": 38
+        },
+        "jinja": {
+          "pass": 38,
+          "total": 38
+        },
+        "minijinja": {
+          "pass": 38,
+          "total": 38
+        },
+        "mojolicious": {
+          "pass": 38,
+          "total": 38
+        },
+        "twig": {
+          "pass": 38,
+          "total": 38
+        },
+        "xslate": {
           "pass": 38,
           "total": 38
         }
@@ -876,7 +3829,35 @@
           "pass": 22,
           "total": 22
         },
+        "blade": {
+          "pass": 22,
+          "total": 22
+        },
         "erb": {
+          "pass": 22,
+          "total": 22
+        },
+        "go-template": {
+          "pass": 22,
+          "total": 22
+        },
+        "jinja": {
+          "pass": 22,
+          "total": 22
+        },
+        "minijinja": {
+          "pass": 22,
+          "total": 22
+        },
+        "mojolicious": {
+          "pass": 22,
+          "total": 22
+        },
+        "twig": {
+          "pass": 22,
+          "total": 22
+        },
+        "xslate": {
           "pass": 22,
           "total": 22
         }
@@ -889,7 +3870,35 @@
           "pass": 86,
           "total": 86
         },
+        "blade": {
+          "pass": 86,
+          "total": 86
+        },
         "erb": {
+          "pass": 86,
+          "total": 86
+        },
+        "go-template": {
+          "pass": 86,
+          "total": 86
+        },
+        "jinja": {
+          "pass": 86,
+          "total": 86
+        },
+        "minijinja": {
+          "pass": 86,
+          "total": 86
+        },
+        "mojolicious": {
+          "pass": 86,
+          "total": 86
+        },
+        "twig": {
+          "pass": 86,
+          "total": 86
+        },
+        "xslate": {
           "pass": 86,
           "total": 86
         }
@@ -902,7 +3911,91 @@
           "pass": 145,
           "total": 145
         },
+        "blade": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 144,
+          "total": 145,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 144,
           "total": 145,
           "gaps": [
@@ -923,7 +4016,35 @@
           "pass": 7,
           "total": 7
         },
+        "blade": {
+          "pass": 7,
+          "total": 7
+        },
         "erb": {
+          "pass": 7,
+          "total": 7
+        },
+        "go-template": {
+          "pass": 7,
+          "total": 7
+        },
+        "jinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "minijinja": {
+          "pass": 7,
+          "total": 7
+        },
+        "mojolicious": {
+          "pass": 7,
+          "total": 7
+        },
+        "twig": {
+          "pass": 7,
+          "total": 7
+        },
+        "xslate": {
           "pass": 7,
           "total": 7
         }
@@ -936,7 +4057,91 @@
           "pass": 37,
           "total": 37
         },
+        "blade": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
         "erb": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 36,
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "xslate": {
           "pass": 36,
           "total": 37,
           "gaps": [
@@ -957,7 +4162,35 @@
           "pass": 12,
           "total": 12
         },
+        "blade": {
+          "pass": 12,
+          "total": 12
+        },
         "erb": {
+          "pass": 12,
+          "total": 12
+        },
+        "go-template": {
+          "pass": 12,
+          "total": 12
+        },
+        "jinja": {
+          "pass": 12,
+          "total": 12
+        },
+        "minijinja": {
+          "pass": 12,
+          "total": 12
+        },
+        "mojolicious": {
+          "pass": 12,
+          "total": 12
+        },
+        "twig": {
+          "pass": 12,
+          "total": 12
+        },
+        "xslate": {
           "pass": 12,
           "total": 12
         }
@@ -970,7 +4203,35 @@
           "pass": 8,
           "total": 8
         },
+        "blade": {
+          "pass": 8,
+          "total": 8
+        },
         "erb": {
+          "pass": 8,
+          "total": 8
+        },
+        "go-template": {
+          "pass": 8,
+          "total": 8
+        },
+        "jinja": {
+          "pass": 8,
+          "total": 8
+        },
+        "minijinja": {
+          "pass": 8,
+          "total": 8
+        },
+        "mojolicious": {
+          "pass": 8,
+          "total": 8
+        },
+        "twig": {
+          "pass": 8,
+          "total": 8
+        },
+        "xslate": {
           "pass": 8,
           "total": 8
         }
@@ -983,7 +4244,35 @@
           "pass": 1,
           "total": 1
         },
+        "blade": {
+          "pass": 1,
+          "total": 1
+        },
         "erb": {
+          "pass": 1,
+          "total": 1
+        },
+        "go-template": {
+          "pass": 1,
+          "total": 1
+        },
+        "jinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "minijinja": {
+          "pass": 1,
+          "total": 1
+        },
+        "mojolicious": {
+          "pass": 1,
+          "total": 1
+        },
+        "twig": {
+          "pass": 1,
+          "total": 1
+        },
+        "xslate": {
           "pass": 1,
           "total": 1
         }
@@ -996,9 +4285,85 @@
           "pass": 14,
           "total": 14
         },
+        "blade": {
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
         "erb": {
           "pass": 14,
           "total": 14
+        },
+        "go-template": {
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "pass": 14,
+          "total": 14
+        },
+        "twig": {
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            }
+          ]
         }
       }
     },
@@ -1009,7 +4374,35 @@
           "pass": 11,
           "total": 11
         },
+        "blade": {
+          "pass": 11,
+          "total": 11
+        },
         "erb": {
+          "pass": 11,
+          "total": 11
+        },
+        "go-template": {
+          "pass": 11,
+          "total": 11
+        },
+        "jinja": {
+          "pass": 11,
+          "total": 11
+        },
+        "minijinja": {
+          "pass": 11,
+          "total": 11
+        },
+        "mojolicious": {
+          "pass": 11,
+          "total": 11
+        },
+        "twig": {
+          "pass": 11,
+          "total": 11
+        },
+        "xslate": {
           "pass": 11,
           "total": 11
         }
