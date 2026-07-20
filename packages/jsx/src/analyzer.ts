@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, SourceLocation } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
@@ -4549,6 +4549,22 @@ function detectReactiveFactory(
     return { kind: 'reactive-shaped' }
   }
 
+  // Collect parameter names first — the rename-site walk below needs them
+  // as part of `relevantNames` and to detect param-shadowing declarations
+  // (BF114). Hoisted above local-binding/body-serialization collection
+  // (#2341 BUG-1); it has no dependency on either.
+  const params: string[] = []
+  for (const p of node.parameters) {
+    if (ts.isIdentifier(p.name)) {
+      params.push(p.name.text)
+      continue
+    }
+    // Destructured params are uncommon for this helper shape and out of
+    // initial scope; the factory still wraps a reactive primitive, so
+    // classify it as reactive-shaped rather than silently ignoring it.
+    return { kind: 'reactive-shaped' }
+  }
+
   // Collect local bindings in the factory body for identifier hygiene at
   // inlining time. Only direct-child declarations of the block are
   // considered — good enough for the typical helper shape.
@@ -4563,24 +4579,134 @@ function detectReactiveFactory(
     }
   }
 
+  // Names that call-site inlining may rename: params (substituted with
+  // arbitrary argument expressions), local bindings (suffix-renamed for
+  // per-call-site hygiene), and return identifiers (renamed to the
+  // caller's destructure names). Every other identifier in the body is
+  // left untouched — the #2341 BUG-1 fix for the old whole-body regex
+  // renames, which corrupted string/template literals, property keys,
+  // and `.prop` tails that merely happened to share a relevant name.
+  const relevantNames = new Set<string>([...params, ...localBindings, ...returnTupleIdentifiers])
+
+  const renameSites: FactoryRenameSite[] = []
+  let shadowedParam: string | null = null
+
+  /**
+   * Recursive AST walk collecting rename sites for one kept statement.
+   * `toBodyOffset` converts a position in `sourceFile` (this statement's
+   * original source) to an offset in the final joined `bodyStatements`
+   * string — see the join loop below for why this must stay a pure
+   * function of `stmtStart`/`base`.
+   */
+  function collectRenameSites(root: ts.Node, toBodyOffset: (pos: number) => number): void {
+    function push(id: ts.Identifier, form: 'plain' | 'shorthand'): void {
+      renameSites.push({
+        name: id.text,
+        start: toBodyOffset(id.getStart(sourceFile)),
+        end: toBodyOffset(id.getEnd()),
+        form,
+      })
+    }
+
+    function classify(id: ts.Identifier): void {
+      if (!relevantNames.has(id.text)) return
+      const p = id.parent
+      // Pure-key / non-reference positions — never rename:
+      if (ts.isPropertyAccessExpression(p) && p.name === id) return        // obj.name tail (incl. ?. chains)
+      if (ts.isPropertyAssignment(p) && p.name === id) return              // { name: v } key
+      if (ts.isBindingElement(p) && p.propertyName === id) return          // { name: local } pattern key
+      if ((ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) ||
+           ts.isSetAccessorDeclaration(p) || ts.isPropertyDeclaration(p) ||
+           ts.isEnumMember(p)) && p.name === id) return                    // member keys
+      if (ts.isJsxAttribute(p) && p.name === id) return                    // JSX attr name
+      if ((ts.isLabeledStatement(p) && p.label === id) ||
+          ((ts.isBreakStatement(p) || ts.isContinueStatement(p)) && p.label === id)) return
+      if ((ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxClosingElement(p)) &&
+          p.tagName === id && /^[a-z]/.test(id.text)) return               // intrinsic tag <div>
+
+      // Shorthand dual-role positions → expansion form (renaming must
+      // preserve the implied key): `{ name }` object literal / pattern.
+      if (ts.isShorthandPropertyAssignment(p) && p.name === id) { push(id, 'shorthand'); return }
+      if (ts.isBindingElement(p) && p.name === id && !p.propertyName &&
+          ts.isObjectBindingPattern(p.parent)) {
+        // ArrayBindingPattern trap: a tuple destructure element
+        // (`const [a, b] = ...`) ALSO has propertyName === undefined —
+        // the ts.isObjectBindingPattern(p.parent) check above is what
+        // keeps tuple elements out of the shorthand-expansion path.
+        if (params.includes(id.text)) shadowedParam = id.text            // decl of a param name → BF114
+        push(id, 'shorthand')
+        return
+      }
+
+      // Declaration-name positions → plain rename, but a param name
+      // re-declared here is a shadow: params are substituted with
+      // arbitrary argument expressions, so a shadowing declaration would
+      // receive an invalid left-hand side (BF114 declines instead).
+      const isDecl =
+        (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p) ||
+         ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) ||
+         ts.isClassDeclaration(p) || ts.isClassExpression(p)) && p.name === id
+      if (isDecl && params.includes(id.text)) shadowedParam = id.text
+
+      push(id, 'plain')                                                   // genuine value reference or decl
+    }
+
+    function visit(n: ts.Node): void {
+      // Never descend into type-land: annotations are stripped downstream,
+      // and splicing an argument EXPRESSION into a type position would be
+      // invalid JS.
+      if (ts.isTypeNode(n) || ts.isTypeParameterDeclaration(n) ||
+          ts.isTypeAliasDeclaration(n) || ts.isInterfaceDeclaration(n)) return
+      if (ts.isIdentifier(n)) { classify(n); return }                      // identifiers have no relevant children
+      ts.forEachChild(n, visit)
+    }
+
+    visit(root)
+  }
+
   // Serialize the body without the outer braces and without the return
   // statement — the return tuple/object is dissolved into caller-named
-  // identifiers.
-  const bodyStatements = node.body.statements
-    .filter(s => !ts.isReturnStatement(s))
-    .map(s => s.getText(sourceFile))
-    .join('\n')
+  // identifiers. `renameSites` is collected in this SAME loop so its
+  // offsets (relative to the joined `bodyStatements` string) can never
+  // drift from the join logic — this invariant is the single most fragile
+  // part of the rename mechanism (#2341 BUG-1): site collection and
+  // `bodyStatements` construction must use the identical statement filter,
+  // identical `getText` slices, and identical '\n' join.
+  const keptStatements = node.body.statements.filter(s => !ts.isReturnStatement(s))
+  const pieces: string[] = []
+  let base = 0
+  for (const stmt of keptStatements) {
+    const text = stmt.getText(sourceFile)
+    const stmtStart = stmt.getStart(sourceFile)
+    collectRenameSites(stmt, (pos) => pos - stmtStart + base)
+    pieces.push(text)
+    base += text.length + 1 // +1 for the '\n' join — MUST match the join below
+  }
+  const bodyStatements = pieces.join('\n')
 
-  const params: string[] = []
-  for (const p of node.parameters) {
-    if (ts.isIdentifier(p.name)) {
-      params.push(p.name.text)
-      continue
+  if (shadowedParam !== null) {
+    return {
+      kind: 'declined',
+      declined: {
+        code: 'BF114',
+        detail: `parameter '${shadowedParam}' of '${node.name.text}' is shadowed by a nested declaration inside the factory body`,
+        loc,
+      },
     }
-    // Destructured params are uncommon for this helper shape and out of
-    // initial scope; the factory still wraps a reactive primitive, so
-    // classify it as reactive-shaped rather than silently ignoring it.
-    return { kind: 'reactive-shaped' }
+  }
+
+  // Dev invariant: every collected site's [start, end) range must slice
+  // out exactly the identifier text it was collected for, or the
+  // bottom-to-top splice in inlineFactoryCallAtSite would corrupt
+  // unrelated text. Cheap (bounded by body size) — kept as a permanent
+  // guard against the offset math drifting under a future edit.
+  for (const site of renameSites) {
+    if (bodyStatements.slice(site.start, site.end) !== site.name) {
+      throw new Error(
+        `Internal error: reactive-factory rename-site offset mismatch for '${site.name}' ` +
+        `in '${node.name.text}' — expected bodyStatements[${site.start}:${site.end}] to equal '${site.name}'.`
+      )
+    }
   }
 
   return {
@@ -4592,6 +4718,7 @@ function detectReactiveFactory(
       returnKind,
       localBindings,
       loc,
+      renameSites,
     },
   }
 }
@@ -4760,30 +4887,49 @@ function rewriteFactoryCallsInSource(
     const thisCallIndex = callSiteIndex++
     const suffix = `_bf${thisCallIndex}`
 
-    // Apply renames to the factory body source.
-    let body = factory.bodySource
-    // 1. Suffix-rename internal bindings.
-    const internalRenames = new Set<string>(factory.localBindings)
-    for (const ex of excludeFromSuffixRename) internalRenames.delete(ex)
-    for (const name of internalRenames) {
-      body = body.replace(new RegExp(`\\b${escapeRegex(name)}\\b`, 'g'), name + suffix)
+    // Merged rename map, one entry per old name → replacement text.
+    // Precedence (matches the pre-#2341 sequential-pass outcome): param
+    // substitution > return→caller rename > internal suffix rename — later
+    // `.set()` calls for the same key overwrite earlier ones below.
+    const renames = new Map<string, string>()
+    // 1. Suffix-rename internal bindings not excluded (tuple params/returns,
+    //    or object-path destructured names — see excludeFromSuffixRename's
+    //    callers).
+    for (const name of factory.localBindings) {
+      if (!excludeFromSuffixRename.has(name)) renames.set(name, name + suffix)
     }
-    // 2. Parameters → argument expressions. Atomic arguments (bare
+    // 2. Return identifiers → caller destructure names (tuple path only).
+    if (renameReturnToCallerNames) {
+      for (const [n, caller] of renameReturnToCallerNames) {
+        if (caller !== n) renames.set(n, caller) // identity rename = no-op, skip
+      }
+    }
+    // 3. Parameters → argument expressions. Atomic arguments (bare
     //    identifiers, numeric literals, string literals) are spliced
     //    directly; anything more complex is wrapped in parens to preserve
-    //    operator precedence at the splice site.
+    //    operator precedence at the splice site. Overwrites any same-name
+    //    return rename above — param substitution wins, as before #2341.
     const atomicArg = /^(?:[\w$.]+|'[^'\\]*'|"[^"\\]*"|-?\d+(?:\.\d+)?)$/
     for (let i = 0; i < factory.params.length; i++) {
       const p = factory.params[i]
-      const a = argTexts[i] ?? 'undefined'
-      const wrapped = atomicArg.test(a.trim()) ? a.trim() : `(${a})`
-      body = body.replace(new RegExp(`\\b${escapeRegex(p)}\\b`, 'g'), wrapped)
+      const a = (argTexts[i] ?? 'undefined').trim()
+      renames.set(p, atomicArg.test(a) ? a : `(${a})`)
     }
-    // 3. Return identifiers → caller destructure names (tuple path only).
-    if (renameReturnToCallerNames) {
-      for (const [n, caller] of renameReturnToCallerNames) {
-        body = body.replace(new RegExp(`\\b${escapeRegex(n)}\\b`, 'g'), caller)
-      }
+
+    // Apply the merged renames as a single bottom-to-top position splice
+    // over `bodySource`, using the sites collected once at detection time
+    // (#2341 BUG-1) — never a text search, so string/template-literal
+    // contents, property keys, `.prop` tails, and JSX intrinsic tags are
+    // never touched, and (unlike the old sequential regex passes) an
+    // argument expression already spliced in for an earlier site can never
+    // be re-scanned and corrupted by a later rename.
+    let body = factory.bodySource
+    for (let i = factory.renameSites.length - 1; i >= 0; i--) {
+      const site = factory.renameSites[i]
+      const repl = renames.get(site.name)
+      if (repl === undefined) continue
+      const text = site.form === 'shorthand' ? `${site.name}: ${repl}` : repl
+      body = body.slice(0, site.start) + text + body.slice(site.end)
     }
 
     edits.push({
@@ -4872,10 +5018,6 @@ function isPascalCaseComponentFn(node: ts.Node): boolean {
   return false
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 // =============================================================================
 // BF110 diagnostic (#931)
 // =============================================================================
@@ -4914,6 +5056,7 @@ function declinedFactoryErrorCode(code: DeclinedReactiveFactory['code']): ErrorC
   switch (code) {
     case 'BF112': return ErrorCodes.REACTIVE_FACTORY_MODULE_CAPTURE
     case 'BF113': return ErrorCodes.REACTIVE_FACTORY_IMPORT_COLLISION
+    case 'BF114': return ErrorCodes.REACTIVE_FACTORY_PARAM_SHADOWED
     default: return ErrorCodes.REACTIVE_FACTORY_RENAME_UNSUPPORTED
   }
 }
