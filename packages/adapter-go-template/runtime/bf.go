@@ -311,10 +311,13 @@ func Date(recv any, op string) any {
 	}
 }
 
-// tzOffsetRE matches a fixed UTC offset `±HH:MM` (`'+09:00'`, `'-05:30'`) —
-// the ONLY `tz` shape FormatDate treats as non-UTC (mirrors OFFSET_RE in
-// packages/client/src/format-date.ts).
-var tzOffsetRE = regexp.MustCompile(`^([+-])(\d{2}):(\d{2})$`)
+// tzOffsetRE matches a fixed UTC offset `±HH:MM` within ECMA-402's valid
+// range — hours 00–23, minutes 00–59 (`'+09:00'`, `'-05:30'`) — one of the
+// three `tz` shapes FormatDate accepts (mirrors OFFSET_RE in
+// packages/client/src/format-date.ts). An out-of-range shape (`'+25:00'`)
+// falls through to the tzdata lookup, fails it, and errors — matching the
+// JS reference's RangeError (#2344).
+var tzOffsetRE = regexp.MustCompile(`^([+-])([01][0-9]|2[0-3]):([0-5][0-9])$`)
 
 // formatDateTokenRE is the longest-match pattern-token alternation (mirrors
 // TOKEN_RE in packages/client/src/format-date.ts). Order matters: MMMM
@@ -361,14 +364,20 @@ func formatDateName(names []any, index int) string {
 // own `time.Time` / `*time.Time`, or an ISO-8601 string — normalized via
 // `toTime`. A nil / unparseable receiver returns "" (never panics).
 //
-// tz: a fixed UTC offset `±HH:MM` shifts the instant by
-// sign*(HH*60+MM) minutes; ANY other value — "UTC", an IANA zone name
-// ("Asia/Tokyo"), or a malformed offset ("+9:00") — normalizes to a
-// zero-minute shift (UTC), so every backend degrades identically instead of
-// dragging in host tzdata. The shifted instant's UTC calendar fields (not
-// the original instant's) are what pattern tokens read — the shifted UTC
-// clock face IS the local clock face at that offset, same reasoning as the
-// JS reference.
+// tz (#2344): "UTC", a range-valid fixed offset `±HH:MM` (shifts by
+// sign*(HH*60+MM) minutes), or a canonical IANA zone name ("Asia/Tokyo")
+// resolved through tzdata via time.LoadLocation — the zone's UTC offset AT
+// THE INSTANT being formatted (DST-aware, historical-transition-aware,
+// seconds precision: pre-standard LMT offsets like Tokyo's +09:18:59
+// count). ANY other value — an unknown zone, a malformed or out-of-range
+// offset ("+9:00", "+25:00"), the empty string or "Local" (LoadLocation's
+// implicit-environment aliases) — returns an ERROR, aborting template
+// execution loudly: the JS reference throws a RangeError there, and a
+// silently substituted timezone is the one failure mode this helper must
+// not have (the pre-#2344 normalize-to-UTC total function is gone). The
+// shifted instant's UTC calendar fields (not the original instant's) are
+// what pattern tokens read — the shifted UTC clock face IS the local clock
+// face in that zone, same reasoning as the JS reference.
 //
 // names (#2334): a flat name table in fixed layout — `[0..11]` wide month
 // names, `[12..23]` abbreviated month names, `[24..30]` wide weekday names
@@ -382,21 +391,35 @@ func formatDateName(names []any, index int) string {
 // `MM`/`DD` zero-pad to 2; `M`/`D` are bare; `MMMM`/`MMM` and `dddd`/`ddd`
 // read the `names` table (weekday computed on the offset-shifted instant,
 // Sunday-first, matching `time.Time.Weekday()`'s own Sunday=0 encoding).
-func FormatDate(recv any, pattern string, tz string, names []any) string {
+func FormatDate(recv any, pattern string, tz string, names []any) (string, error) {
 	t, ok := toTime(recv)
 	if !ok {
-		return ""
+		// Receiver contract precedes tz validation (spec receiver-first
+		// discipline, mirrored by every port).
+		return "", nil
 	}
-	offsetMinutes := 0
-	if m := tzOffsetRE.FindStringSubmatch(tz); m != nil {
-		hh, _ := strconv.Atoi(m[2])
-		mm, _ := strconv.Atoi(m[3])
-		offsetMinutes = hh*60 + mm
-		if m[1] == "-" {
-			offsetMinutes = -offsetMinutes
+	offsetSeconds := 0
+	if tz != "UTC" {
+		if m := tzOffsetRE.FindStringSubmatch(tz); m != nil {
+			hh, _ := strconv.Atoi(m[2])
+			mm, _ := strconv.Atoi(m[3])
+			offsetSeconds = (hh*60 + mm) * 60
+			if m[1] == "-" {
+				offsetSeconds = -offsetSeconds
+			}
+		} else if tz == "" || tz == "Local" {
+			// LoadLocation("") is UTC and LoadLocation("Local") is the host
+			// zone — both implicit-environment reads the contract refuses.
+			return "", fmt.Errorf("format_date: unresolvable timeZone %q", tz)
+		} else {
+			loc, err := time.LoadLocation(tz)
+			if err != nil {
+				return "", fmt.Errorf("format_date: unresolvable timeZone %q", tz)
+			}
+			_, offsetSeconds = t.UTC().In(loc).Zone()
 		}
 	}
-	shifted := t.UTC().Add(time.Duration(offsetMinutes) * time.Minute)
+	shifted := t.UTC().Add(time.Duration(offsetSeconds) * time.Second)
 	year := shifted.Year()
 	month := int(shifted.Month())
 	day := shifted.Day()
@@ -409,7 +432,7 @@ func FormatDate(recv any, pattern string, tz string, names []any) string {
 	if year < 0 {
 		yyyy = "-" + yyyy
 	}
-	return formatDateTokenRE.ReplaceAllStringFunc(pattern, func(token string) string {
+	out := formatDateTokenRE.ReplaceAllStringFunc(pattern, func(token string) string {
 		switch token {
 		case "YYYY":
 			return yyyy
@@ -433,6 +456,7 @@ func FormatDate(recv any, pattern string, tz string, names []any) string {
 			return token
 		}
 	})
+	return out, nil
 }
 
 // toTime normalizes a `Date` helper receiver to a `time.Time`: the runtime's

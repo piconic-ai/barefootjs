@@ -58,7 +58,12 @@ jobs:
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/erb' build
 
-      - name: Run Ruby minitest suite (stdlib-only runtime, no gems)
+      # tzinfo (#2344): the one runtime gem — named-IANA-zone resolution in
+      # `format_date` (loaded lazily; every other helper stays stdlib-only).
+      - name: Install runtime gems
+        run: gem install tzinfo --no-document
+
+      - name: Run Ruby minitest suite
         run: |
           cd packages/adapter-erb
           for f in test/*_test.rb; do

@@ -22,5 +22,11 @@ path = "src/bin/bf-render.rs"
 minijinja = { version = "2", features = ["loader"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
+# #2344 named-IANA-zone resolution in `format_date` (src/date.rs). chrono-tz
+# embeds tzdata at a release pinned per crate version, so zone resolution is
+# deterministic per build — no host tzdata read. The narrow feature set
+# keeps chrono's clock ("now") API out: helpers must stay pure functions.
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+chrono-tz = "0.10"
 
 [dev-dependencies]

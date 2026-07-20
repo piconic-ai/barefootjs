@@ -738,10 +738,19 @@ sub _date_epoch_ms ($recv) {
 # shifted instant. Mirrors packages/client/src/format-date.ts
 # byte-for-byte -- deterministic, no locale, no host TZ, no `time()`.
 #
-# `$tz` is either a fixed offset `±HH:MM` or anything else (including
-# 'UTC', IANA zone names, and malformed offsets like '+9:00'), which all
-# normalize to UTC (offset 0) -- a total function so every backend
-# degrades identically instead of dragging in host tzdata.
+# `$tz` (#2344) is 'UTC', a range-valid fixed offset `±HH:MM` (hours
+# 00-23, minutes 00-59), or a canonical IANA zone name ('Asia/Tokyo')
+# resolved through tzdata via DateTime::TimeZone -- the zone's UTC
+# offset AT THE INSTANT being formatted (DST-aware,
+# historical-transition-aware, seconds precision: pre-standard LMT
+# offsets like Tokyo's +09:18:59 count). Anything unresolvable -- an
+# unknown zone, a malformed or out-of-range offset ('+9:00', '+25:00'
+# fall through to the zone lookup), DateTime::TimeZone's implicit
+# 'local'/'floating' specials -- DIES, aborting the render loudly: the
+# JS reference throws a RangeError there, and a silently substituted
+# timezone is the one failure mode this helper must not have (the
+# pre-#2344 normalize-to-UTC total function is gone). The receiver
+# contract still precedes tz validation (undef/unparseable -> '').
 #
 # The shifted instant's UTC calendar fields come from the same
 # floor-toward-negative-infinity + `gmtime` discipline as `date` above
@@ -770,12 +779,17 @@ sub format_date ($self, $recv, $pattern, $tz, $names = []) {
     my $ms = _date_epoch_ms($recv);
     return '' unless defined $ms;
 
-    my $offset_minutes = 0;
-    if ($tz =~ /^([+-])(\d{2}):(\d{2})$/) {
-        $offset_minutes = ($1 eq '-' ? -1 : 1) * ($2 * 60 + $3);
+    my $offset_seconds = 0;
+    if ($tz ne 'UTC') {
+        if ($tz =~ /^([+-])([01][0-9]|2[0-3]):([0-5][0-9])$/) {
+            $offset_seconds = ($1 eq '-' ? -1 : 1) * ($2 * 3600 + $3 * 60);
+        }
+        else {
+            $offset_seconds = _format_date_zone_offset($tz, $ms);
+        }
     }
 
-    my $shifted = $ms + $offset_minutes * 60_000;
+    my $shifted = $ms + $offset_seconds * 1000;
     my $sec = POSIX::floor($shifted / 1000);
     my @t = gmtime($sec);    # (sec,min,hour,mday,mon,year,wday,...) -- mon/wday are 0-based
 
@@ -800,6 +814,53 @@ sub format_date ($self, $recv, $pattern, $tz, $names = []) {
       :                 $day
     /gex;
     return $out;
+}
+
+# Minimal `utc_rd_values`/`utc_year` provider so
+# `DateTime::TimeZone->offset_for_datetime` can resolve an offset for a raw
+# epoch instant without pulling the full DateTime object model into this
+# runtime (its documented duck-type contract is exactly these two methods).
+# RD day 719163 is 1970-01-01; the floor-division discipline matches
+# `format_date`'s own pre-1970 handling.
+package BarefootJS::_TZProbe {
+
+    sub new ($class, $epoch_s) {
+        my $days = POSIX::floor($epoch_s / 86400);
+        my @t    = gmtime($epoch_s);
+        return bless {
+            rd_days => $days + 719_163,
+            rd_secs => $epoch_s - $days * 86400,
+            year    => $t[5] + 1900,
+        }, $class;
+    }
+
+    sub utc_rd_values ($self) { return ($self->{rd_days}, $self->{rd_secs}, 0) }
+    sub utc_year      ($self) { return $self->{year} }
+
+    sub utc_rd_as_seconds ($self) {
+        return $self->{rd_days} * 86400 + $self->{rd_secs};
+    }
+}
+
+# Resolve a canonical IANA zone name's UTC offset (whole seconds) at the
+# epoch-ms instant through DateTime::TimeZone (#2344). Loaded lazily so the
+# 'UTC'/fixed-offset paths -- and every other helper -- keep working on a
+# core-modules-only install; reaching a named zone without the module dies
+# with the same loud message as an unknown zone (never a silent UTC
+# fallback). 'local' and 'floating' are DateTime::TimeZone specials that
+# would read the host environment / return a zoneless offset -- both
+# refused explicitly, same as the JS reference refuses 'Local'.
+sub _format_date_zone_offset ($tz, $ms) {
+    if ($tz eq '' || lc($tz) eq 'local' || lc($tz) eq 'floating') {
+        die qq{format_date: unresolvable timeZone "$tz"};
+    }
+    my $zone = eval {
+        require DateTime::TimeZone;
+        DateTime::TimeZone->new(name => $tz);
+    };
+    die qq{format_date: unresolvable timeZone "$tz"} unless $zone;
+    return $zone->offset_for_datetime(
+        BarefootJS::_TZProbe->new(POSIX::floor($ms / 1000)));
 }
 
 # ---------------------------------------------------------------------------

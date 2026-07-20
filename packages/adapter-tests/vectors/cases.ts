@@ -94,7 +94,7 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
     return (d as unknown as Record<string, () => unknown>)[op]()
   },
 
-  // `formatDate(date, pattern, timeZone, names)` lowering (#2324/#2334,
+  // `formatDate(date, pattern, timeZone, names)` lowering (#2324/#2334/#2344,
   // spec entry "format_date"). Same receiver contract as `date` (ISO-8601
   // string or `{"$date": …}` envelope; nil/unparseable → ''), then pure
   // pattern substitution over the shifted instant. Mirrors
@@ -104,6 +104,13 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
   // abbreviated months, [24..30] wide weekdays (Sunday-first, so the index
   // IS the epoch-anchored day-of-week), [31..37] abbreviated weekdays; a
   // name token over a missing/short table renders ''.
+  //
+  // tz (#2344): 'UTC', a range-valid fixed ±HH:MM offset, or a canonical
+  // IANA zone ID resolved through this machine's tzdata at the instant
+  // being formatted (seconds precision — LMT counts). Anything else THROWS
+  // (RangeError, mirroring Intl) — such inputs are outside the vector
+  // domain per the spec's JS-throws rule, and the generator crashing on
+  // one is the guard that keeps them out.
   format_date: (recv: unknown, pattern: string, tz: string, names: readonly string[]) => {
     const raw =
       recv !== null && typeof recv === 'object' && '$date' in recv
@@ -113,9 +120,44 @@ export const reference: Record<string, (...args: never[]) => unknown> = {
     const d = new Date(raw as string)
     const t = d.getTime()
     if (Number.isNaN(t)) return ''
-    const m = /^([+-])(\d{2}):(\d{2})$/.exec(tz)
-    const offsetMinutes = m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0
-    const s = new Date(t + offsetMinutes * 60_000)
+    let offsetMs = 0
+    if (tz !== 'UTC') {
+      const m = /^([+-])([01]\d|2[0-3]):([0-5]\d)$/.exec(tz)
+      if (m) {
+        offsetMs = (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) * 60_000
+      } else {
+        // Canonical-ID gate + wall-clock reconstruction, byte-identical to
+        // packages/client/src/format-date.ts's zoneOffsetMs.
+        let dtf: Intl.DateTimeFormat
+        try {
+          dtf = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hourCycle: 'h23',
+            era: 'short',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })
+        } catch {
+          throw new RangeError(`format_date reference: unresolvable timeZone ${JSON.stringify(tz)}`)
+        }
+        if (dtf.resolvedOptions().timeZone !== tz) {
+          throw new RangeError(`format_date reference: non-canonical timeZone ${JSON.stringify(tz)}`)
+        }
+        const field: Record<string, string> = {}
+        for (const part of dtf.formatToParts(t)) field[part.type] = part.value
+        let wallYear = Number(field.year)
+        if (field.era && field.era.startsWith('B')) wallYear = 1 - wallYear
+        const wall = new Date(0)
+        wall.setUTCFullYear(wallYear, Number(field.month) - 1, Number(field.day))
+        wall.setUTCHours(Number(field.hour), Number(field.minute), Number(field.second), 0)
+        offsetMs = wall.getTime() - Math.floor(t / 1000) * 1000
+      }
+    }
+    const s = new Date(t + offsetMs)
     const year = s.getUTCFullYear()
     const yyyy = (year < 0 ? '-' : '') + String(Math.abs(year)).padStart(4, '0')
     const month = s.getUTCMonth() + 1
@@ -604,11 +646,12 @@ export const cases: HelperCase[] = [
   { fn: 'date', args: [{ $date: '9999-12-31T23:59:59.999Z' }, 'toISOString'], note: 'native far-future instant: toISOString' },
 
   // `format_date(recv, pattern, tz)` (#2324) — the pinned instants of the
-  // `date` grid crossed with every v1 token, literal passthrough, the two
-  // date-boundary-crossing fixed offsets, and the total-function tz
-  // normalization (IANA names / malformed offsets degrade to UTC on every
-  // backend identically). Canonical arity is 3 — the lowering always
-  // supplies tz.
+  // `date` grid crossed with every v1 token, literal passthrough, and the
+  // two date-boundary-crossing fixed offsets. Canonical arity is 3 — the
+  // lowering always supplies tz. Unresolvable tz values (malformed or
+  // out-of-range offsets, unknown/non-canonical zone names) THROW as of
+  // #2344 and are outside the vector domain (spec JS-throws rule) — each
+  // backend pins its raise in its own unit suite.
   { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY-MM-DD', 'UTC', []], note: 'epoch 0: zero-padded tokens' },
   { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY/M/D', 'UTC', []], note: 'epoch 0: bare tokens' },
   { fn: 'format_date', args: ['1969-07-20T20:17:40.123Z', 'YYYY-MM-DD', 'UTC', []], note: 'pre-1970 instant with nonzero ms' },
@@ -618,8 +661,20 @@ export const cases: HelperCase[] = [
   { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+09:00', []], note: 'positive offset crosses the date boundary forward' },
   { fn: 'format_date', args: ['2024-01-01T01:00:00.000Z', 'YYYY-MM-DD', '-05:30', []], note: 'negative half-hour offset crosses the date boundary backward' },
   { fn: 'format_date', args: ['2024-01-05T00:00:00.000Z', 'YYYY年M月D日', 'UTC', []], note: 'non-token characters pass through literally' },
-  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', 'Asia/Tokyo', []], note: 'IANA zone name normalizes to UTC (total function)' },
-  { fn: 'format_date', args: ['2024-01-01T23:00:00.000Z', 'YYYY-MM-DD', '+9:00', []], note: 'malformed offset normalizes to UTC (total function)' },
+  // #2344 named IANA zones — canonical primary IDs only, at instants every
+  // shipping tzdata release agrees on (stable zones, no recent political
+  // rule changes). The token set is date-only, so DST-awareness is pinned
+  // by instants where the summer/winter offset flips the rendered DATE.
+  { fn: 'format_date', args: ['2024-03-31T15:00:00.000Z', 'YYYY-MM-DD', 'Asia/Tokyo', []], note: 'named zone: fixed +09:00 zone crosses the date boundary forward' },
+  { fn: 'format_date', args: ['1970-01-01T00:00:00.000Z', 'YYYY/M/D', 'Asia/Tokyo', []], note: 'named zone at epoch 0 stays on the epoch date' },
+  { fn: 'format_date', args: ['2024-07-04T04:30:00.000Z', 'YYYY-MM-DD', 'America/New_York', []], note: 'DST summer offset (-04:00) keeps July 4 — the winter offset would render 07-03' },
+  { fn: 'format_date', args: ['2024-01-04T04:30:00.000Z', 'YYYY-MM-DD', 'America/New_York', []], note: 'standard-time winter offset (-05:00) crosses back to January 3 — the summer offset would render 01-04' },
+  { fn: 'format_date', args: ['2024-06-30T23:30:00.000Z', 'YYYY-MM-DD', 'Europe/London', []], note: 'BST summer offset (+01:00) crosses the date boundary forward — winter GMT would not' },
+  { fn: 'format_date', args: ['1969-07-20T04:30:00.000Z', 'YYYY-MM-DD', 'America/New_York', []], note: 'pre-1970 instant under historical DST: EDT keeps July 20, EST would render 07-19' },
+  { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', 'Asia/Tokyo', []], note: 'named zone pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)' },
+  { fn: 'format_date', args: ['1887-12-31T14:45:00.000Z', 'YYYY-MM-DD', 'Asia/Tokyo', []], note: 'pre-standard LMT offset (+09:18:59) — seconds-precision tzdata resolution flips the date where +09:00 would not' },
+  { fn: 'format_date', args: [{ $date: '2024-07-04T04:30:00.000Z' }, 'YYYY/M/D', 'America/New_York', []], note: 'native receiver resolves the named zone like its string sibling' },
+  { fn: 'format_date', args: ['2024-07-04T04:30:00.000Z', 'dddd', 'America/New_York', ['January','February','March','April','May','June','July','August','September','October','November','December','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun','Mon','Tue','Wed','Thu','Fri','Sat']], note: 'weekday follows the DST-shifted clock face (04:30Z lands on Thursday July 4 in EDT)' },
   { fn: 'format_date', args: ['9999-12-31T23:59:59.999Z', 'YYYY-MM-DD', '+09:00', []], note: 'positive offset pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)' },
   { fn: 'format_date', args: [null, 'YYYY-MM-DD', 'UTC', []], note: 'nil receiver renders the empty string' },
   { fn: 'format_date', args: ['not a date', 'YYYY-MM-DD', 'UTC', []], note: 'unparseable receiver renders the empty string' },

@@ -12,8 +12,9 @@ import { createFixture } from '../src/types'
  * side exercises.
  *
  * The zero-arg sibling stays refused — see `date-method-uncatalogued` —
- * as do runtime locales and IANA zone names (implicit environment /
- * host-tzdata coupling; `to-locale-date-lowering.ts` module doc).
+ * as do runtime locales (implicit environment;
+ * `to-locale-date-lowering.ts` module doc). Canonical IANA zone names
+ * compile since #2344 — see `date-tolocale-named-tz`.
  *
  * The base instant sits at 23:00Z so the `+09:00` cell crosses the date
  * boundary forward. The type-derived adversarial grid contributes the
