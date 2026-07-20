@@ -133,10 +133,11 @@ export function P() {
 `
     const { template } = generate(src)
     expect(template).not.toContain('.SortClass')
-    // `.Params.Sort` is interface{} (a map value), so `eq` coerces it via
-    // `bf_string` before comparing to the string literal.
+    // The inlined ternary lowers to the pipeline `bf_ternary` (#2335), not an
+    // `{{if}}…{{end}}` fragment. `.Params.Sort` is interface{} (a map value),
+    // so `eq` coerces it via `bf_string` before comparing to the string literal.
     expect(template).toContain(
-      'class="{{if eq (bf_string .Params.Sort) "date"}}sort on{{else}}sort{{end}}"',
+      'class="{{(bf_ternary (eq (bf_string .Params.Sort) "date") "sort on" "sort")}}"',
     )
   })
 
@@ -156,8 +157,9 @@ export function P(props: { tags: string[] }) {
 `
     const { template } = generate(src)
     expect(template).not.toContain('.TagClass')
-    // params() is a root memo (→ $.Params) and t is the loop var (→ .)
-    expect(template).toContain('{{if eq $.Params.Tag .}}tag on{{else}}tag{{end}}')
+    // params() is a root memo (→ $.Params) and t is the loop var (→ .); the
+    // inlined ternary lowers to the pipeline `bf_ternary` (#2335).
+    expect(template).toContain('{{(bf_ternary (eq $.Params.Tag .) "tag on" "tag")}}')
   })
 
   test('a helper that delegates to a non-URL-builder local helper is not inlined', () => {
@@ -192,12 +194,15 @@ export function P(props: { a?: string; b?: string }) {
 `
     const { template } = generate(src)
     expect(template).not.toContain('.Cls')
-    // `===` must stay the outer operation (`eq .Sig …`). Without parenthesizing
-    // the arg, `sig() === props.a ?? props.b` would bind as
-    // `(sig() === props.a) ?? props.b` → an outer `{{if or …}}`. This matches
-    // what a direct `sig() === (props.a ?? props.b)` lowers to.
-    expect(template).toContain('{{if eq .Sig')
-    expect(template).not.toContain('{{if or')
+    // The inlined ternary lowers to the pipeline `bf_ternary` (#2335), so the
+    // test sits in `bf_ternary`'s first argument. `===` must stay the outer
+    // operation there (`eq .Sig …`). Without parenthesizing the arg,
+    // `sig() === props.a ?? props.b` would bind as
+    // `(sig() === props.a) ?? props.b` → a `bf_nullish`/`or`-rooted test. This
+    // matches what a direct `sig() === (props.a ?? props.b)` lowers to.
+    expect(template).toContain('(bf_ternary (eq .Sig')
+    expect(template).not.toContain('(bf_ternary (bf_nullish')
+    expect(template).not.toContain('(bf_ternary (or')
   })
 
   // The splicer is scope-blind, so a helper whose body contains a nested

@@ -61,6 +61,7 @@ func FuncMap() template.FuncMap {
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
 		"bf_ternary":     Ternary,
+		"bf_truthy":      Truthy,
 
 		// URL query builder (#1897 PostList href helpers): conditional
 		// (include, key, value) triples → "base?k=v&…", mirroring a
@@ -1973,10 +1974,17 @@ func FilterTruthy(items any) []any {
 }
 
 // Truthy is the exported form of isTruthy — JavaScript's `Boolean(x)`
-// semantics — for generated `NewXxxProps` code lowering a conditional
-// inline-object spread condition on an `interface{}` prop (whose runtime
-// value may be a string, number, bool, …). Keeps the spread bag's
-// inclusion test faithful to JS rather than string-biased (#1752).
+// semantics. Two callers:
+//   - generated `NewXxxProps` code lowering a conditional inline-object
+//     spread condition on an `interface{}` prop (whose runtime value may be
+//     a string, number, bool, …), keeping the spread bag's inclusion test
+//     faithful to JS rather than string-biased (#1752); and
+//   - the `bf_truthy` template FuncMap entry (#2335), which coerces a
+//     `bf_ternary` test to a real bool when it isn't already a comparison /
+//     negation (`Ternary`'s `cond` parameter is typed `bool`, unlike
+//     `{{if}}`'s built-in truthiness). Uniform across string/number/bool/nil,
+//     so a `bf_ternary` test on any prop type can't hit a `bool`-vs-`string`
+//     comparison error the way a string-only `ne <value> ""` would.
 func Truthy(v any) bool { return isTruthy(v) }
 
 // isTruthy mirrors JavaScript's `Boolean(x)` for the value shapes the
