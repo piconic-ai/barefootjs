@@ -1188,6 +1188,22 @@
         "text"
       ]
     },
+    "condition-position-ternary": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "conditional-class": {
       "kinds": [
         "literal"
@@ -4175,11 +4191,11 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 162,
-    "conditional": 18,
-    "identifier": 242,
+    "call": 163,
+    "conditional": 19,
+    "identifier": 243,
     "index-access": 12,
-    "literal": 200,
+    "literal": 201,
     "logical": 41,
     "member": 122,
     "object-literal": 45,
@@ -4222,10 +4238,10 @@
     "binary:===": 30,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 37,
+    "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 86,
-    "literal:string": 143,
+    "literal:string": 144,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

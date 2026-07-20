@@ -927,7 +927,7 @@ func TestFuncMap(t *testing.T) {
 		"bf_add", "bf_sub", "bf_mul", "bf_div", "bf_mod", "bf_neg",
 		"bf_lower", "bf_upper", "bf_trim", "bf_contains", "bf_join",
 		"bf_len", "bf_at", "bf_includes", "bf_first", "bf_last",
-		"bf_arr", "bf_filter_truthy",
+		"bf_arr", "bf_filter_truthy", "bf_ternary", "bf_truthy",
 		"bf_every", "bf_some", "bf_filter", "bf_find", "bf_find_index", "bf_sort",
 		"bf_sort_eval", "bf_reduce_eval", "bf_env",
 		"bf_filter_eval", "bf_every_eval", "bf_some_eval",

@@ -299,16 +299,21 @@ export function Label() {
 // template literals off their parsed kind. That is correct because of a
 // load-bearing invariant: a template literal is the *only* expression form that
 // interleaves author literal text with `{{...}}` actions, so every OTHER
-// fragment producer (ternary, find().prop, filter().length, …) emits a pure
-// action block that begins with `{{`. These tests pin that invariant: if a
-// future emitter prepends literal text to an action block, its output stops
-// starting with `{{`, this fails, and the fix is to give that shape a parsed
-// kind `isTemplateFragment` can detect (as template literals are handled) —
-// NOT to fall back to a fragile `{{` substring scan.
+// fragment producer (find().prop, filter().length, …) emits a pure action block
+// that begins with `{{`. These tests pin that invariant: if a future emitter
+// prepends literal text to an action block, its output stops starting with
+// `{{`, this fails, and the fix is to give that shape a parsed kind
+// `isTemplateFragment` can detect (as template literals are handled) — NOT to
+// fall back to a fragile `{{` substring scan.
+//
+// Ternary is deliberately NOT in this list: as of #2335 a value-position
+// ternary lowers to the pipeline `(bf_ternary …)`, NOT a `{{if}}…{{end}}`
+// fragment, so it is wrapped by the normal expression path like any other
+// pipeline — it is no longer a self-contained action block. See the
+// `bf_ternary value-position lowering` describe below.
 describe('GoTemplateAdapter - template-fragment invariant (#1937)', () => {
   const adapter = new GoTemplateAdapter()
   const blockProducers: [string, string][] = [
-    ['ternary', "flag ? 'a' : 'b'"],
     ['find().prop', 'items.find(i => i.active).name'],
     ['findLast().prop', 'items.findLast(i => i.active).name'],
     ['filter().length', 'items.filter(i => i.active).length'],
@@ -319,6 +324,90 @@ describe('GoTemplateAdapter - template-fragment invariant (#1937)', () => {
       expect(out.startsWith('{{')).toBe(true)
     })
   }
+})
+
+// #2335: Go `text/template` has no expression-level conditional, so every
+// VALUE-position ternary lowers to the pipeline `(bf_ternary <test> <a> <b>)`
+// runtime helper — the SAME form helper-call args already used (#2331) — rather
+// than a text-position `{{if}}…{{end}}` action fragment. `Ternary`'s `cond`
+// parameter is a strict `bool` (not `{{if}}`-style truthiness), so a
+// non-comparison test is wrapped `bf_truthy <value>` (JS `Boolean(x)`).
+describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () => {
+  const adapter = new GoTemplateAdapter()
+  const render = (expr: string) => adapter.renderExpression({ expr } as IRExpression)
+
+  test('a bare-value (non-comparison) test is truthiness-wrapped with bf_truthy', () => {
+    // `.Flag`'s Go type is unknown at emit time — `bf_truthy` coerces string /
+    // number / bool / nil uniformly, where `{{if}}` truthiness used to.
+    expect(render("flag ? 'a' : 'b'")).toBe('{{(bf_ternary (bf_truthy .Flag) "a" "b")}}')
+  })
+
+  test('a comparison test is already a bool — no bf_truthy wrap', () => {
+    expect(render("n >= 10 ? 'big' : 'small'")).toBe('{{(bf_ternary (ge .N 10) "big" "small")}}')
+  })
+
+  test('a negation test is already a bool — no bf_truthy wrap', () => {
+    expect(render("!open ? 'x' : 'y'")).toBe('{{(bf_ternary (not .Open) "x" "y")}}')
+  })
+
+  test('a right-folded chain nests as (bf_ternary … (bf_ternary …))', () => {
+    expect(render("a ? 'x' : b ? 'y' : 'z'")).toBe(
+      '{{(bf_ternary (bf_truthy .A) "x" (bf_ternary (bf_truthy .B) "y" "z"))}}',
+    )
+  })
+
+  test('nested inside a template literal, it is wrapped once (not a raw fragment)', () => {
+    // The ternary is no longer `{{`-leading, so the template-literal emitter
+    // wraps it in a single `{{…}}` alongside the literal text.
+    expect(render("`btn ${active ? 'on' : 'off'}`")).toBe(
+      'btn {{(bf_ternary (bf_truthy .Active) "on" "off")}}',
+    )
+  })
+
+  test('emits no {{if}} action fragment for a value-position ternary', () => {
+    expect(render("flag ? 'a' : 'b'")).not.toContain('{{if')
+  })
+})
+
+// #2335 item 2 (correctness): a ternary used as a boolean CONDITION used to
+// return only its lowered `test`, silently discarding both branches. It now
+// lowers faithfully to `(bf_ternary …)`, truthiness-checked by the enclosing
+// `{{if}}`. Rendered-output parity is pinned by the `condition-position-ternary`
+// conformance fixture; this pins the template SOURCE shape.
+describe('GoTemplateAdapter - bf_ternary condition-position lowering (#2335)', () => {
+  test('a ternary sub-condition keeps both branches inside the {{if}} test', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function P() {
+  const [mode, setMode] = createSignal('a')
+  const [show, setShow] = createSignal(true)
+  const [hide, setHide] = createSignal(false)
+  return <div>{(mode() === 'a' ? show() : hide()) ? <span>Y</span> : <span>N</span>}</div>
+}
+`)
+    expect(template).toContain('{{if (bf_ternary (eq (bf_string .Mode) "a") .Show .Hide)}}')
+    // The old bug collapsed the condition to just the test — assert we no
+    // longer emit the branch-discarding `{{if (eq (bf_string .Mode) "a")}}`.
+    expect(template).not.toContain('{{if (eq (bf_string .Mode) "a")}}')
+  })
+})
+
+// #2335 item 3 (cleanup): an attribute-value ternary reached through the
+// ParsedExpr `conditional` emitter lowers to a single `{{bf_ternary …}}` action
+// inside the attribute string, not an inline `{{if}}…{{end}}` fragment.
+describe('GoTemplateAdapter - bf_ternary attribute-position lowering (#2335)', () => {
+  test('a numeric-branch attr ternary emits name="{{bf_ternary …}}"', () => {
+    const { template } = compileAndGenerate(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function P() {
+  const [active, setActive] = createSignal(false)
+  return <button data-step={active() ? 2 : 1}>x</button>
+}
+`)
+    expect(template).toContain('data-step="{{(bf_ternary (bf_truthy .Active) 2 1)}}"')
+  })
 })
 
 describe('GoTemplateAdapter - Adapter Specific', () => {

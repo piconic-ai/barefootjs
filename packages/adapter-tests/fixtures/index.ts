@@ -106,6 +106,7 @@ import { fixture as nestedElements } from './nested-elements'
 // Priority 3: Conditionals
 import { fixture as ternary } from './ternary'
 import { fixture as nestedTernary } from './nested-ternary'
+import { fixture as conditionPositionTernary } from './condition-position-ternary'
 import { fixture as topLevelTernary } from './top-level-ternary'
 import { fixture as logicalAnd } from './logical-and'
 import { fixture as conditionalClass } from './conditional-class'
@@ -459,6 +460,7 @@ export const jsxFixtures: JSXFixture[] = [
   // Priority 3: Conditionals
   ternary,
   nestedTernary,
+  conditionPositionTernary,
   topLevelTernary,
   logicalAnd,
   conditionalClass,

@@ -819,43 +819,43 @@
       }
     },
     "conditional": {
-      "total": 18,
+      "total": 19,
       "cells": {
         "hono": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "blade": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "erb": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "go-template": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "jinja": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "minijinja": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "mojolicious": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "twig": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         },
         "xslate": {
-          "pass": 18,
-          "total": 18
+          "pass": 19,
+          "total": 19
         }
       }
     },
@@ -3782,43 +3782,43 @@
       }
     },
     "literal:boolean": {
-      "total": 37,
+      "total": 38,
       "cells": {
         "hono": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "blade": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "erb": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "go-template": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "jinja": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "minijinja": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "mojolicious": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "twig": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "xslate": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         }
       }
     },
