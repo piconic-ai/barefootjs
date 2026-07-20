@@ -1,5 +1,31 @@
 # @barefootjs/jsx
 
+## 0.24.0
+
+### Minor Changes
+
+- f7f955a: Month/weekday name tokens for date formatting (#2334). `formatDate` gains an explicit `names` table argument (flat 38-slot layout; the `format_date` helper's canonical arity is now 4) and the `MMMM`/`MMM`/`dddd`/`ddd` tokens. The `toLocaleDateString` sugar now admits ANY literal options bag — `{ dateStyle: 'long', timeZone: 'UTC' }`, `{ weekday: 'short', … }` — probing it at build time and shipping the derived pattern plus the name table into the compiled output as an ordinary array argument, so backends stay locale-data-free (type-only) and no runtime ICU/CLDR exists anywhere. Unreproducible forms (era, dayPeriod, 2-digit year, narrow names, non-latn digits) keep refusing loudly per the fidelity rule: reproduce the user's TSX exactly or decline, never approximate.
+- 6347304: Cross-file reactive-factory imports (#2332): BF112 now declines inlining only
+  for bindings genuinely local to the helper file (top-level const/let/var,
+  function/class/enum names, default/namespace imports). A helper-file named
+  value import that an inlined factory body references is instead re-imported
+  into the component file, using a component-relative specifier (bare/npm
+  specifiers pass through unchanged) and deduped across every factory inlined
+  into that file. New diagnostic BF113: a re-provisioned import whose local
+  name collides with an existing binding in the component file declines that
+  specific call site instead of risking a silent shadow.
+
+  Known limitation: the CLI's build-cache dependency scanner does not track the
+  existence of a factory's helper-file imports, only its own resolved path, so
+  deleting/renaming that third module can leave a stale build until a
+  content change to a tracked file triggers a rebuild. Left as a follow-up.
+
+- 98c9acd: Union-typed runtime locale for the `toLocaleDateString` sugar (#2324's union stage): when the locale argument is a REQUIRED prop typed as a closed string-literal union (`locale: 'en-US' | 'ja-JP'`), every member's default date pattern resolves at build time and the pattern argument lowers to a ternary over the runtime value — runtime locale switching with zero runtime CLDR on any backend, on both the SSR and client-JS paths. Optional unions (undefined would read the host locale), open `string` locales, and unions with an unrepresentable member keep refusing with BF021.
+
+### Patch Changes
+
+- @barefootjs/shared@0.24.0
+
 ## 0.23.0
 
 ### Minor Changes
