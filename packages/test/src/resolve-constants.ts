@@ -15,12 +15,13 @@ import type { ParsedExpr } from '@barefootjs/jsx'
  * Resolves string literals, template literals, array.join() patterns,
  * and plain identifier references. When `valueBranches` is present
  * (from ternary initializers), each branch is resolved and merged
- * with union semantics. An object-literal const with string-valued
- * properties (`const rowClass = { active: 'row row-active', plain: 'row' }`)
- * additionally seeds member-path keys (`rowClass.active` → `'row row-active'`)
- * so a member-access className (`className={rowClass.active}`, or a
- * ternary arm) resolves through the same lookup (#2354). Function
- * expressions and other complex values are skipped.
+ * with union semantics. An object-literal const with string- or
+ * template-literal-valued properties (`const rowClass = { active:
+ * \`${base} row-active\`, plain: base }`) additionally seeds member-path
+ * keys (`rowClass.active` → `'row row-active'`) so a member-access
+ * className (`className={rowClass.active}`, or a ternary arm) resolves
+ * through the same lookup (#2354, template-literal values #2360).
+ * Function expressions and other complex property values are skipped.
  */
 export function resolveConstants(
   constants: Array<{ name: string; value?: string; valueBranches?: string[]; parsed?: ParsedExpr }>
@@ -28,14 +29,13 @@ export function resolveConstants(
   const resolved = new Map<string, string>()
 
   for (const c of constants) {
-    // Object-literal const: expose each string-valued property as a
+    // Object-literal const: expose each resolvable property as a
     // `name.key` member-path key. The bare identifier stays unresolved
     // (an object is not a class string), matching prior behavior.
     if (c.parsed?.kind === 'object-literal') {
       for (const prop of c.parsed.properties) {
-        if (prop.value.kind === 'literal' && prop.value.literalType === 'string') {
-          resolved.set(`${c.name}.${prop.key}`, String(prop.value.value))
-        }
+        const value = resolveObjectPropValue(prop.value, resolved)
+        if (value !== null) resolved.set(`${c.name}.${prop.key}`, value)
       }
       continue
     }
@@ -63,6 +63,31 @@ export function resolveConstants(
   }
 
   return resolved
+}
+
+/**
+ * Resolve one object-literal property's value to a string, for the
+ * `name.key` member-path seeding above. Mirrors `tryResolve`'s string-
+ * literal and template-literal handling, but walks the already-structured
+ * `ParsedExpr` (available here, unlike `tryResolve`'s raw-string input)
+ * instead of re-parsing with a regex. An interpolated identifier resolves
+ * against `resolved` — safe because `resolveConstants` processes
+ * `constants` in declaration order, so a module-scope const referenced
+ * inside a later object literal's template-literal property is already
+ * in the map (#2360). Anything else (a nested object/array, a call, a
+ * binary expression, ...) is left unresolved, same posture as `tryResolve`
+ * skipping "complex values".
+ */
+function resolveObjectPropValue(expr: ParsedExpr, resolved: Map<string, string>): string | null {
+  if (expr.kind === 'literal' && expr.literalType === 'string') {
+    return String(expr.value)
+  }
+  if (expr.kind === 'template-literal') {
+    return expr.parts
+      .map((part) => (part.type === 'string' ? part.value : (part.expr.kind === 'identifier' ? (resolved.get(part.expr.name) ?? '') : '')))
+      .join('')
+  }
+  return null
 }
 
 function tryResolve(raw: string, resolved: Map<string, string>): string | null {
