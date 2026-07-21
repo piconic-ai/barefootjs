@@ -68,19 +68,23 @@ export function resolveConstants(
 /**
  * Resolve one object-literal property's value to a string, for the
  * `name.key` member-path seeding above. Mirrors `tryResolve`'s string-
- * literal and template-literal handling, but walks the already-structured
- * `ParsedExpr` (available here, unlike `tryResolve`'s raw-string input)
- * instead of re-parsing with a regex. An interpolated identifier resolves
- * against `resolved` — safe because `resolveConstants` processes
- * `constants` in declaration order, so a module-scope const referenced
- * inside a later object literal's template-literal property is already
- * in the map (#2360). Anything else (a nested object/array, a call, a
- * binary expression, ...) is left unresolved, same posture as `tryResolve`
- * skipping "complex values".
+ * literal, template-literal, and plain-identifier-reference handling, but
+ * walks the already-structured `ParsedExpr` (available here, unlike
+ * `tryResolve`'s raw-string input) instead of re-parsing with a regex. A
+ * bare identifier property (`{ plain: base }`) and an interpolated
+ * identifier inside a template literal both resolve against `resolved` —
+ * safe because `resolveConstants` processes `constants` in declaration
+ * order, so a module-scope const referenced inside a later object
+ * literal's property is already in the map (#2360). Anything else (a
+ * nested object/array, a call, a binary expression, ...) is left
+ * unresolved, same posture as `tryResolve` skipping "complex values".
  */
 function resolveObjectPropValue(expr: ParsedExpr, resolved: Map<string, string>): string | null {
   if (expr.kind === 'literal' && expr.literalType === 'string') {
     return String(expr.value)
+  }
+  if (expr.kind === 'identifier') {
+    return resolved.get(expr.name) ?? null
   }
   if (expr.kind === 'template-literal') {
     return expr.parts

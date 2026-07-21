@@ -244,6 +244,26 @@ export function List(props: { items: { id: string; active: boolean }[] }) {
     // Only the resolvable arm (`rowClass.plain`) contributes.
     expect(li.classes).toEqual(['row'])
   })
+
+  test('a bare identifier property (referencing an earlier module-scope const) resolves too', () => {
+    // Matches resolveConstants' own JSDoc example verbatim (Copilot review, PR #2361).
+    const source = `
+'use client'
+const base = 'row'
+const rowClass = { active: \`\${base} row-active\`, plain: base }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual(['row', 'row-active', 'row'])
+  })
 })
 
 // ---------------------------------------------------------------------------
