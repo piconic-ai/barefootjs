@@ -38,6 +38,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
@@ -82,6 +83,7 @@ jobs:
 
   e2e-flask:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: test
 
     steps:
@@ -136,6 +138,7 @@ jobs:
 
   e2e-fastapi:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: test
 
     steps:
@@ -190,6 +193,7 @@ jobs:
 
   e2e-django:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: test
 
     steps:
