@@ -266,13 +266,16 @@ export function List(props: { items: { id: string; active: boolean }[] }) {
   })
 
   test('a template-literal property with a non-identifier interpolation stays unresolved, not partially folded to "" (Copilot review, PR #2361)', () => {
-    // `${item.active ? 'x' : 'y'}` inside the template can't resolve to a
+    // `${flag ? 'x' : 'y'}` inside the template is a conditional, not a
     // plain identifier lookup — the whole property must stay unresolved
     // (contributing nothing), not fold the interpolation to '' and seed a
-    // misleadingly "resolved" partial string.
+    // misleadingly "resolved" partial string. `flag` is a real module-scope
+    // const (unlike a component-scope `.map()` param) so this fixture stays
+    // valid TSX on its own (Copilot review, PR #2361).
     const source = `
 'use client'
-const rowClass = { active: \`row-\${item.active ? 'x' : 'y'}\`, plain: 'row' }
+const flag = true
+const rowClass = { active: \`row-\${flag ? 'x' : 'y'}\`, plain: 'row' }
 export function List(props: { items: { id: string; active: boolean }[] }) {
   return (
     <ul>
@@ -289,10 +292,18 @@ export function List(props: { items: { id: string; active: boolean }[] }) {
     expect(li.classes).toEqual(['row'])
   })
 
-  test('a template-literal property interpolating an identifier that never resolves stays unresolved', () => {
+  test('a template-literal property interpolating a declared identifier that never resolves to a string stays unresolved', () => {
+    // `count` is a real module-scope const (so `resolveObjectPropValue`
+    // actually reaches its `identifier` branch, unlike a call expression,
+    // which is a different, already-covered non-identifier shape) but its
+    // value is a number, so it never lands in `resolved` (string-only) —
+    // exercises the "identifier declared but not string-resolvable" path
+    // distinctly from the conditional-interpolation case above (Copilot
+    // review, PR #2361).
     const source = `
 'use client'
-const rowClass = { active: \`row \${undeclaredHelper()}\`, plain: 'row' }
+const count = 42
+const rowClass = { active: \`row \${count}\`, plain: 'row' }
 export function List(props: { items: { id: string; active: boolean }[] }) {
   return (
     <ul>
