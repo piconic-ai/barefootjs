@@ -34,8 +34,15 @@
  *     there, feeding `formatDate` directly. An OPTIONAL union prop also
  *     declines: `undefined` at runtime makes real `toLocaleDateString` read
  *     the host locale, which no frozen pattern table can reproduce;
- *   - an IANA `timeZone` name — couples output to the host's tzdata version
- *     (only `'UTC'` and fixed `±HH:MM` offsets are deterministic);
+ *   - an IANA `timeZone` literal the build machine cannot verify (#2344):
+ *     a named zone IS admitted when the build's own `Intl` echoes it back
+ *     verbatim from `resolvedOptions().timeZone` — the canonical primary
+ *     ID, the one spelling every backend's tzdata resolves identically (the
+ *     runtime helpers resolve it through Go `time.LoadLocation`, Ruby
+ *     tzinfo, PHP `DateTimeZone`, Perl `DateTime::TimeZone`, Python
+ *     `zoneinfo`, Rust `chrono-tz`). Non-canonical case, link/alias names
+ *     the probe canonicalizes away, and unknown zones all decline — the
+ *     probe-and-verify discipline of #2334, applied to tz;
  *   - an options bag the probe cannot reproduce EXACTLY in the token+table
  *     vocabulary — era, dayPeriod, 2-digit year, narrow name forms,
  *     non-literal option values ("faithful or loud", never approximate);
@@ -57,16 +64,45 @@ import { resolveReceiverType, baseTypeName } from './rich-type-evidence.ts'
 import { typeReachesDate } from './date-lowering.ts'
 
 /**
- * `timeZone` literals the lowering admits: `'UTC'` or a fixed `±HH:MM`
- * offset **within ECMA-402's valid offset range** (hours 00–23, minutes
- * 00–59). An out-of-range shape like `'+25:00'` or `'+99:99'` must DECLINE
- * (→ BF021), not lower: real `toLocaleDateString` throws a RangeError on
- * it, so compiling it would render a nonsense offset on the template
- * adapters while the JS-native path (Hono, and the pre-rewrite semantics
- * the sugar stands in for) crashes — the exact divergence the sugar exists
- * to rule out.
+ * `timeZone` literals the lowering admits without probing: `'UTC'` or a
+ * fixed `±HH:MM` offset **within ECMA-402's valid offset range** (hours
+ * 00–23, minutes 00–59). An out-of-range shape like `'+25:00'` or
+ * `'+99:99'` must DECLINE (→ BF021), not lower: real `toLocaleDateString`
+ * throws a RangeError on it, so compiling it would render a nonsense
+ * offset on the template adapters while the JS-native path (Hono, and the
+ * pre-rewrite semantics the sugar stands in for) crashes — the exact
+ * divergence the sugar exists to rule out. Named IANA zones are admitted
+ * through {@link isBuildResolvableTimeZone} instead (#2344).
  */
 export const TO_LOCALE_TZ_RE = /^(?:UTC|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/
+
+/** Build-time probe cache: tz literal → verified-canonical? */
+const tzProbeCache = new Map<string, boolean>()
+
+/**
+ * Probe-and-verify a named-zone `timeZone` literal against the build
+ * machine's own `Intl` (#2344, the #2334 discipline applied to tz): admit
+ * it iff `resolvedOptions().timeZone` echoes the literal back VERBATIM.
+ * The echo check is what pins the canonical primary IANA ID — `Intl`
+ * itself accepts case-folded spellings and link/alias names but
+ * canonicalizes them in `resolvedOptions()`, and those non-canonical
+ * spellings are exactly where backend tzdata layers disagree (Go/Python/
+ * Ruby/Rust resolve the exact ID set; PHP folds case; link availability
+ * varies by tzdata vintage). Anything the probe can't verify declines
+ * (→ BF021) — the `formatDate` primitive stays available for edge cases.
+ */
+export function isBuildResolvableTimeZone(value: string): boolean {
+  const cached = tzProbeCache.get(value)
+  if (cached !== undefined) return cached
+  let verified: boolean
+  try {
+    verified = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone === value
+  } catch {
+    verified = false
+  }
+  tzProbeCache.set(value, verified)
+  return verified
+}
 
 /**
  * Probe instant for pattern derivation: 2001-02-03 UTC. Month and day are
@@ -452,8 +488,9 @@ export function matchToLocaleDateStringCall(
   if (callee.kind !== 'member' || callee.computed) return null
   if (callee.property !== 'toLocaleDateString' || args.length !== 2) return null
   const [locale, options] = args
-  // Options bag: `timeZone` is REQUIRED (a literal 'UTC' | valid ±HH:MM —
-  // its omission would read the host timezone); every OTHER key rides into
+  // Options bag: `timeZone` is REQUIRED (a literal 'UTC' | valid ±HH:MM |
+  // probe-verified canonical IANA zone (#2344) — its omission would read
+  // the host timezone); every OTHER key rides into
   // the Intl probe as-is when its value is a string literal (#2334's
   // fidelity rule: admit any literal options bag the probe can reproduce
   // exactly, decline everything else — dateStyle, month/weekday forms, …).
@@ -464,7 +501,7 @@ export function matchToLocaleDateStringCall(
     if (prop.value.kind !== 'literal' || prop.value.literalType !== 'string') return null
     const value = String(prop.value.value)
     if (prop.key === 'timeZone') {
-      if (!TO_LOCALE_TZ_RE.test(value)) return null
+      if (!TO_LOCALE_TZ_RE.test(value) && !isBuildResolvableTimeZone(value)) return null
       tz = value
     } else {
       probeOptions[prop.key] = value

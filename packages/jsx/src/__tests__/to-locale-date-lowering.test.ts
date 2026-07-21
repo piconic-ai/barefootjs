@@ -88,14 +88,39 @@ describe('matchToLocaleDateStringCall accept/decline table', () => {
     })
   })
 
+  test('a canonical IANA zone timeZone is admitted via the build probe (#2344)', () => {
+    const node = match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })`)
+    expect(node).toMatchObject({
+      helper: 'format_date',
+      args: [
+        { kind: 'identifier', name: 'createdAt' },
+        { kind: 'literal', value: 'YYYY/M/D' },
+        { kind: 'literal', value: 'Asia/Tokyo' },
+        { kind: 'array-literal', elements: [] },
+      ],
+    })
+    expect(match(`createdAt.toLocaleDateString('en-US', { timeZone: 'America/New_York' })`)).toMatchObject({
+      helper: 'format_date',
+      args: [expect.anything(), { value: 'M/D/YYYY' }, { value: 'America/New_York' }, expect.anything()],
+    })
+  })
+
+  test('unverifiable timeZone literals decline (#2344 probe-and-verify)', () => {
+    // unknown zone: real toLocaleDateString throws RangeError
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyoo' })`)).toBeNull()
+    // non-canonical case: the probe canonicalizes it away, and backend
+    // tzdata layers disagree on case-folded spellings
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'asia/tokyo' })`)).toBeNull()
+    // host-environment aliases
+    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'Local' })`)).toBeNull()
+  })
+
   test('implicit-environment and runtime-value shapes all decline', () => {
     // zero-arg / locale-only: reads host locale and/or timezone
     expect(match(`createdAt.toLocaleDateString()`)).toBeNull()
     expect(match(`createdAt.toLocaleDateString('ja-JP')`)).toBeNull()
     // non-literal locale: no build-time CLDR resolution
     expect(match(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)).toBeNull()
-    // IANA zone name: host-tzdata coupling
-    expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' })`)).toBeNull()
     // non-literal timeZone
     expect(match(`createdAt.toLocaleDateString('ja-JP', { timeZone: tz })`)).toBeNull()
     // out-of-range fixed offsets: real toLocaleDateString throws RangeError

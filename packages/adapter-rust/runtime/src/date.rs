@@ -5,9 +5,14 @@
 //! the host populated it) -- both normalize to a single epoch-ms integer
 //! via [`epoch_ms_of`] before dispatch.
 //!
-//! No `chrono` (or any other date crate) is a dependency of this crate --
-//! see the design doc's fixed dependency list, the same constraint
-//! `num.rs`'s numeric-string grammar docstring cites for avoiding `regex`.
+//! Calendar arithmetic stays hand-rolled (no date crate on the numeric
+//! paths -- the same constraint `num.rs`'s numeric-string grammar
+//! docstring cites for avoiding `regex`), with ONE deliberate exception
+//! (#2344): named-IANA-zone resolution in `format_date` uses
+//! `chrono`/`chrono-tz`, because a timezone database is not something to
+//! hand-roll and `chrono-tz` embeds tzdata at a pinned release
+//! (deterministic per build, no host tzdata read). Fidelity to the JS
+//! reference outranks the zero-dependency stance here.
 //! Calendar <-> day-count conversion is Howard Hinnant's `civil_from_days`
 //! / `days_from_civil` (public-domain algorithm,
 //! <http://howardhinnant.github.io/date_algorithms.html>), correct for the
@@ -161,31 +166,56 @@ pub fn date(recv: &JsValue, op: &str) -> JsValue {
     }
 }
 
-/// Parse a fixed UTC offset `tz` matching `^([+-])(\d{2}):(\d{2})$` into
-/// signed minutes -- mirrors `OFFSET_RE` in
+/// Parse a fixed UTC offset `tz` matching `±HH:MM` within ECMA-402's valid
+/// range -- hours 00-23, minutes 00-59 -- into signed SECONDS, or `None`
+/// for any other shape. Mirrors `OFFSET_RE` in
 /// `packages/client/src/format-date.ts` and `tzOffsetRE` in the Go
-/// runtime's `bf.go`. ANY other shape (`"UTC"`, an IANA zone name, a
-/// malformed offset like `"+9:00"`) is not this exact 6-byte
-/// sign/digit/digit/colon/digit/digit layout and normalizes to `0`
-/// minutes (UTC) -- byte/ascii-digit checks here, not a `regex` crate
-/// dependency (this crate's fixed dependency list excludes `regex`, same
-/// as this module's docstring notes for `chrono`).
-fn parse_tz_offset(tz: &str) -> i64 {
+/// runtime's `bf.go` -- byte/ascii-digit checks here, not a `regex` crate
+/// dependency. A `None` falls through to [`zone_offset_seconds`]'s tzdata
+/// lookup (#2344): an out-of-range offset like `"+25:00"` is not a zone
+/// name either, so it errors there -- matching the JS reference's
+/// RangeError, never a silent UTC.
+fn parse_tz_offset(tz: &str) -> Option<i64> {
     let b = tz.as_bytes();
     if b.len() != 6 || b[3] != b':' {
-        return 0;
+        return None;
     }
     let sign = match b[0] {
         b'+' => 1i64,
         b'-' => -1i64,
-        _ => return 0,
+        _ => return None,
     };
     if !b[1].is_ascii_digit() || !b[2].is_ascii_digit() || !b[4].is_ascii_digit() || !b[5].is_ascii_digit() {
-        return 0;
+        return None;
     }
     let hh = (b[1] - b'0') as i64 * 10 + (b[2] - b'0') as i64;
     let mm = (b[4] - b'0') as i64 * 10 + (b[5] - b'0') as i64;
-    sign * (hh * 60 + mm)
+    if hh > 23 || mm > 59 {
+        return None;
+    }
+    Some(sign * (hh * 3600 + mm * 60))
+}
+
+/// Resolve a canonical IANA zone name's UTC offset (whole seconds) at the
+/// epoch-ms instant through `chrono-tz` (#2344) -- tzdata is EMBEDDED in
+/// the crate at a pinned release, so resolution is deterministic per build
+/// (no host tzdata read), DST-aware and historical-transition-aware at
+/// seconds precision (pre-standard LMT offsets like Tokyo's `+09:18:59`
+/// count). An unresolvable name errors -- the loud-not-silent replacement
+/// for the pre-#2344 normalize-to-UTC total function (the JS reference
+/// throws a RangeError there). `chrono-tz` accepts link names as a
+/// superset of the canonical IDs; the JS reference throws on those, so
+/// that region is unspecified by the spec.
+fn zone_offset_seconds(tz: &str, ms: i64) -> Result<i64, String> {
+    use chrono::{Offset as _, TimeZone as _};
+    let zone: chrono_tz::Tz = tz
+        .parse()
+        .map_err(|_| format!("format_date: unresolvable timeZone {tz:?}"))?;
+    let instant = chrono::DateTime::from_timestamp(ms.div_euclid(1000), 0)
+        .ok_or_else(|| format!("format_date: instant out of range for timeZone {tz:?}"))?;
+    Ok(i64::from(
+        zone.offset_from_utc_datetime(&instant.naive_utc()).fix().local_minus_utc(),
+    ))
 }
 
 /// `names`-table section offsets (#2334, mirrors `MONTHS_WIDE` /
@@ -228,10 +258,15 @@ fn name_at(names: &JsValue, index: usize) -> &str {
 /// there is no accessor/`getTime` numeric fallback here, since
 /// `format_date` always returns a string.
 ///
-/// `tz` resolves via [`parse_tz_offset`]; the instant is shifted by
-/// `offset_minutes * 60_000` ms and the shifted instant's UTC calendar
+/// `tz` (#2344) is `"UTC"`, a range-valid fixed offset (via
+/// [`parse_tz_offset`]), or a canonical IANA zone name (via
+/// [`zone_offset_seconds`]); anything unresolvable is an `Err`, which the
+/// minijinja dispatch surfaces as a template error -- loud, never a
+/// silent UTC (the receiver contract still precedes tz validation:
+/// nil/unparseable renders `Ok("")` first). The instant is shifted by
+/// `offset_seconds * 1000` ms and the shifted instant's UTC calendar
 /// fields (not the original instant's) are what the pattern tokens read --
-/// the shifted UTC clock face IS the local clock face at that offset.
+/// the shifted UTC clock face IS the local clock face in that zone.
 ///
 /// `names` (#2334) is a flat table in fixed layout: `[0..11]` wide month
 /// names, `[12..23]` abbreviated month names, `[24..30]` wide weekday names
@@ -255,13 +290,19 @@ fn name_at(names: &JsValue, index: usize) -> &str {
 /// `(days + 4).rem_euclid(7)` -- 1970-01-01 (`days == 0`) is a Thursday,
 /// and `rem_euclid` (not `%`, which truncates toward zero in Rust) keeps
 /// the result in `[0, 6]` for a negative (pre-1970) `days` too.
-pub fn format_date(recv: &JsValue, pattern: &str, tz: &str, names: &JsValue) -> String {
+pub fn format_date(recv: &JsValue, pattern: &str, tz: &str, names: &JsValue) -> Result<String, String> {
     let ms = match epoch_ms_of(recv) {
         Some(ms) => ms,
-        None => return String::new(),
+        None => return Ok(String::new()),
     };
-    let offset_minutes = parse_tz_offset(tz);
-    let shifted = ms + offset_minutes * 60_000;
+    let offset_seconds = if tz == "UTC" {
+        0
+    } else if let Some(seconds) = parse_tz_offset(tz) {
+        seconds
+    } else {
+        zone_offset_seconds(tz, ms)?
+    };
+    let shifted = ms + offset_seconds * 1000;
     let days = shifted.div_euclid(MS_PER_DAY);
     let (year, month, day) = civil_from_days(days);
     let yyyy = if year < 0 { format!("-{:04}", -year) } else { format!("{year:04}") };
@@ -304,7 +345,7 @@ pub fn format_date(recv: &JsValue, pattern: &str, tz: &str, names: &JsValue) -> 
             i += ch.len_utf8();
         }
     }
-    out
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -338,5 +379,31 @@ mod tests {
         let ms = parse_iso8601("9999-12-31T23:59:59.999Z").unwrap();
         assert_eq!(format_iso8601(ms), "9999-12-31T23:59:59.999Z");
         assert_eq!(date_op(ms, "getUTCFullYear"), JsValue::Number(9999.0));
+    }
+
+    // #2344: named IANA zones resolve through chrono-tz's embedded tzdata;
+    // anything unresolvable is an Err — the loud-not-silent replacement for
+    // the pre-#2344 normalize-to-UTC total function. The resolvable grid is
+    // pinned by the golden vectors (tests/helper_vectors.rs); this pins the
+    // error side, which is outside the vector domain
+    // (spec/template-helpers.md JS-throws rule).
+    #[test]
+    fn unresolvable_time_zones_error() {
+        let recv = JsValue::String("2024-01-01T23:00:00.000Z".to_string());
+        let names = JsValue::Null;
+        for tz in ["garbage", "Asia/Tokyoo", "+9:00", "+25:00", "asia/tokyo", "Local", ""] {
+            assert!(
+                format_date(&recv, "YYYY-MM-DD", tz, &names).is_err(),
+                "tz {tz:?} must error"
+            );
+        }
+        // The receiver contract precedes tz validation.
+        assert_eq!(format_date(&JsValue::Null, "YYYY-MM-DD", "garbage", &names), Ok(String::new()));
+        // Named-zone happy path (redundant with the vectors, but keeps this
+        // file self-sufficient outside the monorepo checkout).
+        assert_eq!(
+            format_date(&recv, "YYYY-MM-DD", "Asia/Tokyo", &names),
+            Ok("2024-01-02".to_string())
+        );
     }
 }

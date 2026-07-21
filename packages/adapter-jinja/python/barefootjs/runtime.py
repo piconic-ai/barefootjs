@@ -75,6 +75,7 @@ import functools
 import math
 import re
 import uuid
+import zoneinfo
 from typing import Any, Callable, Optional
 
 from markupsafe import Markup
@@ -958,7 +959,11 @@ class BarefootJS:
             )
         return 0
 
-    _FORMAT_DATE_TZ_RE = re.compile(r"^([+-])(\d{2}):(\d{2})$")
+    # Range-valid fixed offset ±HH:MM — hours 00-23, minutes 00-59 (#2344,
+    # mirrors OFFSET_RE in packages/client/src/format-date.ts). An
+    # out-of-range shape ('+25:00') falls through to the tzdata lookup,
+    # fails it, and raises — matching the JS reference's RangeError.
+    _FORMAT_DATE_TZ_RE = re.compile(r"^([+-])([01]\d|2[0-3]):([0-5]\d)$")
     _FORMAT_DATE_TOKEN_RE = re.compile(r"YYYY|MMMM|MMM|MM|DD|dddd|ddd|M|D")
 
     # `names`-table section offsets (spec/template-helpers.md "format_date",
@@ -982,14 +987,21 @@ class BarefootJS:
         4 -- the lowering always supplies `tz` and `names` (defaulting
         `'UTC'` and `[]`).
 
-        `tz` is `'UTC'` or a fixed offset matching `±HH:MM`. The helper is
-        total: any other value -- an IANA zone name, a malformed offset --
-        normalizes to a zero-minute shift (UTC), so every backend degrades
-        identically instead of dragging in host tzdata. This is pure
-        arithmetic (`_FORMAT_DATE_TZ_RE` + an epoch-ms shift), never
-        `zoneinfo`. The shifted instant's UTC calendar fields are what the
-        pattern tokens read -- the shifted UTC clock face IS the local
-        clock face at that offset. The shift and field derivation run on
+        `tz` (#2344) is `'UTC'`, a range-valid fixed offset `±HH:MM`, or a
+        canonical IANA zone name ('Asia/Tokyo') resolved through tzdata
+        via `zoneinfo` -- the zone's UTC offset AT THE INSTANT being
+        formatted (DST-aware, historical-transition-aware, seconds
+        precision: pre-standard LMT offsets like Tokyo's +09:18:59 count).
+        Any other value -- an unknown zone, a non-canonical spelling, a
+        malformed or out-of-range offset ('+9:00', '+25:00') -- raises
+        ValueError, aborting the render loudly: the JS reference throws a
+        RangeError there, and a silently substituted timezone is the one
+        failure mode this helper must not have (the pre-#2344
+        normalize-to-UTC total function is gone). The receiver contract
+        still precedes tz validation (nil/unparseable -> '' first). The
+        shifted instant's UTC calendar fields are what the pattern tokens
+        read -- the shifted UTC clock face IS the local clock face in that
+        zone. The shift and field derivation run on
         integers (Hinnant civil-from-days), NOT on a shifted `datetime`:
         a positive offset on 9999-12-31 lands in year 10000, past
         `datetime.max`, and must render `10000-…` like the JS reference
@@ -1033,13 +1045,18 @@ class BarefootJS:
             except ValueError:
                 return ""
         dt = dt.replace(tzinfo=datetime.timezone.utc) if dt.tzinfo is None else dt.astimezone(datetime.timezone.utc)
-        m = self._FORMAT_DATE_TZ_RE.match(tz)
-        offset_minutes = 0
-        if m:
-            offset_minutes = (-1 if m.group(1) == "-" else 1) * (int(m.group(2)) * 60 + int(m.group(3)))
+        offset_ms = 0
+        if tz != "UTC":
+            m = self._FORMAT_DATE_TZ_RE.match(tz)
+            if m:
+                offset_ms = (-1 if m.group(1) == "-" else 1) * (
+                    int(m.group(2)) * 3_600 + int(m.group(3)) * 60
+                ) * 1_000
+            else:
+                offset_ms = self._format_date_zone_offset_ms(tz, dt)
         delta = dt - _DATE_EPOCH
         epoch_ms = (delta.days * 86_400 + delta.seconds) * 1_000 + delta.microseconds // 1_000
-        shifted_ms = epoch_ms + offset_minutes * 60_000
+        shifted_ms = epoch_ms + offset_ms
         # Hinnant civil-from-days over Python's floor division (exact for
         # negative epochs and for days past datetime.max).
         z = shifted_ms // 86_400_000 + 719_468
@@ -1084,6 +1101,28 @@ class BarefootJS:
             return token
 
         return self._FORMAT_DATE_TOKEN_RE.sub(_sub, pattern)
+
+    @staticmethod
+    def _format_date_zone_offset_ms(tz: str, dt: datetime.datetime) -> int:
+        """Resolve a canonical IANA zone ID's UTC offset (whole ms, always
+        second-granular) at instant `dt` through `zoneinfo` (#2344). An
+        unresolvable id raises ValueError — loud, never a silent UTC
+        fallback. `astimezone` on an instant within ~14h of `datetime.max`
+        overflows year 9999 while the SHIFTED rendering must not (the
+        civil-from-days integer path handles year 10000); no real zone
+        transitions in the final days of December, so the offset two days
+        earlier is the same offset — the retry keeps the far-future vector
+        inside `datetime`'s range without changing the resolved offset."""
+        try:
+            zone = zoneinfo.ZoneInfo(tz)
+        except (zoneinfo.ZoneInfoNotFoundError, ValueError, KeyError, OSError):
+            raise ValueError(f"format_date: unresolvable timeZone {tz!r}") from None
+        try:
+            offset = dt.astimezone(zone).utcoffset()
+        except OverflowError:
+            offset = (dt - datetime.timedelta(days=2)).astimezone(zone).utcoffset()
+        assert offset is not None  # ZoneInfo always yields a concrete offset
+        return (offset.days * 86_400 + offset.seconds) * 1_000
 
     # -----------------------------------------------------------------
     # Array / String method helpers (#1448 Tier A)

@@ -35,7 +35,9 @@ jobs:
           perl-version: '5.40'
 
       - name: Install build tool + dist dependencies
-        run: cpanm --notest Module::CPANfile Test2::Suite Text::Xslate Mojolicious
+        # DateTime (#2344): pulls DateTime::TimeZone + DateTime::Duration —
+        # the full runtime chain for named-IANA-zone resolution in format_date.
+        run: cpanm --notest Module::CPANfile Test2::Suite Text::Xslate Mojolicious DateTime
 
       # Core must be built and installed first so the backend dists can resolve
       # `requires 'BarefootJS'` from their cpanfile.

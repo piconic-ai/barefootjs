@@ -530,9 +530,12 @@ module BarefootJS
     end
 
     # `tz` shapes FORMAT_DATE_OFFSET_RE matches: a fixed UTC offset `±HH:MM`
-    # (`'+09:00'`, `'-05:30'`) -- the ONLY non-UTC shape `format_date`
-    # recognizes (mirrors OFFSET_RE in packages/client/src/format-date.ts).
-    FORMAT_DATE_OFFSET_RE = /\A([+-])(\d{2}):(\d{2})\z/
+    # within ECMA-402's valid range -- hours 00-23, minutes 00-59
+    # (`'+09:00'`, `'-05:30'`) -- one of the three `tz` shapes `format_date`
+    # accepts (mirrors OFFSET_RE in packages/client/src/format-date.ts). An
+    # out-of-range shape (`'+25:00'`) falls through to the tzdata lookup,
+    # fails it, and raises -- matching the JS reference's RangeError (#2344).
+    FORMAT_DATE_OFFSET_RE = /\A([+-])([01]\d|2[0-3]):([0-5]\d)\z/
 
     # Longest-match pattern-token alternation (mirrors TOKEN_RE in
     # packages/client/src/format-date.ts). Order matters: Onigmo, like JS's
@@ -562,13 +565,20 @@ module BarefootJS
     # an ISO-8601 string, normalized identically. A nil / unparseable
     # receiver renders '' (never raises mid-render).
     #
-    # tz: a fixed UTC offset `±HH:MM` shifts the instant by
-    # sign*(HH*60+MM) minutes; ANY other value -- 'UTC', an IANA zone name
-    # ('Asia/Tokyo'), or a malformed offset ('+9:00') -- normalizes to a
-    # zero-minute shift (UTC), so every backend degrades identically instead
-    # of dragging in host tzdata. The shifted instant's UTC calendar fields
-    # (not the original instant's) are what pattern tokens read -- the
-    # shifted UTC clock face IS the local clock face at that offset. `Time`
+    # tz (#2344): 'UTC', a range-valid fixed offset `±HH:MM` (shifts the
+    # instant by sign*(HH*60+MM) minutes), or a canonical IANA zone name
+    # ('Asia/Tokyo') resolved through tzdata via the tzinfo gem -- the
+    # zone's UTC offset AT THE INSTANT being formatted (DST-aware,
+    # historical-transition-aware, seconds precision: pre-standard LMT
+    # offsets like Tokyo's +09:18:59 count). ANY other value -- an unknown
+    # zone, a non-canonical spelling, a malformed or out-of-range offset
+    # ('+9:00', '+25:00') -- raises ArgumentError, aborting the render
+    # loudly: the JS reference throws a RangeError there, and a silently
+    # substituted timezone is the one failure mode this helper must not
+    # have (the pre-#2344 normalize-to-UTC total function is gone). The
+    # shifted instant's UTC calendar fields (not the original instant's)
+    # are what pattern tokens read -- the shifted UTC clock face IS the
+    # local clock face in that zone. `Time`
     # arithmetic here is exact (Ruby represents the instant as a Rational,
     # not a floor-divided epoch-millis integer), so there's no pre-1970
     # negative-epoch floor-division trap to dodge the way a naive
@@ -602,10 +612,19 @@ module BarefootJS
         end
       return '' if t.nil?
 
-      m = FORMAT_DATE_OFFSET_RE.match(tz.to_s)
-      offset_minutes = m ? (m[1] == '-' ? -1 : 1) * ((m[2].to_i * 60) + m[3].to_i) : 0
+      tz_s = tz.to_s
+      offset_seconds = 0
+      if tz_s != 'UTC'
+        m = FORMAT_DATE_OFFSET_RE.match(tz_s)
+        offset_seconds =
+          if m
+            (m[1] == '-' ? -1 : 1) * ((m[2].to_i * 60) + m[3].to_i) * 60
+          else
+            format_date_zone_offset(tz_s, t)
+          end
+      end
 
-      shifted = (t.utc + (offset_minutes * 60)).utc
+      shifted = (t.utc + offset_seconds).utc
       year = shifted.year
       month = shifted.mon
       day = shifted.mday
@@ -626,6 +645,29 @@ module BarefootJS
         when 'ddd' then name_at.call(FORMAT_DATE_WEEKDAYS_ABBR + weekday)
         end
       end
+    end
+
+    # Resolve a canonical IANA zone ID's UTC offset (whole seconds) at
+    # instant `t` through the tzinfo gem (#2344) -- TZInfo resolves the
+    # exact-case canonical ID set every backend shares, with full
+    # historical transitions (LMT seconds included). The gem is required
+    # lazily so the fixed-offset/'UTC' paths -- and every other helper --
+    # keep working on a gem-less stdlib install; reaching a named zone
+    # without the gem raises the same loud ArgumentError as an unknown
+    # zone (never a silent UTC fallback).
+    def format_date_zone_offset(tz, t)
+      begin
+        require 'tzinfo'
+      rescue LoadError
+        raise ArgumentError,
+              "format_date: IANA timeZone #{tz.inspect} requires the tzinfo gem (~> 2.0)"
+      end
+      begin
+        zone = TZInfo::Timezone.get(tz)
+      rescue TZInfo::InvalidTimezoneIdentifier
+        raise ArgumentError, "format_date: unresolvable timeZone #{tz.inspect}"
+      end
+      zone.period_for_utc(t.utc).observed_utc_offset
     end
 
     # -----------------------------------------------------------------

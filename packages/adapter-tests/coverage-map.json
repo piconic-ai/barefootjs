@@ -1526,6 +1526,21 @@
         "text"
       ]
     },
+    "date-tolocale-named-tz": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-tolocale-union": {
       "kinds": [
         "call",
@@ -4191,14 +4206,14 @@
     "array-method": 62,
     "arrow": 55,
     "binary": 67,
-    "call": 163,
+    "call": 164,
     "conditional": 19,
-    "identifier": 243,
+    "identifier": 244,
     "index-access": 12,
-    "literal": 201,
+    "literal": 202,
     "logical": 41,
-    "member": 122,
-    "object-literal": 45,
+    "member": 123,
+    "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
     "unsupported": 21
@@ -4241,7 +4256,7 @@
     "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 86,
-    "literal:string": 144,
+    "literal:string": 145,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

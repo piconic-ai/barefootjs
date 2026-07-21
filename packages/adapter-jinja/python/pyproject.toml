@@ -20,7 +20,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = ["jinja2>=3.1", "markupsafe>=2.0"]
+# tzdata (#2344): IANA data for zoneinfo-based named-zone resolution in
+# `format_date` on platforms without a system zoneinfo directory (Windows,
+# slim containers); zoneinfo prefers the system copy where one exists.
+dependencies = ["jinja2>=3.1", "markupsafe>=2.0", "tzdata>=2024.1"]
 
 [project.urls]
 Homepage = "https://github.com/piconic-ai/barefootjs"

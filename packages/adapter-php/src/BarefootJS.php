@@ -784,11 +784,19 @@ final class BarefootJS
      * UTC calendar fields -- the shifted UTC clock face IS the local clock
      * face at that offset. No locale, no host TZ, no time().
      *
-     * `$tz` matches `/^([+-])(\d{2}):(\d{2})$/` or degrades to a zero
-     * offset (UTC) for ANY other value -- IANA zone names ('Asia/Tokyo'),
-     * bare 'UTC', and malformed offsets ('+9:00') alike -- so every
-     * backend degrades identically instead of diverging by way of its own
-     * tzdata.
+     * `$tz` (#2344) is 'UTC', a range-valid fixed offset `±HH:MM` (hours
+     * 00-23, minutes 00-59), or a canonical IANA zone name ('Asia/Tokyo')
+     * resolved through PHP's timezone database -- the zone's UTC offset AT
+     * THE INSTANT being formatted (DST-aware, historical-transition-aware,
+     * seconds precision: pre-standard LMT offsets like Tokyo's +09:18:59
+     * count). An unresolvable `$tz` THROWS InvalidArgumentException,
+     * aborting the render loudly: the JS reference throws a RangeError
+     * there, and a silently substituted timezone is the one failure mode
+     * this helper must not have (the pre-#2344 normalize-to-UTC total
+     * function is gone). PHP's tz layer accepts a superset of the
+     * canonical IDs (case-folded spellings, some offset strings) -- the JS
+     * reference throws on those, so behavior there is unspecified by the
+     * spec and PHP's native acceptance is fine.
      *
      * The epoch-ms -> seconds step floor-divides (rounds toward negative
      * infinity), NOT `intdiv`'s truncate-toward-zero, so a pre-1970 instant
@@ -836,10 +844,24 @@ final class BarefootJS
         $epochMs = ($d->getTimestamp() * 1000) + (int) $d->format('v');
 
         $m = [];
-        $offsetMinutes = preg_match('/^([+-])(\d{2}):(\d{2})$/', $tz, $m)
-            ? ($m[1] === '-' ? -1 : 1) * ((int) $m[2] * 60 + (int) $m[3])
-            : 0;
-        $shiftedMs = $epochMs + $offsetMinutes * 60_000;
+        $offsetSeconds = 0;
+        if ($tz !== 'UTC') {
+            if (preg_match('/^([+-])([01]\d|2[0-3]):([0-5]\d)$/', $tz, $m)) {
+                $offsetSeconds = ($m[1] === '-' ? -1 : 1) * ((int) $m[2] * 3600 + (int) $m[3] * 60);
+            } else {
+                // #2344: canonical IANA zone via PHP's own tzdata; anything
+                // it can't resolve throws -- loud, never a silent UTC.
+                try {
+                    $zone = new \DateTimeZone($tz);
+                } catch (\Throwable $e) {
+                    throw new \InvalidArgumentException(
+                        sprintf('format_date: unresolvable timeZone "%s"', $tz)
+                    );
+                }
+                $offsetSeconds = $zone->getOffset($d);
+            }
+        }
+        $shiftedMs = $epochMs + $offsetSeconds * 1000;
 
         $shiftedSeconds = intdiv($shiftedMs, 1000);
         if ($shiftedMs % 1000 !== 0 && $shiftedMs < 0) {

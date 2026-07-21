@@ -10,6 +10,7 @@ Makefile.PL
 README.md
 t/controller_cycle.t
 t/dev_reload.t
+t/format_date.t
 t/helper_vectors.t
 t/manifest_components.t
 t/search_params.t

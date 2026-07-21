@@ -136,7 +136,14 @@ var vectorBindings = map[string]func(args []any) any{
 	"date":  func(args []any) any { return Date(args[0], args[1].(string)) },
 	"format_date": func(args []any) any {
 		names, _ := args[3].([]any)
-		return FormatDate(args[0], args[1].(string), args[2].(string), names)
+		s, err := FormatDate(args[0], args[1].(string), args[2].(string), names)
+		if err != nil {
+			// Unresolvable-tz inputs are outside the vector domain (#2344,
+			// spec JS-throws rule) — surface the error as the compared
+			// value so a stray one shows up as a loud mismatch.
+			return err
+		}
+		return s
 	},
 	"every":      func(args []any) any { return Every(args[0], args[1].(string)) },
 	"some":       func(args []any) any { return Some(args[0], args[1].(string)) },

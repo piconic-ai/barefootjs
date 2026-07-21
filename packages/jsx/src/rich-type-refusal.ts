@@ -99,10 +99,11 @@ function pushDiagnostic(
   // `toLocaleDateString` has a catalogued explicit-input form (#2324 slice
   // 2) — point the fix at it instead of the generic escape hatches alone.
   // The implicit-environment forms (zero-arg, locale-only, non-literal
-  // locale, IANA timeZone) stay refused by design.
+  // locale, an unverifiable timeZone literal) stay refused by design;
+  // canonical IANA zone literals compile since #2344.
   const suggestion =
     method === 'toLocaleDateString' && typeName === 'Date'
-      ? "Pass a literal locale and an explicit literal timeZone — .toLocaleDateString('ja-JP', { timeZone: 'UTC' }) (or a fixed '±HH:MM' offset) — to compile it to the format_date helper; for a runtime locale, resolve the pattern in your i18n layer and use formatDate(date, pattern, tz) from @barefootjs/client. Alternatively add /* @client */ or pre-compute server-side."
+      ? "Pass a literal locale and an explicit literal timeZone — .toLocaleDateString('ja-JP', { timeZone: 'UTC' }), a fixed '±HH:MM' offset, or a canonical IANA zone ID like 'Asia/Tokyo' (exact case; #2344) — to compile it to the format_date helper; for a runtime locale, resolve the pattern in your i18n layer and use formatDate(date, pattern, tz) from @barefootjs/client. Alternatively add /* @client */ or pre-compute server-side."
       : 'Add /* @client */ to evaluate this expression on the client only, or pre-compute the value server-side.'
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,

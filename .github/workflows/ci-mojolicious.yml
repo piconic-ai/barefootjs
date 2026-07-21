@@ -49,7 +49,10 @@ jobs:
           perl-version: '5.40'
 
       - name: Install Mojolicious
-        run: cpanm --notest Mojolicious
+        # DateTime (#2344): pulls DateTime::TimeZone + DateTime::Duration, the
+        # core runtime's full chain for named-IANA-zone resolution in
+        # format_date (core tests run below).
+        run: cpanm --notest Mojolicious DateTime
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun

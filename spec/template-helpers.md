@@ -351,14 +351,39 @@ compiler derives them from its own ICU at build time, or the app's
 i18n layer passes them at the `formatDate` API level) — backends
 know the SHAPE, never the locale.
 
-`tz` is `'UTC'` or a fixed offset matching `±HH:MM` (`'+09:00'`,
-`'-05:30'`). The helper is **total**: any other value — including
-IANA zone names, which would couple output to the host's tzdata
-version — normalizes to `'UTC'`, so every backend degrades
-identically instead of diverging. Offset application is pure
-arithmetic: shift the instant by the offset, then read UTC fields
-(the shifted UTC clock face is the local clock face at that offset),
-so a `+09:00` on `2024-01-01T23:00Z` renders `2024-01-02`.
+`tz` is `'UTC'`, a fixed offset matching `±HH:MM` within ECMA-402's
+valid range (hours `00`–`23`, minutes `00`–`59`: `'+09:00'`,
+`'-05:30'`), or a **canonical IANA zone ID** (`'Asia/Tokyo'`,
+`'America/New_York'` — #2344). Offset application is always the same
+pure arithmetic: resolve the zone's UTC offset **at the instant
+being formatted** (a fixed offset IS its own resolution; a named
+zone resolves through the backend's tzdata, honoring DST and
+historical transitions, at up to seconds precision — pre-standard
+LMT offsets like Tokyo's `+09:18:59` count), shift the instant by
+that offset, then read UTC fields (the shifted UTC clock face is
+the local clock face in that zone), so a `+09:00` on
+`2024-01-01T23:00Z` renders `2024-01-02`.
+
+Any other `tz` — an unknown or misspelled zone, a non-canonical
+spelling, an out-of-range offset like `'+25:00'`, a host-environment
+alias like `'Local'` — **raises the backend's native error** (the
+JS reference throws a `RangeError`, mirroring `Intl`): loud, never a
+silent fallback to UTC (#2344 reversed the earlier total-function
+normalization — a silently substituted timezone is the one failure
+mode this helper must not have). Per the "inputs on which JS itself
+throws" rule above these inputs are outside the vector domain; each
+backend pins its raise in its own unit suite. A backend whose
+tzdata layer accepts a superset of the canonical IDs (case-folded
+spellings, link/alias names) may resolve them instead of raising —
+JS throws there, so backend behavior is unspecified.
+
+**Vector domain for named zones:** only canonical primary IDs of
+zones whose relevant history is politically stable, at instants
+every shipping tzdata release agrees on — the named-zone analogue
+of ICU skew. The grid pins DST-awareness by instants where the
+summer/winter offset flips the rendered *date* (the token set is
+date-only), plus the seconds-precision LMT case, the pre-1970 DST
+path, and the year-10000 overflow under a named zone.
 
 This helper is also the lowering target of the literal-locale
 `toLocaleDateString` sugar (#2324 slice 2): the compiler resolves a

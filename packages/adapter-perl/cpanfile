@@ -1,8 +1,16 @@
 requires 'perl', '5.020';
 
-# The core runtime uses only core Perl modules (POSIX, Scalar::Util). No
-# template engine or web framework is pulled in here — those live in the
-# backend dists (BarefootJS-Backend-Xslate, Mojolicious-Plugin-BarefootJS).
+# The core runtime uses core Perl modules (POSIX, Scalar::Util) plus one
+# CPAN dependency chain (#2344): DateTime::TimeZone, the tzdata source for
+# named-IANA-zone resolution in `format_date` (loaded lazily — every other
+# helper stays core-only). DateTime must be declared alongside it: every
+# generated zone module `use`s DateTime::TimeZone::OlsonDB, whose compile
+# pulls DateTime::Duration from the DateTime dist, so DateTime::TimeZone
+# alone cannot construct a single named zone at runtime. No template engine
+# or web framework is pulled in here — those live in the backend dists
+# (BarefootJS-Backend-Xslate, Mojolicious-Plugin-BarefootJS).
+requires 'DateTime';
+requires 'DateTime::TimeZone';
 
 on 'test' => sub {
     requires 'Test2::V0';

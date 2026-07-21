@@ -19,6 +19,11 @@ Gem::Specification.new do |s|
 
   s.files = Dir['lib/**/*.rb'] + %w[README.md]
 
+  # #2344: named-IANA-zone resolution in `format_date` (tzdata via TZInfo;
+  # falls back to the system zoneinfo directory when tzinfo-data isn't
+  # installed). Loaded lazily — every other helper stays stdlib-only.
+  s.add_dependency 'tzinfo', '~> 2.0'
+
   s.metadata['documentation_uri'] = 'https://barefootjs.dev'
   s.metadata['source_code_uri'] = 'https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-erb'
   s.metadata['rubygems_mfa_required'] = 'true'

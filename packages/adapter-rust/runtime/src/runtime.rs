@@ -1339,15 +1339,18 @@ impl Object for BfInstance {
             // stays a plain string arg, never routed through `js_number`.
             "date" => Ok(js_to_mj(&date::date(a(0), a(1).as_str().unwrap_or("")))),
             // `format_date(recv, pattern, tz, names)` (spec/template-helpers.md
-            // "format_date", #2324, #2334) -- total, locale-free date-pattern
+            // "format_date", #2324, #2334, #2344) -- locale-free date-pattern
             // formatting layered on the same `recv` normalization as
             // `date` above. `names` stays the array-shaped `JsValue` that
             // `mj_to_js`'s `Seq`/`Iterable` arm already produced above (the
             // compiler's lowering always passes 4 args); a non-array or
             // missing `names` degrades to `""` for every name token, per
-            // `date::name_at`. See `date::format_date`'s docstring for the
-            // full contract.
-            "format_date" => Ok(MjValue::from(date::format_date(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), a(3)))),
+            // `date::name_at`. An unresolvable tz (#2344) surfaces as a
+            // template error -- loud, never a silent UTC. See
+            // `date::format_date`'s docstring for the full contract.
+            "format_date" => date::format_date(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), a(3))
+                .map(MjValue::from)
+                .map_err(|msg| Error::new(ErrorKind::InvalidOperation, msg)),
 
             // -- Array / string method helpers (#1448 Tier A) ------------------
             "includes" => Ok(MjValue::from(includes(a(0), a(1)))),

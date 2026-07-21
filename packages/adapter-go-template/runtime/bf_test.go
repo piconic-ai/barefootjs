@@ -2206,3 +2206,27 @@ func TestAsMap(t *testing.T) {
 		t.Errorf("AsMap(*map[string]interface{}) = %v, want dereferenced map", got)
 	}
 }
+
+// #2344: FormatDate resolves canonical IANA zone names through tzdata and
+// ERRORS on anything unresolvable — the loud-not-silent replacement for the
+// pre-#2344 normalize-to-UTC total function. The resolvable grid lives in
+// the golden vectors (vectors_test.go); this pins the error side, which is
+// outside the vector domain (spec/template-helpers.md JS-throws rule).
+func TestFormatDateUnresolvableTZ(t *testing.T) {
+	recv := "2024-01-01T23:00:00.000Z"
+	for _, tz := range []string{"garbage", "Asia/Tokyoo", "+9:00", "+25:00", "asia/tokyo", "Local", ""} {
+		if _, err := FormatDate(recv, "YYYY-MM-DD", tz, nil); err == nil {
+			t.Errorf("FormatDate(tz=%q) = nil error, want unresolvable-timeZone error", tz)
+		}
+	}
+	// The receiver contract precedes tz validation: a nil/unparseable
+	// receiver renders '' without inspecting tz, on every backend.
+	if s, err := FormatDate(nil, "YYYY-MM-DD", "garbage", nil); err != nil || s != "" {
+		t.Errorf("FormatDate(nil recv, bad tz) = (%q, %v), want (\"\", nil)", s, err)
+	}
+	// Named-zone happy path (redundant with the vectors, but keeps this
+	// file self-sufficient outside the monorepo checkout).
+	if s, err := FormatDate(recv, "YYYY-MM-DD", "Asia/Tokyo", nil); err != nil || s != "2024-01-02" {
+		t.Errorf("FormatDate(Asia/Tokyo) = (%q, %v), want (\"2024-01-02\", nil)", s, err)
+	}
+}

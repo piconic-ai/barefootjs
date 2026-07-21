@@ -2933,24 +2933,153 @@
     {
       "fn": "format_date",
       "args": [
-        "2024-01-01T23:00:00.000Z",
+        "2024-03-31T15:00:00.000Z",
         "YYYY-MM-DD",
         "Asia/Tokyo",
         []
       ],
-      "expect": "2024-01-01",
-      "note": "IANA zone name normalizes to UTC (total function)"
+      "expect": "2024-04-01",
+      "note": "named zone: fixed +09:00 zone crosses the date boundary forward"
     },
     {
       "fn": "format_date",
       "args": [
-        "2024-01-01T23:00:00.000Z",
-        "YYYY-MM-DD",
-        "+9:00",
+        "1970-01-01T00:00:00.000Z",
+        "YYYY/M/D",
+        "Asia/Tokyo",
         []
       ],
-      "expect": "2024-01-01",
-      "note": "malformed offset normalizes to UTC (total function)"
+      "expect": "1970/1/1",
+      "note": "named zone at epoch 0 stays on the epoch date"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-07-04T04:30:00.000Z",
+        "YYYY-MM-DD",
+        "America/New_York",
+        []
+      ],
+      "expect": "2024-07-04",
+      "note": "DST summer offset (-04:00) keeps July 4 — the winter offset would render 07-03"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-01-04T04:30:00.000Z",
+        "YYYY-MM-DD",
+        "America/New_York",
+        []
+      ],
+      "expect": "2024-01-03",
+      "note": "standard-time winter offset (-05:00) crosses back to January 3 — the summer offset would render 01-04"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-06-30T23:30:00.000Z",
+        "YYYY-MM-DD",
+        "Europe/London",
+        []
+      ],
+      "expect": "2024-07-01",
+      "note": "BST summer offset (+01:00) crosses the date boundary forward — winter GMT would not"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "1969-07-20T04:30:00.000Z",
+        "YYYY-MM-DD",
+        "America/New_York",
+        []
+      ],
+      "expect": "1969-07-20",
+      "note": "pre-1970 instant under historical DST: EDT keeps July 20, EST would render 07-19"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "9999-12-31T23:59:59.999Z",
+        "YYYY-MM-DD",
+        "Asia/Tokyo",
+        []
+      ],
+      "expect": "10000-01-01",
+      "note": "named zone pushes the far-future instant past year 9999 (host date types capped at 9999 must not overflow)"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "1887-12-31T14:45:00.000Z",
+        "YYYY-MM-DD",
+        "Asia/Tokyo",
+        []
+      ],
+      "expect": "1888-01-01",
+      "note": "pre-standard LMT offset (+09:18:59) — seconds-precision tzdata resolution flips the date where +09:00 would not"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        {
+          "$date": "2024-07-04T04:30:00.000Z"
+        },
+        "YYYY/M/D",
+        "America/New_York",
+        []
+      ],
+      "expect": "2024/7/4",
+      "note": "native receiver resolves the named zone like its string sibling"
+    },
+    {
+      "fn": "format_date",
+      "args": [
+        "2024-07-04T04:30:00.000Z",
+        "dddd",
+        "America/New_York",
+        [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sun",
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat"
+        ]
+      ],
+      "expect": "Thursday",
+      "note": "weekday follows the DST-shifted clock face (04:30Z lands on Thursday July 4 in EDT)"
     },
     {
       "fn": "format_date",
