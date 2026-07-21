@@ -381,3 +381,94 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(outsideInitChildCount).toBe(0)
   })
 })
+
+describe('per-item conditional wrapping a dynamic attr/event element binds exactly once (#2347)', () => {
+  // A per-item conditional (`cond ? null : <el/>`) whose element itself has a
+  // dynamic attribute and/or event handler used to get bound twice: once
+  // directly against the loop item's own initial template clone (querying
+  // `qsa(__el, ...)` right in the mapArray callback), and again inside the
+  // conditional's own `insert()` bindEvents against whatever node it mounts.
+  // At runtime this doubled the click handler and left the attribute effect
+  // pointed at a detached node once insert() swapped branches.
+
+  test('Repro 1: reactive className on a conditionally-rendered element binds once, inside bindEvents', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      interface Item { handle: string; active: 0 | 1 }
+
+      export function List(props: { viewerHandle: string }) {
+        const [items, setItems] = createSignal<Item[]>([])
+        return (
+          <div>
+            {items().map(u => (
+              <div key={u.handle}>
+                {u.handle === props.viewerHandle ? null : (
+                  <button className={u.active ? 'btn on' : 'btn'} onClick={() => {}}>
+                    {u.active ? 'On' : 'Off'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+
+    // Exactly one class effect, exactly one click listener.
+    expect((content.match(/setAttribute\('class'/g) ?? []).length).toBe(1)
+    expect((content.match(/addEventListener\('click'/g) ?? []).length).toBe(1)
+
+    // The class effect must live inside the conditional's own bindEvents
+    // (querying `__branchScope`, the node insert() actually mounts) —
+    // not directly against `__el` in the outer mapArray scope, which would
+    // go stale the moment insert() swaps in a fresh clone.
+    const bindEventsIndex = content.indexOf('bindEvents:')
+    const classEffectIndex = content.indexOf("setAttribute('class'")
+    expect(bindEventsIndex).toBeGreaterThan(-1)
+    expect(classEffectIndex).toBeGreaterThan(bindEventsIndex)
+    expect(content).toContain("qsa(__branchScope, '[bf=\"s2\"]')")
+  })
+
+  test('Repro 2: a doubly-nested per-item conditional binds click exactly once, in the innermost arm', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      interface Item { handle: string; active: 0 | 1 }
+
+      export function List(props: { viewerHandle: string; signedIn: boolean }) {
+        const [items, setItems] = createSignal<Item[]>([])
+        const onClick = (u: Item) => {}
+        return (
+          <div>
+            {items().map(u => (
+              <div key={u.handle}>
+                {u.handle === props.viewerHandle ? null : props.signedIn ? (
+                  <button className={u.active ? 'btn on' : 'btn'} onClick={() => onClick(u)}>
+                    {u.active ? 'On' : 'Off'}
+                  </button>
+                ) : (
+                  <a href="/login" rel="nofollow noreferrer">Off</a>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+
+    // A single click bound in the browser used to fire the handler twice —
+    // once from the outer arm's own qsa()+addEventListener, once again from
+    // the nested insert()'s bindEvents — silently double-toggling state.
+    expect((content.match(/addEventListener\('click'/g) ?? []).length).toBe(1)
+    expect((content.match(/setAttribute\('class'/g) ?? []).length).toBe(1)
+  })
+})

@@ -14,6 +14,7 @@ import {
   stringifyBranchChildComponentInits,
   stringifyBranchEventBindings,
   stringifyBranchInnerLoops,
+  stringifyBranchReactiveAttrs,
   stringifyLoopChildConditionals,
 } from './loop-child-arm.ts'
 import type { LoopChildArmPlan, LoopChildArmText } from '../plan/loop-child-arm.ts'
@@ -141,6 +142,7 @@ function emitArmBody(lines: string[], arm: LoopChildArmPlan, armIndent: string, 
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
   stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
   stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
+  stringifyBranchReactiveAttrs(lines, arm.attrs, armIndent, pc)
   for (const text of arm.texts) {
     emitArmText(lines, armIndent, text, pc)
   }

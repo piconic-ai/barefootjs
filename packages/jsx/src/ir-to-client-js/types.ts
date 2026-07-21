@@ -512,6 +512,19 @@ export interface LoopChildBranchSummary {
   conditionals?: LoopChildConditional[]
   /** Events on elements inside the branch — attached via insert() bindEvents (#839). */
   events?: ConditionalBranchEvent[]
+  /**
+   * Reactive attrs on elements directly inside the branch — attached via
+   * insert() bindEvents (#2347). Collected loop-param-aware so `u().active`
+   * style loop-item accessors classify as reactive; stops at any further
+   * nested reactive conditional (which gets its own insert() + arm).
+   */
+  reactiveAttrs?: LoopChildReactiveAttr[]
+  /**
+   * Reactive text interpolations on elements directly inside the branch —
+   * attached via insert() bindEvents (#2347). Same loop-param-aware /
+   * nested-conditional-stopping semantics as `reactiveAttrs`.
+   */
+  reactiveTexts?: LoopChildReactiveText[]
 }
 
 export interface LoopChildConditional {

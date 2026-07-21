@@ -13,6 +13,7 @@
 
 import { varSlotId, DATA_BF_PH, keyAttrName, profileBindingId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
+import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { templateRootIsSvg } from './template-parse.ts'
 import { emitListenerLine } from './event-listener.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
@@ -23,6 +24,36 @@ import type {
   LoopChildArmPlan,
   LoopChildConditionalPlan,
 } from '../plan/loop-child-arm.ts'
+import type { ReactiveAttrSlot } from '../plan/reactive-effects.ts'
+
+/**
+ * Emit reactive attribute effects for one arm — one qsa() per slot, then one
+ * `createEffect` per attr on that slot. Mirrors the outer renderItem-scope
+ * attr emission in `stringifyReactiveEffects` (#2347): binding attrs inside
+ * the arm that owns the element (instead of an outer scope's own initial
+ * clone) means a branch swap's fresh `insert()`-mounted node is always the
+ * one the effect targets.
+ */
+export function stringifyBranchReactiveAttrs(
+  lines: string[],
+  plan: readonly ReactiveAttrSlot[],
+  indent: string,
+  pc?: string,
+): void {
+  for (const slot of plan) {
+    const varName = `__ra_${varSlotId(slot.slotId)}`
+    lines.push(`${indent}{ const ${varName} = qsa(__branchScope, '[bf="${slot.slotId}"]')`)
+    lines.push(`${indent}if (${varName}) {`)
+    for (const attr of slot.attrs) {
+      lines.push(`${indent}  createEffect(() => {`)
+      for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
+        lines.push(`${indent}    ${stmt}`)
+      }
+      lines.push(`${indent}  }${profileBindingId(pc, slot.slotId)})`)
+    }
+    lines.push(`${indent}} }`)
+  }
+}
 
 /**
  * Emit `addEventListener` setup for a loop-cond branch arm. One qsa() per
@@ -186,6 +217,7 @@ function stringifyLoopChildArm(
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
   stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
   stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
+  stringifyBranchReactiveAttrs(lines, arm.attrs, armIndent, pc)
   for (const text of arm.texts) {
     const varName = `__rt_${varSlotId(text.slotId)}`
     lines.push(`${armIndent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)

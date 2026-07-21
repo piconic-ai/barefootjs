@@ -265,14 +265,32 @@ export function collectEventHandlersFromIR(node: IRNode): string[] {
 /**
  * Traverse an IR tree depth-first, calling visitor for each element node.
  * Shared by collectConditionalBranchEvents, collectConditionalBranchRefs,
- * and collectLoopChildEvents to avoid duplicating the traversal logic.
+ * collectLoopChildRefs, and collectLoopChildEvents to avoid duplicating the
+ * traversal logic.
  *
  * 'loop' is intentionally skipped. Nested .map() event delegation requires
  * a different approach (nested data-key lookup + inner loop variable
  * resolution) that isn't implemented yet. See memory:
  * compiler-reconcile-templates-events.md
+ *
+ * `stopAtReactiveConditionals` (#2347): when true, a nested `conditional`
+ * with a `slotId` is NOT descended into — the caller is one that also
+ * separately collects that nested conditional via `collectBranchConditionals`
+ * / `collectLoopChildConditionals` and gives it its own `insert()` call, so
+ * descending here too would double-bind (against the enclosing scope's own
+ * initial template node, in addition to the nested conditional's own
+ * `bindEvents` against whatever node `insert()` mounts). Defaults to false
+ * because several callers (e.g. a plain nested `.map()`'s own per-item
+ * bindings, `collectInnerLoops`'s non-branch path) have no such sibling
+ * collector — for those, a slotId'd conditional's content is ONLY ever
+ * reachable by unconditionally descending here, since it's inlined directly
+ * into that scope's template rather than switched via its own `insert()`.
  */
-function traverseElements(node: IRNode, visitor: (el: IRElement, domDepth: number) => void): void {
+function traverseElements(
+  node: IRNode,
+  visitor: (el: IRElement, domDepth: number) => void,
+  stopAtReactiveConditionals = false,
+): void {
   walkIR(node, 0, {
     element: ({ node: el, scope: domDepth, descend }) => {
       visitor(el, domDepth)
@@ -281,12 +299,25 @@ function traverseElements(node: IRNode, visitor: (el: IRElement, domDepth: numbe
     loop: () => {
       // skip: nested-loop event delegation is handled separately
     },
+    ...(stopAtReactiveConditionals
+      ? {
+          conditional: ({ node: c, scope: domDepth, descend }: { node: IRNode & { type: 'conditional' }; scope: number; descend: (s: number) => void }) => {
+            if (!c.slotId) descend(domDepth)
+          },
+        }
+      : {}),
   })
 }
 
 /**
  * Collect events from a conditional branch for use with insert().
  * These events will be bound via the branch's bindEvents function.
+ *
+ * Always stops at a nested reactive conditional (#2347): every caller
+ * (`summarizeBranch`, `summarizeLoopChildBranch`) also collects that nested
+ * conditional separately (`collectBranchConditionals` /
+ * `collectLoopChildConditionals`), so its own `insert()`/bindEvents owns
+ * its events.
  */
 export function collectConditionalBranchEvents(node: IRNode): ConditionalBranchEvent[] {
   const events: ConditionalBranchEvent[] = []
@@ -300,13 +331,17 @@ export function collectConditionalBranchEvents(node: IRNode): ConditionalBranchE
         })
       }
     }
-  })
+  }, true)
   return events
 }
 
 /**
  * Collect refs from a conditional branch for use with insert().
  * These refs will be called via the branch's bindEvents function.
+ *
+ * Always stops at a nested reactive conditional (#2347): its sole caller
+ * (`summarizeBranch`) also collects that nested conditional separately via
+ * `collectBranchConditionals`, so its own `insert()`/bindEvents owns its refs.
  */
 export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef[] {
   const refs: ConditionalBranchRef[] = []
@@ -317,7 +352,7 @@ export function collectConditionalBranchRefs(node: IRNode): ConditionalBranchRef
         callback: el.ref,
       })
     }
-  })
+  }, true)
   return refs
 }
 
@@ -511,12 +546,21 @@ function traverseForComponents(
  * Includes expressions that read signals OR reference the loop parameter.
  * With per-item signals, loop param access (item().text) is reactive
  * because item is a signal accessor.
+ *
+ * `stopAtReactiveConditionals` (#2347): pass true only when the caller also
+ * separately collects nested reactive conditionals (via
+ * `collectLoopChildConditionals`) and gives each its own `insert()` /
+ * bindEvents — otherwise a text inside such a conditional would bind twice.
+ * Defaults to false: some callers (e.g. a plain nested `.map()`'s own
+ * per-item bindings) have no sibling conditional collector, so a slotId'd
+ * conditional's inlined content is only ever reachable by descending here.
  */
 export function collectLoopChildReactiveTexts(
   node: IRNode,
   ctx: ClientJsContext,
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
+  stopAtReactiveConditionals = false,
 ): LoopChildReactiveText[] {
   const texts: LoopChildReactiveText[] = []
   walkIR(node, false, {
@@ -549,8 +593,13 @@ export function collectLoopChildReactiveTexts(
         ...(expanded.freeIds !== undefined && { freeIdentifiers: expanded.freeIds }),
       })
     },
-    conditional: ({ descend }) => {
-      descend(true)
+    conditional: ({ node: c, descend }) => {
+      // When stopAtReactiveConditionals is set, a reactive conditional
+      // (slotId set) gets its own insert() call that rebinds its branch
+      // text effects independently — descending here too would bind the
+      // same expression twice, once against the enclosing scope's initial
+      // node and once against insert()'s mounted node (#2347).
+      if (!stopAtReactiveConditionals || !c.slotId) descend(true)
     },
   })
   return texts
@@ -560,12 +609,17 @@ export function collectLoopChildReactiveTexts(
  * Collect reactive attributes from loop children.
  * These are dynamic attributes that read signals and need createEffect
  * to update the DOM when signals change.
+ *
+ * `stopAtReactiveConditionals` (#2347): see `collectLoopChildReactiveTexts` —
+ * same semantics. Pass true only when the caller also separately collects
+ * nested reactive conditionals and gives each its own `insert()`.
  */
 export function collectLoopChildReactiveAttrs(
   node: IRNode,
   ctx: ClientJsContext,
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
+  stopAtReactiveConditionals = false,
 ): LoopChildReactiveAttr[] {
   const attrs: LoopChildReactiveAttr[] = []
   traverseElements(node, (el) => {
@@ -617,6 +671,6 @@ export function collectLoopChildReactiveAttrs(
         })
       }
     }
-  })
+  }, stopAtReactiveConditionals)
   return attrs
 }
