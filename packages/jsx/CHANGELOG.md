@@ -1,5 +1,18 @@
 # @barefootjs/jsx
 
+## 0.26.0
+
+### Minor Changes
+
+- cc54226: Dynamic `dangerouslySetInnerHTML={{ __html: expr }}` now lowers on every template adapter (#2319, successor to #2215). A prop-/signal-derived `__html` value is serialized by the adapter and emitted through that language's runtime raw-output sink — Blade `{!! !!}`, ERB unescaped `<%= %>`, Go `template.HTML` via the new `bf_raw_html` helper, Jinja/MiniJinja `| safe`, Twig `| raw`, Mojolicious `<%== %>`, Xslate `mark_raw` — instead of refusing with BF101. The value is evaluated at request time and never spliced into template source, so no template-metacharacter guard applies, matching React's "dangerously = the caller owns the value's safety" contract and the existing Hono/CSR behavior. The compile-time string-literal case (#2207) is unchanged; a value that is not a `{ __html: … }` object literal still refuses with BF101.
+- 050513c: `formatDate` / `format_date` timeZone widens to canonical IANA zone IDs (#2344): `'Asia/Tokyo'`-style zones resolve through each backend's tzdata at the instant being formatted (DST-aware, seconds-precision LMT included), and the literal-locale `toLocaleDateString` sugar admits a named-zone literal the build machine's Intl probe verifies. Breaking contract change: an unresolvable timeZone (unknown zone, non-canonical spelling, malformed or out-of-range offset) now raises the backend's native error instead of silently normalizing to UTC. New runtime dependencies: tzinfo (Ruby), DateTime + DateTime::TimeZone (Perl — the generated zone modules load OlsonDB, which needs DateTime::Duration), chrono-tz (Rust), tzdata (Python, fallback only).
+- b4b37aa: Cross-file reactive-factory inlining now re-provisions type-only references too (#2350): a factory body that references an imported type only in type position (a return-type annotation, a generic type argument, a variable's type annotation) previously had that reference silently dropped — never captured as a BF112 module-capture hit, never re-provisioned as an import — so `tsc` on the compiled output could fail to resolve the name with zero diagnostic pointing at the cause, even though `bf build` itself stayed green. The component file now gets a separate `import type { ... }` line alongside the existing re-provisioned value imports, deduped against any import already present at the call site.
+
+### Patch Changes
+
+- 244fe37: Fix an element inside a (possibly nested) per-item conditional in a `mapArray` loop being bound twice when it also carried a dynamic attribute and/or event handler (#2347). Previously such bindings were duplicated between the loop item's own initial template query and the conditional's `insert()` bindEvents, causing event handlers to fire twice and attribute effects (e.g. `class`) to go stale after a branch swap. Both are now bound exactly once, scoped to the innermost conditional arm that actually owns the element.
+  - @barefootjs/shared@0.26.0
+
 ## 0.25.0
 
 ### Minor Changes
