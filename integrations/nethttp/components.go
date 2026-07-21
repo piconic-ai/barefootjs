@@ -110,6 +110,33 @@ type FormProps struct {
 	Accepted bool `json:"accepted"`
 }
 
+// ToggleItem represents a toggleitem.
+type ToggleItem struct {
+	ID string `json:"id"`
+	Hidden bool `json:"hidden"`
+	Active bool `json:"active"`
+}
+
+// NestedCondToggleListInput is the user-facing input type.
+type NestedCondToggleListInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Items []ToggleItem
+}
+
+// NestedCondToggleListProps is the props type for the NestedCondToggleList component.
+type NestedCondToggleListProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Items []ToggleItem `json:"items"`
+}
+
 // PortalExampleInput is the user-facing input type.
 type PortalExampleInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
@@ -706,6 +733,21 @@ func NewFormProps(in FormInput) FormProps {
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		Accepted: false,
+	}
+}
+
+// NewNestedCondToggleListProps creates NestedCondToggleListProps from NestedCondToggleListInput.
+func NewNestedCondToggleListProps(in NestedCondToggleListInput) NestedCondToggleListProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "NestedCondToggleList_" + randomID(6)
+	}
+
+	return NestedCondToggleListProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Items: in.Items,
 	}
 }
 
