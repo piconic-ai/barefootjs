@@ -2543,6 +2543,59 @@ export function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
 }
 
 /**
+ * Identifiers referenced in TYPE position anywhere under `node` (#2350) —
+ * the mirror image of `extractFreeIdentifiersFromNode`, which explicitly
+ * skips type nodes since they carry no runtime reference. Walks the whole
+ * tree without stopping at type nodes; every `TypeReferenceNode`'s root
+ * name is collected, which by plain `forEachChild` recursion also reaches
+ * nested references (generic type arguments, array/union/tuple members,
+ * function-type params/returns) without needing to special-case each shape.
+ * Also collects `TypeQueryNode` (`typeof Foo`) root names — `Foo` there is
+ * a VALUE reference in type position, so `moduleCaptureCheck`'s fallback to
+ * `moduleBindings.imported`/`local` (added for the plain-value-import case,
+ * Copilot review, PR #2351) resolves it the same way (Copilot review, PR
+ * #2351).
+ * A function-like node's own type parameters (`<T>`) are tracked and
+ * excluded within its body/signature, same idea as the value walker's
+ * arrow-parameter tracking — otherwise a generic named the same as a
+ * module-scope type (`function useThing<SavedList>(x: SavedList)`) would
+ * be misclassified as a reference to the import (Copilot review, PR
+ * #2351). Doesn't exclude body-local type/interface declarations that
+ * shadow a module-scope name — rare enough here that, per this file's
+ * accepted-limitation policy, a redundant-but-harmless re-provisioned
+ * import is an acceptable outcome (never a silent dangling reference).
+ */
+function extractFreeTypeIdentifiersFromNode(node: ts.Node): Set<string> {
+  const ids = new Set<string>()
+  const boundTypeParams = new Set<string>()
+  function rootName(name: ts.EntityName): ts.Identifier {
+    return ts.isQualifiedName(name) ? rootName(name.left) : name
+  }
+  function visit(n: ts.Node): void {
+    if (ts.isTypeReferenceNode(n)) {
+      const name = rootName(n.typeName).text
+      if (!boundTypeParams.has(name)) ids.add(name)
+      // Keep descending — nested references (`Promise<SavedList>`,
+      // `Record<string, SavedList>`) live in this same node's type arguments.
+    }
+    if (ts.isTypeQueryNode(n)) {
+      const name = rootName(n.exprName).text
+      if (!boundTypeParams.has(name)) ids.add(name)
+    }
+    if (ts.isFunctionLike(n) && n.typeParameters && n.typeParameters.length > 0) {
+      const names = n.typeParameters.map((p) => p.name.text)
+      for (const p of names) boundTypeParams.add(p)
+      ts.forEachChild(n, visit)
+      for (const p of names) boundTypeParams.delete(p)
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return ids
+}
+
+/**
  * Check if a const initializer expression contains JSX at a non-root
  * position — ternary with JSX on either side, logical-AND / OR /
  * nullish-coalescing with JSX on either side, parenthesized wrappers
@@ -3965,32 +4018,40 @@ function toComponentRelativeSpecifier(resolvedAbs: string, componentFilePath: st
 }
 
 /**
- * localName -> identity of what the entry file's own top-level named value
- * imports bind, for the satisfied-import dedupe check (#2332): if the
- * component file already imports the exact binding a factory needs to
- * re-provision, injecting it again would be a duplicate declaration rather
- * than a shadow, so that case is skipped instead of injected. `targetKey` is
- * the resolved absolute path for relative sources (or `unresolved:<source>`
- * when probing fails) and the raw specifier for bare sources.
+ * localName -> identity of what the entry file's own top-level named
+ * imports bind, for the satisfied-import dedupe check (#2332, type-only
+ * imports included #2350): if the component file already imports the exact
+ * binding a factory needs to re-provision, injecting it again would be a
+ * duplicate declaration rather than a shadow, so that case is skipped
+ * instead of injected. `targetKey` is the resolved absolute path for
+ * relative sources (or `unresolved:<source>` when probing fails) and the
+ * raw specifier for bare sources. `isTypeOnly` matters at the call site: an
+ * existing type-only import satisfies a factory's type-only need but NOT a
+ * value need (it has no runtime binding) — treating it as satisfying both
+ * would silently skip re-provisioning a value the inlined body actually
+ * calls, the same dangling-reference failure #2341 BUG-2 already covers.
  */
 function buildEntryImportIndex(
   sf: ts.SourceFile,
   filePath: string
-): Map<string, { targetKey: string; exportedName: string }> {
-  const index = new Map<string, { targetKey: string; exportedName: string }>()
+): Map<string, { targetKey: string; exportedName: string; isTypeOnly: boolean }> {
+  const index = new Map<string, { targetKey: string; exportedName: string; isTypeOnly: boolean }>()
   for (const stmt of sf.statements) {
     if (!ts.isImportDeclaration(stmt)) continue
     if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
-    if (stmt.importClause?.isTypeOnly) continue
     const src = stmt.moduleSpecifier.text
     const targetKey = src.startsWith('./') || src.startsWith('../')
       ? (resolveRelativeImportToFile(src, filePath) ?? 'unresolved:' + src)
       : src
+    const wholeTypeOnly = stmt.importClause?.isTypeOnly === true
     const namedBindings = stmt.importClause?.namedBindings
     if (namedBindings && ts.isNamedImports(namedBindings)) {
       for (const el of namedBindings.elements) {
-        if (el.isTypeOnly) continue
-        index.set(el.name.text, { targetKey, exportedName: (el.propertyName ?? el.name).text })
+        index.set(el.name.text, {
+          targetKey,
+          exportedName: (el.propertyName ?? el.name).text,
+          isTypeOnly: wholeTypeOnly || el.isTypeOnly,
+        })
       }
     }
   }
@@ -4032,6 +4093,9 @@ function collectEntryBindingNames(sf: ts.SourceFile): Set<string> {
       (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isEnumDeclaration(node)) &&
       node.name
     ) {
+      names.add(node.name.text)
+    }
+    if ((ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) && node.name) {
       names.add(node.name.text)
     }
     if (ts.isFunctionLike(node)) {
@@ -4165,6 +4229,10 @@ function prescanImportedReactiveFactories(
   const entryImportIndex = buildEntryImportIndex(entrySourceFile, filePath)
   // localName -> planned injection identity; a later factory requiring the
   // same name from a DIFFERENT (targetKey, exportedName) is a collision.
+  // Deliberately isTypeOnly-agnostic: a value need and a type need for the
+  // SAME (targetKey, exportedName) aren't a real collision (the eventual
+  // value import satisfies both) — the final line-generation step below
+  // drops the redundant type-only line rather than declining here.
   const plannedInjections = new Map<string, { targetKey: string; exportedName: string }>()
 
   // #2341 BUG-2 — one read+parse per helper file per entry file, memoized
@@ -4346,7 +4414,9 @@ function prescanImportedReactiveFactories(
             break
           }
           // #2332 — re-provision the helper file's own named value imports
-          // that the factory body references, instead of declining. Each
+          // that the factory body references, instead of declining (type-
+          // only refs included #2350 — same treatment, tagged `isTypeOnly`
+          // so the line-generator below emits `import type { ... }`). Each
           // ref resolves to a component-relative specifier (or passes
           // through unchanged for bare/npm specifiers); a ref already
           // satisfied by an identical top-level import in the component
@@ -4358,7 +4428,11 @@ function prescanImportedReactiveFactories(
           const required: RequiredFactoryImport[] = []
           const pending: Array<[string, { targetKey: string; exportedName: string }]> = []
           let declinedEntry: DeclinedReactiveFactory | null = null
-          for (const ref of capture.importedRefs) {
+          const allRefs = [
+            ...capture.importedRefs.map((r) => ({ ...r, isTypeOnly: false })),
+            ...capture.importedTypeRefs.map((r) => ({ ...r, isTypeOnly: true })),
+          ]
+          for (const ref of allRefs) {
             let specifier: string
             let targetKey: string
             if (ref.source.startsWith('./') || ref.source.startsWith('../')) {
@@ -4384,8 +4458,13 @@ function prescanImportedReactiveFactories(
             }
             // Already satisfied by an identical top-level import in the
             // component file — injecting again would redeclare the binding.
+            // A type-only need is satisfiable by ANY matching import (value
+            // or type — a value import brings its type into scope too); a
+            // value need can only be satisfied by an existing value import,
+            // since a type-only import has no runtime binding (#2350).
             const existing = entryImportIndex.get(ref.localName)
-            if (existing && existing.targetKey === targetKey && existing.exportedName === ref.exportedName) {
+            if (existing && existing.targetKey === targetKey && existing.exportedName === ref.exportedName &&
+                (ref.isTypeOnly || !existing.isTypeOnly)) {
               continue
             }
             const planned = plannedInjections.get(ref.localName)
@@ -4402,7 +4481,7 @@ function prescanImportedReactiveFactories(
               break
             }
             pending.push([ref.localName, { targetKey, exportedName: ref.exportedName }])
-            required.push({ localName: ref.localName, exportedName: ref.exportedName, specifier })
+            required.push({ localName: ref.localName, exportedName: ref.exportedName, specifier, isTypeOnly: ref.isTypeOnly || undefined })
           }
           if (declinedEntry) {
             result.declined.set(spec.local, declinedEntry)
@@ -4445,8 +4524,17 @@ function prescanImportedReactiveFactories(
  * came from (`resolveFinalImports` / `detectUsedImports` regex-scan the
  * *generated* code, not the consumer's source imports — see #2325 spec C1),
  * so an inlined body calling `createSignal` is never a capture even though
- * the helper file itself imports it. Type-only imports/declarations carry
- * no runtime binding and are excluded.
+ * the helper file itself imports it.
+ *
+ * `localTypes`/`importedTypes` are the type-position mirror of `local`/
+ * `imported` (#2350): a factory body's return-type annotations, generic
+ * type arguments, and local variable type annotations reference names too,
+ * and those need the exact same capture-or-re-provision treatment — a type
+ * declared directly in the helper file can't be re-imported (BF112,
+ * folded into `local`'s capture handling since the failure mode is
+ * identical), but a type the helper file itself imports (`import type {
+ * X }` or the per-specifier `import { type X }`) can be re-provisioned as
+ * `import type { X } from '<specifier>'` in the component file.
  */
 interface HelperModuleBindings {
   /** Declared directly in the helper file — unconditional BF112 capture. */
@@ -4454,10 +4542,18 @@ interface HelperModuleBindings {
   /** Named value-import specifiers, keyed by helper-file local name —
    *  re-provisionable into the component file (#2332). */
   imported: Map<string, { source: string; exportedName: string }>
+  /** Type/interface declared directly in the helper file — unconditional
+   *  BF112 capture, same as `local` (#2350). */
+  localTypes: Set<string>
+  /** The helper file's own type-only named imports, keyed by local name —
+   *  re-provisionable as `import type { X } from '<specifier>'` (#2350). */
+  importedTypes: Map<string, { source: string; exportedName: string }>
 }
 
 function collectHelperModuleValueBindings(sf: ts.SourceFile): HelperModuleBindings {
   const local = new Set<string>()
+  const localTypes = new Set<string>()
+  const importedTypes = new Map<string, { source: string; exportedName: string }>()
   const imported = new Map<string, { source: string; exportedName: string }>()
   for (const stmt of sf.statements) {
     if (ts.isVariableStatement(stmt)) {
@@ -4475,35 +4571,43 @@ function collectHelperModuleValueBindings(sf: ts.SourceFile): HelperModuleBindin
       local.add(stmt.name.text)
       continue
     }
+    if ((ts.isTypeAliasDeclaration(stmt) || ts.isInterfaceDeclaration(stmt)) && stmt.name) {
+      localTypes.add(stmt.name.text)
+      continue
+    }
     if (ts.isImportDeclaration(stmt)) {
-      if (stmt.importClause?.isTypeOnly) continue
       if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue
       const src = stmt.moduleSpecifier.text
       if (src === '@barefootjs/client' || src === '@barefootjs/client/runtime') continue
+      const wholeTypeOnly = stmt.importClause?.isTypeOnly === true
       // Default/namespace imports stay hard BF112 (#2332 scope decision):
-      // no single named export to re-provision under one local name.
-      if (stmt.importClause?.name) local.add(stmt.importClause.name.text)
+      // no single named export to re-provision under one local name. A
+      // type-only default/namespace import has the same problem, so it
+      // goes to `localTypes` rather than `importedTypes`.
+      if (stmt.importClause?.name) (wholeTypeOnly ? localTypes : local).add(stmt.importClause.name.text)
       const namedBindings = stmt.importClause?.namedBindings
       if (namedBindings && ts.isNamedImports(namedBindings)) {
         for (const el of namedBindings.elements) {
-          if (el.isTypeOnly) continue
-          imported.set(el.name.text, { source: src, exportedName: (el.propertyName ?? el.name).text })
+          const entry = { source: src, exportedName: (el.propertyName ?? el.name).text }
+          if (wholeTypeOnly || el.isTypeOnly) importedTypes.set(el.name.text, entry)
+          else imported.set(el.name.text, entry)
         }
       }
       if (namedBindings && ts.isNamespaceImport(namedBindings)) {
-        local.add(namedBindings.name.text)
+        (wholeTypeOnly ? localTypes : local).add(namedBindings.name.text)
       }
     }
   }
-  return { local, imported }
+  return { local, imported, localTypes, importedTypes }
 }
 
 /**
  * Categorized free-identifier references of a reactive-factory body into
- * its own module scope (#2332): `captured` are unconditional BF112 hits
- * (helper-local bindings — the body would dangle if inlined verbatim);
- * `importedRefs` are references to the helper file's own named value
- * imports, which the caller may re-provision into the component file
+ * its own module scope (#2332, type positions added #2350): `captured` are
+ * unconditional BF112 hits (helper-local bindings — the body would dangle
+ * if inlined verbatim, value or type alike); `importedRefs`/
+ * `importedTypeRefs` are references to the helper file's own named value/
+ * type imports, which the caller may re-provision into the component file
  * instead of declining (§3.4 in the #2332 spec).
  */
 interface ModuleCaptureResult {
@@ -4511,23 +4615,27 @@ interface ModuleCaptureResult {
   captured: string[]
   /** Free refs resolving to the helper's own named value imports, sorted by localName. */
   importedRefs: Array<{ localName: string; source: string; exportedName: string }>
+  /** Free type-position refs resolving to the helper's own named type imports, sorted by localName. */
+  importedTypeRefs: Array<{ localName: string; source: string; exportedName: string }>
 }
 
 /**
  * Free identifiers of a reactive-factory body that resolve to bindings at
- * its own module scope (#2325 §4h / BF112, #2332) — references the inlined
- * body would silently lose once spliced into the component file, unless
- * re-provisioned as an import. Returns `captured` (unconditional BF112) and
- * `importedRefs` (re-provisionable) separately, each sorted for stable
- * diagnostic/injection text.
+ * its own module scope (#2325 §4h / BF112, #2332, type positions #2350) —
+ * references the inlined body would silently lose once spliced into the
+ * component file, unless re-provisioned as an import. Returns `captured`
+ * (unconditional BF112) and `importedRefs`/`importedTypeRefs`
+ * (re-provisionable) separately, each sorted for stable diagnostic/
+ * injection text.
  *
  * Known accepted limitation: `extractFreeIdentifiersFromNode` only scope-
  * tracks arrow-function parameters, not nested `function` declarations'
  * parameters or nested-block declarations — a body-nested binding that
  * happens to shadow a helper-module binding could false-positive into
- * BF112 or `importedRefs`. Acceptable: the failure direction is always a
- * loud build error (BF112/BF113) or a redundant-but-harmless injected
- * import, never a silent dangling reference.
+ * BF112 or `importedRefs`/`importedTypeRefs`. Acceptable: the failure
+ * direction is always a loud build error (BF112/BF113) or a
+ * redundant-but-harmless injected import, never a silent dangling
+ * reference.
  */
 function moduleCaptureCheck(
   fn: ts.FunctionDeclaration,
@@ -4535,16 +4643,24 @@ function moduleCaptureCheck(
   moduleBindings: HelperModuleBindings,
   selfName: string
 ): ModuleCaptureResult {
-  if (!fn.body) return { captured: [], importedRefs: [] }
+  if (!fn.body) return { captured: [], importedRefs: [], importedTypeRefs: [] }
   const free = extractFreeIdentifiersFromNode(fn.body)
+  const freeTypes = extractFreeTypeIdentifiersFromNode(fn.body)
   const exclude = new Set<string>(info.params)
   for (const b of info.localBindings) exclude.add(b)
   for (const r of info.returnTupleIdentifiers) exclude.add(r)
   for (const p of REACTIVE_PRIMITIVES) exclude.add(p)
   exclude.add(selfName)
+  // extractFreeTypeIdentifiersFromNode only tracks type parameters declared
+  // BY nodes it walks — it never sees `fn` itself (only `fn.body`), so the
+  // factory's own `<T>` list needs excluding here instead (Copilot review,
+  // PR #2351: `function useThing<Item>(...)` shadowing a module-scope
+  // `Item` type import).
+  if (fn.typeParameters) for (const p of fn.typeParameters) exclude.add(p.name.text)
 
   const captured: string[] = []
   const importedRefs: ModuleCaptureResult['importedRefs'] = []
+  const importedTypeRefs: ModuleCaptureResult['importedTypeRefs'] = []
   for (const id of free) {
     if (exclude.has(id)) continue
     if (moduleBindings.local.has(id)) {
@@ -4554,9 +4670,29 @@ function moduleCaptureCheck(
     const imp = moduleBindings.imported.get(id)
     if (imp) importedRefs.push({ localName: id, source: imp.source, exportedName: imp.exportedName })
   }
+  for (const id of freeTypes) {
+    if (exclude.has(id)) continue
+    if (free.has(id)) continue // already resolved above — same name, value position wins
+    if (moduleBindings.localTypes.has(id) || moduleBindings.local.has(id)) {
+      captured.push(id)
+      continue
+    }
+    const typeImp = moduleBindings.importedTypes.get(id)
+    if (typeImp) {
+      importedTypeRefs.push({ localName: id, source: typeImp.source, exportedName: typeImp.exportedName })
+      continue
+    }
+    // A name used ONLY in type position can still resolve to the helper's
+    // own VALUE import (e.g. a class referenced purely as `(): Foo`) —
+    // re-provision it as a normal value import, which brings the type into
+    // scope too, instead of missing it entirely (Copilot review, PR #2351).
+    const valueImp = moduleBindings.imported.get(id)
+    if (valueImp) importedRefs.push({ localName: id, source: valueImp.source, exportedName: valueImp.exportedName })
+  }
   captured.sort()
   importedRefs.sort((a, b) => (a.localName < b.localName ? -1 : 1))
-  return { captured, importedRefs }
+  importedTypeRefs.sort((a, b) => (a.localName < b.localName ? -1 : 1))
+  return { captured, importedRefs, importedTypeRefs }
 }
 
 /**
@@ -5084,33 +5220,61 @@ function rewriteFactoryCallsInSource(
   if (edits.length === 0) return source
 
   // #2332 — one deduped import statement per specifier for every inlined
-  // cross-file factory's re-provisioned imports. Injected as a zero-width
-  // edit so the ordinary bottom-to-top splice below applies it; the result
-  // is indistinguishable from a hand-written import for every downstream
+  // cross-file factory's re-provisioned imports (type-only refs #2350, kept
+  // on separate `import type { ... }` lines since a value and a type
+  // import can't share one specifier list). Injected as a zero-width edit
+  // so the ordinary bottom-to-top splice below applies it; the result is
+  // indistinguishable from a hand-written import for every downstream
   // consumer (ctx.imports → SSR templateImports AND client
   // collectExternalImports both parse this same rewritten string).
   const importsBySpecifier = new Map<string, Map<string, string>>() // specifier -> localName -> exportedName
+  const typeImportsBySpecifier = new Map<string, Map<string, string>>() // specifier -> localName -> exportedName
   for (const f of inlinedFactories) {
     for (const r of f.requiredImports ?? []) {
-      let names = importsBySpecifier.get(r.specifier)
-      if (!names) { names = new Map(); importsBySpecifier.set(r.specifier, names) }
+      const bySpecifier = r.isTypeOnly ? typeImportsBySpecifier : importsBySpecifier
+      let names = bySpecifier.get(r.specifier)
+      if (!names) { names = new Map(); bySpecifier.set(r.specifier, names) }
       names.set(r.localName, r.exportedName) // same-key duplicates are identical by prescan construction
     }
   }
-  if (importsBySpecifier.size > 0) {
-    // Sort specifiers and, within each, named-import entries by local name —
-    // `importsBySpecifier`/`inlinedFactories` iterate in incidental AST-
-    // traversal/insertion order, which would otherwise make this generated
-    // text order-unstable across unrelated refactors (Copilot review, PR
-    // #2338).
-    const lines = [...importsBySpecifier]
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([spec, names]) => {
-        const specifiers = [...names]
-          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-          .map(([local, exported]) => (exported === local ? local : `${exported} as ${local}`))
-        return `import { ${specifiers.join(', ')} } from '${spec}'`
-      })
+  // Two different factories can independently need the same (specifier,
+  // localName) — one only in value position, one only in type position
+  // (#2350). The value import already brings the type into scope, so drop
+  // the now-redundant type-only line rather than emit both (which TypeScript
+  // would reject as a duplicate identifier).
+  for (const [spec, typeNames] of typeImportsBySpecifier) {
+    const valueNames = importsBySpecifier.get(spec)
+    if (!valueNames) continue
+    for (const local of [...typeNames.keys()]) {
+      if (valueNames.has(local)) typeNames.delete(local)
+    }
+    if (typeNames.size === 0) typeImportsBySpecifier.delete(spec)
+  }
+  if (importsBySpecifier.size > 0 || typeImportsBySpecifier.size > 0) {
+    // One sorted pass over the UNION of specifiers (value + type-only), not
+    // two separately-sorted lists — the latter would leave the value/
+    // type-only halves each internally sorted but not globally sorted
+    // against each other (a type-only import from 'a' could land after a
+    // value import from 'b'), an unstable-looking order across unrelated
+    // refactors (Copilot review, PR #2351). Within each specifier, named-
+    // import entries are sorted by local name too — `importsBySpecifier`/
+    // `inlinedFactories` iterate in incidental AST-traversal/insertion
+    // order (Copilot review, PR #2338).
+    const buildLine = (names: Map<string, string>, keyword: string, spec: string) => {
+      const specifiers = [...names]
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([local, exported]) => (exported === local ? local : `${exported} as ${local}`))
+      return `import ${keyword}{ ${specifiers.join(', ')} } from '${spec}'`
+    }
+    const allSpecifiers = new Set([...importsBySpecifier.keys(), ...typeImportsBySpecifier.keys()])
+    const lines = [...allSpecifiers].sort().flatMap((spec) => {
+      const out: string[] = []
+      const valueNames = importsBySpecifier.get(spec)
+      if (valueNames) out.push(buildLine(valueNames, '', spec))
+      const typeNames = typeImportsBySpecifier.get(spec)
+      if (typeNames) out.push(buildLine(typeNames, 'type ', spec))
+      return out
+    })
     const at = factoryImportInsertionOffset(sourceFile)
     edits.push({ start: at, end: at, replacement: at === 0 ? lines.join('\n') + '\n' : '\n' + lines.join('\n') })
   }

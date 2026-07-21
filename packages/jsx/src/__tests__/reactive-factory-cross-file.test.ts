@@ -878,7 +878,7 @@ export function Ticker() {
     expect(clientJs!.content).toMatch(/import\s*\{[^}]*onMount[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
   })
 
-  test('M18: a type-only helper import does not trigger BF112 and is not re-provisioned', () => {
+  test('M18: a type-only helper import does not trigger BF112 and is re-provisioned as `import type` (#2350)', () => {
     writeFixture('matrix18/todo-types.ts', `export interface Todo {
   id: number
   text: string
@@ -906,9 +906,260 @@ export function TodoList() {
     const result = compileJSX(consumerSource, consumerPath, { adapter })
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
     expect(result.errors.find(e => e.code === 'BF112')).toBeUndefined()
+    // Re-provisioned into the still-typed rewritten source (#2350) so tsc on
+    // the compiled output can resolve `Todo` in the inlined `createSignal<Todo[]>` —
+    // otherwise this is exactly Sora's SavedList gap (see App.tsx's #2350 comment).
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).toMatch(/import\s+type\s*\{\s*Todo\s*\}\s*from\s*'\.\/todo-types'/)
+    // But never reaches the runtime bundle — type-only imports are erased
+    // before clientJs, same as any other TypeScript type annotation.
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     expect(clientJs!.content).not.toContain('./todo-types')
+  })
+
+  test('M18b: an already-imported type at the call site is not re-provisioned a second time (#2350)', () => {
+    // Mirrors Sora's App.tsx: the compiler doesn't re-provision a factory
+    // body's TYPE-only references on its own (extractFreeIdentifiersFromNode
+    // stops at type nodes), so Sora's App.tsx carries a manual
+    // `import type { SavedList }` for exactly this reason. Once #2350 adds
+    // re-provisioning, that manual import must dedupe against it, not
+    // produce a second, colliding `import type { SavedList }` line.
+    writeFixture('matrix18b/schema.ts', `export interface SavedList {
+  id: string
+}
+`)
+    writeFixture('matrix18b/useListStore.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import type { SavedList } from './schema'
+
+export function useListStore() {
+  function emptyCard(): SavedList {
+    return { id: 'x' }
+  }
+  const [lists, setLists] = createSignal<SavedList[]>([emptyCard()])
+  return { lists, setLists }
+}
+`)
+    const consumerSource = `'use client'
+import { useListStore } from './useListStore'
+import type { SavedList } from './schema'
+
+export function App() {
+  const { lists, setLists } = useListStore()
+  return <button onClick={() => setLists([])}>{lists().length}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18b/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    expect(result.errors.find(e => e.code === 'BF113')).toBeUndefined()
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    const matches = template!.content.match(/import\s+type\s*\{\s*SavedList\s*\}/g) ?? []
+    expect(matches).toHaveLength(1)
+  })
+
+  test('M18c: a value need is never satisfied by an existing type-only import of the same name (#2350)', () => {
+    // The inverse of M18b: the entry file's own `import type { Shared }`
+    // has no runtime binding, so a factory needing `Shared` as a VALUE must
+    // still decline (BF113) rather than silently treat the type-only import
+    // as satisfying it — that would compile clean and crash at hydration
+    // (the same dangling-reference direction as #2341 BUG-2), the one
+    // failure mode this whole feature exists to avoid.
+    writeFixture('matrix18c/shared.ts', `export class Shared {
+  static make(): Shared { return new Shared() }
+}
+`)
+    writeFixture('matrix18c/useShared.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { Shared } from './shared'
+
+export function useShared() {
+  const [value, setValue] = createSignal(Shared.make())
+  return { value, setValue }
+}
+`)
+    const consumerSource = `'use client'
+import { useShared } from './useShared'
+import type { Shared } from './shared'
+
+export function App() {
+  const { value, setValue } = useShared()
+  return <button onClick={() => setValue(null as unknown as Shared)}>{String(value())}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18c/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf113 = result.errors.find(e => e.code === 'BF113')
+    expect(bf113).toBeDefined()
+    expect(bf113!.message).toContain('Shared')
+  })
+
+  test('M18d: a helper VALUE import used only in type position is still re-provisioned (Copilot review, PR #2351)', () => {
+    // `Shape` is a plain value import in the helper file — never wrapped in
+    // `type`/`import type` — but the factory body only ever uses it as a
+    // type annotation. The type-position walk must still find it via
+    // moduleBindings.imported (not just importedTypes), or this regresses
+    // to the exact #2350 gap for names that happen not to be type-only
+    // imports in their OWN file.
+    writeFixture('matrix18d/shape.ts', `export class Shape {
+  area(): number { return 0 }
+}
+`)
+    writeFixture('matrix18d/useShape.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { Shape } from './shape'
+
+export function useShape() {
+  function makeDefault(): Shape {
+    return new Shape()
+  }
+  const [shape, setShape] = createSignal<Shape>(makeDefault())
+  return { shape, setShape }
+}
+`)
+    const consumerSource = `'use client'
+import { useShape } from './useShape'
+
+export function App() {
+  const { shape, setShape } = useShape()
+  return <button onClick={() => setShape(shape())}>{String(shape())}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18d/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    // Re-provisioned as a normal VALUE import (not `import type`) — a value
+    // import already brings the type into scope, and the value form is what
+    // the helper file itself declared.
+    expect(template!.content).toMatch(/import\s*\{\s*Shape\s*\}\s*from\s*'\.\/shape'/)
+    expect(template!.content).not.toMatch(/import\s+type\s*\{\s*Shape\s*\}/)
+  })
+
+  test('M18e: a generic type parameter is not misclassified as a module-scope type reference (Copilot review, PR #2351)', () => {
+    // The factory's own <Item> type parameter shadows an unrelated
+    // module-scope `Item` type import — referencing the PARAMETER inside
+    // the factory body must not trigger re-provisioning of the import (it
+    // isn't actually referenced at all).
+    writeFixture('matrix18e/item-types.ts', `export interface Item {
+  id: string
+}
+`)
+    writeFixture('matrix18e/useBox.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import type { Item } from './item-types'
+
+export function useBox<Item>(initial: Item) {
+  const [value, setValue] = createSignal<Item>(initial)
+  return { value, setValue }
+}
+`)
+    const consumerSource = `'use client'
+import { useBox } from './useBox'
+
+export function App() {
+  const { value, setValue } = useBox(0)
+  return <button onClick={() => setValue(1)}>{String(value())}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18e/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).not.toContain('./item-types')
+  })
+
+  test('M18f: a `typeof` reference to a helper value import is re-provisioned as a value import (Copilot review, PR #2351)', () => {
+    // `typeof DEFAULT_SHAPE` is type position syntactically (a TypeQueryNode),
+    // but the name it names — DEFAULT_SHAPE — is a VALUE import, and only its
+    // TYPE is being borrowed here (the nested makeShape's return type). The
+    // body never reads DEFAULT_SHAPE as a value directly, so this isolates
+    // the TypeQueryNode path from the plain-value-walk path that already
+    // covers a direct `DEFAULT_SHAPE` reference regardless of this fix.
+    writeFixture('matrix18f/shapes.ts', `export const DEFAULT_SHAPE = { kind: 'circle' as const, radius: 1 }
+`)
+    writeFixture('matrix18f/useShape.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { DEFAULT_SHAPE } from './shapes'
+
+export function useShape() {
+  function makeShape(): typeof DEFAULT_SHAPE {
+    return { kind: 'circle', radius: 1 }
+  }
+  const [shape, setShape] = createSignal(makeShape())
+  return { shape, setShape }
+}
+`)
+    const consumerSource = `'use client'
+import { useShape } from './useShape'
+
+export function App() {
+  const { shape, setShape } = useShape()
+  return <button onClick={() => setShape({ kind: 'circle', radius: 2 })}>{shape().kind}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18f/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).toMatch(/import\s*\{\s*DEFAULT_SHAPE\s*\}\s*from\s*'\.\/shapes'/)
+    expect(template!.content).not.toMatch(/import\s+type\s*\{\s*DEFAULT_SHAPE\s*\}/)
+  })
+
+  test('M18g: value and type-only re-provisioned imports are globally sorted by specifier, not grouped by kind (Copilot review, PR #2351)', () => {
+    // A type-only need from 'a-types' and a value need from 'z-value' — a
+    // two-separately-sorted-lists implementation would put ALL value lines
+    // before ALL type lines regardless of specifier, landing 'z-value'
+    // before 'a-types'. The correct order interleaves by specifier: 'a-types'
+    // (type-only) first, then 'z-value' (value).
+    writeFixture('matrix18g/a-types.ts', `export interface Early { id: string }
+`)
+    writeFixture('matrix18g/z-value.ts', `export function makeLate(): number { return 1 }
+`)
+    writeFixture('matrix18g/useBoth.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import type { Early } from './a-types'
+import { makeLate } from './z-value'
+
+export function useBoth() {
+  function makeEarly(): Early {
+    return { id: 'x' }
+  }
+  const [n, setN] = createSignal(makeLate())
+  const [e, setE] = createSignal(makeEarly())
+  return { n, setN, e, setE }
+}
+`)
+    const consumerSource = `'use client'
+import { useBoth } from './useBoth'
+
+export function App() {
+  const { n, setN, e, setE } = useBoth()
+  return <button onClick={() => setN(n() + 1)}>{n()} {e().id}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18g/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    const aTypesIndex = template!.content.indexOf("from './a-types'")
+    const zValueIndex = template!.content.indexOf("from './z-value'")
+    expect(aTypesIndex).toBeGreaterThan(-1)
+    expect(zValueIndex).toBeGreaterThan(-1)
+    expect(aTypesIndex).toBeLessThan(zValueIndex)
   })
 
   test('M19: a colliding binding nested inside a JSX callback still triggers BF113', () => {
