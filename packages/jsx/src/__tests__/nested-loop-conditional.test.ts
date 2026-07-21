@@ -471,4 +471,46 @@ describe('per-item conditional wrapping a dynamic attr/event element binds exact
     expect((content.match(/addEventListener\('click'/g) ?? []).length).toBe(1)
     expect((content.match(/setAttribute\('class'/g) ?? []).length).toBe(1)
   })
+
+  test('a JSX-callback prop call as the WHOLE branch content does not get a nested text effect', () => {
+    // Regression pin for a fix-of-the-fix: the initial #2347 patch made
+    // `summarizeLoopChildBranch` collect reactive texts for any branch,
+    // which newly reached a per-item conditional whose branch is a single
+    // bare `expression` (no wrapping element) — e.g. a hoisted JSX-callback
+    // prop call (`renderNode={(n) => <Pill/>}`-shaped, #1211/#1213). That
+    // value is already fully re-evaluated and spliced via `__bfSlot`
+    // whenever insert() (re-)mounts the branch; wrapping it in an
+    // *additional* createEffect re-invokes the callback (producing a
+    // second, independent live element) on the very first run, and the
+    // loop-child arm's `$t()`-based anchor lookup can't cleanly displace an
+    // already-mounted Element — so the second instance renders beside the
+    // first instead of replacing it (surfaced via barefootjs-xyflow's
+    // renderNode reference page in CI).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      interface Node { id: string }
+
+      export function Flow(props: { renderNode?: (n: Node) => unknown }) {
+        const [nodes] = createSignal<Node[]>([])
+        return (
+          <div>
+            {nodes().map(n => (
+              <div key={n.id}>
+                {props.renderNode ? props.renderNode(n) : <span>{n.id}</span>}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Flow.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+
+    // No nested createEffect re-invoking `props.renderNode(n)` — the
+    // conditional's own template()/insert() already owns this value.
+    expect(content).not.toMatch(/createEffect\(\(\) => \{ __rt_\w+ = __bfText\(__rt_\w+, \(?\s*props\.renderNode\(n\(\)\)/)
+  })
 })

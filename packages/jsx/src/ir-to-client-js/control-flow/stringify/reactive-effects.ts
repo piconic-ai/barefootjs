@@ -149,7 +149,11 @@ function emitArmBody(lines: string[], arm: LoopChildArmPlan, armIndent: string, 
 }
 
 function emitArmText(lines: string[], indent: string, text: LoopChildArmText, pc: string | undefined): void {
+  // __bfText (not a naive `.textContent = String(...)`) so a Child-position
+  // expression whose value is a live Node (e.g. a hoisted `renderNode={(n)
+  // => <PillNode/>}` callback, #1213) is spliced into the slot by identity
+  // instead of being stringified to "[object HTMLElement]" (#2347).
   const varName = `__rt_${varSlotId(text.slotId)}`
-  lines.push(`${indent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
-  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}) }`)
+  lines.push(`${indent}let ${varName} = $t(__branchScope, '${text.slotId}')[0]`)
+  lines.push(`${indent}createEffect(() => { ${varName} = __bfText(${varName}, ${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)})`)
 }

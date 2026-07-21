@@ -219,8 +219,12 @@ function stringifyLoopChildArm(
   stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
   stringifyBranchReactiveAttrs(lines, arm.attrs, armIndent, pc)
   for (const text of arm.texts) {
+    // __bfText (not a naive `.textContent = String(...)`) so a Child-position
+    // expression whose value is a live Node (e.g. a hoisted `renderNode={(n)
+    // => <PillNode/>}` callback, #1213) is spliced into the slot by identity
+    // instead of being stringified to "[object HTMLElement]" (#2347).
     const varName = `__rt_${varSlotId(text.slotId)}`
-    lines.push(`${armIndent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
-    lines.push(`${armIndent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}) }`)
+    lines.push(`${armIndent}let ${varName} = $t(__branchScope, '${text.slotId}')[0]`)
+    lines.push(`${armIndent}createEffect(() => { ${varName} = __bfText(${varName}, ${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)})`)
   }
 }
