@@ -55,6 +55,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-smoke-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
     runs-on: ubuntu-latest

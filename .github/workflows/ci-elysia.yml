@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-elysia-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-elysia:
     runs-on: ubuntu-latest

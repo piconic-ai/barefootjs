@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-h3-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-h3:
     runs-on: ubuntu-latest

@@ -16,6 +16,10 @@ on:
       - 'packages/cli/**'
       - '.github/workflows/ci-create-barefootjs.yml'
 
+concurrency:
+  group: ci-create-barefootjs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest

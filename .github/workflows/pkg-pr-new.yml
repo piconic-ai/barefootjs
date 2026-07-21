@@ -18,6 +18,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: pkg-pr-new-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     if: contains(github.event.pull_request.labels.*.name, 'cr-tracked')
