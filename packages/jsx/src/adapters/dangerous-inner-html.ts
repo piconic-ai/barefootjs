@@ -200,27 +200,40 @@ export function dangerousInnerHtmlMetacharViolation(html: string, adapterId: str
 
 /**
  * Purpose-built `BF101` for a `dangerouslySetInnerHTML` value this adapter
- * can't lower — either the attribute value is not a `{ __html: … }` object
- * literal at all (`unlowerable`), or it is a static literal that fails the
- * metachar guard above. Named `reason` so both refusal paths funnel through
- * the same message shape rather than growing two near-identical adapter-side
- * error strings. A genuinely dynamic value no longer reaches here — it is
- * lowered through the adapter's raw-output sink (#2319).
+ * can't lower. Two distinct failure families funnel through here, so the base
+ * message is chosen by whether a `reason` is supplied:
+ *
+ * - WITHOUT a `reason` — the value is not the required SHAPE: it must be an
+ *   object literal with exactly one `__html` property (no spreads, extra keys,
+ *   or computed keys). The message states that contract so a near-miss like
+ *   `{ __html: x, extra: 1 }` (refused as `unlowerable`) doesn't get told it
+ *   "expects an { __html: … }" it already appears to have.
+ * - WITH a `reason` — the value IS a well-formed `{ __html: … }` object
+ *   literal that this adapter still can't lower: a static literal carrying
+ *   template metacharacters (`dangerousInnerHtmlMetacharViolation`), or — on
+ *   the Go adapter — a template-literal / conditional inner expression with no
+ *   single-argument raw form. The `reason` is the real story; the base states
+ *   only that the value can't be lowered here, not that the shape is wrong.
+ *
+ * A genuinely dynamic value with a lowerable inner expression no longer
+ * reaches here — it is lowered through the adapter's raw-output sink (#2319).
  */
 export function dangerousInnerHtmlDiagnostic(
   expr: string,
   loc: SourceLocation,
   reason?: string,
 ): CompilerError {
-  const detail = reason ? ` — ${reason}.` : ''
+  const base = reason
+    ? `dangerouslySetInnerHTML value cannot be lowered on this adapter — ${reason}`
+    : 'dangerouslySetInnerHTML requires an object literal with a single `__html` property (e.g. { __html: value }) — spreads, extra keys, and computed keys are not supported'
   return {
     code: 'BF101',
     severity: 'error',
-    message: `dangerouslySetInnerHTML expects an { __html: … } object literal${expr ? `: ${expr.trim()}` : ''}${detail}`,
+    message: `${base}${expr ? `: ${expr.trim()}` : ''}`,
     loc,
     suggestion: {
       message:
-        'Pass an object literal { __html: value } (a string literal is spliced as trusted template text; a prop/signal value is lowered through the adapter\'s raw-output sink). To force it onto the client instead of SSR, use /* @client */ (e.g. dangerouslySetInnerHTML={/* @client */ { __html: expr }}) so hydration sets it.',
+        'Pass an object literal { __html: value } with exactly one `__html` property (a string literal is spliced as trusted template text; a prop/signal value is lowered through the adapter\'s raw-output sink). To force it onto the client instead of SSR, use /* @client */ (e.g. dangerouslySetInnerHTML={/* @client */ { __html: expr }}) so hydration sets it.',
     },
   }
 }

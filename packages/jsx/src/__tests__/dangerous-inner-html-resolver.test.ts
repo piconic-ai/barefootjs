@@ -194,13 +194,24 @@ describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
 })
 
 describe('dangerousInnerHtmlDiagnostic (#2207)', () => {
-  test('produces a BF101 with a purpose-built message', () => {
+  test('a wrong-shape refusal (no reason) states the single-__html-property contract', () => {
     const diag = dangerousInnerHtmlDiagnostic('true', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } })
     expect(diag.code).toBe('BF101')
     expect(diag.severity).toBe('error')
-    expect(diag.message).toContain('dangerouslySetInnerHTML expects an { __html: … } object literal')
+    // The message names the canonical shape (a single `__html` property) so a
+    // near-miss like `{ __html: x, extra: 1 }` isn't told it "expects an
+    // { __html: … }" it already appears to have (#2319 review).
+    expect(diag.message).toContain('requires an object literal with a single `__html` property')
     // A dynamic value is now lowered, not refused, so the escape-hatch text
     // points at the object-literal contract and /* @client */ (#2319).
     expect(diag.suggestion?.message).toContain('@client')
+  })
+
+  test('a valid-shape-but-unlowerable refusal (with reason) leads with the reason, not the shape', () => {
+    const diag = dangerousInnerHtmlDiagnostic('{ __html: `<b>${x}</b>` }', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }, 'no single-argument raw form on the Go adapter')
+    expect(diag.code).toBe('BF101')
+    expect(diag.message).toContain('cannot be lowered on this adapter — no single-argument raw form on the Go adapter')
+    // It must NOT claim the shape is wrong when it isn't.
+    expect(diag.message).not.toContain('requires an object literal with a single')
   })
 })

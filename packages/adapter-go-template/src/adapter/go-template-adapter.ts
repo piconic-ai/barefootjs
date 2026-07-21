@@ -3088,9 +3088,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // refuse loudly rather than emit broken template source. The
       // conformance fixture (a plain prop) takes the common path below.
       if (this.isTemplateFragment(goExpr, classify.parsed?.kind)) {
+        // The `{ __html: … }` shape is fine here — echo the whole object
+        // literal (not just the inner value) so the message reads
+        // consistently with the other refusal paths, whose `reason` carries
+        // the actual cause.
         this.errors.push(
           dangerousInnerHtmlDiagnostic(
-            resolution.valueExpr,
+            `{ __html: ${resolution.valueExpr} }`,
             resolution.loc,
             'a template-literal or conditional __html value has no single-argument raw form on the Go adapter',
           ),
