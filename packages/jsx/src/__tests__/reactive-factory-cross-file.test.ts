@@ -999,6 +999,85 @@ export function App() {
     expect(bf113!.message).toContain('Shared')
   })
 
+  test('M18d: a helper VALUE import used only in type position is still re-provisioned (Copilot review, PR #2351)', () => {
+    // `Shape` is a plain value import in the helper file — never wrapped in
+    // `type`/`import type` — but the factory body only ever uses it as a
+    // type annotation. The type-position walk must still find it via
+    // moduleBindings.imported (not just importedTypes), or this regresses
+    // to the exact #2350 gap for names that happen not to be type-only
+    // imports in their OWN file.
+    writeFixture('matrix18d/shape.ts', `export class Shape {
+  area(): number { return 0 }
+}
+`)
+    writeFixture('matrix18d/useShape.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { Shape } from './shape'
+
+export function useShape() {
+  function makeDefault(): Shape {
+    return new Shape()
+  }
+  const [shape, setShape] = createSignal<Shape>(makeDefault())
+  return { shape, setShape }
+}
+`)
+    const consumerSource = `'use client'
+import { useShape } from './useShape'
+
+export function App() {
+  const { shape, setShape } = useShape()
+  return <button onClick={() => setShape(shape())}>{String(shape())}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18d/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    // Re-provisioned as a normal VALUE import (not `import type`) — a value
+    // import already brings the type into scope, and the value form is what
+    // the helper file itself declared.
+    expect(template!.content).toMatch(/import\s*\{\s*Shape\s*\}\s*from\s*'\.\/shape'/)
+    expect(template!.content).not.toMatch(/import\s+type\s*\{\s*Shape\s*\}/)
+  })
+
+  test('M18e: a generic type parameter is not misclassified as a module-scope type reference (Copilot review, PR #2351)', () => {
+    // The factory's own <Item> type parameter shadows an unrelated
+    // module-scope `Item` type import — referencing the PARAMETER inside
+    // the factory body must not trigger re-provisioning of the import (it
+    // isn't actually referenced at all).
+    writeFixture('matrix18e/item-types.ts', `export interface Item {
+  id: string
+}
+`)
+    writeFixture('matrix18e/useBox.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import type { Item } from './item-types'
+
+export function useBox<Item>(initial: Item) {
+  const [value, setValue] = createSignal<Item>(initial)
+  return { value, setValue }
+}
+`)
+    const consumerSource = `'use client'
+import { useBox } from './useBox'
+
+export function App() {
+  const { value, setValue } = useBox(0)
+  return <button onClick={() => setValue(1)}>{String(value())}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18e/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).not.toContain('./item-types')
+  })
+
   test('M19: a colliding binding nested inside a JSX callback still triggers BF113', () => {
     // Pins collectEntryBindingNames's depth: the ONLY `doubleIt` binding in
     // the consumer file is declared inside an onClick callback, not at any

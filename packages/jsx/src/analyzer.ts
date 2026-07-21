@@ -2550,19 +2550,36 @@ export function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
  * name is collected, which by plain `forEachChild` recursion also reaches
  * nested references (generic type arguments, array/union/tuple members,
  * function-type params/returns) without needing to special-case each shape.
- * Doesn't exclude generic type parameters or body-local type declarations
- * that might shadow a module-scope name of the same text — unresolved
- * names are simply not found in the caller's module-scope lookup, which is
- * already the correct behavior for those too (as well as for TS lib
- * globals like `HTMLInputElement`).
+ * A function-like node's own type parameters (`<T>`) are tracked and
+ * excluded within its body/signature, same idea as the value walker's
+ * arrow-parameter tracking — otherwise a generic named the same as a
+ * module-scope type (`function useThing<SavedList>(x: SavedList)`) would
+ * be misclassified as a reference to the import (Copilot review, PR
+ * #2351). Doesn't exclude body-local type/interface declarations that
+ * shadow a module-scope name — rare enough here that, per this file's
+ * accepted-limitation policy, a redundant-but-harmless re-provisioned
+ * import is an acceptable outcome (never a silent dangling reference).
  */
 function extractFreeTypeIdentifiersFromNode(node: ts.Node): Set<string> {
   const ids = new Set<string>()
+  const boundTypeParams = new Set<string>()
   function rootName(name: ts.EntityName): ts.Identifier {
     return ts.isQualifiedName(name) ? rootName(name.left) : name
   }
   function visit(n: ts.Node): void {
-    if (ts.isTypeReferenceNode(n)) ids.add(rootName(n.typeName).text)
+    if (ts.isTypeReferenceNode(n)) {
+      const name = rootName(n.typeName).text
+      if (!boundTypeParams.has(name)) ids.add(name)
+      // Keep descending — nested references (`Promise<SavedList>`,
+      // `Record<string, SavedList>`) live in this same node's type arguments.
+    }
+    if (ts.isFunctionLike(n) && n.typeParameters && n.typeParameters.length > 0) {
+      const names = n.typeParameters.map((p) => p.name.text)
+      for (const p of names) boundTypeParams.add(p)
+      ts.forEachChild(n, visit)
+      for (const p of names) boundTypeParams.delete(p)
+      return
+    }
     ts.forEachChild(n, visit)
   }
   visit(node)
@@ -4625,6 +4642,12 @@ function moduleCaptureCheck(
   for (const r of info.returnTupleIdentifiers) exclude.add(r)
   for (const p of REACTIVE_PRIMITIVES) exclude.add(p)
   exclude.add(selfName)
+  // extractFreeTypeIdentifiersFromNode only tracks type parameters declared
+  // BY nodes it walks — it never sees `fn` itself (only `fn.body`), so the
+  // factory's own `<T>` list needs excluding here instead (Copilot review,
+  // PR #2351: `function useThing<Item>(...)` shadowing a module-scope
+  // `Item` type import).
+  if (fn.typeParameters) for (const p of fn.typeParameters) exclude.add(p.name.text)
 
   const captured: string[] = []
   const importedRefs: ModuleCaptureResult['importedRefs'] = []
@@ -4640,12 +4663,22 @@ function moduleCaptureCheck(
   }
   for (const id of freeTypes) {
     if (exclude.has(id)) continue
-    if (moduleBindings.localTypes.has(id)) {
+    if (free.has(id)) continue // already resolved above — same name, value position wins
+    if (moduleBindings.localTypes.has(id) || moduleBindings.local.has(id)) {
       captured.push(id)
       continue
     }
-    const imp = moduleBindings.importedTypes.get(id)
-    if (imp) importedTypeRefs.push({ localName: id, source: imp.source, exportedName: imp.exportedName })
+    const typeImp = moduleBindings.importedTypes.get(id)
+    if (typeImp) {
+      importedTypeRefs.push({ localName: id, source: typeImp.source, exportedName: typeImp.exportedName })
+      continue
+    }
+    // A name used ONLY in type position can still resolve to the helper's
+    // own VALUE import (e.g. a class referenced purely as `(): Foo`) —
+    // re-provision it as a normal value import, which brings the type into
+    // scope too, instead of missing it entirely (Copilot review, PR #2351).
+    const valueImp = moduleBindings.imported.get(id)
+    if (valueImp) importedRefs.push({ localName: id, source: valueImp.source, exportedName: valueImp.exportedName })
   }
   captured.sort()
   importedRefs.sort((a, b) => (a.localName < b.localName ? -1 : 1))
