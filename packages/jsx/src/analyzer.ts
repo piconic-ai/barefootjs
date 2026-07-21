@@ -2550,6 +2550,11 @@ export function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
  * name is collected, which by plain `forEachChild` recursion also reaches
  * nested references (generic type arguments, array/union/tuple members,
  * function-type params/returns) without needing to special-case each shape.
+ * Also collects `TypeQueryNode` (`typeof Foo`) root names — `Foo` there is
+ * a VALUE reference in type position, so `moduleCaptureCheck`'s fallback to
+ * `moduleBindings.imported`/`local` (added for the plain-value-import case,
+ * Copilot review, PR #2351) resolves it the same way (Copilot review, PR
+ * #2351).
  * A function-like node's own type parameters (`<T>`) are tracked and
  * excluded within its body/signature, same idea as the value walker's
  * arrow-parameter tracking — otherwise a generic named the same as a
@@ -2572,6 +2577,10 @@ function extractFreeTypeIdentifiersFromNode(node: ts.Node): Set<string> {
       if (!boundTypeParams.has(name)) ids.add(name)
       // Keep descending — nested references (`Promise<SavedList>`,
       // `Record<string, SavedList>`) live in this same node's type arguments.
+    }
+    if (ts.isTypeQueryNode(n)) {
+      const name = rootName(n.exprName).text
+      if (!boundTypeParams.has(name)) ids.add(name)
     }
     if (ts.isFunctionLike(n) && n.typeParameters && n.typeParameters.length > 0) {
       const names = n.typeParameters.map((p) => p.name.text)

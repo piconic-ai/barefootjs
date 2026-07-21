@@ -1078,6 +1078,45 @@ export function App() {
     expect(template!.content).not.toContain('./item-types')
   })
 
+  test('M18f: a `typeof` reference to a helper value import is re-provisioned as a value import (Copilot review, PR #2351)', () => {
+    // `typeof DEFAULT_SHAPE` is type position syntactically (a TypeQueryNode),
+    // but the name it names — DEFAULT_SHAPE — is a VALUE import, and only its
+    // TYPE is being borrowed here (the nested makeShape's return type). The
+    // body never reads DEFAULT_SHAPE as a value directly, so this isolates
+    // the TypeQueryNode path from the plain-value-walk path that already
+    // covers a direct `DEFAULT_SHAPE` reference regardless of this fix.
+    writeFixture('matrix18f/shapes.ts', `export const DEFAULT_SHAPE = { kind: 'circle' as const, radius: 1 }
+`)
+    writeFixture('matrix18f/useShape.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { DEFAULT_SHAPE } from './shapes'
+
+export function useShape() {
+  function makeShape(): typeof DEFAULT_SHAPE {
+    return { kind: 'circle', radius: 1 }
+  }
+  const [shape, setShape] = createSignal(makeShape())
+  return { shape, setShape }
+}
+`)
+    const consumerSource = `'use client'
+import { useShape } from './useShape'
+
+export function App() {
+  const { shape, setShape } = useShape()
+  return <button onClick={() => setShape({ kind: 'circle', radius: 2 })}>{shape().kind}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18f/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).toMatch(/import\s*\{\s*DEFAULT_SHAPE\s*\}\s*from\s*'\.\/shapes'/)
+    expect(template!.content).not.toMatch(/import\s+type\s*\{\s*DEFAULT_SHAPE\s*\}/)
+  })
+
   test('M19: a colliding binding nested inside a JSX callback still triggers BF113', () => {
     // Pins collectEntryBindingNames's depth: the ONLY `doubleIt` binding in
     // the consumer file is declared inside an onClick callback, not at any
