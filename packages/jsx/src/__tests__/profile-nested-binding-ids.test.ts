@@ -111,8 +111,11 @@ describe('nested loop binding ids (#1795 Phase 3)', () => {
 
   test('loop-child conditional insert() and its branch text carry ids', () => {
     const on = clientJs(nestedSource, 'Nested', true)
-    // The branch-arm text (`{r.label}` inside the conditional's true arm).
-    expect(on).toMatch(/__rt_s\d+\.textContent = String\(r\(\)\.label\) }, "Nested#binding:s\d+"\)/)
+    // The branch-arm text (`{r.label}` inside the conditional's true arm) —
+    // __bfText (not a naive `.textContent = String(...)`) so a Child-position
+    // expression whose value is a live Node splices by identity instead of
+    // stringifying (#2347).
+    expect(on).toMatch(/__rt_s\d+ = __bfText\(__rt_s\d+, r\(\)\.label\) }, "Nested#binding:s\d+"\)/)
     // The inner loop's child text (`{t}`).
     expect(on).toMatch(/String\(t\(\)\) }, "Nested#binding:s\d+"\)/)
   })

@@ -11,6 +11,8 @@ import type {
   LoopChildBranchSummary,
   LoopChildConditional,
   LoopChildEvent,
+  LoopChildReactiveAttr,
+  LoopChildReactiveText,
   NestedLoop,
 } from '../../types.ts'
 import type {
@@ -20,9 +22,10 @@ import type {
   IRProp,
   LoopParamBinding,
 } from '../../../types.ts'
-import { AttrValueOf } from '../../../types.ts'
+import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
 import { quotePropName, wrapLoopParamAsAccessor, attrValueToString } from '../../utils.ts'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template.ts'
+import type { ReactiveAttrSlot } from './reactive-effects.ts'
 
 /**
  * Apply a string-level expression rewriter (loop-param-accessor wrap, prop
@@ -381,6 +384,56 @@ export function buildLoopChildConditionalsPlan(
   return plans
 }
 
+/**
+ * Group a branch's reactive attrs by child slot (one qsa per slot),
+ * pre-wrapping each expression via the supplied loop-param wrap closure.
+ * Shared by every arm builder — outer conditional arms and recursively
+ * nested ones alike — so an attr binds inside whichever arm directly owns
+ * its element, never a stale outer scope (#2347).
+ */
+export function buildArmAttrsPlan(
+  attrs: readonly LoopChildReactiveAttr[] | undefined,
+  wrap: (expr: string) => string,
+): readonly ReactiveAttrSlot[] {
+  if (!attrs || attrs.length === 0) return []
+  const bySlot = new Map<string, LoopChildReactiveAttr[]>()
+  for (const attr of attrs) {
+    let bucket = bySlot.get(attr.childSlotId)
+    if (!bucket) {
+      bucket = []
+      bySlot.set(attr.childSlotId, bucket)
+    }
+    bucket.push(attr)
+  }
+  const slots: ReactiveAttrSlot[] = []
+  for (const [slotId, slotAttrs] of bySlot) {
+    slots.push({
+      slotId,
+      attrs: slotAttrs.map(attr => ({
+        attrName: attr.attrName,
+        wrappedExpression: wrap(attr.expression),
+        meta: pickAttrMeta(attr),
+      })),
+    })
+  }
+  return slots
+}
+
+/**
+ * Pre-wrap a branch's reactive text interpolations via the supplied
+ * loop-param wrap closure. Shared by every arm builder (#2347).
+ */
+export function buildArmTextsPlan(
+  texts: readonly LoopChildReactiveText[] | undefined,
+  wrap: (expr: string) => string,
+): readonly import('./loop-child-arm.ts').LoopChildArmText[] {
+  if (!texts || texts.length === 0) return []
+  return texts.map(text => ({
+    slotId: text.slotId,
+    wrappedExpression: wrap(text.expression),
+  }))
+}
+
 interface BuildLoopChildArmArgs {
   branch: LoopChildBranchSummary
   wrap: (expr: string) => string
@@ -413,6 +466,7 @@ function buildLoopChildArmPlan(args: BuildLoopChildArmArgs): LoopChildArmPlan {
       loopParam,
       loopParamBindings,
     }),
-    texts: [],
+    attrs: buildArmAttrsPlan(branch.reactiveAttrs, wrap),
+    texts: buildArmTextsPlan(branch.reactiveTexts, wrap),
   }
 }

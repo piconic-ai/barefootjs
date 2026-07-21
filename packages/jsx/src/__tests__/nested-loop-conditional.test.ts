@@ -381,3 +381,136 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(outsideInitChildCount).toBe(0)
   })
 })
+
+describe('per-item conditional wrapping a dynamic attr/event element binds exactly once (#2347)', () => {
+  // A per-item conditional (`cond ? null : <el/>`) whose element itself has a
+  // dynamic attribute and/or event handler used to get bound twice: once
+  // directly against the loop item's own initial template clone (querying
+  // `qsa(__el, ...)` right in the mapArray callback), and again inside the
+  // conditional's own `insert()` bindEvents against whatever node it mounts.
+  // At runtime this doubled the click handler and left the attribute effect
+  // pointed at a detached node once insert() swapped branches.
+
+  test('Repro 1: reactive className on a conditionally-rendered element binds once, inside bindEvents', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      interface Item { handle: string; active: 0 | 1 }
+
+      export function List(props: { viewerHandle: string }) {
+        const [items, setItems] = createSignal<Item[]>([])
+        return (
+          <div>
+            {items().map(u => (
+              <div key={u.handle}>
+                {u.handle === props.viewerHandle ? null : (
+                  <button className={u.active ? 'btn on' : 'btn'} onClick={() => {}}>
+                    {u.active ? 'On' : 'Off'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+
+    // Exactly one class effect, exactly one click listener.
+    expect((content.match(/setAttribute\('class'/g) ?? []).length).toBe(1)
+    expect((content.match(/addEventListener\('click'/g) ?? []).length).toBe(1)
+
+    // The class effect must live inside the conditional's own bindEvents
+    // (querying `__branchScope`, the node insert() actually mounts) —
+    // not directly against `__el` in the outer mapArray scope, which would
+    // go stale the moment insert() swaps in a fresh clone.
+    const bindEventsIndex = content.indexOf('bindEvents:')
+    const classEffectIndex = content.indexOf("setAttribute('class'")
+    expect(bindEventsIndex).toBeGreaterThan(-1)
+    expect(classEffectIndex).toBeGreaterThan(bindEventsIndex)
+    expect(content).toContain("qsa(__branchScope, '[bf=\"s2\"]')")
+  })
+
+  test('Repro 2: a doubly-nested per-item conditional binds click exactly once, in the innermost arm', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      interface Item { handle: string; active: 0 | 1 }
+
+      export function List(props: { viewerHandle: string; signedIn: boolean }) {
+        const [items, setItems] = createSignal<Item[]>([])
+        const onClick = (u: Item) => {}
+        return (
+          <div>
+            {items().map(u => (
+              <div key={u.handle}>
+                {u.handle === props.viewerHandle ? null : props.signedIn ? (
+                  <button className={u.active ? 'btn on' : 'btn'} onClick={() => onClick(u)}>
+                    {u.active ? 'On' : 'Off'}
+                  </button>
+                ) : (
+                  <a href="/login" rel="nofollow noreferrer">Off</a>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'List.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+
+    // A single click bound in the browser used to fire the handler twice —
+    // once from the outer arm's own qsa()+addEventListener, once again from
+    // the nested insert()'s bindEvents — silently double-toggling state.
+    expect((content.match(/addEventListener\('click'/g) ?? []).length).toBe(1)
+    expect((content.match(/setAttribute\('class'/g) ?? []).length).toBe(1)
+  })
+
+  test('a JSX-callback prop call as the WHOLE branch content does not get a nested text effect', () => {
+    // Regression pin for a fix-of-the-fix: the initial #2347 patch made
+    // `summarizeLoopChildBranch` collect reactive texts for any branch,
+    // which newly reached a per-item conditional whose branch is a single
+    // bare `expression` (no wrapping element) — e.g. a hoisted JSX-callback
+    // prop call (`renderNode={(n) => <Pill/>}`-shaped, #1211/#1213). That
+    // value is already fully re-evaluated and spliced via `__bfSlot`
+    // whenever insert() (re-)mounts the branch; wrapping it in an
+    // *additional* createEffect re-invokes the callback (producing a
+    // second, independent live element) on the very first run, and the
+    // loop-child arm's `$t()`-based anchor lookup can't cleanly displace an
+    // already-mounted Element — so the second instance renders beside the
+    // first instead of replacing it (surfaced via barefootjs-xyflow's
+    // renderNode reference page in CI).
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+
+      interface Node { id: string }
+
+      export function Flow(props: { renderNode?: (n: Node) => unknown }) {
+        const [nodes] = createSignal<Node[]>([])
+        return (
+          <div>
+            {nodes().map(n => (
+              <div key={n.id}>
+                {props.renderNode ? props.renderNode(n) : <span>{n.id}</span>}
+              </div>
+            ))}
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'Flow.tsx', { adapter })
+    expect(result.errors).toHaveLength(0)
+    const content = result.files.find(f => f.type === 'clientJs')!.content
+
+    // No nested createEffect re-invoking `props.renderNode(n)` — the
+    // conditional's own template()/insert() already owns this value.
+    expect(content).not.toMatch(/createEffect\(\(\) => \{ __rt_\w+ = __bfText\(__rt_\w+, \(?\s*props\.renderNode\(n\(\)\)/)
+  })
+})

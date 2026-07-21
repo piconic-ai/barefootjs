@@ -1246,8 +1246,13 @@ export function collectLoopChildBindings(
   const bindings = emptyLoopChildBindings()
   for (const child of children) {
     bindings.events.push(...collectLoopChildEventsWithNesting(child))
-    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings))
-    bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, loopParam, loopParamBindings))
+    // stopAtReactiveConditionals=true (#2347): this function always also
+    // collects nested reactive conditionals below via
+    // `collectLoopChildConditionals`, which gives each its own insert() +
+    // arm-scoped attrs/texts (`LoopChildBranchSummary.reactiveAttrs` /
+    // `.reactiveTexts`) — descending into them here too would double-bind.
+    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings, true))
+    bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, loopParam, loopParamBindings, true))
     bindings.refs.push(...collectLoopChildRefs(child))
     bindings.conditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, loopParam, loopParamBindings))
   }
@@ -1342,5 +1347,26 @@ function summarizeLoopChildBranch(
     innerLoops: inner.length > 0 ? inner : undefined,
     conditionals: collectLoopChildConditionals(node, ctx, siblingOffsets, loopParam, loopParamBindings),
     events: collectConditionalBranchEvents(node),
+    // Loop-param-aware — reuses the flat loop-item collectors scoped to just
+    // this branch's subtree. Both already stop descending into any further
+    // nested reactive conditional (own insert()/arm), so calling them here
+    // on the branch root yields exactly this branch's direct bindings
+    // without re-collecting what a nested arm already owns (#2347).
+    reactiveAttrs: collectLoopChildReactiveAttrs(node, ctx, loopParam, loopParamBindings, true),
+    // Skip when the branch's ENTIRE content is a single bare `expression`
+    // (no wrapping element) — e.g. a hoisted `renderNode={(n) => <Pill/>}`
+    // callback (#1211/#1213). That value is already fully re-evaluated and
+    // spliced via `__bfSlot` whenever `insert()` (re-)mounts this branch;
+    // an *additional* nested createEffect for the same expression re-calls
+    // it and creates a second, independent live element (a JSX-callback
+    // result isn't idempotent to re-invoke the way a plain signal read is),
+    // and the loop-child arm's `$t()`-based anchor lookup — designed for
+    // text nodes — doesn't cleanly displace an already-mounted Element,
+    // so the second instance lands beside the first instead of replacing
+    // it. A text *nested inside* a static wrapper element in the branch
+    // (the element-descent case) is unaffected and still collected below.
+    reactiveTexts: node.type === 'expression'
+      ? []
+      : collectLoopChildReactiveTexts(node, ctx, loopParam, loopParamBindings, true),
   }
 }

@@ -152,8 +152,7 @@ export type BranchInnerLoopsPlan = readonly BranchInnerLoop[]
 
 /**
  * One branch-scoped reactive text effect (slotId + already-wrapped
- * expression). The top-level outer conditional's arms emit these inside
- * `bindEvents`; recursive nested conditionals never carry texts.
+ * expression), attached inside the arm's `bindEvents`.
  */
 export interface LoopChildArmText {
   slotId: string
@@ -169,16 +168,23 @@ export interface LoopChildArmText {
  *   - `childComponents`   — `buildBranchChildComponentInitsPlan`
  *   - `innerLoops`        — `buildBranchInnerLoopsPlan`
  *   - `nestedConditionals`— `buildLoopChildConditionalPlan` (recursive)
+ *   - `attrs`             — reactive attrs on elements directly inside the
+ *     arm, grouped by slot (#2347)
+ *   - `texts`             — reactive text interpolations on elements
+ *     directly inside the arm (#2347)
  *
- * `texts` is only populated for the *outer* conditional — the recursion
- * branch (`emitNestedLoopChildConditionals` legacy) never threaded text
- * effects through, so nested arms always carry an empty list.
+ * Both `attrs` and `texts` are collected per-arm at every nesting depth —
+ * an element inside a doubly-nested conditional gets its bindings from the
+ * innermost enclosing arm, never from an outer scope's own initial-clone
+ * query, so a branch swap (`insert()` mounting a fresh node) never leaves a
+ * binding pointed at a detached element.
  */
 export interface LoopChildArmPlan {
   events: BranchEventBindingsPlan
   childComponents: BranchChildComponentInitsPlan
   innerLoops: BranchInnerLoopsPlan
   nestedConditionals: readonly LoopChildConditionalPlan[]
+  attrs: readonly import('./reactive-effects.ts').ReactiveAttrSlot[]
   texts: readonly LoopChildArmText[]
 }
 

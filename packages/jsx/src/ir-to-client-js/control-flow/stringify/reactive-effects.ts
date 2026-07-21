@@ -10,13 +10,7 @@
 
 import { varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
-import {
-  stringifyBranchChildComponentInits,
-  stringifyBranchEventBindings,
-  stringifyBranchInnerLoops,
-  stringifyLoopChildConditionals,
-} from './loop-child-arm.ts'
-import type { LoopChildArmPlan, LoopChildArmText } from '../plan/loop-child-arm.ts'
+import { stringifyLoopChildArm } from './loop-child-arm.ts'
 import type {
   NestedConditionalPlan,
   ReactiveEffectsPlan,
@@ -126,28 +120,12 @@ function emitOuterConditional(
   lines.push(`${indent}insert(${elVar}, '${cond.slotId}', () => ${cond.wrappedCondition}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  emitArmBody(lines, cond.whenTrueArm, armIndent, pc)
+  stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
   lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
-  emitArmBody(lines, cond.whenFalseArm, armIndent, pc)
+  stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent, pc)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}${profileBindingId(pc, cond.slotId)})`)
-}
-
-function emitArmBody(lines: string[], arm: LoopChildArmPlan, armIndent: string, pc: string | undefined): void {
-  stringifyBranchEventBindings(lines, arm.events, armIndent)
-  stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
-  stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
-  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
-  for (const text of arm.texts) {
-    emitArmText(lines, armIndent, text, pc)
-  }
-}
-
-function emitArmText(lines: string[], indent: string, text: LoopChildArmText, pc: string | undefined): void {
-  const varName = `__rt_${varSlotId(text.slotId)}`
-  lines.push(`${indent}{ const [${varName}] = $t(__branchScope, '${text.slotId}')`)
-  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}) }`)
 }

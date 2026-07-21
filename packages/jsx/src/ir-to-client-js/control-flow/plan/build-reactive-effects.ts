@@ -3,17 +3,20 @@
  *
  * Decisions resolved at build time (no longer in the stringifier):
  *   1. Group reactive attrs by `childSlotId` (one qsa() lookup per slot).
+ *      `attrs` only ever carries outer-scope entries — the collector that
+ *      produces it already stops descending into reactive conditionals
+ *      (#2347), so no branch/outer partition is needed here.
  *   2. Wrap every attr / text / condition expression via
  *      `wrapLoopParamAsAccessor` so the stringifier never touches the wrap.
- *   3. Partition reactive texts: those whose slot id appears inside any
- *      conditional branch HTML must be emitted *inside* that branch's
- *      `bindEvents` (insert() may replace the DOM nodes), the rest stay in
- *      the outer renderItem scope.
+ *   3. Each conditional arm gets its own reactive attrs / texts directly
+ *      from `LoopChildBranchSummary.reactiveAttrs` / `.reactiveTexts` —
+ *      collected per-branch, recursively, so a doubly-nested conditional's
+ *      arm carries its own bindings instead of an outer scope reaching in.
  *   4. Apply `addCondAttrToTemplate` to the wrapped branch HTML so the
  *      stringifier emits a ready-to-interpolate template literal.
  *   5. Recurse into the per-arm sub-plans via `LoopChildArmPlan` —
- *      events, child component inits, inner loops, nested conditionals.
- *      No legacy passthrough remains.
+ *      events, child component inits, inner loops, nested conditionals,
+ *      attrs, texts. No legacy passthrough remains.
  */
 
 import type {
@@ -28,15 +31,14 @@ import { pickAttrMeta } from '../../../types.ts'
 import { wrapLoopParamAsAccessor } from '../../utils.ts'
 import { addCondAttrToTemplate } from '../../html-template.ts'
 import {
+  buildArmAttrsPlan,
+  buildArmTextsPlan,
   buildBranchChildComponentInitsPlan,
   buildBranchEventBindingsPlan,
   buildBranchInnerLoopsPlan,
   buildLoopChildConditionalsPlan,
 } from './build-loop-child-arm.ts'
-import type {
-  LoopChildArmPlan,
-  LoopChildArmText,
-} from './loop-child-arm.ts'
+import type { LoopChildArmPlan } from './loop-child-arm.ts'
 import type {
   NestedConditionalPlan,
   ReactiveAttrSlot,
@@ -84,57 +86,31 @@ export function buildReactiveEffectsPlan(
     })
   }
 
-  // 2. Identify text slots that must be deferred into a conditional branch's
-  //    bindEvents. The check mirrors the legacy `cond.whenXxxHtml.includes(
-  //    'bf:' + slotId)` heuristic — the rendered template HTML is the only
-  //    pre-runtime signal available.
-  const textSlotsInConditionals = new Set<string>()
-  if (conditionals) {
-    for (const cond of conditionals) {
-      for (const text of texts) {
-        if (
-          cond.whenTrueHtml.includes(`bf:${text.slotId}`) ||
-          cond.whenFalseHtml.includes(`bf:${text.slotId}`)
-        ) {
-          textSlotsInConditionals.add(text.slotId)
-        }
-      }
-    }
-  }
+  // 2. Outer text effects. `texts` (elem.bindings.reactiveTexts) is produced
+  //    by `collectLoopChildReactiveTexts`, which already stops descending
+  //    into any reactive (slotId'd) conditional — so every entry here is
+  //    genuinely outer-scope, no HTML-substring partition needed (#2347).
+  const outerTexts: ReactiveTextEffect[] = texts.map(text => ({
+    slotId: text.slotId,
+    wrappedExpression: wrap(text.expression),
+  }))
 
-  const outerTexts: ReactiveTextEffect[] = []
-  for (const text of texts) {
-    if (textSlotsInConditionals.has(text.slotId)) continue
-    outerTexts.push({
-      slotId: text.slotId,
-      wrappedExpression: wrap(text.expression),
-    })
-  }
-
-  // 3. Per-conditional plans. Branch-scoped texts are partitioned by which
-  //    branch HTML mentions the slot (declaration order preserved). The
-  //    arm bodies are fully Plan-built — no legacy passthrough.
+  // 3. Per-conditional plans. Each arm's own reactive attrs / texts come
+  //    from `LoopChildBranchSummary.reactiveAttrs` / `.reactiveTexts` —
+  //    collected directly on that branch's subtree (#2347) — instead of a
+  //    flat list partitioned by searching the rendered branch HTML for a
+  //    `bf:<slotId>` marker. The arm bodies are fully Plan-built — no
+  //    legacy passthrough.
   const conditionalPlans: NestedConditionalPlan[] = []
   if (conditionals) {
     for (const cond of conditionals) {
-      const trueTexts: LoopChildArmText[] = []
-      const falseTexts: LoopChildArmText[] = []
-      for (const text of texts) {
-        if (!textSlotsInConditionals.has(text.slotId)) continue
-        const wrapped: LoopChildArmText = {
-          slotId: text.slotId,
-          wrappedExpression: wrap(text.expression),
-        }
-        if (cond.whenTrueHtml.includes(`bf:${text.slotId}`)) trueTexts.push(wrapped)
-        if (cond.whenFalseHtml.includes(`bf:${text.slotId}`)) falseTexts.push(wrapped)
-      }
       conditionalPlans.push({
         slotId: cond.slotId,
         wrappedCondition: wrap(cond.condition),
         whenTrueTemplateHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
         whenFalseTemplateHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
-        whenTrueArm: buildOuterArm(cond.whenTrue, trueTexts, wrap, loopParam, loopParamBindings, profileComponentName),
-        whenFalseArm: buildOuterArm(cond.whenFalse, falseTexts, wrap, loopParam, loopParamBindings, profileComponentName),
+        whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, profileComponentName),
+        whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, profileComponentName),
       })
     }
   }
@@ -149,7 +125,6 @@ export function buildReactiveEffectsPlan(
 
 function buildOuterArm(
   branch: LoopChildBranchSummary,
-  texts: readonly LoopChildArmText[],
   wrap: (expr: string) => string,
   loopParam: string,
   loopParamBindings: readonly LoopParamBinding[] | undefined,
@@ -179,7 +154,8 @@ function buildOuterArm(
       loopParam,
       loopParamBindings,
     }),
-    texts,
+    attrs: buildArmAttrsPlan(branch.reactiveAttrs, wrap),
+    texts: buildArmTextsPlan(branch.reactiveTexts, wrap),
   }
 }
 
