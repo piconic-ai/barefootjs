@@ -31,8 +31,12 @@ export function resolveConstants(
 
   for (const c of constants) {
     // Object-literal const: expose each resolvable property as a
-    // `name.key` member-path key. The bare identifier stays unresolved
-    // (an object is not a class string), matching prior behavior.
+    // `name.key` member-path key. The object's OWN bare identifier
+    // (`c.name` referenced directly, e.g. `className={rowClass}`) stays
+    // unresolved — an object is not a class string — matching prior
+    // behavior; this is unrelated to a resolvable identifier-valued
+    // PROPERTY (`{ plain: base }`), handled by resolveObjectPropValue
+    // below (Copilot review, PR #2361).
     if (c.parsed?.kind === 'object-literal') {
       for (const prop of c.parsed.properties) {
         const value = resolveObjectPropValue(prop.value, resolved)
