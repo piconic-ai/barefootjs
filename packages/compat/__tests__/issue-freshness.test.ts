@@ -45,6 +45,17 @@ describe('collectIssueRefsFromLock', () => {
     expect(refs[0].citedBy).toHaveLength(2)
   })
 
+  test('tolerates trailing slash / fragment / query suffixes and collects every URL in a string', () => {
+    const lock = {
+      // A free-text field embedding two links with assorted suffixes — the
+      // detector must catch BOTH, not just the first, and must not be thrown
+      // by the trailing `/`, `#…`, or `?…`.
+      reason: `superseded by ${url(2356)}/ (see also ${url(2320)}#issuecomment-1 and ${url(2321)}?foo=bar)`,
+    }
+    const refs = [...collectIssueRefsFromLock(lock, 'L').values()].sort((a, b) => a.number - b.number)
+    expect(refs.map((r) => r.number)).toEqual([2320, 2321, 2356])
+  })
+
   test('ignores non-issue GitHub URLs (labels, blobs)', () => {
     const lock = {
       knownLimitationLabel: `https://github.com/${REPO_SLUG}/labels/known-limitation`,

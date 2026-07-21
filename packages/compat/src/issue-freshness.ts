@@ -24,8 +24,16 @@
 /** The canonical repo whose issues the matrix links to. */
 export const REPO_SLUG = 'piconic-ai/barefootjs'
 
+/** Escape regex metacharacters so `REPO_SLUG` is matched literally. */
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Global + capture-group: `matchAll` collects EVERY issue URL in a string
+// (not just the first), and the unanchored number capture tolerates any
+// trailing `/`, `#fragment`, or `?query` suffix — a staleness detector must
+// never silently miss a referenced issue.
 const ISSUE_URL_RE = new RegExp(
-  `https://github\\.com/${REPO_SLUG.replace('/', '/')}/issues/(\\d+)`,
+  `https://github\\.com/${escapeRegExp(REPO_SLUG)}/issues/(\\d+)`,
+  'g',
 )
 
 /** One referenced issue plus every lock-JSON path that cites it. */
@@ -51,8 +59,7 @@ export function collectIssueRefsFromLock(
 ): Map<number, IssueRef> {
   const walk = (node: unknown, path: string): void => {
     if (typeof node === 'string') {
-      const m = node.match(ISSUE_URL_RE)
-      if (m) {
+      for (const m of node.matchAll(ISSUE_URL_RE)) {
         const number = Number(m[1])
         const existing = acc.get(number)
         if (existing) {
