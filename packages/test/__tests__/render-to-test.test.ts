@@ -264,6 +264,48 @@ export function List(props: { items: { id: string; active: boolean }[] }) {
     const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
     expect(li.classes).toEqual(['row', 'row-active', 'row'])
   })
+
+  test('a template-literal property with a non-identifier interpolation stays unresolved, not partially folded to "" (Copilot review, PR #2361)', () => {
+    // `${item.active ? 'x' : 'y'}` inside the template can't resolve to a
+    // plain identifier lookup — the whole property must stay unresolved
+    // (contributing nothing), not fold the interpolation to '' and seed a
+    // misleadingly "resolved" partial string.
+    const source = `
+'use client'
+const rowClass = { active: \`row-\${item.active ? 'x' : 'y'}\`, plain: 'row' }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    // Only the resolvable arm (`rowClass.plain`) contributes — no partial
+    // `row-` token from the unresolved interpolation.
+    expect(li.classes).toEqual(['row'])
+  })
+
+  test('a template-literal property interpolating an identifier that never resolves stays unresolved', () => {
+    const source = `
+'use client'
+const rowClass = { active: \`row \${undeclaredHelper()}\`, plain: 'row' }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual(['row'])
+  })
 })
 
 // ---------------------------------------------------------------------------

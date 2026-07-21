@@ -87,9 +87,23 @@ function resolveObjectPropValue(expr: ParsedExpr, resolved: Map<string, string>)
     return resolved.get(expr.name) ?? null
   }
   if (expr.kind === 'template-literal') {
-    return expr.parts
-      .map((part) => (part.type === 'string' ? part.value : (part.expr.kind === 'identifier' ? (resolved.get(part.expr.name) ?? '') : '')))
-      .join('')
+    const strs: string[] = []
+    for (const part of expr.parts) {
+      if (part.type === 'string') {
+        strs.push(part.value)
+        continue
+      }
+      // An interpolation that isn't a plain identifier reference (a
+      // conditional, a member access, ...), or one that IS an identifier
+      // but doesn't resolve, makes the whole template unresolved — don't
+      // fold it to '' and seed a partial, misleadingly "resolved" string
+      // (Copilot review, PR #2361).
+      if (part.expr.kind !== 'identifier') return null
+      const value = resolved.get(part.expr.name)
+      if (value === undefined) return null
+      strs.push(value)
+    }
+    return strs.join('')
   }
   return null
 }
