@@ -8,20 +8,38 @@
  * re-parsing from the string representation.
  */
 
+import type { ParsedExpr } from '@barefootjs/jsx'
+
 /**
  * Build a map of constant name → resolved string value.
  * Resolves string literals, template literals, array.join() patterns,
  * and plain identifier references. When `valueBranches` is present
  * (from ternary initializers), each branch is resolved and merged
- * with union semantics. Record lookups, function expressions, and
- * other complex values are skipped.
+ * with union semantics. An object-literal const with string-valued
+ * properties (`const rowClass = { active: 'row row-active', plain: 'row' }`)
+ * additionally seeds member-path keys (`rowClass.active` → `'row row-active'`)
+ * so a member-access className (`className={rowClass.active}`, or a
+ * ternary arm) resolves through the same lookup (#2354). Function
+ * expressions and other complex values are skipped.
  */
 export function resolveConstants(
-  constants: Array<{ name: string; value?: string; valueBranches?: string[] }>
+  constants: Array<{ name: string; value?: string; valueBranches?: string[]; parsed?: ParsedExpr }>
 ): Map<string, string> {
   const resolved = new Map<string, string>()
 
   for (const c of constants) {
+    // Object-literal const: expose each string-valued property as a
+    // `name.key` member-path key. The bare identifier stays unresolved
+    // (an object is not a class string), matching prior behavior.
+    if (c.parsed?.kind === 'object-literal') {
+      for (const prop of c.parsed.properties) {
+        if (prop.value.kind === 'literal' && prop.value.literalType === 'string') {
+          resolved.set(`${c.name}.${prop.key}`, String(prop.value.value))
+        }
+      }
+      continue
+    }
+
     if (!c.value) continue
 
     // When the analyzer provides structured branch info, resolve each

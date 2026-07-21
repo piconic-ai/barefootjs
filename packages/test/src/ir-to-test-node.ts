@@ -18,8 +18,9 @@ import type {
   IRProvider,
   IRAsync,
   IRMetadata,
+  ParsedExpr,
 } from '@barefootjs/jsx'
-import { resolveSetters, buildLocalFunctionSetterMap, type SetterRef, type FnSetterResolution } from '@barefootjs/jsx'
+import { resolveSetters, buildLocalFunctionSetterMap, identifierPath, type SetterRef, type FnSetterResolution } from '@barefootjs/jsx'
 
 type IRAttribute = IRElement['attrs'][number]
 type AttrValue = IRAttribute['value']
@@ -500,8 +501,17 @@ function splitClassTokens(value: string): string[] {
  *   - `string` spans → literal text, with `${ident}` interpolations
  *     substituted from resolved consts / literal prop defaults
  * For expression attrs the value resolves through local consts (cmap)
- * and literal prop defaults. Anything still carrying a `${...}`
- * interpolation is dropped by `splitClassTokens`.
+ * and literal prop defaults. A bare `className={cond ? a : b}` ternary
+ * (no backticks) is walked structurally through the attr's `parsed`
+ * tree — the `expression`-kind analogue of the `template` branch's
+ * `ternary` part handling — so both arms union with the same semantics,
+ * and an unresolvable ternary yields `[]` rather than leaking its own
+ * operator tokens (`?`/`:`) and member fragments as class names (#2354).
+ * A non-ternary expression keeps the historical fallback: a resolved
+ * value splits into tokens, otherwise the raw source passes through
+ * (an unresolvable bare identifier surfaces as its name — a proxy some
+ * tests assert on). Anything still carrying a `${...}` interpolation is
+ * dropped by `splitClassTokens`.
  */
 function collectClassTokens(attrValue: AttrValue, resolved: string | boolean | null, ctx: ConvertContext): string[] {
   if (attrValue.kind === 'template') {
@@ -519,10 +529,51 @@ function collectClassTokens(attrValue: AttrValue, resolved: string | boolean | n
 
   const isDynamic = attrValue.kind === 'expression' || attrValue.kind === 'spread'
   if (isDynamic) {
+    // Bare `className={cond ? a : b}`: no backticks, so it never becomes a
+    // structured `template` attr. Walk the parsed ternary and union both
+    // arms — resolving identifier / member-access branches through the
+    // same cmap as everything else. A CSS class can never contain the
+    // `?`/`:` operator tokens the old raw-source fallback leaked here, so
+    // an unresolvable ternary suppresses to `[]` instead (#2354).
+    if (attrValue.kind === 'expression' && attrValue.parsed?.kind === 'conditional') {
+      const value = resolveParsedClass(attrValue.parsed, ctx)
+      return value === null ? [] : splitClassTokens(value)
+    }
     const value = resolveClassValue(resolved, ctx)
     if (value !== null) return splitClassTokens(value)
   }
   return splitClassTokens(resolved)
+}
+
+/**
+ * Reduce a parsed className expression to its resolved class string, or
+ * `null` when no branch resolves. Handles the shapes a className ternary
+ * reaches for: string literals, local-const / prop-default identifiers,
+ * object-property member access (`rowClass.active`, resolved through the
+ * member-path keys `resolveConstants` seeds), and nested ternaries. Both
+ * arms of a ternary union (matching the `template` ternary part and the
+ * intermediate-const `valueBranches` handling), since the IR can't pick a
+ * concrete arm without the runtime condition. (#2354)
+ */
+function resolveParsedClass(expr: ParsedExpr, ctx: ConvertContext): string | null {
+  switch (expr.kind) {
+    case 'literal':
+      return expr.literalType === 'string' ? String(expr.value) : null
+    case 'identifier':
+      return ctx.cmap.get(expr.name) ?? ctx.defaults.get(expr.name) ?? null
+    case 'member': {
+      const path = identifierPath(expr)
+      return path === null ? null : ctx.cmap.get(path) ?? null
+    }
+    case 'conditional': {
+      const whenTrue = resolveParsedClass(expr.consequent, ctx)
+      const whenFalse = resolveParsedClass(expr.alternate, ctx)
+      if (whenTrue === null && whenFalse === null) return null
+      return [whenTrue, whenFalse].filter((v): v is string => v !== null).join(' ')
+    }
+    default:
+      return null
+  }
 }
 
 /**

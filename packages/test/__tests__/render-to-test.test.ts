@@ -76,6 +76,84 @@ export { Label }
 })
 
 // ---------------------------------------------------------------------------
+// Bare `className={cond ? a : b}` ternary resolution (#2354)
+//
+// A ternary written INLINE in className (no backticks) is an
+// `expression`-kind attr, not a structured `template`. Before #2354 the
+// `template`-branch ternary handling had no `expression`-branch analogue,
+// so `collectClassTokens` fell through to splitting the raw JS source —
+// leaking the ternary's own operator tokens (`?`/`:`) and unresolved
+// member fragments (`rowClass.active`) into `.classes` as if they were
+// class names. These pins keep the structured walk (both arms union,
+// member access resolved through the object-literal member-path keys)
+// and the no-garbage fallback (`[]` when nothing resolves) from
+// regressing.
+// ---------------------------------------------------------------------------
+
+describe('bare inline className ternary resolution (#2354)', () => {
+  const listSource = (className: string) => `
+'use client'
+const rowClass = { active: 'row row-active', plain: 'row' }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={${className}}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+
+  test('object-property member-access branches resolve to both arms union', () => {
+    const li = renderToTest(listSource('item.active ? rowClass.active : rowClass.plain'), 'list.tsx', 'List').find({
+      tag: 'li',
+    })!
+    expect(li.classes).toEqual(['row', 'row-active', 'row'])
+    // The ternary's own operator tokens are never class names.
+    expect(li.classes).not.toContain('?')
+    expect(li.classes).not.toContain(':')
+    // Nor are the unresolved expression fragments.
+    expect(li.classes).not.toContain('item.active')
+    expect(li.classes).not.toContain('rowClass.active')
+  })
+
+  test('string-literal branches resolve to both arms union', () => {
+    const li = renderToTest(listSource("item.active ? 'row row-active' : 'row'"), 'list.tsx', 'List').find({
+      tag: 'li',
+    })!
+    expect(li.classes).toEqual(['row', 'row-active', 'row'])
+  })
+
+  test('bare member access (no ternary) resolves through member-path key', () => {
+    const li = renderToTest(listSource('rowClass.active'), 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual(['row', 'row-active'])
+  })
+
+  test('unresolvable ternary yields [] rather than leaking ?/: operator tokens', () => {
+    // Both arms reference members of an object the resolver can't reduce,
+    // so neither arm resolves. The result must be empty — never the raw
+    // ternary source with its `?`/`:` operator tokens.
+    const source = `
+'use client'
+export function List(props: { items: { id: string; active: boolean; a: { x: string }; b: { y: string } }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? item.a.x : item.b.y}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual([])
+    expect(li.classes).not.toContain('?')
+    expect(li.classes).not.toContain(':')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Record<T, string>[key] indexed lookups (#2069)
 //
 // Long documented as a renderToTest resolution limit, resolved by the
