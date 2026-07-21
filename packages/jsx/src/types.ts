@@ -1525,10 +1525,11 @@ export interface ReactiveFactoryInfo {
 
 /**
  * An import the helper file holds that an inlined factory body references
- * (#2332). Not a BF112 capture: the component file can import the same
- * binding itself. Collected at prescan with the specifier ALREADY rewritten
- * relative to the component file (or unchanged for bare/npm specifiers);
- * the source rewriter injects one deduped import statement per specifier.
+ * (#2332, type-only refs added #2350). Not a BF112 capture: the component
+ * file can import the same binding itself. Collected at prescan with the
+ * specifier ALREADY rewritten relative to the component file (or unchanged
+ * for bare/npm specifiers); the source rewriter injects one deduped import
+ * statement per (specifier, isTypeOnly) pair.
  */
 export interface RequiredFactoryImport {
   /** Local binding name as referenced inside the factory body. */
@@ -1537,6 +1538,9 @@ export interface RequiredFactoryImport {
   exportedName: string
   /** Component-file-relative specifier (`../lib/mathmod`), or the unchanged bare specifier. */
   specifier: string
+  /** True when the factory body only ever references this in type position —
+   *  re-provisioned as `import type { ... }` instead of a value import. */
+  isTypeOnly?: boolean
 }
 
 /**

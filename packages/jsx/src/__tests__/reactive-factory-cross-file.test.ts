@@ -878,7 +878,7 @@ export function Ticker() {
     expect(clientJs!.content).toMatch(/import\s*\{[^}]*onMount[^}]*\}\s*from\s*'@barefootjs\/client\/runtime'/)
   })
 
-  test('M18: a type-only helper import does not trigger BF112 and is not re-provisioned', () => {
+  test('M18: a type-only helper import does not trigger BF112 and is re-provisioned as `import type` (#2350)', () => {
     writeFixture('matrix18/todo-types.ts', `export interface Todo {
   id: number
   text: string
@@ -906,9 +906,97 @@ export function TodoList() {
     const result = compileJSX(consumerSource, consumerPath, { adapter })
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
     expect(result.errors.find(e => e.code === 'BF112')).toBeUndefined()
+    // Re-provisioned into the still-typed rewritten source (#2350) so tsc on
+    // the compiled output can resolve `Todo` in the inlined `createSignal<Todo[]>` —
+    // otherwise this is exactly Sora's SavedList gap (see App.tsx's #2350 comment).
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    expect(template!.content).toMatch(/import\s+type\s*\{\s*Todo\s*\}\s*from\s*'\.\/todo-types'/)
+    // But never reaches the runtime bundle — type-only imports are erased
+    // before clientJs, same as any other TypeScript type annotation.
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     expect(clientJs!.content).not.toContain('./todo-types')
+  })
+
+  test('M18b: an already-imported type at the call site is not re-provisioned a second time (#2350)', () => {
+    // Mirrors Sora's App.tsx: the compiler doesn't re-provision a factory
+    // body's TYPE-only references on its own (extractFreeIdentifiersFromNode
+    // stops at type nodes), so Sora's App.tsx carries a manual
+    // `import type { SavedList }` for exactly this reason. Once #2350 adds
+    // re-provisioning, that manual import must dedupe against it, not
+    // produce a second, colliding `import type { SavedList }` line.
+    writeFixture('matrix18b/schema.ts', `export interface SavedList {
+  id: string
+}
+`)
+    writeFixture('matrix18b/useListStore.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import type { SavedList } from './schema'
+
+export function useListStore() {
+  function emptyCard(): SavedList {
+    return { id: 'x' }
+  }
+  const [lists, setLists] = createSignal<SavedList[]>([emptyCard()])
+  return { lists, setLists }
+}
+`)
+    const consumerSource = `'use client'
+import { useListStore } from './useListStore'
+import type { SavedList } from './schema'
+
+export function App() {
+  const { lists, setLists } = useListStore()
+  return <button onClick={() => setLists([])}>{lists().length}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18b/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    expect(result.errors.find(e => e.code === 'BF113')).toBeUndefined()
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    const matches = template!.content.match(/import\s+type\s*\{\s*SavedList\s*\}/g) ?? []
+    expect(matches).toHaveLength(1)
+  })
+
+  test('M18c: a value need is never satisfied by an existing type-only import of the same name (#2350)', () => {
+    // The inverse of M18b: the entry file's own `import type { Shared }`
+    // has no runtime binding, so a factory needing `Shared` as a VALUE must
+    // still decline (BF113) rather than silently treat the type-only import
+    // as satisfying it — that would compile clean and crash at hydration
+    // (the same dangling-reference direction as #2341 BUG-2), the one
+    // failure mode this whole feature exists to avoid.
+    writeFixture('matrix18c/shared.ts', `export class Shared {
+  static make(): Shared { return new Shared() }
+}
+`)
+    writeFixture('matrix18c/useShared.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import { Shared } from './shared'
+
+export function useShared() {
+  const [value, setValue] = createSignal(Shared.make())
+  return { value, setValue }
+}
+`)
+    const consumerSource = `'use client'
+import { useShared } from './useShared'
+import type { Shared } from './shared'
+
+export function App() {
+  const { value, setValue } = useShared()
+  return <button onClick={() => setValue(null as unknown as Shared)}>{String(value())}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18c/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    const bf113 = result.errors.find(e => e.code === 'BF113')
+    expect(bf113).toBeDefined()
+    expect(bf113!.message).toContain('Shared')
   })
 
   test('M19: a colliding binding nested inside a JSX callback still triggers BF113', () => {
