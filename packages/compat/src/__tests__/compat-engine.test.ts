@@ -46,19 +46,19 @@ describe('compileForCompat', () => {
     // `issues` is the UNION of every issue URL any BF101 pin carries on
     // this adapter (buildCompatCell attributes by code, not by fixture —
     // see its docstring) — #2320 (this shape, nested filter callback,
-    // successor to #2038), #2319 (dangerous-inner-html-dynamic, successor
-    // to #2215), and #2321 (static-array-from-props computed loop source)
-    // all surface here even though this test only exercises the nested-
-    // filter-callback shape. #2208's `static-array-children` BF101 pin was
-    // removed (its loop-source gate now bakes a fully-static
-    // array-of-objects const directly) — see `go-template`'s
-    // `conformance-pins.ts`.
+    // successor to #2038) and #2321 (static-array-from-props computed loop
+    // source) surface here even though this test only exercises the nested-
+    // filter-callback shape. #2319 (dangerous-inner-html-dynamic) is no
+    // longer among them — it graduated to a faithful raw-output lowering on
+    // every template adapter, so its BF101 pin was removed. #2208's
+    // `static-array-children` BF101 pin was likewise removed (its loop-source
+    // gate now bakes a fully-static array-of-objects const directly) — see
+    // `go-template`'s `conformance-pins.ts`.
     expect(cell.diagnostics).toEqual([
       {
         code: 'BF101',
         severity: 'error',
         issues: [
-          'https://github.com/piconic-ai/barefootjs/issues/2319',
           'https://github.com/piconic-ai/barefootjs/issues/2320',
           'https://github.com/piconic-ai/barefootjs/issues/2321',
         ],
