@@ -1,30 +1,39 @@
 /**
  * Shared `dangerouslySetInnerHTML={{ __html: expr }}` recognition + policy
- * (#2207). Single place every template adapter calls from `renderElement`,
- * so the injection-safety-relevant policy — "only a compile-time string
- * literal is lowered; anything else refuses loudly" — lives in exactly one
- * reviewable spot instead of being re-derived independently in 8 adapters.
+ * (#2207, dynamic lowering #2319). Single place every template adapter calls
+ * from `renderElement`, so the injection-safety-relevant policy lives in
+ * exactly one reviewable spot instead of being re-derived independently in
+ * 8 adapters. `resolveDangerousInnerHtml` classifies the `__html` value into
+ * three cases the adapter then renders uniformly:
  *
- * Scope, deliberately narrow for v1 (see #2207 / #2215 for the follow-up):
- * a static literal is spliced directly into the adapter's OWN template
- * source as trusted text (same trust domain as hand-writing the HTML into
- * the template) — never routed through a `|safe`/`|raw`/`{!! !!}`-style
- * runtime raw-output primitive, which would reopen a template-source
- * injection surface for no benefit (the value is already fully known at
- * compile time). A DYNAMIC value (signal, prop, a template literal WITH a
- * substitution, local const, anything non-literal) is refused with
- * `BF101` — a no-substitution template literal is NOT dynamic; the parser
- * normalizes it to the same `{kind:'literal', literalType:'string'}` shape
- * as a plain string literal, so it's treated identically (see
- * `staticHtmlLiteral` below). Hono/CSR already support it (the client
- * drives a `createEffect`-based `el.innerHTML = …`
- * assignment — see `ir-to-client-js/emit-reactive.ts`), so this is a
- * template-adapter-only gap, tracked separately (#2215) rather than folded
- * into this literal-only cut.
+ * - `static` — a compile-time string literal. Spliced directly into the
+ *   adapter's OWN template source as trusted text (same trust domain as
+ *   hand-writing the HTML into the template), guarded per-adapter against
+ *   that language's template metacharacters (`dangerousInnerHtmlMetachar
+ *   Violation`). NOT routed through a runtime raw-output primitive — the
+ *   value is fully known at compile time, so a runtime sink would reopen a
+ *   template-source injection surface for no benefit.
+ *
+ * - `dynamic` — a prop-/signal-derived value (a signal read, prop, template
+ *   literal WITH a substitution, local const, `??`-fallback, anything
+ *   non-literal). The adapter serializes the `__html` expression via its own
+ *   `convertExpressionTo<Lang>` and wraps the result in its runtime
+ *   raw-output sink (Blade `{!! !!}`, ERB bare `<%= %>`, Go `template.HTML`,
+ *   Jinja/MiniJinja `|safe`, Twig `|raw`, Mojolicious `<%== %>`, Xslate
+ *   `mark_raw`). The runtime evaluates the expression at request time — the
+ *   VALUE is never spliced into template source, so no metachar guard
+ *   applies. This matches React's contract ("dangerously" = the caller owns
+ *   the value's safety) and the Hono/CSR path, which already drives a
+ *   `createEffect`-based `el.innerHTML = …` assignment (see
+ *   `ir-to-client-js/emit-reactive.ts`).
+ *
+ * - `unlowerable` — the value is not a `{ __html: <expr> }` object literal
+ *   at all (bare boolean/spread, or a variable holding the object). No
+ *   `__html` expression to lower, so the adapter refuses with `BF101`.
  */
 
 import type { CompilerError, IRAttribute, IRElement, SourceLocation } from '../types.ts'
-import { parseExpression, type ParsedExpr } from '../expression-parser.ts'
+import { parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
 
 const DANGEROUS_INNER_HTML_ATTR = 'dangerouslySetInnerHTML'
 
@@ -33,8 +42,28 @@ export function isDangerousInnerHtmlAttr(attr: IRAttribute): boolean {
 }
 
 export type DangerousInnerHtmlResolution =
+  // A compile-time string literal — spliced directly into the adapter's own
+  // template source as trusted text (guarded per-adapter against that
+  // language's template metacharacters). #2207.
   | { kind: 'static'; html: string }
-  | { kind: 'dynamic'; expr: string; loc: SourceLocation }
+  // A dynamic (prop-/signal-derived) `__html` value. `valueParsed` is the
+  // inner expression's IR-parsed tree and `valueExpr` its re-stringified
+  // source — both accepted by every adapter's `convertExpressionTo<Lang>`,
+  // which serializes the expression so the adapter can wrap the result in
+  // its own runtime raw-output sink (Blade `{!! !!}`, ERB bare `<%= %>`,
+  // Go `template.HTML`, Jinja/MiniJinja `|safe`, Twig `|raw`, Mojolicious
+  // `<%== %>`, Xslate `mark_raw`). NO template-metacharacter guard applies:
+  // the value is evaluated at request time by the target runtime, never
+  // spliced into template source, so it cannot forge a template construct.
+  // This matches React semantics ("dangerously" = the caller owns the
+  // safety of the value) and the Hono/CSR path, which already drives a
+  // signal-reactive `el.innerHTML = …`. #2319 (successor to #2215).
+  | { kind: 'dynamic'; valueExpr: string; valueParsed: ParsedExpr; loc: SourceLocation }
+  // The attribute value is not a `{ __html: <expr> }` object literal at all
+  // (a bare boolean/spread, or a variable holding the object) — there is no
+  // `__html` expression to lower, so the adapter refuses with BF101. `expr`
+  // is the raw source for the diagnostic.
+  | { kind: 'unlowerable'; expr: string; loc: SourceLocation }
 
 /**
  * Resolve `element`'s `dangerouslySetInnerHTML` attribute, if present.
@@ -57,35 +86,44 @@ export function resolveDangerousInnerHtml(element: IRElement): DangerousInnerHtm
   if (!attr) return null
   if (attr.clientOnly) return null
   if (attr.value.kind !== 'expression') {
-    return { kind: 'dynamic', expr: '', loc: attr.loc }
+    return { kind: 'unlowerable', expr: '', loc: attr.loc }
   }
   const parsed = attr.value.parsed ?? parseExpression(attr.value.expr.trim())
-  const html = staticHtmlLiteral(parsed)
-  if (html !== null) return { kind: 'static', html }
-  return { kind: 'dynamic', expr: attr.value.expr, loc: attr.loc }
+  const value = htmlPropValue(parsed)
+  // Not a `{ __html: <expr> }` object literal — nothing to lower.
+  if (value === null) return { kind: 'unlowerable', expr: attr.value.expr, loc: attr.loc }
+  // A compile-time string literal (a quoted string or a no-substitution
+  // template literal, which the parser normalises to the same
+  // `{kind:'literal', literalType:'string'}` shape) is spliced as trusted
+  // template text; everything else is a dynamic value the adapter lowers
+  // through its raw-output sink.
+  if (value.kind === 'literal' && value.literalType === 'string') {
+    return { kind: 'static', html: value.value as string }
+  }
+  return {
+    kind: 'dynamic',
+    valueExpr: stringifyParsedExpr(value),
+    valueParsed: value,
+    loc: attr.loc,
+  }
 }
 
 /**
- * `{ __html: '<b>bold</b>' }` → the literal string, nothing else. Exactly
- * one property, key `__html` (identifier or string form — `{ __html: … }`
- * and `{ '__html': … }` are equivalent JS), non-shorthand (`{ __html }`
- * would read a variable, not a literal), value a compile-time STRING
- * LITERAL `ParsedExpr` (`{kind:'literal', literalType:'string'}`) — which
- * a no-substitution template literal (`` `<b>bold</b>` ``) already parses
- * to, so it's accepted the same as a quoted string. A template literal
- * WITH a substitution, a local `const`, string concatenation, or any other
- * non-literal shape all fall through to `null` — no const-folding, no
- * partial evaluation. Widening this is a single-place change here,
- * deliberately not attempted in v1 (#2207).
+ * The `__html` value expression of a `{ __html: <expr> }` object literal, or
+ * `null` when the parsed value is not that shape. Exactly one property, key
+ * `__html` (identifier or string form — `{ __html: … }` and `{ '__html': … }`
+ * are equivalent JS). Shorthand `{ __html }` reads a variable of that name;
+ * it is a valid dynamic value (its `value` is the identifier `__html`), so it
+ * is admitted the same as `{ __html: __html }` — the caller then classifies
+ * literal-vs-dynamic. Spreads, computed keys, and multi-property objects fall
+ * through to `null` (the caller refuses them).
  */
-function staticHtmlLiteral(parsed: ParsedExpr): string | null {
+function htmlPropValue(parsed: ParsedExpr): ParsedExpr | null {
   if (parsed.kind !== 'object-literal') return null
   if (parsed.properties.length !== 1) return null
   const [prop] = parsed.properties
-  if (prop.shorthand) return null
   if (prop.key !== '__html') return null
-  if (prop.value.kind !== 'literal' || prop.value.literalType !== 'string') return null
-  return prop.value.value as string
+  return prop.value
 }
 
 /**
@@ -162,25 +200,40 @@ export function dangerousInnerHtmlMetacharViolation(html: string, adapterId: str
 
 /**
  * Purpose-built `BF101` for a `dangerouslySetInnerHTML` value this adapter
- * can't lower — either genuinely dynamic (not a literal) or a static
- * literal that fails the metachar guard above. Named `reason` so both
- * refusal paths funnel through the same message shape rather than growing
- * two near-identical adapter-side error strings.
+ * can't lower. Two distinct failure families funnel through here, so the base
+ * message is chosen by whether a `reason` is supplied:
+ *
+ * - WITHOUT a `reason` — the value is not the required SHAPE: it must be an
+ *   object literal with exactly one `__html` property (no spreads, extra keys,
+ *   or computed keys). The message states that contract so a near-miss like
+ *   `{ __html: x, extra: 1 }` (refused as `unlowerable`) doesn't get told it
+ *   "expects an { __html: … }" it already appears to have.
+ * - WITH a `reason` — the value IS a well-formed `{ __html: … }` object
+ *   literal that this adapter still can't lower: a static literal carrying
+ *   template metacharacters (`dangerousInnerHtmlMetacharViolation`), or — on
+ *   the Go adapter — a template-literal / conditional inner expression with no
+ *   single-argument raw form. The `reason` is the real story; the base states
+ *   only that the value can't be lowered here, not that the shape is wrong.
+ *
+ * A genuinely dynamic value with a lowerable inner expression no longer
+ * reaches here — it is lowered through the adapter's raw-output sink (#2319).
  */
 export function dangerousInnerHtmlDiagnostic(
   expr: string,
   loc: SourceLocation,
   reason?: string,
 ): CompilerError {
-  const detail = reason ? ` — ${reason}.` : ''
+  const base = reason
+    ? `dangerouslySetInnerHTML value cannot be lowered on this adapter — ${reason}`
+    : 'dangerouslySetInnerHTML requires an object literal with a single `__html` property (e.g. { __html: value }) — spreads, extra keys, and computed keys are not supported'
   return {
     code: 'BF101',
     severity: 'error',
-    message: `dangerouslySetInnerHTML requires a compile-time string literal __html value on template adapters (e.g. { __html: '...' })${expr ? `: ${expr.trim()}` : ''}${detail}`,
+    message: `${base}${expr ? `: ${expr.trim()}` : ''}`,
     loc,
     suggestion: {
       message:
-        'Dynamic or signal-derived HTML for dangerouslySetInnerHTML is only supported on Hono/CSR today (tracked separately: https://github.com/piconic-ai/barefootjs/issues/2215). Use an inline string literal, or defer it to the client with /* @client */ (e.g. dangerouslySetInnerHTML={/* @client */ { __html: expr }}) so hydration sets it instead of SSR.',
+        'Pass an object literal { __html: value } with exactly one `__html` property (a string literal is spliced as trusted template text; a prop/signal value is lowered through the adapter\'s raw-output sink). To force it onto the client instead of SSR, use /* @client */ (e.g. dangerouslySetInnerHTML={/* @client */ { __html: expr }}) so hydration sets it.',
     },
   }
 }

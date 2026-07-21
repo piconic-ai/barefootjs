@@ -3068,9 +3068,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private renderDangerousInnerHtml(element: IRElement): string | null {
     const resolution = resolveDangerousInnerHtml(element)
     if (!resolution) return null
-    if (resolution.kind === 'dynamic') {
+    if (resolution.kind === 'unlowerable') {
       this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
       return ''
+    }
+    if (resolution.kind === 'dynamic') {
+      // Lower the `__html` expression and emit it through the `bf_raw_html`
+      // runtime helper, which returns a `template.HTML` value so
+      // html/template's contextual escaper emits it verbatim (the one raw
+      // sink Go lacks as bare syntax). The runtime evaluates the expression,
+      // so no template-metachar guard applies; the element already carries
+      // its hydration slot marker. #2319.
+      const classify: { parsed?: ParsedExpr } = {}
+      const goExpr = this.convertExpressionToGo(resolution.valueExpr, classify, resolution.valueParsed)
+      // A `{{…}}`-leading fragment or a template literal (a nested ternary
+      // lowered to `{{with}}`, or `` `<b>${x}</b>` `` lowered to mixed
+      // literal+action text) can't be passed as a single argument to
+      // `bf_raw_html`. Those raw-HTML shapes are out of scope on Go alone —
+      // refuse loudly rather than emit broken template source. The
+      // conformance fixture (a plain prop) takes the common path below.
+      if (this.isTemplateFragment(goExpr, classify.parsed?.kind)) {
+        // The `{ __html: … }` shape is fine here — echo the whole object
+        // literal (not just the inner value) so the message reads
+        // consistently with the other refusal paths, whose `reason` carries
+        // the actual cause.
+        this.errors.push(
+          dangerousInnerHtmlDiagnostic(
+            `{ __html: ${resolution.valueExpr} }`,
+            resolution.loc,
+            'a template-literal or conditional __html value has no single-argument raw form on the Go adapter',
+          ),
+        )
+        return ''
+      }
+      return `{{bf_raw_html ${wrapIfMultiToken(goExpr)}}}`
     }
     const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
     if (violation) {

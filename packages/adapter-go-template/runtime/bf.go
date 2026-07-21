@@ -60,6 +60,7 @@ func FuncMap() template.FuncMap {
 		"bf_pad_start":   PadStart,
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
+		"bf_raw_html":    RawHTML,
 		"bf_ternary":     Ternary,
 		"bf_truthy":      Truthy,
 
@@ -1339,6 +1340,17 @@ func String(v any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// RawHTML marks a value as trusted, pre-formatted HTML so html/template's
+// contextual escaper emits it verbatim instead of escaping it. It is the SSR
+// half of a dynamic `dangerouslySetInnerHTML={{ __html: expr }}` (#2319) —
+// the one raw-output sink Go lacks as bare template syntax, the counterpart
+// to Blade `{!! !!}`, ERB `<%= %>`, Jinja/MiniJinja `| safe`, Twig `| raw`,
+// Mojolicious `<%== %>`, and Xslate `mark_raw`. The caller owns the value's
+// safety (React's "dangerously" contract); a nil value renders "".
+func RawHTML(v any) template.HTML {
+	return template.HTML(String(v))
 }
 
 // JSON returns the JSON encoding of v as a string. Mirrors

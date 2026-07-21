@@ -45,13 +45,18 @@ describe('resolveDangerousInnerHtml (#2207)', () => {
     expect(resolveDangerousInnerHtml(el)).toEqual({ kind: 'static', html: '<i>x</i>' })
   })
 
-  test('signal/prop-derived value resolves as dynamic', () => {
+  test('signal/prop-derived value resolves as dynamic and carries the inner expression (#2319)', () => {
     const el = rootElement(`
       function Test({ html }: { html: string }) { return <div dangerouslySetInnerHTML={{ __html: html }} /> }
       export { Test }
     `)
     const resolution = resolveDangerousInnerHtml(el)
     expect(resolution?.kind).toBe('dynamic')
+    // The adapter lowers `valueExpr`/`valueParsed` (the inner `__html` value),
+    // not the whole `{ __html: … }` object, through its raw-output sink.
+    if (resolution?.kind !== 'dynamic') throw new Error('expected dynamic')
+    expect(resolution.valueExpr).toBe('html')
+    expect(resolution.valueParsed).toEqual({ kind: 'identifier', name: 'html' })
   })
 
   test('a no-substitution template literal resolves as static (identical to a string literal)', () => {
@@ -87,12 +92,14 @@ describe('resolveDangerousInnerHtml (#2207)', () => {
     expect(resolveDangerousInnerHtml(el)?.kind).toBe('dynamic')
   })
 
-  test('extra property alongside __html resolves as dynamic', () => {
+  test('extra property alongside __html resolves as unlowerable (not a { __html } object literal)', () => {
     const el = rootElement(`
       function Test() { return <div dangerouslySetInnerHTML={{ __html: '<b>x</b>', extra: 1 }} /> }
       export { Test }
     `)
-    expect(resolveDangerousInnerHtml(el)?.kind).toBe('dynamic')
+    // Not the canonical single-property shape — no faithful lowering, so the
+    // adapter refuses with BF101 (#2319 lowers a lone `{ __html: expr }`).
+    expect(resolveDangerousInnerHtml(el)?.kind).toBe('unlowerable')
   })
 
   test('isDangerousInnerHtmlAttr only matches the exact prop name', () => {
@@ -187,11 +194,24 @@ describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
 })
 
 describe('dangerousInnerHtmlDiagnostic (#2207)', () => {
-  test('produces a BF101 with a purpose-built message', () => {
-    const diag = dangerousInnerHtmlDiagnostic('html', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } })
+  test('a wrong-shape refusal (no reason) states the single-__html-property contract', () => {
+    const diag = dangerousInnerHtmlDiagnostic('true', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } })
     expect(diag.code).toBe('BF101')
     expect(diag.severity).toBe('error')
-    expect(diag.message).toContain('dangerouslySetInnerHTML requires a compile-time string literal')
-    expect(diag.suggestion?.message).toContain('2215')
+    // The message names the canonical shape (a single `__html` property) so a
+    // near-miss like `{ __html: x, extra: 1 }` isn't told it "expects an
+    // { __html: … }" it already appears to have (#2319 review).
+    expect(diag.message).toContain('requires an object literal with a single `__html` property')
+    // A dynamic value is now lowered, not refused, so the escape-hatch text
+    // points at the object-literal contract and /* @client */ (#2319).
+    expect(diag.suggestion?.message).toContain('@client')
+  })
+
+  test('a valid-shape-but-unlowerable refusal (with reason) leads with the reason, not the shape', () => {
+    const diag = dangerousInnerHtmlDiagnostic('{ __html: `<b>${x}</b>` }', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }, 'no single-argument raw form on the Go adapter')
+    expect(diag.code).toBe('BF101')
+    expect(diag.message).toContain('cannot be lowered on this adapter — no single-argument raw form on the Go adapter')
+    // It must NOT claim the shape is wrong when it isn't.
+    expect(diag.message).not.toContain('requires an object literal with a single')
   })
 })

@@ -100,9 +100,9 @@ export const conformancePins: ConformancePins = {
   // `dangerous-inner-html` no longer pinned — a compile-time string-literal
   // `dangerouslySetInnerHTML={{ __html: '...' }}` is spliced directly into
   // the template as trusted raw text (`resolveDangerousInnerHtml`, #2207).
-  // A dynamic/signal-derived value still refuses with BF101 — see the
-  // `dangerous-inner-html-dynamic` fixture/pin below (tracked: #2319, successor to #2215).
-  'dangerous-inner-html-dynamic': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2319' }],
+  // A dynamic/signal-derived value now lowers through Jinja's `| safe` filter
+  // (#2319) — `dangerous-inner-html-dynamic` is no longer pinned and renders
+  // to Hono parity, same as the static case.
   // #2273: a method call on a prop typed as a built-in host rich type
   // (Date, Map, …) has no catalogued lowering in any adapter — this is a
   // compiler-level refusal (`checkRichTypeMethodCalls`, wired ahead of

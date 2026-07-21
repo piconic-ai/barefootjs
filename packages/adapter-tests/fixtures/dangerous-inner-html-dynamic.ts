@@ -3,16 +3,18 @@ import { createFixture } from '../src/types'
 /**
  * `dangerouslySetInnerHTML` with a DYNAMIC (prop-derived) `__html` value —
  * the sibling of `dangerous-inner-html`, which covers the static-literal
- * case that #2207 lowers. A dynamic value still refuses with `BF101` on
- * every template adapter: embedding a non-compile-time-known string
- * directly into a template language's raw/unescaped-output sink at SSR
- * time is a first-class injection vector unless that runtime also
- * sanitizes the value first, which none of these 8 template runtimes do
- * by default. Hono/CSR render it correctly regardless (the client already
- * supports a fully dynamic, even signal-reactive, `__html` — see
+ * case that #2207 lowers. #2319 graduates this case on every template
+ * adapter: the `__html` expression is serialized by the adapter and emitted
+ * through that language's raw-output sink at request time (Blade `{!! !!}`,
+ * ERB unescaped `<%= %>`, Go `template.HTML` via `bf_raw_html`, Jinja/
+ * MiniJinja `| safe`, Twig `| raw`, Mojolicious `<%== %>`, Xslate
+ * `mark_raw`). The runtime evaluates the value — it is never spliced into
+ * template source — so no template-metacharacter guard applies, matching
+ * React's "dangerously = the caller owns the value's safety" contract and
+ * the Hono/CSR path (which already drives a signal-reactive
+ * `el.innerHTML = …` — see
  * `packages/jsx/src/__tests__/dangerously-set-inner-html.test.ts` and
- * `compiler-stress-1244.test.ts`), so this is purely a template-adapter
- * gap. Tracked as a deliberate follow-up, not a bug: #2319 (successor to #2215).
+ * `compiler-stress-1244.test.ts`). All adapters render to Hono parity.
  */
 export const fixture = createFixture({
   id: 'dangerous-inner-html-dynamic',
