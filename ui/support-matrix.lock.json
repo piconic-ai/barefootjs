@@ -152,6 +152,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 176,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
       }
     },
     "array-method": {
@@ -193,6 +198,11 @@
           "pass": 62,
           "total": 62
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 178,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
       }
     },
     "arrow": {
@@ -334,6 +344,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 174,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
       }
     },
     "binary": {
@@ -523,6 +538,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 169,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L169"
       }
     },
     "call": {
@@ -816,6 +836,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 166,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L166"
       }
     },
     "conditional": {
@@ -857,6 +882,11 @@
           "pass": 19,
           "total": 19
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 171,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L171"
       }
     },
     "identifier": {
@@ -1150,6 +1180,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 164,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L164"
       }
     },
     "index-access": {
@@ -1191,6 +1226,11 @@
           "pass": 12,
           "total": 12
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 168,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L168"
       }
     },
     "literal": {
@@ -1296,6 +1336,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 165,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L165"
       }
     },
     "logical": {
@@ -1401,6 +1446,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 172,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
       }
     },
     "member": {
@@ -1694,6 +1744,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 167,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L167"
       }
     },
     "object-literal": {
@@ -1799,6 +1854,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 177,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L177"
       }
     },
     "regex": {
@@ -1840,6 +1900,11 @@
           "pass": 0,
           "total": 0
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 175,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L175"
       }
     },
     "template-literal": {
@@ -1881,6 +1946,11 @@
           "pass": 27,
           "total": 27
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 173,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       }
     },
     "unary": {
@@ -1970,6 +2040,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 170,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L170"
       }
     },
     "unsupported": {
@@ -2123,6 +2198,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 179,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       }
     }
   },
@@ -2166,6 +2246,11 @@
           "pass": 2,
           "total": 2
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 204,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L204"
       }
     },
     "array-method:concat": {
@@ -2207,6 +2292,11 @@
           "pass": 2,
           "total": 2
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 205,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L205"
       }
     },
     "array-method:endsWith": {
@@ -2248,6 +2338,11 @@
           "pass": 2,
           "total": 2
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 217,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L217"
       }
     },
     "array-method:flat": {
@@ -2289,6 +2384,11 @@
           "pass": 4,
           "total": 4
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 223,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L223"
       }
     },
     "array-method:includes": {
@@ -2330,6 +2430,11 @@
           "pass": 12,
           "total": 12
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 201,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L201"
       }
     },
     "array-method:indexOf": {
@@ -2371,6 +2476,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 202,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L202"
       }
     },
     "array-method:join": {
@@ -2412,6 +2522,11 @@
           "pass": 36,
           "total": 36
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 200,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L200"
       }
     },
     "array-method:lastIndexOf": {
@@ -2453,6 +2568,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 203,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L203"
       }
     },
     "array-method:padEnd": {
@@ -2494,6 +2614,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 222,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L222"
       }
     },
     "array-method:padStart": {
@@ -2535,6 +2660,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 221,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L221"
       }
     },
     "array-method:repeat": {
@@ -2576,6 +2706,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 220,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L220"
       }
     },
     "array-method:replace": {
@@ -2617,6 +2752,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 218,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L218"
       }
     },
     "array-method:replaceAll": {
@@ -2658,6 +2798,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 219,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L219"
       }
     },
     "array-method:reverse": {
@@ -2699,6 +2844,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 207,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L207"
       }
     },
     "array-method:slice": {
@@ -2740,6 +2890,11 @@
           "pass": 4,
           "total": 4
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 206,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L206"
       }
     },
     "array-method:split": {
@@ -2781,6 +2936,11 @@
           "pass": 2,
           "total": 2
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 215,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L215"
       }
     },
     "array-method:startsWith": {
@@ -2822,6 +2982,11 @@
           "pass": 3,
           "total": 3
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 216,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L216"
       }
     },
     "array-method:toFixed": {
@@ -2863,6 +3028,11 @@
           "pass": 2,
           "total": 2
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 214,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L214"
       }
     },
     "array-method:toLowerCase": {
@@ -2904,6 +3074,11 @@
           "pass": 4,
           "total": 4
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 209,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L209"
       }
     },
     "array-method:toReversed": {
@@ -2945,6 +3120,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 208,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L208"
       }
     },
     "array-method:toUpperCase": {
@@ -2986,6 +3166,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 210,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L210"
       }
     },
     "array-method:trim": {
@@ -3027,6 +3212,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 211,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L211"
       }
     },
     "array-method:trimEnd": {
@@ -3068,6 +3258,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 213,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L213"
       }
     },
     "array-method:trimStart": {
@@ -3109,6 +3304,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/jsx/src/expression-parser.ts",
+        "line": 212,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L212"
       }
     },
     "binary:!=": {
@@ -3150,6 +3350,11 @@
           "pass": 2,
           "total": 2
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:!==": {
@@ -3191,6 +3396,11 @@
           "pass": 9,
           "total": 9
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:*": {
@@ -3232,6 +3442,11 @@
           "pass": 9,
           "total": 9
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:+": {
@@ -3337,6 +3552,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:-": {
@@ -3378,6 +3598,11 @@
           "pass": 11,
           "total": 11
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:/": {
@@ -3419,6 +3644,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:<": {
@@ -3460,6 +3690,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:===": {
@@ -3601,6 +3836,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:>": {
@@ -3642,6 +3882,11 @@
           "pass": 11,
           "total": 11
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "binary:>=": {
@@ -3683,6 +3928,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 89,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       }
     },
     "literal:boolean": {
@@ -3724,6 +3974,11 @@
           "pass": 38,
           "total": 38
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 95,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
       }
     },
     "literal:null": {
@@ -3765,6 +4020,11 @@
           "pass": 22,
           "total": 22
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 95,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
       }
     },
     "literal:number": {
@@ -3806,6 +4066,11 @@
           "pass": 86,
           "total": 86
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 95,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
       }
     },
     "literal:string": {
@@ -3911,6 +4176,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 95,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
       }
     },
     "logical:&&": {
@@ -3952,6 +4222,11 @@
           "pass": 7,
           "total": 7
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 86,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
       }
     },
     "logical:??": {
@@ -4057,6 +4332,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 86,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
       }
     },
     "logical:||": {
@@ -4098,6 +4378,11 @@
           "pass": 12,
           "total": 12
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 86,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
       }
     },
     "member:computed": {
@@ -4139,6 +4424,11 @@
           "pass": 8,
           "total": 8
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 102,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L102"
       }
     },
     "member:optional": {
@@ -4180,6 +4470,11 @@
           "pass": 1,
           "total": 1
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 101,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L101"
       }
     },
     "unary:!": {
@@ -4269,6 +4564,11 @@
             }
           ]
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 92,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L92"
       }
     },
     "unary:-": {
@@ -4310,6 +4610,11 @@
           "pass": 11,
           "total": 11
         }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 92,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L92"
       }
     }
   }

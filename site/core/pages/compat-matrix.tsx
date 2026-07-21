@@ -69,9 +69,16 @@ interface SupportMatrixCell {
   gaps?: SupportMatrixGap[]
 }
 
+interface SupportMatrixSourceLink {
+  file: string
+  line: number
+  url: string
+}
+
 interface SupportMatrixConstruct {
   total: number
   cells: Record<string, SupportMatrixCell>
+  source?: SupportMatrixSourceLink
 }
 
 interface SupportMatrixLock {
@@ -274,6 +281,17 @@ function supportCellMarkdown(cell: SupportMatrixCell | undefined): string {
   return `${ratio} (${formatIssueLinks(issues, supportMatrix.knownLimitationLabel)})`
 }
 
+/**
+ * The "Construct" cell: the raw label, linked to where it's recognised
+ * in source when `computeConstructSourceLinks()` (packages/compat) could
+ * resolve one — see the "Data Source" section below for how that stays
+ * in sync as the source moves.
+ */
+function constructLabelMarkdown(name: string, source: SupportMatrixSourceLink | undefined): string {
+  const code = `\`${escapeCell(name)}\``
+  return source ? `[${code}](${source.url})` : code
+}
+
 /** One `construct × adapter` table — shared by the "By kind" and "By axis" tables. */
 function buildSupportTable(records: Record<string, SupportMatrixConstruct>): string {
   const adapters = supportMatrix.adapters
@@ -282,7 +300,7 @@ function buildSupportTable(records: Record<string, SupportMatrixConstruct>): str
   const divider = `| --- | ${adapters.map(() => '---').join(' | ')} |`
   const rows = names.map((name) => {
     const cells = adapters.map((adapter) => supportCellMarkdown(records[name]?.cells[adapter]))
-    return `| \`${escapeCell(name)}\` | ${cells.join(' | ')} |`
+    return `| ${constructLabelMarkdown(name, records[name]?.source)} | ${cells.join(' | ')} |`
   })
   return [header, divider, ...rows].join('\n')
 }
@@ -302,6 +320,8 @@ function buildSupportMatrixSection(): string {
 ${supportMatrix.note}
 
 **Read this as a ratio, not a binary.** \`conformancePins\` and \`renderDivergences\` are attributed to a whole **fixture** (a component), not to the individual construct — a gapped fixture is usually a complex component that happens to exercise many common kinds and axes alongside the one shape it exists to pin down. A construct showing \`137/138\` has exactly one gapped fixture contributing to it, not 137 broken cases. A construct with \`total: 0\` (currently just \`regex\`) has no fixture exercising it yet.
+
+Each construct name links to where it's recognised in source, when resolvable.
 
 ### By kind
 
@@ -342,7 +362,7 @@ ${supportMatrixSection}
 
 This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
 
-The construct-support section above is generated from the committed [\`ui/support-matrix.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/support-matrix.lock.json), regenerated with \`bun run support-matrix:lock\` and drift-checked in CI alongside the component matrix.
+The construct-support section above is generated from the committed [\`ui/support-matrix.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/support-matrix.lock.json), regenerated with \`bun run support-matrix:lock\` and drift-checked in CI alongside the component matrix. Each construct's source link is computed the same way — a TS AST walk over the catalogues that define it ([\`construct-source-links.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/construct-source-links.ts)) — so it is regenerated and drift-checked on the same schedule: a link can't silently go stale, because moving the code it points at changes what the next regen commits, and CI fails if that regen was forgotten.
 
 Every issue link on this page is freshness-checked on a schedule (\`bun run compat:issues\`, the [\`compat-issue-freshness\`](https://github.com/piconic-ai/barefootjs/blob/main/.github/workflows/compat-issue-freshness.yml) workflow): if a referenced issue is closed while its pin still points at it, an alert issue is opened automatically so the link is re-pointed or removed — the matrix cannot silently link a live limitation to a completed ticket.
 `

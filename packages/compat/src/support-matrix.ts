@@ -29,6 +29,7 @@
 import { PARSED_EXPR_KINDS } from '@barefootjs/jsx'
 import coverageMapJson from '../../adapter-tests/coverage-map.json' with { type: 'json' }
 import { loadCompatAdapters } from './adapter-registry'
+import { computeConstructSourceLinks, resolveAxisLink, resolveKindLink, type SourceLink } from './construct-source-links'
 import { compareAdapterIds, KNOWN_LIMITATION_LABEL } from './report'
 
 export const SUPPORT_MATRIX_NOTE =
@@ -73,6 +74,8 @@ export interface SupportMatrixCell {
 export interface SupportMatrixConstruct {
   total: number
   cells: Record<string, SupportMatrixCell>
+  /** GitHub permalink to where this construct is recognised, when resolvable (see `construct-source-links.ts`). */
+  source?: SourceLink
 }
 
 export interface SupportMatrixReport {
@@ -192,7 +195,29 @@ export function buildSupportMatrix(
  */
 export async function computeSupportMatrix(): Promise<SupportMatrixReport> {
   const { loaded } = await loadCompatAdapters()
-  return buildSupportMatrix(coverageMapJson as SupportMatrixCoverageMap, loaded)
+  const report = buildSupportMatrix(coverageMapJson as SupportMatrixCoverageMap, loaded)
+  return attachSourceLinks(report)
+}
+
+/**
+ * Attaches a `source` permalink to every resolvable kind/axis row. Kept
+ * separate from `buildSupportMatrix` (which stays a pure join over
+ * caller-supplied data, per its unit test's synthetic fixtures/adapters)
+ * since this reads real source files off disk via
+ * `computeConstructSourceLinks()` — there is nothing meaningful to
+ * resolve against a synthetic coverage map.
+ */
+function attachSourceLinks(report: SupportMatrixReport): SupportMatrixReport {
+  const links = computeConstructSourceLinks()
+  for (const [kind, construct] of Object.entries(report.kinds)) {
+    const source = resolveKindLink(kind, links)
+    if (source) construct.source = source
+  }
+  for (const [axis, construct] of Object.entries(report.axes)) {
+    const source = resolveAxisLink(axis, links)
+    if (source) construct.source = source
+  }
+  return report
 }
 
 /** Lock-file JSON: 2-space indent, trailing newline — same contract as `formatCompatJson`. */
