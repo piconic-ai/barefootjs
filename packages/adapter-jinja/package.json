@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/jinja",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "description": "Jinja2 adapter for BarefootJS — compiles IR to .jinja templates and ships the Python BarefootJS rendering runtime; runs under any Python web framework (Flask, etc.)",
   "type": "module",
   "main": "./dist/index.js",
