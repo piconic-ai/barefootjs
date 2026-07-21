@@ -44,6 +44,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-compat-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lockfile:
     runs-on: ubuntu-latest

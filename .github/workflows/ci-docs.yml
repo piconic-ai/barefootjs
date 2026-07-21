@@ -32,6 +32,10 @@ env:
   VALE_VERSION: 3.15.1
   VALE_SHA256: c024d9c157874fb043d4f24a055d60050d1bb18755251f590593eed5bace1857
 
+concurrency:
+  group: ci-docs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   naming:
     runs-on: ubuntu-latest
