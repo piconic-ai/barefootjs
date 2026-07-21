@@ -875,15 +875,9 @@
           ]
         },
         "blade": {
-          "pass": 238,
+          "pass": 239,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -917,15 +911,9 @@
           ]
         },
         "erb": {
-          "pass": 239,
+          "pass": 240,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -953,15 +941,9 @@
           ]
         },
         "go-template": {
-          "pass": 238,
+          "pass": 239,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -995,15 +977,9 @@
           ]
         },
         "jinja": {
-          "pass": 238,
+          "pass": 239,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1037,15 +1013,9 @@
           ]
         },
         "minijinja": {
-          "pass": 238,
+          "pass": 239,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1079,15 +1049,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 239,
+          "pass": 240,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1115,15 +1079,9 @@
           ]
         },
         "twig": {
-          "pass": 238,
+          "pass": 239,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1157,15 +1115,9 @@
           ]
         },
         "xslate": {
-          "pass": 238,
+          "pass": 239,
           "total": 244,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1752,15 +1704,9 @@
           "total": 46
         },
         "blade": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1770,15 +1716,9 @@
           ]
         },
         "erb": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1788,15 +1728,9 @@
           ]
         },
         "go-template": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1806,15 +1740,9 @@
           ]
         },
         "jinja": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1824,15 +1752,9 @@
           ]
         },
         "minijinja": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1842,15 +1764,9 @@
           ]
         },
         "mojolicious": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1860,15 +1776,9 @@
           ]
         },
         "twig": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -1878,15 +1788,9 @@
           ]
         },
         "xslate": {
-          "pass": 44,
+          "pass": 45,
           "total": 46,
           "gaps": [
-            {
-              "fixture": "dangerous-inner-html-dynamic",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2319"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "issues": [

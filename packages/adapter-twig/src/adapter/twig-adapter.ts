@@ -635,9 +635,16 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   private renderDangerousInnerHtml(element: IRElement): string | null {
     const resolution = resolveDangerousInnerHtml(element)
     if (!resolution) return null
-    if (resolution.kind === 'dynamic') {
+    if (resolution.kind === 'unlowerable') {
       this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
       return ''
+    }
+    if (resolution.kind === 'dynamic') {
+      // Lower the `__html` expression and emit it through Twig's `| raw`
+      // filter, which suppresses autoescape for this one value. The runtime
+      // evaluates the expression, so no template-metachar guard applies; the
+      // element already carries its hydration slot marker. #2319.
+      return `{{ ${this.convertExpressionToTwig(resolution.valueExpr, resolution.valueParsed)} | raw }}`
     }
     const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
     if (violation) {

@@ -45,13 +45,18 @@ describe('resolveDangerousInnerHtml (#2207)', () => {
     expect(resolveDangerousInnerHtml(el)).toEqual({ kind: 'static', html: '<i>x</i>' })
   })
 
-  test('signal/prop-derived value resolves as dynamic', () => {
+  test('signal/prop-derived value resolves as dynamic and carries the inner expression (#2319)', () => {
     const el = rootElement(`
       function Test({ html }: { html: string }) { return <div dangerouslySetInnerHTML={{ __html: html }} /> }
       export { Test }
     `)
     const resolution = resolveDangerousInnerHtml(el)
     expect(resolution?.kind).toBe('dynamic')
+    // The adapter lowers `valueExpr`/`valueParsed` (the inner `__html` value),
+    // not the whole `{ __html: … }` object, through its raw-output sink.
+    if (resolution?.kind !== 'dynamic') throw new Error('expected dynamic')
+    expect(resolution.valueExpr).toBe('html')
+    expect(resolution.valueParsed).toEqual({ kind: 'identifier', name: 'html' })
   })
 
   test('a no-substitution template literal resolves as static (identical to a string literal)', () => {
@@ -87,12 +92,14 @@ describe('resolveDangerousInnerHtml (#2207)', () => {
     expect(resolveDangerousInnerHtml(el)?.kind).toBe('dynamic')
   })
 
-  test('extra property alongside __html resolves as dynamic', () => {
+  test('extra property alongside __html resolves as unlowerable (not a { __html } object literal)', () => {
     const el = rootElement(`
       function Test() { return <div dangerouslySetInnerHTML={{ __html: '<b>x</b>', extra: 1 }} /> }
       export { Test }
     `)
-    expect(resolveDangerousInnerHtml(el)?.kind).toBe('dynamic')
+    // Not the canonical single-property shape — no faithful lowering, so the
+    // adapter refuses with BF101 (#2319 lowers a lone `{ __html: expr }`).
+    expect(resolveDangerousInnerHtml(el)?.kind).toBe('unlowerable')
   })
 
   test('isDangerousInnerHtmlAttr only matches the exact prop name', () => {
@@ -188,10 +195,12 @@ describe('dangerousInnerHtmlMetacharViolation (#2207)', () => {
 
 describe('dangerousInnerHtmlDiagnostic (#2207)', () => {
   test('produces a BF101 with a purpose-built message', () => {
-    const diag = dangerousInnerHtmlDiagnostic('html', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } })
+    const diag = dangerousInnerHtmlDiagnostic('true', { file: 'Test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } })
     expect(diag.code).toBe('BF101')
     expect(diag.severity).toBe('error')
-    expect(diag.message).toContain('dangerouslySetInnerHTML requires a compile-time string literal')
-    expect(diag.suggestion?.message).toContain('2215')
+    expect(diag.message).toContain('dangerouslySetInnerHTML expects an { __html: … } object literal')
+    // A dynamic value is now lowered, not refused, so the escape-hatch text
+    // points at the object-literal contract and /* @client */ (#2319).
+    expect(diag.suggestion?.message).toContain('@client')
   })
 })

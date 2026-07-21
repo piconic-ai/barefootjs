@@ -689,9 +689,19 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   private renderDangerousInnerHtml(element: IRElement): string | null {
     const resolution = resolveDangerousInnerHtml(element)
     if (!resolution) return null
-    if (resolution.kind === 'dynamic') {
+    if (resolution.kind === 'unlowerable') {
       this.errors.push(dangerousInnerHtmlDiagnostic(resolution.expr, resolution.loc))
       return ''
+    }
+    if (resolution.kind === 'dynamic') {
+      // Lower the `__html` expression and emit it through ERB's raw sink.
+      // Stdlib ERB's `<%= %>` does not auto-escape (every escaped text
+      // position wraps the value in `bf.h(...)` — see `renderExpression`),
+      // so dropping that wrap renders the value verbatim. The runtime
+      // evaluates the expression, so no template-metachar guard applies. The
+      // element already carries its own hydration slot marker (`element.slotId`,
+      // stamped in `renderElement`) for the client's `el.innerHTML = …`. #2319.
+      return `<%= ${this.convertExpressionToRuby(resolution.valueExpr, resolution.valueParsed)} %>`
     }
     const violation = dangerousInnerHtmlMetacharViolation(resolution.html, this.name)
     if (violation) {
