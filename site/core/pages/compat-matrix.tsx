@@ -343,6 +343,8 @@ ${supportMatrixSection}
 This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
 
 The construct-support section above is generated from the committed [\`ui/support-matrix.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/support-matrix.lock.json), regenerated with \`bun run support-matrix:lock\` and drift-checked in CI alongside the component matrix.
+
+Every issue link on this page is freshness-checked on a schedule (\`bun run compat:issues\`, the [\`compat-issue-freshness\`](https://github.com/piconic-ai/barefootjs/blob/main/.github/workflows/compat-issue-freshness.yml) workflow): if a referenced issue is closed while its pin still points at it, an alert issue is opened automatically so the link is re-pointed or removed — the matrix cannot silently link a live limitation to a completed ticket.
 `
 }
 
