@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createEffect, createSignal, escapeAttr, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
 
 
 export function initNestedCondToggleList(__scope, _p = {}) {
@@ -28,24 +28,28 @@ export function initNestedCondToggleList(__scope, _p = {}) {
         { const _s2 = qsa(__branchScope, '[bf="s2"]')
           if (_s2) _s2.addEventListener('click', () => { toggle(item().id) })
         }
-        insert(__branchScope, 's1', () => item().active, {
-          template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1-->${__bfSlot('On', __slots)}<!--bf-cond-end:s1-->`, slots: __slots } },
-          bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
-          }
-        }, {
-          template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1-->${__bfSlot('Off', __slots)}<!--bf-cond-end:s1-->`, slots: __slots } },
-          bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
-          }
-        })
+        const __disposers = []
         { const __ra_s2 = qsa(__branchScope, '[bf="s2"]')
         if (__ra_s2) {
-          createEffect(() => {
+          __disposers.push(createDisposableEffect(() => {
             { const __v = `${item().active ? 'toggle-btn on' : 'toggle-btn'}`; if (__v != null) __ra_s2.setAttribute('class', String(__v)); else __ra_s2.removeAttribute('class') }
-          })
-          createEffect(() => {
+          }))
+          __disposers.push(createDisposableEffect(() => {
             { const __v = `toggle-${item().id}`; if (__v != null) __ra_s2.setAttribute('data-testid', String(__v)); else __ra_s2.removeAttribute('data-testid') }
-          })
+          }))
         } }
+        __disposers.push(createDisposableEffect(() => {
+          insert(__branchScope, 's1', () => item().active, {
+            template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1-->${__bfSlot('On', __slots)}<!--bf-cond-end:s1-->`, slots: __slots } },
+            bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+            }
+          }, {
+            template: () => { const __slots = []; return { html: `<!--bf-cond-start:s1-->${__bfSlot('Off', __slots)}<!--bf-cond-end:s1-->`, slots: __slots } },
+            bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+            }
+          })
+        }))
+        return () => __disposers.forEach(d => d())
       }
     })
     return __el

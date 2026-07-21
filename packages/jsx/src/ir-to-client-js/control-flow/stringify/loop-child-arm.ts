@@ -28,11 +28,18 @@ import type { ReactiveAttrSlot } from '../plan/reactive-effects.ts'
 
 /**
  * Emit reactive attribute effects for one arm — one qsa() per slot, then one
- * `createEffect` per attr on that slot. Mirrors the outer renderItem-scope
- * attr emission in `stringifyReactiveEffects` (#2347): binding attrs inside
- * the arm that owns the element (instead of an outer scope's own initial
- * clone) means a branch swap's fresh `insert()`-mounted node is always the
- * one the effect targets.
+ * `createDisposableEffect` per attr on that slot, pushed onto the caller's
+ * `__disposers` array. Mirrors the outer renderItem-scope attr emission in
+ * `stringifyReactiveEffects` (#2347): binding attrs inside the arm that owns
+ * the element (instead of an outer scope's own initial clone) means a branch
+ * swap's fresh `insert()`-mounted node is always the one the effect targets.
+ *
+ * `createDisposableEffect` (not `createEffect`) so the caller's `bindEvents`
+ * can return a cleanup that disposes this effect on the NEXT branch swap —
+ * otherwise it would keep running against the node this branch swap just
+ * detached, and every subsequent swap stacks another orphaned effect.
+ * Callers must declare `const __disposers = []` before emitting this and
+ * return `() => __disposers.forEach(d => d())` from `bindEvents`.
  */
 export function stringifyBranchReactiveAttrs(
   lines: string[],
@@ -45,11 +52,11 @@ export function stringifyBranchReactiveAttrs(
     lines.push(`${indent}{ const ${varName} = qsa(__branchScope, '[bf="${slot.slotId}"]')`)
     lines.push(`${indent}if (${varName}) {`)
     for (const attr of slot.attrs) {
-      lines.push(`${indent}  createEffect(() => {`)
+      lines.push(`${indent}  __disposers.push(createDisposableEffect(() => {`)
       for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
         lines.push(`${indent}    ${stmt}`)
       }
-      lines.push(`${indent}  }${profileBindingId(pc, slot.slotId)})`)
+      lines.push(`${indent}  }${profileBindingId(pc, slot.slotId)}))`)
     }
     lines.push(`${indent}} }`)
   }
@@ -207,7 +214,15 @@ function stringifyLoopChildConditional(
   lines.push(`${indent}}${profileBindingId(pc, cond.slotId)})`)
 }
 
-function stringifyLoopChildArm(
+/**
+ * Emit one arm's full body: events, child component inits, inner loops,
+ * then a disposable section (reactive attrs, nested conditionals, texts)
+ * whose aggregate cleanup `bindEvents` returns to `insert()` (#2347 follow-up).
+ * Shared by both the loop-scoped-conditional stringifier in this file and
+ * the outer (top-of-loop-item) conditional stringifier in
+ * `reactive-effects.ts` — the two arm shapes are identical.
+ */
+export function stringifyLoopChildArm(
   lines: string[],
   arm: LoopChildArmPlan,
   armIndent: string,
@@ -216,8 +231,29 @@ function stringifyLoopChildArm(
   stringifyBranchEventBindings(lines, arm.events, armIndent)
   stringifyBranchChildComponentInits(lines, arm.childComponents, armIndent)
   stringifyBranchInnerLoops(lines, arm.innerLoops, armIndent, pc)
-  stringifyLoopChildConditionals(lines, arm.nestedConditionals, armIndent, pc)
+
+  // Disposable section: reactive attrs + text effects + nested conditionals.
+  // `bindEvents` returns the aggregate cleanup so `insert()` disposes this
+  // arm's scoped effects (and any nested insert()'s own effect tree) before
+  // the NEXT branch swap — otherwise they'd keep running against the node
+  // this swap just detached, stacking another orphaned effect on every
+  // subsequent toggle (#2347 follow-up).
+  const hasDisposables = arm.attrs.length > 0 || arm.texts.length > 0 || arm.nestedConditionals.length > 0
+  if (!hasDisposables) return
+
+  lines.push(`${armIndent}const __disposers = []`)
   stringifyBranchReactiveAttrs(lines, arm.attrs, armIndent, pc)
+
+  // Nested conditionals: each inner `insert()` is wrapped in its own
+  // disposable effect so disposing THIS entry cascades to whatever
+  // reactive state that insert() set up internally (mirrors the top-level
+  // conditional's nested-conditional handling in stringify/insert.ts).
+  for (const cond of arm.nestedConditionals) {
+    lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => {`)
+    stringifyLoopChildConditional(lines, cond, `${armIndent}  `, pc)
+    lines.push(`${armIndent}}))`)
+  }
+
   for (const text of arm.texts) {
     // __bfText (not a naive `.textContent = String(...)`) so a Child-position
     // expression whose value is a live Node (e.g. a hoisted `renderNode={(n)
@@ -225,6 +261,8 @@ function stringifyLoopChildArm(
     // instead of being stringified to "[object HTMLElement]" (#2347).
     const varName = `__rt_${varSlotId(text.slotId)}`
     lines.push(`${armIndent}let ${varName} = $t(__branchScope, '${text.slotId}')[0]`)
-    lines.push(`${armIndent}createEffect(() => { ${varName} = __bfText(${varName}, ${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)})`)
+    lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => { ${varName} = __bfText(${varName}, ${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}))`)
   }
+
+  lines.push(`${armIndent}return () => __disposers.forEach(d => d())`)
 }
