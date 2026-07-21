@@ -1117,6 +1117,51 @@ export function App() {
     expect(template!.content).not.toMatch(/import\s+type\s*\{\s*DEFAULT_SHAPE\s*\}/)
   })
 
+  test('M18g: value and type-only re-provisioned imports are globally sorted by specifier, not grouped by kind (Copilot review, PR #2351)', () => {
+    // A type-only need from 'a-types' and a value need from 'z-value' — a
+    // two-separately-sorted-lists implementation would put ALL value lines
+    // before ALL type lines regardless of specifier, landing 'z-value'
+    // before 'a-types'. The correct order interleaves by specifier: 'a-types'
+    // (type-only) first, then 'z-value' (value).
+    writeFixture('matrix18g/a-types.ts', `export interface Early { id: string }
+`)
+    writeFixture('matrix18g/z-value.ts', `export function makeLate(): number { return 1 }
+`)
+    writeFixture('matrix18g/useBoth.tsx', `'use client'
+import { createSignal } from '@barefootjs/client'
+import type { Early } from './a-types'
+import { makeLate } from './z-value'
+
+export function useBoth() {
+  function makeEarly(): Early {
+    return { id: 'x' }
+  }
+  const [n, setN] = createSignal(makeLate())
+  const [e, setE] = createSignal(makeEarly())
+  return { n, setN, e, setE }
+}
+`)
+    const consumerSource = `'use client'
+import { useBoth } from './useBoth'
+
+export function App() {
+  const { n, setN, e, setE } = useBoth()
+  return <button onClick={() => setN(n() + 1)}>{n()} {e().id}</button>
+}
+`
+    const consumerPath = writeFixture('matrix18g/App.tsx', consumerSource)
+
+    const result = compileJSX(consumerSource, consumerPath, { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')
+    expect(template).toBeDefined()
+    const aTypesIndex = template!.content.indexOf("from './a-types'")
+    const zValueIndex = template!.content.indexOf("from './z-value'")
+    expect(aTypesIndex).toBeGreaterThan(-1)
+    expect(zValueIndex).toBeGreaterThan(-1)
+    expect(aTypesIndex).toBeLessThan(zValueIndex)
+  })
+
   test('M19: a colliding binding nested inside a JSX callback still triggers BF113', () => {
     // Pins collectEntryBindingNames's depth: the ONLY `doubleIt` binding in
     // the consumer file is declared inside an onClick callback, not at any

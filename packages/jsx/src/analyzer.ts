@@ -5251,21 +5251,30 @@ function rewriteFactoryCallsInSource(
     if (typeNames.size === 0) typeImportsBySpecifier.delete(spec)
   }
   if (importsBySpecifier.size > 0 || typeImportsBySpecifier.size > 0) {
-    // Sort specifiers and, within each, named-import entries by local name —
-    // `importsBySpecifier`/`inlinedFactories` iterate in incidental AST-
-    // traversal/insertion order, which would otherwise make this generated
-    // text order-unstable across unrelated refactors (Copilot review, PR
-    // #2338).
-    const buildLines = (bySpecifier: Map<string, Map<string, string>>, keyword: string) =>
-      [...bySpecifier]
+    // One sorted pass over the UNION of specifiers (value + type-only), not
+    // two separately-sorted lists — the latter would leave the value/
+    // type-only halves each internally sorted but not globally sorted
+    // against each other (a type-only import from 'a' could land after a
+    // value import from 'b'), an unstable-looking order across unrelated
+    // refactors (Copilot review, PR #2351). Within each specifier, named-
+    // import entries are sorted by local name too — `importsBySpecifier`/
+    // `inlinedFactories` iterate in incidental AST-traversal/insertion
+    // order (Copilot review, PR #2338).
+    const buildLine = (names: Map<string, string>, keyword: string, spec: string) => {
+      const specifiers = [...names]
         .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([spec, names]) => {
-          const specifiers = [...names]
-            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-            .map(([local, exported]) => (exported === local ? local : `${exported} as ${local}`))
-          return `import ${keyword}{ ${specifiers.join(', ')} } from '${spec}'`
-        })
-    const lines = [...buildLines(importsBySpecifier, ''), ...buildLines(typeImportsBySpecifier, 'type ')]
+        .map(([local, exported]) => (exported === local ? local : `${exported} as ${local}`))
+      return `import ${keyword}{ ${specifiers.join(', ')} } from '${spec}'`
+    }
+    const allSpecifiers = new Set([...importsBySpecifier.keys(), ...typeImportsBySpecifier.keys()])
+    const lines = [...allSpecifiers].sort().flatMap((spec) => {
+      const out: string[] = []
+      const valueNames = importsBySpecifier.get(spec)
+      if (valueNames) out.push(buildLine(valueNames, '', spec))
+      const typeNames = typeImportsBySpecifier.get(spec)
+      if (typeNames) out.push(buildLine(typeNames, 'type ', spec))
+      return out
+    })
     const at = factoryImportInsertionOffset(sourceFile)
     edits.push({ start: at, end: at, replacement: at === 0 ? lines.join('\n') + '\n' : '\n' + lines.join('\n') })
   }
