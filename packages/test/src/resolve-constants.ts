@@ -15,9 +15,10 @@ import type { ParsedExpr } from '@barefootjs/jsx'
  * Resolves string literals, template literals, array.join() patterns,
  * and plain identifier references. When `valueBranches` is present
  * (from ternary initializers), each branch is resolved and merged
- * with union semantics. An object-literal const with string- or
- * template-literal-valued properties (`const rowClass = { active:
- * \`${base} row-active\`, plain: base }`) additionally seeds member-path
+ * with union semantics. An object-literal const with string-literal,
+ * template-literal, or bare-identifier-valued properties (`const rowClass
+ * = { active: \`${base} row-active\`, plain: base }`) additionally seeds
+ * member-path
  * keys (`rowClass.active` → `'row row-active'`) so a member-access
  * className (`className={rowClass.active}`, or a ternary arm) resolves
  * through the same lookup (#2354, template-literal values #2360).
@@ -67,17 +68,24 @@ export function resolveConstants(
 
 /**
  * Resolve one object-literal property's value to a string, for the
- * `name.key` member-path seeding above. Mirrors `tryResolve`'s string-
- * literal, template-literal, and plain-identifier-reference handling, but
- * walks the already-structured `ParsedExpr` (available here, unlike
- * `tryResolve`'s raw-string input) instead of re-parsing with a regex. A
- * bare identifier property (`{ plain: base }`) and an interpolated
- * identifier inside a template literal both resolve against `resolved` —
- * safe because `resolveConstants` processes `constants` in declaration
- * order, so a module-scope const referenced inside a later object
- * literal's property is already in the map (#2360). Anything else (a
- * nested object/array, a call, a binary expression, ...) is left
- * unresolved, same posture as `tryResolve` skipping "complex values".
+ * `name.key` member-path seeding above. Supports the same shapes as
+ * `tryResolve` — string literal, template literal, plain identifier
+ * reference — but walks the already-structured `ParsedExpr` (available
+ * here, unlike `tryResolve`'s raw-string input) instead of re-parsing
+ * with a regex, and is stricter about "unresolvable": `tryResolve`'s
+ * template-literal branch folds an unresolved `${...}` to `''` (its
+ * caller only ever uses that for the whole-constant case, where a
+ * partial string is an acceptable degrade), but a property value here
+ * returns `null` for the whole property instead — seeding `name.key`
+ * with a misleadingly partial class string would be worse than not
+ * seeding it at all. A bare identifier property (`{ plain: base }`) and
+ * an interpolated identifier inside a template literal both resolve
+ * against `resolved` — safe because `resolveConstants` processes
+ * `constants` in declaration order, so a module-scope const referenced
+ * inside a later object literal's property is already in the map
+ * (#2360). Anything else (a nested object/array, a call, a binary
+ * expression, ...) is left unresolved, same posture as `tryResolve`
+ * skipping "complex values".
  */
 function resolveObjectPropValue(expr: ParsedExpr, resolved: Map<string, string>): string | null {
   if (expr.kind === 'literal' && expr.literalType === 'string') {
