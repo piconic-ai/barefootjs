@@ -34,6 +34,7 @@ concurrency:
 jobs:
   update-doc-snapshots:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Skip fork PRs (no write permission to push back to the head branch).
     if: github.event.pull_request.head.repo.full_name == github.repository
 
