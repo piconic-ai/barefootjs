@@ -157,6 +157,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 176,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
+      },
+      "example": {
+        "fixture": "client-only-loop",
+        "description": "Client-only directive suppresses SSR for a bare loop, keeping boundary markers",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/client-only-loop.ts"
       }
     },
     "array-method": {
@@ -203,6 +208,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 178,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
+      },
+      "example": {
+        "fixture": "array-at-default",
+        "description": ".at() with no argument returns the first element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at-default.ts"
       }
     },
     "arrow": {
@@ -349,6 +359,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 174,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
+      },
+      "example": {
+        "fixture": "array-sort-field-asc",
+        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
       }
     },
     "binary": {
@@ -543,6 +558,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 169,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L169"
+      },
+      "example": {
+        "fixture": "array-sort-field-asc",
+        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
       }
     },
     "call": {
@@ -841,6 +861,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 166,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L166"
+      },
+      "example": {
+        "fixture": "client-only-loop",
+        "description": "Client-only directive suppresses SSR for a bare loop, keeping boundary markers",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/client-only-loop.ts"
       }
     },
     "conditional": {
@@ -887,6 +912,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 171,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L171"
+      },
+      "example": {
+        "fixture": "attr-ternary-title",
+        "description": "Ternary expressions in title and data attribute positions",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/attr-ternary-title.ts"
       }
     },
     "identifier": {
@@ -1185,6 +1215,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 164,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L164"
+      },
+      "example": {
+        "fixture": "array-entries",
+        "description": ".entries().map(([i, v]) => ...) iterates with index and value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-entries.ts"
       }
     },
     "index-access": {
@@ -1231,6 +1266,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 168,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L168"
+      },
+      "example": {
+        "fixture": "record-index-lookup-via-child-prop",
+        "description": "Object literal indexed by a prop, passed to a child component prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-index-lookup-via-child-prop.ts"
       }
     },
     "literal": {
@@ -1341,6 +1381,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 165,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L165"
+      },
+      "example": {
+        "fixture": "boolean-attr-literals",
+        "description": "Static boolean attributes: bare, ={true}, and ={false} omission",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-attr-literals.ts"
       }
     },
     "logical": {
@@ -1451,6 +1496,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 172,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
+      },
+      "example": {
+        "fixture": "logical-and-chain",
+        "description": "Chained a() && b() && <element/> conditional",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts"
       }
     },
     "member": {
@@ -1749,6 +1799,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 167,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L167"
+      },
+      "example": {
+        "fixture": "grandchild-composition",
+        "description": "Three-level composition threading a prop through each level",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/grandchild-composition.ts"
       }
     },
     "object-literal": {
@@ -1859,6 +1914,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 177,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L177"
+      },
+      "example": {
+        "fixture": "dangerous-inner-html-dynamic",
+        "description": "dangerouslySetInnerHTML with a prop-derived value renders on Hono/CSR, refuses on template adapters",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dangerous-inner-html-dynamic.ts"
       }
     },
     "regex": {
@@ -1951,6 +2011,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 173,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
+      },
+      "example": {
+        "fixture": "input",
+        "description": "site/ui Input — native text field survives hydration + accepts typing",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/input.ts"
       }
     },
     "unary": {
@@ -2045,6 +2110,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 170,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L170"
+      },
+      "example": {
+        "fixture": "array-at",
+        "description": ".at(-1) returns the last element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts"
       }
     },
     "unsupported": {
@@ -2203,6 +2273,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 179,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
+      },
+      "example": {
+        "fixture": "static-array-from-props",
+        "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
       }
     }
   },
@@ -2251,6 +2326,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 204,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L204"
+      },
+      "example": {
+        "fixture": "array-at-default",
+        "description": ".at() with no argument returns the first element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at-default.ts"
       }
     },
     "array-method:concat": {
@@ -2297,6 +2377,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 205,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L205"
+      },
+      "example": {
+        "fixture": "array-concat",
+        "description": ".concat(other) merges two arrays in order",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-concat.ts"
       }
     },
     "array-method:endsWith": {
@@ -2343,6 +2428,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 217,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L217"
+      },
+      "example": {
+        "fixture": "string-endsWith",
+        "description": ".endsWith(suffix) renders the matching branch",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-endsWith.ts"
       }
     },
     "array-method:flat": {
@@ -2389,6 +2479,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 223,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L223"
+      },
+      "example": {
+        "fixture": "array-flat",
+        "description": ".flat() flattens one level",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-flat.ts"
       }
     },
     "array-method:includes": {
@@ -2435,6 +2530,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 201,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L201"
+      },
+      "example": {
+        "fixture": "array-includes",
+        "description": ".includes(x) on an array prop renders the matching branch",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-includes.ts"
       }
     },
     "array-method:indexOf": {
@@ -2481,6 +2581,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 202,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L202"
+      },
+      "example": {
+        "fixture": "array-indexOf",
+        "description": ".indexOf(x) returns the 0-based position",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-indexOf.ts"
       }
     },
     "array-method:join": {
@@ -2527,6 +2632,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 200,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L200"
+      },
+      "example": {
+        "fixture": "array-join-default",
+        "description": ".join() with no argument joins with the default comma",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-join-default.ts"
       }
     },
     "array-method:lastIndexOf": {
@@ -2573,6 +2683,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 203,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L203"
+      },
+      "example": {
+        "fixture": "array-lastIndexOf",
+        "description": ".lastIndexOf(x) returns the position of the last match",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-lastIndexOf.ts"
       }
     },
     "array-method:padEnd": {
@@ -2619,6 +2734,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 222,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L222"
+      },
+      "example": {
+        "fixture": "string-padEnd",
+        "description": ".padEnd(target, pad) right-pads to the target width",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-padEnd.ts"
       }
     },
     "array-method:padStart": {
@@ -2665,6 +2785,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 221,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L221"
+      },
+      "example": {
+        "fixture": "string-padStart",
+        "description": ".padStart(target, pad) left-pads to the target width",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-padStart.ts"
       }
     },
     "array-method:repeat": {
@@ -2711,6 +2836,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 220,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L220"
+      },
+      "example": {
+        "fixture": "string-repeat",
+        "description": ".repeat(n) concatenates the string n times",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-repeat.ts"
       }
     },
     "array-method:replace": {
@@ -2757,6 +2887,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 218,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L218"
+      },
+      "example": {
+        "fixture": "string-replace",
+        "description": ".replace(old, new) swaps the first occurrence",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-replace.ts"
       }
     },
     "array-method:replaceAll": {
@@ -2803,6 +2938,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 219,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L219"
+      },
+      "example": {
+        "fixture": "string-replaceall",
+        "description": ".replaceAll replaces every occurrence, not just the first",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-replaceall.ts"
       }
     },
     "array-method:reverse": {
@@ -2849,6 +2989,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 207,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L207"
+      },
+      "example": {
+        "fixture": "array-reverse",
+        "description": ".reverse() emits the array in reverse order",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-reverse.ts"
       }
     },
     "array-method:slice": {
@@ -2895,6 +3040,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 206,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L206"
+      },
+      "example": {
+        "fixture": "array-slice-copy",
+        "description": ".slice() with no argument copies the whole array",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-slice-copy.ts"
       }
     },
     "array-method:split": {
@@ -2941,6 +3091,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 215,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L215"
+      },
+      "example": {
+        "fixture": "string-split",
+        "description": ".split(sep) splits a string into an array of substrings",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-split.ts"
       }
     },
     "array-method:startsWith": {
@@ -2987,6 +3142,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 216,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L216"
+      },
+      "example": {
+        "fixture": "string-startsWith",
+        "description": ".startsWith(prefix) renders the matching branch",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-startsWith.ts"
       }
     },
     "array-method:toFixed": {
@@ -3033,6 +3193,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 214,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L214"
+      },
+      "example": {
+        "fixture": "number-tofixed",
+        "description": ".toFixed(2) formats a numeric prop with rounding and zero-padding",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-tofixed.ts"
       }
     },
     "array-method:toLowerCase": {
@@ -3079,6 +3244,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 209,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L209"
+      },
+      "example": {
+        "fixture": "string-toLowerCase",
+        "description": ".toLowerCase() lowercases the receiver string",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-toLowerCase.ts"
       }
     },
     "array-method:toReversed": {
@@ -3125,6 +3295,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 208,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L208"
+      },
+      "example": {
+        "fixture": "array-toReversed",
+        "description": ".toReversed() emits the array in reverse order",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-toReversed.ts"
       }
     },
     "array-method:toUpperCase": {
@@ -3171,6 +3346,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 210,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L210"
+      },
+      "example": {
+        "fixture": "string-toUpperCase",
+        "description": ".toUpperCase() uppercases the receiver string",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-toUpperCase.ts"
       }
     },
     "array-method:trim": {
@@ -3217,6 +3397,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 211,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L211"
+      },
+      "example": {
+        "fixture": "string-trim",
+        "description": ".trim() strips leading and trailing whitespace",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim.ts"
       }
     },
     "array-method:trimEnd": {
@@ -3263,6 +3448,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 213,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L213"
+      },
+      "example": {
+        "fixture": "string-trim-sided",
+        "description": ".trimStart() and .trimEnd() strip only their own side",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim-sided.ts"
       }
     },
     "array-method:trimStart": {
@@ -3309,6 +3499,11 @@
         "file": "packages/jsx/src/expression-parser.ts",
         "line": 212,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L212"
+      },
+      "example": {
+        "fixture": "string-trim-sided",
+        "description": ".trimStart() and .trimEnd() strip only their own side",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim-sided.ts"
       }
     },
     "binary:!=": {
@@ -3355,6 +3550,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "nullish-coalescing-jsx",
+        "description": "Nullish coalescing with JSX fallback in JSX child position",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalescing-jsx.ts"
       }
     },
     "binary:!==": {
@@ -3401,6 +3601,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "comparison-ternary-text",
+        "description": "Comparison operators (>=, ===, !==) as ternary conditions",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts"
       }
     },
     "binary:*": {
@@ -3447,6 +3652,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "memo",
+        "description": "Derived value with createMemo",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo.ts"
       }
     },
     "binary:+": {
@@ -3557,6 +3767,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "string-concat-plus",
+        "description": "String concatenation via the + operator",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-concat-plus.ts"
       }
     },
     "binary:-": {
@@ -3603,6 +3818,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "array-sort-field-asc",
+        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
       }
     },
     "binary:/": {
@@ -3649,6 +3869,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "data-table",
+        "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts"
       }
     },
     "binary:<": {
@@ -3695,6 +3920,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "data-table",
+        "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts"
       }
     },
     "binary:===": {
@@ -3841,6 +4071,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "nested-ternary",
+        "description": "Nested ternary conditional rendering",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-ternary.ts"
       }
     },
     "binary:>": {
@@ -3887,6 +4122,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "top-level-ternary",
+        "description": "Top-level ternary return preserves conditional (#968)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/top-level-ternary.ts"
       }
     },
     "binary:>=": {
@@ -3933,6 +4173,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 89,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
+      },
+      "example": {
+        "fixture": "comparison-ternary-text",
+        "description": "Comparison operators (>=, ===, !==) as ternary conditions",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts"
       }
     },
     "literal:boolean": {
@@ -3979,6 +4224,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 95,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+      },
+      "example": {
+        "fixture": "boolean-attr-literals",
+        "description": "Static boolean attributes: bare, ={true}, and ={false} omission",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-attr-literals.ts"
       }
     },
     "literal:null": {
@@ -4025,6 +4275,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 95,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+      },
+      "example": {
+        "fixture": "adjacent-conditionals",
+        "description": "Two sibling && conditionals with independent signals",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/adjacent-conditionals.ts"
       }
     },
     "literal:number": {
@@ -4071,6 +4326,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 95,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+      },
+      "example": {
+        "fixture": "svg-icon",
+        "description": "Inline SVG: viewBox casing and camelCase → kebab-case presentation attrs",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/svg-icon.ts"
       }
     },
     "literal:string": {
@@ -4181,6 +4441,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 95,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
+      },
+      "example": {
+        "fixture": "jsx-text-whitespace",
+        "description": "Explicit {\" \"} joiners and multi-line text trimming",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-text-whitespace.ts"
       }
     },
     "logical:&&": {
@@ -4227,6 +4492,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 86,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
+      },
+      "example": {
+        "fixture": "logical-and-chain",
+        "description": "Chained a() && b() && <element/> conditional",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts"
       }
     },
     "logical:??": {
@@ -4337,6 +4607,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 86,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
+      },
+      "example": {
+        "fixture": "nullish-coalescing-destructured",
+        "description": "Nullish coalescing over destructured optional props seeds SSR correctly",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalescing-destructured.ts"
       }
     },
     "logical:||": {
@@ -4383,6 +4658,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 86,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L86"
+      },
+      "example": {
+        "fixture": "array-sort-multikey",
+        "description": ".sort((a,b) => a.price - b.price || a.name.localeCompare(b.name)) sorts by price, then name",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-multikey.ts"
       }
     },
     "member:computed": {
@@ -4429,6 +4709,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 102,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L102"
+      },
+      "example": {
+        "fixture": "pagination",
+        "description": "site/ui Pagination demo — one signal drives data-active across seven links; href=\"#\" handlers must preventDefault",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/pagination.ts"
       }
     },
     "member:optional": {
@@ -4475,6 +4760,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 101,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L101"
+      },
+      "example": {
+        "fixture": "optional-chaining-prop",
+        "description": "Optional chaining into an object prop with nullish fallback",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chaining-prop.ts"
       }
     },
     "unary:!": {
@@ -4569,6 +4859,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 92,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L92"
+      },
+      "example": {
+        "fixture": "form",
+        "description": "Terms-acceptance form — reactive data-state / aria-checked / disabled from one signal",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/form.ts"
       }
     },
     "unary:-": {
@@ -4615,6 +4910,11 @@
         "file": "packages/adapter-tests/src/coverage-map.ts",
         "line": 92,
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L92"
+      },
+      "example": {
+        "fixture": "array-at",
+        "description": ".at(-1) returns the last element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts"
       }
     }
   }

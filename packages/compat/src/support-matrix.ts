@@ -29,6 +29,7 @@
 import { PARSED_EXPR_KINDS } from '@barefootjs/jsx'
 import coverageMapJson from '../../adapter-tests/coverage-map.json' with { type: 'json' }
 import { loadCompatAdapters } from './adapter-registry'
+import { computeConstructExamples, type ConstructExample } from './construct-examples'
 import { computeConstructSourceLinks, resolveAxisLink, resolveKindLink, type SourceLink } from './construct-source-links'
 import { compareAdapterIds, KNOWN_LIMITATION_LABEL } from './report'
 
@@ -76,6 +77,8 @@ export interface SupportMatrixConstruct {
   cells: Record<string, SupportMatrixCell>
   /** GitHub permalink to where this construct is recognised, when resolvable (see `construct-source-links.ts`). */
   source?: SourceLink
+  /** Exemplar covering fixture — what the case looks like (see `construct-examples.ts`). */
+  example?: ConstructExample
 }
 
 export interface SupportMatrixReport {
@@ -195,27 +198,34 @@ export function buildSupportMatrix(
  */
 export async function computeSupportMatrix(): Promise<SupportMatrixReport> {
   const { loaded } = await loadCompatAdapters()
-  const report = buildSupportMatrix(coverageMapJson as SupportMatrixCoverageMap, loaded)
-  return attachSourceLinks(report)
+  const coverage = coverageMapJson as SupportMatrixCoverageMap
+  const report = buildSupportMatrix(coverage, loaded)
+  return attachConstructDocs(report, coverage)
 }
 
 /**
- * Attaches a `source` permalink to every resolvable kind/axis row. Kept
- * separate from `buildSupportMatrix` (which stays a pure join over
- * caller-supplied data, per its unit test's synthetic fixtures/adapters)
- * since this reads real source files off disk via
- * `computeConstructSourceLinks()` — there is nothing meaningful to
- * resolve against a synthetic coverage map.
+ * Attaches to every resolvable kind/axis row a `source` definition
+ * permalink and an `example` exemplar fixture (id + description +
+ * fixture-file permalink). Kept separate from `buildSupportMatrix`
+ * (which stays a pure join over caller-supplied data, per its unit
+ * test's synthetic fixtures/adapters) since this reads real source
+ * files off disk — there is nothing meaningful to resolve against a
+ * synthetic coverage map.
  */
-function attachSourceLinks(report: SupportMatrixReport): SupportMatrixReport {
+function attachConstructDocs(report: SupportMatrixReport, coverage: SupportMatrixCoverageMap): SupportMatrixReport {
   const links = computeConstructSourceLinks()
+  const examples = computeConstructExamples(coverage)
   for (const [kind, construct] of Object.entries(report.kinds)) {
     const source = resolveKindLink(kind, links)
     if (source) construct.source = source
+    const example = examples.kinds[kind]
+    if (example) construct.example = example
   }
   for (const [axis, construct] of Object.entries(report.axes)) {
     const source = resolveAxisLink(axis, links)
     if (source) construct.source = source
+    const example = examples.axes[axis]
+    if (example) construct.example = example
   }
   return report
 }
