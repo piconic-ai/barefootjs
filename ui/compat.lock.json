@@ -2177,6 +2177,340 @@
           ]
         }
       }
+    },
+    "docs": {
+      "date-method-uncatalogued": {
+        "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
+      },
+      "filter-nested-callback-predicate": {
+        "description": "Filter predicate containing a nested .some() callback (#2038)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-predicate.ts"
+      },
+      "filter-nested-find-predicate": {
+        "description": "Filter predicate containing a nested .find() callback (#2038)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate.ts"
+      },
+      "static-array-from-props": {
+        "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
+      },
+      "static-array-from-props-with-component": {
+        "description": "Static-array loop with childComponent body materialises rendered children on CSR (#1268)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props-with-component.ts"
+      }
+    }
+  },
+  "componentDocs": {
+    "accordion": {
+      "title": "Accordion",
+      "description": "Vertically collapsing content sections",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/accordion/index.tsx"
+    },
+    "alert": {
+      "title": "Alert",
+      "description": "Displays a callout for important content",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/alert/index.tsx"
+    },
+    "alert-dialog": {
+      "title": "Alert Dialog",
+      "description": "A modal dialog that interrupts the user with important content and expects a response",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/alert-dialog/index.tsx"
+    },
+    "aspect-ratio": {
+      "title": "Aspect Ratio",
+      "description": "Displays content within a desired ratio",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/aspect-ratio/index.tsx"
+    },
+    "avatar": {
+      "title": "Avatar",
+      "description": "An image element with a fallback for representing the user",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/avatar/index.tsx"
+    },
+    "badge": {
+      "title": "Badge",
+      "description": "Small status indicator labels",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/badge/index.tsx"
+    },
+    "breadcrumb": {
+      "title": "Breadcrumb",
+      "description": "Displays the path to the current resource using a hierarchy of links",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/breadcrumb/index.tsx"
+    },
+    "button": {
+      "title": "Button",
+      "description": "A button component with variants and sizes",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/button/index.tsx"
+    },
+    "button-group": {
+      "title": "Button Group",
+      "description": "Container for grouping related buttons",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/button-group/index.tsx"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "description": "A date calendar for picking single dates with month navigation",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/calendar/index.tsx"
+    },
+    "card": {
+      "title": "Card",
+      "description": "Container for grouped content",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/card/index.tsx"
+    },
+    "carousel": {
+      "title": "Carousel",
+      "description": "A carousel with motion and swipe built using Embla",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/carousel/index.tsx"
+    },
+    "chart": {
+      "title": "Chart",
+      "description": "Every chart component (containers, primitives, and tooltips) is JSX-native:",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/chart/index.tsx"
+    },
+    "checkbox": {
+      "title": "Checkbox",
+      "description": "A control that allows the user to toggle between checked and not checked",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/checkbox/index.tsx"
+    },
+    "collapsible": {
+      "title": "Collapsible",
+      "description": "An interactive component which expands/collapses a panel",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/collapsible/index.tsx"
+    },
+    "combobox": {
+      "title": "Combobox",
+      "description": "Autocomplete input with searchable dropdown",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/combobox/index.tsx"
+    },
+    "command": {
+      "title": "Command",
+      "description": "A command menu with search, keyboard navigation, and filtering",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/command/index.tsx"
+    },
+    "context-menu": {
+      "title": "Context Menu",
+      "description": "A menu triggered by right-click, displayed at the cursor position",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/context-menu/index.tsx"
+    },
+    "data-table": {
+      "title": "Data Table",
+      "description": "Powerful table with sorting, filtering, and pagination",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/data-table/index.tsx"
+    },
+    "date-picker": {
+      "title": "Date Picker",
+      "description": "A date picker component with calendar popup and range selection",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/date-picker/index.tsx"
+    },
+    "dialog": {
+      "title": "Dialog",
+      "description": "A modal overlay with custom content",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/dialog/index.tsx"
+    },
+    "direction": {
+      "title": "Direction",
+      "description": "A provider for setting text direction (LTR/RTL) on child content",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/direction/index.tsx"
+    },
+    "drawer": {
+      "title": "Drawer",
+      "description": "A draggable panel that slides from the edge of the screen",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/drawer/index.tsx"
+    },
+    "dropdown-menu": {
+      "title": "Dropdown Menu",
+      "description": "An action menu triggered by a button",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/dropdown-menu/index.tsx"
+    },
+    "empty": {
+      "title": "Empty",
+      "description": "Empty state placeholder with icon, title, and action",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/empty/index.tsx"
+    },
+    "field": {
+      "title": "Field",
+      "description": "Form field wrapper with label, description, and error message",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/field/index.tsx"
+    },
+    "hover-card": {
+      "title": "Hover Card",
+      "description": "A floating card that appears on hover to display rich content",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/hover-card/index.tsx"
+    },
+    "icon": {
+      "title": "Icon",
+      "description": "SVG icons based on Lucide icon definitions.",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/icon/index.tsx"
+    },
+    "input": {
+      "title": "Input",
+      "description": "A text input field with error state support",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/input/index.tsx"
+    },
+    "input-group": {
+      "title": "Input Group",
+      "description": "Input with addons, prefixes, and suffixes",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/input-group/index.tsx"
+    },
+    "input-otp": {
+      "title": "Input OTP",
+      "description": "An accessible one-time password input with copy-paste support",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/input-otp/index.tsx"
+    },
+    "item": {
+      "title": "Item",
+      "description": "A generic list/menu item component with composable sub-components",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/item/index.tsx"
+    },
+    "kbd": {
+      "title": "Kbd",
+      "description": "Keyboard key display for showing keyboard shortcuts",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/kbd/index.tsx"
+    },
+    "label": {
+      "title": "Label",
+      "description": "Accessible label for form controls",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/label/index.tsx"
+    },
+    "menubar": {
+      "title": "Menubar",
+      "description": "A visually persistent menu common in desktop applications",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/menubar/index.tsx"
+    },
+    "native-select": {
+      "title": "Native Select",
+      "description": "A styled native HTML select element",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/native-select/index.tsx"
+    },
+    "navigation-menu": {
+      "title": "Navigation Menu",
+      "description": "A collection of links for navigating websites with hover-activated content panels",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/navigation-menu/index.tsx"
+    },
+    "pagination": {
+      "title": "Pagination",
+      "description": "Pagination with page navigation, next and previous links",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/pagination/index.tsx"
+    },
+    "popover": {
+      "title": "Popover",
+      "description": "A floating panel that appears relative to a trigger element",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/popover/index.tsx"
+    },
+    "portal": {
+      "title": "Portal",
+      "description": "Renders content outside the DOM hierarchy",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/portal/index.tsx"
+    },
+    "progress": {
+      "title": "Progress",
+      "description": "Displays an indicator showing the completion progress of a task",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/progress/index.tsx"
+    },
+    "radio-group": {
+      "title": "Radio Group",
+      "description": "A set of checkable buttons where only one can be checked at a time",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/radio-group/index.tsx"
+    },
+    "resizable": {
+      "title": "Resizable",
+      "description": "Accessible resizable panel groups and layouts with drag and keyboard support",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/resizable/index.tsx"
+    },
+    "scroll-area": {
+      "title": "Scroll Area",
+      "description": "Augments native scroll functionality for custom, cross-browser styling",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/scroll-area/index.tsx"
+    },
+    "select": {
+      "title": "Select",
+      "description": "Displays a list of options for the user to pick from",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/select/index.tsx"
+    },
+    "separator": {
+      "title": "Separator",
+      "description": "A visual divider that separates content horizontally or vertically",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/separator/index.tsx"
+    },
+    "sheet": {
+      "title": "Sheet",
+      "description": "A panel that slides in from the edge of the screen",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/sheet/index.tsx"
+    },
+    "sidebar": {
+      "title": "Sidebar",
+      "description": "A composable, collapsible sidebar component with responsive mobile support",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/sidebar/index.tsx"
+    },
+    "skeleton": {
+      "title": "Skeleton",
+      "description": "A placeholder loading indicator with pulse animation",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/skeleton/index.tsx"
+    },
+    "slider": {
+      "title": "Slider",
+      "description": "A range value selector with draggable thumb",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/slider/index.tsx"
+    },
+    "slot": {
+      "title": "Slot",
+      "description": "A polymorphic component that merges props with child element",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/slot/index.tsx"
+    },
+    "spinner": {
+      "title": "Spinner",
+      "description": "An animated loading indicator for async operations",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/spinner/index.tsx"
+    },
+    "switch": {
+      "title": "Switch",
+      "description": "A control that allows the user to toggle between checked and not checked",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/switch/index.tsx"
+    },
+    "table": {
+      "title": "Table",
+      "description": "A responsive table component for displaying structured data",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/table/index.tsx"
+    },
+    "tabs": {
+      "title": "Tabs",
+      "description": "A set of layered sections of content displayed one at a time",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/tabs/index.tsx"
+    },
+    "textarea": {
+      "title": "Textarea",
+      "description": "A multi-line text input field with error state support",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/textarea/index.tsx"
+    },
+    "toast": {
+      "title": "Toast",
+      "description": "A temporary notification message that appears briefly",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/toast/index.tsx"
+    },
+    "toggle": {
+      "title": "Toggle",
+      "description": "A two-state button that can be on or off",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/toggle/index.tsx"
+    },
+    "toggle-group": {
+      "title": "Toggle Group",
+      "description": "A set of two-state buttons that can be toggled on or off",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/toggle-group/index.tsx"
+    },
+    "tooltip": {
+      "title": "Tooltip",
+      "description": "A popup that displays contextual information on hover or focus",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/tooltip/index.tsx"
+    },
+    "typography": {
+      "title": "Typography",
+      "description": "Styled text elements for headings, paragraphs, and prose content",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/typography/index.tsx"
+    },
+    "xyflow": {
+      "title": "xyflow",
+      "description": "Signal-based graph editor — Flow, Background, Controls, MiniMap, Handle, NodeWrapper, SimpleEdge",
+      "url": "https://github.com/piconic-ai/barefootjs/blob/main/ui/components/ui/xyflow/index.tsx"
     }
   }
 }
