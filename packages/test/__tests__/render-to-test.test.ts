@@ -154,6 +154,172 @@ export function List(props: { items: { id: string; active: boolean; a: { x: stri
 })
 
 // ---------------------------------------------------------------------------
+// Object-literal properties whose value is a template literal (#2360)
+//
+// #2354's member-path seeding only handled a plain string-literal property
+// value (`{ active: 'row row-active' }`) — a property built from a shared
+// base-class constant plus a per-variant suffix (`{ active: \`${base}
+// row-active\` }`, an extremely common way to compose a small related set
+// of class strings) fell through unresolved, silently degrading to `[]`
+// rather than the actual class tokens. Found via a real component
+// (piconic-ai/sora's ListSidebar) using exactly this shape for every one
+// of its per-row state classes.
+// ---------------------------------------------------------------------------
+
+describe('object-literal properties as template literals (#2360)', () => {
+  test('ternary branches referencing template-literal properties resolve to both arms union', () => {
+    const source = `
+'use client'
+const base = 'row'
+const rowClass = { active: \`\${base} row-active\`, plain: \`\${base}\` }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual(['row', 'row-active', 'row'])
+  })
+
+  test('a nested ternary over four template-literal properties resolves every arm (ListSidebar shape)', () => {
+    const source = `
+'use client'
+const listItemBase = 'group flex items-center'
+const listItemActiveBg = 'bg-active'
+const listItemClass = {
+  plain: \`list-item \${listItemBase}\`,
+  active: \`list-item is-active \${listItemBase} \${listItemActiveBg}\`,
+  renaming: \`list-item is-renaming \${listItemBase}\`,
+  activeRenaming: \`list-item is-active is-renaming \${listItemBase} \${listItemActiveBg}\`,
+}
+export function List(props: { items: { id: string; active: boolean; renaming: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((entry) => (
+        <li
+          key={entry.id}
+          className={
+            entry.renaming
+              ? entry.active
+                ? listItemClass.activeRenaming
+                : listItemClass.renaming
+              : entry.active
+                ? listItemClass.active
+                : listItemClass.plain
+          }
+        >{entry.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    for (const token of ['list-item', 'is-active', 'is-renaming', 'group', 'flex', 'items-center', 'bg-active']) {
+      expect(li.classes).toContain(token)
+    }
+    expect(li.classes).not.toContain('?')
+    expect(li.classes).not.toContain(':')
+  })
+
+  test('a property value that is neither a string nor template literal stays unresolved', () => {
+    const source = `
+'use client'
+const rowClass = { active: 1 + 1, plain: 'row' }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    // Only the resolvable arm (`rowClass.plain`) contributes.
+    expect(li.classes).toEqual(['row'])
+  })
+
+  test('a bare identifier property (referencing an earlier module-scope const) resolves too', () => {
+    // Matches resolveConstants' own JSDoc example verbatim (Copilot review, PR #2361).
+    const source = `
+'use client'
+const base = 'row'
+const rowClass = { active: \`\${base} row-active\`, plain: base }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual(['row', 'row-active', 'row'])
+  })
+
+  test('a template-literal property with a non-identifier interpolation stays unresolved, not partially folded to "" (Copilot review, PR #2361)', () => {
+    // `${flag ? 'x' : 'y'}` inside the template is a conditional, not a
+    // plain identifier lookup — the whole property must stay unresolved
+    // (contributing nothing), not fold the interpolation to '' and seed a
+    // misleadingly "resolved" partial string. `flag` is a real module-scope
+    // const (unlike a component-scope `.map()` param) so this fixture stays
+    // valid TSX on its own (Copilot review, PR #2361).
+    const source = `
+'use client'
+const flag = true
+const rowClass = { active: \`row-\${flag ? 'x' : 'y'}\`, plain: 'row' }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    // Only the resolvable arm (`rowClass.plain`) contributes — no partial
+    // `row-` token from the unresolved interpolation.
+    expect(li.classes).toEqual(['row'])
+  })
+
+  test('a template-literal property interpolating a declared identifier that never resolves to a string stays unresolved', () => {
+    // `count` is a real module-scope const (so `resolveObjectPropValue`
+    // actually reaches its `identifier` branch, unlike a call expression,
+    // which is a different, already-covered non-identifier shape) but its
+    // value is a number, so it never lands in `resolved` (string-only) —
+    // exercises the "identifier declared but not string-resolvable" path
+    // distinctly from the conditional-interpolation case above (Copilot
+    // review, PR #2361).
+    const source = `
+'use client'
+const count = 42
+const rowClass = { active: \`row \${count}\`, plain: 'row' }
+export function List(props: { items: { id: string; active: boolean }[] }) {
+  return (
+    <ul>
+      {props.items.map((item) => (
+        <li key={item.id} className={item.active ? rowClass.active : rowClass.plain}>{item.id}</li>
+      ))}
+    </ul>
+  )
+}
+`
+    const li = renderToTest(source, 'list.tsx', 'List').find({ tag: 'li' })!
+    expect(li.classes).toEqual(['row'])
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Record<T, string>[key] indexed lookups (#2069)
 //
 // Long documented as a renderToTest resolution limit, resolved by the
