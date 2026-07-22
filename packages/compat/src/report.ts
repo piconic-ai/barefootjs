@@ -82,11 +82,19 @@ export interface FixtureDivergences {
   docs?: Record<string, FixtureDoc>
 }
 
-/** A component-matrix row's title, description, and link to its source. */
+/** A component-matrix row's title, description, and links. */
 export interface ComponentDoc {
   title: string
   description: string
+  /** GitHub link to the component source (`ui/components/ui/<name>/index.tsx`). */
   url: string
+  /**
+   * Public component-reference page on ui.barefootjs.dev, when the
+   * component has a routed `/components/<name>` page. Absent for
+   * components with no public page (`chart`, `icon`, `sidebar`, `slot`,
+   * `xyflow`), which link to `url` instead.
+   */
+  uiUrl?: string
 }
 
 export interface CompatReport {
