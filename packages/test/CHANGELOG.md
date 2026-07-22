@@ -1,5 +1,12 @@
 # @barefootjs/test
 
+## 0.26.2
+
+### Patch Changes
+
+- ef96913: Fix `resolveConstants` (used by `renderToTest`'s `TestNode.classes`) to also resolve an object-literal className constant's template-literal-valued properties (`` { active: `${base} row-active` } ``), not just plain string literals — a member-access className ternary (`className={cond ? rowClass.active : rowClass.plain}`) previously fell back to `[]` for this common shape instead of the actual class tokens (#2360, follow-up to #2354/#2355).
+  - @barefootjs/jsx@0.26.2
+
 ## 0.26.1
 
 ### Patch Changes
