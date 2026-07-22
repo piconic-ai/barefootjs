@@ -28,6 +28,9 @@ import { REPO_ROOT, blobUrl, fixtureFileMap } from './repo-links'
 
 const COMPONENTS_DIR = 'ui/components/ui'
 const REGISTRY_FILE = 'ui/registry.json'
+const UI_ROUTES_FILE = 'site/ui/routes.tsx'
+const UI_PAGES_DIR = 'site/ui/pages/components'
+const UI_SITE_BASE = 'https://ui.barefootjs.dev'
 /** A description longer than this is trimmed at a word boundary with an ellipsis (prose, not code — safe to truncate). */
 const DESCRIPTION_MAX_CHARS = 100
 
@@ -103,17 +106,95 @@ function taglineFromSource(name: string): string | undefined {
   return content.length >= 2 ? content[1] : undefined
 }
 
+/**
+ * The set of components with a public `/components/<name>` reference
+ * page, read from the site's route table via the TS AST (not a regex —
+ * CLAUDE.md): every `app.get('/components/<name>', …)` whose path is a
+ * single segment under `/components/`. Retired pages (e.g. xyflow, now
+ * at `/xyflow/*`) and section routes (`/charts/*`) are correctly absent,
+ * so a link built from this set never 404s.
+ */
+function routedComponentPages(): Set<string> {
+  const abs = path.join(REPO_ROOT, UI_ROUTES_FILE)
+  let source: string
+  try {
+    source = readFileSync(abs, 'utf8')
+  } catch {
+    return new Set()
+  }
+  const sourceFile = ts.createSourceFile(abs, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const names = new Set<string>()
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'get'
+    ) {
+      const arg = node.arguments[0]
+      if (arg && (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg))) {
+        const m = arg.text.split('/')
+        // ['', 'components', '<name>'] — exactly a single segment under /components/.
+        if (m.length === 3 && m[0] === '' && m[1] === 'components' && m[2]) names.add(m[2])
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return names
+}
+
+/**
+ * The page-level `description` shown on a component's public reference
+ * page — the polished, user-facing copy, preferred over the registry
+ * one-liner. Extracted as the first `description` JSX attribute with a
+ * string-literal value in `site/ui/pages/components/<name>.tsx` (via the
+ * AST, not a regex over JSX — CLAUDE.md); every component page declares
+ * exactly one.
+ */
+function uiPageDescription(name: string): string | undefined {
+  const abs = path.join(REPO_ROOT, UI_PAGES_DIR, `${name}.tsx`)
+  let source: string
+  try {
+    source = readFileSync(abs, 'utf8')
+  } catch {
+    return undefined
+  }
+  const sourceFile = ts.createSourceFile(abs, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  let found: string | undefined
+  const visit = (node: ts.Node): void => {
+    if (found !== undefined) return
+    if (
+      ts.isJsxAttribute(node) &&
+      node.name.getText(sourceFile) === 'description' &&
+      node.initializer &&
+      ts.isStringLiteral(node.initializer)
+    ) {
+      found = node.initializer.text
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return found
+}
+
 export function computeComponentDocs(names: string[]): Record<string, ComponentDoc> {
   const registry = loadRegistry()
+  const routed = routedComponentPages()
   const docs: Record<string, ComponentDoc> = {}
   for (const name of names) {
     const item = registry.get(name)
-    const description = item?.description ?? taglineFromSource(name) ?? ''
-    docs[name] = {
+    const hasPage = routed.has(name)
+    // Prefer the public page's own copy; fall back to the registry
+    // one-liner, then the component's JSDoc tagline.
+    const description = (hasPage ? uiPageDescription(name) : undefined) ?? item?.description ?? taglineFromSource(name) ?? ''
+    const doc: ComponentDoc = {
       title: item?.title ?? titleCase(name),
       description: trimToBudget(description),
       url: blobUrl(`${COMPONENTS_DIR}/${name}/index.tsx`),
     }
+    if (hasPage) doc.uiUrl = `${UI_SITE_BASE}/components/${name}`
+    docs[name] = doc
   }
   return docs
 }

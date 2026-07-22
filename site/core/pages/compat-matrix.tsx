@@ -57,6 +57,8 @@ interface ComponentDoc {
   title: string
   description: string
   url: string
+  /** Optional: public component page on ui.barefootjs.dev (absent for components with no routed page). */
+  uiUrl?: string
 }
 
 interface CompatLock {
@@ -164,12 +166,14 @@ function buildSummary(componentNames: string[]): string {
 }
 
 /**
- * The "Component" cell: the name linked to its source (`componentDocs`,
- * generated alongside the lock) when available, else a plain code span.
+ * The "Component" cell: the name linked to its public component page on
+ * ui.barefootjs.dev when it has one, else to its source (`componentDocs`
+ * is generated alongside the lock), else a plain code span.
  */
 function componentLabelMarkdown(name: string, doc: ComponentDoc | undefined): string {
   const code = `\`${escapeCell(name)}\``
-  return doc?.url ? `[${code}](${doc.url})` : code
+  const url = doc?.uiUrl ?? doc?.url
+  return url ? `[${code}](${url})` : code
 }
 
 /** Build the Markdown table: one row per component, a description, then one column per adapter. */
@@ -407,7 +411,7 @@ ${summary}
 
 ## Matrix
 
-Each component name links to its source; the **Description** column says what it is.
+Each component name links to its [component page](https://ui.barefootjs.dev/components) (or its source, for components without one); the **Description** column says what it is.
 
 ${table}
 
@@ -422,7 +426,7 @@ ${supportMatrixSection}
 
 This table is generated from the committed [\`ui/compat.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/compat.lock.json), regenerated with \`bun run compat:lock\` and drift-checked in CI. Render-level divergences are declared per adapter in \`packages/adapter-*/src/render-divergences.ts\` (each adapter's conformance suite derives its skip list from the same declaration, so this page and the tests cannot drift apart). Tracked limitations carry the [\`known-limitation\`](${compat.knownLimitationLabel}) label.
 
-Component and fixture descriptions are computed into the same lock at regen time ([\`component-docs.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/component-docs.ts)) — component one-liners from the public catalogue (\`ui/registry.json\`, JSDoc-tagline fallback), fixture descriptions from the corpus itself — so they're drift-checked with everything else and can't go stale independently.
+Component and fixture descriptions are computed into the same lock at regen time ([\`component-docs.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/component-docs.ts)) — component copy is taken from the public component page's own \`description\` (falling back to the \`ui/registry.json\` catalogue one-liner, then the component's JSDoc tagline), and the component name links to that page when one exists; fixture descriptions come from the corpus itself. All of it is drift-checked with everything else and can't go stale independently.
 
 The construct-support section above is generated from the committed [\`ui/support-matrix.lock.json\`](https://github.com/piconic-ai/barefootjs/blob/main/ui/support-matrix.lock.json), regenerated with \`bun run support-matrix:lock\` and drift-checked in CI alongside the component matrix. Each construct's fixture link and example description are computed the same way — the exemplar is mechanically chosen as the most narrowly targeted covering fixture ([\`construct-examples.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/construct-examples.ts)), and definition-site fallback links come from a TS AST walk over the compiler's construct catalogues ([\`construct-source-links.ts\`](https://github.com/piconic-ai/barefootjs/blob/main/packages/compat/src/construct-source-links.ts)) — so they are regenerated and drift-checked on the same schedule: a link can't silently go stale, because moving the code it points at changes what the next regen commits, and CI fails if that regen was forgotten.
 

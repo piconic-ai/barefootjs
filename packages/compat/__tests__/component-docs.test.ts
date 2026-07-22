@@ -15,7 +15,7 @@ import { computeComponentDocs, computeFixtureDocs } from '../src/component-docs'
 const LOCK_PATH = resolve(import.meta.dir, '../../../ui/compat.lock.json')
 const lock = JSON.parse(readFileSync(LOCK_PATH, 'utf8')) as {
   components: Record<string, unknown>
-  componentDocs?: Record<string, { title: string; description: string; url: string }>
+  componentDocs?: Record<string, { title: string; description: string; url: string; uiUrl?: string }>
   fixtureDivergences: { fixtures: Record<string, unknown>; docs?: Record<string, { description: string; url: string }> }
 }
 
@@ -43,6 +43,18 @@ describe('computeComponentDocs', () => {
       // 100-char budget + a 1-char ellipsis when trimmed.
       expect(docs[name].description.length).toBeLessThanOrEqual(101)
     }
+  })
+
+  test('uiUrl, when present, points at the public component page', () => {
+    for (const name of names) {
+      const { uiUrl } = docs[name]
+      if (uiUrl !== undefined) {
+        expect(uiUrl).toBe(`https://ui.barefootjs.dev/components/${name}`)
+      }
+    }
+    // The catalogue is broadly published — most components have a page.
+    const withPage = names.filter(n => docs[n].uiUrl !== undefined)
+    expect(withPage.length).toBeGreaterThan(names.length / 2)
   })
 
   test('matches the committed lock (regen freshness)', () => {
