@@ -1,6 +1,6 @@
 {
   "name": "@barefootjs/cli",
-  "version": "0.26.1",
+  "version": "0.26.2",
   "description": "CLI for agent-driven UI component discovery and scaffolding",
   "type": "module",
   "main": "./dist/index.js",
