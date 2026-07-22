@@ -61,12 +61,32 @@ export const FIXTURE_DIVERGENCES_NOTE =
   'rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance ' +
   'suite until fixed). Fixtures absent from this table render to reference parity on every adapter.'
 
+/** A fixture-corpus row's human-readable description + link to its source file. */
+export interface FixtureDoc {
+  description: string
+  url: string
+}
+
 export interface FixtureDivergences {
   note: string
   /** Total shared-corpus fixture count, for the "N of M clean" summary. */
   totalFixtures: number
   /** Fixture id → adapter id → divergence cell. Clean cells are omitted. */
   fixtures: Record<string, Record<string, FixtureDivergenceCell>>
+  /**
+   * Fixture id → description + source link, for the divergent fixtures
+   * listed above. Populated by the CLI at generation time (see
+   * `component-docs.ts`); absent on reports built without it (the pure
+   * `buildFixtureDivergences` leaves it unset).
+   */
+  docs?: Record<string, FixtureDoc>
+}
+
+/** A component-matrix row's title, description, and link to its source. */
+export interface ComponentDoc {
+  title: string
+  description: string
+  url: string
 }
 
 export interface CompatReport {
@@ -76,6 +96,12 @@ export interface CompatReport {
   adapters: string[]
   /** Component name → adapter id → cell. */
   components: Record<string, Record<string, CompatReportCell>>
+  /**
+   * Component name → title + description + source link. Populated by the
+   * CLI at generation time (see `component-docs.ts`); absent on reports
+   * built without it (the pure `buildCompatReport` leaves it unset).
+   */
+  componentDocs?: Record<string, ComponentDoc>
   /** Fixture-level divergences (build-time refusals + render divergences). */
   fixtureDivergences: FixtureDivergences
 }

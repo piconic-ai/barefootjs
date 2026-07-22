@@ -31,6 +31,7 @@ import { glob as fsGlob } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import path from 'path'
 import { loadCompatAdapters } from './adapter-registry'
+import { computeComponentDocs, computeFixtureDocs } from './component-docs'
 import { buildCompatCell, compileForCompat, type CompatCell } from './engine'
 import { buildCompatReport, buildFixtureDivergences, formatCompatJson, formatCompatMarkdown, type CompatReport } from './report'
 
@@ -231,6 +232,18 @@ async function main(): Promise<void> {
   const fixtureDivergences = buildFixtureDivergences(loaded, jsxFixtures.length)
 
   const report = buildCompatReport(cells, fixtureDivergences)
+
+  // Row descriptions + source links for the docs page's two entity
+  // tables (component matrix, render-conformance fixture corpus), so a
+  // reader sees what `accordion` / `filter-nested-callback-predicate`
+  // are without leaving the page. Attached here (not in the pure
+  // `buildCompatReport` / `buildFixtureDivergences`, which stay
+  // synthetic-input-testable) since they read `ui/registry.json`, the
+  // component sources, and the fixture corpus off disk. Committed into
+  // the lock and drift-checked in CI like the rest of it.
+  report.componentDocs = computeComponentDocs(Object.keys(report.components))
+  report.fixtureDivergences.docs = computeFixtureDocs(Object.keys(report.fixtureDivergences.fixtures))
+
   const text = jsonFlag ? formatCompatJson(report) : formatCompatMarkdown(report)
 
   if (outPath) {
