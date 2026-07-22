@@ -79,6 +79,7 @@ interface SupportMatrixExample {
   fixture: string
   description: string
   url: string
+  code?: string
 }
 
 interface SupportMatrixConstruct {
@@ -302,11 +303,20 @@ function constructLabelMarkdown(construct: SupportMatrixConstruct | undefined, n
   return url ? `[${code}](${url})` : code
 }
 
-/** The "Example" cell: the exemplar fixture's human-written description. */
+/**
+ * The "Example" cell: the extracted code snippet (when one exists) with
+ * the exemplar fixture's description under it. A snippet containing a
+ * backtick (template literals) uses a double-backtick code span, per
+ * CommonMark.
+ */
 function exampleCellMarkdown(construct: SupportMatrixConstruct | undefined): string {
   const example = construct?.example
   if (!example) return '—'
-  return escapeCell(example.description)
+  const description = escapeCell(example.description)
+  if (!example.code) return description
+  const code = escapeCell(example.code)
+  const span = code.includes('`') ? `\`\` ${code} \`\`` : `\`${code}\``
+  return `${span}<br>${description}`
 }
 
 /** One `construct × adapter` table — shared by the "By kind" and "By axis" tables. */

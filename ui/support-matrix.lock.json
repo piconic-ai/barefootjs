@@ -161,7 +161,8 @@
       "example": {
         "fixture": "client-only-loop",
         "description": "Client-only directive suppresses SSR for a bare loop, keeping boundary markers",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/client-only-loop.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/client-only-loop.ts",
+        "code": "[]"
       }
     },
     "array-method": {
@@ -212,7 +213,8 @@
       "example": {
         "fixture": "array-at-default",
         "description": ".at() with no argument returns the first element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at-default.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at-default.ts",
+        "code": "items.at()"
       }
     },
     "arrow": {
@@ -363,7 +365,8 @@
       "example": {
         "fixture": "array-sort-field-asc",
         "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
+        "code": "(a, b) => a.price - b.price"
       }
     },
     "binary": {
@@ -562,7 +565,8 @@
       "example": {
         "fixture": "array-sort-field-asc",
         "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
+        "code": "a.price - b.price"
       }
     },
     "call": {
@@ -865,7 +869,8 @@
       "example": {
         "fixture": "client-only-loop",
         "description": "Client-only directive suppresses SSR for a bare loop, keeping boundary markers",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/client-only-loop.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/client-only-loop.ts",
+        "code": "items()"
       }
     },
     "conditional": {
@@ -916,7 +921,8 @@
       "example": {
         "fixture": "attr-ternary-title",
         "description": "Ternary expressions in title and data attribute positions",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/attr-ternary-title.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/attr-ternary-title.ts",
+        "code": "active() ? 2 : 1"
       }
     },
     "identifier": {
@@ -1219,7 +1225,8 @@
       "example": {
         "fixture": "array-entries",
         "description": ".entries().map(([i, v]) => ...) iterates with index and value",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-entries.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-entries.ts",
+        "code": "i"
       }
     },
     "index-access": {
@@ -1270,7 +1277,8 @@
       "example": {
         "fixture": "record-index-lookup-via-child-prop",
         "description": "Object literal indexed by a prop, passed to a child component prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-index-lookup-via-child-prop.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-index-lookup-via-child-prop.ts",
+        "code": "classes[variant]"
       }
     },
     "literal": {
@@ -1385,7 +1393,8 @@
       "example": {
         "fixture": "boolean-attr-literals",
         "description": "Static boolean attributes: bare, ={true}, and ={false} omission",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-attr-literals.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-attr-literals.ts",
+        "code": "true"
       }
     },
     "logical": {
@@ -1500,7 +1509,8 @@
       "example": {
         "fixture": "logical-and-chain",
         "description": "Chained a() && b() && <element/> conditional",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts",
+        "code": "ready() && visible()"
       }
     },
     "member": {
@@ -1803,7 +1813,8 @@
       "example": {
         "fixture": "grandchild-composition",
         "description": "Three-level composition threading a prop through each level",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/grandchild-composition.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/grandchild-composition.ts",
+        "code": "props.text"
       }
     },
     "object-literal": {
@@ -1918,7 +1929,8 @@
       "example": {
         "fixture": "dangerous-inner-html-dynamic",
         "description": "dangerouslySetInnerHTML with a prop-derived value renders on Hono/CSR, refuses on template adapters",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dangerous-inner-html-dynamic.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dangerous-inner-html-dynamic.ts",
+        "code": "{ __html: html }"
       }
     },
     "regex": {
@@ -2114,7 +2126,8 @@
       "example": {
         "fixture": "array-at",
         "description": ".at(-1) returns the last element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts",
+        "code": "-1"
       }
     },
     "unsupported": {
@@ -2330,7 +2343,8 @@
       "example": {
         "fixture": "array-at-default",
         "description": ".at() with no argument returns the first element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at-default.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at-default.ts",
+        "code": "items.at()"
       }
     },
     "array-method:concat": {
@@ -2381,7 +2395,8 @@
       "example": {
         "fixture": "array-concat",
         "description": ".concat(other) merges two arrays in order",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-concat.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-concat.ts",
+        "code": "left.concat(right)"
       }
     },
     "array-method:endsWith": {
@@ -2432,7 +2447,8 @@
       "example": {
         "fixture": "string-endsWith",
         "description": ".endsWith(suffix) renders the matching branch",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-endsWith.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-endsWith.ts",
+        "code": "value.endsWith(suffix)"
       }
     },
     "array-method:flat": {
@@ -2483,7 +2499,8 @@
       "example": {
         "fixture": "array-flat",
         "description": ".flat() flattens one level",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-flat.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-flat.ts",
+        "code": "rows.flat()"
       }
     },
     "array-method:includes": {
@@ -2534,7 +2551,8 @@
       "example": {
         "fixture": "array-includes",
         "description": ".includes(x) on an array prop renders the matching branch",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-includes.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-includes.ts",
+        "code": "items.includes(target)"
       }
     },
     "array-method:indexOf": {
@@ -2585,7 +2603,8 @@
       "example": {
         "fixture": "array-indexOf",
         "description": ".indexOf(x) returns the 0-based position",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-indexOf.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-indexOf.ts",
+        "code": "items.indexOf(target)"
       }
     },
     "array-method:join": {
@@ -2636,7 +2655,8 @@
       "example": {
         "fixture": "array-join-default",
         "description": ".join() with no argument joins with the default comma",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-join-default.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-join-default.ts",
+        "code": "items.join()"
       }
     },
     "array-method:lastIndexOf": {
@@ -2687,7 +2707,8 @@
       "example": {
         "fixture": "array-lastIndexOf",
         "description": ".lastIndexOf(x) returns the position of the last match",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-lastIndexOf.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-lastIndexOf.ts",
+        "code": "items.lastIndexOf(target)"
       }
     },
     "array-method:padEnd": {
@@ -2738,7 +2759,8 @@
       "example": {
         "fixture": "string-padEnd",
         "description": ".padEnd(target, pad) right-pads to the target width",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-padEnd.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-padEnd.ts",
+        "code": "value.padEnd(5, '.')"
       }
     },
     "array-method:padStart": {
@@ -2789,7 +2811,8 @@
       "example": {
         "fixture": "string-padStart",
         "description": ".padStart(target, pad) left-pads to the target width",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-padStart.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-padStart.ts",
+        "code": "value.padStart(5, '0')"
       }
     },
     "array-method:repeat": {
@@ -2840,7 +2863,8 @@
       "example": {
         "fixture": "string-repeat",
         "description": ".repeat(n) concatenates the string n times",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-repeat.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-repeat.ts",
+        "code": "value.repeat(3)"
       }
     },
     "array-method:replace": {
@@ -2891,7 +2915,8 @@
       "example": {
         "fixture": "string-replace",
         "description": ".replace(old, new) swaps the first occurrence",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-replace.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-replace.ts",
+        "code": "value.replace('o', '0')"
       }
     },
     "array-method:replaceAll": {
@@ -2942,7 +2967,8 @@
       "example": {
         "fixture": "string-replaceall",
         "description": ".replaceAll replaces every occurrence, not just the first",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-replaceall.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-replaceall.ts",
+        "code": "path.replaceAll('/', ' > ')"
       }
     },
     "array-method:reverse": {
@@ -2993,7 +3019,8 @@
       "example": {
         "fixture": "array-reverse",
         "description": ".reverse() emits the array in reverse order",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-reverse.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-reverse.ts",
+        "code": "items.reverse()"
       }
     },
     "array-method:slice": {
@@ -3044,7 +3071,8 @@
       "example": {
         "fixture": "array-slice-copy",
         "description": ".slice() with no argument copies the whole array",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-slice-copy.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-slice-copy.ts",
+        "code": "items.slice()"
       }
     },
     "array-method:split": {
@@ -3095,7 +3123,8 @@
       "example": {
         "fixture": "string-split",
         "description": ".split(sep) splits a string into an array of substrings",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-split.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-split.ts",
+        "code": "value.split(',')"
       }
     },
     "array-method:startsWith": {
@@ -3146,7 +3175,8 @@
       "example": {
         "fixture": "string-startsWith",
         "description": ".startsWith(prefix) renders the matching branch",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-startsWith.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-startsWith.ts",
+        "code": "value.startsWith(prefix)"
       }
     },
     "array-method:toFixed": {
@@ -3197,7 +3227,8 @@
       "example": {
         "fixture": "number-tofixed",
         "description": ".toFixed(2) formats a numeric prop with rounding and zero-padding",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-tofixed.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-tofixed.ts",
+        "code": "price.toFixed(2)"
       }
     },
     "array-method:toLowerCase": {
@@ -3248,7 +3279,8 @@
       "example": {
         "fixture": "string-toLowerCase",
         "description": ".toLowerCase() lowercases the receiver string",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-toLowerCase.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-toLowerCase.ts",
+        "code": "value.toLowerCase()"
       }
     },
     "array-method:toReversed": {
@@ -3299,7 +3331,8 @@
       "example": {
         "fixture": "array-toReversed",
         "description": ".toReversed() emits the array in reverse order",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-toReversed.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-toReversed.ts",
+        "code": "items.toReversed()"
       }
     },
     "array-method:toUpperCase": {
@@ -3350,7 +3383,8 @@
       "example": {
         "fixture": "string-toUpperCase",
         "description": ".toUpperCase() uppercases the receiver string",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-toUpperCase.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-toUpperCase.ts",
+        "code": "value.toUpperCase()"
       }
     },
     "array-method:trim": {
@@ -3401,7 +3435,8 @@
       "example": {
         "fixture": "string-trim",
         "description": ".trim() strips leading and trailing whitespace",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim.ts",
+        "code": "value.trim()"
       }
     },
     "array-method:trimEnd": {
@@ -3452,7 +3487,8 @@
       "example": {
         "fixture": "string-trim-sided",
         "description": ".trimStart() and .trimEnd() strip only their own side",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim-sided.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim-sided.ts",
+        "code": "value.trimEnd()"
       }
     },
     "array-method:trimStart": {
@@ -3503,7 +3539,8 @@
       "example": {
         "fixture": "string-trim-sided",
         "description": ".trimStart() and .trimEnd() strip only their own side",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim-sided.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/string-trim-sided.ts",
+        "code": "value.trimStart()"
       }
     },
     "binary:!=": {
@@ -3605,7 +3642,8 @@
       "example": {
         "fixture": "comparison-ternary-text",
         "description": "Comparison operators (>=, ===, !==) as ternary conditions",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts",
+        "code": "n() !== 0"
       }
     },
     "binary:*": {
@@ -3656,7 +3694,8 @@
       "example": {
         "fixture": "memo",
         "description": "Derived value with createMemo",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo.ts",
+        "code": "count() * 2"
       }
     },
     "binary:+": {
@@ -3771,7 +3810,8 @@
       "example": {
         "fixture": "string-concat-plus",
         "description": "String concatenation via the + operator",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-concat-plus.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-concat-plus.ts",
+        "code": "'Hello, ' + name"
       }
     },
     "binary:-": {
@@ -3822,7 +3862,8 @@
       "example": {
         "fixture": "array-sort-field-asc",
         "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
+        "code": "a.price - b.price"
       }
     },
     "binary:/": {
@@ -3873,7 +3914,8 @@
       "example": {
         "fixture": "data-table",
         "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts",
+        "code": "sortedData().length / pageSize"
       }
     },
     "binary:<": {
@@ -3924,7 +3966,8 @@
       "example": {
         "fixture": "data-table",
         "description": "site/ui DataTable demo — keyed-loop reorder on sort: column-header clicks resort the memo and the runtime reorders rows in place",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/data-table.ts",
+        "code": "aStr < bStr"
       }
     },
     "binary:===": {
@@ -4075,7 +4118,8 @@
       "example": {
         "fixture": "nested-ternary",
         "description": "Nested ternary conditional rendering",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-ternary.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-ternary.ts",
+        "code": "status() === 'error'"
       }
     },
     "binary:>": {
@@ -4126,7 +4170,8 @@
       "example": {
         "fixture": "top-level-ternary",
         "description": "Top-level ternary return preserves conditional (#968)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/top-level-ternary.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/top-level-ternary.ts",
+        "code": "count() > 0"
       }
     },
     "binary:>=": {
@@ -4177,7 +4222,8 @@
       "example": {
         "fixture": "comparison-ternary-text",
         "description": "Comparison operators (>=, ===, !==) as ternary conditions",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts",
+        "code": "n() >= 10"
       }
     },
     "literal:boolean": {
@@ -4228,7 +4274,8 @@
       "example": {
         "fixture": "boolean-attr-literals",
         "description": "Static boolean attributes: bare, ={true}, and ={false} omission",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-attr-literals.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-attr-literals.ts",
+        "code": "true"
       }
     },
     "literal:null": {
@@ -4330,7 +4377,8 @@
       "example": {
         "fixture": "svg-icon",
         "description": "Inline SVG: viewBox casing and camelCase → kebab-case presentation attrs",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/svg-icon.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/svg-icon.ts",
+        "code": "2"
       }
     },
     "literal:string": {
@@ -4445,7 +4493,8 @@
       "example": {
         "fixture": "jsx-text-whitespace",
         "description": "Explicit {\" \"} joiners and multi-line text trimming",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-text-whitespace.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-text-whitespace.ts",
+        "code": "' '"
       }
     },
     "logical:&&": {
@@ -4496,7 +4545,8 @@
       "example": {
         "fixture": "logical-and-chain",
         "description": "Chained a() && b() && <element/> conditional",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-chain.ts",
+        "code": "ready() && visible()"
       }
     },
     "logical:??": {
@@ -4611,7 +4661,8 @@
       "example": {
         "fixture": "nullish-coalescing-destructured",
         "description": "Nullish coalescing over destructured optional props seeds SSR correctly",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalescing-destructured.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-coalescing-destructured.ts",
+        "code": "size ?? 1"
       }
     },
     "logical:||": {
@@ -4662,7 +4713,8 @@
       "example": {
         "fixture": "array-sort-multikey",
         "description": ".sort((a,b) => a.price - b.price || a.name.localeCompare(b.name)) sorts by price, then name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-multikey.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-multikey.ts",
+        "code": "a.price - b.price || a.name.localeCompare(b.name)"
       }
     },
     "member:computed": {
@@ -4713,7 +4765,8 @@
       "example": {
         "fixture": "pagination",
         "description": "site/ui Pagination demo — one signal drives data-active across seven links; href=\"#\" handlers must preventDefault",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/pagination.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/pagination.ts",
+        "code": "strokePaths['x']"
       }
     },
     "member:optional": {
@@ -4764,7 +4817,8 @@
       "example": {
         "fixture": "optional-chaining-prop",
         "description": "Optional chaining into an object prop with nullish fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chaining-prop.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chaining-prop.ts",
+        "code": "user?.name"
       }
     },
     "unary:!": {
@@ -4863,7 +4917,8 @@
       "example": {
         "fixture": "form",
         "description": "Terms-acceptance form — reactive data-state / aria-checked / disabled from one signal",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/form.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/form.ts",
+        "code": "!accepted()"
       }
     },
     "unary:-": {
@@ -4914,7 +4969,8 @@
       "example": {
         "fixture": "array-at",
         "description": ".at(-1) returns the last element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts"
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-at.ts",
+        "code": "-1"
       }
     }
   }
