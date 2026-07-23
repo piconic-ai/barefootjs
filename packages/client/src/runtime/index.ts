@@ -103,7 +103,7 @@ export { spreadAttrs } from './spread-attrs.ts'
 export { styleToCss } from './style.ts'
 
 // Runtime helpers
-export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, closestWithin, cssEscape, tAfter } from './query.ts'
+export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEscape, tAfter } from './query.ts'
 export { date } from './date.ts'
 export { hydrate, rehydrateAll, rehydrateScope, disposeScope, flushHydration, getRegisteredDef } from './hydrate.ts'
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry.ts'

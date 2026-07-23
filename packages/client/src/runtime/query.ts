@@ -444,45 +444,6 @@ function findInPortals(scopeId: string, selector: string): Element | null {
   return null
 }
 
-// --- bounded ancestor lookup ---
-
-/**
- * Nearest ancestor-or-self of `start` matching `selector`, without ever
- * climbing past `boundary` (`boundary` itself is tested, then the walk stops).
- *
- * Delegated event handlers use this to resolve which child slot owns an event.
- * `bf="sN"` slot ids are assigned **per component**, so the same id string
- * legitimately exists in several components. An unscoped
- * `target.closest('[bf="sN"]')` climbs across component boundaries and can
- * match a same-id element in an *ancestor* component — the handler then takes
- * the wrong branch, fails a downstream lookup, and silently drops the real
- * event (#2367).
- *
- * The delegating container (the element carrying the listener) contains every
- * slot it delegates on by construction, so bounding the climb to it keeps the
- * match inside this component instance while still finding the correct nested
- * slot. `start` is normally `event.target`; a non-Element node (e.g. a Text
- * target) resolves from its parent element.
- */
-export function closestWithin(
-  start: Node | null,
-  selector: string,
-  boundary: Element | null,
-): Element | null {
-  let el: Element | null =
-    start == null
-      ? null
-      : start.nodeType === Node.ELEMENT_NODE
-        ? (start as Element)
-        : start.parentElement
-  while (el) {
-    if (el.matches(selector)) return el
-    if (el === boundary) break
-    el = el.parentElement
-  }
-  return null
-}
-
 // --- shorthand finders ---
 
 /**

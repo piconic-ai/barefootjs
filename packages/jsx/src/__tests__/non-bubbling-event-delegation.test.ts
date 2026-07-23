@@ -42,7 +42,7 @@ describe('non-bubbling event delegation (#852)', () => {
 
     expect(content).toContain(".addEventListener('mouseenter', (__bfEvt) => {")
     expect(content).toContain('}, true)')
-    expect(content).toContain('closestWithin(target,')
+    expect(content).toContain('target.closest')
     expect(content).toContain('handleEnter(item.id)')
   })
 
@@ -72,7 +72,7 @@ describe('non-bubbling event delegation (#852)', () => {
 
     expect(content).toContain(".addEventListener('mouseleave', (__bfEvt) => {")
     expect(content).toContain('}, true)')
-    expect(content).toContain('closestWithin(target,')
+    expect(content).toContain('target.closest')
     expect(content).toContain('handleLeave(item.id)')
   })
 
@@ -105,7 +105,7 @@ describe('non-bubbling event delegation (#852)', () => {
 
     expect(content).toContain(".addEventListener('pointerenter', (__bfEvt) => {")
     expect(content).toContain('}, true)')
-    expect(content).toContain('closestWithin(target,')
+    expect(content).toContain('target.closest')
     expect(content).toContain('handleEnter(item.id)')
   })
 
@@ -138,7 +138,7 @@ describe('non-bubbling event delegation (#852)', () => {
 
     expect(content).toContain(".addEventListener('pointerleave', (__bfEvt) => {")
     expect(content).toContain('}, true)')
-    expect(content).toContain('closestWithin(target,')
+    expect(content).toContain('target.closest')
     expect(content).toContain('handleLeave(item.id)')
   })
 
@@ -205,7 +205,7 @@ describe('non-bubbling event delegation (#852)', () => {
 
     expect(content).toContain(".addEventListener('focus', (__bfEvt) => {")
     expect(content).toContain('}, true)')
-    expect(content).toContain('closestWithin(target,')
+    expect(content).toContain('target.closest')
     expect(content).toContain('handleFocus(item.id)')
   })
 })

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
-import { findScope, find, $, $c, $t, qsa, closestWithin } from '../../src/runtime/query'
+import { findScope, find, $, $c, $t, qsa } from '../../src/runtime/query'
 import { hydratedScopes } from '../../src/runtime/hydration-state'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
@@ -827,67 +827,5 @@ describe('qsa', () => {
     const scope = document.querySelector('[bf-s="Toggle_test"]')!
     const child = document.querySelector('[bf-s="ToggleItem_rc62ve"]')
     expect(qsa(scope, '[bf-h="Toggle_test"][bf-m="s0"], [bf-s$="_s0"]')).toBe(child)
-  })
-})
-
-describe('closestWithin (#2367)', () => {
-  beforeEach(() => {
-    document.body.innerHTML = ''
-  })
-
-  test('matches the nearest in-scope slot when it is on the ancestor path', () => {
-    document.body.innerHTML = `
-      <table><tbody bf="s11">
-        <tr data-key="1">
-          <td><input bf="s7" /></td>
-        </tr>
-      </tbody></table>
-    `
-    const container = document.querySelector('[bf="s11"]') as Element
-    const input = document.querySelector('[bf="s7"]') as Element
-    expect(closestWithin(input, '[bf="s7"]', container)).toBe(input)
-  })
-
-  test('does NOT climb past the container into a foreign same-id ancestor', () => {
-    // The `.workspace` div carries `bf="s7"` in a *different* component's scope
-    // and is a DOM ancestor of the delegating container (the WordTable repro
-    // from #2367). An unscoped `target.closest('[bf="s7"]')` would wrongly
-    // match it; closestWithin must stop at the container and return null so the
-    // caller falls through to the correct branch.
-    document.body.innerHTML = `
-      <div class="workspace" bf="s7">
-        <table><tbody bf="s11">
-          <tr data-key="1">
-            <td><input bf="s9" /></td>
-          </tr>
-        </tbody></table>
-      </div>
-    `
-    const container = document.querySelector('[bf="s11"]') as Element
-    const backInput = document.querySelector('[bf="s9"]') as Element
-    expect(closestWithin(backInput, '[bf="s7"]', container)).toBeNull()
-    // The correct branch (s9) still resolves within the container.
-    expect(closestWithin(backInput, '[bf="s9"]', container)).toBe(backInput)
-  })
-
-  test('tests the boundary element itself, then stops', () => {
-    document.body.innerHTML = `<div bf="s0"><span></span></div>`
-    const boundary = document.querySelector('[bf="s0"]') as Element
-    const span = boundary.querySelector('span') as Element
-    // Boundary matches → returned even though the walk stops there.
-    expect(closestWithin(span, '[bf="s0"]', boundary)).toBe(boundary)
-  })
-
-  test('resolves from a non-Element start via its parent element', () => {
-    document.body.innerHTML = `<div bf="s5">text</div>`
-    const el = document.querySelector('[bf="s5"]') as Element
-    const textNode = el.firstChild! // a Text node
-    expect(closestWithin(textNode, '[bf="s5"]', el)).toBe(el)
-  })
-
-  test('returns null for a null start', () => {
-    document.body.innerHTML = `<div bf="s5"></div>`
-    const el = document.querySelector('[bf="s5"]') as Element
-    expect(closestWithin(null, '[bf="s5"]', el)).toBeNull()
   })
 })

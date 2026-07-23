@@ -9,8 +9,11 @@
  * delegation then takes the wrong branch, fails a downstream lookup, and
  * silently drops the real handler (no error thrown).
  *
- * The fix bounds the lookup to the delegating container (which holds every
- * slot it delegates on) via `closestWithin(target, '[bf="sN"]', <container>)`.
+ * The fix guards the match with `<container>.contains(sNEl)`. The delegating
+ * container holds every slot it delegates on, so a same-id element in an
+ * *ancestor* component (never a descendant of the container) is rejected and
+ * the handler falls through to the correct branch — without growing the
+ * client runtime (native `closest` + native `contains`).
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -20,9 +23,9 @@ import { TestAdapter } from '../adapters/test-adapter'
 const adapter = new TestAdapter()
 
 describe('delegated handler slot lookups are container-scoped (#2367)', () => {
-  test('keyed dynamic loop bounds each slot lookup to the container', () => {
+  test('keyed dynamic loop guards each slot match with container.contains', () => {
     // WordTable-shaped repro: a <tbody> delegates keydown to two input slots
-    // (front/back). Each slot lookup must be bounded to the tbody container.
+    // (front/back). Each slot match must be gated to the tbody container.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -62,23 +65,21 @@ describe('delegated handler slot lookups are container-scoped (#2367)', () => {
     expect(containerMatch).not.toBeNull()
     const container = containerMatch![1]
 
-    // Every slot lookup is bounded to that container — and NOT an unscoped
-    // `target.closest('[bf="sN"]')` that could climb into an ancestor scope.
-    const slotLookups = [...content.matchAll(/closestWithin\(target, '\[bf="s\d+"\]', (_s\d+)\)/g)]
-    expect(slotLookups.length).toBe(2)
-    for (const m of slotLookups) {
-      expect(m[1]).toBe(container)
+    // Both slot branches gate the match on `<container>.contains(sNEl)` so a
+    // same-id element in an ancestor component (never a descendant of the
+    // container) can't be taken.
+    const guards = [...content.matchAll(/if \((s\d+)El && (_s\d+)\.contains\(\1El\)\)/g)]
+    expect(guards.length).toBe(2)
+    for (const m of guards) {
+      expect(m[2]).toBe(container)
     }
 
-    // No unscoped bf-slot closest() survives.
-    expect(content).not.toContain(`target.closest('[bf="`)
-
-    // The runtime helper is imported.
-    expect(content).toContain('closestWithin')
-    expect(content).toMatch(/import \{[^}]*\bclosestWithin\b[^}]*\} from '@barefootjs\/client\/runtime'/)
+    // The lookup itself stays a plain native `closest` — no new runtime helper.
+    expect(content).toContain(`target.closest('[bf="`)
+    expect(content).not.toContain('closestWithin')
   })
 
-  test('static-array delegation is also container-scoped', () => {
+  test('static-array delegation is also gated by container.contains', () => {
     const source = `
       'use client'
 
@@ -101,7 +102,7 @@ describe('delegated handler slot lookups are container-scoped (#2367)', () => {
     expect(result.errors).toHaveLength(0)
 
     const content = result.files.find(f => f.type === 'clientJs')!.content
-    expect(content).toContain('closestWithin(target,')
-    expect(content).not.toContain(`target.closest('[bf="`)
+    expect(content).toMatch(/if \(s\d+El && _s\d+\.contains\(s\d+El\)\)/)
+    expect(content).not.toContain('closestWithin')
   })
 })
