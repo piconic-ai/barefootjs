@@ -6,7 +6,7 @@
  *     if (<container>) <container>.addEventListener('<eventName>', (__bfEvt) => {
  *       const target = __bfEvt.target
  *       const <slot>El = target.closest('[bf="<slotId>"]')
- *       if (<slot>El) {
+ *       if (<slot>El && <container>.contains(<slot>El)) {
  *         <item-lookup specific>
  *         <handlerCall>
  *         return
@@ -94,8 +94,15 @@ export function stringifyEventDelegation(lines: string[], plan: EventDelegationP
     lines.push(`    const target = __bfEvt.target`)
     for (const ev of evs) {
       const childVar = varSlotId(ev.childSlotId)
+      // Bound the slot match to the delegating container (#2367). `bf` ids are
+      // unique only *within* a component, so an unscoped
+      // `target.closest('[bf="sN"]')` can match a same-id element in an ancestor
+      // component and silently take the wrong branch. The container holds every
+      // slot it delegates on, so a same-id ancestor is never a descendant of it —
+      // the `container.contains(...)` guard rejects the foreign match and the
+      // handler falls through to the correct branch.
       lines.push(`    const ${childVar}El = target.closest('[bf="${ev.childSlotId}"]')`)
-      lines.push(`    if (${childVar}El) {`)
+      lines.push(`    if (${childVar}El && ${containerVar}.contains(${childVar}El)) {`)
       const handlerCall = withTurn(`(${ev.handler.trim()})(__bfEvt)`, profileComponentName, ev.childSlotId, ev.eventName)
       switch (itemLookup.kind) {
         case 'keyed':
