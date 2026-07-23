@@ -51,6 +51,8 @@ export const renderer = jsxRenderer(
           <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/components.css`} />
           <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/todo-app.css`} />
           <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/ai-chat.css`} />
+          <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/tetris.css`} />
+          <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/markdown-editor.css`} />
         </head>
         <body>
           <SiteHeader />

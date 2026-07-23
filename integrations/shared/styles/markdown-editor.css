@@ -1,0 +1,153 @@
+/**
+ * Markdown editor example styles. Theme-aware via tokens.css.
+ */
+
+.md-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 900px;
+  font-family: var(--font-sans);
+  color: var(--foreground);
+}
+
+.md-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.md-btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: filter var(--duration-fast);
+}
+
+.md-btn:hover {
+  filter: brightness(1.1);
+}
+
+.md-btn-danger {
+  margin-left: auto;
+  color: var(--destructive-foreground);
+  background: var(--destructive);
+  border-color: transparent;
+}
+
+.md-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  min-height: 340px;
+}
+
+@media (max-width: 640px) {
+  .md-panes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.md-input {
+  width: 100%;
+  min-height: 340px;
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.md-input:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+}
+
+.md-preview {
+  padding: var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+/* Every preview block is a `.md-blk` div; the second class selects its look. */
+.md-h {
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  margin: 0.6em 0 0.3em;
+  line-height: 1.25;
+}
+.md-h1 { font-size: 1.7rem; }
+.md-h2 { font-size: 1.4rem; }
+.md-h3 { font-size: 1.2rem; }
+.md-h4, .md-h5, .md-h6 { font-size: 1.05rem; }
+
+.md-p {
+  margin: 0.4em 0;
+}
+
+.md-li {
+  position: relative;
+  margin: 0.2em 0 0.2em 1.2em;
+}
+
+.md-li::before {
+  content: "•";
+  position: absolute;
+  left: -1.1em;
+  color: var(--gradient-start);
+  font-weight: 700;
+}
+
+.md-quote {
+  margin: 0.5em 0;
+  padding: 0.3em 0.9em;
+  border-left: 3px solid var(--gradient-start);
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.md-code {
+  margin: 0;
+  padding: 0.1em 0.6em;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--muted);
+  color: var(--foreground);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.md-gap {
+  height: 0.5em;
+}
+
+.md-preview strong {
+  font-weight: 700;
+}
+
+.md-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.md-stat strong {
+  color: var(--foreground);
+  font-family: var(--font-mono);
+}

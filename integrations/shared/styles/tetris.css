@@ -1,0 +1,164 @@
+/**
+ * Tetris example styles. Colours come from tokens.css so the board works in
+ * both light and dark themes; the seven piece colours are fixed hues.
+ */
+
+.tetris {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-family: var(--font-sans);
+  color: var(--foreground);
+}
+
+.t-main {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+}
+
+.t-board {
+  position: relative;
+  display: grid;
+  grid-template-rows: repeat(20, 1fr);
+  gap: 1px;
+  padding: 6px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.t-row {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 1px;
+}
+
+.t-preview .t-row {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.t-cell {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+}
+
+.t-mini {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.t-empty {
+  background: var(--background);
+  opacity: 0.35;
+}
+
+/* Piece colours — indices match `type + 1` in the component. */
+.t-c1 { background: #22d3ee; } /* I */
+.t-c2 { background: #3b82f6; } /* J */
+.t-c3 { background: #f97316; } /* L */
+.t-c4 { background: #eab308; } /* O */
+.t-c5 { background: #22c55e; } /* S */
+.t-c6 { background: #a855f7; } /* T */
+.t-c7 { background: #ef4444; } /* Z */
+
+.t-cell.t-c1, .t-cell.t-c2, .t-cell.t-c3, .t-cell.t-c4,
+.t-cell.t-c5, .t-cell.t-c6, .t-cell.t-c7 {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25),
+              inset 0 -3px 4px rgb(0 0 0 / 0.25);
+}
+
+.t-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-md);
+}
+
+.t-overlay-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+.t-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 140px;
+}
+
+.t-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.t-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--muted-foreground);
+}
+
+.t-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.t-preview {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 1px;
+  margin-top: 4px;
+}
+
+.t-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.t-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: filter var(--duration-fast);
+}
+
+.t-btn:hover {
+  filter: brightness(1.1);
+}
+
+.t-btn-primary {
+  color: var(--primary-foreground);
+  background: var(--gradient-start);
+  border-color: transparent;
+}
+
+.t-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}

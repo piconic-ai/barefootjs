@@ -18,6 +18,8 @@ import { ReactiveProps, PropsReactivityComparison } from '@/components/ReactiveP
 import { Form } from '@/components/Form'
 import { PortalExample } from '@/components/PortalExample'
 import ConditionalReturn from '@/components/ConditionalReturn'
+import { Tetris } from '@/components/Tetris'
+import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { AIChatPage } from './components/AIChatPage'
 import { blog } from './blog'
 
@@ -117,6 +119,8 @@ app.get('/', (c) => {
           <li><a href={link('/todos')}>Todo (@client)</a></li>
           <li><a href={link('/todos-ssr')}>Todo (no @client markers)</a></li>
           <li><a href={link('/ai-chat')}>AI Chat (SSE Streaming)</a></li>
+          <li><a href={link('/tetris')}>Tetris (game loop + keyboard)</a></li>
+          <li><a href={link('/editor')}>Markdown Editor (live preview)</a></li>
           <li><a href={link('/blog')}>Blog (@barefootjs/router — partial navigation)</a></li>
         </ul>
       </nav>
@@ -224,6 +228,31 @@ app.get('/conditional-return-link', (c) => {
     <div>
       <h1>Conditional Return Example (Link)</h1>
       <ConditionalReturn variant="link" />
+      <p><a href={link('/')}>← Back</a></p>
+    </div>
+  )
+})
+
+app.get('/tetris', (c) => {
+  return c.render(
+    <div>
+      <h1>Tetris Example</h1>
+      <p>A full game loop driven by BarefootJS signals — keyboard controls, a
+        reactive 10×20 grid, line clears, and scoring. Click Start, then use the
+        arrow keys.</p>
+      <Tetris />
+      <p><a href={link('/')}>← Back</a></p>
+    </div>
+  )
+})
+
+app.get('/editor', (c) => {
+  return c.render(
+    <div>
+      <h1>Markdown Editor Example</h1>
+      <p>Type Markdown on the left; a live preview and word/character counters
+        update on the right — all derived from a single <code>text</code> signal.</p>
+      <MarkdownEditor />
       <p><a href={link('/')}>← Back</a></p>
     </div>
   )

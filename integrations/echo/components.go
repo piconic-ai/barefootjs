@@ -110,6 +110,42 @@ type FormProps struct {
 	Accepted bool `json:"accepted"`
 }
 
+// Seg represents a seg.
+type Seg struct {
+	Bold bool `json:"bold"`
+	Text string `json:"text"`
+}
+
+// Block represents a block.
+type Block struct {
+	Cls string `json:"cls"`
+	Segs []Seg `json:"segs"`
+}
+
+// MarkdownEditorInput is the user-facing input type.
+type MarkdownEditorInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// MarkdownEditorProps is the props type for the MarkdownEditor component.
+type MarkdownEditorProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Text interface{} `json:"text"`
+	Blocks []Block `json:"blocks"`
+	CharCount int `json:"charCount"`
+	WordCount int `json:"wordCount"`
+	LineCount int `json:"lineCount"`
+	ReadMinutes int `json:"readMinutes"`
+}
+
 // ToggleItem represents a toggleitem.
 type ToggleItem struct {
 	ID string `json:"id"`
@@ -267,6 +303,43 @@ type PropsReactivityComparisonProps struct {
 	Count int `json:"count"`
 	PropsStyleChildSlot3 PropsStyleChildProps `json:"-"`
 	DestructuredStyleChildSlot4 DestructuredStyleChildProps `json:"-"`
+}
+
+// Piece represents a piece.
+type Piece struct {
+	Type int `json:"type"`
+	Rot int `json:"rot"`
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+// TetrisInput is the user-facing input type.
+type TetrisInput struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+}
+
+// TetrisProps is the props type for the Tetris component.
+type TetrisProps struct {
+	ScopeID string `json:"scopeID"`
+	BfIsRoot bool `json:"-"`
+	BfIsChild bool `json:"-"`
+	BfParent string `json:"-"`
+	BfMount string `json:"-"`
+	BfDataKey string `json:"-"`
+	Scripts *bf.ScriptCollector `json:"-"`
+	Board [][]int `json:"board"`
+	Piece interface{} `json:"piece"`
+	NextType int `json:"nextType"`
+	Score int `json:"score"`
+	Lines int `json:"lines"`
+	Level int `json:"level"`
+	Running bool `json:"running"`
+	Paused bool `json:"paused"`
+	GameOver bool `json:"gameOver"`
+	Display [][]int `json:"display"`
+	Preview int `json:"preview"`
 }
 
 // TextEscapeInput is the user-facing input type.
@@ -736,6 +809,26 @@ func NewFormProps(in FormInput) FormProps {
 	}
 }
 
+// NewMarkdownEditorProps creates MarkdownEditorProps from MarkdownEditorInput.
+func NewMarkdownEditorProps(in MarkdownEditorInput) MarkdownEditorProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "MarkdownEditor_" + randomID(6)
+	}
+
+	return MarkdownEditorProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Text: nil,
+		Blocks: nil,
+		CharCount: 0,
+		WordCount: 0,
+		LineCount: 0,
+		ReadMinutes: 0,
+	}
+}
+
 // NewNestedCondToggleListProps creates NestedCondToggleListProps from NestedCondToggleListInput.
 func NewNestedCondToggleListProps(in NestedCondToggleListInput) NestedCondToggleListProps {
 	scopeID := in.ScopeID
@@ -873,6 +966,31 @@ func NewPropsReactivityComparisonProps(in PropsReactivityComparisonInput) PropsR
 			Value: 1,
 			Label: "Destructured",
 		}),
+	}
+}
+
+// NewTetrisProps creates TetrisProps from TetrisInput.
+func NewTetrisProps(in TetrisInput) TetrisProps {
+	scopeID := in.ScopeID
+	if scopeID == "" {
+		scopeID = "Tetris_" + randomID(6)
+	}
+
+	return TetrisProps{
+		ScopeID: scopeID,
+		BfParent: in.BfParent,
+		BfMount: in.BfMount,
+		Board: nil,
+		Piece: nil,
+		NextType: 0,
+		Score: 0,
+		Lines: 0,
+		Level: 1,
+		Running: false,
+		Paused: false,
+		GameOver: false,
+		Display: nil,
+		Preview: 0,
 	}
 }
 
