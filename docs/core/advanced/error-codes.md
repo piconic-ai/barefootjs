@@ -98,7 +98,7 @@ export function Counter() {
 
 ---
 
-## JSX Errors (BF021–BF023)
+## JSX Errors (BF021–BF026)
 
 ### BF021 — Unsupported JSX Pattern
 
@@ -217,6 +217,80 @@ backend cannot compute, and dies at render time the same way.
 {items().map(item => <li key={item.id}>{item.name}</li>)}
 ```
 
+### BF026 — Unsupported List-Render Callback Body
+
+A `.map()` callback whose body is an **if / else-if / else (or `switch`) chain
+of direct JSX returns** is lowered to a per-item conditional (the same shape a
+ternary map body produces), so the natural multi-branch form works:
+
+```tsx
+// ✅ if-chain in a .map() callback — lowered to a per-item conditional
+{blocks().map((block, i) => {
+  if (block.kind === 'code') return <pre key={i}>{block.text}</pre>
+  if (block.kind === 'quote') return <blockquote key={i}>{block.text}</blockquote>
+  return <p key={i}>{block.text}</p>
+})}
+
+// ✅ switch with a default also works
+{blocks().map((block, i) => {
+  switch (block.kind) {
+    case 'code': return <pre key={i}>{block.text}</pre>
+    default: return <p key={i}>{block.text}</p>
+  }
+})}
+```
+
+**Trigger:** BF026 fires only when such a body **cannot** be lowered — when the
+branching JSX returns are mixed with a **local variable declaration** or
+**nested control flow** inside a branch. Those can't collapse into a per-item
+conditional, and left alone would leak raw JSX into the client bundle
+(`Unexpected token '<'` at hydrate) while the build still reported success.
+
+```tsx
+// ❌ BF026 — a preamble const alongside branching JSX returns
+{items().map((item, i) => {
+  const label = item.name.toUpperCase()
+  if (item.a) return <li key={i} className="a">{label}</li>
+  return <li key={i}>{label}</li>
+})}
+
+// ❌ BF026 — nested control flow inside a branch
+{items().map((item, i) => {
+  if (item.a) {
+    let n = 0
+    for (const x of item.xs) n += x
+    return <li key={i}>{n}</li>
+  }
+  return <li key={i}>{item.id}</li>
+})}
+```
+
+**Fix:** keep each branch a direct `return <JSX/>` and move per-item
+computation into the array before mapping (or into the returned JSX
+expression):
+
+```tsx
+// ✅ precompute in a memo, then branch on plain fields
+const rows = createMemo(() =>
+  items().map(item => ({ ...item, label: item.name.toUpperCase() }))
+)
+// ...
+{rows().map((row, i) => {
+  if (row.a) return <li key={i} className="a">{row.label}</li>
+  return <li key={i}>{row.label}</li>
+})}
+```
+
+A non-JSX preamble with a *single* return is also fine (no branching):
+
+```tsx
+// ✅ single return with a preamble const compiles
+{items().map((item, i) => {
+  const label = item.toUpperCase()
+  return <li key={i}>{label}</li>
+})}
+```
+
 ---
 
 ## Component Errors (BF043–BF044)
@@ -332,6 +406,7 @@ function Component({ checked }: Props) {
 | BF011 | Error | Module-level reactive declaration without `/* @client */` |
 | BF021 | Error | Unsupported JSX pattern for SSR |
 | BF023 | Error | Missing key in list |
+| BF026 | Error | Unsupported `.map()` callback body (block with branching JSX returns) |
 | BF043 | Warning | Props destructuring breaks reactivity |
 | BF044 | Error | Signal/memo getter passed without calling it |
 | BF054 | Error | Built-in `<Async>` / `<Region>` used without `@barefootjs/client` import |

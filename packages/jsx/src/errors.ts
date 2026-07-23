@@ -27,6 +27,16 @@ export const ErrorCodes = {
   MISSING_KEY_IN_LIST: 'BF023',
   MISSING_KEY_IN_NESTED_LIST: 'BF024',
   UNSUPPORTED_DESTRUCTURE_REST: 'BF025',
+  // A `.map()` list-render callback whose body is a statement block
+  // (`(item) => { ... return <jsx> }`) instead of a single JSX expression.
+  // The list-lowering pipeline only builds a per-item template from an
+  // expression body (JSX literal, or a ternary / logical / component call
+  // that resolves to JSX); a block body is not lowered and, before this
+  // diagnostic, leaked the raw JSX return into the emitted client bundle —
+  // an `Unexpected token '<'` SyntaxError at runtime that silently broke
+  // hydration while the build still reported success. Mirrors BF045's
+  // "use a single return statement" stance for local JSX functions.
+  UNSUPPORTED_LIST_CALLBACK_BODY: 'BF026',
 
   // Component errors (BF043-BF049)
   PROPS_DESTRUCTURING: 'BF043',
@@ -115,6 +125,11 @@ const errorMessages: Record<ErrorCode, string> = {
     'Missing key attribute in list rendering. Add a key prop for efficient updates',
   [ErrorCodes.MISSING_KEY_IN_NESTED_LIST]:
     'Nested .map() loop requires key attribute for event delegation. Add a key prop to elements in the inner loop',
+  [ErrorCodes.UNSUPPORTED_LIST_CALLBACK_BODY]:
+    'Unsupported .map() list-render callback. A block-body callback that returns JSX from multiple branches is lowered to a per-item conditional only when the body is a plain if / else-if / else (or switch) chain of direct `return <JSX/>` statements. ' +
+    'This body mixes those branching returns with a local variable declaration or nested control flow, which cannot be lowered — leaving the raw JSX to leak into the client bundle and throw at runtime. ' +
+    'Keep each branch a direct `return <JSX/>` and move any per-item computation into the array before mapping (or into the returned JSX expression); or collapse the branches into a single ternary.',
+
   [ErrorCodes.UNSUPPORTED_DESTRUCTURE_REST]:
     // Despite the legacy `UNSUPPORTED_DESTRUCTURE_REST` name, this code now
     // fires only for shapes that are valid TypeScript but unrepresentable in

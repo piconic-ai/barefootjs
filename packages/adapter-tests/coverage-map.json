@@ -2005,6 +2005,27 @@
       "axes": [],
       "contexts": []
     },
+    "if-chain-map": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "if-statement": {
       "kinds": [
         "binary",
@@ -4202,18 +4223,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 54,
+    "array-literal": 55,
     "array-method": 62,
     "arrow": 55,
-    "binary": 67,
-    "call": 164,
+    "binary": 68,
+    "call": 165,
     "conditional": 19,
-    "identifier": 244,
+    "identifier": 245,
     "index-access": 12,
-    "literal": 202,
+    "literal": 203,
     "logical": 41,
-    "member": 123,
-    "object-literal": 46,
+    "member": 124,
+    "object-literal": 47,
     "template-literal": 27,
     "unary": 22,
     "unsupported": 21
@@ -4250,13 +4271,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 30,
+    "binary:===": 31,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 86,
-    "literal:string": 145,
+    "literal:string": 146,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

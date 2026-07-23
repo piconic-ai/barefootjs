@@ -51,7 +51,7 @@ import { createTemplateAwareStringProtector } from './ir-to-client-js/html-templ
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
-import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
+import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
 
@@ -2087,6 +2087,108 @@ function transformJsxFunctionCall(
   }
 }
 
+/**
+ * Fold an extracted if/else-if/else (or switch) JSX-return chain into a nested
+ * `IRConditional` — `if (c1) return <A/>; if (c2) return <B/>; return <C/>`
+ * becomes `c1 ? <A/> : c2 ? <B/> : <C/>`. Built bottom-up so each branch's
+ * `whenFalse` is the accumulated rest, terminating in the fallback (or a `null`
+ * expression when there is none — i.e. no branch matched renders nothing).
+ *
+ * `getText` extracts condition source: the inlined-helper path passes a
+ * param-substituting variant (and swaps `ctx.getJS` so nested JSX transforms
+ * substitute too); the `.map()`-callback path passes the identity `ctx.getJS`
+ * because the callback's params are the loop params, already in scope.
+ */
+function foldMultiReturnBranches(
+  info: Omit<MultiReturnJsxInfo, 'params'>,
+  ctx: TransformContext,
+  loc: SourceLocation,
+  getText: (node: ts.Node) => string,
+): IRNode {
+  const nullExpr: IRExpression = {
+    type: 'expression',
+    expr: 'null',
+    typeInfo: { kind: 'primitive', raw: 'null', primitive: 'null' },
+    reactive: false,
+    slotId: null,
+    loc,
+    origin: { phase: 'tick', scope: 'template', effect: 'pure', freeRefs: [] },
+  }
+
+  let result: IRNode = info.fallback
+    ? (transformNode(info.fallback, ctx) ?? nullExpr)
+    : nullExpr
+
+  for (let i = info.branches.length - 1; i >= 0; i--) {
+    const branch = info.branches[i]
+
+    let conditionText: string
+    if (info.switchDiscriminant) {
+      conditionText = `${getText(info.switchDiscriminant)} === ${getText(branch.condition)}`
+    } else {
+      conditionText = getText(branch.condition)
+    }
+
+    const env = makeBindingEnv(ctx)
+    const caseFreeRefs = resolveFreeRefs(branch.condition, env)
+    const discFreeRefs = info.switchDiscriminant
+      ? resolveFreeRefs(info.switchDiscriminant, env)
+      : []
+    const conditionOrigin: OriginInfo = {
+      phase: 'tick',
+      scope: 'template',
+      effect: 'pure',
+      freeRefs: [...discFreeRefs, ...caseFreeRefs],
+    }
+    const reactive = isReactiveExpression(conditionText, ctx, branch.condition)
+      || isReactiveOrigin(conditionOrigin)
+    const loopParamReactive = !reactive && referencesLoopParam(conditionText, ctx)
+    const callsReactive = exprCallsReactiveGetters(branch.condition, ctx)
+      || (info.switchDiscriminant ? exprCallsReactiveGetters(info.switchDiscriminant, ctx) : false)
+    const hasCalls = exprHasFunctionCalls(branch.condition)
+      || (info.switchDiscriminant ? exprHasFunctionCalls(info.switchDiscriminant) : false)
+    const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
+    const slotId = needsSlot ? generateSlotId(ctx) : null
+
+    const whenTrue = branch.jsxReturn
+      ? (transformNode(branch.jsxReturn, ctx) ?? nullExpr)
+      : nullExpr
+
+    let templateCondition: string | undefined
+    if (info.switchDiscriminant) {
+      const discRewritten = rewriteBarePropRefs(
+        getText(info.switchDiscriminant), info.switchDiscriminant, ctx
+      )
+      const caseRewritten = rewriteBarePropRefs(
+        getText(branch.condition), branch.condition, ctx
+      )
+      const discPart = discRewritten ?? getText(info.switchDiscriminant)
+      const casePart = caseRewritten ?? getText(branch.condition)
+      templateCondition = `${discPart} === ${casePart}`
+    } else {
+      templateCondition = rewriteBarePropRefs(conditionText, branch.condition, ctx)
+    }
+
+    const conditional: IRConditional = {
+      type: 'conditional',
+      condition: conditionText,
+      templateCondition,
+      conditionType: null,
+      reactive,
+      whenTrue,
+      whenFalse: result,
+      slotId,
+      callsReactiveGetters: callsReactive || undefined,
+      hasFunctionCalls: hasCalls || undefined,
+      loc,
+      origin: conditionOrigin,
+    }
+    result = conditional
+  }
+
+  return result
+}
+
 function transformMultiReturnJsxFunctionCall(
   callExpr: ts.CallExpression,
   info: MultiReturnJsxInfo,
@@ -2119,96 +2221,9 @@ function transformMultiReturnJsxFunctionCall(
 
   try {
     const loc = getSourceLocation(callExpr, ctx.sourceFile, ctx.filePath)
-    const nullExpr: IRExpression = {
-      type: 'expression',
-      expr: 'null',
-      typeInfo: { kind: 'primitive', raw: 'null', primitive: 'null' },
-      reactive: false,
-      slotId: null,
-      loc,
-      origin: { phase: 'tick', scope: 'template', effect: 'pure', freeRefs: [] },
-    }
-
-    // Build the conditional chain from bottom up (last branch → first branch)
-    let result: IRNode = info.fallback
-      ? (transformNode(info.fallback, ctx) ?? nullExpr)
-      : nullExpr
-
-    for (let i = info.branches.length - 1; i >= 0; i--) {
-      const branch = info.branches[i]
-
-      // Build condition text with param substitution
-      let conditionText: string
-      if (info.switchDiscriminant) {
-        const discText = substitutedGetJS(info.switchDiscriminant)
-        const caseText = substitutedGetJS(branch.condition)
-        conditionText = `${discText} === ${caseText}`
-      } else {
-        conditionText = substitutedGetJS(branch.condition)
-      }
-
-      // For switch-sourced conditions, merge freeRefs/reactivity from
-      // both the discriminant and case expression so prop rewrites and
-      // reactivity detection cover the full `disc === case` condition.
-      const env = makeBindingEnv(ctx)
-      const caseFreeRefs = resolveFreeRefs(branch.condition, env)
-      const discFreeRefs = info.switchDiscriminant
-        ? resolveFreeRefs(info.switchDiscriminant, env)
-        : []
-      const conditionOrigin: OriginInfo = {
-        phase: 'tick',
-        scope: 'template',
-        effect: 'pure',
-        freeRefs: [...discFreeRefs, ...caseFreeRefs],
-      }
-      const reactive = isReactiveExpression(conditionText, ctx, branch.condition)
-        || isReactiveOrigin(conditionOrigin)
-      const loopParamReactive = !reactive && referencesLoopParam(conditionText, ctx)
-      const callsReactive = exprCallsReactiveGetters(branch.condition, ctx)
-        || (info.switchDiscriminant ? exprCallsReactiveGetters(info.switchDiscriminant, ctx) : false)
-      const hasCalls = exprHasFunctionCalls(branch.condition)
-        || (info.switchDiscriminant ? exprHasFunctionCalls(info.switchDiscriminant) : false)
-      const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
-      const slotId = needsSlot ? generateSlotId(ctx) : null
-
-      const whenTrue = branch.jsxReturn
-        ? (transformNode(branch.jsxReturn, ctx) ?? nullExpr)
-        : nullExpr
-
-      // For switch conditions, build templateCondition from both parts
-      let templateCondition: string | undefined
-      if (info.switchDiscriminant) {
-        const discRewritten = rewriteBarePropRefs(
-          substitutedGetJS(info.switchDiscriminant), info.switchDiscriminant, ctx
-        )
-        const caseRewritten = rewriteBarePropRefs(
-          substitutedGetJS(branch.condition), branch.condition, ctx
-        )
-        const discPart = discRewritten ?? substitutedGetJS(info.switchDiscriminant)
-        const casePart = caseRewritten ?? substitutedGetJS(branch.condition)
-        templateCondition = `${discPart} === ${casePart}`
-      } else {
-        templateCondition = rewriteBarePropRefs(conditionText, branch.condition, ctx)
-      }
-
-      const conditional: IRConditional = {
-        type: 'conditional',
-        condition: conditionText,
-        templateCondition,
-        conditionType: null,
-        reactive,
-        whenTrue,
-        whenFalse: result,
-        slotId,
-        callsReactiveGetters: callsReactive || undefined,
-        hasFunctionCalls: hasCalls || undefined,
-        loc,
-        origin: conditionOrigin,
-      }
-      result = conditional
-    }
-
-    return result
+    // `substitutedGetJS` extracts condition text with param→arg substitution;
+    // `ctx.getJS` is swapped above so nested JSX transforms substitute too.
+    return foldMultiReturnBranches(info, ctx, loc, substitutedGetJS)
   } finally {
     ctx.getJS = originalCtxGetJS
     ctx.analyzer.getJS = originalAnalyzerGetJS
@@ -2321,6 +2336,69 @@ function containsJsxInExpression(node: ts.Node): boolean {
     return true
   }
   return ts.forEachChild(node, containsJsxInExpression) ?? false
+}
+
+/**
+ * Does a `.map()` block-body preamble statement contain a `return` whose value
+ * is JSX? This is the leak that BF026 guards: only the callback's single chosen
+ * return becomes a per-item template, so an earlier `if (...) return <JSX/>`
+ * branch would otherwise be captured as raw text and emitted verbatim into the
+ * client bundle (`Unexpected token '<'` at runtime).
+ *
+ * Crucially this is narrower than "statement contains any JSX": JSX passed as a
+ * function-call argument (`createPortal(<div/>, document.body)`) is lowered by
+ * its own path and must NOT trip BF026. We therefore look specifically for a
+ * `return` of JSX, and do NOT descend into nested function/arrow bodies — a
+ * return inside those belongs to that inner function, not this callback.
+ */
+function preambleStatementReturnsJsx(node: ts.Node): boolean {
+  let found = false
+  const visit = (n: ts.Node): void => {
+    if (found) return
+    // Stop at every function-like boundary — functions, arrows, methods,
+    // accessors, constructors — so a `return <JSX/>` inside a class/object
+    // method declared in the preamble is attributed to that inner scope, not
+    // this map callback (matches the `ts.isFunctionLike` return-scan
+    // convention in analyzer.ts).
+    if (ts.isFunctionLike(n)) return
+    if (ts.isReturnStatement(n) && n.expression && containsJsxInExpression(n.expression)) {
+      found = true
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return found
+}
+
+/**
+ * The first JSX element/fragment anywhere in a block body (not descending into
+ * nested function-like scopes). Used only to give a BF026-rejected callback a
+ * benign, already-lowered placeholder template so the raw callback text is
+ * never handed to the scalar `.map(...)` fallback (which would re-emit the
+ * invalid JSX). Because `hasStrayJsxReturn` requires a return whose expression
+ * *contains* JSX, this finds a literal even inside a ternary / logical / call
+ * (`return cond ? <A/> : <B/>`), not just a direct JSX return.
+ */
+function firstJsxElementIn(
+  node: ts.Node,
+): ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment | null {
+  let found:
+    | ts.JsxElement
+    | ts.JsxSelfClosingElement
+    | ts.JsxFragment
+    | null = null
+  const visit = (n: ts.Node): void => {
+    if (found) return
+    if (ts.isFunctionLike(n)) return
+    if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) {
+      found = n
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(node)
+  return found
 }
 
 /**
@@ -3885,6 +3963,10 @@ function transformMapCall(
   let children: IRNode[] = []
   let paramBindings: LoopParamBinding[] | undefined
   let flatMapCallback: FlatMapCallback | undefined
+  // Set when BF026 fires for an unlowerable block-body callback. Suppresses the
+  // downstream key check (BF023/BF024 would be redundant noise on already-
+  // rejected code) and records that children hold only a benign placeholder.
+  let bf026Raised = false
 
   if (ts.isArrowFunction(callback)) {
     // Extract parameter names and type annotations
@@ -4036,7 +4118,66 @@ function transformMapCall(
       const returnStmt = body.statements.find(
         (s): s is ts.ReturnStatement => ts.isReturnStatement(s) && s.expression != null
       )
-      if (returnStmt && returnStmt.expression) {
+
+      // A block body with an if/else-if/else (or switch) chain of JSX returns —
+      //   if (a) return <A/>; if (b) return <B/>; return <C/>
+      // — is lowered into a nested IRConditional (`a ? <A/> : b ? <B/> : <C/>`),
+      // the SAME representation a ternary map body produces, which the loop
+      // machinery already lowers to per-branch templates. So the natural
+      // multi-branch callback form WORKS rather than erroring. Reuses the
+      // analyzer's `extractMultiReturnJsxBranches` (also used for inlined
+      // multi-return JSX helpers) + the shared `foldMultiReturnBranches` fold;
+      // no param substitution here because the callback's params are the loop
+      // params, already registered in `ctx.loopParams`.
+      const multiReturn = extractMultiReturnJsxBranches(body)
+
+      // BF026 remains only for shapes the extractor cannot lower: a branching
+      // JSX return alongside a preamble `const`/`let`, or nested control flow
+      // inside a branch. Those still can't become a single per-item template,
+      // and — left alone — would leak raw JSX into the client bundle (swept into
+      // `mapPreamble`, or via the null → scalar-`.map()`-stringify fallback).
+      // A `return` of JSX passed as a call argument — `createPortal(<div/>,
+      // document.body)` — is not a branch return and is lowered elsewhere, so
+      // it is deliberately spared.
+      const hasStrayJsxReturn = !multiReturn && body.statements.some(
+        (s) => s !== returnStmt && preambleStatementReturnsJsx(s),
+      )
+
+      if (multiReturn && multiReturn.branches.length > 0) {
+        const chainLoc = getSourceLocation(callback.body, ctx.sourceFile, ctx.filePath)
+        children = [foldMultiReturnBranches(multiReturn, ctx, chainLoc, (n) => ctx.getJS(n))]
+      } else if (hasStrayJsxReturn) {
+        bf026Raised = true
+        ctx.analyzer.errors.push(
+          createError(
+            ErrorCodes.UNSUPPORTED_LIST_CALLBACK_BODY,
+            getSourceLocation(callback.body, ctx.sourceFile, ctx.filePath),
+          ),
+        )
+        // Guarantee a non-empty `children` so the raw callback text is never
+        // handed to the scalar `.map()` fallback (which would re-emit the
+        // invalid JSX). Use any JSX literal in the body as a benign, already-
+        // lowered placeholder template — this finds one even inside a ternary /
+        // logical / call return. As a final backstop (transform declines, or —
+        // defensively — no literal is found), fall back to an empty text node.
+        // The build is already failing on BF026, so the placeholder is never
+        // observed; this only keeps the erroring output free of raw JSX. No
+        // preamble is built.
+        const placeholder = firstJsxElementIn(body)
+        if (placeholder) {
+          const transformed = transformNode(placeholder, ctx)
+          if (transformed) children = [transformed]
+        }
+        if (children.length === 0) {
+          children = [
+            {
+              type: 'text',
+              value: '',
+              loc: getSourceLocation(callback.body, ctx.sourceFile, ctx.filePath),
+            },
+          ]
+        }
+      } else if (returnStmt && returnStmt.expression) {
         let returnExpr = returnStmt.expression
         while (ts.isParenthesizedExpression(returnExpr)) {
           returnExpr = returnExpr.expression
@@ -4047,6 +4188,8 @@ function transformMapCall(
             children = [transformed]
           }
         }
+        // Preamble statements here are guaranteed JSX-return-free (the stray
+        // case was handled above), so capturing them verbatim is safe.
         const preambleStmts: string[] = []
         const templatePreambleStmts: string[] = []
         const typedPreambleStmts: string[] = []
@@ -4076,7 +4219,7 @@ function transformMapCall(
 
       // flatMap block body fallback: compile JSX inline when children
       // couldn't be extracted via the standard single-return path.
-      if (method === 'flatMap' && children.length === 0) {
+      if (method === 'flatMap' && children.length === 0 && !bf026Raised) {
         flatMapCallback = buildFlatMapCallback(callback, body, ctx)
       }
     } else {
@@ -4101,8 +4244,10 @@ function transformMapCall(
   }
 
   // Emit BF023 / BF024 if the loop root element lacks a valid key attribute.
-  // Call whenever children were produced (the callback returned JSX).
-  if (ts.isArrowFunction(node.arguments[0]) && children.length > 0) {
+  // Call whenever children were produced (the callback returned JSX). Skip when
+  // BF026 already rejected the callback — the children hold only a benign
+  // placeholder, so a key diagnostic on it would be misleading noise.
+  if (ts.isArrowFunction(node.arguments[0]) && children.length > 0 && !bf026Raised) {
     checkLoopKey(node.arguments[0], ctx, isNested)
   }
 

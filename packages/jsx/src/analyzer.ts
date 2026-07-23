@@ -2084,7 +2084,7 @@ type JsxReturnNode = ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment
  * Supports if/else if chains and switch statements where every branch
  * returns JSX or null. Returns null for unsupported patterns.
  */
-function extractMultiReturnJsxBranches(
+export function extractMultiReturnJsxBranches(
   body: ts.Block
 ): { branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }>; fallback: JsxReturnNode | null; switchDiscriminant?: ts.Expression } | null {
   const branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }> = []
