@@ -47,9 +47,9 @@ describe('event delegation depth ordering (#774)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Should have event delegation with closest checks
+    // Should have event delegation with container-bounded slot lookups (#2367)
     expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
-    expect(content).toContain('target.closest')
+    expect(content).toContain('closestWithin(target,')
 
     // Child handler (handleDelete / button) must appear before parent handler
     // (handleRowClick / tr) in the delegation handler.

@@ -489,7 +489,7 @@ describe('child components inside .map() (#344)', () => {
 
     // Event delegation should be generated for the static array
     expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
-    expect(content).toContain('target.closest')
+    expect(content).toContain('closestWithin(target,')
     expect(content).toContain('Array.from(')
     expect(content).toContain('handleClick(item.id)')
   })

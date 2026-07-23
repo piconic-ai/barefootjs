@@ -149,9 +149,10 @@ describe('composite loops inside conditional branches (#724)', () => {
     // Should use mapArray for the loop
     expect(js).toContain('mapArray(')
 
-    // Should have event delegation (addEventListener + closest pattern)
+    // Should have event delegation (addEventListener + container-bounded
+    // slot lookup, #2367)
     expect(js).toContain(".addEventListener('click', (__bfEvt) => {")
-    expect(js).toContain('target.closest')
+    expect(js).toContain('closestWithin(target,')
     expect(js).toContain('handleDelete(item.id)')
 
     // Should NOT use createComponent inside the init body (no child
