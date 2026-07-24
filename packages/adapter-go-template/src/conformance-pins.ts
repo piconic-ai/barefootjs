@@ -15,6 +15,10 @@ export const conformancePins: ConformancePins = {
   // JS-runtime target runs it, a DSL adapter surfaces BF021 + `/* @client */`.
   // See spec/callback-fidelity.md.
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
+  // `.fill(value)` mutates the receiver in place — no template lowering
+  // on any DSL adapter; a JS-runtime target runs it, a DSL adapter
+  // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
+  'fill-unsupported': [{ code: 'BF101', severity: 'error' }],
   // `style-object-dynamic` / `style-3-signals` no longer pinned — a
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic
   // values interpolated (`background-color:{{.Color}};padding:8px`) via

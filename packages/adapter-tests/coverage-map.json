@@ -1775,6 +1775,24 @@
         "text"
       ]
     },
+    "fill-unsupported": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "filter-nested-callback-predicate": {
       "kinds": [
         "array-literal",
@@ -4244,17 +4262,17 @@
     }
   },
   "kindCounts": {
-    "array-literal": 56,
-    "array-method": 62,
+    "array-literal": 57,
+    "array-method": 63,
     "arrow": 57,
     "binary": 69,
-    "call": 166,
+    "call": 167,
     "conditional": 19,
-    "identifier": 246,
+    "identifier": 247,
     "index-access": 12,
-    "literal": 204,
+    "literal": 205,
     "logical": 41,
-    "member": 125,
+    "member": 126,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
@@ -4267,7 +4285,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 36,
+    "array-method:join": 37,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -4297,8 +4315,8 @@
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
-    "literal:number": 86,
-    "literal:string": 147,
+    "literal:number": 87,
+    "literal:string": 148,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

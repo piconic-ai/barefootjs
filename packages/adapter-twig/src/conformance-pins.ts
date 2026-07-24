@@ -15,6 +15,10 @@ export const conformancePins: ConformancePins = {
   // JS-runtime target runs it, a DSL adapter surfaces BF021 + `/* @client */`.
   // See spec/callback-fidelity.md.
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
+  // `.fill(value)` mutates the receiver in place — no template lowering
+  // on any DSL adapter; a JS-runtime target runs it, a DSL adapter
+  // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
+  'fill-unsupported': [{ code: 'BF101', severity: 'error' }],
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the
