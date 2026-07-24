@@ -2009,6 +2009,28 @@
         "text"
       ]
     },
+    "flatmap-typeof-projection": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "form": {
       "kinds": [
         "call",
@@ -3079,6 +3101,22 @@
         "text"
       ]
     },
+    "reduce-right-typeof-body": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "reduce-sum-field": {
       "kinds": [
         "arrow",
@@ -3107,6 +3145,22 @@
       ],
       "axes": [
         "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "reduce-typeof-body": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
         "literal:number"
       ],
       "contexts": [
@@ -4319,21 +4373,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 60,
-    "array-method": 63,
-    "arrow": 60,
-    "binary": 72,
-    "call": 170,
-    "conditional": 19,
-    "identifier": 250,
+    "array-literal": 63,
+    "array-method": 64,
+    "arrow": 61,
+    "binary": 73,
+    "call": 173,
+    "conditional": 20,
+    "identifier": 253,
     "index-access": 12,
-    "literal": 208,
+    "literal": 211,
     "logical": 41,
-    "member": 129,
+    "member": 132,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
-    "unsupported": 26
+    "unsupported": 29
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -4342,7 +4396,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 37,
+    "array-method:join": 38,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -4367,13 +4421,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 35,
+    "binary:===": 36,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
-    "literal:number": 87,
-    "literal:string": 151,
+    "literal:number": 89,
+    "literal:string": 152,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

@@ -14,15 +14,15 @@
   ],
   "kinds": {
     "array-literal": {
-      "total": 60,
+      "total": 63,
       "cells": {
         "hono": {
-          "pass": 60,
-          "total": 60
+          "pass": 63,
+          "total": 63
         },
         "blade": {
           "pass": 53,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -50,6 +50,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -60,7 +72,7 @@
         },
         "erb": {
           "pass": 54,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -82,6 +94,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -92,7 +116,7 @@
         },
         "go-template": {
           "pass": 53,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -120,6 +144,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -130,7 +166,7 @@
         },
         "jinja": {
           "pass": 53,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -158,6 +194,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -168,7 +216,7 @@
         },
         "minijinja": {
           "pass": 53,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -196,6 +244,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -206,7 +266,7 @@
         },
         "mojolicious": {
           "pass": 54,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -228,6 +288,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -238,7 +310,7 @@
         },
         "twig": {
           "pass": 53,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -266,6 +338,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -276,7 +360,7 @@
         },
         "xslate": {
           "pass": 53,
-          "total": 60,
+          "total": 63,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -304,6 +388,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -326,88 +422,120 @@
       }
     },
     "array-method": {
-      "total": 63,
+      "total": 64,
       "cells": {
         "hono": {
-          "pass": 63,
-          "total": 63
+          "pass": 64,
+          "total": 64
         },
         "blade": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "erb": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "twig": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 62,
-          "total": 63,
+          "total": 64,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
@@ -426,15 +554,15 @@
       }
     },
     "arrow": {
-      "total": 60,
+      "total": 61,
       "cells": {
         "hono": {
-          "pass": 60,
-          "total": 60
+          "pass": 61,
+          "total": 61
         },
         "blade": {
           "pass": 54,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -458,6 +586,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -468,7 +600,7 @@
         },
         "erb": {
           "pass": 55,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -486,6 +618,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -496,7 +632,7 @@
         },
         "go-template": {
           "pass": 54,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -520,6 +656,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -530,7 +670,7 @@
         },
         "jinja": {
           "pass": 54,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -554,6 +694,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -564,7 +708,7 @@
         },
         "minijinja": {
           "pass": 54,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -588,6 +732,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -598,7 +746,7 @@
         },
         "mojolicious": {
           "pass": 55,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -616,6 +764,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -626,7 +778,7 @@
         },
         "twig": {
           "pass": 54,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -650,6 +802,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -660,7 +816,7 @@
         },
         "xslate": {
           "pass": 54,
-          "total": 60,
+          "total": 61,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -684,6 +840,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -706,15 +866,15 @@
       }
     },
     "binary": {
-      "total": 72,
+      "total": 73,
       "cells": {
         "hono": {
-          "pass": 72,
-          "total": 72
+          "pass": 73,
+          "total": 73
         },
         "blade": {
           "pass": 65,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -738,6 +898,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -754,7 +918,7 @@
         },
         "erb": {
           "pass": 66,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -772,6 +936,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -788,7 +956,7 @@
         },
         "go-template": {
           "pass": 65,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -812,6 +980,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -828,7 +1000,7 @@
         },
         "jinja": {
           "pass": 65,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -852,6 +1024,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -868,7 +1044,7 @@
         },
         "minijinja": {
           "pass": 65,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -892,6 +1068,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -908,7 +1088,7 @@
         },
         "mojolicious": {
           "pass": 66,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -926,6 +1106,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -942,7 +1126,7 @@
         },
         "twig": {
           "pass": 65,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -966,6 +1150,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -982,7 +1170,7 @@
         },
         "xslate": {
           "pass": 65,
-          "total": 72,
+          "total": 73,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1006,6 +1194,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -1034,11 +1226,11 @@
       }
     },
     "call": {
-      "total": 170,
+      "total": 173,
       "cells": {
         "hono": {
-          "pass": 169,
-          "total": 170,
+          "pass": 172,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1050,7 +1242,7 @@
         },
         "blade": {
           "pass": 160,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1084,6 +1276,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1106,7 +1310,7 @@
         },
         "erb": {
           "pass": 161,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1134,6 +1338,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1156,7 +1372,7 @@
         },
         "go-template": {
           "pass": 160,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1190,6 +1406,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1212,7 +1440,7 @@
         },
         "jinja": {
           "pass": 160,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1246,6 +1474,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1268,7 +1508,7 @@
         },
         "minijinja": {
           "pass": 160,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1302,6 +1542,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1324,7 +1576,7 @@
         },
         "mojolicious": {
           "pass": 161,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1352,6 +1604,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1374,7 +1638,7 @@
         },
         "twig": {
           "pass": 160,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1408,6 +1672,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1430,7 +1706,7 @@
         },
         "xslate": {
           "pass": 160,
-          "total": 170,
+          "total": 173,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1464,6 +1740,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1498,43 +1786,91 @@
       }
     },
     "conditional": {
-      "total": 19,
+      "total": 20,
       "cells": {
         "hono": {
-          "pass": 19,
-          "total": 19
+          "pass": 20,
+          "total": 20
         },
         "blade": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "erb": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "twig": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 19,
-          "total": 19
+          "total": 20,
+          "gaps": [
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -1550,11 +1886,11 @@
       }
     },
     "identifier": {
-      "total": 250,
+      "total": 253,
       "cells": {
         "hono": {
-          "pass": 249,
-          "total": 250,
+          "pass": 252,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1566,7 +1902,7 @@
         },
         "blade": {
           "pass": 240,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1600,6 +1936,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1622,7 +1970,7 @@
         },
         "erb": {
           "pass": 241,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1650,6 +1998,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1672,7 +2032,7 @@
         },
         "go-template": {
           "pass": 240,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1706,6 +2066,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1728,7 +2100,7 @@
         },
         "jinja": {
           "pass": 240,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1762,6 +2134,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1784,7 +2168,7 @@
         },
         "minijinja": {
           "pass": 240,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1818,6 +2202,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1840,7 +2236,7 @@
         },
         "mojolicious": {
           "pass": 241,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1868,6 +2264,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1890,7 +2298,7 @@
         },
         "twig": {
           "pass": 240,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1924,6 +2332,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -1946,7 +2366,7 @@
         },
         "xslate": {
           "pass": 240,
-          "total": 250,
+          "total": 253,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1980,6 +2400,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2066,15 +2498,15 @@
       }
     },
     "literal": {
-      "total": 208,
+      "total": 211,
       "cells": {
         "hono": {
-          "pass": 208,
-          "total": 208
+          "pass": 211,
+          "total": 211
         },
         "blade": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2090,6 +2522,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2106,7 +2550,7 @@
         },
         "erb": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2122,6 +2566,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2138,7 +2594,7 @@
         },
         "go-template": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2154,6 +2610,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2170,7 +2638,7 @@
         },
         "jinja": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2186,6 +2654,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2202,7 +2682,7 @@
         },
         "minijinja": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2218,6 +2698,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2234,7 +2726,7 @@
         },
         "mojolicious": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2250,6 +2742,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2266,7 +2770,7 @@
         },
         "twig": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2282,6 +2786,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2298,7 +2814,7 @@
         },
         "xslate": {
           "pass": 202,
-          "total": 208,
+          "total": 211,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2314,6 +2830,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2458,11 +2986,11 @@
       }
     },
     "member": {
-      "total": 129,
+      "total": 132,
       "cells": {
         "hono": {
-          "pass": 128,
-          "total": 129,
+          "pass": 131,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2474,7 +3002,7 @@
         },
         "blade": {
           "pass": 119,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2508,6 +3036,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2530,7 +3070,7 @@
         },
         "erb": {
           "pass": 120,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2558,6 +3098,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2580,7 +3132,7 @@
         },
         "go-template": {
           "pass": 119,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2614,6 +3166,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2636,7 +3200,7 @@
         },
         "jinja": {
           "pass": 119,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2670,6 +3234,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2692,7 +3268,7 @@
         },
         "minijinja": {
           "pass": 119,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2726,6 +3302,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2748,7 +3336,7 @@
         },
         "mojolicious": {
           "pass": 120,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2776,6 +3364,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2798,7 +3398,7 @@
         },
         "twig": {
           "pass": 119,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2832,6 +3432,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -2854,7 +3466,7 @@
         },
         "xslate": {
           "pass": 119,
-          "total": 129,
+          "total": 132,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2888,6 +3500,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3235,15 +3859,15 @@
       }
     },
     "unsupported": {
-      "total": 26,
+      "total": 29,
       "cells": {
         "hono": {
-          "pass": 26,
-          "total": 26
+          "pass": 29,
+          "total": 29
         },
         "blade": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3255,6 +3879,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3277,7 +3913,7 @@
         },
         "erb": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3289,6 +3925,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3311,7 +3959,7 @@
         },
         "go-template": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3323,6 +3971,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3345,7 +4005,7 @@
         },
         "jinja": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3357,6 +4017,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3379,7 +4051,7 @@
         },
         "minijinja": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3391,6 +4063,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3413,7 +4097,7 @@
         },
         "mojolicious": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3425,6 +4109,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3447,7 +4143,7 @@
         },
         "twig": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3459,6 +4155,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3481,7 +4189,7 @@
         },
         "xslate": {
           "pass": 20,
-          "total": 26,
+          "total": 29,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3493,6 +4201,18 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             },
             {
@@ -3520,9 +4240,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       },
       "example": {
-        "fixture": "static-array-from-props",
-        "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
+        "fixture": "reduce-right-typeof-body",
+        "description": "Off-subset `.reduceRight()` body (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-right-typeof-body.ts"
       }
     }
   },
@@ -3840,88 +4560,120 @@
       }
     },
     "array-method:join": {
-      "total": 37,
+      "total": 38,
       "cells": {
         "hono": {
-          "pass": 37,
-          "total": 37
+          "pass": 38,
+          "total": 38
         },
         "blade": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "erb": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "twig": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 36,
-          "total": 37,
+          "total": 38,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             }
           ]
@@ -5251,15 +6003,15 @@
       }
     },
     "binary:===": {
-      "total": 35,
+      "total": 36,
       "cells": {
         "hono": {
-          "pass": 35,
-          "total": 35
+          "pass": 36,
+          "total": 36
         },
         "blade": {
           "pass": 29,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5283,6 +6035,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5293,7 +6049,7 @@
         },
         "erb": {
           "pass": 30,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5311,6 +6067,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5321,7 +6081,7 @@
         },
         "go-template": {
           "pass": 29,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5345,6 +6105,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5355,7 +6119,7 @@
         },
         "jinja": {
           "pass": 29,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5379,6 +6143,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5389,7 +6157,7 @@
         },
         "minijinja": {
           "pass": 29,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5413,6 +6181,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5423,7 +6195,7 @@
         },
         "mojolicious": {
           "pass": 30,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5441,6 +6213,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5451,7 +6227,7 @@
         },
         "twig": {
           "pass": 29,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5475,6 +6251,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5485,7 +6265,7 @@
         },
         "xslate": {
           "pass": 29,
-          "total": 35,
+          "total": 36,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5509,6 +6289,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5738,88 +6522,152 @@
       }
     },
     "literal:number": {
-      "total": 87,
+      "total": 89,
       "cells": {
         "hono": {
-          "pass": 87,
-          "total": 87
+          "pass": 89,
+          "total": 89
         },
         "blade": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "erb": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "twig": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 86,
-          "total": 87,
+          "total": 89,
           "gaps": [
             {
               "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
               "issues": []
             }
           ]
@@ -5838,15 +6686,15 @@
       }
     },
     "literal:string": {
-      "total": 151,
+      "total": 152,
       "cells": {
         "hono": {
-          "pass": 151,
-          "total": 151
+          "pass": 152,
+          "total": 152
         },
         "blade": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5862,6 +6710,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5878,7 +6730,7 @@
         },
         "erb": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5894,6 +6746,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5910,7 +6766,7 @@
         },
         "go-template": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5926,6 +6782,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5942,7 +6802,7 @@
         },
         "jinja": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5958,6 +6818,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -5974,7 +6838,7 @@
         },
         "minijinja": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -5990,6 +6854,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -6006,7 +6874,7 @@
         },
         "mojolicious": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -6022,6 +6890,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -6038,7 +6910,7 @@
         },
         "twig": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -6054,6 +6926,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {
@@ -6070,7 +6946,7 @@
         },
         "xslate": {
           "pass": 145,
-          "total": 151,
+          "total": 152,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -6086,6 +6962,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
               "issues": []
             },
             {

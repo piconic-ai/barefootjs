@@ -25,6 +25,13 @@ export const conformancePins: ConformancePins = {
   'find-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
   'some-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
   'every-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
+  // Off-subset `.reduce()` / `.reduceRight()` body / `.flatMap()`
+  // projection (`typeof`) the compiler can't lower; a JS-runtime target
+  // runs it, a DSL adapter surfaces BF101 + `/* @client */`.
+  // See spec/callback-fidelity.md.
+  'reduce-typeof-body': [{ code: 'BF101', severity: 'error' }],
+  'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error' }],
+  'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error' }],
   // `style-object-dynamic` / `style-3-signals` no longer pinned — a
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic
   // values interpolated (`background-color:{{.Color}};padding:8px`) via
