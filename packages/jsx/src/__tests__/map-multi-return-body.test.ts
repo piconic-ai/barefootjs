@@ -74,7 +74,7 @@ describe('.map() multi-return body fold (Stage 2)', () => {
   })
 
   describe('conservative bail — no silent drop', () => {
-    function extract(body: string) {
+    function extract(body: string, allowPreamble = false) {
       const sf = ts.createSourceFile('t.tsx', `const f = (it: any) => ${body}`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
       let block: ts.Block | undefined
       const visit = (n: ts.Node) => {
@@ -82,7 +82,7 @@ describe('.map() multi-return body fold (Stage 2)', () => {
         ts.forEachChild(n, visit)
       }
       visit(sf)
-      return extractMultiReturnJsxBranches(block!)
+      return extractMultiReturnJsxBranches(block!, allowPreamble)
     }
 
     test('a branch-local const bails (would otherwise be dropped)', () => {
@@ -95,9 +95,60 @@ describe('.map() multi-return body fold (Stage 2)', () => {
       expect(r).toBeNull()
     })
 
-    test('a leading const preamble bails (deferred — DSL cannot carry the local)', () => {
+    test('a leading const is a preamble only when allowPreamble is set', () => {
       const body = `{ const label = it.kind; if (it.on) return <b>{label}</b>; return <span>{label}</span> }`
+      // The helper-function inliner passes no allowPreamble — bails.
       expect(extract(body)).toBeNull()
+      // The .map() body fold opts in — collects the leading const as a preamble.
+      const r = extract(body, true)
+      expect(r).not.toBeNull()
+      expect(r!.preamble?.length).toBe(1)
+    })
+
+    test('a preamble with a null-returning branch bails (mapArrayAnchored hazard)', () => {
+      // `const f = …; if (!f) return null; return <div key={fid}>…</div>` — the
+      // null early-return routes the loop through the anchored conditional-item
+      // runtime, where a preamble local breaks keyed reactivity (the
+      // pivot-table demo shape). Fold only the all-JSX preamble case.
+      const body = `{ const f = it.field; if (!f) return null; return <div key={it.id}>{f}</div> }`
+      expect(extract(body, true)).toBeNull()
+    })
+  })
+
+  describe('leading-const preamble is adapter-gated (JS folds, DSL refuses)', () => {
+    const preambleBody = `{
+      const label = it.kind.toUpperCase()
+      if (it.on) return <b key={it.id}>{label}</b>
+      return <span key={it.id}>{label}</span>
+    }`
+
+    function compileWith(source: string, dsl: boolean) {
+      const a = new TestAdapter()
+      // Model a DSL adapter: its template runtime can't run a callback body
+      // verbatim, so `acceptsCallbackBody` reports false for every kind.
+      if (dsl) a.acceptsCallbackBody = () => false
+      return compileJSX(source, 'List.tsx', { adapter: a })
+    }
+
+    test('a JS-runtime adapter folds the preamble (const emitted, no error)', () => {
+      const r = compileWith(wrap(preambleBody), false)
+      expect(r.errors).toHaveLength(0)
+      const cj = r.files.find(f => f.type === 'clientJs')!
+      expect(cj.content).toMatch(/const label\b/)
+      expect(cj.content).not.toMatch(/return <(b|span)/)
+    })
+
+    test('a DSL adapter refuses with BF021 + the /* @client */ escape', () => {
+      const r = compileWith(wrap(preambleBody), true)
+      const bf021 = r.errors.filter(e => e.code === 'BF021')
+      expect(bf021).toHaveLength(1)
+      expect(bf021[0].suggestion?.message).toContain('@client')
+    })
+
+    test('/* @client */ suppresses the DSL refusal', () => {
+      const clientSource = wrap(preambleBody).replace('items.map', '/* @client */ items.map')
+      const r = compileWith(clientSource, true)
+      expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(0)
     })
   })
 })

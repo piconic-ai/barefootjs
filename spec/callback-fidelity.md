@@ -263,10 +263,21 @@ Each stage is independently shippable, tested, and PR-sized. Value/risk-ordered.
   gap (silently emitted, no `BF101`) and corrected the stale `reduce` /
   higher-order comments. *Tests: compiler-unit (adapter-conditional BF021), CSR
   conformance, DSL conformance/divergence, coverage/support-matrix.*
-- **Stage 2 — Generalize the JSX-`map` fold to neutral IR (D3).** *In progress.*
-  Re-lands the #2371 if-chain fold, reframed, plus preamble-const branches and
-  nested loops. All backends gain SSR fidelity. *Tests: compiler-unit, CSR +
-  cross-adapter + hydration conformance (new fixtures), coverage. PRs: ~2–3.*
+- **Stage 2 — Generalize the JSX-`map` fold to neutral IR (D3).** ✅
+  *Landed (#2377, #2378, and follow-up).* A `.map()` block body that is an
+  if/else-if chain or a `switch` (including fallthrough case labels) now folds
+  into a nested `IRConditional` — the neutral IR a ternary map body already
+  produces — instead of silently leaking the raw `if`/`switch` into the
+  callback. All backends gain SSR fidelity for these shapes. A **leading
+  `const`/`let` preamble** folds on JS-runtime adapters and, since a DSL
+  backend can't carry a loop-local into a conditional branch template, is
+  adapter-gated: a DSL target refuses with `BF021` + `/* @client */` (never
+  silent divergence). Two shapes are deliberately **not** folded and bail
+  conservatively: a *branch-local* `const` (inside a branch block / case), and
+  a **statement-level nested loop** (an imperative `for`-with-`push` that builds
+  a JSX array) — the latter is an arbitrary imperative body handled by Stage 3's
+  verbatim-JS path, not the neutral-IR fold. *Tests: compiler-unit, CSR +
+  cross-adapter + hydration conformance (new fixtures), coverage.*
 - **Stage 3 — JS-runtime verbatim + `/* @client */` for the rest (D4 + D5).**
   Reaches the fidelity ceiling for JSX-`map`. Requires the Stage-0 `keyFn`
   decision. *Tests: runtime-unit (key contract), CSR conformance, E2E
