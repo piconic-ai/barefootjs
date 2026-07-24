@@ -2029,6 +2029,56 @@
           ]
         }
       },
+      "filter-typeof-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        }
+      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",
@@ -2190,6 +2240,10 @@
       "filter-nested-find-predicate": {
         "description": "Filter predicate containing a nested .find() callback (#2038)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-find-predicate.ts"
+      },
+      "filter-typeof-predicate": {
+        "description": "Off-subset filter predicate (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-typeof-predicate.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
