@@ -1,10 +1,16 @@
 # Callback-Body Fidelity Across Backends (RFC / Draft)
 
-> **Status:** RFC / Draft. Supersedes the diagnose-first
+> **Status:** Accepted; landing in stages. Supersedes the diagnose-first
 > [#2371](https://github.com/piconic-ai/barefootjs/pull/2371) (closed "to
 > restart from a design-first footing"). Records the principle, the target
 > fidelity model, and a staged plan; adjusted as the work lands (same
 > convention as `spec/subset-conformance.md`).
+>
+> **Progress:** Stage 0 (this doc) and Stage 1 have landed — `#2373`
+> (adapter-gate the Phase-1 `filter`/`sort` constraint), `#2374` (close the
+> `fill` gap + doc/comment cleanup), `#2375` (find/some/every off-subset
+> conformance), `#2376` (reduce/reduceRight/flatMap off-subset conformance).
+> Stage 2 is in progress.
 
 ## Vision
 
@@ -246,17 +252,21 @@ Each stage is independently shippable, tested, and PR-sized. Value/risk-ordered.
 
 - **Stage 0 — This RFC.** Agree the model, the `keyFn` contract (D5), and the
   capability-predicate granularity (D1). *Deliverable: this doc, merged.*
-- **Stage 1 — Adapter-gate the value-callback constraints (D1 + D2).** The
-  biggest immediate win: `filter` / `sort` / `find` / `some` / `every` /
-  `reduce` with *any* predicate/comparator compile on JS runtimes; DSL keeps the
-  error + `/* @client */`. Also fixes the latent `fill` gap (silently emitted, no
-  `BF101` today) and the stale `reduce` comment. *Tests: compiler-unit
-  (adapter-conditional BF021), CSR conformance, DSL conformance/divergence,
-  coverage/support-matrix. PRs: ~2–3.*
-- **Stage 2 — Generalize the JSX-`map` fold to neutral IR (D3).** Re-lands the
-  #2371 if-chain fold, reframed, plus preamble-const branches and nested loops.
-  All backends gain SSR fidelity. *Tests: compiler-unit, CSR + cross-adapter +
-  hydration conformance (new fixtures), coverage. PRs: ~2–3.*
+- **Stage 1 — Adapter-gate the value-callback constraints (D1 + D2).** ✅
+  *Landed (#2373–#2376).* The biggest immediate win: `filter` / `sort` / `find`
+  / `some` / `every` / `reduce` with *any* predicate/comparator compile on JS
+  runtimes; DSL keeps the error + `/* @client */`. The survey found the
+  value-callback methods beyond `filter`/`sort` already split correctly (they
+  refuse only at adapter emit — BF101/BF102 — which JS adapters skip), so #2373
+  gated the one Phase-1 `filter`/`sort` `BF021` site and #2375–#2376 locked the
+  rest with off-subset conformance fixtures. #2374 also closed the latent `fill`
+  gap (silently emitted, no `BF101`) and corrected the stale `reduce` /
+  higher-order comments. *Tests: compiler-unit (adapter-conditional BF021), CSR
+  conformance, DSL conformance/divergence, coverage/support-matrix.*
+- **Stage 2 — Generalize the JSX-`map` fold to neutral IR (D3).** *In progress.*
+  Re-lands the #2371 if-chain fold, reframed, plus preamble-const branches and
+  nested loops. All backends gain SSR fidelity. *Tests: compiler-unit, CSR +
+  cross-adapter + hydration conformance (new fixtures), coverage. PRs: ~2–3.*
 - **Stage 3 — JS-runtime verbatim + `/* @client */` for the rest (D4 + D5).**
   Reaches the fidelity ceiling for JSX-`map`. Requires the Stage-0 `keyFn`
   decision. *Tests: runtime-unit (key contract), CSR conformance, E2E
