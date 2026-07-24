@@ -16,6 +16,11 @@ export const conformancePins: ConformancePins = {
   // JS-runtime target runs it, a DSL adapter surfaces BF021 + `/* @client */`.
   // See spec/callback-fidelity.md.
   'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
+  // A `.map()` body with a `const`/`let` preamble before its branches:
+  // a JS runtime folds it, a DSL adapter can't carry the loop-local into a
+  // conditional branch template, so it refuses with BF021 + `/* @client */`.
+  // See spec/callback-fidelity.md.
+  'map-preamble-branch-body': [{ code: 'BF021', severity: 'error' }],
   // `.fill(value)` mutates the receiver in place — no template lowering
   // on any DSL adapter; a JS-runtime target runs it, a DSL adapter
   // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.
