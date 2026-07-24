@@ -23,6 +23,13 @@ export const conformancePins: ConformancePins = {
   'find-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
   'some-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
   'every-typeof-predicate': [{ code: 'BF101', severity: 'error' }],
+  // Off-subset `.reduce()` / `.reduceRight()` body / `.flatMap()`
+  // projection (`typeof`) the compiler can't lower; a JS-runtime target
+  // runs it, a DSL adapter surfaces BF101 + `/* @client */`.
+  // See spec/callback-fidelity.md.
+  'reduce-typeof-body': [{ code: 'BF101', severity: 'error' }],
+  'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error' }],
+  'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error' }],
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the

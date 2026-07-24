@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 269,
+    "totalFixtures": 272,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2229,6 +2229,156 @@
           ]
         }
       },
+      "flatmap-typeof-projection": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "reduce-right-typeof-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "reduce-typeof-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -2456,6 +2606,18 @@
       "find-typeof-predicate": {
         "description": "Off-subset `.find()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/find-typeof-predicate.ts"
+      },
+      "flatmap-typeof-projection": {
+        "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
+      },
+      "reduce-right-typeof-body": {
+        "description": "Off-subset `.reduceRight()` body (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-right-typeof-body.ts"
+      },
+      "reduce-typeof-body": {
+        "description": "Off-subset `.reduce()` body (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
