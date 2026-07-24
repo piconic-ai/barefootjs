@@ -29,6 +29,14 @@ export { MapIfChain }
 `,
   props: { items: [{ id: '1', kind: 'a' }, { id: '2', kind: 'b' }, { id: '3', kind: 'z' }] },
   expectedHtml: `
-    <ul bf-s="test" bf="s5"><!--bf-loop:l0--><li bf-c="s3" data-key="1">A:<!--bf:s4-->1<!--/--></li><!--bf-cond-start:s3--><li bf-c="s1" data-key="2">B:<!--bf:s2-->2<!--/--></li><!--bf-cond-end:s3--><!--bf-cond-start:s3--><li bf-c="s1" data-key="3">C:<!--bf:s0-->3<!--/--></li><!--bf-cond-end:s3--><!--bf-/loop:l0--></ul>
+    <ul bf-s="test" bf="s5">
+      <li bf-c="s3" data-key="1">A:<!--bf:s4-->1<!--/--></li>
+      <!--bf-cond-start:s3-->
+      <li bf-c="s1" data-key="2">B:<!--bf:s2-->2<!--/--></li>
+      <!--bf-cond-end:s3-->
+      <!--bf-cond-start:s3-->
+      <li bf-c="s1" data-key="3">C:<!--bf:s0-->3<!--/--></li>
+      <!--bf-cond-end:s3-->
+    </ul>
   `,
 })
