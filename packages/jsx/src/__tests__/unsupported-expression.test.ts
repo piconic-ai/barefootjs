@@ -128,8 +128,11 @@ describe('Unsupported Expression Error (BF021)', () => {
   test('compileJSX surfaces IR-phase BF021 for a DSL target (no acceptsCallbackBody)', () => {
     // Model a DSL adapter: its template runtime can't run an off-subset
     // predicate verbatim, so the Phase-1 diagnostic must surface in the result.
+    // Real DSL adapters leave `acceptsCallbackBody` unset; the gate
+    // (`?.(kind) ?? false`) treats unset and a false-returning predicate
+    // identically, so override it to decline every callback kind.
     const dslAdapter = new TestAdapter()
-    ;(dslAdapter as { acceptsCallbackBody?: unknown }).acceptsCallbackBody = undefined
+    dslAdapter.acceptsCallbackBody = () => false
     const result = compileJSX(unsupportedSource, 'TodoList.tsx', { adapter: dslAdapter })
     const bf021 = result.errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
 
