@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 266,
+    "totalFixtures": 269,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -1896,6 +1896,56 @@
           ],
           "issues": [
             "https://github.com/piconic-ai/barefootjs/issues/2356"
+          ]
+        }
+      },
+      "every-typeof-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
           ]
         }
       },
@@ -2126,6 +2176,106 @@
           "kind": "refusal",
           "codes": [
             "BF021"
+          ]
+        }
+      },
+      "find-typeof-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        }
+      },
+      "some-typeof-predicate": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
           ]
         }
       },
@@ -2283,6 +2433,10 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
+      "every-typeof-predicate": {
+        "description": "Off-subset `.every()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate.ts"
+      },
       "fill-unsupported": {
         "description": "Off-subset array method `.fill()` — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/fill-unsupported.ts"
@@ -2298,6 +2452,14 @@
       "filter-typeof-predicate": {
         "description": "Off-subset filter predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-typeof-predicate.ts"
+      },
+      "find-typeof-predicate": {
+        "description": "Off-subset `.find()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/find-typeof-predicate.ts"
+      },
+      "some-typeof-predicate": {
+        "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
