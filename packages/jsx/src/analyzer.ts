@@ -2087,7 +2087,17 @@ export type JsxReturnNode = ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFra
  * `spec/callback-fidelity.md`) the `.map()` callback-body fold.
  */
 export interface MultiReturnJsxBranches {
-  branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }>
+  branches: Array<{
+    condition: ts.Expression
+    jsxReturn: JsxReturnNode | null
+    /**
+     * For a `switch` with fallthrough (`case 'a': case 'b': return X`), the
+     * additional case expressions that share this branch's return. The fold
+     * OR-joins them with `condition` into `disc === a || disc === b`. Only set
+     * on switch-sourced branches.
+     */
+    extraCaseConditions?: ts.Expression[]
+  }>
   fallback: JsxReturnNode | null
   switchDiscriminant?: ts.Expression
 }
@@ -2100,7 +2110,11 @@ export interface MultiReturnJsxBranches {
 export function extractMultiReturnJsxBranches(
   body: ts.Block
 ): MultiReturnJsxBranches | null {
-  const branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }> = []
+  const branches: Array<{
+    condition: ts.Expression
+    jsxReturn: JsxReturnNode | null
+    extraCaseConditions?: ts.Expression[]
+  }> = []
   let fallback: JsxReturnNode | null = null
 
   const stmts = body.statements
@@ -2164,20 +2178,45 @@ export function extractMultiReturnJsxBranches(
       const hasDefault = stmt.caseBlock.clauses.some(c => ts.isDefaultClause(c))
       if (!hasDefault) return null
 
+      // Case labels that fall through to the next clause's body — an empty
+      // `case 'a':` immediately before `case 'b': return X` — share that
+      // return. Accumulate their expressions and attach them to the branch of
+      // the clause that finally carries the body. Stage 2 of
+      // spec/callback-fidelity.md.
+      let pendingCases: ts.Expression[] = []
       for (const clause of stmt.caseBlock.clauses) {
+        if (ts.isCaseClause(clause) && clause.statements.length === 0) {
+          pendingCases.push(clause.expression)
+          continue
+        }
+
         const jsxReturn = findJsxReturnInCaseClause(clause)
         const nullReturn = findNullReturnInCaseClause(clause)
         if (!jsxReturn && !nullReturn) return null
+        // Reject clauses that carry extra statements around the return (a
+        // local `const`, an expression statement, …): folding drops them, the
+        // same branch-local-preamble gap as `isDirectReturnBlock`. A bare
+        // `break` is fine. (#2377 review.)
+        if (!caseClauseIsDirectReturn(clause)) return null
 
         if (ts.isCaseClause(clause)) {
           branches.push({
             condition: clause.expression,
             jsxReturn: jsxReturn ?? null,
+            extraCaseConditions: pendingCases.length > 0 ? pendingCases : undefined,
           })
+          pendingCases = []
         } else {
+          // `default`. A fallthrough INTO default (`case 'a': default:`) would
+          // need the accumulated cases to also hit the default body — an
+          // unusual shape; bail rather than guess.
+          if (pendingCases.length > 0) return null
           fallback = jsxReturn ?? null
         }
       }
+      // Trailing empty case labels with no following body (`case 'z':` last,
+      // no return anywhere after) — nothing to attach them to; bail.
+      if (pendingCases.length > 0) return null
 
       if (branches.length === 0) return null
       return { branches, fallback, switchDiscriminant: stmt.expression }
@@ -2197,7 +2236,10 @@ export function extractMultiReturnJsxBranches(
     }
 
     // Reject bodies with variable declarations — locals referenced in
-    // conditions or JSX would become undefined after inlining.
+    // conditions or JSX would become undefined after inlining. (A leading-const
+    // preamble fold was tried but silently diverged on DSL adapters, which
+    // can't carry a loop-local into a conditional branch template; deferred
+    // pending a per-backend refuse/render story. See spec/callback-fidelity.md.)
     if (ts.isVariableStatement(stmt)) return null
 
     // Any other statement type → unsupported pattern
@@ -2221,18 +2263,17 @@ function isDirectReturnBlock(node: ts.Statement): boolean {
     for (const stmt of node.statements) {
       if (ts.isReturnStatement(stmt)) {
         returnCount++
-      } else if (
-        ts.isIfStatement(stmt) ||
-        ts.isSwitchStatement(stmt) ||
-        ts.isForStatement(stmt) ||
-        ts.isForOfStatement(stmt) ||
-        ts.isForInStatement(stmt) ||
-        ts.isWhileStatement(stmt) ||
-        ts.isDoStatement(stmt) ||
-        ts.isTryStatement(stmt)
-      ) {
-        return false
+        continue
       }
+      // Any non-return statement — a local `const`/`let`, an expression
+      // statement, or nested control flow (if/switch/for/while/try) — means
+      // this is not a *direct* return block. Folding it into an
+      // `IRConditional` branch would silently DROP the statement: the neutral
+      // IR has no per-branch carrier for a local, so a branch-local
+      // `const x = …; return <A>{x}</A>` renders `x` undefined (ReferenceError
+      // at SSR/hydration). Bail so the caller falls back conservatively.
+      // (#2377 review; Stage 2 of spec/callback-fidelity.md.)
+      return false
     }
     return returnCount === 1
   }
@@ -2264,6 +2305,27 @@ function findJsxReturnInCaseClause(
     }
   }
   return null
+}
+
+/**
+ * True when a `switch` case/default clause contains exactly one `return` and
+ * nothing else that would be dropped by the fold (a trailing `break` is
+ * allowed). Rejects clauses with a local `const`/`let`, an expression
+ * statement, or nested control flow — those have no per-branch preamble
+ * carrier in the folded `IRConditional`. (#2377 review; Stage 2 of
+ * spec/callback-fidelity.md.)
+ */
+function caseClauseIsDirectReturn(clause: ts.CaseClause | ts.DefaultClause): boolean {
+  let returnCount = 0
+  for (const stmt of clause.statements) {
+    if (ts.isReturnStatement(stmt)) {
+      returnCount++
+      continue
+    }
+    if (ts.isBreakStatement(stmt)) continue
+    return false
+  }
+  return returnCount === 1
 }
 
 function findNullReturnInCaseClause(
