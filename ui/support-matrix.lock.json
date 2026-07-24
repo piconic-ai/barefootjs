@@ -14,16 +14,20 @@
   ],
   "kinds": {
     "array-literal": {
-      "total": 56,
+      "total": 57,
       "cells": {
         "hono": {
-          "pass": 56,
-          "total": 56
+          "pass": 57,
+          "total": 57
         },
         "blade": {
           "pass": 53,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -44,8 +48,12 @@
         },
         "erb": {
           "pass": 54,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -60,8 +68,12 @@
         },
         "go-template": {
           "pass": 53,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -82,8 +94,12 @@
         },
         "jinja": {
           "pass": 53,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -104,8 +120,12 @@
         },
         "minijinja": {
           "pass": 53,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -126,8 +146,12 @@
         },
         "mojolicious": {
           "pass": 54,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -142,8 +166,12 @@
         },
         "twig": {
           "pass": 53,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -164,8 +192,12 @@
         },
         "xslate": {
           "pass": 53,
-          "total": 56,
+          "total": 57,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -198,43 +230,91 @@
       }
     },
     "array-method": {
-      "total": 62,
+      "total": 63,
       "cells": {
         "hono": {
-          "pass": 62,
-          "total": 62
+          "pass": 63,
+          "total": 63
         },
         "blade": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "erb": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "twig": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 62,
-          "total": 62
+          "total": 63,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -666,11 +746,11 @@
       }
     },
     "call": {
-      "total": 166,
+      "total": 167,
       "cells": {
         "hono": {
-          "pass": 165,
-          "total": 166,
+          "pass": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -682,13 +762,17 @@
         },
         "blade": {
           "pass": 160,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -722,13 +806,17 @@
         },
         "erb": {
           "pass": 161,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -756,13 +844,17 @@
         },
         "go-template": {
           "pass": 160,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -796,13 +888,17 @@
         },
         "jinja": {
           "pass": 160,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -836,13 +932,17 @@
         },
         "minijinja": {
           "pass": 160,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -876,13 +976,17 @@
         },
         "mojolicious": {
           "pass": 161,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -910,13 +1014,17 @@
         },
         "twig": {
           "pass": 160,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -950,13 +1058,17 @@
         },
         "xslate": {
           "pass": 160,
-          "total": 166,
+          "total": 167,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1054,11 +1166,11 @@
       }
     },
     "identifier": {
-      "total": 246,
+      "total": 247,
       "cells": {
         "hono": {
-          "pass": 245,
-          "total": 246,
+          "pass": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1070,13 +1182,17 @@
         },
         "blade": {
           "pass": 240,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1110,13 +1226,17 @@
         },
         "erb": {
           "pass": 241,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -1144,13 +1264,17 @@
         },
         "go-template": {
           "pass": 240,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1184,13 +1308,17 @@
         },
         "jinja": {
           "pass": 240,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1224,13 +1352,17 @@
         },
         "minijinja": {
           "pass": 240,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1264,13 +1396,17 @@
         },
         "mojolicious": {
           "pass": 241,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -1298,13 +1434,17 @@
         },
         "twig": {
           "pass": 240,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1338,13 +1478,17 @@
         },
         "xslate": {
           "pass": 240,
-          "total": 246,
+          "total": 247,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1442,16 +1586,20 @@
       }
     },
     "literal": {
-      "total": 204,
+      "total": 205,
       "cells": {
         "hono": {
-          "pass": 204,
-          "total": 204
+          "pass": 205,
+          "total": 205
         },
         "blade": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1466,8 +1614,12 @@
         },
         "erb": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1482,8 +1634,12 @@
         },
         "go-template": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1498,8 +1654,12 @@
         },
         "jinja": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1514,8 +1674,12 @@
         },
         "minijinja": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1530,8 +1694,12 @@
         },
         "mojolicious": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1546,8 +1714,12 @@
         },
         "twig": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1562,8 +1734,12 @@
         },
         "xslate": {
           "pass": 202,
-          "total": 204,
+          "total": 205,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -1706,11 +1882,11 @@
       }
     },
     "member": {
-      "total": 125,
+      "total": 126,
       "cells": {
         "hono": {
-          "pass": 124,
-          "total": 125,
+          "pass": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1722,13 +1898,17 @@
         },
         "blade": {
           "pass": 119,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1762,13 +1942,17 @@
         },
         "erb": {
           "pass": 120,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -1796,13 +1980,17 @@
         },
         "go-template": {
           "pass": 119,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1836,13 +2024,17 @@
         },
         "jinja": {
           "pass": 119,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1876,13 +2068,17 @@
         },
         "minijinja": {
           "pass": 119,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1916,13 +2112,17 @@
         },
         "mojolicious": {
           "pass": 120,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-find-predicate",
@@ -1950,13 +2150,17 @@
         },
         "twig": {
           "pass": 119,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -1990,13 +2194,17 @@
         },
         "xslate": {
           "pass": 119,
-          "total": 125,
+          "total": 126,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
             },
             {
               "fixture": "filter-nested-callback-predicate",
@@ -2864,43 +3072,91 @@
       }
     },
     "array-method:join": {
-      "total": 36,
+      "total": 37,
       "cells": {
         "hono": {
-          "pass": 36,
-          "total": 36
+          "pass": 37,
+          "total": 37
         },
         "blade": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "erb": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "twig": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 36,
-          "total": 36
+          "total": 37,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -4618,43 +4874,91 @@
       }
     },
     "literal:number": {
-      "total": 86,
+      "total": 87,
       "cells": {
         "hono": {
-          "pass": 86,
-          "total": 86
+          "pass": 87,
+          "total": 87
         },
         "blade": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "erb": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "twig": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 86,
-          "total": 86
+          "total": 87,
+          "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -4670,16 +4974,20 @@
       }
     },
     "literal:string": {
-      "total": 147,
+      "total": 148,
       "cells": {
         "hono": {
-          "pass": 147,
-          "total": 147
+          "pass": 148,
+          "total": 148
         },
         "blade": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4694,8 +5002,12 @@
         },
         "erb": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4710,8 +5022,12 @@
         },
         "go-template": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4726,8 +5042,12 @@
         },
         "jinja": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4742,8 +5062,12 @@
         },
         "minijinja": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4758,8 +5082,12 @@
         },
         "mojolicious": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4774,8 +5102,12 @@
         },
         "twig": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
@@ -4790,8 +5122,12 @@
         },
         "xslate": {
           "pass": 145,
-          "total": 147,
+          "total": 148,
           "gaps": [
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
             {
               "fixture": "filter-typeof-predicate",
               "issues": []

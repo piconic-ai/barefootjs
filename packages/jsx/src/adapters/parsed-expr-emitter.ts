@@ -87,16 +87,11 @@ export type ArrayMethod =
  */
 export type SortMethod = 'sort' | 'toSorted'
 
-/**
- * `reduce` / `reduceRight` are handled by the dedicated `reduceMethod()`
- * dispatcher arm (#1448 Tier C) for the same reason sort is: they carry
- * a structured `ReduceOp` (the parsed arithmetic-fold spec) rather than
- * a `ParsedExpr[]` args list, so folding them into `arrayMethod()` would
- * force a spec-or-args runtime check at every call site. The method name
- * is threaded through so adapters can pick the fold direction (left for
- * `reduce`, right for `reduceRight`).
- */
-export type ReduceMethod = 'reduce' | 'reduceRight'
+// NB: there is no structured `reduce` / `reduceRight` emitter type here.
+// #2018 P5 removed the folded `ReduceOp` form — a `.reduce(fn, init)` now
+// arrives as a generic `call` whose reducer body + initial value serialize
+// to the runtime evaluator, so no dedicated `reduceMethod()` dispatcher (or
+// `ReduceMethod` type) exists.
 
 export type LiteralType = 'string' | 'number' | 'boolean' | 'null'
 

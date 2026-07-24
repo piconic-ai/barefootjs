@@ -364,25 +364,22 @@ export interface SupportResult {
 // evaluate JS at runtime via hono/jsx) so this set only constrains
 // the template-language adapters.
 const UNSUPPORTED_METHODS = new Set([
-  // Higher-order array methods. Seven of these (`filter`, `every`,
-  // `some`, `find`, `findIndex`, `findLast`, `findLastIndex`) are
-  // intercepted as `higher-order` IR before reaching this gate.
-  // `map` is intercepted as an IRLoop when its callback returns JSX,
-  // and as a `CALLBACK_METHODS` evaluator lowering (`map_eval`, #2073)
-  // when it returns a value — it stays listed here so the fall-throughs
-  // (a bare `arr.map` reference, a function-reference callback) still
-  // refuse loudly. `reduce` / `reduceRight` stay
-  // listed here so the shapes the Tier C catalogue can't lower still
-  // refuse loudly: the `convertNode` call branch intercepts a matching
-  // `.reduce(fn, init)` / `.reduceRight(fn, init)` into the structured
-  // `array-method` + `ReduceOp` form *before* this gate (returning
-  // early), so only the unlowerable fall-throughs (a `.reduce(fn)` with
-  // no initial value, or a bare method reference) reach the gate and
-  // refuse. A 2-arg call whose reducer/init shape is off-catalogue
-  // returns an explicit `unsupported` from the call branch with a richer
-  // message. The rest stay refused — see #1448 Tier C for the design
-  // questions. `forEach` carries a tailored reason (see
-  // `UNSUPPORTED_METHOD_REASONS`).
+  // Higher-order array methods. `filter`, `every`, `some`, `find`,
+  // `findIndex`, `findLast`, `findLastIndex`, `reduce`, `reduceRight`
+  // and `flatMap` *with an arrow-callback argument* are recognized by
+  // `asCallbackMethodCall` and lower via the runtime evaluator
+  // (`serializeParsedExpr`) in the `call` arm ABOVE this gate — an
+  // off-subset callback body refuses there with a "complex callback"
+  // reason, not here. They stay listed in this set so the shapes that
+  // recognition can't catch — a BARE method reference (`arr.filter`
+  // uncalled) or a function-reference callback (no arrow) — still refuse
+  // loudly. (`reduce` / `reduceRight` are NOT folded into a structured
+  // `array-method` / `ReduceOp` form: #2018 P5 leaves them as a generic
+  // `call` whose reducer body + initial value serialize to the
+  // evaluator.) `map` is intercepted as an IRLoop when its callback
+  // returns JSX, and as a `CALLBACK_METHODS` evaluator lowering
+  // (`map_eval`, #2073) when it returns a value. `forEach` carries a
+  // tailored reason (see `UNSUPPORTED_METHOD_REASONS`).
   // `flat` is no longer here — `.flat(depth?)` lowers via the
   // `array-method` IR (structured `FlatDepth`) + `bf_flat` (Go) /
   // `bf->flat` (Mojo). `flatMap` stays listed as a fallback: the
@@ -395,6 +392,17 @@ const UNSUPPORTED_METHODS = new Set([
   // `IRLoop` upstream. See #1448.
   'filter', 'map', 'reduce', 'reduceRight', 'every', 'some',
   'forEach', 'flatMap',
+  // `fill` has no template lowering on any DSL adapter (it mutates the
+  // receiver in place and returns it — no ParsedExpr / evaluator form).
+  // Before it was listed here `isSupported` reported it "supported" and
+  // the adapters emitted a raw `.fill(...)` method call with no build
+  // diagnostic — the same silent footgun the string methods below
+  // documented before they were gated: it only surfaced as a crash at
+  // template-render time. Listing it makes the build fail loudly with
+  // BF101, pointing users at the `/* @client */` escape (a JS-runtime
+  // adapter still runs it verbatim, since those skip `isSupported`).
+  // See spec/callback-fidelity.md.
+  'fill',
   // #1448 Tier A — Array methods. Each method PR adds the lowering
   // (typically a new `array-method` variant or runtime helper) and
   // removes its row here. See packages/adapter-tests/fixtures/methods/.
