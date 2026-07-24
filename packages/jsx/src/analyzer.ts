@@ -2100,6 +2100,17 @@ export interface MultiReturnJsxBranches {
   }>
   fallback: JsxReturnNode | null
   switchDiscriminant?: ts.Expression
+  /**
+   * Leading `const` / `let` declarations before the branches, collected only
+   * when the caller passes `allowPreamble` (the `.map()` body fold — Stage 2 of
+   * `spec/callback-fidelity.md`). A JS-runtime adapter folds them into a
+   * per-iteration preamble; a DSL adapter can't carry a loop-local into a
+   * conditional branch template, so the `.map()` lowering refuses (BF021 +
+   * `/* @client *\/`) rather than render wrong output. Empty for the
+   * helper-function inliner, which passes no `allowPreamble` and still bails on
+   * any variable statement.
+   */
+  preamble?: ts.VariableStatement[]
 }
 
 /**
@@ -2108,7 +2119,8 @@ export interface MultiReturnJsxBranches {
  * returns JSX or null. Returns null for unsupported patterns.
  */
 export function extractMultiReturnJsxBranches(
-  body: ts.Block
+  body: ts.Block,
+  allowPreamble = false,
 ): MultiReturnJsxBranches | null {
   const branches: Array<{
     condition: ts.Expression
@@ -2116,6 +2128,7 @@ export function extractMultiReturnJsxBranches(
     extraCaseConditions?: ts.Expression[]
   }> = []
   let fallback: JsxReturnNode | null = null
+  const preamble: ts.VariableStatement[] = []
 
   const stmts = body.statements
   for (let i = 0; i < stmts.length; i++) {
@@ -2152,7 +2165,7 @@ export function extractMultiReturnJsxBranches(
             return null
           }
           if (branches.length === 0) return null
-          return { branches, fallback }
+          return { branches, fallback, preamble }
         }
         break
       }
@@ -2219,7 +2232,7 @@ export function extractMultiReturnJsxBranches(
       if (pendingCases.length > 0) return null
 
       if (branches.length === 0) return null
-      return { branches, fallback, switchDiscriminant: stmt.expression }
+      return { branches, fallback, switchDiscriminant: stmt.expression, preamble }
     }
 
     // Trailing return <jsx> or return null — this is the fallback
@@ -2235,19 +2248,28 @@ export function extractMultiReturnJsxBranches(
       continue
     }
 
-    // Reject bodies with variable declarations — locals referenced in
-    // conditions or JSX would become undefined after inlining. (A leading-const
-    // preamble fold was tried but silently diverged on DSL adapters, which
-    // can't carry a loop-local into a conditional branch template; deferred
-    // pending a per-backend refuse/render story. See spec/callback-fidelity.md.)
-    if (ts.isVariableStatement(stmt)) return null
+    // Leading `const`/`let` before any branch — collected as a preamble when
+    // the caller allows it (the `.map()` body fold; Stage 2 of
+    // spec/callback-fidelity.md). The JS-runtime fold emits it once per
+    // iteration ahead of the conditional; a DSL target refuses (BF021 +
+    // `/* @client */`) since it can't carry the loop-local into a branch
+    // template. Without `allowPreamble`, or once branches have started, reject:
+    // the helper-function inliner has no place to emit it, and a mid-chain
+    // local referenced in a later condition/JSX would become undefined.
+    if (ts.isVariableStatement(stmt)) {
+      if (allowPreamble && branches.length === 0 && fallback === null) {
+        preamble.push(stmt)
+        continue
+      }
+      return null
+    }
 
     // Any other statement type → unsupported pattern
     return null
   }
 
   if (branches.length === 0) return null
-  return { branches, fallback }
+  return { branches, fallback, preamble }
 }
 
 /**

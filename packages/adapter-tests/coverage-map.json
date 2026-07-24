@@ -2535,6 +2535,19 @@
         "text"
       ]
     },
+    "map-preamble-branch-body": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "map-switch-fallthrough-body": {
       "kinds": [
         "binary",
@@ -4416,11 +4429,11 @@
     "binary": 75,
     "call": 173,
     "conditional": 20,
-    "identifier": 255,
+    "identifier": 256,
     "index-access": 12,
     "literal": 213,
     "logical": 42,
-    "member": 134,
+    "member": 135,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,

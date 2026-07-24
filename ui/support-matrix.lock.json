@@ -1886,11 +1886,11 @@
       }
     },
     "identifier": {
-      "total": 255,
+      "total": 256,
       "cells": {
         "hono": {
-          "pass": 254,
-          "total": 255,
+          "pass": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1902,7 +1902,7 @@
         },
         "blade": {
           "pass": 242,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1940,6 +1940,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -1970,7 +1974,7 @@
         },
         "erb": {
           "pass": 243,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2002,6 +2006,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2032,7 +2040,7 @@
         },
         "go-template": {
           "pass": 242,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2070,6 +2078,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2100,7 +2112,7 @@
         },
         "jinja": {
           "pass": 242,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2138,6 +2150,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2168,7 +2184,7 @@
         },
         "minijinja": {
           "pass": 242,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2206,6 +2222,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2236,7 +2256,7 @@
         },
         "mojolicious": {
           "pass": 243,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2268,6 +2288,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2298,7 +2322,7 @@
         },
         "twig": {
           "pass": 242,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2336,6 +2360,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2366,7 +2394,7 @@
         },
         "xslate": {
           "pass": 242,
-          "total": 255,
+          "total": 256,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2404,6 +2432,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -2986,11 +3018,11 @@
       }
     },
     "member": {
-      "total": 134,
+      "total": 135,
       "cells": {
         "hono": {
-          "pass": 133,
-          "total": 134,
+          "pass": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3002,7 +3034,7 @@
         },
         "blade": {
           "pass": 121,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3040,6 +3072,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3070,7 +3106,7 @@
         },
         "erb": {
           "pass": 122,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3102,6 +3138,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3132,7 +3172,7 @@
         },
         "go-template": {
           "pass": 121,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3170,6 +3210,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3200,7 +3244,7 @@
         },
         "jinja": {
           "pass": 121,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3238,6 +3282,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3268,7 +3316,7 @@
         },
         "minijinja": {
           "pass": 121,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3306,6 +3354,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3336,7 +3388,7 @@
         },
         "mojolicious": {
           "pass": 122,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3368,6 +3420,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3398,7 +3454,7 @@
         },
         "twig": {
           "pass": 121,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3436,6 +3492,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
@@ -3466,7 +3526,7 @@
         },
         "xslate": {
           "pass": 121,
-          "total": 134,
+          "total": 135,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3504,6 +3564,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-preamble-branch-body",
               "issues": []
             },
             {
