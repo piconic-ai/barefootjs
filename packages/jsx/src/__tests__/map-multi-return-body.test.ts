@@ -1,9 +1,10 @@
 /**
  * Stage 2 of spec/callback-fidelity.md — folding a `.map()` callback whose
- * body is an if/else-if chain or `switch` (optionally preceded by a
- * `const`/`let` preamble) into a nested `IRConditional`, instead of the prior
- * silent verbatim leak. Also pins the conservative bail for shapes the fold
- * can't yet carry (branch-local locals), so nothing is dropped silently.
+ * body is an if/else-if chain or `switch` (including fallthrough case labels)
+ * into a nested `IRConditional`, instead of the prior silent verbatim leak.
+ * Also pins the conservative bail for shapes the fold can't carry — a
+ * branch-local local, or a leading-`const` preamble (deferred; a following PR
+ * adds an adapter-gated preamble fold) — so nothing is dropped silently.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -92,6 +93,14 @@ describe('.map() multi-return body fold (Stage 2)', () => {
 
     test('a switch case with an extra statement bails', () => {
       const r = extract(`{ switch (it.kind) { case 'a': { const y = it.id; return <b>{y}</b> } default: return <span>D</span> } }`)
+      expect(r).toBeNull()
+    })
+
+    test('a switch case with a break before the return bails (return unreachable)', () => {
+      // `case 'a': break; return <A/>` — the break makes the return
+      // unreachable at runtime (the case exits to undefined), so it must not
+      // fold as if it rendered <A/>. (#2378 review.)
+      const r = extract(`{ switch (it.kind) { case 'a': break; return <b>A</b>; default: return <span>D</span> } }`)
       expect(r).toBeNull()
     })
 

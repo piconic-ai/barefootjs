@@ -2317,12 +2317,22 @@ function findJsxReturnInCaseClause(
  */
 function caseClauseIsDirectReturn(clause: ts.CaseClause | ts.DefaultClause): boolean {
   let returnCount = 0
+  let seenReturn = false
   for (const stmt of clause.statements) {
     if (ts.isReturnStatement(stmt)) {
       returnCount++
+      seenReturn = true
       continue
     }
-    if (ts.isBreakStatement(stmt)) continue
+    if (ts.isBreakStatement(stmt)) {
+      // A `break` BEFORE the return makes the return unreachable — at runtime
+      // the case exits and the callback falls through to `undefined`, so
+      // folding it as if it returned JSX would render the wrong branch. Only a
+      // trailing break (after the return; dead but harmless) is allowed.
+      // (#2378 review.)
+      if (!seenReturn) return false
+      continue
+    }
     return false
   }
   return returnCount === 1
