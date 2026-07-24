@@ -2079,16 +2079,27 @@ function extractSingleJsxReturn(
   return jsxReturn
 }
 
-type JsxReturnNode = ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment
+export type JsxReturnNode = ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment
+
+/**
+ * The branch structure extracted from a multi-return JSX body — an if/else-if
+ * chain or a `switch`. Shared by the helper-function fold and (Stage 2 of
+ * `spec/callback-fidelity.md`) the `.map()` callback-body fold.
+ */
+export interface MultiReturnJsxBranches {
+  branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }>
+  fallback: JsxReturnNode | null
+  switchDiscriminant?: ts.Expression
+}
 
 /**
  * Extract conditional branches from a multi-return JSX helper function body.
  * Supports if/else if chains and switch statements where every branch
  * returns JSX or null. Returns null for unsupported patterns.
  */
-function extractMultiReturnJsxBranches(
+export function extractMultiReturnJsxBranches(
   body: ts.Block
-): { branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }>; fallback: JsxReturnNode | null; switchDiscriminant?: ts.Expression } | null {
+): MultiReturnJsxBranches | null {
   const branches: Array<{ condition: ts.Expression; jsxReturn: JsxReturnNode | null }> = []
   let fallback: JsxReturnNode | null = null
 
