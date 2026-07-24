@@ -2114,6 +2114,27 @@ export interface MultiReturnJsxBranches {
 }
 
 /**
+ * A leading-`const` preamble is only safe to fold when every branch (and the
+ * fallback) returns real JSX. If any returns `null`, the loop item can be null
+ * and the compiler routes the loop through the anchored conditional-item
+ * runtime (`mapArrayAnchored`), where a preamble local computed before the
+ * conditional interacts badly with the per-item hydration anchor — observed as
+ * a keyed-reactivity break on a real component (the pivot-table demo, whose
+ * `.map()` body is `const f = …; if (!f) return null; return <div key={fid}>`
+ * and which carries a workaround note about exactly this compiler behavior).
+ * When unsafe, bail so the body falls through to the single-return path
+ * unchanged. Stage 2 of `spec/callback-fidelity.md`.
+ */
+function preambleUnsafe(
+  preamble: ts.VariableStatement[],
+  branches: Array<{ jsxReturn: JsxReturnNode | null }>,
+  fallback: JsxReturnNode | null,
+): boolean {
+  if (preamble.length === 0) return false
+  return fallback === null || branches.some(b => b.jsxReturn === null)
+}
+
+/**
  * Extract conditional branches from a multi-return JSX helper function body.
  * Supports if/else if chains and switch statements where every branch
  * returns JSX or null. Returns null for unsupported patterns.
@@ -2165,6 +2186,7 @@ export function extractMultiReturnJsxBranches(
             return null
           }
           if (branches.length === 0) return null
+          if (preambleUnsafe(preamble, branches, fallback)) return null
           return { branches, fallback, preamble }
         }
         break
@@ -2232,6 +2254,7 @@ export function extractMultiReturnJsxBranches(
       if (pendingCases.length > 0) return null
 
       if (branches.length === 0) return null
+      if (preambleUnsafe(preamble, branches, fallback)) return null
       return { branches, fallback, switchDiscriminant: stmt.expression, preamble }
     }
 
@@ -2269,6 +2292,7 @@ export function extractMultiReturnJsxBranches(
   }
 
   if (branches.length === 0) return null
+  if (preambleUnsafe(preamble, branches, fallback)) return null
   return { branches, fallback, preamble }
 }
 

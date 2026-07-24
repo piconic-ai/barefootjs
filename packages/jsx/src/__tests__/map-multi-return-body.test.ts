@@ -104,6 +104,15 @@ describe('.map() multi-return body fold (Stage 2)', () => {
       expect(r).not.toBeNull()
       expect(r!.preamble?.length).toBe(1)
     })
+
+    test('a preamble with a null-returning branch bails (mapArrayAnchored hazard)', () => {
+      // `const f = …; if (!f) return null; return <div key={fid}>…</div>` — the
+      // null early-return routes the loop through the anchored conditional-item
+      // runtime, where a preamble local breaks keyed reactivity (the
+      // pivot-table demo shape). Fold only the all-JSX preamble case.
+      const body = `{ const f = it.field; if (!f) return null; return <div key={it.id}>{f}</div> }`
+      expect(extract(body, true)).toBeNull()
+    })
   })
 
   describe('leading-const preamble is adapter-gated (JS folds, DSL refuses)', () => {
