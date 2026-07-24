@@ -2163,22 +2163,31 @@ function foldMultiReturnBranches(
   for (let i = info.branches.length - 1; i >= 0; i--) {
     const branch = info.branches[i]
 
+    // A switch fallthrough (`case 'a': case 'b': return X`) yields one branch
+    // covering several case labels — OR-join them into `disc === a ||
+    // disc === b`. A plain if-branch or a single case is just `[condition]`.
+    const caseConds = info.switchDiscriminant
+      ? [branch.condition, ...(branch.extraCaseConditions ?? [])]
+      : [branch.condition]
+
     // Build condition text (`getText` applies param substitution when the
     // helper-function inliner supplies a substituting variant).
     let conditionText: string
     if (info.switchDiscriminant) {
       const discText = getText(info.switchDiscriminant)
-      const caseText = getText(branch.condition)
-      conditionText = `${discText} === ${caseText}`
+      // Parenthesize both operands so a low-precedence case expression
+      // (`case a ?? b:`, a ternary, …) keeps strict-equality semantics rather
+      // than binding as `(disc === a) ?? b`. (#2377 review.)
+      conditionText = caseConds.map(c => `(${discText}) === (${getText(c)})`).join(' || ')
     } else {
       conditionText = getText(branch.condition)
     }
 
-    // For switch-sourced conditions, merge freeRefs/reactivity from
-    // both the discriminant and case expression so prop rewrites and
-    // reactivity detection cover the full `disc === case` condition.
+    // For switch-sourced conditions, merge freeRefs/reactivity from the
+    // discriminant and every case expression so prop rewrites and reactivity
+    // detection cover the full `disc === a || disc === b` condition.
     const env = makeBindingEnv(ctx)
-    const caseFreeRefs = resolveFreeRefs(branch.condition, env)
+    const caseFreeRefs = caseConds.flatMap(c => resolveFreeRefs(c, env))
     const discFreeRefs = info.switchDiscriminant
       ? resolveFreeRefs(info.switchDiscriminant, env)
       : []
@@ -2191,9 +2200,9 @@ function foldMultiReturnBranches(
     const reactive = isReactiveExpression(conditionText, ctx, branch.condition)
       || isReactiveOrigin(conditionOrigin)
     const loopParamReactive = !reactive && referencesLoopParam(conditionText, ctx)
-    const callsReactive = exprCallsReactiveGetters(branch.condition, ctx)
+    const callsReactive = caseConds.some(c => exprCallsReactiveGetters(c, ctx))
       || (info.switchDiscriminant ? exprCallsReactiveGetters(info.switchDiscriminant, ctx) : false)
-    const hasCalls = exprHasFunctionCalls(branch.condition)
+    const hasCalls = caseConds.some(c => exprHasFunctionCalls(c))
       || (info.switchDiscriminant ? exprHasFunctionCalls(info.switchDiscriminant) : false)
     const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
     const slotId = needsSlot ? generateSlotId(ctx) : null
@@ -2202,18 +2211,18 @@ function foldMultiReturnBranches(
       ? (transformNode(branch.jsxReturn, ctx) ?? nullExpr)
       : nullExpr
 
-    // For switch conditions, build templateCondition from both parts
+    // For switch conditions, build templateCondition from the discriminant and
+    // every (prop-rewritten) case label, OR-joined for fallthrough.
     let templateCondition: string | undefined
     if (info.switchDiscriminant) {
       const discRewritten = rewriteBarePropRefs(
         getText(info.switchDiscriminant), info.switchDiscriminant, ctx
       )
-      const caseRewritten = rewriteBarePropRefs(
-        getText(branch.condition), branch.condition, ctx
-      )
       const discPart = discRewritten ?? getText(info.switchDiscriminant)
-      const casePart = caseRewritten ?? getText(branch.condition)
-      templateCondition = `${discPart} === ${casePart}`
+      templateCondition = caseConds.map(c => {
+        const casePart = rewriteBarePropRefs(getText(c), c, ctx) ?? getText(c)
+        return `(${discPart}) === (${casePart})`
+      }).join(' || ')
     } else {
       templateCondition = rewriteBarePropRefs(conditionText, branch.condition, ctx)
     }
@@ -4073,15 +4082,15 @@ function transformMapCall(
       // flatMap arrow with array literal: items.flatMap(item => [<A/>, <B/>])
       children = transformArrayLiteralChildren(body, ctx)
     } else if (ts.isBlock(body)) {
-      // Multi-return JSX block body (if/else-if chain or switch) — fold to a
-      // nested IRConditional so the loop renders each branch's compiled
-      // template. Tried BEFORE the single-return path: otherwise the trailing
-      // `return <fallback/>` would claim the single-return arm and the leading
-      // `if (...) return <A/>` would leak verbatim into the map preamble (the
-      // silent-verbatim-leak this fixes). Stage 2 of spec/callback-fidelity.md.
-      // Preamble-const / switch-fallthrough / nested-loop shapes are not yet
-      // extracted (extractMultiReturnJsxBranches returns null) and fall through
-      // to the single-return path below.
+      // Multi-return JSX block body (if/else-if chain or a `switch`, including
+      // fallthrough case labels) — fold to a nested IRConditional so the loop
+      // renders each branch's compiled template. Tried BEFORE the single-return
+      // path: otherwise the trailing `return <fallback/>` would claim the
+      // single-return arm and the leading `if (...) return <A/>` would leak
+      // verbatim into the map preamble (the silent-verbatim-leak this fixes).
+      // Stage 2 of spec/callback-fidelity.md. Bodies with a preamble/branch-local
+      // `const`, or a statement-level nested loop, are not folded
+      // (extractMultiReturnJsxBranches returns null) and fall through below.
       const multiReturn = method !== 'flatMap' ? extractMultiReturnJsxBranches(body) : null
       if (multiReturn && multiReturn.branches.length > 0) {
         const loc = getSourceLocation(body, ctx.sourceFile, ctx.filePath)
