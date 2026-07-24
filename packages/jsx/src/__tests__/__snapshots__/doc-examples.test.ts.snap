@@ -5548,3 +5548,97 @@ export function initCounter(__scope, _p = {}) {
 hydrate('Counter', { init: initCounter, template: (_p) => \`<button bf="s1"> Count: <!--bf:s0-->\${escapeText((0))}<!--/--></button>\` })
 export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __bfKey) }"
 `;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L188 — ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator 1`] = `
+"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+
+export function initTodoItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.todo)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('TodoItem__b3c36eee', { init: initTodoItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.todo))}<!--/--></li>\` })
+export function TodoItem(_p, __bfKey) { return createComponent('TodoItem__b3c36eee', _p, __bfKey) }
+export function initItem(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $t(__scope, 's0')
+
+  let __anchor_s0 = _s0
+  createEffect(() => {
+    const __val = String(_p.item)
+    __anchor_s0 = __bfText(__anchor_s0, __val)
+  })
+
+}
+
+hydrate('Item__b3c36eee', { init: initItem, template: (_p) => \`<li bf="s1"><!--bf:s0-->\${escapeText(String(_p.item))}<!--/--></li>\` })
+export function Item(_p, __bfKey) { return createComponent('Item__b3c36eee', _p, __bfKey) }
+function initDashboard() {}
+
+hydrate('Dashboard__b3c36eee', { init: initDashboard, template: (_p) => \`<div>D</div>\` })
+export function Dashboard(_p, __bfKey) { return createComponent('Dashboard__b3c36eee', _p, __bfKey) }
+export function initExample(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const children = _p.children
+  const [count, setCount] = createSignal(0)
+  const [isLoggedIn] = createSignal(false)
+  const [todos] = createSignal([])
+  const [items] = createSignal([])
+  const [filter] = createSignal('all')
+  const [accepted] = createSignal(false)
+  const [text, setText] = createSignal('')
+
+  const [_s1] = $(__scope, 's1')
+
+  mapArray(() => items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    if (__existing) { initChild('Item__b3c36eee', __existing, { get item() { return item() } }); return __existing }
+    return createComponent('Item__b3c36eee', { get item() { return item() } }, item().id)
+  }, 'l0')
+
+}
+
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-loop:l0-->\${([]).sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map((item) => \`\${renderChild('Item__b3c36eee', {item: item}, item.id)}\`).join('')}<!--bf-/loop:l0--></div>\` })
+export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
+`;
+
+exports[`docs/core/rendering/jsx-compatibility.md doc-examples L205 — ❌ BF021 on Go/Mojo — \`byPrice\` is imported, not declared in this file 1`] = `
+"import { $, $t, createComponent, createEffect, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+import { byPrice } from './comparators'
+
+
+export function initSortedList(__scope, _p = {}) {
+  if (!__scope) return
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const items = _p.items
+
+  const [_s1] = $(__scope, 's1')
+
+  const __tpl_l0 = document.createElement('template')
+  __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
+  mapArray(() => items.sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
+    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
+    const __p = __existing ? null : [__el.firstChild]
+    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
+    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
+    return __el
+  }, 'l0')
+
+}
+
+hydrate('SortedList__b3c36eee', { init: initSortedList, template: (_p) => \`<ul bf="s1"><!--bf-loop:l0-->\${_p.items.sort(byPrice).map((item) => \`<li data-key="\${item.id}"><!--bf:s0-->\${escapeText(item.name)}<!--/--></li>\`).join('')}<!--bf-/loop:l0--></ul>\` })
+export function SortedList(_p, __bfKey) { return createComponent('SortedList__b3c36eee', _p, __bfKey) }"
+`;
