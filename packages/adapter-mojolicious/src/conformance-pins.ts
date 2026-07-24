@@ -9,6 +9,10 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
+  // Off-subset filter predicate (`typeof`) the compiler can't lower; a
+  // JS-runtime target runs it, a DSL adapter surfaces BF021 + `/* @client */`.
+  // See spec/callback-fidelity.md.
+  'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the

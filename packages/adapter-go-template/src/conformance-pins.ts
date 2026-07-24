@@ -11,6 +11,10 @@
 import type { ConformancePins } from '@barefootjs/jsx'
 
 export const conformancePins: ConformancePins = {
+  // Off-subset filter predicate (`typeof`) the compiler can't lower; a
+  // JS-runtime target runs it, a DSL adapter surfaces BF021 + `/* @client */`.
+  // See spec/callback-fidelity.md.
+  'filter-typeof-predicate': [{ code: 'BF021', severity: 'error' }],
   // `style-object-dynamic` / `style-3-signals` no longer pinned — a
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic
   // values interpolated (`background-color:{{.Color}};padding:8px`) via

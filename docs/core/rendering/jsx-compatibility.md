@@ -108,11 +108,11 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 | `.reduce()`, `.forEach()`, `.flatMap()` | works | **BF101** |
 | Nested `.filter()` / `.map()` in a filter predicate (`x => x.tags.filter(...).length > 0`) | works | works |
 | Nested `.some()` / `.find()` / `.reduce()` in a filter predicate | works | **BF101** |
-| Sort comparator that's a multi-statement block body or `localeCompare(b, locale, opts)` | **BF021** (all adapters) | **BF021** |
-| Sort comparator that's a function reference to an imported/prop identifier, or an alias chain (`const c2 = c1`) | **BF021** (all adapters) | **BF021** |
-| `typeof` in a filter predicate | **BF021** (all adapters) | **BF021** |
+| Sort comparator that's a multi-statement block body or `localeCompare(b, locale, opts)` | works (runs as JS) | **BF021** |
+| Sort comparator that's a function reference to an imported/prop identifier, or an alias chain (`const c2 = c1`) | works (runs as JS) | **BF021** |
+| `typeof` in a filter predicate | works (runs as JS) | **BF021** |
 
-`BF021` is raised at the IR layer and applies to every adapter. `BF101` is raised by adapters that can't lower the expression to their template language. Either way, add [`/* @client */`](./client-directive.md) to opt into client-only evaluation and suppress the error.
+An off-subset `filter` predicate or `sort` comparator (`typeof`, an imperative block body, an imported/aliased comparator reference, …) is raised as `BF021` only on non-JS template adapters — a JS-runtime adapter (Hono, CSR) executes the callback body verbatim at SSR, so it compiles there. `BF101` is raised by adapters that can't lower the expression to their template language. Either way, add [`/* @client */`](./client-directive.md) on a DSL backend to defer the shape to client-only evaluation and suppress the error.
 
 ### Patterns that error on Go / Mojo
 
@@ -165,9 +165,9 @@ A nested `.some()` / `.find()` / `.reduce()` still has no faithful Go/Mojo lower
 {items().filter(x => x.done)}
 ```
 
-### Patterns that error on all adapters
+### Sort comparators that error on Go / Mojo
 
-**Unsupported sort comparators** (imperative block bodies, unresolved function references):
+**Unsupported sort comparators** (imperative block bodies, unresolved function references) — a JS-runtime adapter (Hono, CSR) runs any of these verbatim; only non-JS template backends refuse them:
 
 A value-producing block body normalizes to an expression — pure `const`
 bindings inline (let-inline) and a value-producing `if` / early `return`
@@ -181,10 +181,10 @@ becomes a ternary — so it lowers on all adapters just like the expression form
 ```
 
 Only a genuinely imperative comparator — one that re-assigns a local, loops, or
-`break`s — has no value-position lowering and errors:
+`break`s — has no value-position lowering and errors on Go / Mojo:
 
 ```tsx
-// ❌ BF021 (all adapters)
+// ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator
 {items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map(item => (
   <Item key={item.id} item={item} />
 ))}
@@ -201,7 +201,7 @@ compiles (see the "Sort comparators" section above); an **imported** or
 only one binding, so it can't see through a re-export or `const c2 = c1`:
 
 ```tsx
-// ❌ BF021 — `byPrice` is imported, not declared in this file
+// ❌ BF021 on Go/Mojo — `byPrice` is imported, not declared in this file
 import { byPrice } from './comparators'
 function SortedList({ items }: { items: Item[] }) {
   return <ul>{items.sort(byPrice).map((item) => <li key={item.id}>{item.name}</li>)}</ul>

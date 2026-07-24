@@ -12,6 +12,7 @@ import type {
 } from '../types.ts'
 import { BF_SCOPE, BF_SLOT, BF_COND } from '@barefootjs/shared'
 import { BaseAdapter } from './interface.ts'
+import type { CallbackBodyAcceptor } from './interface.ts'
 import { ENV_SIGNAL_CLIENT_FACTORY } from './env-signal.ts'
 import { formatParamWithType, findReachableNames } from '../module-exports.ts'
 
@@ -25,6 +26,15 @@ export abstract class JsxAdapter extends BaseAdapter {
 
   /** Subclasses define whether to use typed values for type-safe output */
   protected abstract jsxConfig: JsxAdapterConfig
+
+  /**
+   * JS-runtime adapters (Hono SSR, CSR, the test adapter) render an off-subset
+   * callback body by running it verbatim, so the compiler need not raise a
+   * universal Phase-1 diagnostic for a `filter`/`sort`/… body it can't lower.
+   * DSL adapters extend `BaseAdapter` and leave this undefined.
+   * See `spec/callback-fidelity.md`.
+   */
+  acceptsCallbackBody: CallbackBodyAcceptor = () => true
 
   // ===========================================================================
   // Import Formatting

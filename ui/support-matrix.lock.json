@@ -14,15 +14,15 @@
   ],
   "kinds": {
     "array-literal": {
-      "total": 54,
+      "total": 56,
       "cells": {
         "hono": {
-          "pass": 54,
-          "total": 54
+          "pass": 56,
+          "total": 56
         },
         "blade": {
-          "pass": 52,
-          "total": 54,
+          "pass": 53,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -35,24 +35,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 53,
-          "total": 54,
+          "pass": 54,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 52,
-          "total": 54,
+          "pass": 53,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -65,12 +73,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 52,
-          "total": 54,
+          "pass": 53,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -83,12 +95,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 52,
-          "total": 54,
+          "pass": 53,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -101,24 +117,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 53,
-          "total": 54,
+          "pass": 54,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 52,
-          "total": 54,
+          "pass": 53,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -131,12 +155,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 52,
-          "total": 54,
+          "pass": 53,
+          "total": 56,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -149,6 +177,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         }
@@ -218,15 +250,15 @@
       }
     },
     "arrow": {
-      "total": 55,
+      "total": 57,
       "cells": {
         "hono": {
-          "pass": 55,
-          "total": 55
+          "pass": 57,
+          "total": 57
         },
         "blade": {
-          "pass": 53,
-          "total": 55,
+          "pass": 54,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -239,24 +271,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 54,
-          "total": 55,
+          "pass": 55,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 53,
-          "total": 55,
+          "pass": 54,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -269,12 +309,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 53,
-          "total": 55,
+          "pass": 54,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -287,12 +331,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 53,
-          "total": 55,
+          "pass": 54,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -305,24 +353,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 54,
-          "total": 55,
+          "pass": 55,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 53,
-          "total": 55,
+          "pass": 54,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -335,12 +391,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 53,
-          "total": 55,
+          "pass": 54,
+          "total": 57,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -353,6 +413,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         }
@@ -370,15 +434,15 @@
       }
     },
     "binary": {
-      "total": 67,
+      "total": 69,
       "cells": {
         "hono": {
-          "pass": 67,
-          "total": 67
+          "pass": 69,
+          "total": 69
         },
         "blade": {
-          "pass": 64,
-          "total": 67,
+          "pass": 65,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -391,6 +455,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -401,14 +469,18 @@
           ]
         },
         "erb": {
-          "pass": 65,
-          "total": 67,
+          "pass": 66,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -419,8 +491,8 @@
           ]
         },
         "go-template": {
-          "pass": 64,
-          "total": 67,
+          "pass": 65,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -433,6 +505,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -443,8 +519,8 @@
           ]
         },
         "jinja": {
-          "pass": 64,
-          "total": 67,
+          "pass": 65,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -457,6 +533,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -467,8 +547,8 @@
           ]
         },
         "minijinja": {
-          "pass": 64,
-          "total": 67,
+          "pass": 65,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -481,6 +561,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -491,14 +575,18 @@
           ]
         },
         "mojolicious": {
-          "pass": 65,
-          "total": 67,
+          "pass": 66,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -509,8 +597,8 @@
           ]
         },
         "twig": {
-          "pass": 64,
-          "total": 67,
+          "pass": 65,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -523,6 +611,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -533,8 +625,8 @@
           ]
         },
         "xslate": {
-          "pass": 64,
-          "total": 67,
+          "pass": 65,
+          "total": 69,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -547,6 +639,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props-with-component",
@@ -570,11 +666,11 @@
       }
     },
     "call": {
-      "total": 164,
+      "total": 166,
       "cells": {
         "hono": {
-          "pass": 163,
-          "total": 164,
+          "pass": 165,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -585,8 +681,8 @@
           ]
         },
         "blade": {
-          "pass": 159,
-          "total": 164,
+          "pass": 160,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -605,6 +701,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -621,8 +721,8 @@
           ]
         },
         "erb": {
-          "pass": 160,
-          "total": 164,
+          "pass": 161,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -635,6 +735,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -651,8 +755,8 @@
           ]
         },
         "go-template": {
-          "pass": 159,
-          "total": 164,
+          "pass": 160,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -671,6 +775,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -687,8 +795,8 @@
           ]
         },
         "jinja": {
-          "pass": 159,
-          "total": 164,
+          "pass": 160,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -707,6 +815,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -723,8 +835,8 @@
           ]
         },
         "minijinja": {
-          "pass": 159,
-          "total": 164,
+          "pass": 160,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -743,6 +855,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -759,8 +875,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 160,
-          "total": 164,
+          "pass": 161,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -773,6 +889,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -789,8 +909,8 @@
           ]
         },
         "twig": {
-          "pass": 159,
-          "total": 164,
+          "pass": 160,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -809,6 +929,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -825,8 +949,8 @@
           ]
         },
         "xslate": {
-          "pass": 159,
-          "total": 164,
+          "pass": 160,
+          "total": 166,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -845,6 +969,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -926,11 +1054,11 @@
       }
     },
     "identifier": {
-      "total": 244,
+      "total": 246,
       "cells": {
         "hono": {
-          "pass": 243,
-          "total": 244,
+          "pass": 245,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -941,8 +1069,8 @@
           ]
         },
         "blade": {
-          "pass": 239,
-          "total": 244,
+          "pass": 240,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -961,6 +1089,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -977,8 +1109,8 @@
           ]
         },
         "erb": {
-          "pass": 240,
-          "total": 244,
+          "pass": 241,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -991,6 +1123,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1007,8 +1143,8 @@
           ]
         },
         "go-template": {
-          "pass": 239,
-          "total": 244,
+          "pass": 240,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1027,6 +1163,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1043,8 +1183,8 @@
           ]
         },
         "jinja": {
-          "pass": 239,
-          "total": 244,
+          "pass": 240,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1063,6 +1203,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1079,8 +1223,8 @@
           ]
         },
         "minijinja": {
-          "pass": 239,
-          "total": 244,
+          "pass": 240,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1099,6 +1243,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1115,8 +1263,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 240,
-          "total": 244,
+          "pass": 241,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1129,6 +1277,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1145,8 +1297,8 @@
           ]
         },
         "twig": {
-          "pass": 239,
-          "total": 244,
+          "pass": 240,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1165,6 +1317,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1181,8 +1337,8 @@
           ]
         },
         "xslate": {
-          "pass": 239,
-          "total": 244,
+          "pass": 240,
+          "total": 246,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1201,6 +1357,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1282,16 +1442,20 @@
       }
     },
     "literal": {
-      "total": 202,
+      "total": 204,
       "cells": {
         "hono": {
-          "pass": 202,
-          "total": 202
+          "pass": 204,
+          "total": 204
         },
         "blade": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1301,9 +1465,13 @@
           ]
         },
         "erb": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1313,9 +1481,13 @@
           ]
         },
         "go-template": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1325,9 +1497,13 @@
           ]
         },
         "jinja": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1337,9 +1513,13 @@
           ]
         },
         "minijinja": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1349,9 +1529,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1361,9 +1545,13 @@
           ]
         },
         "twig": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1373,9 +1561,13 @@
           ]
         },
         "xslate": {
-          "pass": 201,
-          "total": 202,
+          "pass": 202,
+          "total": 204,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -1514,11 +1706,11 @@
       }
     },
     "member": {
-      "total": 123,
+      "total": 125,
       "cells": {
         "hono": {
-          "pass": 122,
-          "total": 123,
+          "pass": 124,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1529,8 +1721,8 @@
           ]
         },
         "blade": {
-          "pass": 118,
-          "total": 123,
+          "pass": 119,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1549,6 +1741,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1565,8 +1761,8 @@
           ]
         },
         "erb": {
-          "pass": 119,
-          "total": 123,
+          "pass": 120,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1579,6 +1775,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1595,8 +1795,8 @@
           ]
         },
         "go-template": {
-          "pass": 118,
-          "total": 123,
+          "pass": 119,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1615,6 +1815,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1631,8 +1835,8 @@
           ]
         },
         "jinja": {
-          "pass": 118,
-          "total": 123,
+          "pass": 119,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1651,6 +1855,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1667,8 +1875,8 @@
           ]
         },
         "minijinja": {
-          "pass": 118,
-          "total": 123,
+          "pass": 119,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1687,6 +1895,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1703,8 +1915,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 119,
-          "total": 123,
+          "pass": 120,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1717,6 +1929,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1733,8 +1949,8 @@
           ]
         },
         "twig": {
-          "pass": 118,
-          "total": 123,
+          "pass": 119,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1753,6 +1969,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -1769,8 +1989,8 @@
           ]
         },
         "xslate": {
-          "pass": 118,
-          "total": 123,
+          "pass": 119,
+          "total": 125,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1789,6 +2009,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "static-array-from-props",
@@ -2131,16 +2355,20 @@
       }
     },
     "unsupported": {
-      "total": 21,
+      "total": 23,
       "cells": {
         "hono": {
-          "pass": 21,
-          "total": 21
+          "pass": 23,
+          "total": 23
         },
         "blade": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2156,9 +2384,13 @@
           ]
         },
         "erb": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2174,9 +2406,13 @@
           ]
         },
         "go-template": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2192,9 +2428,13 @@
           ]
         },
         "jinja": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2210,9 +2450,13 @@
           ]
         },
         "minijinja": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2228,9 +2472,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2246,9 +2494,13 @@
           ]
         },
         "twig": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -2264,9 +2516,13 @@
           ]
         },
         "xslate": {
-          "pass": 19,
-          "total": 21,
+          "pass": 20,
+          "total": 23,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props",
               "issues": [
@@ -3971,15 +4227,15 @@
       }
     },
     "binary:===": {
-      "total": 30,
+      "total": 32,
       "cells": {
         "hono": {
-          "pass": 30,
-          "total": 30
+          "pass": 32,
+          "total": 32
         },
         "blade": {
-          "pass": 28,
-          "total": 30,
+          "pass": 29,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -3992,24 +4248,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 29,
-          "total": 30,
+          "pass": 30,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 28,
-          "total": 30,
+          "pass": 29,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -4022,12 +4286,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 28,
-          "total": 30,
+          "pass": 29,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -4040,12 +4308,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 28,
-          "total": 30,
+          "pass": 29,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -4058,24 +4330,32 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 29,
-          "total": 30,
+          "pass": 30,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 28,
-          "total": 30,
+          "pass": 29,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -4088,12 +4368,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 28,
-          "total": 30,
+          "pass": 29,
+          "total": 32,
           "gaps": [
             {
               "fixture": "filter-nested-callback-predicate",
@@ -4106,6 +4390,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2320"
               ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
             }
           ]
         }
@@ -4382,16 +4670,20 @@
       }
     },
     "literal:string": {
-      "total": 145,
+      "total": 147,
       "cells": {
         "hono": {
-          "pass": 145,
-          "total": 145
+          "pass": 147,
+          "total": 147
         },
         "blade": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4401,9 +4693,13 @@
           ]
         },
         "erb": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4413,9 +4709,13 @@
           ]
         },
         "go-template": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4425,9 +4725,13 @@
           ]
         },
         "jinja": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4437,9 +4741,13 @@
           ]
         },
         "minijinja": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4449,9 +4757,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4461,9 +4773,13 @@
           ]
         },
         "twig": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -4473,9 +4789,13 @@
           ]
         },
         "xslate": {
-          "pass": 144,
-          "total": 145,
+          "pass": 145,
+          "total": 147,
           "gaps": [
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [

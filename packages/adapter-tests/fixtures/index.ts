@@ -117,6 +117,8 @@ import { fixture as mapWithIndex } from './map-with-index'
 import { fixture as filterSimple } from './filter-simple'
 import { fixture as filterNestedCallbackPredicate } from './filter-nested-callback-predicate'
 import { fixture as filterNestedCallbackPredicateClient } from './filter-nested-callback-predicate-client'
+import { fixture as filterTypeofPredicate } from './filter-typeof-predicate'
+import { fixture as filterTypeofPredicateClient } from './filter-typeof-predicate-client'
 import { fixture as filterNestedFindPredicate } from './filter-nested-find-predicate'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
@@ -472,6 +474,8 @@ export const jsxFixtures: JSXFixture[] = [
   filterSimple,
   filterNestedCallbackPredicate,
   filterNestedCallbackPredicateClient,
+  filterTypeofPredicate,
+  filterTypeofPredicateClient,
   filterNestedFindPredicate,
   sortSimple,
   filterSortChain,

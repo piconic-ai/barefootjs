@@ -1888,6 +1888,48 @@
         "text"
       ]
     },
+    "filter-typeof-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-typeof-predicate-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-wrapper-props-reachable": {
       "kinds": [
         "array-literal",
@@ -4202,21 +4244,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 54,
+    "array-literal": 56,
     "array-method": 62,
-    "arrow": 55,
-    "binary": 67,
-    "call": 164,
+    "arrow": 57,
+    "binary": 69,
+    "call": 166,
     "conditional": 19,
-    "identifier": 244,
+    "identifier": 246,
     "index-access": 12,
-    "literal": 202,
+    "literal": 204,
     "logical": 41,
-    "member": 123,
+    "member": 125,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
-    "unsupported": 21
+    "unsupported": 23
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -4250,13 +4292,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 30,
+    "binary:===": 32,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 86,
-    "literal:string": 145,
+    "literal:string": 147,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

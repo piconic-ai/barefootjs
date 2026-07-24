@@ -119,7 +119,7 @@ function compileMultipleComponents(
   const program = options.program ?? (needsTypeBasedDetection(source) ? createProgramForFile(source, filePath)?.program : undefined)
 
   for (const componentName of componentNames) {
-    const ctx = analyzeComponent(source, filePath, componentName, program)
+    const ctx = analyzeComponent(source, filePath, componentName, program, adapter.acceptsCallbackBody)
 
     if (!ctx.jsxReturn) {
       errors.push(...ctx.errors)
@@ -556,7 +556,7 @@ export function compileJSX(
   }
 
   // Single component flow
-  const ctx = analyzeComponent(compileSource, filePath, undefined, options.program)
+  const ctx = analyzeComponent(compileSource, filePath, undefined, options.program, options.adapter.acceptsCallbackBody)
 
   if (!ctx.jsxReturn) {
     errors.push(...ctx.errors)

@@ -9,6 +9,7 @@
 import ts from 'typescript'
 import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation } from './types.ts'
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
+import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -158,7 +159,8 @@ export function analyzeComponent(
   source: string,
   filePath: string,
   targetComponentName?: string,
-  program?: ts.Program
+  program?: ts.Program,
+  acceptsCallbackBody?: CallbackBodyAcceptor
 ): AnalyzerContext {
   incrementCounter('filesAnalyzed')
   // Track whether the caller supplied a shared ts.Program. Used downstream
@@ -229,7 +231,7 @@ export function analyzeComponent(
     }
   }
 
-  const ctx = createAnalyzerContext(sourceFile, filePath)
+  const ctx = createAnalyzerContext(sourceFile, filePath, acceptsCallbackBody)
   ctx.checker = checker
 
   // Reactive-factory prescan results (#931, #2325 cross-file + object-

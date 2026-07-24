@@ -18,6 +18,13 @@ import {
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
+// The CSR runtime is a JS engine, so — like Hono / any `JsxAdapter` — it runs
+// an off-subset callback body (`filter`/`sort` predicate the compiler can't
+// lower) verbatim. Model that capability here so the CSR harness compiles such
+// a predicate instead of tripping the DSL-only BF021. See
+// `spec/callback-fidelity.md`.
+const csrAcceptsCallbackBody = () => true
+
 const CSR_TEMP_DIR = resolve(import.meta.dir, '../.csr-render-temp')
 
 export interface CsrRenderOptions {
@@ -52,7 +59,7 @@ function compileToClientJs(source: string, filePath: string): string {
   if (componentNames.length === 0) {
     // Fall back to default-export resolution (preserves prior behaviour for
     // sources where `listComponentFunctions` returns nothing).
-    const ctx = analyzeComponent(source, filePath)
+    const ctx = analyzeComponent(source, filePath, undefined, undefined, csrAcceptsCallbackBody)
     if (!ctx.jsxReturn) {
       throwIfErrors(ctx, filePath)
       return ''
@@ -72,7 +79,7 @@ function compileToClientJs(source: string, filePath: string): string {
 
   const outputs: string[] = []
   for (const componentName of componentNames) {
-    const ctx = analyzeComponent(source, filePath, componentName)
+    const ctx = analyzeComponent(source, filePath, componentName, undefined, csrAcceptsCallbackBody)
     if (!ctx.jsxReturn) {
       throwIfErrors(ctx, filePath)
       continue

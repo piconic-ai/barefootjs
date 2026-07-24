@@ -25,6 +25,7 @@ import type {
   DeclinedReactiveFactory,
 } from './types.ts'
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
+import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 
 /**
  * Deferred info for BF043 (props destructuring warning).
@@ -199,6 +200,15 @@ export interface AnalyzerContext {
 
   // Errors
   errors: CompilerError[]
+  /**
+   * Capability of the adapter this component is being compiled for: can its
+   * runtime render an off-subset callback body (`filter`/`sort`/… predicate)
+   * verbatim? Set from `TemplateAdapter.acceptsCallbackBody`; undefined for
+   * direct analyzer callers (no adapter) and DSL adapters. Consulted at the
+   * Phase-1 callback-lowering sites so a JS-runtime target isn't rejected for
+   * a body it could run. See `spec/callback-fidelity.md`.
+   */
+  acceptsCallbackBody?: CallbackBodyAcceptor
 
   // Directive
   hasUseClientDirective: boolean
@@ -232,11 +242,13 @@ export interface AnalyzerContext {
 
 export function createAnalyzerContext(
   sourceFile: ts.SourceFile,
-  filePath: string
+  filePath: string,
+  acceptsCallbackBody?: CallbackBodyAcceptor
 ): AnalyzerContext {
   return {
     sourceFile,
     filePath,
+    acceptsCallbackBody,
 
     componentName: null,
     componentNode: null,
