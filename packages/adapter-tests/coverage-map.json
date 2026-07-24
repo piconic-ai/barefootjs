@@ -1763,6 +1763,25 @@
         "text"
       ]
     },
+    "every-typeof-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "falsy-text-values": {
       "kinds": [
         "literal"
@@ -1968,6 +1987,25 @@
       ],
       "contexts": [
         "loop",
+        "text"
+      ]
+    },
+    "find-typeof-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -3449,6 +3487,25 @@
         "text"
       ]
     },
+    "some-typeof-predicate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "sort-simple": {
       "kinds": [
         "array-literal",
@@ -4262,21 +4319,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 57,
+    "array-literal": 60,
     "array-method": 63,
-    "arrow": 57,
-    "binary": 69,
-    "call": 167,
+    "arrow": 60,
+    "binary": 72,
+    "call": 170,
     "conditional": 19,
-    "identifier": 247,
+    "identifier": 250,
     "index-access": 12,
-    "literal": 205,
+    "literal": 208,
     "logical": 41,
-    "member": 126,
+    "member": 129,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
-    "unsupported": 23
+    "unsupported": 26
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -4310,13 +4367,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 32,
+    "binary:===": 35,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 87,
-    "literal:string": 148,
+    "literal:string": 151,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,

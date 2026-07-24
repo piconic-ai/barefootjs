@@ -121,6 +121,9 @@ import { fixture as filterTypeofPredicate } from './filter-typeof-predicate'
 import { fixture as filterTypeofPredicateClient } from './filter-typeof-predicate-client'
 import { fixture as filterNestedFindPredicate } from './filter-nested-find-predicate'
 import { fixture as fillUnsupported } from './fill-unsupported'
+import { fixture as findTypeofPredicate } from './find-typeof-predicate'
+import { fixture as someTypeofPredicate } from './some-typeof-predicate'
+import { fixture as everyTypeofPredicate } from './every-typeof-predicate'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
@@ -479,6 +482,9 @@ export const jsxFixtures: JSXFixture[] = [
   filterTypeofPredicateClient,
   filterNestedFindPredicate,
   fillUnsupported,
+  findTypeofPredicate,
+  someTypeofPredicate,
+  everyTypeofPredicate,
   sortSimple,
   filterSortChain,
   mapNested,

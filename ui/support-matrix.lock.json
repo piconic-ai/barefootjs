@@ -14,16 +14,20 @@
   ],
   "kinds": {
     "array-literal": {
-      "total": 57,
+      "total": 60,
       "cells": {
         "hono": {
-          "pass": 57,
-          "total": 57
+          "pass": 60,
+          "total": 60
         },
         "blade": {
           "pass": 53,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -42,14 +46,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "erb": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -62,14 +78,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 53,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -88,14 +116,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 53,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -114,14 +154,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 53,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -140,14 +192,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -160,14 +224,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "twig": {
           "pass": 53,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -186,14 +262,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 53,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -212,6 +300,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
@@ -330,16 +426,20 @@
       }
     },
     "arrow": {
-      "total": 57,
+      "total": 60,
       "cells": {
         "hono": {
-          "pass": 57,
-          "total": 57
+          "pass": 60,
+          "total": 60
         },
         "blade": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -354,14 +454,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "erb": {
           "pass": 55,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -370,14 +482,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -392,14 +516,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -414,14 +550,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -436,14 +584,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 55,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -452,14 +612,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "twig": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -475,13 +647,25 @@
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 54,
-          "total": 57,
+          "total": 60,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -496,6 +680,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
@@ -514,16 +706,20 @@
       }
     },
     "binary": {
-      "total": 69,
+      "total": 72,
       "cells": {
         "hono": {
-          "pass": 69,
-          "total": 69
+          "pass": 72,
+          "total": 72
         },
         "blade": {
           "pass": 65,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -538,6 +734,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -550,8 +754,12 @@
         },
         "erb": {
           "pass": 66,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -560,6 +768,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -572,8 +788,12 @@
         },
         "go-template": {
           "pass": 65,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -588,6 +808,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -600,8 +828,12 @@
         },
         "jinja": {
           "pass": 65,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -616,6 +848,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -628,8 +868,12 @@
         },
         "minijinja": {
           "pass": 65,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -644,6 +888,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -656,8 +908,12 @@
         },
         "mojolicious": {
           "pass": 66,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -666,6 +922,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -678,8 +942,12 @@
         },
         "twig": {
           "pass": 65,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -697,6 +965,14 @@
               "issues": []
             },
             {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
@@ -706,8 +982,12 @@
         },
         "xslate": {
           "pass": 65,
-          "total": 69,
+          "total": 72,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -722,6 +1002,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -746,11 +1034,11 @@
       }
     },
     "call": {
-      "total": 167,
+      "total": 170,
       "cells": {
         "hono": {
-          "pass": 166,
-          "total": 167,
+          "pass": 169,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -762,13 +1050,17 @@
         },
         "blade": {
           "pass": 160,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -788,6 +1080,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -806,13 +1106,17 @@
         },
         "erb": {
           "pass": 161,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -826,6 +1130,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -844,13 +1156,17 @@
         },
         "go-template": {
           "pass": 160,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -870,6 +1186,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -888,13 +1212,17 @@
         },
         "jinja": {
           "pass": 160,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -914,6 +1242,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -932,13 +1268,17 @@
         },
         "minijinja": {
           "pass": 160,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -958,6 +1298,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -976,13 +1324,17 @@
         },
         "mojolicious": {
           "pass": 161,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -996,6 +1348,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1014,13 +1374,17 @@
         },
         "twig": {
           "pass": 160,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1040,6 +1404,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1058,13 +1430,17 @@
         },
         "xslate": {
           "pass": 160,
-          "total": 167,
+          "total": 170,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1084,6 +1460,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1166,11 +1550,11 @@
       }
     },
     "identifier": {
-      "total": 247,
+      "total": 250,
       "cells": {
         "hono": {
-          "pass": 246,
-          "total": 247,
+          "pass": 249,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1182,13 +1566,17 @@
         },
         "blade": {
           "pass": 240,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1208,6 +1596,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1226,13 +1622,17 @@
         },
         "erb": {
           "pass": 241,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1246,6 +1646,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1264,13 +1672,17 @@
         },
         "go-template": {
           "pass": 240,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1290,6 +1702,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1308,13 +1728,17 @@
         },
         "jinja": {
           "pass": 240,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1334,6 +1758,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1352,13 +1784,17 @@
         },
         "minijinja": {
           "pass": 240,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1378,6 +1814,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1396,13 +1840,17 @@
         },
         "mojolicious": {
           "pass": 241,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1416,6 +1864,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1434,13 +1890,17 @@
         },
         "twig": {
           "pass": 240,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1460,6 +1920,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1478,13 +1946,17 @@
         },
         "xslate": {
           "pass": 240,
-          "total": 247,
+          "total": 250,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1504,6 +1976,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1586,22 +2066,34 @@
       }
     },
     "literal": {
-      "total": 205,
+      "total": 208,
       "cells": {
         "hono": {
-          "pass": 205,
-          "total": 205
+          "pass": 208,
+          "total": 208
         },
         "blade": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1614,14 +2106,26 @@
         },
         "erb": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1634,14 +2138,26 @@
         },
         "go-template": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1654,14 +2170,26 @@
         },
         "jinja": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1674,14 +2202,26 @@
         },
         "minijinja": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1694,14 +2234,26 @@
         },
         "mojolicious": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1714,14 +2266,26 @@
         },
         "twig": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1734,14 +2298,26 @@
         },
         "xslate": {
           "pass": 202,
-          "total": 205,
+          "total": 208,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1882,11 +2458,11 @@
       }
     },
     "member": {
-      "total": 126,
+      "total": 129,
       "cells": {
         "hono": {
-          "pass": 125,
-          "total": 126,
+          "pass": 128,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1898,13 +2474,17 @@
         },
         "blade": {
           "pass": 119,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1924,6 +2504,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1942,13 +2530,17 @@
         },
         "erb": {
           "pass": 120,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -1962,6 +2554,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -1980,13 +2580,17 @@
         },
         "go-template": {
           "pass": 119,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -2006,6 +2610,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2024,13 +2636,17 @@
         },
         "jinja": {
           "pass": 119,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -2050,6 +2666,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2068,13 +2692,17 @@
         },
         "minijinja": {
           "pass": 119,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -2094,6 +2722,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2112,13 +2748,17 @@
         },
         "mojolicious": {
           "pass": 120,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -2132,6 +2772,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2150,13 +2798,17 @@
         },
         "twig": {
           "pass": 119,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -2176,6 +2828,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2194,13 +2854,17 @@
         },
         "xslate": {
           "pass": 119,
-          "total": 126,
+          "total": 129,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
               ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
             },
             {
               "fixture": "fill-unsupported",
@@ -2220,6 +2884,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2563,18 +3235,30 @@
       }
     },
     "unsupported": {
-      "total": 23,
+      "total": 26,
       "cells": {
         "hono": {
-          "pass": 23,
-          "total": 23
+          "pass": 26,
+          "total": 26
         },
         "blade": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2593,10 +3277,22 @@
         },
         "erb": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2615,10 +3311,22 @@
         },
         "go-template": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2637,10 +3345,22 @@
         },
         "jinja": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2659,10 +3379,22 @@
         },
         "minijinja": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2681,10 +3413,22 @@
         },
         "mojolicious": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2703,10 +3447,22 @@
         },
         "twig": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -2725,10 +3481,22 @@
         },
         "xslate": {
           "pass": 20,
-          "total": 23,
+          "total": 26,
           "gaps": [
             {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -4483,16 +5251,20 @@
       }
     },
     "binary:===": {
-      "total": 32,
+      "total": 35,
       "cells": {
         "hono": {
-          "pass": 32,
-          "total": 32
+          "pass": 35,
+          "total": 35
         },
         "blade": {
           "pass": 29,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -4507,14 +5279,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "erb": {
           "pass": 30,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -4523,14 +5307,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 29,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -4545,14 +5341,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 29,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -4567,14 +5375,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 29,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -4589,14 +5409,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 30,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-find-predicate",
               "issues": [
@@ -4605,14 +5437,26 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
         },
         "twig": {
           "pass": 29,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -4628,13 +5472,25 @@
             {
               "fixture": "filter-typeof-predicate",
               "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 29,
-          "total": 32,
+          "total": 35,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "filter-nested-callback-predicate",
               "issues": [
@@ -4649,6 +5505,14 @@
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             }
           ]
@@ -4974,22 +5838,34 @@
       }
     },
     "literal:string": {
-      "total": 148,
+      "total": 151,
       "cells": {
         "hono": {
-          "pass": 148,
-          "total": 148
+          "pass": 151,
+          "total": 151
         },
         "blade": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5002,14 +5878,26 @@
         },
         "erb": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5022,14 +5910,26 @@
         },
         "go-template": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5042,14 +5942,26 @@
         },
         "jinja": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5062,14 +5974,26 @@
         },
         "minijinja": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5082,14 +6006,26 @@
         },
         "mojolicious": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5102,14 +6038,26 @@
         },
         "twig": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
@@ -5122,14 +6070,26 @@
         },
         "xslate": {
           "pass": 145,
-          "total": 148,
+          "total": 151,
           "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
             {
               "fixture": "fill-unsupported",
               "issues": []
             },
             {
               "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
               "issues": []
             },
             {
