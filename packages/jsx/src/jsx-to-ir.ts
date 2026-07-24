@@ -51,7 +51,7 @@ import { createTemplateAwareStringProtector } from './ir-to-client-js/html-templ
 import { datePlugin, DATE_METHODS } from './date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-lowering.ts'
 import type { LoweringMatcher } from './lowering-registry.ts'
-import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx } from './analyzer.ts'
+import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, type MultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
 
@@ -2119,100 +2119,123 @@ function transformMultiReturnJsxFunctionCall(
 
   try {
     const loc = getSourceLocation(callExpr, ctx.sourceFile, ctx.filePath)
-    const nullExpr: IRExpression = {
-      type: 'expression',
-      expr: 'null',
-      typeInfo: { kind: 'primitive', raw: 'null', primitive: 'null' },
-      reactive: false,
-      slotId: null,
-      loc,
-      origin: { phase: 'tick', scope: 'template', effect: 'pure', freeRefs: [] },
-    }
-
-    // Build the conditional chain from bottom up (last branch → first branch)
-    let result: IRNode = info.fallback
-      ? (transformNode(info.fallback, ctx) ?? nullExpr)
-      : nullExpr
-
-    for (let i = info.branches.length - 1; i >= 0; i--) {
-      const branch = info.branches[i]
-
-      // Build condition text with param substitution
-      let conditionText: string
-      if (info.switchDiscriminant) {
-        const discText = substitutedGetJS(info.switchDiscriminant)
-        const caseText = substitutedGetJS(branch.condition)
-        conditionText = `${discText} === ${caseText}`
-      } else {
-        conditionText = substitutedGetJS(branch.condition)
-      }
-
-      // For switch-sourced conditions, merge freeRefs/reactivity from
-      // both the discriminant and case expression so prop rewrites and
-      // reactivity detection cover the full `disc === case` condition.
-      const env = makeBindingEnv(ctx)
-      const caseFreeRefs = resolveFreeRefs(branch.condition, env)
-      const discFreeRefs = info.switchDiscriminant
-        ? resolveFreeRefs(info.switchDiscriminant, env)
-        : []
-      const conditionOrigin: OriginInfo = {
-        phase: 'tick',
-        scope: 'template',
-        effect: 'pure',
-        freeRefs: [...discFreeRefs, ...caseFreeRefs],
-      }
-      const reactive = isReactiveExpression(conditionText, ctx, branch.condition)
-        || isReactiveOrigin(conditionOrigin)
-      const loopParamReactive = !reactive && referencesLoopParam(conditionText, ctx)
-      const callsReactive = exprCallsReactiveGetters(branch.condition, ctx)
-        || (info.switchDiscriminant ? exprCallsReactiveGetters(info.switchDiscriminant, ctx) : false)
-      const hasCalls = exprHasFunctionCalls(branch.condition)
-        || (info.switchDiscriminant ? exprHasFunctionCalls(info.switchDiscriminant) : false)
-      const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
-      const slotId = needsSlot ? generateSlotId(ctx) : null
-
-      const whenTrue = branch.jsxReturn
-        ? (transformNode(branch.jsxReturn, ctx) ?? nullExpr)
-        : nullExpr
-
-      // For switch conditions, build templateCondition from both parts
-      let templateCondition: string | undefined
-      if (info.switchDiscriminant) {
-        const discRewritten = rewriteBarePropRefs(
-          substitutedGetJS(info.switchDiscriminant), info.switchDiscriminant, ctx
-        )
-        const caseRewritten = rewriteBarePropRefs(
-          substitutedGetJS(branch.condition), branch.condition, ctx
-        )
-        const discPart = discRewritten ?? substitutedGetJS(info.switchDiscriminant)
-        const casePart = caseRewritten ?? substitutedGetJS(branch.condition)
-        templateCondition = `${discPart} === ${casePart}`
-      } else {
-        templateCondition = rewriteBarePropRefs(conditionText, branch.condition, ctx)
-      }
-
-      const conditional: IRConditional = {
-        type: 'conditional',
-        condition: conditionText,
-        templateCondition,
-        conditionType: null,
-        reactive,
-        whenTrue,
-        whenFalse: result,
-        slotId,
-        callsReactiveGetters: callsReactive || undefined,
-        hasFunctionCalls: hasCalls || undefined,
-        loc,
-        origin: conditionOrigin,
-      }
-      result = conditional
-    }
-
-    return result
+    return foldMultiReturnBranches(info, ctx, loc, substitutedGetJS)
   } finally {
     ctx.getJS = originalCtxGetJS
     ctx.analyzer.getJS = originalAnalyzerGetJS
   }
+}
+
+/**
+ * Fold an extracted multi-return branch structure (if/else-if chain or switch)
+ * into a right-nested chain of `IRConditional` nodes, terminating in the
+ * fallback (or `null`). Shared by the helper-function inliner
+ * (`transformMultiReturnJsxFunctionCall`, which swaps `ctx.getJS` for a
+ * param-substituting variant first) and the `.map()` callback-body fold
+ * (Stage 2 of `spec/callback-fidelity.md`), which folds branches in the
+ * loop-body context where the item binding is already in scope — no
+ * substitution. `getText` stringifies condition / discriminant expressions
+ * (the substituting variant for the former, `ctx.getJS` for the latter);
+ * branch JSX is transformed via `transformNode`, which reads the (possibly
+ * swapped) `ctx.getJS`.
+ */
+function foldMultiReturnBranches(
+  info: MultiReturnJsxBranches,
+  ctx: TransformContext,
+  loc: SourceLocation,
+  getText: (node: ts.Node) => string,
+): IRNode {
+  const nullExpr: IRExpression = {
+    type: 'expression',
+    expr: 'null',
+    typeInfo: { kind: 'primitive', raw: 'null', primitive: 'null' },
+    reactive: false,
+    slotId: null,
+    loc,
+    origin: { phase: 'tick', scope: 'template', effect: 'pure', freeRefs: [] },
+  }
+
+  // Build the conditional chain from bottom up (last branch → first branch)
+  let result: IRNode = info.fallback
+    ? (transformNode(info.fallback, ctx) ?? nullExpr)
+    : nullExpr
+
+  for (let i = info.branches.length - 1; i >= 0; i--) {
+    const branch = info.branches[i]
+
+    // Build condition text (`getText` applies param substitution when the
+    // helper-function inliner supplies a substituting variant).
+    let conditionText: string
+    if (info.switchDiscriminant) {
+      const discText = getText(info.switchDiscriminant)
+      const caseText = getText(branch.condition)
+      conditionText = `${discText} === ${caseText}`
+    } else {
+      conditionText = getText(branch.condition)
+    }
+
+    // For switch-sourced conditions, merge freeRefs/reactivity from
+    // both the discriminant and case expression so prop rewrites and
+    // reactivity detection cover the full `disc === case` condition.
+    const env = makeBindingEnv(ctx)
+    const caseFreeRefs = resolveFreeRefs(branch.condition, env)
+    const discFreeRefs = info.switchDiscriminant
+      ? resolveFreeRefs(info.switchDiscriminant, env)
+      : []
+    const conditionOrigin: OriginInfo = {
+      phase: 'tick',
+      scope: 'template',
+      effect: 'pure',
+      freeRefs: [...discFreeRefs, ...caseFreeRefs],
+    }
+    const reactive = isReactiveExpression(conditionText, ctx, branch.condition)
+      || isReactiveOrigin(conditionOrigin)
+    const loopParamReactive = !reactive && referencesLoopParam(conditionText, ctx)
+    const callsReactive = exprCallsReactiveGetters(branch.condition, ctx)
+      || (info.switchDiscriminant ? exprCallsReactiveGetters(info.switchDiscriminant, ctx) : false)
+    const hasCalls = exprHasFunctionCalls(branch.condition)
+      || (info.switchDiscriminant ? exprHasFunctionCalls(info.switchDiscriminant) : false)
+    const needsSlot = reactive || loopParamReactive || callsReactive || hasCalls
+    const slotId = needsSlot ? generateSlotId(ctx) : null
+
+    const whenTrue = branch.jsxReturn
+      ? (transformNode(branch.jsxReturn, ctx) ?? nullExpr)
+      : nullExpr
+
+    // For switch conditions, build templateCondition from both parts
+    let templateCondition: string | undefined
+    if (info.switchDiscriminant) {
+      const discRewritten = rewriteBarePropRefs(
+        getText(info.switchDiscriminant), info.switchDiscriminant, ctx
+      )
+      const caseRewritten = rewriteBarePropRefs(
+        getText(branch.condition), branch.condition, ctx
+      )
+      const discPart = discRewritten ?? getText(info.switchDiscriminant)
+      const casePart = caseRewritten ?? getText(branch.condition)
+      templateCondition = `${discPart} === ${casePart}`
+    } else {
+      templateCondition = rewriteBarePropRefs(conditionText, branch.condition, ctx)
+    }
+
+    const conditional: IRConditional = {
+      type: 'conditional',
+      condition: conditionText,
+      templateCondition,
+      conditionType: null,
+      reactive,
+      whenTrue,
+      whenFalse: result,
+      slotId,
+      callsReactiveGetters: callsReactive || undefined,
+      hasFunctionCalls: hasCalls || undefined,
+      loc,
+      origin: conditionOrigin,
+    }
+    result = conditional
+  }
+
+  return result
 }
 
 function transformConditional(
@@ -4050,10 +4073,27 @@ function transformMapCall(
       // flatMap arrow with array literal: items.flatMap(item => [<A/>, <B/>])
       children = transformArrayLiteralChildren(body, ctx)
     } else if (ts.isBlock(body)) {
+      // Multi-return JSX block body (if/else-if chain or switch) — fold to a
+      // nested IRConditional so the loop renders each branch's compiled
+      // template. Tried BEFORE the single-return path: otherwise the trailing
+      // `return <fallback/>` would claim the single-return arm and the leading
+      // `if (...) return <A/>` would leak verbatim into the map preamble (the
+      // silent-verbatim-leak this fixes). Stage 2 of spec/callback-fidelity.md.
+      // Preamble-const / switch-fallthrough / nested-loop shapes are not yet
+      // extracted (extractMultiReturnJsxBranches returns null) and fall through
+      // to the single-return path below.
+      const multiReturn = method !== 'flatMap' ? extractMultiReturnJsxBranches(body) : null
+      if (multiReturn && multiReturn.branches.length > 0) {
+        const loc = getSourceLocation(body, ctx.sourceFile, ctx.filePath)
+        children = [foldMultiReturnBranches(multiReturn, ctx, loc, ctx.getJS)]
+      }
+
       // Block body: (item) => { const label = ...; return <div>{label}</div> }
-      const returnStmt = body.statements.find(
-        (s): s is ts.ReturnStatement => ts.isReturnStatement(s) && s.expression != null
-      )
+      const returnStmt = children.length === 0
+        ? body.statements.find(
+            (s): s is ts.ReturnStatement => ts.isReturnStatement(s) && s.expression != null
+          )
+        : undefined
       if (returnStmt && returnStmt.expression) {
         let returnExpr = returnStmt.expression
         while (ts.isParenthesizedExpression(returnExpr)) {
