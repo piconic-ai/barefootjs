@@ -3761,7 +3761,12 @@ function transformMapCall(
     // Handle sort comparator extraction
     const sortExtraction = extractSortComparator(sortInfo.callback, sortInfo.method, ctx)
     if (isClientOnly || !sortExtraction.result) {
-      if (!isClientOnly && sortExtraction.unsupportedReason) {
+      // Off-subset comparator: keep it in the array string for client / SSR
+      // evaluation. Only raise the diagnostic when the target adapter's runtime
+      // can't run the comparator body verbatim (DSL); a JS-runtime adapter runs
+      // it, so rejecting it would be a universal error for a DSL-only limit.
+      // See spec/callback-fidelity.md.
+      if (!isClientOnly && sortExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('sort') ?? false)) {
         ctx.analyzer.errors.push(
           createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
             getSourceLocation(sortInfo.callback, ctx.sourceFile, ctx.filePath),
@@ -3784,7 +3789,11 @@ function transformMapCall(
         chainOrder = 'filter-sort'
         const filterExtraction = extractFilterPredicate(innerFilter.callback, ctx)
         if (isClientOnly || !filterExtraction.result) {
-          if (!isClientOnly && filterExtraction.unsupportedReason) {
+          // Off-subset predicate: keep it in the array string for client / SSR
+      // evaluation. Only raise the diagnostic when the target adapter's runtime
+      // can't run the predicate body verbatim (DSL); a JS-runtime adapter runs
+      // it. See spec/callback-fidelity.md.
+      if (!isClientOnly && filterExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('filter') ?? false)) {
             ctx.analyzer.errors.push(
               createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
                 getSourceLocation(innerFilter.callback, ctx.sourceFile, ctx.filePath),
@@ -3818,7 +3827,11 @@ function transformMapCall(
     const filterExtraction = extractFilterPredicate(filterInfo.callback, ctx)
 
     if (isClientOnly || !filterExtraction.result) {
-      if (!isClientOnly && filterExtraction.unsupportedReason) {
+      // Off-subset predicate: keep it in the array string for client / SSR
+      // evaluation. Only raise the diagnostic when the target adapter's runtime
+      // can't run the predicate body verbatim (DSL); a JS-runtime adapter runs
+      // it. See spec/callback-fidelity.md.
+      if (!isClientOnly && filterExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('filter') ?? false)) {
         ctx.analyzer.errors.push(
           createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
             getSourceLocation(filterInfo.callback, ctx.sourceFile, ctx.filePath),
@@ -3841,7 +3854,12 @@ function transformMapCall(
         chainOrder = 'sort-filter'
         const sortExtraction = extractSortComparator(innerSort.callback, innerSort.method, ctx)
         if (isClientOnly || !sortExtraction.result) {
-          if (!isClientOnly && sortExtraction.unsupportedReason) {
+          // Off-subset comparator: keep it in the array string for client / SSR
+      // evaluation. Only raise the diagnostic when the target adapter's runtime
+      // can't run the comparator body verbatim (DSL); a JS-runtime adapter runs
+      // it, so rejecting it would be a universal error for a DSL-only limit.
+      // See spec/callback-fidelity.md.
+      if (!isClientOnly && sortExtraction.unsupportedReason && !(ctx.analyzer.acceptsCallbackBody?.('sort') ?? false)) {
             ctx.analyzer.errors.push(
               createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN,
                 getSourceLocation(innerSort.callback, ctx.sourceFile, ctx.filePath),

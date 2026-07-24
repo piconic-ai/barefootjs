@@ -184,7 +184,7 @@ Only a genuinely imperative comparator — one that re-assigns a local, loops, o
 `break`s — has no value-position lowering and errors:
 
 ```tsx
-// ❌ BF021 (all adapters)
+// ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator
 {items().sort((a, b) => { let r = 0; r = a.name > b.name ? 1 : -1; return r }).map(item => (
   <Item key={item.id} item={item} />
 ))}
@@ -201,7 +201,7 @@ compiles (see the "Sort comparators" section above); an **imported** or
 only one binding, so it can't see through a re-export or `const c2 = c1`:
 
 ```tsx
-// ❌ BF021 — `byPrice` is imported, not declared in this file
+// ❌ BF021 on Go/Mojo — `byPrice` is imported, not declared in this file
 import { byPrice } from './comparators'
 function SortedList({ items }: { items: Item[] }) {
   return <ul>{items.sort(byPrice).map((item) => <li key={item.id}>{item.name}</li>)}</ul>

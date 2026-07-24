@@ -125,13 +125,28 @@ describe('Unsupported Expression Error (BF021)', () => {
     expect(ir!.type).toBe('element')
   })
 
-  test('compileJSX includes IR-phase BF021 errors in result', () => {
-    const result = compileJSX(unsupportedSource, 'TodoList.tsx', { adapter })
+  test('compileJSX surfaces IR-phase BF021 for a DSL target (no acceptsCallbackBody)', () => {
+    // Model a DSL adapter: its template runtime can't run an off-subset
+    // predicate verbatim, so the Phase-1 diagnostic must surface in the result.
+    const dslAdapter = new TestAdapter()
+    ;(dslAdapter as { acceptsCallbackBody?: unknown }).acceptsCallbackBody = undefined
+    const result = compileJSX(unsupportedSource, 'TodoList.tsx', { adapter: dslAdapter })
     const bf021 = result.errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
 
     expect(bf021).toHaveLength(1)
     expect(bf021[0].severity).toBe('error')
     expect(bf021[0].message).toContain('Expression cannot be compiled to marked template')
+    expect(bf021[0].suggestion?.message).toContain('@client')
+  })
+
+  test('compileJSX does NOT raise BF021 for a JS-runtime target (fidelity)', () => {
+    // A JS runtime (Hono / CSR — the default TestAdapter, extending JsxAdapter)
+    // runs the predicate verbatim, so an off-subset body is not a universal
+    // error. It stays in the array string for the runtime to evaluate.
+    // See spec/callback-fidelity.md.
+    const result = compileJSX(unsupportedSource, 'TodoList.tsx', { adapter })
+    const bf021 = result.errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+    expect(bf021).toHaveLength(0)
   })
 })
 

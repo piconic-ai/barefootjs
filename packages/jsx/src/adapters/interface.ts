@@ -130,6 +130,37 @@ export type TemplatePrimitiveRegistry = Record<string, TemplatePrimitiveEmit>
  */
 export type TemplateCallAcceptor = (calleeName: string) => boolean
 
+/**
+ * The collection-method callbacks whose body the compiler may hand to a
+ * backend to run. Used by {@link CallbackBodyAcceptor}. See
+ * `spec/callback-fidelity.md`.
+ */
+export type CallbackBodyKind =
+  | 'filter'
+  | 'sort'
+  | 'map'
+  | 'flatMap'
+  | 'find'
+  | 'some'
+  | 'every'
+  | 'reduce'
+
+/**
+ * Predicate: can this adapter's runtime render an *off-subset* callback body
+ * of the given kind verbatim? A callback whose body the compiler can't express
+ * as a template / ParsedExpr subtree is only renderable at SSR by a backend
+ * whose template runtime is a full JS engine.
+ *
+ * JS-runtime adapters (Hono SSR, CSR — anything extending `JsxAdapter`) return
+ * true, so the compiler keeps the callback inlined for the runtime to execute
+ * instead of raising a universal Phase-1 diagnostic. DSL adapters (Go, Perl,
+ * …) leave this undefined; an off-subset body then raises the usual diagnostic
+ * with the `/* @client *\/` escape, and the user opts that piece into
+ * client-only rendering. Granular by kind so a DSL adapter may later accept a
+ * subset (e.g. `filter` but not `sort`). See `spec/callback-fidelity.md`.
+ */
+export type CallbackBodyAcceptor = (kind: CallbackBodyKind) => boolean
+
 export interface TemplateAdapter {
   name: string
   extension: string
@@ -200,6 +231,15 @@ export interface TemplateAdapter {
    * and rely on the explicit `templatePrimitives` map.
    */
   acceptsTemplateCall?: TemplateCallAcceptor
+
+  /**
+   * Whether this adapter's runtime can render an off-subset callback body
+   * (`filter`/`sort`/`find`/… predicate or comparator the compiler can't
+   * lower to a template / ParsedExpr) verbatim. JS-runtime adapters set this
+   * (via `JsxAdapter`); DSL adapters leave it undefined and instead surface
+   * the diagnostic + `/* @client *\/` escape. See `spec/callback-fidelity.md`.
+   */
+  acceptsCallbackBody?: CallbackBodyAcceptor
 
   // Main entry point - generates complete template from IR
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput
