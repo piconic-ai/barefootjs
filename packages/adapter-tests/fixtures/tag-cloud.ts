@@ -1,5 +1,9 @@
 /**
- * TagCloud fixture lifted from `integrations/shared/components/TagCloud.tsx`.
+ * TagCloud fixture — source lives in the fixture-only root
+ * (`fixtures/components/TagCloud.tsx`), NOT `integrations/shared/components`:
+ * every integration app's `bf build` compiles that directory wholesale, and
+ * this component's segment-carried flatMap is intentionally DSL-refused
+ * (BF021), which would break every DSL integration build.
  *
  * The real-browser regression pin for the flatMap client-loop rewiring: a
  * signal-driven `.flatMap()` BLOCK body (early return + `const` preamble +
@@ -25,6 +29,7 @@ const leaf = (n: number) => `.tags li:nth-child(${n})` as const
 export const spec: SharedFixtureSpec = {
   id: 'tag-cloud',
   componentName: 'TagCloud',
+  sourceRoot: 'fixture',
   description:
     'flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove',
   props: {

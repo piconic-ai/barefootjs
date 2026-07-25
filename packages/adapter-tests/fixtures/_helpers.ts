@@ -58,10 +58,21 @@ export const UI_COMPONENTS_DIR = resolve(HERE, '../../../ui/components/ui')
  * sibling inference resolves both shapes (see `uiSiblingBasename`).
  */
 export const DEMO_COMPONENTS_DIR = resolve(HERE, '../../../site/ui/components')
+/**
+ * Fourth source root: fixture-ONLY components under
+ * `packages/adapter-tests/fixtures/components/<name>.tsx`. Same flat
+ * layout as `shared`, but deliberately OUTSIDE `integrations/shared/` —
+ * every integration app's `bf build` compiles that directory wholesale,
+ * so a component whose shape is intentionally DSL-refused (e.g.
+ * `tag-cloud`'s segment-carried flatMap, BF021 on DSL backends) would
+ * break every DSL integration build if it lived there. Components here
+ * exist solely for the conformance corpus + fixture-hydrate browser pins.
+ */
+export const FIXTURE_COMPONENTS_DIR = resolve(HERE, 'components')
 export const SNAPSHOT_DIR = resolve(HERE, '__snapshots__')
 
 /** Which source-root layout a fixture's component is loaded from. */
-export type FixtureSourceRoot = 'shared' | 'ui' | 'demo'
+export type FixtureSourceRoot = 'shared' | 'ui' | 'demo' | 'fixture'
 
 export interface SharedFixtureSpec {
   /** Fixture id; also the `__snapshots__/<id>.{html,client.js}` basename. */
@@ -154,6 +165,8 @@ export function componentPath(
       return resolve(DEMO_COMPONENTS_DIR, `${basename}.tsx`)
     case 'shared':
       return resolve(SHARED_COMPONENTS_DIR, `${basename}.tsx`)
+    case 'fixture':
+      return resolve(FIXTURE_COMPONENTS_DIR, `${basename}.tsx`)
   }
 }
 
@@ -163,7 +176,8 @@ export function componentPath(
  * under the `ui` root; `shared` fixtures keep their flat layout.
  */
 export function siblingSourceRoot(root: FixtureSourceRoot): FixtureSourceRoot {
-  return root === 'shared' ? 'shared' : 'ui'
+  if (root === 'shared' || root === 'fixture') return root
+  return 'ui'
 }
 
 /** Absolute path to a fixture's root component source. */
@@ -190,6 +204,7 @@ export function siblingImportKey(root: FixtureSourceRoot, basename: string): str
     case 'demo':
       return `${UI_ALIAS_PREFIX}${basename}`
     case 'shared':
+    case 'fixture':
       return `./${basename}.tsx`
   }
 }
@@ -325,7 +340,7 @@ export function resolveSiblingSpecifiers(
   }
 
   for (const base of spec.additionalComponents ?? []) {
-    if (root === 'shared') {
+    if (root === 'shared' || root === 'fixture') {
       found.set(base, new Set([siblingImportKey(root, base)]))
     } else {
       add(base, siblingImportKey(root, base))
