@@ -153,6 +153,12 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     if (elem.filterPredicate) addExprEdges(ROOT_SOURCE, elem.filterPredicate.raw, 'template-closure')
     if (elem.sortComparator) addExprEdges(ROOT_SOURCE, elem.sortComparator.raw, 'template-closure')
     if (elem.preamble) addExprEdges(ROOT_SOURCE, preambleAnalysisText(elem.preamble), 'template-closure')
+    // flatMap descriptor body (the mapArray accessor's flatten projection):
+    // its js segments AND leaf interpolations reference init-scope names
+    // (destructured props like `maxTags`, signals) — without these edges the
+    // props-extraction pass would skip `const maxTags = _p.maxTags` and the
+    // accessor would throw ReferenceError at hydration.
+    if (elem.flatMapClient) addExprEdges(ROOT_SOURCE, elem.flatMapClient.body, 'template-closure')
     for (const attr of elem.bindings.reactiveAttrs) {
       addExprEdges(ROOT_SOURCE, attr.expression, 'template-closure')
     }
@@ -318,6 +324,15 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
       if (l.filterPredicate) addExprEdges(ROOT_SOURCE, l.filterPredicate.raw, 'template-closure')
       if (l.sortComparator) addExprEdges(ROOT_SOURCE, l.sortComparator.raw, 'template-closure')
       if (l.preamble) addExprEdges(ROOT_SOURCE, preambleAnalysisText(l.preamble), 'template-closure')
+      // flatMap bodies: js segments reference init-scope names; segment
+      // leaves are IR nodes off `children`, so `descend()` never reaches
+      // them — walk them explicitly (mirrors attachParsedExpressions).
+      if (l.flatMapCallback) {
+        addExprEdges(ROOT_SOURCE, preambleAnalysisText(l.flatMapCallback), 'template-closure')
+        for (const seg of l.flatMapCallback.segments) {
+          if (seg.kind === 'jsx') walkIR(seg.ir, null, visitor)
+        }
+      }
       descend()
       if (l.childComponent) walkChildComponent(l.childComponent)
       if (l.nestedComponents) {

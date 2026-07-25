@@ -25,6 +25,7 @@ import { fixture as propsReactivityComparison } from './props-reactivity-compari
 import { fixture as form } from './form'
 import { fixture as portal } from './portal'
 import { fixture as todoApp } from './todo-app'
+import { fixture as tagCloud } from './tag-cloud'
 import { fixture as todoAppSsr } from './todo-app-ssr'
 import { fixture as aiChat } from './ai-chat'
 // #1467 Phase 2a: first `site/ui` source-root fixture (Button + its
@@ -437,6 +438,7 @@ export const jsxFixtures: JSXFixture[] = [
   form,
   portal,
   todoApp,
+  tagCloud,
   todoAppSsr,
   aiChat,
   button,

@@ -46,6 +46,7 @@ export const conformancePins: ConformancePins = {
   // (pre-gate this emitted an empty loop body — silent divergence).
   // See spec/callback-fidelity.md.
   'flatmap-expression-body': [{ code: 'BF021', severity: 'error' }],
+  'tag-cloud': [{ code: 'BF021', severity: 'error' }],
   // `todo-app` / `todo-app-ssr` no longer pinned (#2205) — the conformance
   // harness now passes `siblingTemplatesRegistered: true` for fixtures with
   // sibling `components`, matching `bf build`'s real semantics, so the

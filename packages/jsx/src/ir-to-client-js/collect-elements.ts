@@ -6,7 +6,7 @@ import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity.ts'
-import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, type SkeletonSlotPaths } from './html-template.ts'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { templateRootIsSvg } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
 import { walkIR, stopAt } from './walker.ts'
@@ -777,6 +777,13 @@ export function collectElements(
         } : undefined,
         chainOrder: l.chainOrder,
         preamble: l.preamble,
+        flatMapClient: l.flatMapCallback
+          ? {
+              params: l.flatMapCallback.params,
+              body: renderFlatMapClientBody(l.flatMapCallback, buildRestSpreadNames(ctx)),
+              keyed: flatMapCallbackHasKeyedLeaf(l.flatMapCallback),
+            }
+          : undefined,
       })
       // Don't descend — loop-scoped variables are only available inside the iteration.
     },
@@ -1126,6 +1133,13 @@ function collectBranchLoops(
           raw: n.sortComparator.raw,
         } : undefined,
         chainOrder: n.chainOrder,
+        flatMapClient: n.flatMapCallback
+          ? {
+              params: n.flatMapCallback.params,
+              body: renderFlatMapClientBody(n.flatMapCallback, restNames),
+              keyed: flatMapCallbackHasKeyedLeaf(n.flatMapCallback),
+            }
+          : undefined,
       })
       // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation.
     },

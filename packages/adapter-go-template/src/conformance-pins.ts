@@ -45,6 +45,7 @@ export const conformancePins: ConformancePins = {
   // (pre-gate this emitted an empty loop body — silent divergence).
   // See spec/callback-fidelity.md.
   'flatmap-expression-body': [{ code: 'BF021', severity: 'error' }],
+  'tag-cloud': [{ code: 'BF021', severity: 'error' }],
   // `style-object-dynamic` / `style-3-signals` no longer pinned — a
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic
   // values interpolated (`background-color:{{.Color}};padding:8px`) via
