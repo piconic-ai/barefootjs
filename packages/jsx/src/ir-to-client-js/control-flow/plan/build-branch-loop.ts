@@ -45,6 +45,7 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
 
   const plan: BranchPlainLoopPlan = {
     kind: 'plain',
+    rowConstruction: 'string-template',
     containerSlotId,
     containerVar,
     markerId: loop.markerId,

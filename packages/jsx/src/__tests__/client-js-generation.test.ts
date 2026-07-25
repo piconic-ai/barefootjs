@@ -1824,11 +1824,11 @@ describe('Client JS generation', () => {
         }
         const loop = findLoop(ir.root)
         expect(loop).toBeTruthy()
-        expect(loop.mapPreamble).toBeUndefined()
+        expect(loop.preamble).toBeUndefined()
       }
     })
 
-    test('generates mapPreamble in IR', () => {
+    test('generates the structured preamble in IR', () => {
       const source = `
         'use client'
         import { createSignal } from '@barefootjs/client'
@@ -1866,7 +1866,14 @@ describe('Client JS generation', () => {
       }
       const loop = findLoop(ir.root)
       expect(loop).toBeTruthy()
-      expect(loop.mapPreamble).toContain('const label = item.name.toUpperCase()')
+      // Structured carrier (Stage 3 root cure): the declaration lands in the
+      // preamble's js segments; the IR stays plain serializable data.
+      const jsText = loop.preamble.segments
+        .filter((s: any) => s.kind === 'js')
+        .map((s: any) => s.text)
+        .join('')
+      expect(jsText).toContain('const label = item.name.toUpperCase()')
+      expect(loop.preamble.declaredNames).toContain('label')
       expect(loop.children).toHaveLength(1)
       expect(loop.children[0].type).toBe('element')
     })

@@ -37,16 +37,14 @@ interface Shape {
 }
 
 /** Shapes that are silent holes today. Shrink-only — never add entries. */
-// Structured-preamble migration (root-cure commit 2) healed three holes by
-// construction — multi-root fragment, nested inner map, and branch loop now
-// render soundly because every plan builder renders the preamble through the
-// single `renderPreamble` door. The two remaining entries are Phase-1
-// acceptance holes (the collector accepts a return shape whose template can't
-// host the builder array) — closed by the dispatcher/acceptance commit.
-const KNOWN_HOLES: ReadonlySet<string> = new Set([
-  'return-bare-identifier',
-  'return-ternary-after-builder',
-])
+// EMPTY — and it must stay that way. The structured-preamble migration healed
+// the multi-root, nested-inner-map, and branch-loop holes by construction
+// (every plan builder renders through the single `renderPreamble` door), and
+// the Phase-1 acceptance guard closed the return-shape holes (bare identifier,
+// ternary: no single element root → loud BF021 with restructuring guidance).
+// A future entry here means a NEW silent hole shipped: fix the leak, don't
+// grow the set.
+const KNOWN_HOLES: ReadonlySet<string> = new Set([])
 
 const shapes: Shape[] = [
   {
@@ -189,6 +187,22 @@ function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
     const out = []
     for (const c of r.cells) out.push(<td onClick={() => console.log(c)}>{c}</td>)
     return <tr key={r.id}>{out}</tr>
+  })}</tbody></table>
+}
+export { T }`,
+  },
+  {
+    id: 'component-root-builder',
+    // Builder preamble + component root: the component would receive raw HTML
+    // strings on the client but JSX elements at SSR — refused (dom-ops row
+    // construction cannot host a string-lowered preamble).
+    source: `
+import { Row } from './row'
+function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
+  return <table><tbody>{rows.map((r) => {
+    const out = []
+    for (const c of r.cells) out.push(<td>{c}</td>)
+    return <Row key={r.id} cells={out} />
   })}</tbody></table>
 }
 export { T }`,

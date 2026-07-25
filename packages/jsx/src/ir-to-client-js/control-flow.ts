@@ -21,6 +21,7 @@
  */
 
 import type { ClientJsContext, TopLevelLoop } from './types.ts'
+import { internalInvariant } from '../errors.ts'
 import { buildInsertPlan } from './control-flow/plan/build-insert.ts'
 import { stringifyInsert } from './control-flow/stringify/insert.ts'
 import { buildLoopPlan } from './control-flow/plan/build-loop.ts'
@@ -70,6 +71,16 @@ export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLoc
       unsafeLocalNames,
       profileComponentName: ctx.profile ? ctx.componentName : undefined,
     })
+    // Stage 3 root cure — a JSX-bearing preamble can only be spliced into a
+    // string-templated row (renderPreamble). Every shape that reaches a
+    // 'dom-ops' variant today is already refused in Phase 1 with a proper
+    // source location; this backstop exists for FUTURE variants, so a new
+    // plan kind that declares 'dom-ops' cannot silently drop the preamble —
+    // it fails the build here instead.
+    internalInvariant(
+      !(elem.preamble && elem.preamble.builderNames.length > 0 && plan.rowConstruction === 'dom-ops'),
+      `loop variant '${plan.kind}' declares dom-ops row construction but received a JSX-bearing preamble — add a Phase-1 refusal (or wire renderPreamble support) for this shape`,
+    )
     stringifyLoop(lines, plan)
     emitLoopEventDelegation(lines, elem, plan.kind, ctx.profile ? ctx.componentName : undefined)
   }

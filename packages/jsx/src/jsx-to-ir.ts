@@ -4183,7 +4183,32 @@ function transformMapCall(
           // runs the same body). Mirrors the const-preamble gate above and the
           // Stage-1 filter/sort sites (all consult `acceptsCallbackBody`).
           const jsRuntime = isClientOnly || (ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
-          if (!jsRuntime) {
+          if (children.length === 0) {
+            // The return shape produced no loop children (a bare identifier
+            // `return out`, a ternary, any non-element return): there is no
+            // single template root to host the built elements, so the loop IR
+            // can't exist and the fallback would splice the raw callback —
+            // JSX included — verbatim into an expression anchor (a silent
+            // leak on EVERY tier, /* @client */ included). Refuse loudly with
+            // restructuring guidance; the return-shape holes pinned by
+            // map-body-no-silent-divergence.test.ts close here.
+            ctx.analyzer.errors.push(
+              createError(
+                ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+                getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
+                {
+                  message:
+                    'A .map() callback that builds JSX in a statement before its ' +
+                    '`return` must return a single JSX element that embeds the ' +
+                    'built array — this return shape has no element root to host it.',
+                  suggestion: {
+                    message:
+                      'Wrap the result in one element root, e.g. `return <tr key={item.id}>{out}</tr>`.',
+                  },
+                }
+              )
+            )
+          } else if (!jsRuntime) {
             ctx.analyzer.errors.push(
               createError(
                 ErrorCodes.UNSUPPORTED_JSX_PATTERN,
@@ -4318,8 +4343,40 @@ function transformMapCall(
 
   // Stage 3 / D4 — flag element-array children ({out}) built by the preamble so
   // Phase-2 string emission joins them instead of `String([])`-collapsing them.
-  if (declaredNameSet) {
-    flagArrayChildExpressions(children, declaredNameSet)
+  // Scoped to builderNames (leaf accumulators), NOT all declared locals — a
+  // value-only `{label}` keeps its historical plain interpolation.
+  if (preamble && preamble.builderNames.length > 0) {
+    flagArrayChildExpressions(children, new Set(preamble.builderNames))
+  }
+
+  // Stage 3 root cure — a JSX-building preamble feeding a COMPONENT root is
+  // refused: the component loop's rows are createComponent-driven ('dom-ops'
+  // row construction), and a lowered HTML-string leaf passed as a prop would
+  // silently diverge from SSR, where the same prop is a real JSX element.
+  if (
+    preamble &&
+    preamble.builderNames.length > 0 &&
+    children.length === 1 &&
+    children[0].type === 'component'
+  ) {
+    ctx.analyzer.errors.push(
+      createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
+        message:
+          'A .map() callback that builds JSX in its preamble cannot return a ' +
+          'component: the built elements would reach the component as raw HTML ' +
+          'strings on the client but as JSX elements at SSR (a silent divergence).',
+        suggestion: {
+          message:
+            'Return a plain element root that embeds the array, or move the ' +
+            'building logic inside the component.',
+        },
+      })
+    )
+    // Refused = not carried (the old "do NOT collect" principle): codegen
+    // still runs on an errored compile, and the dom-ops backstop invariant
+    // must stay a FUTURE-variant tripwire, not re-fire on shapes Phase 1
+    // already refused loudly.
+    preamble = undefined
   }
 
   // Extract childComponent info if the loop body is a single component
@@ -4663,6 +4720,8 @@ function preambleFromValueStatements(
     segments: trimPreambleSegments(segments),
     ssrText: tsxSourceText(typedParts.join(' ')),
     declaredNames: [...declared],
+    // Value-only preambles accumulate no JSX, so no child needs the array join.
+    builderNames: [],
   }
 }
 
@@ -4697,7 +4756,31 @@ function buildPreambleSegments(
   const segments: PreambleSegment[] = []
   const typedParts: string[] = []
   const declared = new Set<string>()
+  const builders = new Set<string>()
   let refusalNode: ts.Node | undefined
+
+  // Which local does this leaf accumulate into? The `push`/`unshift` receiver
+  // (`out.push(<td/>)`) or the declaration target of a leaf-bearing
+  // initializer (`const out = xs.map(x => <td/>)`). Only these names get the
+  // `{out}` array-join child emission — a value-only local must keep its
+  // plain interpolation (pinned by client-js-generation.test.ts #520).
+  const recordBuilderTarget = (leaf: ts.Node, stmt: ts.Statement): void => {
+    for (let n: ts.Node | undefined = leaf.parent; n && n !== stmt.parent; n = n.parent) {
+      if (
+        ts.isCallExpression(n) &&
+        ts.isPropertyAccessExpression(n.expression) &&
+        (n.expression.name.text === 'push' || n.expression.name.text === 'unshift') &&
+        ts.isIdentifier(n.expression.expression)
+      ) {
+        builders.add(n.expression.expression.text)
+        return
+      }
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name)) {
+        builders.add(n.name.text)
+        return
+      }
+    }
+  }
 
   for (const stmt of statements) {
     if (stmt === returnStmt) break
@@ -4710,6 +4793,7 @@ function buildPreambleSegments(
     const collect = (n: ts.Node, underTemplate: boolean): void => {
       if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) {
         if (underTemplate) refusalNode ??= n
+        recordBuilderTarget(n, stmt)
         leafSpans.push({ start: n.getStart(ctx.sourceFile), end: n.getEnd() })
         const ir = transformNode(n as ts.Expression, ctx)
         if (ir && preambleFragmentNeedsWiring(ir)) refusalNode ??= n
@@ -4757,6 +4841,7 @@ function buildPreambleSegments(
       segments: trimPreambleSegments(segments),
       ssrText: tsxSourceText(typedParts.join(' ')),
       declaredNames: [...declared],
+      builderNames: [...builders],
     },
     refusalNode,
   }

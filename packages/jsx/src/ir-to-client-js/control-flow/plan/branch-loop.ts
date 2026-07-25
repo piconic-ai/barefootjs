@@ -21,6 +21,8 @@ import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 
 export interface BranchPlainLoopPlan {
   kind: 'plain'
+  /** See LoopPlanCommon.rowConstruction — required on every variant. */
+  rowConstruction: 'string-template' | 'dom-ops'
   /**
    * Variable suffix for the container lookup — e.g. for slotId `s4` the
    * stringifier emits `__loop_s4` and queries via `$(__branchScope, 's4')`.

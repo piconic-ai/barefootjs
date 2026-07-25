@@ -60,6 +60,10 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
 
   return {
     kind: 'component',
+    // Rows are createComponent-driven: a lowered HTML-string leaf passed as a
+    // prop would diverge from SSR (which passes real JSX elements). The plan
+    // dispatcher refuses a JSX-bearing preamble on this variant.
+    rowConstruction: 'dom-ops',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     arrayExpr: buildChainedArrayExpr(elem),

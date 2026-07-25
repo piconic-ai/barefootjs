@@ -37,6 +37,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
 
   return {
     kind: 'composite',
+    rowConstruction: 'string-template',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     arrayExpr: buildChainedArrayExpr(elem),
@@ -93,6 +94,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
 
   return {
     kind: 'composite',
+    rowConstruction: 'string-template',
     containerVar: `__loop_${cv}`,
     markerId: loop.markerId,
     // Chain `.filter()` / `.toSorted()` onto the source array so the mapArray

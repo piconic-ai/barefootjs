@@ -810,8 +810,16 @@ export interface MapCallbackPreamble {
   segments: PreambleSegment[]
   /** Raw preamble source (types + JSX intact) for JSX-runtime SSR adapters. */
   ssrText: TsxSourceText
-  /** const/let/function names the preamble declares (D5 key guard, {out} join). */
+  /** const/let/function names the preamble declares (D5 key-derivability guard). */
   declaredNames: string[]
+  /**
+   * The subset of {@link declaredNames} that accumulate JSX leaves — the
+   * `push`/`unshift` targets of a `jsx` segment and the declaration targets of
+   * a leaf-bearing initializer (`const out = xs.map(x => <td/>)`). Only these
+   * get the `{out}` array-join child emission; a value-only local (`{label}`)
+   * keeps the plain interpolation it always had.
+   */
+  builderNames: string[]
 }
 
 /**

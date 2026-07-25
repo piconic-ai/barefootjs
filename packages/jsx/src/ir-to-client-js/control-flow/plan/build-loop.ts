@@ -93,6 +93,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
 
   return {
     kind: 'plain',
+    rowConstruction: 'string-template',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
@@ -148,6 +149,7 @@ export function buildStaticLoopPlan(elem: TopLevelLoop, unsafeLocalNames: Set<st
 
   return {
     kind: 'static',
+    rowConstruction: 'string-template',
     containerVar: `_${varSlotId(elem.slotId)}`,
     arrayExpr: elem.array,
     param: elem.param,
