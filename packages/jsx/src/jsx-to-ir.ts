@@ -4162,29 +4162,64 @@ function transformMapCall(
             children = [transformed]
           }
         }
-        const preambleStmts: string[] = []
-        const templatePreambleStmts: string[] = []
-        const typedPreambleStmts: string[] = []
-        let hasTypeDiff = false
-        let hasTemplateDiff = false
-        for (const stmt of body.statements) {
-          if (stmt === returnStmt) break
-          const js = ctx.getJS(stmt)
-          const tjs = ctx.getTemplateJS(stmt)
-          const ts = stmt.getText(ctx.sourceFile)
-          preambleStmts.push(js.endsWith(';') ? js : js + ';')
-          templatePreambleStmts.push(tjs.endsWith(';') ? tjs : tjs + ';')
-          typedPreambleStmts.push(ts.endsWith(';') ? ts : ts + ';')
-          if (js !== ts) hasTypeDiff = true
-          if (js !== tjs) hasTemplateDiff = true
-        }
-        if (preambleStmts.length > 0) {
-          mapPreamble = preambleStmts.join(' ')
-          if (hasTemplateDiff) {
-            templateMapPreamble = templatePreambleStmts.join(' ')
+        // Stage 3 of spec/callback-fidelity.md — an arbitrary `.map()` body that
+        // *constructs* JSX in a statement before its `return` (the classic
+        // `const out = []; for (const c of it.cells) out.push(<td>{c}</td>);
+        // return <tr>{out}</tr>` array-builder) cannot be lowered to a template.
+        // The preamble collector below reconstructs each statement with
+        // `ctx.getJS`, which strips *types* but not JSX, so the raw `<td>{c}</td>`
+        // would splice verbatim into the emitted client bundle — invalid JS, a
+        // silent syntax-error leak with no diagnostic. Refuse loudly instead of
+        // leaking. (A later Stage-3 PR renders such bodies verbatim on JS
+        // runtimes; until then it is a build error on every backend.)
+        const jsxPreambleStmt = body.statements.find(
+          s => s !== returnStmt && containsJsxInExpression(s)
+        )
+        if (jsxPreambleStmt) {
+          ctx.analyzer.errors.push(
+            createError(
+              ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+              getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
+              {
+                message:
+                  'A .map() callback that builds JSX in a statement before its ' +
+                  '`return` (for example pushing elements into an array in a loop) ' +
+                  'cannot be lowered to a template.',
+                suggestion: {
+                  message:
+                    'Return the JSX directly — e.g. project with a nested .map() ' +
+                    'inside the returned element — instead of constructing it in a ' +
+                    'preceding statement.',
+                },
+              }
+            )
+          )
+          // Do NOT collect the JSX-bearing preamble: that splice is the leak.
+        } else {
+          const preambleStmts: string[] = []
+          const templatePreambleStmts: string[] = []
+          const typedPreambleStmts: string[] = []
+          let hasTypeDiff = false
+          let hasTemplateDiff = false
+          for (const stmt of body.statements) {
+            if (stmt === returnStmt) break
+            const js = ctx.getJS(stmt)
+            const tjs = ctx.getTemplateJS(stmt)
+            const ts = stmt.getText(ctx.sourceFile)
+            preambleStmts.push(js.endsWith(';') ? js : js + ';')
+            templatePreambleStmts.push(tjs.endsWith(';') ? tjs : tjs + ';')
+            typedPreambleStmts.push(ts.endsWith(';') ? ts : ts + ';')
+            if (js !== ts) hasTypeDiff = true
+            if (js !== tjs) hasTemplateDiff = true
           }
-          if (hasTypeDiff) {
-            typedMapPreamble = typedPreambleStmts.join(' ')
+          if (preambleStmts.length > 0) {
+            mapPreamble = preambleStmts.join(' ')
+            if (hasTemplateDiff) {
+              templateMapPreamble = templatePreambleStmts.join(' ')
+            }
+            if (hasTypeDiff) {
+              typedMapPreamble = typedPreambleStmts.join(' ')
+            }
           }
         }
       }
