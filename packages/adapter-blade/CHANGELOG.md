@@ -1,5 +1,42 @@
 # @barefootjs/blade
 
+## 0.26.3
+
+### Patch Changes
+
+- 87d5508: Adapter-gate the Phase-1 `BF021` refusal for off-subset `filter` predicates and `sort` comparators (callback-body fidelity, Stage 1 of `spec/callback-fidelity.md`).
+
+  An off-catalogue `filter` predicate or `sort` comparator (`typeof`, a function call, a nested higher-order method, …) previously raised `BF021` in Phase 1 — before any adapter was consulted — rejecting the code for every target, including JS runtimes whose template engine could run the callback verbatim. The refusal is now adapter-conditional via a new `acceptsCallbackBody` capability on `TemplateAdapter`:
+
+  - JS-runtime adapters (`JsxAdapter` — Hono, CSR) accept any `filter`/`sort` callback body and run it as written.
+  - DSL adapters keep the `BF021` refusal and the explicit `/* @client */` escape to defer the shape to client-only rendering.
+
+  SSR/CSR parity is unchanged: per-backend fidelity means per-backend SSR coverage, with the browser as the common fully-faithful floor. Each DSL adapter declares the expected diagnostic for the new `filter-typeof-predicate` conformance fixture via its `conformancePins`.
+
+- 30a5cfb: Fold `.map()` bodies with a leading `const`/`let` preamble, adapter-gated (callback-body fidelity, Stage 2 of `spec/callback-fidelity.md`).
+
+  A `.map()` callback body with a leading `const` before an if/else-if chain or `switch` (`{ const label = fmt(it); if (it.on) return <b/>; return <span/> }`) now folds into a nested `IRConditional` with the declarations emitted once per iteration, so the local is in scope in every branch. Because a DSL backend can't carry a loop-local into a conditional branch template, the fold is adapter-gated like the off-subset filter/sort predicates: a JS-runtime adapter (Hono, CSR) folds and runs it, while a DSL adapter refuses with `BF021` + the `/* @client */` escape rather than rendering the local `undefined` (a silent divergence). Covered by the `map-preamble-branch-body` conformance fixture (JS-runtime faithful, pinned BF021 on every DSL adapter) and the `map-multi-return-body` compiler-unit test (fold / refuse / `@client`-escape). A branch-local `const` (inside a branch block or case) and statement-level imperative nested loops remain unfolded — the latter is Stage 3's verbatim-JS territory.
+
+- 06dc399: Close the latent `.fill()` gap and correct stale `reduce` documentation (callback-body fidelity, Stage 1 of `spec/callback-fidelity.md`).
+
+  `Array.prototype.fill(value)` had no template lowering on any DSL adapter but was reported "supported" by `isSupported`, so the DSL adapters emitted a raw `.fill(...)` method call with no build diagnostic — a silent footgun that only surfaced as a crash at template-render time. `fill` is now in the `UNSUPPORTED_METHODS` gate, so a DSL build fails loudly with BF101 and points at the `/* @client */` escape; a JS-runtime adapter (Hono, CSR) still runs it verbatim, since those skip `isSupported`. Covered by the `fill-unsupported` conformance fixture (JS-runtime faithful / DSL-diagnostic, pinned BF101 on every DSL adapter).
+
+  Also corrects two stale comments in `expression-parser.ts` (the claim that `find`/`some`/`every`/… are "intercepted as `higher-order` IR", and that `reduce` folds into a structured `ReduceOp` before the gate — neither is true; both flow through the runtime evaluator as a generic `call`) and removes the dead, never-referenced `ReduceMethod` type from `parsed-expr-emitter.ts`.
+
+- dd098fa: Render arbitrary array-builder `.map()` bodies verbatim on JS-runtime adapters (callback-body fidelity, Stage 3 / D4 + D5 of `spec/callback-fidelity.md`).
+
+  A `.map()` callback that constructs JSX in a statement before its `return` — the imperative array-builder `{ const out = []; for (const c of r.cells) out.push(<td>{c}</td>); return <tr key={r.id}>{out}</tr> }` — previously refused on every backend (it would otherwise leak raw JSX into the plain-JS bundle). On a JS-runtime adapter it now renders verbatim: each JSX leaf lowers to a template-literal HTML string (reusing the flatMap-callback fragment mechanism), the imperative control flow runs as-is, and the `{out}` element-array child is joined into the row so SSR, hydration, and CSR all render identical markup. The loop key is hoisted (D5): it is derived from the raw item and evaluated before the body runs, so a key that reads a preamble-computed local is refused rather than compiled to an unbound `keyFn`. A leaf that carries an event handler, a component, a nested loop, a reactive expression, or a spread is refused loudly (no silent divergence). A DSL adapter refuses the whole shape with `BF021` + the `/* @client */` escape (which renders the loop client-only, where the browser runs the same verbatim body). Covered by the `map-array-builder-body` conformance fixture (JS-runtime faithful, pinned BF021 on every DSL adapter) and the rewritten `map-arbitrary-body` compiler-unit test (verbatim lowering, `{out}` join, keyFn hoist, key-derivability and leaf-scope refusals). Also fixes a latent bug where `TestAdapter.renderLoop` dropped the `.map()` preamble entirely.
+
+- 5b65cf2: Lock the per-backend fidelity split for off-subset `.find()` / `.some()` / `.every()` predicates (callback-body fidelity, Stage 1 of `spec/callback-fidelity.md`).
+
+  These search/predicate methods already render verbatim on JS-runtime adapters (Hono, CSR) and refuse with BF101 + the `/* @client */` escape on DSL adapters — the split existed but had no conformance coverage. Adds `find-typeof-predicate`, `some-typeof-predicate`, and `every-typeof-predicate` fixtures (a `typeof` guard the evaluator can't lower) and pins each BF101 on all eight DSL adapters, so a regression that either silently mis-lowered them on a DSL backend or refused them on a JS runtime is caught.
+
+- a855122: Lock the per-backend fidelity split for off-subset `.reduce()` / `.reduceRight()` reducers and `.flatMap()` projections (callback-body fidelity, Stage 1 of `spec/callback-fidelity.md`).
+
+  These fold/projection methods already run verbatim on JS-runtime adapters (Hono, CSR) and refuse with BF101 + the `/* @client */` escape on DSL adapters — the split existed but had no conformance coverage. Adds `reduce-typeof-body`, `reduce-right-typeof-body`, and `flatmap-typeof-projection` fixtures (a `typeof` guard the evaluator can't lower) and pins each BF101 on all eight DSL adapters, so a regression that either silently mis-lowered them on a DSL backend or refused them on a JS runtime is caught. Completes Stage 1's callback-method coverage.
+
+  - @barefootjs/shared@0.26.3
+
 ## 0.26.2
 
 ### Patch Changes

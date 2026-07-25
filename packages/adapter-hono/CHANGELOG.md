@@ -1,5 +1,19 @@
 # @barefootjs/hono
 
+## 0.26.3
+
+### Patch Changes
+
+- 8b8e2f6: Unify flatMap callbacks onto the structured-segments carrier — the `__BF_JSX_N__` sentinel ceases to exist.
+
+  `FlatMapCallback` was the last user of the sentinel-string mechanism (body text with `__BF_JSX_N__` placeholders, substitution duplicated per emitter). It now carries the same structure as `.map()` preambles — js-text / compiled-JSX-leaf segments rendered through the single `renderPreamble()` door, plus `TsxSourceText`-branded raw TSX for JSX-runtime SSR — so the placeholder concept (and its user-string collision hazard and per-emitter `String.replace` fragility) is gone from the compiler entirely. Riding the shared machinery brings three behavior fixes to flatMap block bodies: leaf text interpolations now escape like the SSR JSX runtime, TypeScript type annotations in the body are now stripped from the client bundle (previously spliced raw), and a JSX leaf inside a template literal is refused explicitly. These are pinned at the compiler-unit level (`flatmap-segments.test.ts`); a byte-parity conformance fixture is deliberately deferred — the flatMap CSR string render has pre-existing structural asymmetries against the Hono rawBody SSR path (client-only leaf `data-key` with an unescaped attribute value, client-only slot markers) tracked as a known limitation in #2384. Analysis walkers (`attachParsedExpressions`, loop-bound names, rich-type refusal) now also visit `.map()`-preamble leaf IR, closing an analysis-coverage gap. A test-gated `getJS` trust-boundary assertion (armed by the trichotomy harness) makes any future "raw JSX spliced into output on an error-free compile" throw at the source instead of leaking.
+
+- 9aae7b1: Root-cure the `.map()` callback-preamble pipeline (Stage 3 of `spec/callback-fidelity.md`).
+
+  The preamble was carried as sentinel-bearing strings (`mapPreamble` + `__BF_JSX_N__` placeholders) whose substitution obligations were spread across every loop emitter — each unwired emitter silently leaked raw JSX or sentinels into the client bundle. Probing found five such silent holes (bare-identifier return, multi-root fragment return, ternary return after a builder preamble, nested inner map, conditional-branch loop). The carrier is now a structured type: `MapCallbackPreamble` segments (JS text / compiled JSX-leaf IR) plus `TsxSourceText`-branded raw TSX for JSX-runtime SSR, rendered exclusively through `renderPreamble()` — a consumer that can't call it cannot splice the preamble, so a missing wire-up is a type error, not a runtime leak.
+
+  All five holes are closed: the migration itself healed multi-root, nested-inner-map, and branch-loop (nested verified to full parity — array-builder bodies now render inside nested maps and conditional branches); a Phase-1 acceptance guard refuses the return shapes that have no element root (`return out`, ternaries) with restructuring guidance; a builder feeding a component root is refused (the component would receive HTML strings client-side but JSX elements at SSR); and every loop plan variant now declares its row-construction capability (`rowConstruction`), with a dispatcher backstop so a future variant cannot silently drop a preamble. Leaf text interpolations now escape like the SSR JSX runtime (`escapeText` applied once at the `renderPreamble` door; `map-array-builder-escaping` fixture pins byte parity). The `{out}` array-join is scoped precisely to leaf-accumulating locals, fixing a spurious join on value-only locals. The no-silent-divergence invariant is executable (`map-body-no-silent-divergence.test.ts`): every `.map()` body shape must compile sound or refuse loudly, and the known-hole set is empty and shrink-only. A JSX leaf inside a template literal in a preamble is refused explicitly.
+
 ## 0.26.2
 
 ## 0.26.1
