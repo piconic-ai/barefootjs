@@ -2279,6 +2279,56 @@
           ]
         }
       },
+      "map-array-builder-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        }
+      },
       "map-preamble-branch-body": {
         "blade": {
           "kind": "refusal",
@@ -2660,6 +2710,10 @@
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
+      },
+      "map-array-builder-body": {
+        "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
       },
       "map-preamble-branch-body": {
         "description": "const preamble + if/else as a .map() body — JS-runtime folds, DSL refuses (BF021)",
