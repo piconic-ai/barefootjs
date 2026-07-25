@@ -53,6 +53,16 @@ describe('.map() array-builder body — JS-runtime verbatim (Stage 3 / D4)', () 
     expect(cj).toMatch(/out\.push\(`<td>/)
   })
 
+  test('leaf text interpolations escape like the SSR JSX runtime (parity)', () => {
+    // A JSX-runtime SSR adapter auto-escapes `{c}`; the client's HTML-string
+    // lowering must escape the same position (renderPreamble's leaf door) or
+    // special characters in data would parse as markup client-side only.
+    // Byte-level parity is pinned by the map-array-builder-escaping fixture.
+    const r = compile(arrayBuilder, false)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    expect(cj).toMatch(/out\.push\(`<td>\$\{escapeText\(\(c\)\)\}<\/td>`\)/)
+  })
+
   test('the element-array child {out} is joined into the row', () => {
     const r = compile(arrayBuilder, false)
     const cj = r.files.find(f => f.type === 'clientJs')!.content
