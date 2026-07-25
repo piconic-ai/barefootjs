@@ -27,6 +27,9 @@ import {
   type RestExcludeKey,
   type FlatMapCallback,
   type FlatMapJsxFragment,
+  type MapCallbackPreamble,
+  type PreambleSegment,
+  tsxSourceText,
   type SourceLocation,
   type TypeInfo,
   type OriginInfo,
@@ -54,7 +57,7 @@ import { toLocaleDatePlugin, foldedArgToClientJs } from './to-locale-date-loweri
 import type { LoweringMatcher } from './lowering-registry.ts'
 import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMultiReturnJsxBranches, type MultiReturnJsxBranches } from './analyzer.ts'
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
-import { reconstructWithReplacements } from './strip-types.ts'
+import { reconstructAsSegments } from './strip-types.ts'
 import { toHTMLAttrName, decodeEntities } from '@barefootjs/shared'
 
 // =============================================================================
@@ -3739,14 +3742,10 @@ function transformMapCall(
   let filterPredicate: FilterPredicateResult | undefined
   let sortComparator: IRLoopSort | undefined
   let chainOrder: 'filter-sort' | 'sort-filter' | undefined
-  let mapPreamble: string | undefined
-  let templateMapPreamble: string | undefined
-  let typedMapPreamble: string | undefined
-  // Stage 3 / D4 (spec/callback-fidelity.md) — JSX leaves compiled from an
-  // arbitrary array-builder preamble, and the names that preamble declares (for
-  // the D5 key-derivability guard and the {out} array-child join).
-  let preambleFragments: FlatMapJsxFragment[] | undefined
-  let preambleDeclaredNames: ReadonlySet<string> | undefined
+  // Structured pre-return statements of a block-body callback (Stage 3 root
+  // cure): JS text + compiled JSX leaves as segments, plus the raw TSX for
+  // JSX-runtime SSR and the declared names (D5 key guard, {out} join).
+  let preamble: MapCallbackPreamble | undefined
   let iterationShape: 'entries' | 'keys' | undefined
   let objectIteration: 'entries' | 'keys' | 'values' | undefined
 
@@ -4110,24 +4109,7 @@ function transformMapCall(
           // the conditional — the same carrier the single-return path uses. A
           // JS-runtime adapter (and the browser under /* @client */) runs it
           // verbatim.
-          const jsStmts: string[] = []
-          const tplStmts: string[] = []
-          const typedStmts: string[] = []
-          let tplDiff = false
-          let typeDiff = false
-          for (const stmt of pre) {
-            const js = ctx.getJS(stmt)
-            const tjs = ctx.getTemplateJS(stmt)
-            const raw = stmt.getText(ctx.sourceFile)
-            jsStmts.push(js.endsWith(';') ? js : js + ';')
-            tplStmts.push(tjs.endsWith(';') ? tjs : tjs + ';')
-            typedStmts.push(raw.endsWith(';') ? raw : raw + ';')
-            if (js !== raw) typeDiff = true
-            if (js !== tjs) tplDiff = true
-          }
-          mapPreamble = jsStmts.join(' ')
-          if (tplDiff) templateMapPreamble = tplStmts.join(' ')
-          if (typeDiff) typedMapPreamble = typedStmts.join(' ')
+          preamble = preambleFromValueStatements(pre, ctx)
 
           // A DSL adapter can't carry a loop-local `const` into a conditional
           // branch template, so it would render the branches with the local
@@ -4201,7 +4183,32 @@ function transformMapCall(
           // runs the same body). Mirrors the const-preamble gate above and the
           // Stage-1 filter/sort sites (all consult `acceptsCallbackBody`).
           const jsRuntime = isClientOnly || (ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
-          if (!jsRuntime) {
+          if (children.length === 0) {
+            // The return shape produced no loop children (a bare identifier
+            // `return out`, a ternary, any non-element return): there is no
+            // single template root to host the built elements, so the loop IR
+            // can't exist and the fallback would splice the raw callback —
+            // JSX included — verbatim into an expression anchor (a silent
+            // leak on EVERY tier, /* @client */ included). Refuse loudly with
+            // restructuring guidance; the return-shape holes pinned by
+            // map-body-no-silent-divergence.test.ts close here.
+            ctx.analyzer.errors.push(
+              createError(
+                ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+                getSourceLocation(jsxPreambleStmt, ctx.sourceFile, ctx.filePath),
+                {
+                  message:
+                    'A .map() callback that builds JSX in a statement before its ' +
+                    '`return` must return a single JSX element that embeds the ' +
+                    'built array — this return shape has no element root to host it.',
+                  suggestion: {
+                    message:
+                      'Wrap the result in one element root, e.g. `return <tr key={item.id}>{out}</tr>`.',
+                  },
+                }
+              )
+            )
+          } else if (!jsRuntime) {
             ctx.analyzer.errors.push(
               createError(
                 ErrorCodes.UNSUPPORTED_JSX_PATTERN,
@@ -4218,11 +4225,14 @@ function transformMapCall(
               )
             )
           } else {
-            const collected = buildPreambleJsxFragments(body.statements, returnStmt, ctx)
+            const collected = buildPreambleSegments(body.statements, returnStmt, ctx)
             if (collected.refusalNode) {
               // A leaf carries wiring the verbatim path can't render (event
-              // handler, component, nested loop, reactive slot, spread). Refuse
-              // loudly (D-E) rather than emit a silently-degraded node.
+              // handler, component, nested loop, reactive slot, spread), or
+              // sits inside a template literal (a segment boundary there would
+              // split the literal's lexical state for downstream text
+              // transforms). Refuse loudly (D-E) rather than emit a
+              // silently-degraded node.
               ctx.analyzer.errors.push(
                 createError(
                   ErrorCodes.UNSUPPORTED_JSX_PATTERN,
@@ -4230,8 +4240,9 @@ function transformMapCall(
                   {
                     message:
                       'A JSX element built in a .map() callback preamble cannot carry ' +
-                      'event handlers, components, nested loops, or reactive expressions — ' +
-                      'the verbatim render path builds it once, with no reactive wiring.',
+                      'event handlers, components, nested loops, or reactive expressions, ' +
+                      'and cannot sit inside a template literal — the verbatim render ' +
+                      'path builds it once, with no reactive wiring.',
                     suggestion: {
                       message:
                         'Return the element directly (not through a preamble variable), ' +
@@ -4241,38 +4252,17 @@ function transformMapCall(
                 )
               )
             } else {
-              mapPreamble = collected.clientText
-              templateMapPreamble = collected.clientText
-              typedMapPreamble = collected.typedText
-              preambleFragments = collected.fragments
-              preambleDeclaredNames = collected.declaredNames
+              preamble = collected.preamble
             }
           }
         } else {
-          const preambleStmts: string[] = []
-          const templatePreambleStmts: string[] = []
-          const typedPreambleStmts: string[] = []
-          let hasTypeDiff = false
-          let hasTemplateDiff = false
+          const valueStmts: ts.Statement[] = []
           for (const stmt of body.statements) {
             if (stmt === returnStmt) break
-            const js = ctx.getJS(stmt)
-            const tjs = ctx.getTemplateJS(stmt)
-            const ts = stmt.getText(ctx.sourceFile)
-            preambleStmts.push(js.endsWith(';') ? js : js + ';')
-            templatePreambleStmts.push(tjs.endsWith(';') ? tjs : tjs + ';')
-            typedPreambleStmts.push(ts.endsWith(';') ? ts : ts + ';')
-            if (js !== ts) hasTypeDiff = true
-            if (js !== tjs) hasTemplateDiff = true
+            valueStmts.push(stmt)
           }
-          if (preambleStmts.length > 0) {
-            mapPreamble = preambleStmts.join(' ')
-            if (hasTemplateDiff) {
-              templateMapPreamble = templatePreambleStmts.join(' ')
-            }
-            if (hasTypeDiff) {
-              typedMapPreamble = typedPreambleStmts.join(' ')
-            }
+          if (valueStmts.length > 0) {
+            preamble = preambleFromValueStatements(valueStmts, ctx)
           }
         }
       }
@@ -4330,9 +4320,12 @@ function transformMapCall(
   // be derivable from the item (and index), never from a value the preamble
   // computes. A key that reads a preamble-declared local would compile to an
   // unbound keyFn; refuse instead.
-  if (key && preambleDeclaredNames && preambleDeclaredNames.size > 0) {
+  const declaredNameSet = preamble && preamble.declaredNames.length > 0
+    ? new Set(preamble.declaredNames)
+    : undefined
+  if (key && declaredNameSet) {
     const keyRefs = extractFreeIdentifiersFromText(key)
-    const usesLocal = [...keyRefs].some((r) => preambleDeclaredNames!.has(r))
+    const usesLocal = [...keyRefs].some((r) => declaredNameSet.has(r))
     if (usesLocal) {
       ctx.analyzer.errors.push(
         createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
@@ -4350,8 +4343,40 @@ function transformMapCall(
 
   // Stage 3 / D4 — flag element-array children ({out}) built by the preamble so
   // Phase-2 string emission joins them instead of `String([])`-collapsing them.
-  if (preambleDeclaredNames && preambleDeclaredNames.size > 0) {
-    flagArrayChildExpressions(children, preambleDeclaredNames)
+  // Scoped to builderNames (leaf accumulators), NOT all declared locals — a
+  // value-only `{label}` keeps its historical plain interpolation.
+  if (preamble && preamble.builderNames.length > 0) {
+    flagArrayChildExpressions(children, new Set(preamble.builderNames))
+  }
+
+  // Stage 3 root cure — a JSX-building preamble feeding a COMPONENT root is
+  // refused: the component loop's rows are createComponent-driven ('dom-ops'
+  // row construction), and a lowered HTML-string leaf passed as a prop would
+  // silently diverge from SSR, where the same prop is a real JSX element.
+  if (
+    preamble &&
+    preamble.builderNames.length > 0 &&
+    children.length === 1 &&
+    children[0].type === 'component'
+  ) {
+    ctx.analyzer.errors.push(
+      createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(node, ctx.sourceFile, ctx.filePath), {
+        message:
+          'A .map() callback that builds JSX in its preamble cannot return a ' +
+          'component: the built elements would reach the component as raw HTML ' +
+          'strings on the client but as JSX elements at SSR (a silent divergence).',
+        suggestion: {
+          message:
+            'Return a plain element root that embeds the array, or move the ' +
+            'building logic inside the component.',
+        },
+      })
+    )
+    // Refused = not carried (the old "do NOT collect" principle): codegen
+    // still runs on an errored compile, and the dom-ops backstop invariant
+    // must stay a FUTURE-variant tripwire, not re-fire on shapes Phase 1
+    // already refused loudly.
+    preamble = undefined
   }
 
   // Extract childComponent info if the loop body is a single component
@@ -4454,12 +4479,9 @@ function transformMapCall(
     objectIteration,
     depth,
     clientOnly: isClientOnly || undefined,
-    mapPreamble,
-    templateMapPreamble,
+    preamble,
     paramType,
     indexType,
-    typedMapPreamble,
-    preambleFragments,
     paramBindings,
     arrayFreeIdentifiers: extractFreeIdentifiersFromNode(arrayExpr),
     flatMapCallback,
@@ -4568,17 +4590,10 @@ function buildFlatMapCallback(
 
 /**
  * Stage 3 / D4 (spec/callback-fidelity.md) — the collected JSX-bearing preamble
- * of an arbitrary `.map()` callback (an imperative array-builder).
+ * of an arbitrary `.map()` callback (an imperative array-builder), structured.
  */
 interface PreambleCollection {
-  /** Pre-return statements, TS types stripped, each JSX leaf → `__BF_JSX_N__`. */
-  clientText: string
-  /** Same statements verbatim (types + raw JSX kept) for JS-runtime SSR adapters. */
-  typedText: string
-  /** Compiled IR per placeholder, in index order. */
-  fragments: FlatMapJsxFragment[]
-  /** const/let/function names the preamble declares (D5 key guard, {out} join). */
-  declaredNames: Set<string>
+  preamble: MapCallbackPreamble
   /** Set when a leaf carries wiring the verbatim path can't render (D-E). */
   refusalNode?: ts.Node
 }
@@ -4679,65 +4694,155 @@ function collectPreambleDeclaredNames(stmt: ts.Statement, out: Set<string>): voi
 }
 
 /**
- * Collect an arbitrary `.map()` callback's pre-return statements, replacing each
- * top-level JSX leaf with a `__BF_JSX_N__` placeholder (mirrors
- * {@link buildFlatMapCallback}). `clientText` is type-stripped for the plain-JS
- * bundle; `typedText` keeps the raw JSX so a JS-runtime SSR adapter renders it
- * natively. Each leaf is compiled to IR (and checked against
- * {@link preambleFragmentNeedsWiring}). Never regex over JS — the placeholder
- * swap is a single AST-span reconstruction ({@link reconstructWithReplacements}).
+ * Build a {@link MapCallbackPreamble} from value-only (JSX-free) pre-return
+ * statements — the Stage-2 fold preamble and the plain block-body preamble.
+ * One `js` segment per statement, semicolon-normalized and space-joined
+ * exactly as the former string carriers were.
  */
-function buildPreambleJsxFragments(
+function preambleFromValueStatements(
+  statements: readonly ts.Statement[],
+  ctx: TransformContext,
+): MapCallbackPreamble {
+  const segments: PreambleSegment[] = []
+  const typedParts: string[] = []
+  const declared = new Set<string>()
+  for (const stmt of statements) {
+    collectPreambleDeclaredNames(stmt, declared)
+    const js0 = ctx.getJS(stmt)
+    const tjs0 = ctx.getTemplateJS(stmt)
+    const raw0 = stmt.getText(ctx.sourceFile)
+    const js = (js0.endsWith(';') ? js0 : js0 + ';') + ' '
+    const tjs = (tjs0.endsWith(';') ? tjs0 : tjs0 + ';') + ' '
+    typedParts.push(raw0.endsWith(';') ? raw0 : raw0 + ';')
+    segments.push(tjs !== js ? { kind: 'js', text: js, templateText: tjs } : { kind: 'js', text: js })
+  }
+  return {
+    segments: trimPreambleSegments(segments),
+    ssrText: tsxSourceText(typedParts.join(' ')),
+    declaredNames: [...declared],
+    // Value-only preambles accumulate no JSX, so no child needs the array join.
+    builderNames: [],
+  }
+}
+
+/** Drop the trailing separator space from the final js segment. */
+function trimPreambleSegments(segments: PreambleSegment[]): PreambleSegment[] {
+  const last = segments[segments.length - 1]
+  if (last?.kind === 'js') {
+    const text = last.text.trimEnd()
+    const templateText = last.templateText?.trimEnd()
+    segments[segments.length - 1] = templateText !== undefined
+      ? { kind: 'js', text, templateText }
+      : { kind: 'js', text }
+  }
+  return segments
+}
+
+/**
+ * Collect an arbitrary `.map()` callback's pre-return statements as structured
+ * segments: JS text between JSX leaves becomes `js` segments (types stripped via
+ * the same span-walk as `reconstructWithoutTypes`), each top-level JSX leaf
+ * becomes a `jsx` segment carrying its compiled IR. No sentinel string ever
+ * exists. Each leaf is checked against {@link preambleFragmentNeedsWiring}; a
+ * leaf inside a template literal is refused (a segment boundary there would
+ * split the literal's lexical state for downstream per-segment text
+ * transforms).
+ */
+function buildPreambleSegments(
   statements: ts.NodeArray<ts.Statement>,
   returnStmt: ts.Statement | undefined,
   ctx: TransformContext,
 ): PreambleCollection {
-  const clientParts: string[] = []
+  const segments: PreambleSegment[] = []
   const typedParts: string[] = []
-  const fragments: FlatMapJsxFragment[] = []
-  const declaredNames = new Set<string>()
+  const declared = new Set<string>()
+  const builders = new Set<string>()
   let refusalNode: ts.Node | undefined
-  let fragIndex = 0
+
+  // Which local does this leaf accumulate into? The `push`/`unshift` receiver
+  // (`out.push(<td/>)`) or the declaration target of a leaf-bearing
+  // initializer (`const out = xs.map(x => <td/>)`). Only these names get the
+  // `{out}` array-join child emission — a value-only local must keep its
+  // plain interpolation (pinned by client-js-generation.test.ts #520).
+  const recordBuilderTarget = (leaf: ts.Node, stmt: ts.Statement): void => {
+    for (let n: ts.Node | undefined = leaf.parent; n && n !== stmt.parent; n = n.parent) {
+      if (
+        ts.isCallExpression(n) &&
+        ts.isPropertyAccessExpression(n.expression) &&
+        (n.expression.name.text === 'push' || n.expression.name.text === 'unshift') &&
+        ts.isIdentifier(n.expression.expression)
+      ) {
+        builders.add(n.expression.expression.text)
+        return
+      }
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name)) {
+        builders.add(n.name.text)
+        return
+      }
+    }
+  }
 
   for (const stmt of statements) {
     if (stmt === returnStmt) break
-    collectPreambleDeclaredNames(stmt, declaredNames)
+    collectPreambleDeclaredNames(stmt, declared)
 
     // Top-level JSX leaves in this statement — don't descend into a JSX node
-    // (transformNode compiles its interior). Same walk as buildFlatMapCallback.
-    const jsxSpans: Array<{ start: number; end: number; text: string }> = []
-    const collect = (n: ts.Node): void => {
+    // (transformNode compiles its interior). Mirrors buildFlatMapCallback.
+    const leafSpans: Array<{ start: number; end: number }> = []
+    const leafIrs: IRNode[] = []
+    const collect = (n: ts.Node, underTemplate: boolean): void => {
       if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) {
-        const placeholder = `__BF_JSX_${fragIndex++}__`
-        jsxSpans.push({ start: n.getStart(ctx.sourceFile), end: n.getEnd(), text: placeholder })
+        if (underTemplate) refusalNode ??= n
+        recordBuilderTarget(n, stmt)
+        leafSpans.push({ start: n.getStart(ctx.sourceFile), end: n.getEnd() })
         const ir = transformNode(n as ts.Expression, ctx)
         if (ir && preambleFragmentNeedsWiring(ir)) refusalNode ??= n
-        fragments.push({
-          placeholder,
-          ir: ir ?? { type: 'text', value: '', loc: getSourceLocation(n, ctx.sourceFile, ctx.filePath) },
-        })
+        leafIrs.push(ir ?? { type: 'text', value: '', loc: getSourceLocation(n, ctx.sourceFile, ctx.filePath) })
         return
       }
-      n.forEachChild(collect)
+      const inTemplate = underTemplate || ts.isTemplateExpression(n) || ts.isTaggedTemplateExpression(n)
+      n.forEachChild((c) => collect(c, inTemplate))
     }
-    collect(stmt)
+    collect(stmt, false)
 
-    const clientText = reconstructWithReplacements(
-      stmt,
-      ctx.sourceFile,
-      ctx.analyzer.typeExcludeRanges,
-      jsxSpans,
-    )
-    const rawText = stmt.getText(ctx.sourceFile)
-    clientParts.push(clientText.endsWith(';') ? clientText : clientText + ';')
-    typedParts.push(rawText.endsWith(';') ? rawText : rawText + ';')
+    const raw0 = stmt.getText(ctx.sourceFile)
+    typedParts.push(raw0.endsWith(';') ? raw0 : raw0 + ';')
+
+    if (leafSpans.length === 0) {
+      const js0 = ctx.getJS(stmt)
+      const tjs0 = ctx.getTemplateJS(stmt)
+      const js = (js0.endsWith(';') ? js0 : js0 + ';') + ' '
+      const tjs = (tjs0.endsWith(';') ? tjs0 : tjs0 + ';') + ' '
+      segments.push(tjs !== js ? { kind: 'js', text: js, templateText: tjs } : { kind: 'js', text: js })
+      continue
+    }
+
+    const pieces = reconstructAsSegments(stmt, ctx.sourceFile, ctx.analyzer.typeExcludeRanges, leafSpans)
+    for (const piece of pieces) {
+      if ('marker' in piece) {
+        segments.push({ kind: 'jsx', ir: leafIrs[piece.marker] })
+      } else {
+        // Per-segment template variant: the destructured-prop rewrite is a text
+        // transform; leaf refusal above guarantees segment boundaries never
+        // split a string/template literal's lexical state.
+        const tpl = rewriteBarePropRefs(piece.js, stmt, ctx)
+        segments.push(tpl !== undefined && tpl !== piece.js
+          ? { kind: 'js', text: piece.js, templateText: tpl }
+          : { kind: 'js', text: piece.js })
+      }
+    }
+    // Statement separator + semicolon normalization (the raw text may omit `;`).
+    const sep = raw0.endsWith(';') ? ' ' : '; '
+    segments.push({ kind: 'js', text: sep })
   }
 
   return {
-    clientText: clientParts.join(' '),
-    typedText: typedParts.join(' '),
-    fragments,
-    declaredNames,
+    preamble: {
+      segments: trimPreambleSegments(segments),
+      ssrText: tsxSourceText(typedParts.join(' ')),
+      declaredNames: [...declared],
+      builderNames: [...builders],
+    },
     refusalNode,
   }
 }

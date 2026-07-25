@@ -393,7 +393,7 @@ export function collectInnerLoops(
           objectIteration: n.objectIteration,
           containerSlotId: scope.parentSlotId,
           template,
-          mapPreamble: n.mapPreamble,
+          preamble: n.preamble,
           refsOuterParam: refsOuter,
           childComponents,
           insideConditional: !flat && scope.insideCond ? true : undefined,
@@ -776,8 +776,7 @@ export function collectElements(
           raw: l.sortComparator.raw,
         } : undefined,
         chainOrder: l.chainOrder,
-        mapPreamble: l.mapPreamble,
-        preambleFragments: l.preambleFragments,
+        preamble: l.preamble,
       })
       // Don't descend — loop-scoped variables are only available inside the iteration.
     },
@@ -1112,7 +1111,7 @@ function collectBranchLoops(
         objectIteration: n.objectIteration,
         template: childTemplate,
         containerSlotId: containerSlot,
-        mapPreamble: n.mapPreamble ?? null,
+        preamble: n.preamble,
         nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
         bindings: branchBindings,
         innerLoops: useElementReconciliation ? innerLoopsCollected : undefined,

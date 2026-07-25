@@ -29,6 +29,7 @@ import {
   attrValueToString,
 } from '../../utils.ts'
 import { buildChildRefBindings, buildStaticChildRefBindings } from '../shared.ts'
+import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 
 /**
  * Mirror of the helper in `build-loop-child-arm.ts` — kept local to avoid
@@ -115,7 +116,7 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
     const useReactive = refsParent && !!inner.template
 
     const emit: InnerLoopReactiveEmit | InnerLoopStaticEmit = useReactive
-      ? buildReactiveEmit(inner, level, wrapOuter, uidSuffix)
+      ? buildReactiveEmit(inner, level, wrapOuter, uidSuffix, outerLoopParam, outerLoopParamBindings)
       : buildStaticEmit(inner, level, uidSuffix)
 
     const arrayExpr = useReactive ? wrapOuter(inner.array) : inner.array
@@ -155,6 +156,8 @@ function buildReactiveEmit(
   level: DepthLevel,
   wrapOuter: (expr: string) => string,
   uidSuffix: string,
+  outerLoopParam?: string,
+  outerLoopParamBindings?: readonly LoopParamBinding[],
 ): InnerLoopReactiveEmit {
   const wrapInner = (expr: string) => wrapLoopParamAsAccessor(expr, inner.param, inner.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(inner.param, inner.paramBindings)
@@ -229,7 +232,20 @@ function buildReactiveEmit(
   const indexAlias = nestedLoopIndexAlias(inner, `__innerIdx${uidSuffix}`, paramHead, level.comps, level.events)
   if (indexAlias) preludeStatements.push(indexAlias)
   if (paramUnwrap) preludeStatements.push(paramUnwrap)
-  if (inner.mapPreamble) preludeStatements.push(wrapInner(wrapOuter(inner.mapPreamble)))
+  if (inner.preamble) {
+    // Leaf JSX renders under both param contexts, mirroring the
+    // wrapInner(wrapOuter(...)) applied to the js text.
+    const leafLoopParams = outerLoopParam
+      ? [
+          { param: outerLoopParam, bindings: outerLoopParamBindings },
+          { param: inner.param, bindings: inner.paramBindings },
+        ]
+      : [{ param: inner.param, bindings: inner.paramBindings }]
+    preludeStatements.push(renderPreamble(inner.preamble, {
+      transformJs: (t) => wrapInner(wrapOuter(t)),
+      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, leafLoopParams, undefined, true),
+    }))
+  }
 
   const childRefs = buildChildRefBindings(inner.bindings.refs, inner.param, inner.paramBindings)
 
@@ -265,7 +281,14 @@ function buildStaticEmit(inner: NestedLoop, level: DepthLevel, uidSuffix: string
   const preludeStatements: string[] = []
   const indexAlias = nestedLoopIndexAlias(inner, `__innerIdx${uidSuffix}`, inner.param, level.comps, level.events)
   if (indexAlias) preludeStatements.push(indexAlias)
-  if (inner.mapPreamble) preludeStatements.push(inner.mapPreamble)
+  // Static `forEach` receives the literal item, so neither the js text nor a
+  // leaf's param reads get accessor-wrapped (mirrors the verbatim emission
+  // of the js segments above).
+  if (inner.preamble) {
+    preludeStatements.push(renderPreamble(inner.preamble, {
+      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+    }))
+  }
   return {
     mode: 'static',
     rawKey: inner.key ?? null,

@@ -11,6 +11,7 @@
 
 import type { TopLevelLoop, BranchLoop, LoopChildEvent } from '../../types.ts'
 import { buildChainedArrayExpr, varSlotId, substituteLoopBindings } from '../../utils.ts'
+import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import type {
   EventDelegationPlan,
   ItemLookup,
@@ -35,7 +36,11 @@ export function buildDynamicLoopDelegationPlan(
       paramBindings: elem.paramBindings,
       key: elem.key,
       index: elem.index,
-      mapPreamble: elem.mapPreamble ?? null,
+      mapPreamble: elem.preamble
+        ? renderPreamble(elem.preamble, {
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+          })
+        : null,
     }),
   }
 }
@@ -60,7 +65,11 @@ export function buildBranchLoopDelegationPlan(
       paramBindings: loop.paramBindings,
       key: loop.key,
       index: loop.index,
-      mapPreamble: loop.mapPreamble ?? null,
+      mapPreamble: loop.preamble
+        ? renderPreamble(loop.preamble, {
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+          })
+        : null,
     }),
   }
 }
@@ -86,7 +95,11 @@ export function buildStaticArrayDelegationPlan(
       // array too (#1434).
       arrayExpr: buildChainedArrayExpr(elem),
       param: elem.param,
-      mapPreamble: elem.mapPreamble ?? null,
+      mapPreamble: elem.preamble
+        ? renderPreamble(elem.preamble, {
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+          })
+        : null,
       offset: elem.offset ?? null,
       indexParam: elem.index ?? null,
     },

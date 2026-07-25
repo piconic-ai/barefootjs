@@ -687,35 +687,20 @@ export interface IRLoop {
    */
   bodyIsItemConditional?: boolean
 
-  /**
-   * Raw JS of pre-return statements in block body .map() callback.
-   * Example: `items.map(item => { const label = item.name.toUpperCase(); return <li>{label}</li> })`
-   * stores "const label = item.name.toUpperCase();" as mapPreamble.
-   */
-  mapPreamble?: string
-  /** Pre-transformed mapPreamble with destructured prop refs rewritten to _p.xxx. */
-  templateMapPreamble?: string
-
   /** Type annotation for loop param (e.g., 'Desk'), preserved for .tsx output */
   paramType?: string
   /** Type annotation for loop index param (e.g., 'number'), preserved for .tsx output */
   indexType?: string
-  /** mapPreamble with TypeScript type annotations preserved, for .tsx output */
-  typedMapPreamble?: string
-
   /**
-   * Stage 3 / D4 (spec/callback-fidelity.md) — JSX leaves embedded in an
-   * arbitrary `.map()` callback preamble (an imperative array-builder:
-   * `const out = []; for (…) out.push(<td>{c}</td>); return <tr>{out}</tr>`).
-   * `mapPreamble` / `templateMapPreamble` carry the preamble text with each JSX
-   * span replaced by a `__BF_JSX_N__` placeholder; this holds the compiled IR
-   * per placeholder so Phase 2 substitutes a template-literal HTML string at
-   * each. `typedMapPreamble` keeps the raw JSX intact for JS-runtime SSR
-   * adapters (Hono's JSX runtime renders it natively). Mirrors
-   * {@link FlatMapCallback.fragments}. Only populated on a JS-runtime adapter
-   * (or a `/* @client *\/`-marked map); a DSL target refuses with BF021.
+   * Structured pre-return statements of a block-body `.map()` callback
+   * (Stage 3 root cure, spec/callback-fidelity.md). Replaces the former
+   * `mapPreamble` / `templateMapPreamble` / `typedMapPreamble` string carriers
+   * and `preambleFragments`: mixed content (JS text + JSX leaves) is carried as
+   * a segment list, never as a sentinel-bearing string, so an emitter that
+   * lacks preamble support cannot accidentally interpolate it — rendering goes
+   * through `renderPreamble()` (html-template.ts) or not at all.
    */
-  preambleFragments?: FlatMapJsxFragment[]
+  preamble?: MapCallbackPreamble
 
   /**
    * When `.map(callback)` destructures its item parameter (array or object
@@ -778,6 +763,86 @@ export interface FlatMapJsxFragment {
   placeholder: string
   /** Compiled IR node for this JSX fragment */
   ir: IRNode
+}
+
+/**
+ * Raw TSX source text (types + JSX intact), branded so it is only assignable
+ * where a JSX-runtime SSR adapter emits real TSX (Hono / TestAdapter). Plain
+ * strings destined for the client bundle cannot satisfy this type, and this
+ * type must never be spliced into plain-JS emission — the write-side twin of
+ * the "never parse JS with regex" rule: raw source crossing into an emitted
+ * artifact is tagged with its only legal destination.
+ */
+export type TsxSourceText = string & { readonly __tsxSourceBrand: unique symbol }
+
+/** Constructor for {@link TsxSourceText} — the single place the brand is applied. */
+export function tsxSourceText(raw: string): TsxSourceText {
+  return raw as TsxSourceText
+}
+
+/**
+ * One segment of a `.map()` callback preamble. Mixed content is structured,
+ * never a sentinel-bearing string: `js` segments carry JSX-free JS source text
+ * (types stripped; `templateText` set when the destructured-prop rewrite
+ * differs), `jsx` segments carry the compiled IR of one JSX leaf. Segments
+ * concatenate in source order with no separators (they are sub-statement
+ * spans).
+ */
+export type PreambleSegment =
+  | {
+      kind: 'js'
+      /** Type-stripped JS text for the client bundle. */
+      text: string
+      /** `text` with destructured prop refs rewritten to `_p.xxx`, when different. */
+      templateText?: string
+    }
+  | { kind: 'jsx'; ir: IRNode }
+
+/**
+ * The structured pre-return statements of a block-body `.map()` callback
+ * (Stage 3 root cure, spec/callback-fidelity.md). Client emission renders
+ * `segments` via `renderPreamble()` (html-template.ts) — the only door; a
+ * consumer that can't call it has no way to splice the preamble, so a missing
+ * wire-up is a type error or an explicit refusal, never a silent leak.
+ * JSX-runtime SSR adapters emit `ssrText` (real TSX) instead.
+ */
+export interface MapCallbackPreamble {
+  segments: PreambleSegment[]
+  /** Raw preamble source (types + JSX intact) for JSX-runtime SSR adapters. */
+  ssrText: TsxSourceText
+  /** const/let/function names the preamble declares (D5 key-derivability guard). */
+  declaredNames: string[]
+  /**
+   * The subset of {@link declaredNames} that accumulate JSX leaves — the
+   * `push`/`unshift` targets of a `jsx` segment and the declaration targets of
+   * a leaf-bearing initializer (`const out = xs.map(x => <td/>)`). Only these
+   * get the `{out}` array-join child emission; a value-only local (`{label}`)
+   * keeps the plain interpolation it always had.
+   */
+  builderNames: string[]
+}
+
+/**
+ * The preamble's JS text (js segments only, concatenated), for read-side
+ * analysis — free-identifier scans, reachability edges, rest-misuse checks.
+ * JSX-leaf interiors are compiled IR and are analyzed through their own IR
+ * walks, exactly as the former placeholder carrier excluded them. NEVER use
+ * this for emission — emission goes through `renderPreamble()`.
+ */
+export function preambleAnalysisText(p: MapCallbackPreamble): string {
+  let out = ''
+  for (const seg of p.segments) if (seg.kind === 'js') out += seg.text
+  return out
+}
+
+/**
+ * Template-context variant of {@link preambleAnalysisText} (destructured prop
+ * refs rewritten). Read-side analysis only.
+ */
+export function preambleAnalysisTemplateText(p: MapCallbackPreamble): string {
+  let out = ''
+  for (const seg of p.segments) if (seg.kind === 'js') out += seg.templateText ?? seg.text
+  return out
 }
 
 /**

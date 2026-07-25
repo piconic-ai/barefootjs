@@ -258,7 +258,7 @@ export class TestAdapter extends JsxAdapter {
     // carrier so raw JSX leaves stay intact for the JSX runtime; `{out}`-style
     // element-array children render natively. (Without this the preamble was
     // dropped and its identifiers rendered unbound.)
-    const preamble = loop.typedMapPreamble ?? loop.mapPreamble
+    const preamble = loop.preamble?.ssrText
     if (preamble) {
       return `{${loop.array}.map((${loop.param}${indexParam}) => { ${preamble} return ${safeChildren} })}`
     }

@@ -35,6 +35,7 @@ import type {
   ReferenceSource,
   ReferencesGraph,
 } from '../types.ts'
+import { preambleAnalysisText } from '../types.ts'
 import type { IRVisitor as WalkerVisitor } from './walker.ts'
 import { attrValueToString } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
@@ -151,7 +152,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     }
     if (elem.filterPredicate) addExprEdges(ROOT_SOURCE, elem.filterPredicate.raw, 'template-closure')
     if (elem.sortComparator) addExprEdges(ROOT_SOURCE, elem.sortComparator.raw, 'template-closure')
-    if (elem.mapPreamble) addExprEdges(ROOT_SOURCE, elem.mapPreamble, 'template-closure')
+    if (elem.preamble) addExprEdges(ROOT_SOURCE, preambleAnalysisText(elem.preamble), 'template-closure')
     for (const attr of elem.bindings.reactiveAttrs) {
       addExprEdges(ROOT_SOURCE, attr.expression, 'template-closure')
     }
@@ -316,7 +317,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
       addExprEdges(ROOT_SOURCE, l.array, 'template-closure')
       if (l.filterPredicate) addExprEdges(ROOT_SOURCE, l.filterPredicate.raw, 'template-closure')
       if (l.sortComparator) addExprEdges(ROOT_SOURCE, l.sortComparator.raw, 'template-closure')
-      if (l.mapPreamble) addExprEdges(ROOT_SOURCE, l.mapPreamble, 'template-closure')
+      if (l.preamble) addExprEdges(ROOT_SOURCE, preambleAnalysisText(l.preamble), 'template-closure')
       descend()
       if (l.childComponent) walkChildComponent(l.childComponent)
       if (l.nestedComponents) {

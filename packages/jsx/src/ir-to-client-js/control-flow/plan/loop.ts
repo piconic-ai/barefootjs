@@ -45,6 +45,18 @@ interface LoopPlanCommon {
    * — initial mount, SSR hydration, and same-key remount after unmount.
    */
   childRefs: readonly LoopChildRefBinding[]
+  /**
+   * How this variant constructs each row's DOM (Stage 3 root cure,
+   * spec/callback-fidelity.md). `'string-template'` = rows are built from
+   * interpolated innerHTML template literals, so a `.map()` preamble carrying
+   * lowered JSX leaves can be spliced via `renderPreamble()`. `'dom-ops'` =
+   * rows are built imperatively (createElement/reconcile paths) and CANNOT
+   * host a string-lowered preamble — the plan dispatcher refuses a JSX-bearing
+   * preamble on such a variant instead of letting it drop silently. Required
+   * on every variant (like `childRefs`) so a new loop shape must declare its
+   * capability — the compile error is the point.
+   */
+  rowConstruction: 'string-template' | 'dom-ops'
 }
 
 /** Fields shared by every dynamic (`mapArray`-driven) loop variant. */

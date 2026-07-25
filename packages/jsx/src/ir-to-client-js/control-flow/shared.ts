@@ -14,6 +14,7 @@
 
 import type { LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
 import type { IRLoopChildComponent, LoopParamBinding } from '../../types.ts'
+import { preambleAnalysisText } from '../../types.ts'
 import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
 import { irChildrenToJsExpr } from '../html-template.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
@@ -83,7 +84,7 @@ export function nestedLoopReferencesIndex(
   for (const a of inner.bindings.reactiveAttrs) {
     if (exprRefs(a.expression, a.freeIdentifiers)) return true
   }
-  if (inner.mapPreamble && extractFreeIdentifiersFromStatementText(inner.mapPreamble).has(index)) return true
+  if (inner.preamble && extractFreeIdentifiersFromStatementText(preambleAnalysisText(inner.preamble)).has(index)) return true
   if (inner.template && extractFreeIdentifiersFromTemplateText(inner.template).has(index)) return true
   for (const ev of events) {
     if (exprRefs(ev.handler)) return true

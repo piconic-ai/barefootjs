@@ -857,8 +857,8 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     this.loopKeyStack.pop()
 
     let mapExpr: string
-    // Use typed mapPreamble when available to preserve type annotations in .tsx output
-    const preamble = loop.typedMapPreamble ?? loop.mapPreamble
+    // Raw TSX preamble text (types + JSX intact) for the JSX-runtime output
+    const preamble = loop.preamble?.ssrText
     // When the rendered children are a JSX expression-container (e.g. a single
     // ternary `{cond ? <A/> : <B/>}` from renderConditional), they cannot be
     // used directly as an arrow body — `(x) => {…}` is parsed as a block

@@ -22,7 +22,7 @@ import type {
   ImportInfo,
   TypeInfo,
   TypeDefinition,
-  FlatMapJsxFragment,
+  MapCallbackPreamble,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 import type { SkeletonSlotPaths } from './html-template.ts'
@@ -357,7 +357,7 @@ export interface BranchLoop extends LoopCore {
   index: string | null // Index parameter (e.g., 'i')
   template: string     // HTML template for each item
   containerSlotId: string // bf slot ID of the container element (e.g., 's1' for <ul bf="s1">)
-  mapPreamble: string | null
+  preamble?: MapCallbackPreamble
   // Composite loop fields (loops whose body contains child components)
   nestedComponents?: IRLoopChildComponent[]
   innerLoops?: NestedLoop[]
@@ -443,7 +443,7 @@ export interface NestedLoop extends LoopCore {
    * `renderItem` callback so locals referenced by the cloned-template IIFE
    * (and any subsequent reads) are in scope (#1052).
    */
-  mapPreamble?: string
+  preamble?: MapCallbackPreamble
   /** Whether the inner array references the outer loop param (needs reactive mapArray) */
   refsOuterParam?: boolean
   /** Child components inside inner loop items (for initChild/createComponent) */
@@ -600,9 +600,7 @@ export interface TopLevelLoop extends LoopCore {
     raw: string  // Full comparator body for client JS
   }
   chainOrder?: 'filter-sort' | 'sort-filter'
-  mapPreamble?: string
-  /** Stage 3 / D4 — compiled JSX leaves in an arbitrary array-builder preamble. */
-  preambleFragments?: FlatMapJsxFragment[]
+  preamble?: MapCallbackPreamble
 }
 
 /**
