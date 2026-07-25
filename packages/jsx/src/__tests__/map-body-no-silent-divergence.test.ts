@@ -26,6 +26,12 @@
 
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
+
+// Arm the getJS trust-boundary assertion (analyzer-context.ts) BEFORE the
+// compiler loads: any getJS call on a JSX-bearing node throws instead of
+// splicing raw JSX into output. Every compile in this harness runs under it.
+process.env.BF_ASSERT_NO_JSX_IN_GETJS = '1'
+
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 
@@ -217,6 +223,42 @@ function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
     for (const c of r.cells) out.push(<td><Badge label={c} /></td>)
     return <tr key={r.id}>{out}</tr>
   })}</tbody></table>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-block-body',
+    // flatMap block bodies ride the same segments + renderPreamble machinery.
+    source: `
+function T({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => {
+    return it.tags.map((t) => <li key={t}>{t}</li>)
+  })}</ul>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-nested-in-map',
+    source: `
+function T({ groups }: { groups: { id: string; items: { id: string; tags: string[] }[] }[] }) {
+  return <div>{groups.map((g) => (
+    <ul key={g.id}>{g.items.flatMap((it) => {
+      return it.tags.map((t) => <li key={t}>{t}</li>)
+    })}</ul>
+  ))}</div>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-leaf-in-template-literal',
+    // A leaf inside a template literal is refused (segment boundary would
+    // split the literal's lexical state) — same rule as map preambles.
+    source: `
+function T({ items }: { items: { id: string }[] }) {
+  return <ul>{items.flatMap((it) => {
+    const s = \`x\${<b>{it.id}</b>}\`
+    return [<li key={it.id}>{s}</li>]
+  })}</ul>
 }
 export { T }`,
   },

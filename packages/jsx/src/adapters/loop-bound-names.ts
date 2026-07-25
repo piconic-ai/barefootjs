@@ -57,8 +57,12 @@ export function collectLoopBoundNames(ir: ComponentIR): Set<string> {
         for (const nested of node.nestedComponents ?? []) {
           for (const child of nested.children) visit(child)
         }
-        for (const frag of node.flatMapCallback?.fragments ?? []) {
-          visit(frag.ir)
+        for (const seg of node.flatMapCallback?.segments ?? []) {
+          if (seg.kind === 'jsx') visit(seg.ir)
+        }
+        // Preamble leaves (array-builder bodies) are nested IR the same way.
+        for (const seg of node.preamble?.segments ?? []) {
+          if (seg.kind === 'jsx') visit(seg.ir)
         }
         break
       case 'conditional':

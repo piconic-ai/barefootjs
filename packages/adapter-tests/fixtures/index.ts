@@ -132,6 +132,7 @@ import { fixture as mapSwitchFallthroughBody } from './map-switch-fallthrough-bo
 import { fixture as mapPreambleBranchBody } from './map-preamble-branch-body'
 import { fixture as mapArrayBuilderBody } from './map-array-builder-body'
 import { fixture as mapArrayBuilderEscaping } from './map-array-builder-escaping'
+import { fixture as flatmapEscaping } from './flatmap-escaping'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
@@ -501,6 +502,7 @@ export const jsxFixtures: JSXFixture[] = [
   mapPreambleBranchBody,
   mapArrayBuilderBody,
   mapArrayBuilderEscaping,
+  flatmapEscaping,
   sortSimple,
   filterSortChain,
   mapNested,

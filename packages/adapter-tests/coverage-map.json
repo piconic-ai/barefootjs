@@ -2009,6 +2009,21 @@
         "text"
       ]
     },
+    "flatmap-escaping": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:+"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "flatmap-typeof-projection": {
       "kinds": [
         "array-literal",
@@ -4450,14 +4465,14 @@
     "array-literal": 63,
     "array-method": 64,
     "arrow": 61,
-    "binary": 75,
+    "binary": 76,
     "call": 173,
     "conditional": 20,
-    "identifier": 258,
+    "identifier": 259,
     "index-access": 12,
     "literal": 213,
     "logical": 42,
-    "member": 137,
+    "member": 138,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
@@ -4491,7 +4506,7 @@
     "binary:!=": 2,
     "binary:!==": 9,
     "binary:*": 9,
-    "binary:+": 17,
+    "binary:+": 18,
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,

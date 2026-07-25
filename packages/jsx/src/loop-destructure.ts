@@ -160,9 +160,10 @@ function restNamesMisused(loop: IRLoop, names: string[]): boolean {
       check(preambleAnalysisTemplateText(l.preamble))
     }
     if (l.flatMapCallback) {
-      check(l.flatMapCallback.body)
-      check(l.flatMapCallback.templateBody)
-      l.flatMapCallback.fragments.forEach(f => visit(f.ir))
+      check(preambleAnalysisText(l.flatMapCallback))
+      for (const seg of l.flatMapCallback.segments) {
+        if (seg.kind === 'jsx') visit(seg.ir)
+      }
     }
     l.children.forEach(visit)
   }

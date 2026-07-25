@@ -567,7 +567,7 @@ function itemAnchorTemplate(keyExpr: string): string {
  * they refuse at plan dispatch instead of splicing.
  */
 export function renderPreamble(
-  preamble: MapCallbackPreamble,
+  preamble: Pick<MapCallbackPreamble, 'segments'>,
   opts: {
     /** Pick `templateText` on js segments (hydrate/CSR template contexts). */
     textVariant?: 'client' | 'template'
@@ -814,12 +814,11 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       let mapExpr: string
 
       if (node.flatMapCallback) {
-        // Complex flatMap: use pre-compiled body with JSX placeholders
-        let body = node.flatMapCallback.templateBody ?? node.flatMapCallback.body
-        for (const frag of node.flatMapCallback.fragments) {
-          const renderedIr = irToHtmlTemplate(frag.ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop)
-          body = body.replace(frag.placeholder, `\`${renderedIr}\``)
-        }
+        // Complex flatMap: the body is structured segments, rendered through
+        // the same single door as map preambles.
+        const body = renderPreamble(node.flatMapCallback, {
+          renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop),
+        })
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder
@@ -1263,11 +1262,9 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       const iterMethod = node.method ?? 'map'
       let mapExpr: string
       if (node.flatMapCallback) {
-        let body = node.flatMapCallback.templateBody ?? node.flatMapCallback.body
-        for (const frag of node.flatMapCallback.fragments) {
-          const renderedIr = irToPlaceholderTemplate(frag.ir, restSpreadNames, loopDepth + 1, loopParams)
-          body = body.replace(frag.placeholder, `\`${renderedIr}\``)
-        }
+        const body = renderPreamble(node.flatMapCallback, {
+          renderLeaf: (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams),
+        })
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder preamble.
@@ -2382,12 +2379,13 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const iterMethod = node.method ?? 'map'
       let mapExpr: string
       if (node.flatMapCallback) {
-        let body = node.flatMapCallback.templateBody ?? node.flatMapCallback.body
-        for (const frag of node.flatMapCallback.fragments) {
-          const renderedIr = recurseInLoopBody(frag.ir)
-          body = body.replace(frag.placeholder, `\`${renderedIr}\``)
-        }
-        body = applyPropsRewrite(body, propsObjectName ?? null)
+        // Props rewrite applies to js segments only — a rendered leaf handles
+        // its own props context via recurseInLoopBody (the old whole-string
+        // rewrite also ran over rendered leaf HTML).
+        const body = renderPreamble(node.flatMapCallback, {
+          transformJs: (t) => applyPropsRewrite(t, propsObjectName ?? null),
+          renderLeaf: (ir) => recurseInLoopBody(ir),
+        })
         mapExpr = `\${${iterArrayExpr}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {
         // Stage 3 / D4 — template-variant js text with the props rewrite

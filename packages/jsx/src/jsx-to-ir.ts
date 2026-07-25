@@ -26,7 +26,6 @@ import {
   type LoopBindingPathSegment,
   type RestExcludeKey,
   type FlatMapCallback,
-  type FlatMapJsxFragment,
   type MapCallbackPreamble,
   type PreambleSegment,
   tsxSourceText,
@@ -914,8 +913,12 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, bound:
       for (const nested of node.nestedComponents ?? []) {
         for (const child of nested.children) attachParsedExpressions(child, analyzer, loopBound)
       }
-      for (const frag of node.flatMapCallback?.fragments ?? []) {
-        attachParsedExpressions(frag.ir, analyzer, loopBound)
+      for (const seg of node.flatMapCallback?.segments ?? []) {
+        if (seg.kind === 'jsx') attachParsedExpressions(seg.ir, analyzer, loopBound)
+      }
+      // Preamble leaves (array-builder bodies) are nested IR the same way.
+      for (const seg of node.preamble?.segments ?? []) {
+        if (seg.kind === 'jsx') attachParsedExpressions(seg.ir, analyzer, loopBound)
       }
       break
     }
@@ -4525,9 +4528,10 @@ function containsJsx(node: ts.Node): boolean {
 
 /**
  * Build a FlatMapCallback for complex flatMap block bodies (conditional
- * returns, variable-assigned JSX, etc.). Walks the callback body AST,
- * transforms each JSX node to IR, replaces it with a `__BF_JSX_N__`
- * placeholder, and returns the compiled callback descriptor.
+ * returns, variable-assigned JSX, etc.). Walks the callback body AST and
+ * carries it as structured segments — JS text (types stripped) interleaved
+ * with compiled JSX-leaf IR — never as a sentinel-bearing string (the
+ * write-side rule in CLAUDE.md; same shape as the map-preamble carrier).
  */
 function buildFlatMapCallback(
   callback: ts.ArrowFunction | ts.FunctionExpression,
@@ -4536,55 +4540,54 @@ function buildFlatMapCallback(
 ): FlatMapCallback | undefined {
   if (!containsJsx(body)) return undefined
 
-  const fragments: FlatMapJsxFragment[] = []
-  const sourceText = ctx.sourceFile.text
-  const bodyStart = body.getStart(ctx.sourceFile)
-  const bodyEnd = body.getEnd()
-  const bodyText = sourceText.slice(bodyStart, bodyEnd)
-
-  // Collect all JSX nodes and their positions, sorted by start position
-  const jsxNodes: Array<{ node: ts.Node; start: number; end: number }> = []
-  function collectJsx(n: ts.Node): void {
+  // Collect all JSX leaves — don't descend into a JSX node (transformNode
+  // compiles its interior). A leaf under a template literal is refused (a
+  // segment boundary there would split the literal's lexical state), same as
+  // the map-preamble collector.
+  const leafSpans: Array<{ start: number; end: number }> = []
+  const leafIrs: IRNode[] = []
+  let refusalNode: ts.Node | undefined
+  const collectJsx = (n: ts.Node, underTemplate: boolean): void => {
     if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n) || ts.isJsxFragment(n)) {
-      jsxNodes.push({
-        node: n,
-        start: n.getStart(ctx.sourceFile) - bodyStart,
-        end: n.getEnd() - bodyStart,
-      })
+      if (underTemplate) refusalNode ??= n
+      leafSpans.push({ start: n.getStart(ctx.sourceFile), end: n.getEnd() })
+      const ir = transformNode(n as ts.Expression, ctx)
+      leafIrs.push(ir ?? { type: 'text', value: '', loc: getSourceLocation(n, ctx.sourceFile, ctx.filePath) })
       return
     }
-    n.forEachChild(collectJsx)
+    const inTemplate = underTemplate || ts.isTemplateExpression(n) || ts.isTaggedTemplateExpression(n)
+    n.forEachChild((c) => collectJsx(c, inTemplate))
   }
-  collectJsx(body)
+  collectJsx(body, false)
 
-  if (jsxNodes.length === 0) return undefined
-
-  // Build the body text with JSX replaced by placeholders
-  let compiledBody = ''
-  let lastEnd = 0
-  for (let i = 0; i < jsxNodes.length; i++) {
-    const { node, start, end } = jsxNodes[i]
-    const placeholder = `__BF_JSX_${i}__`
-    compiledBody += bodyText.slice(lastEnd, start) + placeholder
-    lastEnd = end
-
-    const ir = transformNode(node as any, ctx)
-    fragments.push({
-      placeholder,
-      ir: ir ?? { type: 'text', value: '', loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath) },
-    })
+  if (leafSpans.length === 0) return undefined
+  if (refusalNode) {
+    ctx.analyzer.errors.push(
+      createError(
+        ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+        getSourceLocation(refusalNode, ctx.sourceFile, ctx.filePath),
+        {
+          message:
+            'A JSX element inside a template literal in a .flatMap() callback ' +
+            'body cannot be compiled.',
+          suggestion: { message: 'Build the element outside the template literal.' },
+        }
+      )
+    )
+    return undefined
   }
-  compiledBody += bodyText.slice(lastEnd)
 
-  // Build the template body (with prop refs rewritten)
+  const pieces = reconstructAsSegments(body, ctx.sourceFile, ctx.analyzer.typeExcludeRanges, leafSpans)
+  const segments: PreambleSegment[] = pieces.map((piece) =>
+    'marker' in piece ? { kind: 'jsx', ir: leafIrs[piece.marker] } : { kind: 'js', text: piece.js }
+  )
+
   const paramsText = callback.parameters.map(p => p.getText(ctx.sourceFile)).join(', ')
 
   return {
     params: `(${paramsText})`,
-    body: compiledBody,
-    templateBody: compiledBody,
-    rawBody: bodyText,
-    fragments,
+    segments,
+    rawBody: tsxSourceText(body.getText(ctx.sourceFile)),
   }
 }
 
