@@ -17,12 +17,10 @@
  * stringifier never inspects raw IR.
  */
 
-import type { IRLoopChildComponent } from '../../types.ts'
-import type { NestedLoop, TopLevelLoop } from '../types.ts'
-import type { ClientJsContext } from '../types.ts'
+import type { IRLoopChildComponent, MapCallbackPreamble } from '../../types.ts'
+import type { ClientJsContext, NestedLoop, TopLevelLoop } from '../types.ts'
 import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
 import { irChildrenToJsExpr, renderPreamble, irToHtmlTemplate } from '../html-template.ts'
-import type { MapCallbackPreamble } from '../../types.ts'
 
 /**
  * Render a loop preamble for the static-array init context. Static `forEach`
