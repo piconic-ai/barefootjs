@@ -2535,6 +2535,25 @@
         "text"
       ]
     },
+    "map-switch-fallthrough-body": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop"
+      ]
+    },
     "map-with-index": {
       "kinds": [
         "array-literal",
@@ -4394,14 +4413,14 @@
     "array-literal": 63,
     "array-method": 64,
     "arrow": 61,
-    "binary": 74,
+    "binary": 75,
     "call": 173,
     "conditional": 20,
-    "identifier": 254,
+    "identifier": 255,
     "index-access": 12,
-    "literal": 212,
-    "logical": 41,
-    "member": 133,
+    "literal": 213,
+    "logical": 42,
+    "member": 134,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
@@ -4439,16 +4458,16 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 37,
+    "binary:===": 38,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 89,
-    "literal:string": 153,
+    "literal:string": 154,
     "logical:&&": 7,
     "logical:??": 37,
-    "logical:||": 12,
+    "logical:||": 13,
     "member:computed": 8,
     "member:optional": 1,
     "unary:!": 14,
