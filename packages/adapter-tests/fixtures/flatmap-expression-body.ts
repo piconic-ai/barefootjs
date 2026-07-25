@@ -37,6 +37,10 @@ export { TagList }
     ],
   },
   expectedHtml: `
-    <ul bf-s="test" bf="s0"><li>&lt;b&gt;bold&lt;/b&gt;</li><li>x &amp; &quot;y&quot;</li><li>it&#39;s</li></ul>
+    <ul bf-s="test" bf="s0">
+      <li>&lt;b&gt;bold&lt;/b&gt;</li>
+      <li>x &amp; &quot;y&quot;</li>
+      <li>it&#39;s</li>
+    </ul>
   `,
 })
