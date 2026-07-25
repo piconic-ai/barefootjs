@@ -4083,18 +4083,66 @@ function transformMapCall(
       children = transformArrayLiteralChildren(body, ctx)
     } else if (ts.isBlock(body)) {
       // Multi-return JSX block body (if/else-if chain or a `switch`, including
-      // fallthrough case labels) — fold to a nested IRConditional so the loop
-      // renders each branch's compiled template. Tried BEFORE the single-return
-      // path: otherwise the trailing `return <fallback/>` would claim the
+      // fallthrough case labels, optionally preceded by a `const`/`let`
+      // preamble) — fold to a nested IRConditional so the loop renders each
+      // branch's compiled template. Tried BEFORE the single-return path:
+      // otherwise the trailing `return <fallback/>` would claim the
       // single-return arm and the leading `if (...) return <A/>` would leak
       // verbatim into the map preamble (the silent-verbatim-leak this fixes).
-      // Stage 2 of spec/callback-fidelity.md. Bodies with a preamble/branch-local
-      // `const`, or a statement-level nested loop, are not folded
-      // (extractMultiReturnJsxBranches returns null) and fall through below.
-      const multiReturn = method !== 'flatMap' ? extractMultiReturnJsxBranches(body) : null
+      // Stage 2 of spec/callback-fidelity.md. A branch-local `const` (inside a
+      // branch block/case) or a statement-level nested loop is not folded
+      // (extractMultiReturnJsxBranches returns null) and falls through below.
+      const multiReturn = method !== 'flatMap' ? extractMultiReturnJsxBranches(body, true) : null
       if (multiReturn && multiReturn.branches.length > 0) {
         const loc = getSourceLocation(body, ctx.sourceFile, ctx.filePath)
         children = [foldMultiReturnBranches(multiReturn, ctx, loc, ctx.getJS)]
+
+        const pre = multiReturn.preamble ?? []
+        if (pre.length > 0) {
+          // Emit the leading const/let preamble once per iteration, ahead of
+          // the conditional — the same carrier the single-return path uses. A
+          // JS-runtime adapter (and the browser under /* @client */) runs it
+          // verbatim.
+          const jsStmts: string[] = []
+          const tplStmts: string[] = []
+          const typedStmts: string[] = []
+          let tplDiff = false
+          let typeDiff = false
+          for (const stmt of pre) {
+            const js = ctx.getJS(stmt)
+            const tjs = ctx.getTemplateJS(stmt)
+            const raw = stmt.getText(ctx.sourceFile)
+            jsStmts.push(js.endsWith(';') ? js : js + ';')
+            tplStmts.push(tjs.endsWith(';') ? tjs : tjs + ';')
+            typedStmts.push(raw.endsWith(';') ? raw : raw + ';')
+            if (js !== raw) typeDiff = true
+            if (js !== tjs) tplDiff = true
+          }
+          mapPreamble = jsStmts.join(' ')
+          if (tplDiff) templateMapPreamble = tplStmts.join(' ')
+          if (typeDiff) typedMapPreamble = typedStmts.join(' ')
+
+          // A DSL adapter can't carry a loop-local `const` into a conditional
+          // branch template, so it would render the branches with the local
+          // undefined (silent divergence). Refuse instead — adapter-gated like
+          // the filter/sort sites: a JS-runtime target folds and runs it, a DSL
+          // target errors with the /* @client */ escape (which renders the map
+          // client-only, where the browser runs the preamble). Stage 2 of
+          // spec/callback-fidelity.md.
+          if (!isClientOnly && !(ctx.analyzer.acceptsCallbackBody?.('map') ?? false)) {
+            ctx.analyzer.errors.push(
+              createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, loc, {
+                message:
+                  'A .map() callback body with a `const`/`let` preamble before its ' +
+                  'branches cannot be lowered to a template: the loop-local binding ' +
+                  'cannot be carried into a conditional branch on this backend.',
+                suggestion: {
+                  message: 'Add /* @client */ to evaluate this expression on the client only',
+                },
+              })
+            )
+          }
+        }
       }
 
       // Block body: (item) => { const label = ...; return <div>{label}</div> }
