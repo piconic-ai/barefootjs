@@ -4,7 +4,7 @@
  * optionally preceded by a leading-`const`/`let` preamble, into a nested
  * `IRConditional`, instead of the prior silent verbatim leak. The preamble
  * fold is adapter-gated: a JS runtime folds it, a DSL adapter refuses (BF021 +
- * `/* @client */`). Also pins the conservative bail for shapes the fold can't
+ * `/* @client *\/`). Also pins the conservative bail for shapes the fold can't
  * carry — a branch-local local, or a preamble with a null-returning branch —
  * so nothing is dropped silently.
  */
@@ -114,6 +114,13 @@ describe('.map() multi-return body fold (Stage 2)', () => {
       const r = extract(body, true)
       expect(r).not.toBeNull()
       expect(r!.preamble?.length).toBe(1)
+    })
+
+    test('a leading `var` preamble is not collected (var hoisting semantics)', () => {
+      // Only `const`/`let` are collectable; `var` hoists differently, so the
+      // per-iteration preamble emit wouldn't preserve semantics. (#2379 review.)
+      const body = `{ var label = it.kind; if (it.on) return <b>{label}</b>; return <span>{label}</span> }`
+      expect(extract(body, true)).toBeNull()
     })
 
     test('a preamble with a null-returning branch bails (mapArrayAnchored hazard)', () => {

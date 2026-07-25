@@ -2280,7 +2280,14 @@ export function extractMultiReturnJsxBranches(
     // the helper-function inliner has no place to emit it, and a mid-chain
     // local referenced in a later condition/JSX would become undefined.
     if (ts.isVariableStatement(stmt)) {
-      if (allowPreamble && branches.length === 0 && fallback === null) {
+      // Only `const` / `let` are collectable — a `var` hoists to the enclosing
+      // function scope with different (redeclaration / TDZ-free) semantics that
+      // the per-iteration preamble emit wouldn't preserve, so reject it.
+      // (#2379 review.)
+      const declFlags = stmt.declarationList.flags
+      const isConstOrLet =
+        (declFlags & ts.NodeFlags.Const) !== 0 || (declFlags & ts.NodeFlags.Let) !== 0
+      if (allowPreamble && isConstOrLet && branches.length === 0 && fallback === null) {
         preamble.push(stmt)
         continue
       }
