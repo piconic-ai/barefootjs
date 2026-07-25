@@ -11,10 +11,22 @@
 > `fill` gap + doc/comment cleanup), `#2375` (find/some/every off-subset
 > conformance), `#2376` (reduce/reduceRight/flatMap off-subset conformance).
 > Stage 2 has landed (if/else-if + `switch` fold, `const`-preamble fold
-> adapter-gated). Stage 3 is in progress — the imperative array-builder body
-> (`const out = []; for (…) out.push(<td/>); return <tr>{out}</tr>`) now renders
-> verbatim on JS-runtime adapters (D4 + D5(a), keyFn hoisted); DSL adapters
-> refuse with `BF021` + `/* @client */`.
+> adapter-gated). Stage 3 has landed in two steps: the imperative array-builder
+> body (`const out = []; for (…) out.push(<td/>); return <tr>{out}</tr>`)
+> renders verbatim on JS-runtime adapters (D4 + D5(a), keyFn hoisted; DSL
+> refuses with `BF021` + `/* @client */`), and the follow-up **root cure**
+> replaced the sentinel-string preamble carrier with structured IR
+> (`MapCallbackPreamble` segments rendered only through `renderPreamble()`),
+> making silent leak holes structurally impossible. The supported envelope is
+> principled, not enumerated: verbatim rendering covers loops whose row
+> construction is string-templated (declared per plan variant via
+> `rowConstruction`); a body whose return has no single element root, a
+> builder feeding a component root, and a leaf inside a template literal
+> refuse loudly with restructuring guidance. The no-silent-divergence
+> invariant is executable: `map-body-no-silent-divergence.test.ts` sweeps the
+> shape axes and pins every shape as sound-or-loud, with its known-hole set
+> empty and shrink-only. SSR/CSR escaping parity for lowered leaves is decided
+> once at the `renderPreamble` door (`map-array-builder-escaping` fixture).
 
 ## Vision
 
