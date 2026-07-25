@@ -1115,7 +1115,18 @@ describe('<Async> body error path — sync throw + async reject (#1375)', () => 
 })
 
 describe('createPortal inside .map() — per-item portal owner tracking', () => {
-  test('one portal created per loop item', () => {
+  // SURFACED LIMITATION. Passing *inline* JSX as a `createPortal` argument is
+  // an unsupported shape: there is no compiler lowering for it (the JSX is
+  // never compiled to DOM ops) and no runtime per-loop-item portal tracking.
+  // Here the `createPortal(<div>…</div>, …)` sits as a non-return statement in
+  // a `.map()` callback, so as of Stage 3 of spec/callback-fidelity.md the
+  // generic "map body builds JSX in a preamble statement" guard refuses it
+  // with BF021 — replacing what was previously a *silent* leak of the raw
+  // `<div>{it.body}</div>` verbatim into the client bundle. The body below
+  // asserts the intended end state (compiles clean, one portal per item);
+  // drop `.todo` once inline-JSX createPortal (and per-item owner tracking)
+  // is actually implemented.
+  test.todo('one portal created per loop item', () => {
     const src = `
       'use client'
       import { createSignal, createPortal } from '@barefootjs/client'

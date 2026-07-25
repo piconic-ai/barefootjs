@@ -37,6 +37,9 @@ export { MapPreambleBranch }
 `,
   props: { items: [{ id: '1', on: true, kind: 'a' }, { id: '2', on: false, kind: 'b' }] },
   expectedHtml: `
-    <ul bf-s="test" bf="s1"><!--bf-loop:l0--><b bf-c="s0" data-key="1">A</b><span bf-c="s0" data-key="2">B</span><!--bf-/loop:l0--></ul>
+    <ul bf-s="test" bf="s1">
+      <b bf-c="s0" data-key="1">A</b>
+      <span bf-c="s0" data-key="2">B</span>
+    </ul>
   `,
 })
