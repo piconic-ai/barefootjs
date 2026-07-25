@@ -127,6 +127,7 @@ import { fixture as everyTypeofPredicate } from './every-typeof-predicate'
 import { fixture as reduceTypeofBody } from './reduce-typeof-body'
 import { fixture as reduceRightTypeofBody } from './reduce-right-typeof-body'
 import { fixture as flatMapTypeofProjection } from './flatmap-typeof-projection'
+import { fixture as mapIfChainBody } from './map-if-chain-body'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
@@ -491,6 +492,7 @@ export const jsxFixtures: JSXFixture[] = [
   reduceTypeofBody,
   reduceRightTypeofBody,
   flatMapTypeofProjection,
+  mapIfChainBody,
   sortSimple,
   filterSortChain,
   mapNested,

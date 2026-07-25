@@ -2468,6 +2468,24 @@
         "text"
       ]
     },
+    "map-if-chain-body": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "map-index-handler": {
       "kinds": [
         "array-literal",
@@ -4376,14 +4394,14 @@
     "array-literal": 63,
     "array-method": 64,
     "arrow": 61,
-    "binary": 73,
+    "binary": 74,
     "call": 173,
     "conditional": 20,
-    "identifier": 253,
+    "identifier": 254,
     "index-access": 12,
-    "literal": 211,
+    "literal": 212,
     "logical": 41,
-    "member": 132,
+    "member": 133,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,
@@ -4421,13 +4439,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 36,
+    "binary:===": 37,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
     "literal:number": 89,
-    "literal:string": 152,
+    "literal:string": 153,
     "logical:&&": 7,
     "logical:??": 37,
     "logical:||": 12,
