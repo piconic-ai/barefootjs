@@ -4578,9 +4578,18 @@ function buildFlatMapCallback(
   }
 
   const pieces = reconstructAsSegments(body, ctx.sourceFile, ctx.analyzer.typeExcludeRanges, leafSpans)
-  const segments: PreambleSegment[] = pieces.map((piece) =>
-    'marker' in piece ? { kind: 'jsx', ir: leafIrs[piece.marker] } : { kind: 'js', text: piece.js }
-  )
+  const segments: PreambleSegment[] = pieces.map((piece) => {
+    if ('marker' in piece) return { kind: 'jsx', ir: leafIrs[piece.marker] }
+    // Template variant per segment, like buildPreambleSegments: the hydrate
+    // registration template is module scope (`template: (_p) => ...`), so a
+    // bare destructured-prop reference must rewrite to `_p.xxx` there —
+    // `applyPropsRewrite` can't do it (destructured components have no props
+    // object name).
+    const tpl = rewriteBarePropRefs(piece.js, body, ctx)
+    return tpl !== undefined && tpl !== piece.js
+      ? { kind: 'js', text: piece.js, templateText: tpl }
+      : { kind: 'js', text: piece.js }
+  })
 
   const paramsText = callback.parameters.map(p => p.getText(ctx.sourceFile)).join(', ')
 

@@ -37,6 +37,28 @@ export { F }
     expect(cj).not.toMatch(/__BF_JSX_/)
   })
 
+  test('destructured prop refs rewrite to _p.xxx in the hydrate template', () => {
+    // The hydrate registration template is module scope (`template: (_p) =>`),
+    // so a bare destructured-prop reference in the flatMap body would be a
+    // runtime ReferenceError. Per-segment templateText (rewriteBarePropRefs)
+    // + textVariant 'template' at the CSR-template site rewrite it.
+    const src = `
+function F({ limit, items }: { limit: number; items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => {
+    if (it.tags.length > limit) return []
+    return it.tags.map((t) => <li key={t}>{t}</li>)
+  })}</ul>
+}
+export { F }
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    expect(r.errors).toHaveLength(0)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    const tpl = cj.match(/template: \(_p\) => `[\s\S]*?` \}\)/)?.[0] ?? ''
+    expect(tpl).toMatch(/_p\.limit/)
+    expect(tpl).not.toMatch(/[^.\w]limit\b/)
+  })
+
   test('TS type annotations in the block body are stripped from the client bundle', () => {
     const src = `
 function F({ items }: { items: { id: string; labels: string[] }[] }) {

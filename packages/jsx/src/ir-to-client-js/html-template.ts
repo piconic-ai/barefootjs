@@ -2379,10 +2379,12 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const iterMethod = node.method ?? 'map'
       let mapExpr: string
       if (node.flatMapCallback) {
-        // Props rewrite applies to js segments only — a rendered leaf handles
-        // its own props context via recurseInLoopBody (the old whole-string
-        // rewrite also ran over rendered leaf HTML).
+        // Module-scope template context: pick the templateText variant
+        // (destructured-prop refs rewritten to _p.xxx) and apply the
+        // props-object rewrite to js segments only — a rendered leaf handles
+        // its own props context via recurseInLoopBody.
         const body = renderPreamble(node.flatMapCallback, {
+          textVariant: 'template',
           transformJs: (t) => applyPropsRewrite(t, propsObjectName ?? null),
           renderLeaf: (ir) => recurseInLoopBody(ir),
         })
