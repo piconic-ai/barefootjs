@@ -371,6 +371,15 @@ export interface IRExpression {
   loc: SourceLocation
   /** When true, expression should be evaluated on client side only */
   clientOnly?: boolean
+  /**
+   * Stage 3 / D4 (spec/callback-fidelity.md) — this expression child references
+   * an array built by an arbitrary `.map()` preamble (`return <tr>{out}</tr>`
+   * where `out` is `push`-populated with element strings). Phase-2 string-
+   * template emission must join it (`Array.isArray(out) ? out.join('') : …`)
+   * rather than `String([])`-comma-collapse it. JSX SSR adapters ignore the
+   * flag (their JSX runtime renders an array child natively).
+   */
+  joinArrayChild?: boolean
   /** When true, expression calls signal getters or memos (has reactive `foo()` pattern). */
   callsReactiveGetters?: boolean
   /** When true, expression contains function call(s) — any `identifier()` pattern (computed from AST). */
@@ -693,6 +702,20 @@ export interface IRLoop {
   indexType?: string
   /** mapPreamble with TypeScript type annotations preserved, for .tsx output */
   typedMapPreamble?: string
+
+  /**
+   * Stage 3 / D4 (spec/callback-fidelity.md) — JSX leaves embedded in an
+   * arbitrary `.map()` callback preamble (an imperative array-builder:
+   * `const out = []; for (…) out.push(<td>{c}</td>); return <tr>{out}</tr>`).
+   * `mapPreamble` / `templateMapPreamble` carry the preamble text with each JSX
+   * span replaced by a `__BF_JSX_N__` placeholder; this holds the compiled IR
+   * per placeholder so Phase 2 substitutes a template-literal HTML string at
+   * each. `typedMapPreamble` keeps the raw JSX intact for JS-runtime SSR
+   * adapters (Hono's JSX runtime renders it natively). Mirrors
+   * {@link FlatMapCallback.fragments}. Only populated on a JS-runtime adapter
+   * (or a `/* @client *\/`-marked map); a DSL target refuses with BF021.
+   */
+  preambleFragments?: FlatMapJsxFragment[]
 
   /**
    * When `.map(callback)` destructures its item parameter (array or object

@@ -10,7 +10,11 @@
 > (adapter-gate the Phase-1 `filter`/`sort` constraint), `#2374` (close the
 > `fill` gap + doc/comment cleanup), `#2375` (find/some/every off-subset
 > conformance), `#2376` (reduce/reduceRight/flatMap off-subset conformance).
-> Stage 2 is in progress.
+> Stage 2 has landed (if/else-if + `switch` fold, `const`-preamble fold
+> adapter-gated). Stage 3 is in progress — the imperative array-builder body
+> (`const out = []; for (…) out.push(<td/>); return <tr>{out}</tr>`) now renders
+> verbatim on JS-runtime adapters (D4 + D5(a), keyFn hoisted); DSL adapters
+> refuse with `BF021` + `/* @client */`.
 
 ## Vision
 
@@ -295,8 +299,16 @@ Each stage is independently shippable, tested, and PR-sized. Value/risk-ordered.
 
 ## Open decisions (resolve in Stage 0)
 
-1. **`keyFn` contract (D5):** hoist (a) vs report (b). *Leaning (b)* for
-   generality, accepting a scoped `mapArray` API change.
+1. **`keyFn` contract (D5):** hoist (a) vs report (b). **Resolved: (a) hoist.**
+   Though the RFC leaned (b) for generality, the `mapArray` runtime already
+   computes `getKey(rawItem, index)` from the raw item *before* `renderItem`
+   runs, and the compiler's `keyFn` is already a pure `(item, index) => …`
+   closure — so (a) needs zero runtime/call-site change and preserves SSR/CSR
+   hydration parity, whereas (b) is a real `mapArray` API change with a
+   key-ordering inversion across every call site. The array-builder PR
+   implements (a): the key must be derivable from the item; a key that reads a
+   preamble-computed local is refused. (b)'s extra generality — a key computed
+   inside the body — can be revisited if a real use case needs it.
 2. **Capability-predicate granularity (D1):** binary (`JsxAdapter` vs
    `BaseAdapter`) vs shape-granular `acceptsCallbackBody(parsed)`. *Leaning
    granular*, symmetric with `acceptsTemplateCall`, to let DSL adapters accept

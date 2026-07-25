@@ -130,6 +130,7 @@ import { fixture as flatMapTypeofProjection } from './flatmap-typeof-projection'
 import { fixture as mapIfChainBody } from './map-if-chain-body'
 import { fixture as mapSwitchFallthroughBody } from './map-switch-fallthrough-body'
 import { fixture as mapPreambleBranchBody } from './map-preamble-branch-body'
+import { fixture as mapArrayBuilderBody } from './map-array-builder-body'
 import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
@@ -497,6 +498,7 @@ export const jsxFixtures: JSXFixture[] = [
   mapIfChainBody,
   mapSwitchFallthroughBody,
   mapPreambleBranchBody,
+  mapArrayBuilderBody,
   sortSimple,
   filterSortChain,
   mapNested,

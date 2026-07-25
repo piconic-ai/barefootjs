@@ -2440,6 +2440,18 @@
         "text"
       ]
     },
+    "map-array-builder-body": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "map-basic": {
       "kinds": [
         "array-literal",
@@ -4429,11 +4441,11 @@
     "binary": 75,
     "call": 173,
     "conditional": 20,
-    "identifier": 256,
+    "identifier": 257,
     "index-access": 12,
     "literal": 213,
     "logical": 42,
-    "member": 135,
+    "member": 136,
     "object-literal": 46,
     "template-literal": 27,
     "unary": 22,

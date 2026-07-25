@@ -71,6 +71,52 @@ export function reconstructWithoutTypes(
   return result
 }
 
+/**
+ * Reconstruct a node's text with types stripped (via `ranges`) AND selected
+ * sub-spans replaced by literal text. Used by Stage 3 / D4 preamble collection
+ * (spec/callback-fidelity.md) to strip TS types while swapping each JSX leaf for
+ * a `__BF_JSX_N__` placeholder in one span-walk — never regex, per the repo's
+ * "no string-matching JS syntax" rule.
+ *
+ * `replacements` are absolute-position sub-spans of `node`, non-overlapping, in
+ * any order. A type range that falls inside a replacement span is subsumed (the
+ * replacement text wins); type ranges outside are stripped as usual.
+ */
+export function reconstructWithReplacements(
+  node: ts.Node,
+  sourceFile: ts.SourceFile,
+  ranges: ExcludeRange[],
+  replacements: Array<{ start: number; end: number; text: string }>
+): string {
+  const nodeStart = node.getStart(sourceFile)
+  const nodeEnd = node.getEnd()
+  const fullText = sourceFile.text
+
+  // One merged, position-sorted edit list: type ranges emit nothing,
+  // replacements emit their text. Replacements sort first at a shared start so
+  // a subsumed type range (same start) is skipped by the `edit.start < pos` guard.
+  type Edit = { start: number; end: number; text: string }
+  const edits: Edit[] = []
+  for (const r of ranges) {
+    if (r.end <= nodeStart || r.start >= nodeEnd) continue
+    edits.push({ start: r.start, end: r.end, text: '' })
+  }
+  for (const rep of replacements) {
+    edits.push({ start: rep.start, end: rep.end, text: rep.text })
+  }
+  edits.sort((a, b) => a.start - b.start || b.end - a.end)
+
+  let result = ''
+  let pos = nodeStart
+  for (const edit of edits) {
+    if (edit.start < pos) continue // subsumed by an already-emitted span
+    result += fullText.slice(pos, edit.start) + edit.text
+    pos = edit.end
+  }
+  if (pos < nodeEnd) result += fullText.slice(pos, nodeEnd)
+  return result
+}
+
 function mergeRanges(ranges: ExcludeRange[]): ExcludeRange[] {
   if (ranges.length === 0) return []
   const merged: ExcludeRange[] = [ranges[0]]

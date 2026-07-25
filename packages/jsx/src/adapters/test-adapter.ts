@@ -253,6 +253,16 @@ export class TestAdapter extends JsxAdapter {
     // parsed as a block statement (matches hono-adapter behavior).
     const safeChildren = children.startsWith('{') ? `<>${children}</>` : children
 
+    // A `.map()` callback preamble (a Stage-2 value-only `const`, or a Stage-3
+    // arbitrary array-builder) runs verbatim in the block body. Use the typed
+    // carrier so raw JSX leaves stay intact for the JSX runtime; `{out}`-style
+    // element-array children render natively. (Without this the preamble was
+    // dropped and its identifiers rendered unbound.)
+    const preamble = loop.typedMapPreamble ?? loop.mapPreamble
+    if (preamble) {
+      return `{${loop.array}.map((${loop.param}${indexParam}) => { ${preamble} return ${safeChildren} })}`
+    }
+
     return `{${loop.array}.map((${loop.param}${indexParam}) => ${safeChildren})}`
   }
 
