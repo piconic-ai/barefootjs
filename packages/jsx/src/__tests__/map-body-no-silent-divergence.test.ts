@@ -24,16 +24,27 @@
  * never grow.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import ts from 'typescript'
-
-// Arm the getJS trust-boundary assertion (analyzer-context.ts) BEFORE the
-// compiler loads: any getJS call on a JSX-bearing node throws instead of
-// splicing raw JSX into output. Every compile in this harness runs under it.
-process.env.BF_ASSERT_NO_JSX_IN_GETJS = '1'
-
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+
+// Arm the getJS trust-boundary assertion (analyzer-context.ts) for THIS
+// file's compiles only: any getJS call on a JSX-bearing node throws instead
+// of splicing raw JSX into output. Scoped via beforeAll/afterAll because bun
+// runs suite files in one process — a module-scope assignment would leak the
+// assertion into every later file and fail pre-existing raw-JSX-via-getJS
+// paths outside this harness's axes (e.g. the Array.from mapper lowering),
+// which are tracked for their own segments migration rather than pinned here.
+let prevAssertEnv: string | undefined
+beforeAll(() => {
+  prevAssertEnv = process.env.BF_ASSERT_NO_JSX_IN_GETJS
+  process.env.BF_ASSERT_NO_JSX_IN_GETJS = '1'
+})
+afterAll(() => {
+  if (prevAssertEnv === undefined) delete process.env.BF_ASSERT_NO_JSX_IN_GETJS
+  else process.env.BF_ASSERT_NO_JSX_IN_GETJS = prevAssertEnv
+})
 
 interface Shape {
   id: string
