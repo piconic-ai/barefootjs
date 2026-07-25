@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 277,
+    "totalFixtures": 278,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2226,6 +2226,56 @@
           "kind": "refusal",
           "codes": [
             "BF101"
+          ]
+        }
+      },
+      "flatmap-expression-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
           ]
         }
       },
@@ -2756,6 +2806,10 @@
       "find-typeof-predicate": {
         "description": "Off-subset `.find()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/find-typeof-predicate.ts"
+      },
+      "flatmap-expression-body": {
+        "description": "JSX-returning `.flatMap()` expression body — segments carrier, adapter-gated on DSL",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-expression-body.ts"
       },
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",

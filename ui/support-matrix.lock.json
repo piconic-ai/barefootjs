@@ -1886,11 +1886,11 @@
       }
     },
     "identifier": {
-      "total": 258,
+      "total": 259,
       "cells": {
         "hono": {
-          "pass": 257,
-          "total": 258,
+          "pass": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1902,7 +1902,7 @@
         },
         "blade": {
           "pass": 242,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1936,6 +1936,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -1982,7 +1986,7 @@
         },
         "erb": {
           "pass": 243,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2010,6 +2014,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -2056,7 +2064,7 @@
         },
         "go-template": {
           "pass": 242,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2090,6 +2098,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -2136,7 +2148,7 @@
         },
         "jinja": {
           "pass": 242,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2170,6 +2182,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -2216,7 +2232,7 @@
         },
         "minijinja": {
           "pass": 242,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2250,6 +2266,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -2296,7 +2316,7 @@
         },
         "mojolicious": {
           "pass": 243,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2324,6 +2344,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -2370,7 +2394,7 @@
         },
         "twig": {
           "pass": 242,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2404,6 +2428,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -2450,7 +2478,7 @@
         },
         "xslate": {
           "pass": 242,
-          "total": 258,
+          "total": 259,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2484,6 +2512,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3082,11 +3114,11 @@
       }
     },
     "member": {
-      "total": 137,
+      "total": 138,
       "cells": {
         "hono": {
-          "pass": 136,
-          "total": 137,
+          "pass": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3098,7 +3130,7 @@
         },
         "blade": {
           "pass": 121,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3132,6 +3164,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3178,7 +3214,7 @@
         },
         "erb": {
           "pass": 122,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3206,6 +3242,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3252,7 +3292,7 @@
         },
         "go-template": {
           "pass": 121,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3286,6 +3326,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3332,7 +3376,7 @@
         },
         "jinja": {
           "pass": 121,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3366,6 +3410,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3412,7 +3460,7 @@
         },
         "minijinja": {
           "pass": 121,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3446,6 +3494,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3492,7 +3544,7 @@
         },
         "mojolicious": {
           "pass": 122,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3520,6 +3572,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3566,7 +3622,7 @@
         },
         "twig": {
           "pass": 121,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3600,6 +3656,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3646,7 +3706,7 @@
         },
         "xslate": {
           "pass": 121,
-          "total": 137,
+          "total": 138,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3680,6 +3740,10 @@
             },
             {
               "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-expression-body",
               "issues": []
             },
             {
@@ -3900,43 +3964,91 @@
       }
     },
     "template-literal": {
-      "total": 27,
+      "total": 28,
       "cells": {
         "hono": {
-          "pass": 27,
-          "total": 27
+          "pass": 28,
+          "total": 28
         },
         "blade": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "erb": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "twig": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 27,
-          "total": 27
+          "total": 28,
+          "gaps": [
+            {
+              "fixture": "flatmap-expression-body",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -3945,9 +4057,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
-        "fixture": "input",
-        "description": "site/ui Input — native text field survives hydration + accepts typing",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/input.ts"
+        "fixture": "flatmap-expression-body",
+        "description": "JSX-returning `.flatMap()` expression body — segments carrier, adapter-gated on DSL",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-expression-body.ts",
+        "code": "`${it.id}:${tag}`"
       }
     },
     "unary": {
