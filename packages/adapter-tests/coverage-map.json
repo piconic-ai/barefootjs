@@ -2009,6 +2009,19 @@
         "text"
       ]
     },
+    "flatmap-expression-body": {
+      "kinds": [
+        "identifier",
+        "member",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "flatmap-typeof-projection": {
       "kinds": [
         "array-literal",
@@ -4453,13 +4466,13 @@
     "binary": 75,
     "call": 173,
     "conditional": 20,
-    "identifier": 258,
+    "identifier": 259,
     "index-access": 12,
     "literal": 213,
     "logical": 42,
-    "member": 137,
+    "member": 138,
     "object-literal": 46,
-    "template-literal": 27,
+    "template-literal": 28,
     "unary": 22,
     "unsupported": 29
   },

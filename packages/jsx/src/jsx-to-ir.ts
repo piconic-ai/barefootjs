@@ -4279,6 +4279,43 @@ function transformMapCall(
       tryTransformRenderableBody(body)
     }
 
+    // flatMap EXPRESSION body containing JSX — e.g.
+    // `todos().flatMap(t => t.tags.map(tag => <li key={...}>{tag}</li>))`,
+    // parenthesized or not. The block-body form (`{ return t.tags.map(...) }`)
+    // already rides the structured-segments carrier in the isBlock branch
+    // above; an unbraced body is the same shape minus the braces, so route it
+    // through the same door. Without this the dispatch falls to the
+    // IRExpression scalar path, which splices the raw callback — JSX included
+    // — verbatim into the client bundle: a silent SyntaxError that kills the
+    // whole component's hydration.
+    if (method === 'flatMap' && children.length === 0 && !flatMapCallback && !ts.isBlock(body)) {
+      flatMapCallback = buildFlatMapCallback(callback, body, ctx)
+    }
+
+    // Adapter gate (spec/callback-fidelity.md fidelity model): a flatMap body
+    // carried as structured segments runs verbatim on a JS runtime; a DSL
+    // template runtime cannot execute it at SSR — pre-gate, e.g. the Go
+    // adapter emitted `{{range …}}{{end}}` with an EMPTY body (silent
+    // divergence, the exact failure class the sound-or-loud invariant
+    // forbids). Refuse loudly with the /* @client */ escape, mirroring the
+    // const-preamble and array-builder gates above.
+    if (flatMapCallback && !isClientOnly && !(ctx.analyzer.acceptsCallbackBody?.('flatMap') ?? false)) {
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+          getSourceLocation(body, ctx.sourceFile, ctx.filePath),
+          {
+            message:
+              'A .flatMap() callback body with statements or a nested projection ' +
+              'cannot be lowered to a template on this backend.',
+            suggestion: {
+              message: 'Add /* @client */ to render this loop on the client only',
+            },
+          }
+        )
+      )
+    }
+
     // Unregister loop params
     if (paramBindings) {
       for (const b of paramBindings) ctx.loopParams.delete(b.name)
@@ -4293,6 +4330,37 @@ function transformMapCall(
   // fall back to treating the entire expression as an IRExpression — unless
   // flatMap already built a compiled callback (flatMapCallback).
   if (children.length === 0 && !flatMapCallback) {
+    // Structural net (sound-or-loud, spec/callback-fidelity.md): a callback
+    // body that carries an INLINE JSX literal but produced no loop lowering
+    // must never fall through to the IRExpression scalar path — `ctx.getJS`
+    // strips types, not JSX, so the raw `<li …>` would splice verbatim into
+    // the emitted client bundle as a silent SyntaxError. Any recognizer gap
+    // for a JSX-bearing shape becomes a loud diagnostic here instead of a
+    // leak. (A JSX-helper CALL — `map(t => renderItem(t))` — carries no
+    // inline JSX literal and legitimately stays on the reactive-text path.)
+    const cb = node.arguments[0]
+    const cbBody = cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) ? cb.body : undefined
+    if (cbBody && containsJsxInExpression(cbBody)) {
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+          getSourceLocation(cbBody, ctx.sourceFile, ctx.filePath),
+          {
+            message:
+              `A .${method}() callback that builds JSX in this shape cannot be ` +
+              'compiled — the JSX would leak verbatim into the client bundle. ' +
+              'Recognized bodies: a JSX element/fragment, a ternary or ' +
+              '&& / || / ?? expression, an array literal (flatMap), or a block ' +
+              'body whose return the compiler can lower.',
+            suggestion: {
+              message:
+                'Restructure the callback to return the JSX element directly ' +
+                '(or via a block body with a plain `return`).',
+            },
+          }
+        )
+      )
+    }
     return null
   }
 
@@ -4527,15 +4595,19 @@ function containsJsx(node: ts.Node): boolean {
 }
 
 /**
- * Build a FlatMapCallback for complex flatMap block bodies (conditional
- * returns, variable-assigned JSX, etc.). Walks the callback body AST and
- * carries it as structured segments — JS text (types stripped) interleaved
- * with compiled JSX-leaf IR — never as a sentinel-bearing string (the
- * write-side rule in CLAUDE.md; same shape as the map-preamble carrier).
+ * Build a FlatMapCallback for complex flatMap bodies (conditional returns,
+ * variable-assigned JSX, etc.). Accepts a block body OR an expression body
+ * (`t => t.tags.map(tag => <li/>)`) — segment reconstruction and the SSR
+ * rawBody are position-based, so both shapes flow through identically (a
+ * block's text keeps its braces; an expression's text is a valid arrow body
+ * as-is). Walks the callback body AST and carries it as structured segments
+ * — JS text (types stripped) interleaved with compiled JSX-leaf IR — never
+ * as a sentinel-bearing string (the write-side rule in CLAUDE.md; same shape
+ * as the map-preamble carrier).
  */
 function buildFlatMapCallback(
   callback: ts.ArrowFunction | ts.FunctionExpression,
-  body: ts.Block,
+  body: ts.Block | ts.Expression,
   ctx: TransformContext,
 ): FlatMapCallback | undefined {
   if (!containsJsx(body)) return undefined

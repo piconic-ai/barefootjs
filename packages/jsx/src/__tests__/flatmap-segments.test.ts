@@ -59,6 +59,42 @@ export { F }
     expect(tpl).not.toMatch(/[^.\w]limit\b/)
   })
 
+  test('expression bodies ride the same segments carrier as block bodies', () => {
+    // `t => t.tags.map(...)` (no braces) is the block form minus the braces.
+    // Pre-fix it fell through to the IRExpression scalar path and spliced the
+    // raw callback — JSX included — verbatim into the client bundle (invalid
+    // JS; the whole component failed to hydrate with `Unexpected token '<'`).
+    const src = `
+function F({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <li key={t}>{t}</li>))}</ul>
+}
+export { F }
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    expect(r.errors).toHaveLength(0)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    // The hydrate template lowers the leaf to an escaped HTML template string…
+    expect(cj).toMatch(/escapeText\(\(t\)\)/)
+    // …and no raw JSX survives anywhere in the bundle.
+    expect(cj).not.toMatch(/<li key=\{t\}>/)
+    expect(cj).not.toMatch(/__BF_JSX_/)
+  })
+
+  test('destructured prop refs rewrite to _p.xxx in expression-body hydrate templates', () => {
+    const src = `
+function F({ owner, items }: { owner: string; items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <li key={t}>{t} ({owner})</li>))}</ul>
+}
+export { F }
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    expect(r.errors).toHaveLength(0)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    const tpl = cj.match(/template: \(_p\) => `[\s\S]*?` \}\)/)?.[0] ?? ''
+    expect(tpl).toMatch(/_p\.owner/)
+    expect(tpl).not.toMatch(/[^.\w]owner\b/)
+  })
+
   test('TS type annotations in the block body are stripped from the client bundle', () => {
     const src = `
 function F({ items }: { items: { id: string; labels: string[] }[] }) {

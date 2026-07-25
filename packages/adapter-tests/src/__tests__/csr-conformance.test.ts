@@ -105,6 +105,15 @@ describe('CSR Conformance Tests', () => {
     'toggle-shared',
     'reactive-props',
     'props-reactivity-comparison',
+    // flatMap segment leaves: the CSR string template stamps the leaf's
+    // `key` as a `data-key` attribute (unescaped interpolation), while the
+    // Hono SSR rawBody path renders the raw JSX where `key` is a JSX prop
+    // and emits NO data-key — the pre-existing CSR/SSR leaf asymmetry
+    // documented in `flatmap-segments.test.ts`'s header. Removed by the
+    // flatMap client-loop rewiring PR stacked on this one (leaf keys move
+    // to mapArray's setAttribute path, off the string template), which
+    // deletes this skip.
+    'flatmap-expression-body',
     //   - `search-params-derived-memo`: the memo's template-eval reads the
     //     env-signal getter (`sp()`), a binding only init/hydration wires up
     //     (the per-request reader) — same init-wired-binding class as
