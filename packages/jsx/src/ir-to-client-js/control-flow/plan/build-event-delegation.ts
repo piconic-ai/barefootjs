@@ -36,11 +36,18 @@ export function buildDynamicLoopDelegationPlan(
       paramBindings: elem.paramBindings,
       key: elem.key,
       index: elem.index,
+      // No loopParams spec here (unlike the row-render context) — in the
+      // delegated handler `elem.param` is bound to the plain `.find()`/
+      // indexed result, not a signal accessor, so leaf refs must stay in
+      // their literal (`t.name`) form. Passing a loopParams spec here was
+      // BUG-3: it rewrote leaf refs to accessor-call form (`t().name`),
+      // which throws since `t` is a plain object in this scope.
       mapPreamble: elem.preamble
         ? renderPreamble(elem.preamble, {
-            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
           })
         : null,
+      mapPreambleDeclaredNames: elem.preamble?.declaredNames ?? [],
     }),
   }
 }
@@ -65,11 +72,14 @@ export function buildBranchLoopDelegationPlan(
       paramBindings: loop.paramBindings,
       key: loop.key,
       index: loop.index,
+      // See note in `buildDynamicLoopDelegationPlan` above (BUG-3): no
+      // loopParams spec — leaf refs must stay in plain-object form here.
       mapPreamble: loop.preamble
         ? renderPreamble(loop.preamble, {
-            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
           })
         : null,
+      mapPreambleDeclaredNames: loop.preamble?.declaredNames ?? [],
     }),
   }
 }
@@ -95,11 +105,14 @@ export function buildStaticArrayDelegationPlan(
       // array too (#1434).
       arrayExpr: buildChainedArrayExpr(elem),
       param: elem.param,
+      // See note in `buildDynamicLoopDelegationPlan` above (BUG-3): no
+      // loopParams spec — leaf refs must stay in plain-object form here.
       mapPreamble: elem.preamble
         ? renderPreamble(elem.preamble, {
-            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
           })
         : null,
+      mapPreambleDeclaredNames: elem.preamble?.declaredNames ?? [],
       offset: elem.offset ?? null,
       indexParam: elem.index ?? null,
     },
@@ -117,6 +130,7 @@ function buildKeyedOrIndexLookup(args: {
   key: string | null
   index: string | null
   mapPreamble: string | null
+  mapPreambleDeclaredNames: readonly string[]
 }): ItemLookup {
   const hasBindings = (args.paramBindings?.length ?? 0) > 0
   if (args.key !== null) {
@@ -132,6 +146,7 @@ function buildKeyedOrIndexLookup(args: {
       paramBindings: args.paramBindings,
       keyWithItem,
       mapPreamble: args.mapPreamble,
+      mapPreambleDeclaredNames: args.mapPreambleDeclaredNames,
       hasBindings,
       indexParam: args.index,
     }
@@ -141,6 +156,7 @@ function buildKeyedOrIndexLookup(args: {
     arrayExpr: args.array,
     param: args.param,
     mapPreamble: args.mapPreamble,
+    mapPreambleDeclaredNames: args.mapPreambleDeclaredNames,
     hasBindings,
     indexParam: args.index,
   }

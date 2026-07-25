@@ -74,6 +74,26 @@ function indexBindingLine(handler: string, indexParam: string | null, indexExpr:
   return `const ${indexParam} = ${indexExpr}`
 }
 
+/**
+ * Splice-only-when-referenced (#3, BUG-3 fix part 2): a preamble is dead
+ * weight for an event whose handler never reads one of the names it
+ * declares — the common case (an unused array builder like `cells` in the
+ * BUG-3 repro). Only emit `mapPreamble` when `handler`'s free identifiers
+ * intersect `declaredNames`; otherwise the delegated handler pays nothing
+ * for a preamble it never uses. `declaredNames` is empty whenever
+ * `mapPreamble` is `null`, so the `!mapPreamble` short-circuit is mostly
+ * redundant but keeps this correct-by-construction if that ever changes.
+ */
+function preambleLineForHandler(
+  mapPreamble: string | null,
+  declaredNames: readonly string[],
+  handler: string,
+): string | null {
+  if (!mapPreamble || declaredNames.length === 0) return null
+  const free = extractFreeIdentifiersFromText(handler)
+  return declaredNames.some((name) => free.has(name)) ? mapPreamble : null
+}
+
 export function stringifyEventDelegation(lines: string[], plan: EventDelegationPlan): void {
   const { containerVar, events, itemLookup, profileComponentName } = plan
   const eventsByName = new Map<string, LoopChildEvent[]>()
@@ -133,7 +153,8 @@ function emitKeyedLookup(
   handlerCall: string,
   lookup: KeyedItemLookup,
 ): void {
-  const { arrayExpr, param, keyWithItem, mapPreamble, hasBindings, indexParam } = lookup
+  const { arrayExpr, param, keyWithItem, mapPreamble, mapPreambleDeclaredNames, hasBindings, indexParam } = lookup
+  const preambleLine = preambleLineForHandler(mapPreamble, mapPreambleDeclaredNames, ev.handler)
 
   if (ev.nestedLoops.length === 0) {
     // Single-level keyed lookup.
@@ -146,15 +167,28 @@ function emitKeyedLookup(
       ls.push(`        const __bfLoopItem = ${arrayExpr}.find(item => String(${keyWithItem}) === key)`)
       ls.push(`        if (__bfLoopItem) {`)
       ls.push(`          const ${param} = __bfLoopItem`)
-      if (mapPreamble) ls.push(`          ${mapPreamble}`)
+      if (preambleLine) ls.push(`          ${preambleLine}`)
       if (idxLine) ls.push(`          ${idxLine}`)
-      ls.push(`          ${handlerCall}`)
+      // Leading `;` (not just relying on the preceding line's own
+      // semicolon): `handlerCall` always starts with `(` — an ASI hazard
+      // pre-existing in this branch even with neither optional line above
+      // (`const ${param} = __bfLoopItem` has no trailing `;`), which glues
+      // the call onto it as `__bfLoopItem(...)` and throws
+      // `TypeError: __bfLoopItem is not a function`. Defend at the one
+      // emission point rather than chasing every preceding-line shape.
+      ls.push(`          ;${handlerCall}`)
       ls.push(`        }`)
     } else {
+      // The preamble (when referenced) and the handler call both run INSIDE
+      // the item null guard — a `.find()` miss (stale-DOM race, e.g. the
+      // clicked row's key no longer in the current array) must short-circuit
+      // before a preamble that dereferences the item ever runs (BUG-4).
       ls.push(`        const ${param} = ${arrayExpr}.find(item => String(${keyWithItem}) === key)`)
-      if (mapPreamble) ls.push(`        ${mapPreamble}`)
-      if (idxLine) ls.push(`        if (${param}) { ${idxLine}; ${handlerCall} }`)
-      else ls.push(`        if (${param}) ${handlerCall}`)
+      ls.push(`        if (${param}) {`)
+      if (preambleLine) ls.push(`          ${preambleLine}`)
+      if (idxLine) ls.push(`          ${idxLine}`)
+      ls.push(`          ;${handlerCall}`)
+      ls.push(`        }`)
     }
     ls.push(`      }`)
     return
@@ -187,10 +221,14 @@ function emitKeyedLookup(
   }
   const outerGuard = hasBindings ? '__bfLoopItem' : param
   const allParams = [outerGuard, ...ev.nestedLoops.map(n => n.param)]
-  if (mapPreamble) ls.push(`      ${mapPreamble}`)
+  // Preamble and idx binding run INSIDE the combined item guard (BUG-4) —
+  // a nested `.find()` miss must short-circuit before the preamble runs.
   const idxLine = indexBindingLine(ev.handler, indexParam, `${arrayExpr}.findIndex(item => String(${keyWithItem}) === outerKey)`)
-  if (idxLine) ls.push(`      if (${allParams.join(' && ')}) { ${idxLine}; ${handlerCall} }`)
-  else ls.push(`      if (${allParams.join(' && ')}) ${handlerCall}`)
+  ls.push(`      if (${allParams.join(' && ')}) {`)
+  if (preambleLine) ls.push(`        ${preambleLine}`)
+  if (idxLine) ls.push(`        ${idxLine}`)
+  ls.push(`        ;${handlerCall}`)
+  ls.push(`      }`)
 }
 
 function emitDynamicIndexLookup(
@@ -199,7 +237,8 @@ function emitDynamicIndexLookup(
   handlerCall: string,
   lookup: DynamicIndexItemLookup,
 ): void {
-  const { arrayExpr, param, mapPreamble, hasBindings, indexParam } = lookup
+  const { arrayExpr, param, mapPreamble, mapPreambleDeclaredNames, hasBindings, indexParam } = lookup
+  const preambleLine = preambleLineForHandler(mapPreamble, mapPreambleDeclaredNames, ev.handler)
   const idxLine = indexBindingLine(ev.handler, indexParam, 'idx')
   ls.push(`      const li = ${varSlotId(ev.childSlotId)}El.closest('li, [bf-i]')`)
   ls.push(`      if (li && li.parentElement) {`)
@@ -208,15 +247,19 @@ function emitDynamicIndexLookup(
     ls.push(`        const __bfLoopItem = ${arrayExpr}[idx]`)
     ls.push(`        if (__bfLoopItem) {`)
     ls.push(`          const ${param} = __bfLoopItem`)
-    if (mapPreamble) ls.push(`          ${mapPreamble}`)
+    if (preambleLine) ls.push(`          ${preambleLine}`)
     if (idxLine) ls.push(`          ${idxLine}`)
-    ls.push(`          ${handlerCall}`)
+    ls.push(`          ;${handlerCall}`)
     ls.push(`        }`)
   } else {
+    // Preamble and idx binding run INSIDE the item null guard (BUG-4) — an
+    // out-of-range index (stale-DOM race) must short-circuit first.
     ls.push(`        const ${param} = ${arrayExpr}[idx]`)
-    if (mapPreamble) ls.push(`        ${mapPreamble}`)
-    if (idxLine) ls.push(`        if (${param}) { ${idxLine}; ${handlerCall} }`)
-    else ls.push(`        if (${param}) ${handlerCall}`)
+    ls.push(`        if (${param}) {`)
+    if (preambleLine) ls.push(`          ${preambleLine}`)
+    if (idxLine) ls.push(`          ${idxLine}`)
+    ls.push(`          ;${handlerCall}`)
+    ls.push(`        }`)
   }
   ls.push(`      }`)
 }
@@ -228,7 +271,8 @@ function emitStaticIndexLookup(
   lookup: StaticIndexItemLookup,
   containerVar: string,
 ): void {
-  const { arrayExpr, param, mapPreamble, offset, indexParam } = lookup
+  const { arrayExpr, param, mapPreamble, mapPreambleDeclaredNames, offset, indexParam } = lookup
+  const preambleLine = preambleLineForHandler(mapPreamble, mapPreambleDeclaredNames, ev.handler)
   const idxLine = indexBindingLine(ev.handler, indexParam, '__idx')
   ls.push(`      let __el = ${varSlotId(ev.childSlotId)}El`)
   ls.push(`      while (__el.parentElement && __el.parentElement !== ${containerVar}) __el = __el.parentElement`)
@@ -236,8 +280,12 @@ function emitStaticIndexLookup(
   const idxOffset = buildLoopChildIndexSubtraction(offset ?? undefined)
   ls.push(`        const __idx = Array.from(${containerVar}.children).indexOf(__el)${idxOffset}`)
   ls.push(`        const ${param} = ${arrayExpr}[__idx]`)
-  if (mapPreamble) ls.push(`        ${mapPreamble}`)
-  if (idxLine) ls.push(`        if (${param}) { ${idxLine}; ${handlerCall} }`)
-  else ls.push(`        if (${param}) ${handlerCall}`)
+  // Preamble and idx binding run INSIDE the item null guard (BUG-4) — an
+  // out-of-range index (stale-DOM race) must short-circuit first.
+  ls.push(`        if (${param}) {`)
+  if (preambleLine) ls.push(`          ${preambleLine}`)
+  if (idxLine) ls.push(`          ${idxLine}`)
+  ls.push(`          ;${handlerCall}`)
+  ls.push(`        }`)
   ls.push(`      }`)
 }

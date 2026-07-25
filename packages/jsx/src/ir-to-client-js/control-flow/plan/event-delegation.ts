@@ -66,8 +66,19 @@ export interface KeyedItemLookup {
    * decision.
    */
   keyWithItem: string
-  /** Optional preamble line — emitted before the handler call. */
+  /** Optional preamble line — emitted before the handler call, inside the item guard. */
   mapPreamble: string | null
+  /**
+   * `const`/`let`/function names `mapPreamble` declares (from
+   * `MapCallbackPreamble.declaredNames`). The stringifier only splices
+   * `mapPreamble` for an event whose handler text actually references one of
+   * these — a preamble that only feeds unused local state (e.g. a `cells`
+   * array builder never read by the click handler) is dead weight the
+   * delegated handler shouldn't pay for, and emitting it unconditionally is
+   * what let BUG-3's stale-context leaf render go unnoticed. Empty when
+   * `mapPreamble` is `null`.
+   */
+  mapPreambleDeclaredNames: readonly string[]
   /** True when `paramBindings` is non-empty — drives TDZ-safe lookup shape. */
   hasBindings: boolean
 }
@@ -77,6 +88,8 @@ export interface DynamicIndexItemLookup {
   arrayExpr: string
   param: string
   mapPreamble: string | null
+  /** See `KeyedItemLookup.mapPreambleDeclaredNames`. */
+  mapPreambleDeclaredNames: readonly string[]
   hasBindings: boolean
   /** Loop index param name — see `KeyedItemLookup.indexParam` (#2189). */
   indexParam: string | null
@@ -87,6 +100,8 @@ export interface StaticIndexItemLookup {
   arrayExpr: string
   param: string
   mapPreamble: string | null
+  /** See `KeyedItemLookup.mapPreambleDeclaredNames`. */
+  mapPreambleDeclaredNames: readonly string[]
   /** Loop index param name — see `KeyedItemLookup.indexParam` (#2189). */
   indexParam: string | null
   /**
