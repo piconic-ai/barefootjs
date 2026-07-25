@@ -4172,9 +4172,18 @@ function transformMapCall(
         // silent syntax-error leak with no diagnostic. Refuse loudly instead of
         // leaking. (A later Stage-3 PR renders such bodies verbatim on JS
         // runtimes; until then it is a build error on every backend.)
-        const jsxPreambleStmt = body.statements.find(
-          s => s !== returnStmt && containsJsxInExpression(s)
-        )
+        // Scan only statements the preamble collector below would reach — i.e.
+        // those *before* `returnStmt` (it `break`s at the return). JSX in
+        // unreachable post-return dead code is never spliced into the preamble,
+        // so it is not part of the leak and must not trip the refusal.
+        let jsxPreambleStmt: ts.Statement | undefined
+        for (const stmt of body.statements) {
+          if (stmt === returnStmt) break
+          if (containsJsxInExpression(stmt)) {
+            jsxPreambleStmt = stmt
+            break
+          }
+        }
         if (jsxPreambleStmt) {
           ctx.analyzer.errors.push(
             createError(

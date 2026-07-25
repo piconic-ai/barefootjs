@@ -68,6 +68,23 @@ export { List }
     expect(cj.content).toMatch(/const label\b/)
   })
 
+  test('JSX in unreachable code after the return does not trip BF021', () => {
+    // The preamble collector stops at `return`, so JSX in a post-return dead
+    // statement is never spliced into the loop — it is not part of the leak
+    // and must not be refused. (Guards the scan boundary.)
+    const src = `
+function List({ items }: { items: { id: string }[] }) {
+  return <ul>{items.map((it) => {
+    return <li key={it.id}>{it.id}</li>
+    const dead = <span>{it.id}</span>
+  })}</ul>
+}
+export { List }
+`
+    const r = compile(src, false)
+    expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(0)
+  })
+
   test('a plain single-return JSX body is unaffected', () => {
     const src = `
 function List({ items }: { items: { id: string }[] }) {
