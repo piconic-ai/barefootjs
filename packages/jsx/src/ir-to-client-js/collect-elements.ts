@@ -777,6 +777,7 @@ export function collectElements(
         } : undefined,
         chainOrder: l.chainOrder,
         mapPreamble: l.mapPreamble,
+        preambleFragments: l.preambleFragments,
       })
       // Don't descend — loop-scoped variables are only available inside the iteration.
     },

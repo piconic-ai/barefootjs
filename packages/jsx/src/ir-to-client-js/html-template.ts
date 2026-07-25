@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, IRAttribute, IRNode, IRProp } from '../types.ts'
+import type { AttrValue, IRAttribute, IRNode, IRProp, FlatMapJsxFragment } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -556,6 +556,28 @@ function itemAnchorTemplate(keyExpr: string): string {
   return `<!--${loopItemMarker('${' + keyExpr + '}')}-->`
 }
 
+/**
+ * Stage 3 / D4 (spec/callback-fidelity.md) — substitute each `__BF_JSX_N__`
+ * placeholder in an arbitrary `.map()` preamble with a template-literal HTML
+ * string built from the leaf's compiled IR. Mirrors the flatMap-callback
+ * substitution but is shared across the client-JS and hydrate-template splice
+ * sites. Uses a function replacement so `$`-sequences in the rendered HTML
+ * (`${...}`) are never reinterpreted by `String.replace`.
+ */
+export function substituteJsxFragments(
+  text: string,
+  fragments: ReadonlyArray<FlatMapJsxFragment> | undefined,
+  renderFragment: (ir: IRNode) => string,
+): string {
+  if (!fragments || fragments.length === 0) return text
+  let result = text
+  for (const frag of fragments) {
+    const rendered = renderFragment(frag.ir)
+    result = result.replace(frag.placeholder, () => '`' + rendered + '`')
+  }
+  return result
+}
+
 export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, insideLoop = false, inHoistedChildren = false): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, insideLoop, inHoistedChildren)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
@@ -624,20 +646,29 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // as HTML (template.innerHTML), so re-escape for the HTML parser.
       return escapeHtml(node.value)
 
-    case 'expression':
+    case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
+      const inner = wrapInterpolation(wrapExpr(node.expr))
+      // Stage 3 / D4 — an element-array child ({out}) built by an arbitrary
+      // .map() preamble is an array of HTML strings; join it rather than let
+      // `${[...]}` `String`-comma-collapse it. Only reached on a JS-runtime
+      // adapter (the flag is set in Phase 1 only there); a plain local can be
+      // read twice safely.
+      const valueExpr = node.joinArrayChild
+        ? `Array.isArray(${inner}) ? ${inner}.join('') : (${inner} ?? '')`
+        : inner
       if (node.slotId) {
-        const inner = wrapInterpolation(wrapExpr(node.expr))
         // In branch-slot context `wrapInterpolation` routes the value
         // through `__bfSlot`, which returns raw `<!--bf-slot:N-->` markers
         // for live `Node` values (spliced back by `insert()`). Escaping
         // would corrupt those markers and drop slotted content (#1694
         // regression). `__bfSlot` owns coercion of its own value, so the
         // text-escape applies only to the non-slot (plain text) form.
-        const slotted = branchSlotsVar ? inner : escapeTextSlotExpr(inner)
+        const slotted = branchSlotsVar || node.joinArrayChild ? valueExpr : escapeTextSlotExpr(valueExpr)
         return `<!--bf:${node.slotId}-->\${${slotted}}<!--/-->`
       }
-      return `\${${wrapInterpolation(wrapExpr(node.expr))}}`
+      return `\${${valueExpr}}`
+    }
 
     case 'conditional': {
       const trueBranch = recurse(node.whenTrue)
@@ -748,7 +779,10 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
         }
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.mapPreamble) {
-        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        // Stage 3 / D4 — substitute JSX leaves in an arbitrary array-builder
+        // preamble (the hydrate-template context uses the bare loop param).
+        const preamble = substituteJsxFragments(node.mapPreamble, node.preambleFragments, (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop))
+        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
       }
@@ -1138,12 +1172,18 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       // as HTML (template.innerHTML), so re-escape for the HTML parser.
       return escapeHtml(node.value)
 
-    case 'expression':
+    case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
+      const wrapped = wrapExpr(node.expr)
+      // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
+      const value = node.joinArrayChild
+        ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
+        : wrapped
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${escapeTextSlotExpr(wrapExpr(node.expr))}}<!--/-->`
+        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      return `\${${wrapExpr(node.expr)}}`
+      return `\${${value}}`
+    }
 
     case 'conditional': {
       const trueBranch = recurse(node.whenTrue)
@@ -1187,7 +1227,9 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
         }
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.mapPreamble) {
-        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${node.mapPreamble} return \`${childTemplate}\` }).join('')}`
+        // Stage 3 / D4 — substitute JSX leaves in an arbitrary array-builder preamble.
+        const preamble = substituteJsxFragments(node.mapPreamble, node.preambleFragments, (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams))
+        mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
       }
@@ -1553,12 +1595,18 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       // as HTML (template.innerHTML), so re-escape for the HTML parser.
       return escapeHtml(node.value)
 
-    case 'expression':
+    case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
+      const wrapped = transformExpr(node.expr, node.templateExpr)
+      // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
+      const value = node.joinArrayChild
+        ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
+        : wrapped
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${escapeTextSlotExpr(transformExpr(node.expr, node.templateExpr))}}<!--/-->`
+        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      return `\${${transformExpr(node.expr, node.templateExpr)}}`
+      return `\${${value}}`
+    }
 
     case 'conditional': {
       // A client-only conditional (auto-deferred brand read or manual
@@ -2134,10 +2182,14 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         // before init's createEffect overwrites the slot (#1128). Emit
         // an empty placeholder instead.
         const expr = transformed === UNSAFE_TEMPLATE_EXPR ? "''" : transformed
+        // Stage 3 / D4 — join an element-array child ({out}) built by the preamble.
+        const value = node.joinArrayChild
+          ? `Array.isArray(${expr}) ? ${expr}.join('') : (${expr} ?? '')`
+          : expr
         if (node.slotId) {
-          return `<!--bf:${node.slotId}-->\${${escapeTextSlotExpr(expr)}}<!--/-->`
+          return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr)}}<!--/-->`
         }
-        return `\${${expr}}`
+        return `\${${value}}`
       }
 
     case 'conditional': {
@@ -2296,7 +2348,9 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         mapExpr = `\${${iterArrayExpr}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.mapPreamble) {
         const rawPreamble = node.templateMapPreamble ?? node.mapPreamble
-        const preamble = applyPropsRewrite(rawPreamble, propsObjectName ?? null)
+        // Stage 3 / D4 — substitute JSX leaves after the props rewrite
+        // (placeholders are inert identifiers it leaves untouched).
+        const preamble = substituteJsxFragments(applyPropsRewrite(rawPreamble, propsObjectName ?? null), node.preambleFragments, (ir) => recurseInLoopBody(ir))
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`

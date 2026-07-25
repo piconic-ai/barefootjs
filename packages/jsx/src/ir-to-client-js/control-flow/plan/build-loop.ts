@@ -39,6 +39,7 @@ import {
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildComponentLoopPlan } from './build-component-loop.ts'
 import { buildTopLevelCompositePlan } from './build-composite-loop.ts'
+import { substituteJsxFragments, irToHtmlTemplate } from '../../html-template.ts'
 import type {
   LoopPlan,
   PlainLoopPlan,
@@ -100,7 +101,17 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
     paramHead,
     paramUnwrap,
     indexParam: elem.index || '__idx',
-    mapPreambleWrapped: elem.mapPreamble ? wrap(elem.mapPreamble) : '',
+    // Stage 3 / D4 — wrap the loop-param accessors first (placeholders are inert
+    // identifiers `wrap` won't touch), then substitute each JSX leaf with its
+    // rendered HTML-string template. The fragment renders under this loop's param
+    // context so a leaf that reads the item (`r`) becomes `r()`.
+    mapPreambleWrapped: elem.mapPreamble
+      ? substituteJsxFragments(
+          wrap(elem.mapPreamble),
+          elem.preambleFragments,
+          (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+        )
+      : '',
     template: elem.template,
     skeletonTemplate: elem.skeletonTemplate,
     skeletonPaths: elem.skeletonPaths,

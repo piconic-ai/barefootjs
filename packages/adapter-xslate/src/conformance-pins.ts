@@ -18,6 +18,7 @@ export const conformancePins: ConformancePins = {
   // conditional branch template, so it refuses with BF021 + `/* @client */`.
   // See spec/callback-fidelity.md.
   'map-preamble-branch-body': [{ code: 'BF021', severity: 'error' }],
+  'map-array-builder-body': [{ code: 'BF021', severity: 'error' }],
   // `.fill(value)` mutates the receiver in place — no template lowering
   // on any DSL adapter; a JS-runtime target runs it, a DSL adapter
   // surfaces BF101 + `/* @client */`. See spec/callback-fidelity.md.

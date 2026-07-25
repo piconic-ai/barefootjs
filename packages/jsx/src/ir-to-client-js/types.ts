@@ -22,6 +22,7 @@ import type {
   ImportInfo,
   TypeInfo,
   TypeDefinition,
+  FlatMapJsxFragment,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 import type { SkeletonSlotPaths } from './html-template.ts'
@@ -600,6 +601,8 @@ export interface TopLevelLoop extends LoopCore {
   }
   chainOrder?: 'filter-sort' | 'sort-filter'
   mapPreamble?: string
+  /** Stage 3 / D4 — compiled JSX leaves in an arbitrary array-builder preamble. */
+  preambleFragments?: FlatMapJsxFragment[]
 }
 
 /**

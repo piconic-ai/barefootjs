@@ -1,13 +1,19 @@
 /**
- * Stage 3 of spec/callback-fidelity.md — a `.map()` callback whose body
- * *constructs* JSX in a statement before its `return` (an imperative
- * array-builder: `const out = []; for (…) out.push(<td/>); return <tr>{out}</tr>`)
- * cannot be lowered to a template. Before this stage the compiler silently
- * spliced such statements into the loop preamble verbatim — and because the
- * type-stripper leaves JSX untouched, the raw `<td/>` leaked into the emitted
- * client bundle as invalid JS, with NO diagnostic. This pins the loud refusal
- * (BF021) that replaces the silent leak, on both a JS-runtime and a DSL adapter,
- * and guards that legitimate value-only preambles are NOT caught.
+ * Stage 3 (D4 + D5) of spec/callback-fidelity.md — a `.map()` callback whose
+ * body *constructs* JSX in a statement before its `return` (an imperative
+ * array-builder: `const out = []; for (…) out.push(<td/>); return <tr>{out}</tr>`).
+ *
+ * On a **JS-runtime** adapter (`acceptsCallbackBody() => true`) the body is now
+ * rendered verbatim: each JSX leaf lowers to a template-literal HTML string, the
+ * imperative control flow runs as-is, and the `{out}` element-array child is
+ * joined into the row's innerHTML. No raw JSX leaks into the plain-JS bundle.
+ *
+ * On a **DSL** adapter (whose template runtime can't run a callback body) it
+ * still refuses with BF021, always naming the `/* @client *\/` escape.
+ *
+ * D5 (keyFn = hoist): the loop key is evaluated before the body runs, so it must
+ * be derivable from the raw item — a key that reads a preamble-computed local is
+ * refused (it would compile to an unbound keyFn).
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -23,35 +29,110 @@ function compile(source: string, dsl: boolean) {
 
 const arrayBuilder = `
 function Table({ rows }: { rows: { id: string; cells: string[] }[] }) {
-  return <table>{rows.map((r) => {
+  return <table><tbody>{rows.map((r) => {
     const out = []
     for (const c of r.cells) out.push(<td>{c}</td>)
     return <tr key={r.id}>{out}</tr>
-  })}</table>
+  })}</tbody></table>
 }
 export { Table }
 `
 
-describe('.map() arbitrary body — no silent JSX leak (Stage 3)', () => {
-  for (const dsl of [false, true]) {
-    const tier = dsl ? 'DSL' : 'JS-runtime'
+describe('.map() array-builder body — JS-runtime verbatim (Stage 3 / D4)', () => {
+  test('compiles with no BF021 on a JS-runtime adapter', () => {
+    const r = compile(arrayBuilder, false)
+    expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(0)
+  })
 
-    test(`an array-builder body refuses with BF021 (${tier})`, () => {
-      const r = compile(arrayBuilder, dsl)
-      const bf021 = r.errors.filter(e => e.code === 'BF021')
-      expect(bf021).toHaveLength(1)
-    })
+  test('no raw JSX leaks into the client bundle; the leaf is a lowered string', () => {
+    const r = compile(arrayBuilder, false)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    // The raw `out.push(<td>…)` must not survive — raw JSX is invalid plain JS.
+    expect(cj).not.toMatch(/out\.push\(</)
+    // …it lowers to a template-literal HTML string instead.
+    expect(cj).toMatch(/out\.push\(`<td>/)
+  })
 
-    test(`the raw JSX never leaks into the client bundle (${tier})`, () => {
-      const r = compile(arrayBuilder, dsl)
-      const cj = r.files.find(f => f.type === 'clientJs')
-      // The `out.push(<td>…</td>)` statement must not survive verbatim — raw
-      // JSX in the plain-JS client bundle is a syntax error.
-      expect(cj?.content ?? '').not.toMatch(/out\.push\(</)
-      expect(cj?.content ?? '').not.toMatch(/<td>/)
-    })
-  }
+  test('the element-array child {out} is joined into the row', () => {
+    const r = compile(arrayBuilder, false)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    // `out` is an array of HTML strings; the child interpolation must join it,
+    // not `String([])`-comma-collapse it.
+    expect(cj).toMatch(/Array\.isArray\(out\)\s*\?\s*out\.join\(''\)/)
+  })
 
+  test('keyFn is hoisted from the returned root and derived from the raw item', () => {
+    const r = compile(arrayBuilder, false)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    expect(cj).toMatch(/\(r\)\s*=>\s*String\(r\.id\)/)
+  })
+
+  test('DSL adapter refuses with BF021 naming the /* @client */ escape', () => {
+    const r = compile(arrayBuilder, true)
+    const bf021 = r.errors.filter(e => e.code === 'BF021')
+    expect(bf021).toHaveLength(1)
+    expect(bf021[0].suggestion?.message ?? '').toMatch(/@client/)
+  })
+
+  test('a /* @client */-marked array-builder compiles clean on a DSL adapter', () => {
+    // The escape: the loop renders client-only (the DSL SSR adapter emits
+    // markers, the browser runs the verbatim body), so the DSL refusal lifts.
+    const src = `
+function Table({ rows }: { rows: { id: string; cells: string[] }[] }) {
+  return <table><tbody>{/* @client */ rows.map((r) => {
+    const out = []
+    for (const c of r.cells) out.push(<td>{c}</td>)
+    return <tr key={r.id}>{out}</tr>
+  })}</tbody></table>
+}
+export { Table }
+`
+    const r = compile(src, true)
+    expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(0)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    // The browser still runs the verbatim body — the leaf is a lowered string.
+    expect(cj).toMatch(/out\.push\(`<td>/)
+  })
+})
+
+describe('.map() array-builder — D5 keyFn hoist contract', () => {
+  test('a key derived from a preamble-computed local is refused', () => {
+    // `k` is computed in the body; the key runs *before* the body, so it cannot
+    // reference `k`. Refuse rather than emit an unbound keyFn.
+    const src = `
+function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
+  return <table><tbody>{rows.map((r) => {
+    const k = r.id + '-row'
+    const out = []
+    for (const c of r.cells) out.push(<td>{c}</td>)
+    return <tr key={k}>{out}</tr>
+  })}</tbody></table>
+}
+export { T }
+`
+    const r = compile(src, false)
+    expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(1)
+  })
+})
+
+describe('.map() array-builder — leaf scope (D-E: refuse what cannot be wired)', () => {
+  test('a leaf with an event handler is refused (no silent divergence)', () => {
+    const src = `
+function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
+  return <table><tbody>{rows.map((r) => {
+    const out = []
+    for (const c of r.cells) out.push(<td onClick={() => console.log(c)}>{c}</td>)
+    return <tr key={r.id}>{out}</tr>
+  })}</tbody></table>
+}
+export { T }
+`
+    const r = compile(src, false)
+    expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(1)
+  })
+})
+
+describe('.map() arbitrary body — regression guards (unchanged)', () => {
   test('a value-only const preamble still compiles clean (no false positive)', () => {
     const src = `
 function List({ items }: { items: { id: string; name: string }[] }) {
@@ -69,9 +150,6 @@ export { List }
   })
 
   test('JSX in unreachable code after the return does not trip BF021', () => {
-    // The preamble collector stops at `return`, so JSX in a post-return dead
-    // statement is never spliced into the loop — it is not part of the leak
-    // and must not be refused. (Guards the scan boundary.)
     const src = `
 function List({ items }: { items: { id: string }[] }) {
   return <ul>{items.map((it) => {
@@ -85,7 +163,7 @@ export { List }
     expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(0)
   })
 
-  test('a plain single-return JSX body is unaffected', () => {
+  test('a plain single-return JSX body is unaffected on a DSL adapter', () => {
     const src = `
 function List({ items }: { items: { id: string }[] }) {
   return <ul>{items.map((it) => { return <li key={it.id}>{it.id}</li> })}</ul>
