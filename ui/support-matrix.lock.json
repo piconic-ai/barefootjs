@@ -866,15 +866,15 @@
       }
     },
     "binary": {
-      "total": 76,
+      "total": 75,
       "cells": {
         "hono": {
-          "pass": 76,
-          "total": 76
+          "pass": 75,
+          "total": 75
         },
         "blade": {
-          "pass": 68,
-          "total": 76,
+          "pass": 67,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -917,8 +917,8 @@
           ]
         },
         "erb": {
-          "pass": 69,
-          "total": 76,
+          "pass": 68,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -955,8 +955,8 @@
           ]
         },
         "go-template": {
-          "pass": 68,
-          "total": 76,
+          "pass": 67,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -999,8 +999,8 @@
           ]
         },
         "jinja": {
-          "pass": 68,
-          "total": 76,
+          "pass": 67,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1043,8 +1043,8 @@
           ]
         },
         "minijinja": {
-          "pass": 68,
-          "total": 76,
+          "pass": 67,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1087,8 +1087,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 69,
-          "total": 76,
+          "pass": 68,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1125,8 +1125,8 @@
           ]
         },
         "twig": {
-          "pass": 68,
-          "total": 76,
+          "pass": 67,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1169,8 +1169,8 @@
           ]
         },
         "xslate": {
-          "pass": 68,
-          "total": 76,
+          "pass": 67,
+          "total": 75,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1219,10 +1219,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L169"
       },
       "example": {
-        "fixture": "flatmap-escaping",
-        "description": "special characters in flatMap block-body leaf text escape identically at SSR and CSR",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-escaping.ts",
-        "code": "it.id + t"
+        "fixture": "array-sort-field-asc",
+        "description": ".sort((a,b) => a.f - b.f) sorts by field, ascending",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-sort-field-asc.ts",
+        "code": "a.price - b.price"
       }
     },
     "call": {
@@ -1886,11 +1886,11 @@
       }
     },
     "identifier": {
-      "total": 259,
+      "total": 258,
       "cells": {
         "hono": {
-          "pass": 258,
-          "total": 259,
+          "pass": 257,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1901,8 +1901,8 @@
           ]
         },
         "blade": {
-          "pass": 243,
-          "total": 259,
+          "pass": 242,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1981,8 +1981,8 @@
           ]
         },
         "erb": {
-          "pass": 244,
-          "total": 259,
+          "pass": 243,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2055,8 +2055,8 @@
           ]
         },
         "go-template": {
-          "pass": 243,
-          "total": 259,
+          "pass": 242,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2135,8 +2135,8 @@
           ]
         },
         "jinja": {
-          "pass": 243,
-          "total": 259,
+          "pass": 242,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2215,8 +2215,8 @@
           ]
         },
         "minijinja": {
-          "pass": 243,
-          "total": 259,
+          "pass": 242,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2295,8 +2295,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 244,
-          "total": 259,
+          "pass": 243,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2369,8 +2369,8 @@
           ]
         },
         "twig": {
-          "pass": 243,
-          "total": 259,
+          "pass": 242,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2449,8 +2449,8 @@
           ]
         },
         "xslate": {
-          "pass": 243,
-          "total": 259,
+          "pass": 242,
+          "total": 258,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3082,11 +3082,11 @@
       }
     },
     "member": {
-      "total": 138,
+      "total": 137,
       "cells": {
         "hono": {
-          "pass": 137,
-          "total": 138,
+          "pass": 136,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3097,8 +3097,8 @@
           ]
         },
         "blade": {
-          "pass": 122,
-          "total": 138,
+          "pass": 121,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3177,8 +3177,8 @@
           ]
         },
         "erb": {
-          "pass": 123,
-          "total": 138,
+          "pass": 122,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3251,8 +3251,8 @@
           ]
         },
         "go-template": {
-          "pass": 122,
-          "total": 138,
+          "pass": 121,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3331,8 +3331,8 @@
           ]
         },
         "jinja": {
-          "pass": 122,
-          "total": 138,
+          "pass": 121,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3411,8 +3411,8 @@
           ]
         },
         "minijinja": {
-          "pass": 122,
-          "total": 138,
+          "pass": 121,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3491,8 +3491,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 123,
-          "total": 138,
+          "pass": 122,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3565,8 +3565,8 @@
           ]
         },
         "twig": {
-          "pass": 122,
-          "total": 138,
+          "pass": 121,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3645,8 +3645,8 @@
           ]
         },
         "xslate": {
-          "pass": 122,
-          "total": 138,
+          "pass": 121,
+          "total": 137,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -5923,15 +5923,15 @@
       }
     },
     "binary:+": {
-      "total": 18,
+      "total": 17,
       "cells": {
         "hono": {
-          "pass": 18,
-          "total": 18
+          "pass": 17,
+          "total": 17
         },
         "blade": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -5942,8 +5942,8 @@
           ]
         },
         "erb": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -5954,8 +5954,8 @@
           ]
         },
         "go-template": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -5966,8 +5966,8 @@
           ]
         },
         "jinja": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -5978,8 +5978,8 @@
           ]
         },
         "minijinja": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -5990,8 +5990,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -6002,8 +6002,8 @@
           ]
         },
         "twig": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -6014,8 +6014,8 @@
           ]
         },
         "xslate": {
-          "pass": 17,
-          "total": 18,
+          "pass": 16,
+          "total": 17,
           "gaps": [
             {
               "fixture": "static-array-from-props-with-component",
@@ -6032,10 +6032,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L89"
       },
       "example": {
-        "fixture": "flatmap-escaping",
-        "description": "special characters in flatMap block-body leaf text escape identically at SSR and CSR",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-escaping.ts",
-        "code": "it.id + t"
+        "fixture": "string-concat-plus",
+        "description": "String concatenation via the + operator",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-concat-plus.ts",
+        "code": "'Hello, ' + name"
       }
     },
     "binary:-": {
