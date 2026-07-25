@@ -1,4 +1,5 @@
 import type { IRLoop, IRNode, AttrValue, IRTemplatePart } from './types.ts'
+import { preambleAnalysisText, preambleAnalysisTemplateText } from './types.ts'
 
 /**
  * True when a loop's `.map()` destructure param is one of the shapes this
@@ -154,8 +155,10 @@ function restNamesMisused(loop: IRLoop, names: string[]): boolean {
     check(l.array)
     check(l.templateArray)
     check(l.key)
-    check(l.mapPreamble)
-    check(l.templateMapPreamble)
+    if (l.preamble) {
+      check(preambleAnalysisText(l.preamble))
+      check(preambleAnalysisTemplateText(l.preamble))
+    }
     if (l.flatMapCallback) {
       check(l.flatMapCallback.body)
       check(l.flatMapCallback.templateBody)

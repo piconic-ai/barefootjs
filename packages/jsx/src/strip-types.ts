@@ -117,6 +117,54 @@ export function reconstructWithReplacements(
   return result
 }
 
+/**
+ * Split a node's text into JS/marker segments: type ranges are stripped from
+ * the JS text, and each `markers` span becomes its own segment boundary
+ * (emitting `{ marker: i }` for the i-th marker, in the order given). Used by
+ * the Stage-3 preamble collector to carry mixed content (JS text + JSX leaves)
+ * as structured segments instead of a sentinel-bearing string — the marker
+ * index maps to the compiled leaf IR. Same span-walk contract as
+ * {@link reconstructWithReplacements}: markers are absolute-position,
+ * non-overlapping sub-spans of `node`; a type range inside a marker span is
+ * subsumed.
+ */
+export function reconstructAsSegments(
+  node: ts.Node,
+  sourceFile: ts.SourceFile,
+  ranges: ExcludeRange[],
+  markers: Array<{ start: number; end: number }>
+): Array<{ js: string } | { marker: number }> {
+  const nodeStart = node.getStart(sourceFile)
+  const nodeEnd = node.getEnd()
+  const fullText = sourceFile.text
+
+  type Edit = { start: number; end: number; marker: number | null }
+  const edits: Edit[] = []
+  for (const r of ranges) {
+    if (r.end <= nodeStart || r.start >= nodeEnd) continue
+    edits.push({ start: r.start, end: r.end, marker: null })
+  }
+  markers.forEach((m, i) => edits.push({ start: m.start, end: m.end, marker: i }))
+  edits.sort((a, b) => a.start - b.start || b.end - a.end)
+
+  const segments: Array<{ js: string } | { marker: number }> = []
+  let jsBuf = ''
+  let pos = nodeStart
+  for (const edit of edits) {
+    if (edit.start < pos) continue // subsumed by an already-emitted span
+    jsBuf += fullText.slice(pos, edit.start)
+    if (edit.marker !== null) {
+      if (jsBuf) segments.push({ js: jsBuf })
+      jsBuf = ''
+      segments.push({ marker: edit.marker })
+    }
+    pos = edit.end
+  }
+  if (pos < nodeEnd) jsBuf += fullText.slice(pos, nodeEnd)
+  if (jsBuf) segments.push({ js: jsBuf })
+  return segments
+}
+
 function mergeRanges(ranges: ExcludeRange[]): ExcludeRange[] {
   if (ranges.length === 0) return []
   const merged: ExcludeRange[] = [ranges[0]]

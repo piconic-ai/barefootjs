@@ -21,7 +21,21 @@ import type { IRLoopChildComponent } from '../../types.ts'
 import type { NestedLoop, TopLevelLoop } from '../types.ts'
 import type { ClientJsContext } from '../types.ts'
 import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
-import { irChildrenToJsExpr } from '../html-template.ts'
+import { irChildrenToJsExpr, renderPreamble, irToHtmlTemplate } from '../html-template.ts'
+import type { MapCallbackPreamble } from '../../types.ts'
+
+/**
+ * Render a loop preamble for the static-array init context. Static `forEach`
+ * binds params as plain values (see `buildStaticPropsExpr` note), so neither
+ * js text nor leaf-JSX param reads get accessor-wrapped.
+ */
+function staticPreludeStatements(preamble: MapCallbackPreamble | undefined): string[] {
+  return preamble
+    ? [renderPreamble(preamble, {
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+      })]
+    : []
+}
 import { buildCompSelector } from '../control-flow/shared.ts'
 
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
@@ -94,7 +108,7 @@ function buildSingleCompPlan(
     arrayExpr: elem.array,
     param: elem.param,
     indexParam: elem.index || '__idx',
-    outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
+    outerPreludeStatements: staticPreludeStatements(elem.preamble),
     propsExpr: buildStaticPropsExpr(props),
   }
 }
@@ -113,7 +127,7 @@ function buildOuterNestedPlan(
     param: elem.param,
     indexParam,
     offsetExpr: buildLoopChildIndexExpr(indexParam, elem.offset),
-    outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
+    outerPreludeStatements: staticPreludeStatements(elem.preamble),
     propsExpr: buildStaticPropsExpr(comp.props),
   }
 }
@@ -142,13 +156,13 @@ function buildInnerLoopNestedPlan(
     outerParam: elem.param,
     outerIndexParam,
     outerOffsetExpr: buildLoopChildIndexExpr(outerIndexParam, elem.offset),
-    outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
+    outerPreludeStatements: staticPreludeStatements(elem.preamble),
     innerContainerSlotId: innerLoop.containerSlotId ?? null,
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
     innerIndexParam,
     innerOffsetExpr: buildLoopChildIndexExpr(innerIndexParam, innerLoop.offset),
-    innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
+    innerPreludeStatements: staticPreludeStatements(innerLoop.preamble),
     depth: innerLoop.depth,
     comps,
   }
@@ -189,11 +203,11 @@ function buildComponentRootedInnerLoopPlan(
     // position, so there's no synthetic fallback and index-less loops keep
     // byte-identical output.
     outerIndexParam: elem.index,
-    outerPreludeStatements: elem.mapPreamble ? [elem.mapPreamble] : [],
+    outerPreludeStatements: staticPreludeStatements(elem.preamble),
     innerArrayExpr: innerLoop.array,
     innerParam: innerLoop.param,
     innerIndexParam: innerLoop.index,
-    innerPreludeStatements: innerLoop.mapPreamble ? [innerLoop.mapPreamble] : [],
+    innerPreludeStatements: staticPreludeStatements(innerLoop.preamble),
     depth: innerLoop.depth,
     comps,
   }

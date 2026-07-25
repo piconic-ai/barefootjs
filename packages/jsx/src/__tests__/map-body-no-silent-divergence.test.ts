@@ -37,12 +37,15 @@ interface Shape {
 }
 
 /** Shapes that are silent holes today. Shrink-only — never add entries. */
+// Structured-preamble migration (root-cure commit 2) healed three holes by
+// construction — multi-root fragment, nested inner map, and branch loop now
+// render soundly because every plan builder renders the preamble through the
+// single `renderPreamble` door. The two remaining entries are Phase-1
+// acceptance holes (the collector accepts a return shape whose template can't
+// host the builder array) — closed by the dispatcher/acceptance commit.
 const KNOWN_HOLES: ReadonlySet<string> = new Set([
   'return-bare-identifier',
-  'return-multi-root-fragment',
   'return-ternary-after-builder',
-  'nested-inner-map-builder',
-  'branch-loop-builder',
 ])
 
 const shapes: Shape[] = [

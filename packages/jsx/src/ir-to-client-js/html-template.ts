@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, IRAttribute, IRNode, IRProp, FlatMapJsxFragment } from '../types.ts'
+import type { AttrValue, IRAttribute, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -557,25 +557,36 @@ function itemAnchorTemplate(keyExpr: string): string {
 }
 
 /**
- * Stage 3 / D4 (spec/callback-fidelity.md) — substitute each `__BF_JSX_N__`
- * placeholder in an arbitrary `.map()` preamble with a template-literal HTML
- * string built from the leaf's compiled IR. Mirrors the flatMap-callback
- * substitution but is shared across the client-JS and hydrate-template splice
- * sites. Uses a function replacement so `$`-sequences in the rendered HTML
- * (`${...}`) are never reinterpreted by `String.replace`.
+ * The ONLY door from a structured `.map()` preamble to emitted text (Stage 3
+ * root cure, spec/callback-fidelity.md). `js` segments contribute their JS
+ * text (template variant when requested, then the caller's context transform —
+ * e.g. the loop-param accessor wrap); `jsx` segments render their compiled IR
+ * as a template-literal HTML string. There is no sentinel substitution because
+ * there is no sentinel: mixed content stays structured until this function.
+ * Emitters that cannot host a string-templated preamble must not call this —
+ * they refuse at plan dispatch instead of splicing.
  */
-export function substituteJsxFragments(
-  text: string,
-  fragments: ReadonlyArray<FlatMapJsxFragment> | undefined,
-  renderFragment: (ir: IRNode) => string,
+export function renderPreamble(
+  preamble: MapCallbackPreamble,
+  opts: {
+    /** Pick `templateText` on js segments (hydrate/CSR template contexts). */
+    textVariant?: 'client' | 'template'
+    /** Context transform for js text (e.g. wrapLoopParamAsAccessor). */
+    transformJs?: (text: string) => string
+    /** Context-appropriate leaf renderer (an irToHtmlTemplate variant). */
+    renderLeaf: (ir: IRNode) => string
+  },
 ): string {
-  if (!fragments || fragments.length === 0) return text
-  let result = text
-  for (const frag of fragments) {
-    const rendered = renderFragment(frag.ir)
-    result = result.replace(frag.placeholder, () => '`' + rendered + '`')
+  let out = ''
+  for (const seg of preamble.segments) {
+    if (seg.kind === 'js') {
+      const text = opts.textVariant === 'template' ? (seg.templateText ?? seg.text) : seg.text
+      out += opts.transformJs ? opts.transformJs(text) : text
+    } else {
+      out += '`' + opts.renderLeaf(seg.ir) + '`'
+    }
   }
-  return result
+  return out
 }
 
 export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, insideLoop = false, inHoistedChildren = false): string {
@@ -778,10 +789,10 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
           body = body.replace(frag.placeholder, `\`${renderedIr}\``)
         }
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
-      } else if (node.mapPreamble) {
-        // Stage 3 / D4 — substitute JSX leaves in an arbitrary array-builder
+      } else if (node.preamble) {
+        // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder
         // preamble (the hydrate-template context uses the bare loop param).
-        const preamble = substituteJsxFragments(node.mapPreamble, node.preambleFragments, (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop))
+        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop) })
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
@@ -1226,9 +1237,9 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
           body = body.replace(frag.placeholder, `\`${renderedIr}\``)
         }
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
-      } else if (node.mapPreamble) {
-        // Stage 3 / D4 — substitute JSX leaves in an arbitrary array-builder preamble.
-        const preamble = substituteJsxFragments(node.mapPreamble, node.preambleFragments, (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams))
+      } else if (node.preamble) {
+        // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder preamble.
+        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams) })
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
@@ -2346,11 +2357,10 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         }
         body = applyPropsRewrite(body, propsObjectName ?? null)
         mapExpr = `\${${iterArrayExpr}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
-      } else if (node.mapPreamble) {
-        const rawPreamble = node.templateMapPreamble ?? node.mapPreamble
-        // Stage 3 / D4 — substitute JSX leaves after the props rewrite
-        // (placeholders are inert identifiers it leaves untouched).
-        const preamble = substituteJsxFragments(applyPropsRewrite(rawPreamble, propsObjectName ?? null), node.preambleFragments, (ir) => recurseInLoopBody(ir))
+      } else if (node.preamble) {
+        // Stage 3 / D4 — template-variant js text with the props rewrite
+        // applied per segment; JSX leaves render via the loop-body recursion.
+        const preamble = renderPreamble(node.preamble, { textVariant: 'template', transformJs: (t) => applyPropsRewrite(t, propsObjectName ?? null), renderLeaf: (ir) => recurseInLoopBody(ir) })
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${iterArrayExpr}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`

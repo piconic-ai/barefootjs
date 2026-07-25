@@ -23,6 +23,7 @@ import {
 } from '../shared.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildInnerLoopsPlan } from './build-inner-loop.ts'
+import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import type { CompositeLoopPlan } from './types.ts'
 
 /** @internal — prefer `buildLoopPlan`. */
@@ -43,7 +44,12 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
     paramHead,
     paramUnwrap,
     indexParam: elem.index || '__idx',
-    mapPreambleWrapped: elem.mapPreamble ? wrap(elem.mapPreamble) : '',
+    mapPreambleWrapped: elem.preamble
+      ? renderPreamble(elem.preamble, {
+          transformJs: wrap,
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+        })
+      : '',
     template: elem.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, elem.bindings.conditionals),
     outerEvents: elem.bindings.events.filter(ev => ev.nestedLoops.length === 0),
@@ -97,7 +103,12 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
     paramHead,
     paramUnwrap,
     indexParam: loop.index || '__idx',
-    mapPreambleWrapped: loop.mapPreamble ? wrap(loop.mapPreamble) : '',
+    mapPreambleWrapped: loop.preamble
+      ? renderPreamble(loop.preamble, {
+          transformJs: wrap,
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+        })
+      : '',
     template: loop.template,
     outerComps: filterCondCompsOut(outerCompsByDepth, loop.bindings.conditionals),
     outerEvents: childEvents.filter(ev => ev.nestedLoops.length === 0),

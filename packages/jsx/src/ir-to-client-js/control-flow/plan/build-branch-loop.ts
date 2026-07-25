@@ -16,6 +16,7 @@ import { buildBranchCompositePlan } from './build-composite-loop.ts'
 import { buildBranchLoopDelegationPlan } from './build-event-delegation.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { destructureLoopParam, loopKeyFn, buildChildRefBindings } from '../shared.ts'
+import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import type {
   BranchCompositeLoopPlan,
   BranchLoopPlan,
@@ -54,8 +55,11 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
     indexParam: loop.index || '__idx',
     // Wrap loop-param references to signal-accessor form so the preamble
     // matches the template literal's already-wrapped reads (#1065).
-    mapPreambleWrapped: loop.mapPreamble
-      ? wrapLoopParamAsAccessor(loop.mapPreamble, loop.param, loop.paramBindings)
+    mapPreambleWrapped: loop.preamble
+      ? renderPreamble(loop.preamble, {
+          transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+        })
       : '',
     template: loop.template,
     reactiveEffects: hasReactiveEffects
