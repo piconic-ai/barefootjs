@@ -312,12 +312,34 @@ export function createAnalyzerContext(
       } catch {
         ownSourceFile = undefined
       }
+      // Test-gated trust-boundary assertion (write-side string rule,
+      // CLAUDE.md): getJS output is spliced into emitted artifacts, so a
+      // JSX-bearing node here is a leak by construction — mixed content must
+      // travel as structured segments, never as raw text. Every getJS call
+      // site shares this contract; the env gate keeps the subtree walk off
+      // the production hot path (the trichotomy harness enables it). Scoped
+      // to error-free compiles: a compile that already refused loudly may
+      // take degraded fallback paths whose artifacts are gated by the error —
+      // the invariant this trips on is the SILENT leak.
+      if (process.env.BF_ASSERT_NO_JSX_IN_GETJS === '1' && this.errors.length === 0 && nodeContainsJsx(node)) {
+        throw new Error(
+          'getJS() called on a JSX-bearing node — raw JSX must never be spliced ' +
+          'into emitted output. Carry mixed content as structured segments ' +
+          '(MapCallbackPreamble / FlatMapCallback) instead.'
+        )
+      }
       if (ownSourceFile && ownSourceFile !== sourceFile) {
         return node.getText(ownSourceFile)
       }
       return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
     },
   }
+}
+
+/** Subtree JSX check for the test-gated getJS assertion above. */
+function nodeContainsJsx(node: ts.Node): boolean {
+  if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return true
+  return ts.forEachChild(node, nodeContainsJsx) ?? false
 }
 
 // =============================================================================

@@ -728,9 +728,9 @@ export interface IRLoop {
   /**
    * For flatMap callbacks whose body can't be decomposed into simple
    * `children` (block bodies with conditional returns, variable-assigned
-   * JSX, etc.). Carries the full callback body with JSX fragments
-   * replaced by `__BF_JSX_N__` placeholders, plus the IR for each
-   * fragment so each adapter can render them appropriately.
+   * JSX, etc.). Carries the body as structured segments (JS text +
+   * compiled JSX-leaf IR) rendered through `renderPreamble()`, plus the
+   * raw TSX for JSX-runtime SSR adapters.
    *
    * When present, `children` is empty — emitters use this field instead.
    */
@@ -738,31 +738,18 @@ export interface IRLoop {
 }
 
 /**
- * A compiled flatMap callback body. JSX elements in the original
- * callback have been transformed to IR nodes and replaced with
- * `__BF_JSX_0__`, `__BF_JSX_1__`, … placeholders in `body`.
- *
- * Each emitter (html-template, hono-adapter) renders the IR fragments
- * in its own format and substitutes the placeholders accordingly.
+ * A compiled flatMap callback body, carried as structured segments (the same
+ * shape as {@link MapCallbackPreamble}, rendered through the same
+ * `renderPreamble()` door) — never as a sentinel-bearing string. JSX-runtime
+ * SSR adapters emit `rawBody` (real TSX, branded) instead.
  */
 export interface FlatMapCallback {
   /** Callback parameters text, e.g. `"(frame, i)"` */
   params: string
-  /** Callback body text with JSX replaced by `__BF_JSX_N__` placeholders */
-  body: string
-  /** Same as `body` but with prop refs rewritten for template context */
-  templateBody?: string
-  /** Original callback body text with JSX preserved (for Hono .tsx output) */
-  rawBody: string
-  /** IR nodes for each JSX placeholder, ordered by placeholder index */
-  fragments: FlatMapJsxFragment[]
-}
-
-export interface FlatMapJsxFragment {
-  /** Placeholder string, e.g. `"__BF_JSX_0__"` */
-  placeholder: string
-  /** Compiled IR node for this JSX fragment */
-  ir: IRNode
+  /** Callback body as js-text / compiled-JSX-leaf segments. */
+  segments: PreambleSegment[]
+  /** Original callback body text (JSX intact) for JSX-runtime SSR adapters. */
+  rawBody: TsxSourceText
 }
 
 /**
@@ -829,7 +816,7 @@ export interface MapCallbackPreamble {
  * walks, exactly as the former placeholder carrier excluded them. NEVER use
  * this for emission — emission goes through `renderPreamble()`.
  */
-export function preambleAnalysisText(p: MapCallbackPreamble): string {
+export function preambleAnalysisText(p: Pick<MapCallbackPreamble, 'segments'>): string {
   let out = ''
   for (const seg of p.segments) if (seg.kind === 'js') out += seg.text
   return out
@@ -839,7 +826,7 @@ export function preambleAnalysisText(p: MapCallbackPreamble): string {
  * Template-context variant of {@link preambleAnalysisText} (destructured prop
  * refs rewritten). Read-side analysis only.
  */
-export function preambleAnalysisTemplateText(p: MapCallbackPreamble): string {
+export function preambleAnalysisTemplateText(p: Pick<MapCallbackPreamble, 'segments'>): string {
   let out = ''
   for (const seg of p.segments) if (seg.kind === 'js') out += seg.templateText ?? seg.text
   return out

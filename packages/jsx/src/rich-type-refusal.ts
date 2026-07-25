@@ -299,8 +299,12 @@ function walkNode(
       for (const nested of node.nestedComponents ?? []) {
         for (const child of nested.children) walkNode(child, meta, loopBindings, matchers, errors, seen)
       }
-      for (const frag of node.flatMapCallback?.fragments ?? []) {
-        walkNode(frag.ir, meta, loopBindings, matchers, errors, seen)
+      for (const seg of node.flatMapCallback?.segments ?? []) {
+        if (seg.kind === 'jsx') walkNode(seg.ir, meta, loopBindings, matchers, errors, seen)
+      }
+      // Preamble leaves (array-builder bodies) are nested IR the same way.
+      for (const seg of node.preamble?.segments ?? []) {
+        if (seg.kind === 'jsx') walkNode(seg.ir, meta, loopBindings, matchers, errors, seen)
       }
       break
     }

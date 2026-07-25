@@ -24,10 +24,27 @@
  * never grow.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import ts from 'typescript'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+
+// Arm the getJS trust-boundary assertion (analyzer-context.ts) for THIS
+// file's compiles only: any getJS call on a JSX-bearing node throws instead
+// of splicing raw JSX into output. Scoped via beforeAll/afterAll because bun
+// runs suite files in one process — a module-scope assignment would leak the
+// assertion into every later file and fail pre-existing raw-JSX-via-getJS
+// paths outside this harness's axes (e.g. the Array.from mapper lowering),
+// which are tracked for their own segments migration rather than pinned here.
+let prevAssertEnv: string | undefined
+beforeAll(() => {
+  prevAssertEnv = process.env.BF_ASSERT_NO_JSX_IN_GETJS
+  process.env.BF_ASSERT_NO_JSX_IN_GETJS = '1'
+})
+afterAll(() => {
+  if (prevAssertEnv === undefined) delete process.env.BF_ASSERT_NO_JSX_IN_GETJS
+  else process.env.BF_ASSERT_NO_JSX_IN_GETJS = prevAssertEnv
+})
 
 interface Shape {
   id: string
@@ -217,6 +234,42 @@ function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
     for (const c of r.cells) out.push(<td><Badge label={c} /></td>)
     return <tr key={r.id}>{out}</tr>
   })}</tbody></table>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-block-body',
+    // flatMap block bodies ride the same segments + renderPreamble machinery.
+    source: `
+function T({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => {
+    return it.tags.map((t) => <li key={t}>{t}</li>)
+  })}</ul>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-nested-in-map',
+    source: `
+function T({ groups }: { groups: { id: string; items: { id: string; tags: string[] }[] }[] }) {
+  return <div>{groups.map((g) => (
+    <ul key={g.id}>{g.items.flatMap((it) => {
+      return it.tags.map((t) => <li key={t}>{t}</li>)
+    })}</ul>
+  ))}</div>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-leaf-in-template-literal',
+    // A leaf inside a template literal is refused (segment boundary would
+    // split the literal's lexical state) — same rule as map preambles.
+    source: `
+function T({ items }: { items: { id: string }[] }) {
+  return <ul>{items.flatMap((it) => {
+    const s = \`x\${<b>{it.id}</b>}\`
+    return [<li key={it.id}>{s}</li>]
+  })}</ul>
 }
 export { T }`,
   },
