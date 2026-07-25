@@ -95,6 +95,28 @@ export { Table }
   })
 })
 
+describe('.map() array-builder — {out} join is scoped to the bare identifier', () => {
+  test('only the bare {out} child joins; a property access on it does not', () => {
+    // `{out}` is the element-array child and must join; `{out.length}` is a
+    // number and must NOT get the array-join coercion (which would also
+    // double-read the expression).
+    const src = `
+function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
+  return <table><tbody>{rows.map((r) => {
+    const out = []
+    for (const c of r.cells) out.push(<td>{c}</td>)
+    return <tr key={r.id}>{out}<td>{out.length}</td></tr>
+  })}</tbody></table>
+}
+export { T }
+`
+    const r = compile(src, false)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    expect(cj).toMatch(/Array\.isArray\(out\)\s*\?\s*out\.join\(''\)/)
+    expect(cj).not.toMatch(/Array\.isArray\(out\.length\)/)
+  })
+})
+
 describe('.map() array-builder — D5 keyFn hoist contract', () => {
   test('a key derived from a preamble-computed local is refused', () => {
     // `k` is computed in the body; the key runs *before* the body, so it cannot
@@ -103,6 +125,24 @@ describe('.map() array-builder — D5 keyFn hoist contract', () => {
 function T({ rows }: { rows: { id: string; cells: string[] }[] }) {
   return <table><tbody>{rows.map((r) => {
     const k = r.id + '-row'
+    const out = []
+    for (const c of r.cells) out.push(<td>{c}</td>)
+    return <tr key={k}>{out}</tr>
+  })}</tbody></table>
+}
+export { T }
+`
+    const r = compile(src, false)
+    expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(1)
+  })
+
+  test('a key derived from a destructured preamble local is refused', () => {
+    // The guard must see `k` even when it is bound via destructuring — else it
+    // would compile to a keyFn referencing an unbound `k`.
+    const src = `
+function T({ rows }: { rows: { meta: { id: string }; cells: string[] }[] }) {
+  return <table><tbody>{rows.map((r) => {
+    const { id: k } = r.meta
     const out = []
     for (const c of r.cells) out.push(<td>{c}</td>)
     return <tr key={k}>{out}</tr>

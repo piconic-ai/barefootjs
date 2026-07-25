@@ -4624,8 +4624,16 @@ function flagArrayChildExpressions(nodes: IRNode[], declared: ReadonlySet<string
   for (const node of nodes) {
     switch (node.type) {
       case 'expression': {
+        // Only the bare `{out}` shape — the whole expression is a single
+        // identifier that is itself a preamble-declared array. A broader
+        // expression (`{out.length}`, `{f(out)}`) must NOT get the array-join
+        // coercion: it would change the value, and the join ternary reads the
+        // expression twice, so a call could double-fire its side effects.
+        const name = node.expr.trim()
         const refs = extractFreeIdentifiersFromText(node.expr)
-        if ([...refs].some((r) => declared.has(r))) node.joinArrayChild = true
+        if (refs.size === 1 && refs.has(name) && declared.has(name)) {
+          node.joinArrayChild = true
+        }
         break
       }
       case 'element':
@@ -4642,11 +4650,28 @@ function flagArrayChildExpressions(nodes: IRNode[], declared: ReadonlySet<string
   }
 }
 
+/**
+ * Collect the names a binding introduces, recursing through object/array
+ * destructuring patterns (`const { id: k } = r`, `const [k, ...rest] = xs`) so
+ * the D5 key-derivability guard sees every preamble-scoped local — mirrors
+ * `collectParamBindingNames`.
+ */
+function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
+  if (ts.isIdentifier(name)) {
+    out.add(name.text)
+    return
+  }
+  // Object / array binding pattern; array holes are OmittedExpression, skipped.
+  for (const el of name.elements) {
+    if (ts.isBindingElement(el)) collectBindingNames(el.name, out)
+  }
+}
+
 /** Names a preamble statement declares (const/let/var/function). */
 function collectPreambleDeclaredNames(stmt: ts.Statement, out: Set<string>): void {
   if (ts.isVariableStatement(stmt)) {
     for (const decl of stmt.declarationList.declarations) {
-      if (ts.isIdentifier(decl.name)) out.add(decl.name.text)
+      collectBindingNames(decl.name, out)
     }
   } else if (ts.isFunctionDeclaration(stmt) && stmt.name) {
     out.add(stmt.name.text)
