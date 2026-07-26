@@ -124,8 +124,9 @@ describe('#1247 — static-loop CSR self-heal', () => {
     const m = clientJs.match(/if \(!__iterEl\) \{[\s\S]*?\n\s+\}\n\s+if \(__iterEl\)/)
     expect(m).toBeTruthy()
     const block = m![0]
-    // The cloned template must reference `emoji` directly.
-    expect(block).toMatch(/\$\{emoji\}/)
+    // The cloned template must reference `emoji` directly (possibly through
+    // the escapeAttr/escapeText interpolation wrappers).
+    expect(block).toMatch(/\$\{(?:escape(?:Attr|Text)\()?emoji\)?\}/)
     // It must NOT reference `__bfItem()` — that accessor only exists
     // inside `mapArray` renderItems, not inside a plain forEach.
     expect(block).not.toMatch(/__bfItem\(\)/)

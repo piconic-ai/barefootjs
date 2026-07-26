@@ -52,6 +52,21 @@ return <div>...</div>
 ))}
 ```
 
+`.flatMap()` expands nested collections into a flat run of keyed elements. A pure projection body — the nested `.map()` as the whole body, expression or single-`return` block — compiles on every adapter; a body with statements before the projection (early returns, `const`s) runs as JS on JS-runtime adapters and needs [`/* @client */`](./client-directive.md) on DSL backends:
+
+```tsx
+// ✅ Projection — works on every adapter
+{todos().flatMap(todo => todo.tags.map(tag => (
+  <li key={`${todo.id}:${tag}`}>{tag}</li>
+)))}
+
+// ✅ Statement body — JS-runtime adapters; /* @client */ on Go/Mojo etc.
+{todos().flatMap(todo => {
+  if (todo.hidden) return []
+  return todo.tags.map(tag => <li key={`${todo.id}:${tag}`}>{tag}</li>)
+})}
+```
+
 `.sort()` and `.toSorted()` can be chained with `.map()` and `.filter()`:
 
 ```tsx
@@ -105,7 +120,9 @@ Some JavaScript expressions cannot be translated into marked template syntax. Wh
 |---|---|---|
 | `.filter()` with destructured param (`({done}) => done`) | works (runs as JS) | **BF101** |
 | `.filter()` with `function` keyword callback | works | **BF101** |
-| `.reduce()`, `.forEach()`, `.flatMap()` | works | **BF101** |
+| `.reduce()`, `.forEach()`, value-returning `.flatMap()` with an off-catalogue projection | works | **BF101** |
+| JSX-returning `.flatMap()` projection (`items.flatMap(it => it.tags.map(tag => <li key={...}/>))`) | works | works |
+| JSX-returning `.flatMap()` with a statement body (early `return`, `const` before the projection) | works (runs as JS) | **BF021** |
 | Nested `.filter()` / `.map()` in a filter predicate (`x => x.tags.filter(...).length > 0`) | works | works |
 | Nested `.some()` / `.find()` / `.reduce()` in a filter predicate | works | **BF101** |
 | Sort comparator that's a multi-statement block body or `localeCompare(b, locale, opts)` | works (runs as JS) | **BF021** |

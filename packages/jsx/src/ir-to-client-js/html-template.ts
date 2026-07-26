@@ -276,9 +276,14 @@ function templateAttrExpr(attrName: string, valExpr: string, presenceOrUndefined
   // `data-key` / `data-key-N` is a reconciliation contract — every loop item
   // must carry one. Emit unconditionally; if the user passes `key={undefined}`
   // we want it to surface as `data-key="undefined"` (and ultimately a runtime
-  // assertion in mapArray) rather than silently fall back to "no key".
+  // assertion in mapArray) rather than silently fall back to "no key" —
+  // `escapeAttr(undefined)` stringifies to exactly that. The value is escaped
+  // like every other dynamic attribute: SSR adapters escape it (their
+  // template engines do), so an unescaped `"` in a key — surfaced by the
+  // flatmap-expression-body fixture's adversarial keys — corrupted the
+  // client-assembled HTML and diverged from the SSR bytes.
   if (attrName === 'data-key' || attrName.startsWith('data-key-')) {
-    return `${attrName}="\${${valExpr}}"`
+    return `${attrName}="\${${escapeAttrValueExpr(valExpr)}}"`
   }
   return `\${(${valExpr}) != null ? '${attrName}="' + ${escapeAttrValueExpr(valExpr)} + '"' : ''}`
 }
@@ -660,6 +665,31 @@ export function renderFlatMapClientBody(
 /** True when any segment leaf declares a `key` — drives the mapArray keyFn. */
 export function flatMapCallbackHasKeyedLeaf(cb: Pick<FlatMapCallback, 'segments'>): boolean {
   return cb.segments.some((s) => s.kind === 'jsx' && flatMapLeafKeyExpr(s.ir) !== null)
+}
+
+/**
+ * Synthesize the client descriptor body for a flatMap PROJECTION loop —
+ * one whose only child is a nested `IRLoop` lowered from
+ * `flatMap(it => it.tags.map(tag => <li/>))`. The neutral IR is the single
+ * carrier: SSR adapters templatize the nested loop natively, and this
+ * derives the `mapArray` accessor's flatten projection from the SAME inner
+ * loop — `<chained-inner>.map((tag, i) => ({ k: <inner.key>, h: `<leaf>` }))`.
+ * Runs in the accessor context (plain source items, no per-item signals),
+ * so leaf refs stay unwrapped. Leaf `key` attrs were already stripped at IR
+ * build (`stripLoopLeafKeyAttrs`); the inner loop's `key` FIELD supplies
+ * `k`.
+ */
+export function renderFlatMapProjectionClientBody(
+  inner: Extract<IRNode, { type: 'loop' }>,
+  restSpreadNames?: Set<string>,
+): string {
+  const chained = applyLoopChain(inner)
+  const params = inner.index ? `(${inner.param}, ${inner.index})` : `(${inner.param})`
+  const key = inner.key ? `(${inner.key})` : 'undefined'
+  const html = inner.children
+    .map((c) => irToHtmlTemplate(escapeLeafTextExpressions(c), restSpreadNames, 1, undefined, undefined, true))
+    .join('')
+  return `${chained}.map(${params} => ({ k: ${key}, h: \`${html}\` }))`
 }
 
 /**
