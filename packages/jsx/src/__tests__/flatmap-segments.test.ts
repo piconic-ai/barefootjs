@@ -90,6 +90,25 @@ export { F }
     }
   })
 
+  test('a member-expression tag leaf is a component, not a projection leaf', () => {
+    // `<icons.Tag/>` starts lowercase but is a component per JSX semantics —
+    // the wireless-leaf gate must not admit it to the projection route
+    // (which cannot wire components). It falls to the segments carrier,
+    // where a DSL-tier adapter refuses loudly instead of templatizing a
+    // component tag as literal HTML.
+    const src = `
+import { icons } from './icons'
+function F({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <icons.Tag key={t} label={t} />))}</ul>
+}
+export { F }
+`
+    const dsl = new TestAdapter()
+    ;(dsl as { acceptsCallbackBody?: () => boolean }).acceptsCallbackBody = () => false
+    const r = compileJSX(src, 'F.tsx', { adapter: dsl })
+    expect(r.errors.filter(e => e.severity === 'error').length).toBeGreaterThan(0)
+  })
+
   test('single-return block projection lowers identically (DSL adapters accept it)', () => {
     const src = `
 function F({ items }: { items: { id: string; tags: string[] }[] }) {

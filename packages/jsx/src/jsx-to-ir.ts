@@ -3703,8 +3703,15 @@ function leafIsWirelessElement(el: ts.JsxElement | ts.JsxSelfClosingElement): bo
   const visit = (n: ts.Node): void => {
     if (!ok) return
     if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
-      const tag = n.tagName.getText()
-      if (/^[A-Z]/.test(tag)) { ok = false; return }
+      // Only a lowercase plain identifier (or a namespaced name like
+      // `svg:path`) is an intrinsic element. A member/this tag
+      // (`<icons.Tag/>`, `<this.Tag/>`) is a component per JSX semantics
+      // regardless of case — the case test alone would let it through.
+      const tagNode = n.tagName
+      const isIntrinsic = ts.isIdentifier(tagNode)
+        ? !/^[A-Z]/.test(tagNode.text)
+        : ts.isJsxNamespacedName(tagNode)
+      if (!isIntrinsic) { ok = false; return }
       for (const attr of n.attributes.properties) {
         if (ts.isJsxSpreadAttribute(attr)) { ok = false; return }
         if (ts.isJsxAttribute(attr)) {
