@@ -790,40 +790,6 @@ function getDualScopeIds(scope: Element | null): string[] {
   return id ? [id] : []
 }
 
-// --- $pre: preamble-region comment finder ---
-
-/**
- * Find the START comment of a `<!--bf:sN-->...<!--/-->` marker pair for a
- * `.map()` preamble-patched loop region (#2389 — see `patchSlotRange`).
- * Returns the Comment itself (not the text/content after it, unlike `$t`)
- * since a region's content is markup, not a single Text node.
- *
- * Slot ids are per-component, so a nested child component inside the row
- * would reuse the same `bf:sN` comment values — a comment under a nested
- * `bf-s` scope is skipped, never returned. Today this is defense in depth:
- * regions are only emitted for the plain loop-plan shape, and
- * `decideLoopRendering` routes any row containing nested components or
- * inner loops to the composite/component shapes (which don't consume
- * `preambleRegions`), so a `$pre` row is component-free by construction.
- * The guard keeps that safety local instead of coupled to routing —
- * extending regions to composite rows must not silently patch child DOM.
- */
-export function $pre(scope: Element | null, id: string): Comment | null {
-  if (!scope) return null
-  const marker = `bf:${id}`
-  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
-  while (walker.nextNode()) {
-    const comment = walker.currentNode as Comment
-    if (comment.nodeValue !== marker) continue
-    let owned = true
-    for (let el = comment.parentElement; el && el !== scope; el = el.parentElement) {
-      if (el.hasAttribute(BF_SCOPE)) { owned = false; break }
-    }
-    if (owned) return comment
-  }
-  return null
-}
-
 // --- $t: text node finder via comment markers ---
 
 /**

@@ -54,10 +54,6 @@ export function detectUsedImports(code: string): Set<string> {
   if (/\$t\s*\(/.test(code)) {
     used.add('$t')
   }
-  // Match $pre( for preamble-region comment finders (#2389)
-  if (/\$pre\s*\(/.test(code)) {
-    used.add('$pre')
-  }
   // Match $( but not $c( or $t( - use negative lookahead
   if (/\$\s*\(/.test(code)) {
     used.add('$')

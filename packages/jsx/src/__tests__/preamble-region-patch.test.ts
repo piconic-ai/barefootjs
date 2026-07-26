@@ -89,7 +89,7 @@ describe('preamble-region-patch (#2389)', () => {
     // First run only records (trusts SSR/CSR mount-time content); only a
     // SUBSEQUENT change patches via patchSlotRange.
     expect(clientJs).toMatch(/if \(__last_\w+ === undefined\) \{ __last_\w+ = __html_\w+; return \}/)
-    expect(clientJs).toMatch(/patchSlotRange\(__pre_\w+, __html_\w+\)/)
+    expect(clientJs).toMatch(/patchSlotRange\(__el, 's\d+', __html_\w+\)/)
   })
 
   test('(c) a loop without a preamble gets no region', () => {
@@ -103,7 +103,6 @@ describe('preamble-region-patch (#2389)', () => {
     `
     const { clientJs } = compileWith(new TestAdapter(), source)
     expect(clientJs).not.toContain('patchSlotRange')
-    expect(clientJs).not.toContain('$pre(')
   })
 
   test('(c) a static-array loop with a preamble gets no region', () => {
@@ -125,7 +124,6 @@ describe('preamble-region-patch (#2389)', () => {
     `
     const { clientJs } = compileWith(new TestAdapter(), source)
     expect(clientJs).not.toContain('patchSlotRange')
-    expect(clientJs).not.toContain('$pre(')
   })
 
   test('(d) a preamble local never referenced by an expression child gets no region', () => {
@@ -148,6 +146,5 @@ describe('preamble-region-patch (#2389)', () => {
     `
     const { clientJs } = compileWith(new TestAdapter(), source)
     expect(clientJs).not.toContain('patchSlotRange')
-    expect(clientJs).not.toContain('$pre(')
   })
 })

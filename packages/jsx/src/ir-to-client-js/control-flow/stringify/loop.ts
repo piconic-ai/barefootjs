@@ -68,12 +68,13 @@ export function emitLoopChildRefs(
 /**
  * Emit the region-patch effect for each preamble-patched region (#2389 —
  * `arr.map(t => { const cells = []; ...; return <tr>{cells}<td>{t.name}</td></tr> })`).
- * `$pre` finds the region's `<!--bf:sN-->` start comment inside the just-
- * built/hydrated row; the effect re-runs the (loop-param-accessor-wrapped)
- * preamble on every reactive tick so it re-reads the current per-item
- * signal, recomputes the region's value, and — past the FIRST run (which
- * only records, trusting the SSR/CSR mount-time content already in the
- * DOM) — patches the DOM range via `patchSlotRange` when the value changed.
+ * The effect re-runs the (loop-param-accessor-wrapped) preamble on every
+ * reactive tick so it re-reads the current per-item signal, recomputes the
+ * region's value, and — past the FIRST run (which only records, trusting
+ * the SSR/CSR mount-time content already in the DOM) — patches the DOM
+ * range via `patchSlotRange(__el, 'sN', html)`. The marker lookup lives
+ * inside `patchSlotRange`, so a row that never changes pays zero lookup
+ * cost at mount/adoption.
  *
  * Non-empty `regions` forces the caller's multi-line renderItem layout (the
  * effect needs `__el` as a query root), mirroring `emitLoopChildRefs`.
@@ -88,13 +89,12 @@ export function emitPreambleRegionEffects(
   const { indent, elVar } = opts
   for (const region of regions) {
     const v = varSlotId(region.slotId)
-    lines.push(`${indent}{ const __pre_${v} = $pre(${elVar}, '${region.slotId}')`)
-    lines.push(`${indent}let __last_${v}`)
-    lines.push(`${indent}if (__pre_${v}) createEffect(() => {`)
+    lines.push(`${indent}{ let __last_${v}`)
+    lines.push(`${indent}createEffect(() => {`)
     if (mapPreambleWrapped) lines.push(`${indent}  ${mapPreambleWrapped}`)
     lines.push(`${indent}  const __html_${v} = ${region.valueExpr}`)
     lines.push(`${indent}  if (__last_${v} === undefined) { __last_${v} = __html_${v}; return }`)
-    lines.push(`${indent}  if (__html_${v} !== __last_${v}) { __last_${v} = __html_${v}; patchSlotRange(__pre_${v}, __html_${v}) }`)
+    lines.push(`${indent}  if (__html_${v} !== __last_${v}) { __last_${v} = __html_${v}; patchSlotRange(${elVar}, '${region.slotId}', __html_${v}) }`)
     lines.push(`${indent}}) }`)
   }
 }
