@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, IRAttribute, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
+import type { AttrValue, FlatMapCallback, IRAttribute, IRNode, IRProp, MapCallbackPreamble } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -575,6 +575,12 @@ export function renderPreamble(
     transformJs?: (text: string) => string
     /** Context-appropriate leaf renderer (an irToHtmlTemplate variant). */
     renderLeaf: (ir: IRNode) => string
+    /**
+     * When true, `renderLeaf` output is spliced verbatim — the renderer
+     * supplies its own delimiters (e.g. the flatMap descriptor form
+     * `({ k, h })`). Default wraps each leaf in a template literal.
+     */
+    rawLeaf?: boolean
   },
 ): string {
   let out = ''
@@ -582,11 +588,78 @@ export function renderPreamble(
     if (seg.kind === 'js') {
       const text = opts.textVariant === 'template' ? (seg.templateText ?? seg.text) : seg.text
       out += opts.transformJs ? opts.transformJs(text) : text
+    } else if (opts.rawLeaf) {
+      out += opts.renderLeaf(escapeLeafTextExpressions(seg.ir))
     } else {
       out += '`' + opts.renderLeaf(escapeLeafTextExpressions(seg.ir)) + '`'
     }
   }
   return out
+}
+
+/**
+ * Project a flatMap segment leaf's `key={...}` attribute into a runtime key
+ * expression, or `null` when the leaf declares none. Template-literal keys
+ * (`key={\`${it.id}:${tag}\`}`) are first-class here — unlike the loop-level
+ * `extractLoopKey`, the expression is evaluated inside the flatMap body where
+ * the callback params are in scope, so any expression form works.
+ */
+export function flatMapLeafKeyExpr(ir: IRNode): string | null {
+  if (ir.type !== 'element') return null
+  const keyAttr = ir.attrs.find((a) => a.name === 'key')
+  if (!keyAttr) return null
+  switch (keyAttr.value.kind) {
+    case 'expression':
+      return `(${keyAttr.value.expr})`
+    case 'literal':
+      return JSON.stringify(keyAttr.value.value)
+    case 'template':
+      return attrValueToString(keyAttr.value)
+    default:
+      return null
+  }
+}
+
+/** Copy of `ir` with the loop `key` attribute removed (element leaves only). */
+function stripLeafKeyAttr(ir: IRNode): IRNode {
+  if (ir.type !== 'element') return ir
+  return { ...ir, attrs: ir.attrs.filter((a) => a.name !== 'key') }
+}
+
+/**
+ * Render a `FlatMapCallback` as the CLIENT-SIDE descriptor body for
+ * `mapArray` (the reconciliation twin of the string-template rendering in
+ * `irToHtmlTemplate`'s `'loop'` case). Each JSX leaf becomes
+ * `({ k: <keyExpr>, h: \`<html>\` })` — the flatMap flattens descriptors,
+ * `mapArray` keys on `d.k` (index fallback), and the emitted renderItem
+ * builds/patches the leaf element from `d.h`.
+ *
+ * Runs in the init scope where the loop SOURCE items are plain values (the
+ * flatMap executes inside the `mapArray` accessor, BEFORE per-item signals
+ * exist), so neither js segments nor leaf HTML get the accessor wrap — refs
+ * stay `t.title`, not `t().title`. `data-key` is deliberately NOT emitted in
+ * the leaf HTML: reconciliation identity is stamped by `mapArray` via
+ * `setAttribute`, matching the SSR side (which never emits it for flatMap
+ * leaves).
+ */
+export function renderFlatMapClientBody(
+  cb: Pick<FlatMapCallback, 'segments'>,
+  restSpreadNames?: Set<string>,
+): string {
+  return renderPreamble(cb, {
+    textVariant: 'client',
+    rawLeaf: true,
+    renderLeaf: (ir) => {
+      const key = flatMapLeafKeyExpr(ir)
+      const html = irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, 1, undefined, undefined, true)
+      return `({ k: ${key ?? 'undefined'}, h: \`${html}\` })`
+    },
+  })
+}
+
+/** True when any segment leaf declares a `key` — drives the mapArray keyFn. */
+export function flatMapCallbackHasKeyedLeaf(cb: Pick<FlatMapCallback, 'segments'>): boolean {
+  return cb.segments.some((s) => s.kind === 'jsx' && flatMapLeafKeyExpr(s.ir) !== null)
 }
 
 /**
@@ -816,8 +889,12 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       if (node.flatMapCallback) {
         // Complex flatMap: the body is structured segments, rendered through
         // the same single door as map preambles.
+        // Leaf `key` is stripped from the string form: SSR (Hono rawBody)
+        // never emits data-key for flatMap leaves, and reconciliation
+        // identity is stamped by mapArray via setAttribute — emitting it
+        // here was the CSR/SSR data-key asymmetry (unescaped, client-only).
         const body = renderPreamble(node.flatMapCallback, {
-          renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop),
+          renderLeaf: (ir) => irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop),
         })
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {
@@ -1263,7 +1340,8 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       let mapExpr: string
       if (node.flatMapCallback) {
         const body = renderPreamble(node.flatMapCallback, {
-          renderLeaf: (ir) => irToPlaceholderTemplate(ir, restSpreadNames, loopDepth + 1, loopParams),
+          // Leaf `key` stripped — see the irToHtmlTemplate site above.
+          renderLeaf: (ir) => irToPlaceholderTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams),
         })
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {
@@ -2386,7 +2464,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         const body = renderPreamble(node.flatMapCallback, {
           textVariant: 'template',
           transformJs: (t) => applyPropsRewrite(t, propsObjectName ?? null),
-          renderLeaf: (ir) => recurseInLoopBody(ir),
+          // Leaf `key` stripped — see the irToHtmlTemplate site above.
+          renderLeaf: (ir) => recurseInLoopBody(stripLeafKeyAttr(ir)),
         })
         mapExpr = `\${${iterArrayExpr}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {

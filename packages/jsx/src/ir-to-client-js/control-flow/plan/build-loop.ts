@@ -91,6 +91,37 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
     || elem.bindings.reactiveTexts.length > 0
     || elem.bindings.conditionals.length > 0
 
+  // flatMap descriptor mode: reconcile the FLATTENED leaves. The source
+  // accessor runs the flatMap body (plain items — per-item signals don't
+  // exist yet) producing `({ k, h })` descriptors; the keyFn reads the
+  // leaf-declared key with an index fallback. Everything row-template-
+  // related is bypassed — the stringifier emits the build-or-patch
+  // renderItem instead. Pre-fix this fell into the generic plain shape
+  // with the UN-flattened source, a null keyFn, and an EMPTY template
+  // (leaf loss at hydration; cloneNode(null) crash on adds).
+  if (elem.flatMapClient) {
+    return {
+      kind: 'plain',
+      rowConstruction: 'string-template',
+      containerVar: `_${varSlotId(elem.slotId)}`,
+      markerId: elem.markerId,
+      profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
+      arrayExpr: `(${buildChainedArrayExpr(elem)}).flatMap(${elem.flatMapClient.params} => ${elem.flatMapClient.body})`,
+      keyFn: elem.flatMapClient.keyed ? '(__bfD, __bfI) => String(__bfD.k ?? __bfI)' : 'null',
+      paramHead: '__bfD',
+      paramUnwrap: '',
+      indexParam: '__idx',
+      mapPreambleWrapped: '',
+      template: '',
+      reactiveEffects: null,
+      childRefs: [],
+      bodyIsMultiRoot: false,
+      anchored: false,
+      anchorKeyExpr: '__idx',
+      flatMapLeafItem: true,
+    }
+  }
+
   return {
     kind: 'plain',
     rowConstruction: 'string-template',

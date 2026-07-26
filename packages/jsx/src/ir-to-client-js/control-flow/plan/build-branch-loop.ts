@@ -43,14 +43,21 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
     || loop.bindings.reactiveTexts.length > 0
     || loop.bindings.conditionals.length > 0
 
+  // flatMap descriptor mode — see buildPlainLoopPlan (build-loop.ts).
+  const fm = loop.flatMapClient
   const plan: BranchPlainLoopPlan = {
     kind: 'plain',
     rowConstruction: 'string-template',
     containerSlotId,
     containerVar,
     markerId: loop.markerId,
-    arrayExpr: buildChainedArrayExpr(loop),
-    keyFn: loopKeyFn(loop),
+    flatMapLeafItem: fm ? true : undefined,
+    arrayExpr: fm
+      ? `(${buildChainedArrayExpr(loop)}).flatMap(${fm.params} => ${fm.body})`
+      : buildChainedArrayExpr(loop),
+    keyFn: fm
+      ? (fm.keyed ? '(__bfD, __bfI) => String(__bfD.k ?? __bfI)' : 'null')
+      : loopKeyFn(loop),
     paramHead,
     paramUnwrap,
     indexParam: loop.index || '__idx',

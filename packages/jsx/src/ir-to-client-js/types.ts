@@ -310,6 +310,19 @@ export interface LoopCore {
    * `IRLoop.objectIteration`.
    */
   objectIteration?: 'entries' | 'keys' | 'values'
+
+  /**
+   * Client-side descriptor body for a flatMap loop carried as structured
+   * segments (`IRLoop.flatMapCallback`). `body` is the callback body
+   * rendered so each JSX leaf becomes a `({ k, h })` descriptor
+   * (`renderFlatMapClientBody`); the plan builder wires
+   * `mapArray(() => <chained>.flatMap(<params> => <body>), …)` so the
+   * runtime reconciles the FLATTENED leaves — never the un-flattened
+   * source items (which loses leaves at hydration and crashes on adds
+   * against an empty item template). `keyed` is true when any leaf
+   * declares a `key`, driving the `d.k`-based keyFn.
+   */
+  flatMapClient?: { params: string; body: string; keyed: boolean }
 }
 
 /**

@@ -1814,6 +1814,21 @@
       }
     }
   ],
+  "tag-cloud": [
+    {
+      "name": "gen:items:absent",
+      "props": {
+        "__instanceId": "TagCloud_test"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "__instanceId": "TagCloud_test"
+      }
+    }
+  ],
   "template-literal-multi-interp": [
     {
       "name": "gen:greeting:markup",
