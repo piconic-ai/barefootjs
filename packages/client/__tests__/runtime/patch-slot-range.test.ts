@@ -97,3 +97,29 @@ describe('patchSlotRange', () => {
     expect(comments.map(c => c.nodeValue)).toEqual(['bf:s6', '/'])
   })
 })
+
+describe('$pre ownership', () => {
+  test('skips a same-id marker owned by a nested bf-s scope', async () => {
+    // Slot ids are per-component: a child component mounted inside the row
+    // carries its own `bf:s0`. `$pre(row, 's0')` must never return it —
+    // patching it would corrupt the child's DOM. The row's own marker
+    // (AFTER the nested scope in document order here) is the right one.
+    const { $pre } = await import('../../src/runtime/query.ts')
+    const root = mount(
+      '<div><section bf-s="Badge_x1"><!--bf:s0-->child<!--/--></section><!--bf:s0-->own<!--/--></div>',
+    )
+    const row = root.firstElementChild as HTMLElement
+    const found = $pre(row, 's0')
+    expect(found).not.toBeNull()
+    expect(found!.parentElement).toBe(row)
+    // The found marker's next sibling is the row-owned text, not the child's.
+    expect(found!.nextSibling?.textContent).toBe('own')
+  })
+
+  test('returns null when the only same-id marker is inside a nested scope', async () => {
+    const { $pre } = await import('../../src/runtime/query.ts')
+    const root = mount('<div><section bf-s="Badge_x1"><!--bf:s0-->child<!--/--></section></div>')
+    const row = root.firstElementChild as HTMLElement
+    expect($pre(row, 's0')).toBeNull()
+  })
+})

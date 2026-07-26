@@ -798,12 +798,15 @@ function getDualScopeIds(scope: Element | null): string[] {
  * Returns the Comment itself (not the text/content after it, unlike `$t`)
  * since a region's content is markup, not a single Text node.
  *
- * Deliberately simpler than `$t`: `$t` guards against a nested child
- * component's own `bf:sN` markers colliding with the parent's, via
- * `commentBelongsToScope`. A loop row element is never a component scope
- * (no `bf-s`, no comment-scope registration) — `$t`'s ownership check would
- * be a no-op here (`isComponentScope` false) — so a plain forward
- * `TreeWalker` scan already gives the same result with less code.
+ * Slot ids are per-component, so a nested child component inside the row
+ * would reuse the same `bf:sN` comment values — a comment under a nested
+ * `bf-s` scope is skipped, never returned. Today this is defense in depth:
+ * regions are only emitted for the plain loop-plan shape, and
+ * `decideLoopRendering` routes any row containing nested components or
+ * inner loops to the composite/component shapes (which don't consume
+ * `preambleRegions`), so a `$pre` row is component-free by construction.
+ * The guard keeps that safety local instead of coupled to routing —
+ * extending regions to composite rows must not silently patch child DOM.
  */
 export function $pre(scope: Element | null, id: string): Comment | null {
   if (!scope) return null
@@ -811,7 +814,12 @@ export function $pre(scope: Element | null, id: string): Comment | null {
   const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
   while (walker.nextNode()) {
     const comment = walker.currentNode as Comment
-    if (comment.nodeValue === marker) return comment
+    if (comment.nodeValue !== marker) continue
+    let owned = true
+    for (let el = comment.parentElement; el && el !== scope; el = el.parentElement) {
+      if (el.hasAttribute(BF_SCOPE)) { owned = false; break }
+    }
+    if (owned) return comment
   }
   return null
 }
