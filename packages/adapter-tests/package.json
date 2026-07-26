@@ -23,8 +23,8 @@
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/mojolicious": "workspace:*",
     "@barefootjs/xslate": "workspace:*",
-    "@happy-dom/global-registrator": "^20.0.11",
     "@playwright/test": "^1.57.0",
+    "happy-dom": "^20.11.1",
     "typescript": "^5.0.0"
   }
 }

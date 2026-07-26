@@ -43,16 +43,27 @@ import { describe, test, expect } from 'bun:test'
 import * as ts from 'typescript'
 import { compileJSX } from '@barefootjs/jsx'
 import type { TemplateAdapter } from '@barefootjs/jsx'
-import { GlobalRegistrator } from '@happy-dom/global-registrator'
+import { Window, type Node as HappyNode, type Element as HappyElement, type Comment as HappyComment } from 'happy-dom'
 import { BF_SCOPE } from '@barefootjs/shared'
 import { jsxFixtures } from '../fixtures'
 import type { RenderOptions } from './jsx-runner'
 
 const BF_SCOPE_ATTR = BF_SCOPE
 
-if (typeof window === 'undefined') {
-  GlobalRegistrator.register()
-}
+// A private, unregistered happy-dom `Window` — deliberately NOT
+// `@happy-dom/global-registrator`. That helper assigns `window`/`document`/…
+// onto `globalThis` for the rest of the process, and this module is imported
+// by every adapter package's single conformance entry point
+// (`runAdapterConformanceTests` → `runClaimPlanConformance`), all of which
+// share ONE `bun test` process with that adapter's own unrelated suites.
+// `@barefootjs/client`'s server/client branches gate on `typeof window ===
+// 'undefined'` (see `reactive.ts`'s `createEnvSignal`) — a global register
+// here flips that check for every OTHER test file that runs afterward in the
+// same process, e.g. `packages/adapter-hono/src/__tests__/request-env.test.tsx`
+// silently takes the browser branch instead of resolving
+// `runWithRequestEnv`'s AsyncLocalStorage-scoped query. An isolated `Window`
+// instance parses the same HTML without ever touching `globalThis`.
+const parseDocument = new Window().document
 
 interface ExtractedSlotSpec {
   id: string
@@ -135,8 +146,8 @@ interface AnchorCheckResult {
 
 /** Resolve `path` against `root`'s `childNodes`, per-index, exactly like
  *  `claim-slots.ts`'s `resolvePath` — no node-kind assumption mid-walk. */
-function resolvePath(root: Node, path: readonly number[]): Node | null {
-  let node: Node = root
+function resolvePath(root: HappyNode, path: readonly number[]): HappyNode | null {
+  let node: HappyNode = root
   for (const index of path) {
     const child = node.childNodes[index]
     if (!child) return null
@@ -145,7 +156,7 @@ function resolvePath(root: Node, path: readonly number[]): Node | null {
   return node
 }
 
-function checkAnchor(root: Element, spec: ExtractedSlotSpec, html: string): AnchorCheckResult {
+function checkAnchor(root: HappyElement, spec: ExtractedSlotSpec, html: string): AnchorCheckResult {
   if (spec.path === null) return { ok: true } // not statically verifiable — see module docstring
   if (spec.path.length === 0) return { ok: true } // deliberate scan-fallback case, nothing to check
 
@@ -162,7 +173,7 @@ function checkAnchor(root: Element, spec: ExtractedSlotSpec, html: string): Anch
     if (!parent) {
       return { ok: false, reason: `markerless slot ${spec.id}'s path parent did not resolve in the rendered DOM` }
     }
-    const existing = parent.childNodes[idx] as Comment | undefined
+    const existing = parent.childNodes[idx] as HappyComment | undefined
     if (existing && existing.nodeType === 3 /* TEXT_NODE */) return { ok: true } // adopts the rendered value
     if (!existing) return { ok: true } // append point — SSR rendered this slot empty
     if (existing.nodeType === 8 /* COMMENT_NODE */ && (existing.nodeValue ?? '').startsWith('bf:')) {
@@ -175,7 +186,7 @@ function checkAnchor(root: Element, spec: ExtractedSlotSpec, html: string): Anch
   if (!anchor || anchor.nodeType !== 8 /* COMMENT_NODE */ || anchor.nodeValue !== `bf:${spec.id}`) {
     return {
       ok: false,
-      reason: `slot ${spec.id}'s path did not resolve to its own <!--bf:${spec.id}--> marker (found ${anchor ? `nodeType=${anchor.nodeType} value=${JSON.stringify((anchor as Comment).nodeValue)}` : 'nothing'})`,
+      reason: `slot ${spec.id}'s path did not resolve to its own <!--bf:${spec.id}--> marker (found ${anchor ? `nodeType=${anchor.nodeType} value=${JSON.stringify((anchor as HappyComment).nodeValue)}` : 'nothing'})`,
     }
   }
   return { ok: true }
@@ -219,7 +230,7 @@ export function runClaimPlanConformance(opts: RunClaimPlanConformanceOptions): v
           throw err
         }
 
-        const host = document.createElement('div')
+        const host = parseDocument.createElement('div')
         host.innerHTML = html
         // Claim-plan paths are relative to `__scope` (`init<Name>(__scope,
         // …)`, `generate-init.ts`) — the element CARRYING `bf-s`, not this
@@ -228,7 +239,7 @@ export function runClaimPlanConformance(opts: RunClaimPlanConformanceOptions): v
         // extraction actually resolves paths for (see module docstring —
         // MY elision target never crosses into a child component's own
         // subtree, so its paths are always relative to the OUTER scope).
-        const root = (host.querySelector(`[${BF_SCOPE_ATTR}]`) ?? host.firstElementChild ?? host) as Element
+        const root = (host.querySelector(`[${BF_SCOPE_ATTR}]`) ?? host.firstElementChild ?? host) as HappyElement
         const results = specs.map(spec => ({ spec, result: checkAnchor(root, spec, html) }))
         const failures = results.filter(r => !r.result.ok)
         expect(failures.map(f => f.result.reason)).toEqual([])
