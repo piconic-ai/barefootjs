@@ -194,6 +194,66 @@ heap 2729KB) quoted in §5a above:
   reconciliation work once lazy claim lands), not yet visible as a wall-
   clock delta while the per-row effect graph is still built eagerly.
 
+### Step B measured (measured 2026-07-26)
+
+Step B shipped a deliberately NARROW slice of §3(b)'s elision rule, not
+the general case, and the SSR-bench numbers below reflect exactly that
+scope — reported honestly rather than alongside a benchmark result the
+implementation doesn't actually move.
+
+**What shipped**: `client-only-elision.ts` elides the marker pair for
+`/* @client */` text expressions ONLY — the one 'text'-kind slot whose
+rendered width is deterministically zero at claim time on every request
+(SSR can never evaluate client-only JS), which is what makes computing a
+real, reusable, hydration-safe compile-time path sound without also
+solving the general problem below. Scope, precisely: not inside any loop
+or conditional branch, not adjacent to loose text/another slot (case (i)),
+and capped at one elided slot per static subtree (the "freeze after
+first" rule in that module's docstring). `todo-app`'s `<strong>{/* @client
+*/ count}</strong>` is the corpus's one hit; its marker pair
+(`<!--bf:s6--><!--/-->`) is gone from both SSR and CSR output, and the
+claim plan carries a real `path`/`markerless: true` instead.
+
+**Why the general case (ordinary reactive text in loop rows — the
+1k-row bench's actual hot path) is NOT in this PR, deferred loudly**: an
+ordinary `{item.name}`-style slot's rendered width is DATA-DEPENDENT
+(empty or not, per request), so a later sibling's absolute child-index
+path is only valid for the specific width THIS request happened to
+produce — not for every request the compiled function ever serves.
+Working around that (only elide the FIRST width-uncertain slot per
+static subtree, exactly `client-only-elision.ts`'s "freeze" rule, minus
+the `clientOnly` restriction) is the identified path forward, but it
+requires the elision decision to be made where loop-row 'text'-kind
+classification already happens (`collect-elements.ts` /
+`ir-to-client-js/control-flow/plan/loop.ts`, deep inside
+`generateClientJs`) rather than in a standalone pre-pass run before
+`adapter.generate` — `compiler.ts` currently calls `adapter.generate`
+BEFORE `generateClientJs`, and reordering those (verified safe for THIS
+PR's `client-only-elision.ts`, which needs no ir-to-client-js state) has
+not been re-verified against the loop-row planner's own invariants. Real
+follow-up work, not a rounding error.
+
+**Bench result — HTML size is UNCHANGED from A4** (318.6KB / 19.5KB,
+identical to A4's own numbers above), because `benchmarks/ssr/apps/
+barefoot`'s 1,000-row table contains no `/* @client */` expression at all
+— every row's dynamic text is ordinary reactive text, exactly the
+general case deferred above. This PR's elision is real (see `todo-app`)
+but the bench app doesn't exercise it, so the memory/node-count case
+`spec/slot-unification.md` §5a argues for remains a projection, not yet
+a measurement, pending the general-case follow-up.
+
+| Metric | react | solid | barefoot |
+|---|---|---|---|
+| Server render (median, n=20) | 20.70ms | 0.68ms | 8.20ms |
+| Hydration (median, n=10) | 76.85ms | 54.45ms | 67.65ms |
+| Client JS (raw / gzip) | 182.3 / 58.1KB | 17.0 / 6.6KB | 21.8 / 7.9KB |
+| HTML (raw / gzip) | 220.0 / 14.9KB | 235.9 / 18.6KB | 318.6 / 19.5KB |
+
+(Single run, not the two-run A4 protocol — since the HTML/bytes numbers
+are the load-bearing claim here and they're deterministic build outputs,
+not timing-sensitive; hydration/server-render numbers above are
+consistent with A4's jitter range and are not this note's point.)
+
 ## 5. Migration — two steps, stacked semantic PRs
 
 Compatibility with the current emitted grammar is explicitly NOT a goal

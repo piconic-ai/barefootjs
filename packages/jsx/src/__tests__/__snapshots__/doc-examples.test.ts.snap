@@ -950,7 +950,7 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
   createEffect(() => {
     __bfw_s0('s0', items().filter(x => x.tags.some(t => t.active)).map(t => t.name))
   }) }
@@ -1070,7 +1070,7 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
   createEffect(() => {
     __bfw_s0('s0', items().reduce((sum, x) => sum + x.price, 0))
   }) }
@@ -1522,7 +1522,7 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
   createEffect(() => {
     __bfw_s0('s0', items().filter(x => x.tags().filter(t => t.active).length > 0))
   }) }
@@ -1582,7 +1582,7 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0], markerless: true }])
   createEffect(() => {
     __bfw_s0('s0', items().reduce((sum, x) => sum + x.price, 0))
   }) }
@@ -1642,7 +1642,7 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
-  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0, 0], markerless: true }])
   createEffect(() => {
     __bfw_s0('s0', todos().filter(t => !t.done).length)
   }) }

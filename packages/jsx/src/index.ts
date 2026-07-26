@@ -65,6 +65,7 @@ export { createProgramForCorpus, type SharedProgramOptions } from './shared-prog
 
 // JSX to IR transformer
 export { jsxToIR } from './jsx-to-ir.ts'
+export { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
 
 // Module exports generation (compiler layer)
 export { generateModuleExports, extractFunctionParams, formatParamWithType, findReachableNames } from './module-exports.ts'

@@ -654,6 +654,14 @@ export interface ReactiveAttribute extends AttrMeta {
 export interface ClientOnlyElement {
   slotId: string
   expression: string
+  /**
+   * Slot unification Step B (`spec/slot-unification.md` §3(b), §5 Step B):
+   * copied from `IRExpression.elidedPath` (`client-only-elision.ts`) when
+   * the compiler proved this slot's marker pair can be elided. Absent
+   * (`undefined`) is always safe — the claim plan falls back to `path: []`
+   * / marker-based resolution exactly as before Step B.
+   */
+  elidedPath?: readonly number[]
 }
 
 

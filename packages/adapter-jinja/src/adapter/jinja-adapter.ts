@@ -615,6 +615,9 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     // missing Text node on first write (A2's create-if-absent semantics).
     // Replaces the old unpaired `client:sN` comment, which nothing adopted.
     if (expr.clientOnly) {
+      // Slot unification Step B: `client-only-elision.ts` already proved
+      // `elidedPath` alone is enough for the claim plan — drop the marker.
+      if (expr.markerless) return ''
       if (expr.slotId) {
         return `{{ bf.text_start("${expr.slotId}") | safe }}{{ bf.text_end() | safe }}`
       }

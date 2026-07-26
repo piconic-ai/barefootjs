@@ -754,6 +754,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // replaces the old unpaired `<!--bf-client:sN-->` marker, which nothing
     // ever adopted — the one SSR byte change Step A allows.
     if (expr.clientOnly && expr.slotId) {
+      // Slot unification Step B: see the Go adapter's identical comment —
+      // `client-only-elision.ts` already proved `elidedPath` alone is
+      // enough for the claim plan, so drop the marker pair entirely.
+      if (expr.markerless) return ''
       return `{bfText("${expr.slotId}")}{bfTextEnd()}`
     }
     // Mark expressions with slotId using comment nodes for client JS to find.

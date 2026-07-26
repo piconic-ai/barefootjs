@@ -34,12 +34,21 @@ export interface ClaimSlotSpec {
    * `__existing ? [] : [1, 0]`. Overrides `path` when present.
    */
   readonly pathExpr?: string
+  /**
+   * Slot unification Step B (`spec/slot-unification.md` §3(b), §5 Step B):
+   * true when NO marker was emitted for this slot — `path`'s last index is
+   * the slot's own position, not an anchor comment. Only ever set by
+   * `client-only-elision.ts`-derived callers; every other emission site
+   * omits it (falsy = today's marker-based behavior, unchanged).
+   */
+  readonly markerless?: boolean
 }
 
 /** Render one `SlotSpec` as a source-text object literal. */
 function slotSpecLiteral(slot: ClaimSlotSpec): string {
   const pathSrc = slot.pathExpr ?? `[${slot.path.join(', ')}]`
-  return `{ id: '${slot.id}', kind: '${slot.kind}', path: ${pathSrc} }`
+  const markerlessSrc = slot.markerless ? ', markerless: true' : ''
+  return `{ id: '${slot.id}', kind: '${slot.kind}', path: ${pathSrc}${markerlessSrc} }`
 }
 
 /** Render a `ClaimPlan` (an array of `SlotSpec`) as a source-text array literal. */

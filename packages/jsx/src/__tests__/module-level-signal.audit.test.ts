@@ -234,10 +234,13 @@ export function Counter() {
     const ssr = files['Counter.tsx']
     // SSR template should NOT declare count as a getter
     expect(ssr).not.toContain('const count = () =>')
-    // SSR template should have a client-only placeholder (not the value):
-    // an empty claimed 'text' slot pair (slot unification A3) rather than
-    // the value, since the expression can't be evaluated server-side.
-    expect(ssr).toMatch(/bfText\("s\d+"\)\}\{bfTextEnd\(\)\}/)
+    // Slot unification Step B: `{count()}` is the SPAN's only, non-adjacent
+    // child, so `client-only-elision.ts` elides its marker pair entirely —
+    // no `bfText`/`bfTextEnd` call reaches the SSR output at all. The
+    // client's claim plan (`Counter.client.js`) creates the missing Text
+    // node from `elidedPath` alone; see `claim-slots.test.ts`'s
+    // "markerless text kind" describe block for the runtime contract.
+    expect(ssr).not.toContain('bfText(')
   })
 
   test('full compile: exported signal uses `export const` in client JS', () => {

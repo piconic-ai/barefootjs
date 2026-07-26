@@ -3648,10 +3648,13 @@ export function C() {
 
       const guarded = emit(expr, true)
       expect(guarded.errors).toEqual([])
-      // Client-only text slot → an ordinary claimed 'text' slot pair (slot
-      // unification A3): `{{bfTextStart "sN"}}{{bfTextEnd}}`, empty at SSR.
-      expect(guarded.template).toMatch(/bfTextStart "s\d+"/)
-      expect(guarded.template).toMatch(/bfTextEnd/)
+      // Slot unification Step B: this expression is the `<div>`'s only,
+      // non-adjacent child, so `client-only-elision.ts` elides its marker
+      // pair entirely — no `bfTextStart`/`bfTextEnd` reaches the SSR
+      // template at all (empty at SSR either way; the client's claim plan
+      // creates the missing Text node from `elidedPath` alone).
+      expect(guarded.template).not.toContain('bfTextStart')
+      expect(guarded.template).not.toContain('bfTextEnd')
       expect(guarded.template).not.toContain(badEmit)
     })
   }

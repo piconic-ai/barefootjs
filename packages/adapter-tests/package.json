@@ -14,7 +14,8 @@
     "test:fixture-hydrate": "bunx playwright test --config=playwright.config.ts"
   },
   "dependencies": {
-    "@barefootjs/jsx": "workspace:*"
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/shared": "workspace:*"
   },
   "devDependencies": {
     "@barefootjs/client": "workspace:*",
@@ -22,6 +23,7 @@
     "@barefootjs/hono": "workspace:*",
     "@barefootjs/mojolicious": "workspace:*",
     "@barefootjs/xslate": "workspace:*",
+    "@happy-dom/global-registrator": "^20.0.11",
     "@playwright/test": "^1.57.0",
     "typescript": "^5.0.0"
   }

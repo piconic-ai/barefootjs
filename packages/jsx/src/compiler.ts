@@ -16,6 +16,7 @@ import { analyzeComponent, listComponentFunctions, createProgramForFile, needsTy
 import { jsxToIR } from './jsx-to-ir.ts'
 import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
+import { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
 import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
 import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
@@ -139,6 +140,10 @@ function compileMultipleComponents(
 
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
     checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
+
+    // Slot unification Step B — see the single-component path's identical
+    // call for why this must run before adapter.generate/generateClientJs.
+    decideClientOnlyElision(componentIR.root)
 
     if (options.cssLayerPrefix) {
       applyCssLayerPrefix(componentIR, options.cssLayerPrefix)
@@ -618,6 +623,12 @@ export function compileJSX(
   // Pre-compute client JS analysis for adapter optimization
   componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
   checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
+
+  // Slot unification Step B (`spec/slot-unification.md` §5 Step B): decide
+  // marker elision ONCE, mutating `componentIR.root` in place, before either
+  // `adapter.generate` or `generateClientJs` run below — both must see the
+  // SAME `markerless`/`elidedPath` flags on the SAME IR nodes.
+  decideClientOnlyElision(componentIR.root)
 
   // Cross-file @client signal sources: identify which import sources
   // need `.client.js` path rewriting in the client bundle.
