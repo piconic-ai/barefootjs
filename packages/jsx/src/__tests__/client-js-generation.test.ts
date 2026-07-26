@@ -1753,8 +1753,14 @@ describe('Client JS generation', () => {
 
       // Should contain the preamble in the map callback
       expect(clientJs?.content).toContain('const label = item.name.toUpperCase()')
-      // Should contain the template with the label reference
-      expect(clientJs?.content).toContain('${label}')
+      // The sole child expression reads the preamble local `label` (#2389
+      // patch-on-update): it is classified as a preamble-patched region —
+      // slot-marked and escaped, like an ordinary text slot — rather than a
+      // bare `${label}` interpolation that would freeze on a same-key
+      // update. See `preamble-region-patch.test.ts` for the full region
+      // contract (row-template marker, region-patch effect, SSR parity).
+      expect(clientJs?.content).toContain('${escapeText(label)}')
+      expect(clientJs?.content).toContain('patchSlotRange')
     })
 
     test('handles block body with multiple variable declarations', () => {

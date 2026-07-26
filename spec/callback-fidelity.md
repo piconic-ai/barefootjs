@@ -35,6 +35,20 @@
 > shape axes and pins every shape as sound-or-loud, with its known-hole set
 > empty and shrink-only. SSR/CSR escaping parity for lowered leaves is decided
 > once at the `renderPreamble` door (`map-array-builder-escaping` fixture).
+> A preamble leaf is built once per row construction (mount, SSR-adopting
+> hydration, same-key remount) AND kept fresh under same-key item updates: a
+> loop-body expression child that reads a preamble-declared local (`{cells}`,
+> `{stateLabel}`) is a **preamble-patched region** — slot-marked like a
+> reactive text (`<!--bf:sN-->...<!--/-->` / Hono's `{bfText("sN")}`) but
+> wired via a dedicated region-patch effect, not a `.textContent` assignment
+> (which would corrupt array-joined markup). `mapArray` reuses the row DOM
+> node on a same-key `setItem` update and re-runs only wired slots — without
+> the region, a preamble-derived child froze at its mount-time value forever
+> while sibling wired slots (`{t.name}`) updated normally. The effect re-runs
+> the preamble (accessor-wrapped) and patches the marker-delimited DOM range
+> via `patchSlotRange` (`@barefootjs/client`) only when the recomputed value
+> changed — the first run always just records, trusting the SSR/CSR mount.
+> #2389, `preamble-region-patch.test.ts` + the `preamble-cells` fixture.
 
 ## Vision
 

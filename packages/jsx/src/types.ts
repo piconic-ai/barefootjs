@@ -380,6 +380,15 @@ export interface IRExpression {
    * flag (their JSX runtime renders an array child natively).
    */
   joinArrayChild?: boolean
+  /**
+   * True when this expression was classified as a loop's preamble-patched
+   * region (#2389 — see `IRLoop.preambleRegions`): its free identifiers
+   * intersect the enclosing loop's `preamble.declaredNames`. Excludes the
+   * node from `collectLoopChildReactiveTexts` (which patches via
+   * `.textContent`, wrong for markup) regardless of `reactive` / `slotId` —
+   * the region-patch effect (`patchSlotRange`) is its only wiring.
+   */
+  preambleRegion?: boolean
   /** When true, expression calls signal getters or memos (has reactive `foo()` pattern). */
   callsReactiveGetters?: boolean
   /** When true, expression contains function call(s) — any `identifier()` pattern (computed from AST). */
@@ -703,6 +712,29 @@ export interface IRLoop {
   preamble?: MapCallbackPreamble
 
   /**
+   * Expression children of the loop body whose free identifiers intersect
+   * `preamble.declaredNames` (#2389, patch-on-update follow-up to the Stage 3
+   * root cure) — e.g. `{cells}` in `arr.map(t => { const cells = []; ...;
+   * return <tr>{cells}<td>{t.name}</td></tr> })`. `mapArray` reuses the same
+   * DOM node on a same-key item update via per-item `setItem`, re-running
+   * only the wired text/attr slots — a preamble-derived child has NEITHER
+   * (it's a bare interpolation, `joinArrayChild` array-join or otherwise),
+   * so without this it freezes at its mount-time value forever. Each entry's
+   * `slotId` is emitted as the usual `<!--bf:sN-->...<!--/-->` marker pair
+   * (same door as a reactive text slot — `irToHtmlTemplate` / Hono's
+   * `renderExpression` key off `slotId` alone), but the CLIENT wiring is a
+   * distinct `patchSlotRange`-based region-patch effect (`preambleRegions`
+   * in the client-JS loop plan), NOT a `reactiveTexts` entry — patching via
+   * `.textContent` would escape markup that a `joinArrayChild` region must
+   * render raw. `collectLoopChildReactiveTexts` excludes any node collected
+   * here (`IRExpression.preambleRegion`) so a qualifying expression is never
+   * double-wired. Populated only when `preamble` is set and the loop is NOT
+   * `isStaticArray` — a static array's SSR-rendered items are never
+   * recreated via signals, so there is nothing to patch.
+   */
+  preambleRegions?: PreambleRegionSource[]
+
+  /**
    * When `.map(callback)` destructures its item parameter (array or object
    * pattern), this captures each destructured binding's name and the
    * accessor path into the item. The client-JS emitter rewrites binding
@@ -807,6 +839,23 @@ export interface MapCallbackPreamble {
    * keeps the plain interpolation it always had.
    */
   builderNames: string[]
+}
+
+/**
+ * One loop-body expression child classified as a preamble-patched region
+ * (#2389 — see `IRLoop.preambleRegions`). `expr` is the raw (unwrapped)
+ * expression text, exactly as carried on the source `IRExpression` node;
+ * emitters wrap it with the loop-param accessor at codegen time, matching
+ * every other loop-body expression. `joinArrayChild` mirrors the
+ * `IRExpression` field of the same name — the client-JS plan builder uses it
+ * to decide between the array-join value expression and a plain (escaped)
+ * text value, keeping the region's re-render byte-identical to the row
+ * template's own `irToHtmlTemplate` rendering of the same node.
+ */
+export interface PreambleRegionSource {
+  slotId: string
+  expr: string
+  joinArrayChild?: boolean
 }
 
 /**

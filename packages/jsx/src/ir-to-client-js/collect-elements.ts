@@ -795,6 +795,7 @@ export function collectElements(
         } : undefined,
         chainOrder: l.chainOrder,
         preamble: l.preamble,
+        preambleRegions: l.preambleRegions,
         flatMapClient: projectionInner
           ? {
               params: l.index ? `(${l.param}, ${l.index})` : `(${l.param})`,
@@ -1153,6 +1154,7 @@ function collectBranchLoops(
         template: childTemplate,
         containerSlotId: containerSlot,
         preamble: n.preamble,
+        preambleRegions: n.preambleRegions,
         nestedComponents: useElementReconciliation ? n.nestedComponents : undefined,
         bindings: branchBindings,
         innerLoops: useElementReconciliation ? innerLoopsCollected : undefined,

@@ -14,7 +14,7 @@ import { stringifyCompositeLoop } from './composite-loop.ts'
 import { stringifyEventDelegation } from './event-delegation.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
-import { emitLoopChildRefs } from './loop.ts'
+import { emitLoopChildRefs, emitPreambleRegionEffects } from './loop.ts'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
@@ -58,6 +58,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     childRefs,
     bodyIsMultiRoot,
     profileLoopId,
+    preambleRegions,
   } = plan
 
   const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
@@ -89,8 +90,9 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
   }
 
   // Non-empty `childRefs` need `__el` as a handle inside the factory body,
-  // so force the multi-line layout (#1244).
-  if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0) {
+  // so force the multi-line layout (#1244) — preamble-patched regions
+  // (#2389) need the same handle for their own effect.
+  if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0 && preambleRegions.length === 0) {
     // Simple case: single-line renderItem (single root, no reactive effects).
     const cloneExpr = emitTemplateCloneInline(template)
     if (mapPreambleWrapped) {
@@ -117,6 +119,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
       stringifyReactiveEffects(lines, reactiveEffects, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
     }
     emitLoopChildRefs(lines, childRefs, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
+    emitPreambleRegionEffects(lines, preambleRegions, mapPreambleWrapped, { indent: '          ', elVar: '__el' })
     lines.push(`          return __el`)
     lines.push(`        }, '${markerId}'${loopBfId})`)
   }

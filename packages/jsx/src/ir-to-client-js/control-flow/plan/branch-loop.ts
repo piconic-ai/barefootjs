@@ -15,7 +15,7 @@
  * pair.
  */
 
-import type { CompositeLoopPlan, LoopChildRefBinding } from './loop.ts'
+import type { CompositeLoopPlan, LoopChildRefBinding, PreambleRegionPlan } from './loop.ts'
 import type { EventDelegationPlan } from './event-delegation.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 
@@ -84,6 +84,11 @@ export interface BranchPlainLoopPlan {
    * Undefined off → byte-identical (SR8).
    */
   profileLoopId?: string
+  /**
+   * Preamble-patched regions (#2389) — non-empty forces the multi-line
+   * renderItem layout, mirroring the top-level plain plan.
+   */
+  preambleRegions: readonly PreambleRegionPlan[]
 }
 
 export interface BranchCompositeLoopPlan {

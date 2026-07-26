@@ -78,6 +78,19 @@ interface DynamicLoopCommon extends LoopPlanCommon {
   paramUnwrap: string
 }
 
+/**
+ * A resolved preamble-patched region (#2389), ready to emit: `valueExpr` is
+ * already wrapped with the loop-param accessor and, for a `joinArrayChild`
+ * source, already carries the array-join ternary — the exact value
+ * `irToHtmlTemplate` computes for the same node in the row template, so a
+ * same-key update's re-patch stays byte-identical to what a fresh mount
+ * would render.
+ */
+export interface PreambleRegionPlan {
+  slotId: string
+  valueExpr: string
+}
+
 /** Per-item ref callback resolved against a child slot for emission (#1244). */
 export interface LoopChildRefBinding {
   /** bf slot ID of the target element (root or descendant of the body). */
@@ -155,6 +168,12 @@ interface PlainLoopVariant extends DynamicLoopCommon {
    * is empty and `mapPreambleWrapped` unused in this mode.
    */
   flatMapLeafItem?: boolean
+  /**
+   * Preamble-patched regions (#2389) — non-empty forces the multi-line
+   * renderItem layout (mirrors `childRefs`) so the region-patch effects have
+   * `__el` to query against.
+   */
+  preambleRegions: readonly PreambleRegionPlan[]
 }
 
 /**

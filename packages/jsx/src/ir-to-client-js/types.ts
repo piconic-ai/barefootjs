@@ -23,6 +23,7 @@ import type {
   TypeInfo,
   TypeDefinition,
   MapCallbackPreamble,
+  PreambleRegionSource,
 } from '../types.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 import type { SkeletonSlotPaths } from './html-template.ts'
@@ -323,6 +324,16 @@ export interface LoopCore {
    * declares a `key`, driving the `d.k`-based keyFn.
    */
   flatMapClient?: { params: string; body: string; keyed: boolean }
+
+  /**
+   * Loop-body expression children classified as preamble-patched regions
+   * (#2389), threaded from `IRLoop.preambleRegions`. Consumed only by the
+   * top-level and branch **plain** loop-plan builders (`build-loop.ts`,
+   * `build-branch-loop.ts`) — the composite / component / static / anchored
+   * shapes leave this unconsumed (stale — same pre-existing freeze, not a
+   * new regression) pending a follow-up.
+   */
+  preambleRegions?: readonly PreambleRegionSource[]
 }
 
 /**

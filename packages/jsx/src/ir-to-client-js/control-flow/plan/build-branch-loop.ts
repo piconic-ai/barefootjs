@@ -15,7 +15,7 @@ import { buildChainedArrayExpr, varSlotId, wrapLoopParamAsAccessor } from '../..
 import { buildBranchCompositePlan } from './build-composite-loop.ts'
 import { buildBranchLoopDelegationPlan } from './build-event-delegation.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
-import { destructureLoopParam, loopKeyFn, buildChildRefBindings } from '../shared.ts'
+import { destructureLoopParam, loopKeyFn, buildChildRefBindings, buildPreambleRegionPlans } from '../shared.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import type {
   BranchCompositeLoopPlan,
@@ -82,6 +82,7 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
       : null,
     eventDelegation: buildBranchLoopDelegationPlan(loop, cv, profileComponentName),
     childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
+    preambleRegions: buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings),
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${containerSlotId}` : undefined,
   }

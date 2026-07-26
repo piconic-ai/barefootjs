@@ -32,6 +32,7 @@ import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.t
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
+import type { PreambleRegionPlan } from '../plan/loop.ts'
 
 /**
  * Emit `(callback)(__rf)` for each ref on a per-item slot, looking up the
@@ -61,6 +62,40 @@ export function emitLoopChildRefs(
       : `${lookup}(${elVar}, '[bf="${ref.childSlotId}"]')`
     lines.push(`${indent}{ const ${varName} = ${lookupExpr}`)
     lines.push(`${indent}if (${varName}) ${emitRefCall(ref.callback, varName)} }`)
+  }
+}
+
+/**
+ * Emit the region-patch effect for each preamble-patched region (#2389 —
+ * `arr.map(t => { const cells = []; ...; return <tr>{cells}<td>{t.name}</td></tr> })`).
+ * The effect re-runs the (loop-param-accessor-wrapped) preamble on every
+ * reactive tick so it re-reads the current per-item signal, recomputes the
+ * region's value, and — past the FIRST run (which only records, trusting
+ * the SSR/CSR mount-time content already in the DOM) — patches the DOM
+ * range via `patchSlotRange(__el, 'sN', html)`. The marker lookup lives
+ * inside `patchSlotRange`, so a row that never changes pays zero lookup
+ * cost at mount/adoption.
+ *
+ * Non-empty `regions` forces the caller's multi-line renderItem layout (the
+ * effect needs `__el` as a query root), mirroring `emitLoopChildRefs`.
+ */
+export function emitPreambleRegionEffects(
+  lines: string[],
+  regions: readonly PreambleRegionPlan[],
+  mapPreambleWrapped: string,
+  opts: { indent: string; elVar: string },
+): void {
+  if (regions.length === 0) return
+  const { indent, elVar } = opts
+  for (const region of regions) {
+    const v = varSlotId(region.slotId)
+    lines.push(`${indent}{ let __last_${v}`)
+    lines.push(`${indent}createEffect(() => {`)
+    if (mapPreambleWrapped) lines.push(`${indent}  ${mapPreambleWrapped}`)
+    lines.push(`${indent}  const __html_${v} = ${region.valueExpr}`)
+    lines.push(`${indent}  if (__last_${v} === undefined) { __last_${v} = __html_${v}; return }`)
+    lines.push(`${indent}  if (__html_${v} !== __last_${v}) { __last_${v} = __html_${v}; patchSlotRange(${elVar}, '${region.slotId}', __html_${v}) }`)
+    lines.push(`${indent}}) }`)
   }
 }
 
@@ -128,6 +163,7 @@ export function stringifyPlainLoop(
     bodyIsMultiRoot,
     anchored,
     anchorKeyExpr,
+    preambleRegions,
   } = plan
 
   // flatMap descriptor mode: the accessor flattens the source through the
@@ -182,7 +218,10 @@ export function stringifyPlainLoop(
   // the factory, so non-empty refs force the multi-line layout the same way
   // reactive effects do (#1244).
   const loopBfId = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
-  if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0) {
+  // Preamble-patched regions (#2389) need `__el` as a query root for their
+  // effect, so non-empty regions force the multi-line layout — same
+  // precedent as `childRefs` above.
+  if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0 && preambleRegions.length === 0) {
     // Single-line renderItem (no reactive effects, single root, no refs).
     const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
     const preamble = mapPreambleWrapped ? `${mapPreambleWrapped}; ` : ''
@@ -241,6 +280,7 @@ export function stringifyPlainLoop(
     })
   }
   emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot, elementIndexBySlot: pathPlan?.elementIndexBySlot })
+  emitPreambleRegionEffects(lines, preambleRegions, mapPreambleWrapped, { indent: bodyIndent, elVar: '__el' })
   lines.push(`${bodyIndent}return __el`)
   lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }

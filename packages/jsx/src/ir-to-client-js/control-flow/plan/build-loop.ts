@@ -35,6 +35,7 @@ import {
   destructureLoopParam,
   buildChildRefBindings,
   buildStaticChildRefBindings,
+  buildPreambleRegionPlans,
 } from '../shared.ts'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
 import { buildComponentLoopPlan } from './build-component-loop.ts'
@@ -119,6 +120,9 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
       anchored: false,
       anchorKeyExpr: '__idx',
       flatMapLeafItem: true,
+      // flatMap loops carry no `MapCallbackPreamble` (jsx-to-ir.ts drops it
+      // for flatMapCallback), so there is nothing to patch here.
+      preambleRegions: [],
     }
   }
 
@@ -147,6 +151,7 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
     skeletonPaths: elem.skeletonPaths,
     reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem, profileComponentName) : null,
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
+    preambleRegions: buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings),
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
     anchored: elem.bodyIsItemConditional ?? false,
     // Fall back to the iteration index when the loop has no key. A whole-item

@@ -8,7 +8,7 @@ import { isClientBuiltinName } from '../builtins.ts'
 // All exports from @barefootjs/client/runtime that may be used in generated code
 export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
-  'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'patchLeaf', 'createDisposableEffect',
+  'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'patchLeaf', 'patchSlotRange', 'createDisposableEffect',
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild', 'updateClientMarker',
   'createPortal',
   'provideContext', 'createContext', 'useContext',

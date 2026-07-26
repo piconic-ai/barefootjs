@@ -20,7 +20,8 @@ import { irChildrenToJsExpr } from '../html-template.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
-import type { LoopChildRefBinding } from './plan/loop.ts'
+import type { LoopChildRefBinding, PreambleRegionPlan } from './plan/loop.ts'
+import type { PreambleRegionSource } from '../../types.ts'
 import {
   extractFreeIdentifiersFromText,
   extractFreeIdentifiersFromStatementText,
@@ -235,6 +236,30 @@ export function destructureLoopParam(
     }
   }
   return { head: param, unwrap: '' }
+}
+
+/**
+ * Resolve `IRLoop.preambleRegions` (#2389) into ready-to-emit
+ * `PreambleRegionPlan`s: wrap each source expression with the loop-param
+ * accessor and, for a `joinArrayChild` source, apply the same array-join
+ * ternary `irToHtmlTemplate` uses for the identical node in the row
+ * template — so the region-patch effect's re-render matches what a fresh
+ * mount would have produced. Shared by the top-level (`build-loop.ts`) and
+ * branch (`build-branch-loop.ts`) plain-loop-plan builders.
+ */
+export function buildPreambleRegionPlans(
+  regions: readonly PreambleRegionSource[] | undefined,
+  loopParam: string,
+  loopParamBindings: readonly LoopParamBinding[] | undefined,
+): readonly PreambleRegionPlan[] {
+  if (!regions || regions.length === 0) return []
+  return regions.map((r) => {
+    const wrapped = wrapLoopParamAsAccessor(r.expr, loopParam, loopParamBindings)
+    const valueExpr = r.joinArrayChild
+      ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
+      : `escapeText(${wrapped})`
+    return { slotId: r.slotId, valueExpr }
+  })
 }
 
 /**

@@ -570,6 +570,12 @@ export function collectLoopChildReactiveTexts(
     ...stopAt<boolean>('loop', 'async', 'ifStatement'),
     expression: ({ node: n, scope: insideConditional }) => {
       if (!n.slotId) return
+      // #2389 — a preamble-patched region (see `IRLoop.preambleRegions`) has
+      // its own `patchSlotRange`-based effect (`preambleRegions` in the
+      // client-JS loop plan); it must never ALSO become a `reactiveTexts`
+      // entry, which would patch it via `.textContent` and corrupt markup
+      // (a `joinArrayChild` region's value is raw HTML, not text).
+      if (n.preambleRegion) return
       const originFreeIds = freeIdsFromRefs(n.origin?.freeRefs)
       const expanded = expandConstantForReactivity(n.expr, ctx, originFreeIds)
       // Include if expression reads signals OR references the loop parameter
