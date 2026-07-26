@@ -13,10 +13,10 @@
  * `data-key` is excluded from attribute sync: reconciliation identity is
  * owned by `mapArray` (stamped via `setAttribute`), never by leaf content.
  */
-export function patchLeaf(el: HTMLElement, html: string): void {
+export function patchLeaf(el: Element, html: string): void {
   const tpl = document.createElement('template')
   tpl.innerHTML = html
-  const next = tpl.content.firstElementChild as HTMLElement | null
+  const next = tpl.content.firstElementChild
   if (!next) return
   if (next.tagName !== el.tagName) {
     // A root-tag change under a stable key cannot swap the node without

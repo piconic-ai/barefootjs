@@ -4667,8 +4667,9 @@ function buildFlatMapCallback(
               'leaf renders as a keyed HTML string with no per-element wiring.',
             suggestion: {
               message:
-                'Restructure so the interactive element lives in a .map() body, ' +
-                'or add /* @client */ to render the loop on the client only.',
+                'Restructure so the interactive element lives in a .map() body — ' +
+                'the descriptor path has no per-element wiring on any backend, ' +
+                'so /* @client */ does not lift this.',
             },
           }
         )

@@ -11,7 +11,7 @@
  *
  * Interactions cover the four behaviours the pre-fix wiring broke:
  *   1. hydration adopts every SSR leaf (pre-fix: leaves vanished on load —
- *      reconciled against the UN-flattENED source with index keys),
+ *      reconciled against the UN-flattened source with index keys),
  *   2. content change under stable keys patches leaves in place (`shout`),
  *   3. adding an item creates its leaves (pre-fix: `cloneNode(null)` crash
  *      against an empty item template),
