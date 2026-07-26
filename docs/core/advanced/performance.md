@@ -51,7 +51,7 @@ The compiler detects static arrays and skips reconciliation:
 const tabs = ['Home', 'About', 'Contact']
 {tabs.map(tab => <Tab label={tab} />)}
 
-// Dynamic — reconcileElements needed
+// Dynamic — keyed reconciliation (mapArray) needed
 const [items, setItems] = createSignal([...])
 {items().map(item => <Item key={item.id} data={item} />)}
 ```

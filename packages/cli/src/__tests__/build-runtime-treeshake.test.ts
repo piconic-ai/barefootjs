@@ -123,7 +123,6 @@ describe('build() runtime tree-shaking', () => {
       expectLacksFn(content, 'onCleanup')
       expectLacksFn(content, 'createMemo')
       expectLacksFn(content, 'createPortal')
-      expectLacksFn(content, 'reconcileList')
 
       // And it's meaningfully smaller than the full runtime.
       expect(content.length).toBeLessThan(readFileSync(REAL_DIST, 'utf8').length / 2)
@@ -145,7 +144,7 @@ describe('build() runtime tree-shaking', () => {
 
       const content = readFileSync(resolve(outDir, 'components/barefoot.js'), 'utf8')
       // Every runtime export present, including ones nothing imports.
-      for (const name of ['onMount', 'onCleanup', 'createMemo', 'createPortal', 'reconcileList']) {
+      for (const name of ['onMount', 'onCleanup', 'createMemo', 'createPortal']) {
         expectHasFn(content, name)
       }
     } finally {

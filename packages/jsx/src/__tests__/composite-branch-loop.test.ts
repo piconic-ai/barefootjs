@@ -2,7 +2,7 @@
  * BarefootJS Compiler - Composite loops inside conditional branches (#724)
  *
  * Verifies that loops with child components inside ternary conditionals
- * generate reconcileElements with createComponent in the branch's bindEvents.
+ * generate mapArray with createComponent in the branch's bindEvents.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -52,7 +52,7 @@ describe('composite loops inside conditional branches (#724)', () => {
     expect(clientJs).toBeDefined()
     const js = clientJs!.content
 
-    // Should use reconcileElements inside the branch's bindEvents
+    // Should use mapArray inside the branch's bindEvents
     expect(js).toContain('mapArray(')
 
     // After O-1's mode-collapse PR, child component init goes through the

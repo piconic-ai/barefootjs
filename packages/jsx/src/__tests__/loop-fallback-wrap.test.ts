@@ -18,7 +18,7 @@
  * and the conditional follow-up (#941), so this loop widening closes
  * the divergence gap between the allow-list path and the AST-flag path.
  *
- * Over-reconciliation of a pure-call array has a real cost (reconcileList
+ * Over-reconciliation of a pure-call array has a real cost (mapArray
  * is not a cheap primitive), so the fixture sweep in the accompanying
  * PR measures byte delta too; but the silent-drop bug this closes is
  * the expensive one — a frozen client list is a visible correctness

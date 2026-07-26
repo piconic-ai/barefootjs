@@ -211,7 +211,7 @@ describe('child components inside .map() (#344)', () => {
     expect(clientJs!.content).toContain('toggleRow(index)')
   })
 
-  test('dynamic signal array: component generates reconcileElements with createComponent', () => {
+  test('dynamic signal array: component generates mapArray with createComponent', () => {
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -321,7 +321,7 @@ describe('child components inside .map() (#344)', () => {
     const uniqueVars = new Set(allVars)
     expect(allVars.length).toBe(uniqueVars.size)
 
-    // Component slot ref ($c) and reconcileElements should both be present
+    // Component slot ref ($c) and mapArray should both be present
     expect(content).toContain('$c(__scope')
     expect(content).toContain('mapArray')
   })
@@ -355,7 +355,7 @@ describe('child components inside .map() (#344)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Should use reconcileElements with createComponent
+    // Should use mapArray with createComponent
     expect(content).toContain('mapArray')
     expect(content).toContain("createComponent('TableRow'")
 
@@ -650,7 +650,7 @@ describe('child components inside .map() (#344)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Dynamic array should use reconcileElements and event delegation
+    // Dynamic array should use mapArray and event delegation
     expect(content).toContain('mapArray')
     expect(content).toContain(".addEventListener('click', (__bfEvt) => {")
     expect(content).toContain('handleClick(item.id)')

@@ -255,7 +255,7 @@ export interface LoopCore {
   /**
    * Unique id for this loop's `<!--bf-loop:<id>--> ... <!--bf-/loop:<id>-->`
    * marker pair, threaded from `IRLoop.markerId`. Each `mapArray()` /
-   * `reconcileElements()` call passes this id so sibling loops under the
+   * `mapArrayAnchored()` call passes this id so sibling loops under the
    * same parent reconcile their own range (#1087).
    */
   markerId: string
@@ -609,7 +609,7 @@ export interface TopLevelLoop extends LoopCore {
   // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
   // now live on `LoopCore.bindings` — see issue #1244 §B.
   isStaticArray: boolean // True if array is a static prop (not a signal)
-  useElementReconciliation?: boolean // True: reconcileElements + composite rendering (native root with child components)
+  useElementReconciliation?: boolean // True: mapArray/mapArrayAnchored + composite rendering (native root with child components)
   /** Inner loop metadata for composite element reconciliation (array, param, key, container) */
   innerLoops?: NestedLoop[]
   /** Offset of this loop's items past its preceding container siblings (#1693). */

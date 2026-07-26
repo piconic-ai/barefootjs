@@ -77,9 +77,9 @@ export {
   type PortalChildren,
 } from './portal.ts'
 
-// List reconciliation
-export { reconcileList, type RenderItemFn } from './list.ts'
-export { reconcileElements, getLoopChildren, getLoopNodes } from './reconcile-elements.ts'
+// Loop boundary marker lookup (used by mapArray/mapArrayAnchored consumers
+// and compiler-generated clearing code — see ./loop-markers.ts docstring)
+export { getLoopChildren, getLoopNodes } from './loop-markers.ts'
 export { qsaItem, upsertChildItem } from './qsa-item.ts'
 export { mapArray, mapArrayAnchored } from './map-array.ts'
 export { patchLeaf } from './patch-leaf.ts'

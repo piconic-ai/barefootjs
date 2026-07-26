@@ -246,7 +246,6 @@ const searchParams = () => new URLSearchParams()
 const onMount = () => {}
 const onCleanup = () => {}
 const insert = () => {}
-const reconcileElements = () => {}
 // Claim-plan interpreter stubs (slot unification A2/A3): \`lazySlots\`/
 // \`claimSlots\` are called at init time (not deferred inside \`createEffect\`),
 // so — like \`$\`/\`$t\`/\`$c\` above — they must at least return a benign no-op

@@ -68,7 +68,7 @@ describe('reactive attributes inside .map() callbacks', () => {
     expect(clientJs!.content).toContain('disabled')
   })
 
-  test('dynamic array: reactive className handled by reconcileElements re-render (no extra effect needed)', () => {
+  test('dynamic array: reactive className handled by mapArray re-render (no extra effect needed)', () => {
     const source = `
       'use client'
 
@@ -91,7 +91,7 @@ describe('reactive attributes inside .map() callbacks', () => {
 
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // Dynamic arrays use reconcileElements which re-creates items on signal change
+    // Dynamic arrays use mapArray which re-creates items on signal change
     expect(clientJs!.content).toContain('mapArray')
   })
 

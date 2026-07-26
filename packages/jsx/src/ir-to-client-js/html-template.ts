@@ -908,8 +908,8 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // (Go's `bf_sort`, etc.) applied the sort separately and
       // hydration only needed to match, but broken on Hono / CSR
       // where the template is the only source of truth. The chain
-      // mirrors `buildChainedArrayExpr` so reconcileList sees the
-      // same array shape this template emits.
+      // mirrors `buildChainedArrayExpr` so mapArray/mapArrayAnchored sees
+      // the same array shape this template emits.
       const rawChainedArray = applyLoopChain(node)
       const { array: iterArray, callbackParam } = applyIterationShape(node, rawChainedArray, indexParam)
       const wrappedArray = wrapExpr(iterArray)

@@ -2,7 +2,7 @@
  * BarefootJS - Component Creation
  *
  * Functions for dynamically creating component instances at runtime.
- * Used by reconcileList() when rendering components in loops.
+ * Used by mapArray()/mapArrayAnchored() when rendering components in loops.
  */
 
 import { getTemplate } from './template.ts'
@@ -25,12 +25,17 @@ export function setParentScopeId(id: string | null): void {
   _parentScopeId = id
 }
 
-// WeakMap to store props update functions for each component element
-// This allows reconcileList to update props when an element is reused
+// WeakMap to store props update functions for each component element.
+// Originally read by the (removed, slot unification A4) `reconcileList`
+// element-reconciler to update props when an element was reused; mapArray's
+// reuse path goes through `initChild` instead (`./map-array.ts`), so
+// `getPropsUpdateFn` currently has no caller. Left in place — it's cheap
+// bookkeeping populated on every component creation, not a live bug.
 const propsUpdateMap = new WeakMap<HTMLElement, (props: Record<string, unknown>) => void>()
 
-// WeakMap to store the current props for each component element
-// Used to pass props to existing elements when they are reused
+// WeakMap to store the current props for each component element.
+// Same history as `propsUpdateMap` above — `getComponentProps` currently
+// has no caller now that `reconcileList` is gone.
 const propsMap = new WeakMap<HTMLElement, Record<string, unknown>>()
 
 
@@ -248,7 +253,8 @@ export function createComponent(
   // 12. Mark element as initialized
   hydratedScopes.add(element)
 
-  // 13. Store props and register update function for element reuse in reconcileList
+  // 13. Store props and register update function for element reuse (see
+  //     propsUpdateMap/propsMap docstrings above)
   propsMap.set(element, props)
   registerPropsUpdate(element, name, props)
 
@@ -257,7 +263,8 @@ export function createComponent(
 
 /**
  * Get the props stored for a component element.
- * Used by reconcileList to pass props to an existing element.
+ * See `propsMap`'s docstring — currently unused now that `reconcileList` is
+ * gone, kept for the WeakMap it reads.
  */
 export function getComponentProps(element: HTMLElement): Record<string, unknown> | undefined {
   return propsMap.get(element)
@@ -272,7 +279,7 @@ function registerPropsUpdate(
   name: string,
   _initialProps: Record<string, unknown>
 ): void {
-  // Register update function that will be called by reconcileList
+  // Register update function (see `propsUpdateMap`'s docstring above)
   propsUpdateMap.set(element, (newProps: Record<string, unknown>) => {
     // Re-initialize the component with new props
     // This allows the component to capture new values (e.g., todo with editing: true)
@@ -286,7 +293,8 @@ function registerPropsUpdate(
 
 /**
  * Get the props update function for an element.
- * Used by reconcileList to update props when reusing an element.
+ * See `propsUpdateMap`'s docstring — currently unused now that
+ * `reconcileList` is gone, kept for the WeakMap it reads.
  */
 export function getPropsUpdateFn(element: HTMLElement): ((props: Record<string, unknown>) => void) | undefined {
   return propsUpdateMap.get(element)

@@ -139,6 +139,61 @@ Readings that bind the plan:
   win. (b)'s value routes through **DOM node count** (4,000 comments +
   2,001 attrs per 1k rows) into memory and parse, not the wire.
 
+### Step A measured results (measured 2026-07-26, A4 cleanup)
+
+Real numbers from the shipped Step A pipeline (A2 runtime + A3 compiler
+switch + A4 dead-export removal), not the hand-written Stage 0 prototype
+above. `bun run --filter '@barefootjs/client' build`, then
+`bun benchmarks/ssr/apps/barefoot/build.ts`, then
+`bench-ssr.ts` (hydration/bytes) and the adapted `bench-ssr-memory.ts`
+(heap; the Stage 0 spike's fourth `barefoot-claim` column doesn't exist in
+this tree — A2/A3 already put the real claim-plan interpreter into
+`barefoot` itself), each run twice, all in the foreground.
+react/solid/barefoot only.
+
+| Metric | react (run1 / run2) | solid (run1 / run2) | barefoot (run1 / run2) |
+|---|---|---|---|
+| Server render (median, n=20) | 26.05 / 26.19ms | 0.54 / 0.38ms | 11.83 / 8.82ms |
+| Hydration (median, n=10) | 51.45 / 48.40ms | 30.45 / 29.60ms | 39.80 / 38.95ms |
+| HTML (raw / gzip) | 220.0 / 14.9KB (both runs) | 235.9 / 18.6KB (both runs) | 318.6 / 19.5KB (both runs) |
+| Post-hydration heap (n=3, median, stdev ≤7KB) | 3475.7 / 3476.5KB | 2589.3 / 2578.4KB | 3244.9 / 3244.9KB |
+
+Honest read, against this doc's own pre-A baseline (hydration 28–32ms,
+heap 2729KB) quoted in §5a above:
+
+- **These numbers are not directly comparable to the pre-A baseline** —
+  that baseline and this measurement ran in different sandbox
+  environments (different hardware/Chromium build), and the *absolute*
+  hydration and heap numbers moved for react and solid too (react's heap
+  is ~3475KB here, and solid's hydration varies 30.45→29.60ms between
+  this run's own two trials). The same-environment, same-run
+  react/solid/barefoot comparison above is the reliable signal; the
+  cross-environment comparison to §5a's baseline is not.
+- **No memory win yet, and that is expected.** A3's compiler switch
+  replaced the *emission mechanism* (claim plans instead of
+  `$t`/`__bfText`/`patchSlotRange`/`updateClientMarker`) but explicitly
+  kept the per-row reactive graph — row-level lazy claim (the Stage 0
+  prototype's memory story, §5a's −57% ceiling) is deferred past Step A
+  (§6 "Row-pristine invariant"; §5's Step A description). Step A's own
+  goal was verifiability (SSR bytes unchanged) while swapping the update
+  door, not the memory win — so barefoot's heap sitting essentially flat
+  across both runs (3244.9KB, stdev <1KB) and above solid's is the
+  expected outcome of *this* step, not a regression to chase. Step B
+  (marker elision) and a future lazy-claim step are where the Stage 0
+  ceiling gets tested against a real implementation.
+- **HTML bytes are pinned and unchanged from pre-A**, as designed: Step
+  A's only allowed SSR byte change was dropping the dead `bf-client:`
+  marker, and 318.6KB raw / 19.5KB gzip — identical across both runs —
+  matches §5a's barefoot column exactly.
+- **Hydration and server-render times are within normal run-to-run
+  jitter** at 1k rows in this sandbox (e.g. solid's own hydration moves
+  30.45→29.60ms and barefoot's server render moves 11.83→8.82ms between
+  otherwise-identical runs); no claim of improvement or regression over
+  the pre-A baseline is supportable from this data — the claim-plan
+  switch's proven win (per §5a) is architectural (zero per-row
+  reconciliation work once lazy claim lands), not yet visible as a wall-
+  clock delta while the per-row effect graph is still built eagerly.
+
 ## 5. Migration — two steps, stacked semantic PRs
 
 Compatibility with the current emitted grammar is explicitly NOT a goal
