@@ -1,16 +1,15 @@
-import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, insert, mapArray, onMount, qsa, renderChild, updateClientMarker } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, insert, lazySlots, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
   const [_s0, _s2, _s3, _s4, _s5] = $(__scope, 's0', 's2', 's3', 's4', 's5')
-  const [_s1] = $t(__scope, 's1')
 
-  let __anchor_s1 = _s1
+  const __bfw_s1 = lazySlots(__scope, [{ id: 's1', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.todo.text
-    __anchor_s1 = __bfText(__anchor_s1, __val)
+    __bfw_s1('s1', __val)
   })
 
   createEffect(() => {
@@ -161,9 +160,10 @@ export function initTodoApp(__scope, _p = {}) {
   const [_s0, _s10, _s11, _s12, _s14, _s1, _s4] = $(__scope, 's0', 's10', 's11', 's12', 's14', 's1', 's4')
 
   // @client: s6
+  { const __bfw_s6 = lazySlots(__scope, [{ id: 's6', kind: 'text', path: [] }])
   createEffect(() => {
-    updateClientMarker(__scope, 's6', todos().filter(t => !t.done).length)
-  })
+    __bfw_s6('s6', todos().filter(t => !t.done).length)
+  }) }
 
   createEffect(() => {
     if (_s0) {
@@ -263,5 +263,5 @@ hydrate('TodoApp', { init: initTodoApp, template: (_p) => `<section class="todoa
             if (f === 'active') return !t.done
             if (f === 'completed') return t.done
             return true
-          }).map((todo) => `${renderChild('TodoItem', {todo: todo}, todo.id)}`).join('')}<!--bf-/loop:l0--></ul></section><footer class="footer" bf="s15"><span class="todo-count" bf="s9"><strong bf="s7"><!--bf-client:s6--><!--/--></strong>${' '}<!--bf-cond-start:s8--><!--bf-cond-end:s8--> left </span><ul class="filters"><li><a href="#/" ${(`${('all') === 'all' ? 'selected' : ''}`) != null ? 'class="' + escapeAttr(`${('all') === 'all' ? 'selected' : ''}`) + '"' : ''} bf="s10">All</a></li><li><a href="#/active" ${(`${('all') === 'active' ? 'selected' : ''}`) != null ? 'class="' + escapeAttr(`${('all') === 'active' ? 'selected' : ''}`) + '"' : ''} bf="s11">Active</a></li><li><a href="#/completed" ${(`${('all') === 'completed' ? 'selected' : ''}`) != null ? 'class="' + escapeAttr(`${('all') === 'completed' ? 'selected' : ''}`) + '"' : ''} bf="s12">Completed</a></li></ul><!--bf-cond-start:s13--><!--bf-cond-end:s13--></footer></section>` })
+          }).map((todo) => `${renderChild('TodoItem', {todo: todo}, todo.id)}`).join('')}<!--bf-/loop:l0--></ul></section><footer class="footer" bf="s15"><span class="todo-count" bf="s9"><strong bf="s7"><!--bf:s6--><!--/--></strong>${' '}<!--bf-cond-start:s8--><!--bf-cond-end:s8--> left </span><ul class="filters"><li><a href="#/" ${(`${('all') === 'all' ? 'selected' : ''}`) != null ? 'class="' + escapeAttr(`${('all') === 'all' ? 'selected' : ''}`) + '"' : ''} bf="s10">All</a></li><li><a href="#/active" ${(`${('all') === 'active' ? 'selected' : ''}`) != null ? 'class="' + escapeAttr(`${('all') === 'active' ? 'selected' : ''}`) + '"' : ''} bf="s11">Active</a></li><li><a href="#/completed" ${(`${('all') === 'completed' ? 'selected' : ''}`) != null ? 'class="' + escapeAttr(`${('all') === 'completed' ? 'selected' : ''}`) + '"' : ''} bf="s12">Completed</a></li></ul><!--bf-cond-start:s13--><!--bf-cond-end:s13--></footer></section>` })
 export function TodoApp(_p, __bfKey) { return createComponent('TodoApp', _p, __bfKey) }

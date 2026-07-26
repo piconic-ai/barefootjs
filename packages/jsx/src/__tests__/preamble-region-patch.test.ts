@@ -11,9 +11,12 @@
  * the preamble's `declaredNames` is classified as a preamble-patched
  * region — slot-marked like an ordinary reactive text (so SSR/CSR row
  * templates render `<!--bf:sN-->...<!--/-->` / `{bfText("sN")}` the same
- * door a reactive text uses), but wired on the client via a dedicated
- * `patchSlotRange`-based region-patch effect rather than a `reactiveTexts`
- * `.textContent` assignment (which would corrupt the array-joined markup).
+ * door a reactive text uses), but wired on the client via a claimed
+ * 'markup' slot writer (slot unification A3, `@barefootjs/client/runtime/
+ * claim-slots.ts`) rather than a `reactiveTexts` `.textContent` assignment
+ * (which would corrupt the array-joined markup). Trust-first-run and
+ * dedup — previously a per-region `__last` local next to a `patchSlotRange`
+ * call — now live inside the writer itself.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -68,7 +71,8 @@ describe('preamble-region-patch (#2389)', () => {
     expect(clientJs).toMatch(/<!--bf:s\d+-->\$\{Array\.isArray\(cells\) \? cells\.join\(''\) : \(cells \?\? ''\)\}<!--\/-->/)
 
     const hono = compileWith(new HonoAdapter())
-    expect(hono.clientJs).toContain('patchSlotRange')
+    expect(hono.clientJs).toContain("kind: 'markup'")
+    expect(hono.clientJs).toContain('lazySlots(__el')
     // Hono SSR renders the SAME slotId through `renderExpression`'s generic
     // `{bfText("id")}...{bfTextEnd()}` door — no bespoke region handling.
     const slotMatch = /<!--bf:(s\d+)-->\$\{Array\.isArray\(cells\)/.exec(hono.clientJs)
@@ -81,15 +85,16 @@ describe('preamble-region-patch (#2389)', () => {
 
   test('(b) renderItem emits the region-patch effect, re-running the preamble in accessor form', () => {
     const { clientJs } = compileWith(new TestAdapter())
-    expect(clientJs).toContain('patchSlotRange')
+    expect(clientJs).toContain("kind: 'markup'")
     // The preamble re-runs inside the effect with the loop-param accessor
     // wrap (`t().done`), not the plain (`t.done`) form used at the
     // top-level construction line.
     expect(clientJs).toMatch(/createEffect\(\(\) => \{\s*const stateLabel = t\(\)\.done/)
-    // First run only records (trusts SSR/CSR mount-time content); only a
-    // SUBSEQUENT change patches via patchSlotRange.
-    expect(clientJs).toMatch(/if \(__last_\w+ === undefined\) \{ __last_\w+ = __html_\w+; return \}/)
-    expect(clientJs).toMatch(/patchSlotRange\(__el, 's\d+', __html_\w+\)/)
+    // The write goes through the claimed 'markup' writer — trust-first-run
+    // (record without patching on the very first write) and dedup now live
+    // inside `writeMarkup` itself (`claim-slots.ts`), not a per-region
+    // `__last` local next to the write call.
+    expect(clientJs).toMatch(/__bfw_\w+\('s\d+', Array\.isArray\(cells\)/)
   })
 
   test('(c) a loop without a preamble gets no region', () => {
@@ -102,7 +107,7 @@ describe('preamble-region-patch (#2389)', () => {
       }
     `
     const { clientJs } = compileWith(new TestAdapter(), source)
-    expect(clientJs).not.toContain('patchSlotRange')
+    expect(clientJs).not.toContain("kind: 'markup'")
   })
 
   test('(c) a static-array loop with a preamble gets no region', () => {
@@ -123,7 +128,7 @@ describe('preamble-region-patch (#2389)', () => {
       }
     `
     const { clientJs } = compileWith(new TestAdapter(), source)
-    expect(clientJs).not.toContain('patchSlotRange')
+    expect(clientJs).not.toContain("kind: 'markup'")
   })
 
   test('(d) a preamble local never referenced by an expression child gets no region', () => {
@@ -145,6 +150,6 @@ describe('preamble-region-patch (#2389)', () => {
       }
     `
     const { clientJs } = compileWith(new TestAdapter(), source)
-    expect(clientJs).not.toContain('patchSlotRange')
+    expect(clientJs).not.toContain("kind: 'markup'")
   })
 })

@@ -1,4 +1,4 @@
-import { $, $t, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, patchSlotRange } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 
 export function initPreambleCells(__scope, _p = {}) {
@@ -17,15 +17,13 @@ export function initPreambleCells(__scope, _p = {}) {
   mapArray(() => todos(), _s3, (t) => String(t.id), (t, __idx, __existing) => {
     const stateLabel = t().done ? 'done & dusted' : 'open'; const cells = []; cells.push(`<td class="state">${escapeText((stateLabel))}</td>`);
     const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<tr data-key="${escapeAttr(t().id)}"><!--bf:s2-->${Array.isArray(cells) ? cells.join('') : (cells ?? '')}<!--/--><td class="name"><!--bf:s0-->${escapeText(t().name)}<!--/--></td><td><button class="toggle" bf="s1">toggle</button></td></tr>`; return __tpl.content.firstElementChild.cloneNode(true) })()
-    { const [__rt_s0] = $t(__el, 's0')
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(t().name) }) }
-    { let __last_s2
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])
+    createEffect(() => { __bfw_s0('s0', String(t().name)) })
+    const __bfw_s2 = lazySlots(__el, [{ id: 's2', kind: 'markup', path: [] }])
     createEffect(() => {
       const stateLabel = t().done ? 'done & dusted' : 'open'; const cells = []; cells.push(`<td class="state">${escapeText((stateLabel))}</td>`);
-      const __html_s2 = Array.isArray(cells) ? cells.join('') : (cells ?? '')
-      if (__last_s2 === undefined) { __last_s2 = __html_s2; return }
-      if (__html_s2 !== __last_s2) { __last_s2 = __html_s2; patchSlotRange(__el, 's2', __html_s2) }
-    }) }
+      __bfw_s2('s2', Array.isArray(cells) ? cells.join('') : (cells ?? ''))
+    })
     return __el
   }, 'l0')
 

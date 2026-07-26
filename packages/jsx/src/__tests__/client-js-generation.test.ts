@@ -1760,7 +1760,10 @@ describe('Client JS generation', () => {
       // update. See `preamble-region-patch.test.ts` for the full region
       // contract (row-template marker, region-patch effect, SSR parity).
       expect(clientJs?.content).toContain('${escapeText(label)}')
-      expect(clientJs?.content).toContain('patchSlotRange')
+      // Slot unification A3: preamble regions now write through a claimed
+      // 'markup' slot instead of `patchSlotRange`.
+      expect(clientJs?.content).toContain("kind: 'markup'")
+      expect(clientJs?.content).toContain('lazySlots(__el')
     })
 
     test('handles block body with multiple variable declarations', () => {
@@ -2423,11 +2426,12 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // Text node updates route through `__bfText`, which renders nullish
-      // values as '' (not the string "undefined") and also splices live
-      // Nodes by identity (#1663). The nullish guard moved from the inline
-      // `String(__val ?? '')` assignment into that helper.
-      expect(content).toContain('__bfText(')
+      // Text node updates route through a claimed 'markup' slot writer (slot
+      // unification A3), whose `writeMarkup` renders nullish values as ''
+      // (not the string "undefined") and also splices live Nodes by
+      // identity (#1663) — the same contract `__bfText` used to provide.
+      // The nullish guard lives in the runtime writer, not inline here.
+      expect(content).toContain("kind: 'markup'")
       expect(content).not.toMatch(/\.nodeValue = String\(__val\)(?! )/)
     })
 
@@ -2464,8 +2468,10 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // text() inside a component inside a conditional uses $t() in branch-scoped effect
-      expect(content).toContain('$t(__branchScope')
+      // text() inside a component inside a conditional writes through a
+      // claimed 'markup' slot built fresh in the branch's own bindEvents
+      // (slot unification A3) — re-claimed on every branch activation.
+      expect(content).toContain("lazySlots(__branchScope, [{ id: '^s2', kind: 'markup', path: [] }])")
     })
 
     test('propagates insideConditional through fragment children', () => {
@@ -2495,8 +2501,10 @@ describe('Client JS generation', () => {
       expect(clientJs).toBeDefined()
       const content = clientJs!.content
 
-      // text() inside a fragment inside a conditional uses $t() in branch-scoped effect
-      expect(content).toContain('$t(__branchScope')
+      // text() inside a fragment inside a conditional writes through a
+      // claimed 'markup' slot built fresh in the branch's own bindEvents
+      // (slot unification A3) — re-claimed on every branch activation.
+      expect(content).toContain("lazySlots(__branchScope, [{ id: 's2', kind: 'markup', path: [] }])")
     })
   })
 

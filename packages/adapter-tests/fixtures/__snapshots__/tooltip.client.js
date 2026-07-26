@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfText, applyRestAttrs, createComponent, createEffect, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 
 export function initTooltip(__scope, _p = {}) {
   if (!__scope) return
@@ -55,12 +55,11 @@ export function initTooltip(__scope, _p = {}) {
   const handleBlur = () => setOpen(false)
 
   const [_s3, _s2, _s1] = $(__scope, 's3', 's2', 's1')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.content
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   createEffect(() => {

@@ -1,4 +1,4 @@
-import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, insert, mapArray, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, insert, lazySlots, mapArray, qsa } from '@barefootjs/client/runtime'
 
 
 export function initAIChatInteractive(__scope, _p = {}) {
@@ -62,11 +62,8 @@ export function initAIChatInteractive(__scope, _p = {}) {
     template: () => { const __slots = []; return { html: `<div bf-c="s2" class="chat-msg chat-assistant"><div class="chat-bubble"><p bf="s4"><!--bf:s3-->${__bfSlot(streamingText(), __slots)}<!--/--><span class="streaming-cursor">▌</span></p></div></div>`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
-      let __anchor_s3 = $t(__branchScope, 's3')[0]
-      __disposers.push(createDisposableEffect(() => {
-        const __val = streamingText()
-        __anchor_s3 = __bfText(__anchor_s3, __val)
-      }))
+      const __bfw_s3 = lazySlots(__branchScope, [{ id: 's3', kind: 'markup', path: [] }])
+      __disposers.push(createDisposableEffect(() => { __bfw_s3('s3', streamingText()) }))
       return () => __disposers.forEach(d => d())
     }
   }, {
@@ -94,8 +91,8 @@ export function initAIChatInteractive(__scope, _p = {}) {
         { const __v = `chat-msg chat-${msg().role}`; if (__v != null) __ra_s1.setAttribute('class', String(__v)); else __ra_s1.removeAttribute('class') }
       })
     } }
-    { const [__rt_s0] = $t(__el, 's0')
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(msg().content) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])
+    createEffect(() => { __bfw_s0('s0', String(msg().content)) })
     return __el
   }, 'l0')
 

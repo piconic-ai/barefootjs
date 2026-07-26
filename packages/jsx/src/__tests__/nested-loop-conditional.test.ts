@@ -134,13 +134,14 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(mapArrayCount).toBeGreaterThanOrEqual(3)
   })
 
-  test('reactive text inside conditional inside inner loop uses re-query pattern (#840)', () => {
+  test('reactive text inside conditional inside inner loop uses re-claim pattern (#840)', () => {
     // When a reactive text is inside a conditional branch inside a nested (inner) loop,
     // insert() may replace the SSR element after the text node is captured.
-    // The generated code must use the re-query pattern:
-    //   createEffect(() => { const [__rt] = $t(...) ... })
-    // NOT the capture-then-effect pattern:
-    //   { const [__rt] = $t(...); if (__rt) createEffect(() => ...) }
+    // Slot unification A3: the generated code must re-claim on EVERY run via
+    // a fresh `claimSlots(...).write(...)` call inside the effect body — not
+    // a `lazySlots` writer built once outside it, which would go stale once
+    // insert() swaps the branch's DOM (see `stringifyInnerLoops`' docstring
+    // in `ir-to-client-js/control-flow/stringify/inner-loop.ts`).
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -175,8 +176,9 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     expect(clientJs).toBeDefined()
     const content = clientJs!.content
 
-    // Re-query pattern: $t() inside createEffect so it always finds the live node
-    expect(content).toContain('createEffect(() => { const [__rt] = $t(')
+    // Re-claim pattern: a fresh `claimSlots(...)` call inside createEffect so
+    // it always resolves against the live node, never a cached stale ref.
+    expect(content).toMatch(/createEffect\(\(\) => \{ claimSlots\(__innerEl\w*, \[\{ id: 's\d+', kind: 'text', path: \[\] \}\]\)\.write\('s\d+', String\(/)
   })
 
   test('event handler inside conditional branch of loop item appears in bindEvents (#839)', () => {

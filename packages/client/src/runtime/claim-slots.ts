@@ -1,15 +1,18 @@
 /**
  * Claim-plan interpreter and claimed-slot primitives (slot unification
- * Step A2, `spec/slot-unification.md` §4/§5-A2).
+ * Steps A2/A3, `spec/slot-unification.md` §4/§5).
  *
  * This module is the ONE claim mechanism the spec's §4 target architecture
  * describes: a compile-time `ClaimPlan` (per-slot child-index paths from a
  * claim root down to the slot's anchor comment) is resolved ONCE — either
  * eagerly (`claimSlots`) or lazily on first write (`lazySlots`) — and every
  * later write goes through the held reference, never re-scanning the DOM.
- * It supersedes (but, per A2's scope, does not yet replace — that's A3) the
- * four mechanisms inventoried in §1: `$t`/text-effect writes, `__bfText`,
- * `patchSlotRange`, and `updateClientMarker`.
+ * As of A3 the compiler emits claim plans for every content slot; the
+ * `patchSlotRange` and `updateClientMarker` mechanisms it superseded are
+ * deleted. `$t`/text-effect writes and `__bfText` are ALSO superseded for
+ * every emission site but one — see `dynamic-text.ts`'s docstring for the
+ * one deliberately-deferred case (`emitDynamicTextUpdates`'s
+ * `conditionalElems` path).
  *
  * Anchors are still the existing `<!--bf:sN-->…<!--/-->` marker pairs — SSR
  * bytes are unchanged in Step A (§5, §6) so the new client claims against
@@ -46,7 +49,11 @@
  * If neither the path nor the fallback scan finds an owned marker, that one
  * slot is dropped with a `console.warn` and the rest of the plan still
  * claims — never guess a boundary, and never let one bad slot sink its
- * siblings.
+ * siblings. An EMPTY path (`[]`) skips straight to the scan without that
+ * first warning — the compiler emits `path: []` deliberately when a slot's
+ * position can't be statically pathed (slot unification A3), so a miss
+ * there is expected, not drift; only a non-empty path that fails to resolve
+ * signals a real shape mismatch worth warning about.
  *
  * Row-pristine lazy claim (§3(a)): `lazySlots` touches NOTHING until the
  * first write, and that first write claims the WHOLE plan at once (not just
@@ -56,10 +63,28 @@
  * hatch for callers that cannot honor that invariant (streaming/portal
  * paths that mutate row content before any write would occur, per §6's
  * risk note) — it claims every slot in the plan immediately.
+ *
+ * Trust-first-run + dedup (slot unification A3, spec §5/§6): a 'markup'
+ * slot's write door now holds a `last` value alongside its boundary refs.
+ * The FIRST write ever made to a slot only RECORDS `last` — it never
+ * touches the DOM, trusting that the claimed range already holds matching
+ * SSR/CSR content (the same discipline `patchSlotRange`'s per-effect
+ * `__last === undefined` seed used to provide at the call site; A3 moves it
+ * into the writer so every 'markup' caller gets it for free). Every write
+ * after the first skips the DOM patch when the new string equals `last`
+ * (dedup) and otherwise clears-and-inserts as before. A `Node` write is
+ * deduped by identity (mirrors `__bfText`'s `value === current` check) but
+ * is NEVER trust-first-run-seeded — the first render of a live Node (e.g. a
+ * freshly `createComponent`-built element) is a distinct object from
+ * whatever the SSR markup rendered, so it always splices on its first
+ * write, exactly like `__bfText` always did. 'text' writes stay a plain
+ * `nodeValue` assignment (already idempotent, per §5's design note) — no
+ * dedup state needed.
  */
 
 import { BF_SCOPE } from '@barefootjs/shared'
-import { textNodeAfterComment } from './query.ts'
+import { textNodeAfterComment, commentsInScope } from './query.ts'
+import { commentScopeRegistry } from './scope.ts'
 
 /**
  * A slot's compile-time descriptor. `path` is the list of child indices
@@ -87,12 +112,15 @@ interface ClaimedTextSlot {
 /**
  * A claimed 'markup' slot: both boundary comments, held by identity.
  * Content lives strictly between `start` and `end`; both survive every
- * write.
+ * write. `last` is the trust-first-run + dedup state (see module docstring)
+ * — `undefined` until the first write, a `string` once a string has been
+ * recorded/patched, or the live `Node` once one has been spliced in.
  */
 interface ClaimedMarkupSlot {
   readonly kind: 'markup'
   readonly start: Comment
   readonly end: Comment
+  last: string | Node | undefined
 }
 
 type ClaimedSlotRef = ClaimedTextSlot | ClaimedMarkupSlot
@@ -134,15 +162,26 @@ function isSlotComment(node: Node | null, id: string): node is Comment {
  * loop: a same-id marker owned by a nested `bf-s` scope (a child
  * component's own slot — ids collide across components by design) is
  * skipped so the fallback can never claim into a child's content.
+ *
+ * `commentsInScope` (not a bare `document.createTreeWalker(root, …)`) so a
+ * whole-item loop conditional's claim root (`insert.ts`'s detached
+ * `commentScopeRegistry` proxy for a `<!--bf-loop-i:key-->` anchor, #1665)
+ * resolves correctly: the proxy has no DOM children of its own — the row's
+ * real content lives as SIBLINGS of the registered comment — and
+ * `commentsInScope` already knows to walk that sibling range instead of
+ * `root`'s (empty) descendants. The ownership boundary adapts to match:
+ * every node in a comment-scope's range shares the registered comment's
+ * OWN parent element, so that (not the unreachable proxy `root`) is where
+ * the ancestor walk must stop.
  */
 function findOwnedMarker(root: Element, id: string): Comment | null {
   const marker = `bf:${id}`
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT)
-  while (walker.nextNode()) {
-    const comment = walker.currentNode as Comment
+  const registryInfo = commentScopeRegistry.get(root)
+  const boundary = registryInfo ? registryInfo.commentNode.parentElement : root
+  for (const comment of commentsInScope(root)) {
     if (comment.nodeValue !== marker) continue
     let owned = true
-    for (let el = comment.parentElement; el && el !== root; el = el.parentElement) {
+    for (let el = comment.parentElement; el && el !== boundary; el = el.parentElement) {
       if (el.hasAttribute(BF_SCOPE)) {
         owned = false
         break
@@ -184,16 +223,24 @@ function findMarkupEnd(start: Comment): Comment | null {
  * Resolve one slot's anchor comment: try the compile-time path first, fall
  * back to an owned marker scan on any miss (path resolves to nothing, or to
  * a node that isn't this slot's own comment — shape drift), and warn on
- * either the fallback-needed or the total-miss case. Never throws — a bad
- * slot returns `null` and the caller drops it from the claimed set.
+ * either the fallback-needed or the total-miss case — EXCEPT when the plan
+ * shipped an empty path (`spec.path.length === 0`, slot unification A3's
+ * "cannot be statically pathed" case, `spec/slot-unification.md` §5-A3):
+ * an empty path is a deliberate "no compile-time path available" marker,
+ * not a claim that index `0` addresses this slot, so going straight to the
+ * scan is the plan's INTENDED behavior, not a drift to warn about. Never
+ * throws — a bad slot returns `null` and the caller drops it from the
+ * claimed set.
  */
 function resolveAnchor(root: Element, spec: SlotSpec): Comment | null {
-  const resolved = resolvePath(root, spec.path)
-  if (isSlotComment(resolved, spec.id)) return resolved
+  if (spec.path.length > 0) {
+    const resolved = resolvePath(root, spec.path)
+    if (isSlotComment(resolved, spec.id)) return resolved
+    console.warn(
+      `[barefootjs] claim path for slot ${spec.id} did not resolve to its bf:${spec.id} marker; falling back to a scan`,
+    )
+  }
 
-  console.warn(
-    `[barefootjs] claim path for slot ${spec.id} did not resolve to its bf:${spec.id} marker; falling back to a scan`,
-  )
   const found = findOwnedMarker(root, spec.id)
   if (!found) {
     console.warn(`[barefootjs] slot ${spec.id} marker not found; skipping`)
@@ -215,7 +262,7 @@ function claimOne(root: Element, spec: SlotSpec): ClaimedSlotRef | null {
     console.warn(`[barefootjs] slot ${spec.id} has no end marker; skipping`)
     return null
   }
-  return { kind: 'markup', start: anchor, end }
+  return { kind: 'markup', start: anchor, end, last: undefined }
 }
 
 // --- writes ---
@@ -240,16 +287,39 @@ function writeMarkup(ref: ClaimedMarkupSlot, value: unknown): void {
   const { start, end } = ref
   const parent = end.parentNode
   if (!parent) return
-  clearMarkupRange(start, end)
+
+  // Slot markers (`__slot()`, `@barefootjs/client/slot.ts`): a caller-passed
+  // JSX prop that itself contains a component. Leave the server-rendered DOM
+  // untouched entirely — no write, no `last` update either, so a later real
+  // value still gets a correct trust-first-run/dedup read. Mirrors
+  // `__bfText`'s identical guard (#1663).
+  if (value != null && (value as { __isSlot?: boolean }).__isSlot) return
 
   if (typeof Node !== 'undefined' && value instanceof Node) {
+    // Identity dedup, mirrors `__bfText`'s `value === current` check — the
+    // same live node handed back again is a no-op. Never trust-first-run
+    // seeded: a freshly rendered Node is never the SSR-rendered markup by
+    // identity, so the very first Node write always splices.
+    if (value === ref.last) return
+    clearMarkupRange(start, end)
     parent.insertBefore(value, end)
+    ref.last = value
     return
   }
 
+  const text = String(value ?? '')
+  if (ref.last === undefined) {
+    // Trust-first-run: the claimed range already holds matching SSR/CSR
+    // content (row-pristine invariant, §3(a)) — record without patching.
+    ref.last = text
+    return
+  }
+  if (text === ref.last) return // dedup: identical string, skip the DOM touch
+  clearMarkupRange(start, end)
   const tpl = document.createElement('template')
-  tpl.innerHTML = String(value ?? '')
+  tpl.innerHTML = text
   parent.insertBefore(tpl.content, end)
+  ref.last = text
 }
 
 function writeSlot(refs: ReadonlyMap<string, ClaimedSlotRef>, id: string, value: unknown): void {

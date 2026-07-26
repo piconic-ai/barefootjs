@@ -1,18 +1,16 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L15 — Ternary 1`] = `
-"import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeText, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -23,12 +21,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -58,11 +54,8 @@ export function initExample(__scope, _p = {}) {
     template: () => { const __slots = []; return { html: \`<p bf-c="s0" bf="s2"><!--bf:s1-->\${__bfSlot(count(), __slots)}<!--/--> items</p>\`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
-      let __anchor_s1 = $t(__branchScope, 's1')[0]
-      __disposers.push(createDisposableEffect(() => {
-        const __val = count()
-        __anchor_s1 = __bfText(__anchor_s1, __val)
-      }))
+      const __bfw_s1 = lazySlots(__branchScope, [{ id: 's1', kind: 'markup', path: [] }])
+      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', count()) }))
       return () => __disposers.forEach(d => d())
     }
   }, {
@@ -78,18 +71,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L18 — Logical AND 1`] = `
-"import { $, $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, insert, renderChild } from '@barefootjs/client/runtime'
+"import { $, $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, insert, lazySlots, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -100,12 +91,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -154,18 +143,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L31 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -176,12 +163,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -219,18 +204,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L40 — ✅ Simple predicate 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -241,12 +224,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -284,18 +265,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L45 — ✅ Block body with simple statements — also works 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -306,12 +285,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -359,18 +336,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L59 — ✅ Projection — works on every adapter 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, patchLeaf } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray, patchLeaf } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -381,12 +356,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -431,18 +404,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L64 — ✅ Statement body — JS-runtime adapters; /* @client */ on Go/Mojo etc. 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, mapArray, patchLeaf } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots, mapArray, patchLeaf } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -453,12 +424,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -509,18 +478,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L74 — ✅ Sort then render 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -531,12 +498,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -574,18 +539,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L79 — ✅ Filter, sort, then render 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -596,12 +559,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -639,18 +600,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L84 — ✅ Multi-key: sort by price, break ties by name 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -661,12 +620,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -704,18 +661,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L89 — ✅ Relational ternary 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -726,12 +681,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -769,18 +722,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L100 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -791,12 +742,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -833,18 +782,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L142 — ✅ Nested \`.filter()\` / \`.map()\` now compiles everywhere 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -855,12 +802,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -884,12 +829,10 @@ export function initExample(__scope, _p = {}) {
   const [accepted] = createSignal(false)
   const [text, setText] = createSignal('')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = items().filter(x => x.tags.filter(t => t.active).length > 0).map(t => t.name)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -899,18 +842,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L149 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -921,12 +862,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -950,12 +889,10 @@ export function initExample(__scope, _p = {}) {
   const [accepted] = createSignal(false)
   const [text, setText] = createSignal('')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = items().filter(x => x.tags.some(t => t.active)).map(t => t.name)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -965,18 +902,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L152 — ✅ Add /* @client */ to evaluate on the client 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -987,12 +922,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1017,29 +950,28 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
   createEffect(() => {
-    updateClientMarker(__scope, 's0', items().filter(x => x.tags.some(t => t.active)).map(t => t.name))
-  })
+    __bfw_s0('s0', items().filter(x => x.tags.some(t => t.active)).map(t => t.name))
+  }) }
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-client:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L159 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1050,12 +982,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1079,12 +1009,10 @@ export function initExample(__scope, _p = {}) {
   const [accepted] = createSignal(false)
   const [text, setText] = createSignal('')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = items().reduce((sum, x) => sum + x.price, 0)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1094,18 +1022,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L162 — ✅ Use /* @client */ 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1116,12 +1042,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1146,29 +1070,28 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
   createEffect(() => {
-    updateClientMarker(__scope, 's0', items().reduce((sum, x) => sum + x.price, 0))
-  })
+    __bfw_s0('s0', items().reduce((sum, x) => sum + x.price, 0))
+  }) }
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-client:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L179 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1179,12 +1102,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1208,12 +1129,10 @@ export function initExample(__scope, _p = {}) {
   const [accepted] = createSignal(false)
   const [text, setText] = createSignal('')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = items().filter(function(x) { return x.done })
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1223,18 +1142,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L182 — ✅ Use arrow functions for adapter portability 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1245,12 +1162,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1274,12 +1189,10 @@ export function initExample(__scope, _p = {}) {
   const [accepted] = createSignal(false)
   const [text, setText] = createSignal('')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = items().filter(x => x.done)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1289,18 +1202,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L195 — ✅ Value-producing block bodies normalize (let-inline) and lower everywhere 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1311,12 +1222,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1354,18 +1263,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L205 — ❌ BF021 on Go/Mojo — a JS-runtime target (Hono, CSR) runs the comparator 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1376,12 +1283,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1419,18 +1324,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L210 — ✅ Use /* @client */ 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1441,12 +1344,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1484,7 +1385,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L222 — ❌ BF021 on Go/Mojo — \`byPrice\` is imported, not declared in this file 1`] = `
-"import { $, $t, createComponent, createEffect, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 import { byPrice } from './comparators'
 
 
@@ -1500,9 +1401,8 @@ export function initSortedList(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items.sort(byPrice), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item().name)) })
     return __el
   }, 'l0')
 
@@ -1513,18 +1413,16 @@ export function SortedList(_p, __bfKey) { return createComponent('SortedList__b3
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L228 — ✅ Use /* @client */, or inline / re-declare the comparator locally 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1535,12 +1433,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1578,18 +1474,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L59 — Nested higher-order methods 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1600,12 +1494,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1630,29 +1522,28 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
   createEffect(() => {
-    updateClientMarker(__scope, 's0', items().filter(x => x.tags().filter(t => t.active).length > 0))
-  })
+    __bfw_s0('s0', items().filter(x => x.tags().filter(t => t.active).length > 0))
+  }) }
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-client:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L62 — Unsupported array methods 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1663,12 +1554,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1693,29 +1582,28 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
   createEffect(() => {
-    updateClientMarker(__scope, 's0', items().reduce((sum, x) => sum + x.price, 0))
-  })
+    __bfw_s0('s0', items().reduce((sum, x) => sum + x.price, 0))
+  }) }
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf-client:s0--><!--/--></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s1"><!--bf:s0--><!--/--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/client-directive.md doc-examples L74 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, updateClientMarker } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1726,12 +1614,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1756,29 +1642,28 @@ export function initExample(__scope, _p = {}) {
   const [text, setText] = createSignal('')
 
   // @client: s0
+  { const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
   createEffect(() => {
-    updateClientMarker(__scope, 's0', todos().filter(t => !t.done).length)
-  })
+    __bfw_s0('s0', todos().filter(t => !t.done).length)
+  }) }
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div><strong bf="s1"><!--bf-client:s0--><!--/--></strong></div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div><strong bf="s1"><!--bf:s0--><!--/--></strong></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
 exports[`docs/core/rendering/fragment.md doc-examples L11 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1789,12 +1674,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1825,18 +1708,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/fragment.md doc-examples L23 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -1847,12 +1728,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2040,7 +1919,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-signal.md doc-examples L95 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -2050,12 +1929,11 @@ export function initCounter(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s2] = $(__scope, 's2')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
@@ -2229,18 +2107,16 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-effect.md doc-examples L115 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2251,12 +2127,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2363,18 +2237,16 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/create-memo.md doc-examples L60 — No memo needed 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2385,12 +2257,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2414,12 +2284,10 @@ export function initExample(__scope, _p = {}) {
   const [accepted] = createSignal(false)
   const [text, setText] = createSignal('')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count() * 2
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2670,19 +2538,17 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L82 — Parent 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Child */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2693,12 +2559,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2751,18 +2615,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/reactivity/props-reactivity.md doc-examples L85 — Compiled props object 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2773,12 +2635,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2809,7 +2669,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L16 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
@@ -2818,12 +2678,10 @@ export function initGreeting(__scope, _p = {}) {
 
   const name = _p.name
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = name
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2833,7 +2691,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L29 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -2843,12 +2701,11 @@ export function initCounter(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s1] = $(__scope, 's1')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
@@ -2940,19 +2797,17 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L14 — (no label) 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -2963,12 +2818,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3022,19 +2875,17 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L68 — Input 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Slot */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3045,12 +2896,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3086,18 +2935,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L73 — Output 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3108,12 +2955,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3147,19 +2992,17 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L86 — (no label) 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Button */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3170,12 +3013,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3211,19 +3052,17 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L93 — (no label) 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Button */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3234,12 +3073,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3275,19 +3112,17 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L109 — Dialog trigger as a custom element 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:DialogTrigger */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3298,12 +3133,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3339,7 +3172,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L118 — (no label) 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Dialog */'
 import '/* @bf-child:DialogTrigger */'
 import '/* @bf-child:DialogOverlay */'
@@ -3355,12 +3188,10 @@ export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3371,12 +3202,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3429,18 +3258,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L140 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, mapArray, renderChild } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, mapArray, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3451,12 +3278,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3503,18 +3328,16 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L40 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, provideContext } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots, provideContext } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3525,12 +3348,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3616,7 +3437,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L94 — Usage 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ThemeProvider */'
 import '/* @bf-child:ThemedButton */'
 
@@ -3624,12 +3445,10 @@ export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3640,12 +3459,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3769,7 +3586,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L170 — (no label) 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Accordion */'
 import '/* @bf-child:AccordionTrigger */'
 import '/* @bf-child:AccordionContent */'
@@ -3778,12 +3595,10 @@ export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3794,12 +3609,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3839,18 +3652,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L190 — Provider passes signal getter 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, provideContext } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots, provideContext } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3861,12 +3672,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -3956,7 +3765,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/portals.md doc-examples L53 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createPortal, createSignal, escapeText, hydrate, isSSRPortal } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createPortal, createSignal, escapeText, hydrate, isSSRPortal, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initTooltip(__scope, _p = {}) {
@@ -3977,12 +3786,11 @@ export function initTooltip(__scope, _p = {}) {
   }
 
   const [_s0, _s2] = $(__scope, 's0', 's2')
-  const [_s1] = $t(__scope, 's1')
 
-  let __anchor_s1 = _s1
+  const __bfw_s1 = lazySlots(__scope, [{ id: 's1', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.text
-    __anchor_s1 = __bfText(__anchor_s1, __val)
+    __bfw_s1('s1', __val)
   })
 
   if (_s0) _s0.addEventListener('mouseenter', () => { setVisible(true) })
@@ -4061,25 +3869,23 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L16 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0, _s1] = $t(__scope, 's0', 's1')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.greeting ?? 'Hello'
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
-  let __anchor_s1 = _s1
+  const __bfw_s1 = lazySlots(__scope, [{ id: 's1', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.name
-    __anchor_s1 = __bfText(__anchor_s1, __val)
+    __bfw_s1('s1', __val)
   })
 
 }
@@ -4125,19 +3931,17 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L89 — (no label) 1`] = `
-"import { $c, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, createEffect, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:Card */'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4148,12 +3952,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4207,7 +4009,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/how-it-works.mdx doc-examples L33 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4217,12 +4019,11 @@ export function initCounter(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s1] = $(__scope, 's1')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
@@ -4255,7 +4056,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/core-concepts/mpa-style.md doc-examples L23 — (no label) 1`] = `
-"import { $, $c, $t, __bfText, createComponent, createEffect, escapeAttr, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $, $c, createComponent, createEffect, escapeAttr, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:ReviewStars */'
 import '/* @bf-child:AddToCart */'
 
@@ -4267,19 +4068,18 @@ export function initProductPage(__scope, _p = {}) {
   const product = _p.product ?? {}
 
   const [_s4] = $(__scope, 's4')
-  const [_s0, _s2] = $t(__scope, 's0', 's2')
   const [_s5, _s6] = $c(__scope, 's5', 's6')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = product.name
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
-  let __anchor_s2 = _s2
+  const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = product.description
-    __anchor_s2 = __bfText(__anchor_s2, __val)
+    __bfw_s2('s2', __val)
   })
 
   createEffect(() => {
@@ -4311,19 +4111,17 @@ export function ProductPage(_p, __bfKey) { return createComponent('ProductPage',
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L55 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.name
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4333,7 +4131,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L82 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4347,12 +4145,11 @@ export function initCounter(__scope, _p = {}) {
   })
 
   const [_s2] = $(__scope, 's2')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
@@ -4385,18 +4182,16 @@ export function Layout(_p, __bfKey) { return createComponent('Layout', _p, __bfK
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L167 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4407,12 +4202,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4455,18 +4248,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L171 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4477,12 +4268,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4525,18 +4314,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L177 — (no label) 1`] = `
-"import { $, $t, __bfSlot, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, __bfSlot, createComponent, createEffect, createSignal, escapeText, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4547,12 +4334,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4595,18 +4380,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L190 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4617,12 +4400,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4652,9 +4433,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item()) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item())) })
     return __el
   }, 'l0')
 
@@ -4665,19 +4445,17 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L71 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initGreeting(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.name
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4687,7 +4465,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L95 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -4701,12 +4479,11 @@ export function initCounter(__scope, _p = {}) {
   })
 
   const [_s2] = $(__scope, 's2')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })
@@ -4717,18 +4494,16 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L168 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4739,12 +4514,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4774,9 +4547,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item()) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item())) })
     return __el
   }, 'l0')
 
@@ -4787,18 +4559,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L180 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4809,12 +4579,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4844,9 +4612,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items().filter(item => item.active), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item().name)) })
     return __el
   }, 'l0')
 
@@ -4857,18 +4624,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L194 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4879,12 +4644,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4915,8 +4678,8 @@ export function initExample(__scope, _p = {}) {
     items.forEach((t, __idx) => {
       let __iterEl = _s1.children[__idx]
       if (__iterEl) {
-        { const [__rt_s0] = $t(__iterEl, 's0')
-        if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(t.name) }) }
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('s0', String(t.name)) })
       }
     })
   }
@@ -4952,18 +4715,16 @@ export function TodoList(_p, __bfKey) { return createComponent('TodoList', _p, _
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L260 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, insert, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -4974,12 +4735,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5022,18 +4781,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L169 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5044,12 +4801,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5080,18 +4835,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L174 — (no label) 1`] = `
-"import { $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5102,12 +4855,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5138,18 +4889,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L195 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5160,12 +4909,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5196,8 +4943,8 @@ export function initExample(__scope, _p = {}) {
     items.forEach((item, __idx) => {
       let __iterEl = _s1.children[__idx]
       if (__iterEl) {
-        { const [__rt_s0] = $t(__iterEl, 's0')
-        if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item.name) }) }
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('s0', String(item.name)) })
       }
     })
   }
@@ -5209,18 +4956,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/custom-adapter.md doc-examples L200 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5231,12 +4976,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5267,8 +5010,8 @@ export function initExample(__scope, _p = {}) {
     items.forEach((item, __idx) => {
       let __iterEl = _s1.children[__idx]
       if (__iterEl) {
-        { const [__rt_s0] = $t(__iterEl, 's0')
-        if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item.name) }) }
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('s0', String(item.name)) })
       }
     })
   }
@@ -5289,18 +5032,16 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5311,12 +5052,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5346,9 +5085,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => todos().filter(t => !t.done).toSorted((a, b) => a.date - b.date), _s1, (t) => String(t.id), (t, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(t().name) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(t().name)) })
     return __el
   }, 'l0')
 
@@ -5421,18 +5159,16 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L67 — ✅ Stable key — DOM nodes reused when list changes 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5443,12 +5179,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5478,9 +5212,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item) => String(item.id), (item, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item().name)) })
     return __el
   }, 'l0')
 
@@ -5491,18 +5224,16 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L70 — ❌ Index key — DOM nodes recreated on reorder 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, mapArray, tAfter } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.todo)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5513,12 +5244,10 @@ export function initItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const [_s0] = $t(__scope, 's0')
-
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = String(_p.item)
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
 }
@@ -5548,9 +5277,8 @@ export function initExample(__scope, _p = {}) {
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   mapArray(() => items(), _s1, (item, i) => String(i), (item, i, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __p = __existing ? null : [__el.firstChild]
-    { const __rt_s0 = __p ? tAfter(__p[0]) : $t(__el, 's0')[0]
-    if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(item().name) }) }
+    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: __existing ? [] : [0] }])
+    createEffect(() => { __bfw_s0('s0', String(item().name)) })
     return __el
   }, 'l0')
 
@@ -5768,7 +5496,7 @@ export function TimelineBar(_p, __bfKey) { return createComponent('TimelineBar',
 `;
 
 exports[`docs/core/introduction.mdx doc-examples L15 — (no label) 1`] = `
-"import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initCounter(__scope, _p = {}) {
@@ -5778,12 +5506,11 @@ export function initCounter(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s1] = $(__scope, 's1')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })

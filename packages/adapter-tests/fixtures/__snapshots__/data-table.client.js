@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfText, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -2956,13 +2956,12 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
   const columnHeaderClasses = 'inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer select-none'
 
   const [_s6, _s1] = $(__scope, 's6', 's1')
-  const [_s0] = $t(__scope, 's0')
   const [_s2, _s4, _s5] = $c(__scope, 's2', 's4', 's5')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = title
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   createEffect(() => {
@@ -3315,19 +3314,18 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
   const paginatedData = createMemo(() =>
     sortedData().slice(page() * pageSize, (page() + 1) * pageSize))
 
-  const [_s19, _s20] = $t(__scope, '^s19', '^s20')
   const [_s18, _s7, _s6, _s0, _s2, _s1, _s3, _s5, _s4, _s17, _s21] = $c(__scope, 's18', 's7', 's6', 's0', 's2', 's1', 's3', 's5', 's4', 's17', 's21')
 
-  let __anchor_s19 = _s19
+  const __bfw_s19 = lazySlots(__scope, [{ id: '^s19', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = page() + 1
-    __anchor_s19 = __bfText(__anchor_s19, __val)
+    __bfw_s19('^s19', __val)
   })
 
-  let __anchor_s20 = _s20
+  const __bfw_s20 = lazySlots(__scope, [{ id: '^s20', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = pageCount()
-    __anchor_s20 = __bfText(__anchor_s20, __val)
+    __bfw_s20('^s20', __val)
   })
 
 
@@ -3501,19 +3499,18 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
   }
 
   const [_s0] = $(__scope, 's0')
-  const [_s18, _s19] = $t(__scope, '^s18', '^s19')
   const [_s17, _s6, _s5, _s1, _s2, _s3, _s4, _s16, _s20] = $c(__scope, 's17', 's6', 's5', 's1', 's2', 's3', 's4', 's16', 's20')
 
-  let __anchor_s18 = _s18
+  const __bfw_s18 = lazySlots(__scope, [{ id: '^s18', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = page() + 1
-    __anchor_s18 = __bfText(__anchor_s18, __val)
+    __bfw_s18('^s18', __val)
   })
 
-  let __anchor_s19 = _s19
+  const __bfw_s19 = lazySlots(__scope, [{ id: '^s19', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = pageCount()
-    __anchor_s19 = __bfText(__anchor_s19, __val)
+    __bfw_s19('^s19', __val)
   })
 
   createEffect(() => {
@@ -3641,13 +3638,12 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     setSelected(prev => prev.map((v, i) => i === index ? !v : v))
   }
 
-  const [_s21] = $t(__scope, 's21')
   const [_s0, _s20, _s7, _s6, _s1, _s2, _s3, _s4, _s5, _s19] = $c(__scope, 's0', 's20', 's7', 's6', 's1', 's2', 's3', 's4', 's5', 's19')
 
-  let __anchor_s21 = _s21
+  const __bfw_s21 = lazySlots(__scope, [{ id: 's21', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = selectedCount()
-    __anchor_s21 = __bfText(__anchor_s21, __val)
+    __bfw_s21('s21', __val)
   })
 
 
@@ -3682,14 +3678,11 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       let __iterEl = _s19.children[index]
       if (__iterEl) {
-        { const [__rt_s10] = $t(__iterEl, '^s10')
-        if (__rt_s10) createEffect(() => { __rt_s10.textContent = String(payment.id) }) }
-        { const [__rt_s12] = $t(__iterEl, '^s12')
-        if (__rt_s12) createEffect(() => { __rt_s12.textContent = String(payment.status) }) }
-        { const [__rt_s14] = $t(__iterEl, '^s14')
-        if (__rt_s14) createEffect(() => { __rt_s14.textContent = String(payment.email) }) }
-        { const [__rt_s16] = $t(__iterEl, '^s16')
-        if (__rt_s16) createEffect(() => { __rt_s16.textContent = String(payment.amount.toFixed(2)) }) }
+        const __bfw_s10 = lazySlots(__iterEl, [{ id: '^s10', kind: 'text', path: [] }, { id: '^s12', kind: 'text', path: [] }, { id: '^s14', kind: 'text', path: [] }, { id: '^s16', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s10('^s10', String(payment.id)) })
+        createEffect(() => { __bfw_s10('^s12', String(payment.status)) })
+        createEffect(() => { __bfw_s10('^s14', String(payment.email)) })
+        createEffect(() => { __bfw_s10('^s16', String(payment.amount.toFixed(2))) })
       }
     })
   }

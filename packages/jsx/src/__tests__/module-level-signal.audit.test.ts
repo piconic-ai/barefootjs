@@ -234,8 +234,10 @@ export function Counter() {
     const ssr = files['Counter.tsx']
     // SSR template should NOT declare count as a getter
     expect(ssr).not.toContain('const count = () =>')
-    // SSR template should have a client-only placeholder (not the value)
-    expect(ssr).toContain('client:s')
+    // SSR template should have a client-only placeholder (not the value):
+    // an empty claimed 'text' slot pair (slot unification A3) rather than
+    // the value, since the expression can't be evaluated server-side.
+    expect(ssr).toMatch(/bfText\("s\d+"\)\}\{bfTextEnd\(\)\}/)
   })
 
   test('full compile: exported signal uses `export const` in client JS', () => {

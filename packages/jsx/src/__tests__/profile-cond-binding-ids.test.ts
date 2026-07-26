@@ -60,8 +60,9 @@ describe('conditional binding-effect ids (#1795 Phase 1)', () => {
     const on = clientJs(true)
     // Branch reactive attribute effect (createDisposableEffect with the class write).
     expect(on).toMatch(/setAttribute\('class'[\s\S]*?}, "Disclosure#binding:s\d+"\)\)/)
-    // Branch reactive text effect (__bfText path).
-    expect(on).toMatch(/__bfText\([\s\S]*?}, "Disclosure#binding:s\d+"\)\)/)
+    // Branch reactive text effect (claimed 'markup' slot writer, slot
+    // unification A3).
+    expect(on).toMatch(/__bfw_\w+\([\s\S]*?}, "Disclosure#binding:s\d+"\)\)/)
   })
 
   test('buildIdIndex resolves conditional / attribute / text binding ids to source loc', () => {

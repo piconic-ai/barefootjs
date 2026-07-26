@@ -2322,7 +2322,11 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
       if (node.clientOnly && node.slotId) {
-        return `<!--bf-client:${node.slotId}--><!--/-->`
+        // Ordinary claimed 'text' slot pair (slot unification A3) — matches
+        // the SSR adapters' `renderExpression` byte-for-byte (byte parity):
+        // empty at CSR mount too, since the expression is evaluated only
+        // once init's createEffect runs, same as the SSR case.
+        return `<!--bf:${node.slotId}--><!--/-->`
       }
       {
         const transformed = transformExpr(node.expr, node.templateExpr)

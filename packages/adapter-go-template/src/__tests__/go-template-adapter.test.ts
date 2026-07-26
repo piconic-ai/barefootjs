@@ -3648,8 +3648,10 @@ export function C() {
 
       const guarded = emit(expr, true)
       expect(guarded.errors).toEqual([])
-      // Client-only text slot → `{{bfComment "client:sN"}}` placeholder.
-      expect(guarded.template).toMatch(/bfComment "client:s\d+"/)
+      // Client-only text slot → an ordinary claimed 'text' slot pair (slot
+      // unification A3): `{{bfTextStart "sN"}}{{bfTextEnd}}`, empty at SSR.
+      expect(guarded.template).toMatch(/bfTextStart "s\d+"/)
+      expect(guarded.template).toMatch(/bfTextEnd/)
       expect(guarded.template).not.toContain(badEmit)
     })
   }
@@ -3761,11 +3763,12 @@ export function C() {
     expect(result.template).toMatch(/bf_sort/)
   })
 
-  // End-to-end proof via `go run`: the `@client` form renders a
-  // `<!--bf-client:sN-->` placeholder. The bare form is now caught at
-  // build with BF101 and degrades to an empty, render-safe slot (no
-  // more `can't evaluate field …` crash), so we assert the build error
-  // rather than a render crash. Skipped on hosts without Go.
+  // End-to-end proof via `go run`: the `@client` form renders an empty
+  // claimed 'text' slot pair, `<!--bf:sN--><!--/-->` (slot unification A3).
+  // The bare form is now caught at build with BF101 and degrades to an
+  // empty, render-safe slot (no more `can't evaluate field …` crash), so we
+  // assert the build error rather than a render crash. Skipped on hosts
+  // without Go.
   test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
     // Uses the Tier C `charAt` (still refused) — earlier this test used
     // `repeat`, which has since landed its #1448 Tier B lowering.
@@ -3784,7 +3787,7 @@ export function C() {
 `.trimStart(),
         adapter: new GoTemplateAdapter(),
       })
-      expect(html).toContain('<!--bf-client:s0-->')
+      expect(html).toContain('<!--bf:s0--><!--/-->')
     } catch (err) {
       if (err instanceof GoNotAvailableError) {
         console.log('Skipping #1448 @client e2e: go command not found')

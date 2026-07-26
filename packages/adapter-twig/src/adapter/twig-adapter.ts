@@ -660,9 +660,14 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
   // ===========================================================================
 
   renderExpression(expr: IRExpression): string {
+    // @client: an ordinary claimed 'text' slot pair (slot unification A3,
+    // spec/slot-unification.md §5-A3), empty at SSR since the expression
+    // can't be evaluated server-side — the client's claim creates the
+    // missing Text node on first write (A2's create-if-absent semantics).
+    // Replaces the old unpaired `client:sN` comment, which nothing adopted.
     if (expr.clientOnly) {
       if (expr.slotId) {
-        return `{{ bf.comment("client:${expr.slotId}") | raw }}`
+        return `{{ bf.text_start("${expr.slotId}") | raw }}{{ bf.text_end() | raw }}`
       }
       return ''
     }

@@ -1867,8 +1867,10 @@ export function C() {
 
       const guarded = emit(expr, true)
       expect(guarded.errors).toEqual([])
-      // Client-only text slot → `<%== bf->comment("client:sN") %>`.
-      expect(guarded.template).toMatch(/bf->comment\("client:s\d+"\)/)
+      // Client-only text slot → an ordinary claimed 'text' slot pair (slot
+      // unification A3): `bf->text_start("sN")` / `bf->text_end`, empty at SSR.
+      expect(guarded.template).toMatch(/bf->text_start\("s\d+"\)/)
+      expect(guarded.template).toMatch(/bf->text_end/)
       expect(guarded.template).not.toContain(badEmit)
     })
   }
@@ -1976,11 +1978,12 @@ export function C() {
     expect(result.template).toMatch(/bf->sort/)
   })
 
-  // End-to-end proof via perl + Mojolicious: the `@client` form renders
-  // a `<!--bf-client:sN-->` placeholder. The bare form is now caught at
-  // build with BF101 and degrades to an empty, render-safe slot (no
-  // more `HASH ref` crash), so we assert the build error rather than a
-  // render crash. Skipped on hosts without Mojolicious installed.
+  // End-to-end proof via perl + Mojolicious: the `@client` form renders an
+  // empty claimed 'text' slot pair, `<!--bf:sN--><!--/-->` (slot unification
+  // A3). The bare form is now caught at build with BF101 and degrades to an
+  // empty, render-safe slot (no more `HASH ref` crash), so we assert the
+  // build error rather than a render crash. Skipped on hosts without
+  // Mojolicious installed.
   test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
     // Uses the Tier C `charAt` (still refused) — earlier this test used
     // `repeat`, which has since landed its #1448 Tier B lowering.
@@ -1999,7 +2002,7 @@ export function C() {
 `.trimStart(),
         adapter: new MojoAdapter(),
       })
-      expect(html).toContain('<!--bf-client:s0-->')
+      expect(html).toContain('<!--bf:s0--><!--/-->')
     } catch (err) {
       if (err instanceof PerlNotAvailableError) {
         console.log('Skipping #1448 @client e2e: perl/Mojolicious not found')

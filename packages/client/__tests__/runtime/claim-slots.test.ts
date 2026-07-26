@@ -16,6 +16,7 @@ beforeAll(() => {
 })
 
 const { claimSlots, lazySlots } = await import('../../src/runtime/claim-slots.ts')
+const { commentScopeRegistry } = await import('../../src/runtime/scope.ts')
 type SlotSpec = import('../../src/runtime/claim-slots.ts').SlotSpec
 
 function mount(html: string): HTMLElement {
@@ -80,14 +81,38 @@ describe('claimSlots — text kind', () => {
 })
 
 describe('claimSlots — markup kind', () => {
-  test('holds boundaries and patches string content', () => {
+  test('trust-first-run: the first write only records, never patches', () => {
     const root = mount('<div><!--bf:s3-->old<!--/--></div>')
     const row = root.firstElementChild as HTMLElement
     const plan: SlotSpec[] = [{ id: 's3', kind: 'markup', path: [0] }]
 
     const claimed = claimSlots(row, plan)
+    claimed.write('s3', 'old') // matches the SSR content already in the range
+    expect(row.innerHTML).toBe('<!--bf:s3-->old<!--/-->') // untouched, not re-parsed
+  })
+
+  test('holds boundaries and patches string content on the second write', () => {
+    const root = mount('<div><!--bf:s3-->old<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's3', kind: 'markup', path: [0] }]
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s3', 'old') // first write: trust-first-run seed, no patch
     claimed.write('s3', '<b>new</b>')
     expect(row.innerHTML).toBe('<!--bf:s3--><b>new</b><!--/-->')
+  })
+
+  test('dedup: an unchanged string skips the DOM patch entirely', () => {
+    const root = mount('<div><!--bf:s3b-->old<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's3b', kind: 'markup', path: [0] }]
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s3b', 'old') // seed
+    const textNode = row.childNodes[1]
+    claimed.write('s3b', 'old') // same value again — must not clear/re-insert
+    expect(row.childNodes[1]).toBe(textNode) // identity preserved, no patch happened
+    expect(row.innerHTML).toBe('<!--bf:s3b-->old<!--/-->')
   })
 
   test('nested bf: comment pairs inside the range do not break matching', () => {
@@ -98,6 +123,7 @@ describe('claimSlots — markup kind', () => {
     const plan: SlotSpec[] = [{ id: 's4', kind: 'markup', path: [0] }]
 
     const claimed = claimSlots(row, plan)
+    claimed.write('s4', 'outer<!--bf:s9-->inner<!--/-->tail') // seed (matches SSR range)
     claimed.write('s4', '<span>replaced</span>')
     expect(row.innerHTML).toBe('<!--bf:s4--><span>replaced</span><!--/--><p>after</p>')
   })
@@ -111,6 +137,7 @@ describe('claimSlots — markup kind', () => {
     const start = row.childNodes[0]
     const end = row.childNodes[1]
 
+    claimed.write('s5', '') // seed: SSR range was already empty
     claimed.write('s5', 'hello')
     expect(row.innerHTML).toBe('<!--bf:s5-->hello<!--/-->')
     claimed.write('s5', '')
@@ -118,6 +145,25 @@ describe('claimSlots — markup kind', () => {
 
     const comments = Array.from(row.childNodes).filter(n => n.nodeType === Node.COMMENT_NODE)
     expect(comments).toEqual([start, end])
+  })
+
+  // Folded from the deleted `patch-slot-range.test.ts` (slot unification
+  // A3 — `patchSlotRange` is superseded by claimed 'markup' slots): a
+  // dangling start marker with no matching end comment must warn and do
+  // nothing rather than guess a boundary.
+  test('a slot with no end marker warns and drops that slot only', () => {
+    const root = mount('<div><!--bf:s7-->dangling</div>')
+    const row = root.firstElementChild as HTMLElement
+    const before = row.innerHTML
+    const plan: SlotSpec[] = [{ id: 's7', kind: 'markup', path: [0] }]
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(row, plan)
+      claimed.write('s7', 'patched')
+    })
+
+    expect(row.innerHTML).toBe(before)
+    expect(warnings.some(w => w.includes('s7') && w.includes('no end marker'))).toBe(true)
   })
 
   test('splices a Node value in by identity', () => {
@@ -132,6 +178,79 @@ describe('claimSlots — markup kind', () => {
 
     expect(row.innerHTML).toBe('<!--bf:s6--><b>X</b><!--/-->')
     expect(row.childNodes[1]).toBe(el)
+  })
+
+  // Folded from `dynamic-text.test.ts` (`__bfText`'s Node-identity pins) —
+  // `writeMarkup` provides the same "the `__bfText` live-Node case" contract
+  // A2's docstring promises.
+  test('a repeated write of the SAME Node is a no-op (identity dedup)', () => {
+    const root = mount('<div><!--bf:s6b-->old<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's6b', kind: 'markup', path: [0] }]
+
+    const el = document.createElement('b')
+    el.textContent = 'X'
+    const claimed = claimSlots(row, plan)
+    claimed.write('s6b', el)
+    claimed.write('s6b', el) // same Node again — must not clear/reinsert
+    expect(row.childNodes[1]).toBe(el)
+    expect(row.innerHTML).toBe('<!--bf:s6b--><b>X</b><!--/-->')
+  })
+
+  test('writing a NEW Node replaces the previously-spliced one', () => {
+    const root = mount('<div><!--bf:s6c-->old<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's6c', kind: 'markup', path: [0] }]
+    const claimed = claimSlots(row, plan)
+
+    const first = document.createElement('span')
+    first.textContent = 'a'
+    claimed.write('s6c', first)
+    const second = document.createElement('span')
+    second.textContent = 'b'
+    claimed.write('s6c', second)
+
+    expect(row.contains(first)).toBe(false)
+    expect(row.childNodes[1]).toBe(second)
+    expect(row.innerHTML).toBe('<!--bf:s6c--><span>b</span><!--/-->')
+  })
+
+  test('switching from a Node value back to a string replaces it', () => {
+    const root = mount('<div><!--bf:s6d-->old<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's6d', kind: 'markup', path: [0] }]
+    const claimed = claimSlots(row, plan)
+
+    const el = document.createElement('span')
+    el.textContent = 'node'
+    claimed.write('s6d', el)
+    claimed.write('s6d', 'plain')
+
+    expect(row.contains(el)).toBe(false)
+    expect(row.innerHTML).toBe('<!--bf:s6d-->plain<!--/-->')
+  })
+
+  // Folded from `dynamic-text.test.ts` (`__bfText`'s `__isSlot` guard, #1663):
+  // a caller-passed JSX prop containing a component is wrapped with
+  // `__slot()`; writing it must leave the server-rendered DOM untouched
+  // entirely — no clear, no re-parse, and no `last` update (so a later real
+  // value still gets a correct trust-first-run/dedup read).
+  test('preserves server-rendered DOM for __isSlot markers, and does not disturb dedup state', () => {
+    const root = mount('<div><!--bf:s6e-->ssr<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's6e', kind: 'markup', path: [0] }]
+    const claimed = claimSlots(row, plan)
+
+    const slotMarker = { __isSlot: true }
+    claimed.write('s6e', slotMarker)
+    expect(row.innerHTML).toBe('<!--bf:s6e-->ssr<!--/-->') // untouched
+
+    // The __isSlot write never seeded `last` — this first REAL write is
+    // still treated as trust-first-run (matches the SSR content, no patch).
+    claimed.write('s6e', 'ssr')
+    expect(row.innerHTML).toBe('<!--bf:s6e-->ssr<!--/-->')
+    claimed.write('s6e', 'changed')
+    expect(row.innerHTML).toBe('<!--bf:s6e-->changed<!--/-->')
   })
 })
 
@@ -162,6 +281,7 @@ describe('lazySlots', () => {
 
     const write = lazySlots(row, plan)
     write('sA', 'A1') // claims sA AND sB now, holding sB's TRUE end ref
+    write('sB', 'B0') // trust-first-run seed for sB — records, does not patch
 
     // External mutation: inject a spurious `/`-comment inside sB's range,
     // strictly before the TRUE end comment already held.
@@ -181,7 +301,78 @@ describe('lazySlots', () => {
   })
 })
 
+describe('comment-scope proxy claim root (#1665 whole-item loop conditionals)', () => {
+  // `insert.ts`'s `makeRegion()` hands `bindEvents` — and therefore this
+  // module's `root` — a DETACHED `<bf-loop-item>` proxy registered in
+  // `commentScopeRegistry`, not the loop item's real container. The proxy
+  // has no DOM children of its own; the item's real content lives as
+  // SIBLINGS of the registered `<!--bf-loop-i:key-->` comment in the actual
+  // document. A bare `document.createTreeWalker(root, …)` (root = the
+  // childless proxy) finds nothing — this is the exact shape that must
+  // resolve via `commentsInScope`'s comment-scope-aware walk instead.
+  function mountLoopItemProxy(rangeHtml: string): { proxy: Element; root: Element } {
+    const root = document.createElement('div')
+    root.innerHTML = `<!--bf-loop-i:k1-->${rangeHtml}<!--bf-loop-i:k2-->`
+    const anchor = root.firstChild as Comment
+    const proxy = document.createElement('bf-loop-item')
+    commentScopeRegistry.set(proxy, { commentNode: anchor, scopeId: '' })
+    return { proxy, root }
+  }
+
+  test('text kind resolves through the sibling range, not the (empty) proxy', () => {
+    const { proxy, root } = mountLoopItemProxy('<!--bf:s0-->x<!--/-->')
+    const plan: SlotSpec[] = [{ id: 's0', kind: 'text', path: [] }]
+
+    const claimed = claimSlots(proxy, plan)
+    claimed.write('s0', 'updated')
+
+    expect(root.innerHTML).toBe('<!--bf-loop-i:k1--><!--bf:s0-->updated<!--/--><!--bf-loop-i:k2-->')
+  })
+
+  test('markup kind resolves through the sibling range and respects the item boundary', () => {
+    const { proxy, root } = mountLoopItemProxy('<li bf-c="s1"><!--bf:s2-->a<!--/--></li>')
+    const plan: SlotSpec[] = [{ id: 's2', kind: 'markup', path: [] }]
+
+    const claimed = claimSlots(proxy, plan)
+    claimed.write('s2', 'a') // trust-first-run seed
+    claimed.write('s2', 'b')
+
+    expect(root.innerHTML).toBe(
+      '<!--bf-loop-i:k1--><li bf-c="s1"><!--bf:s2-->b<!--/--></li><!--bf-loop-i:k2-->',
+    )
+  })
+
+  test('never resolves a marker belonging to a nested child component inside the item range', () => {
+    const { proxy, root } = mountLoopItemProxy(
+      '<section bf-s="Badge_x1"><!--bf:s0-->child<!--/--></section><!--bf:s0-->own<!--/-->',
+    )
+    const plan: SlotSpec[] = [{ id: 's0', kind: 'text', path: [] }]
+
+    const claimed = claimSlots(proxy, plan)
+    claimed.write('s0', 'patched')
+
+    expect(root.innerHTML).toBe(
+      '<!--bf-loop-i:k1--><section bf-s="Badge_x1"><!--bf:s0-->child<!--/--></section><!--bf:s0-->patched<!--/--><!--bf-loop-i:k2-->',
+    )
+  })
+})
+
 describe('path-miss fallback', () => {
+  test('an empty path (no compile-time path available) falls back silently, without warning', () => {
+    const root = mount('<div><!--bf:s9b-->hello<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's9b', kind: 'text', path: [] }]
+
+    let claimed: ReturnType<typeof claimSlots>
+    const warnings = withWarnings(() => {
+      claimed = claimSlots(row, plan)
+    })
+    claimed.write('s9b', 'updated')
+
+    expect(row.innerHTML).toBe('<!--bf:s9b-->updated<!--/-->')
+    expect(warnings).toEqual([]) // deliberate "cannot be statically pathed" case, not drift
+  })
+
   test('falls back to a marker scan and warns when the path misses', () => {
     const root = mount('<div><!--bf:s10-->hello<!--/--></div>')
     const row = root.firstElementChild as HTMLElement

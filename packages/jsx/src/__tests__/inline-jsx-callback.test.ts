@@ -440,10 +440,12 @@ describe('inline JSX as object-literal arrow value (#1663)', () => {
     expect(js).toMatch(/hydrate\(\s*['"]BFInlineJsxCallback1(?:__|['"])/)
   })
 
-  test('dynamic JSX-returning call routes the slot through __bfText', () => {
+  test('dynamic JSX-returning call routes the slot through a claimed markup slot', () => {
     // The child expression `{themeLogo(props.id)}` evaluates to a live
     // component element on the client; the slot update must splice it in by
-    // identity via __bfText rather than stringify it into "[object …]".
+    // identity via a claimed 'markup' slot writer (slot unification A3)
+    // rather than stringify it into "[object …]" — the same contract
+    // `__bfText` used to provide.
     const source = `
       'use client'
       import { BrandLogo } from './brand-logo'
@@ -458,7 +460,7 @@ describe('inline JSX as object-literal arrow value (#1663)', () => {
       }
     `
     const js = clientJs(source)
-    expect(js).toContain('__bfText(')
-    expect(js).toMatch(/__bfText[^']*from '@barefootjs\/client\/runtime'/)
+    expect(js).toContain("kind: 'markup'")
+    expect(js).toMatch(/lazySlots[^']*from '@barefootjs\/client\/runtime'/)
   })
 })

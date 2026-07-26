@@ -34,6 +34,7 @@ import type { InsertPlan, InsertArm, ArmBody, ScopeRef } from '../plan/types.ts'
 import { stringifyBranchLoops } from './branch-loop.ts'
 import { emitListenerLine } from './event-listener.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 
 export interface StringifyInsertOptions {
   /** Indent on the `insert(` line itself. */
@@ -173,18 +174,20 @@ function emitArmBody(
     lines.push(`${indent}} }`)
   }
 
-  for (const te of body.textEffects) {
-    const v = varSlotId(te.slotId)
-    // Route through `__bfText` so a JSX-valued expression (`{cond && logo(id)}`)
+  if (body.textEffects.length > 0) {
+    // 'markup' kind so a JSX-valued expression (`{cond && logo(id)}`)
     // re-splices the live element by identity instead of stringifying it to
-    // "[object HTMLElement]" — the branch template already spliced it via
-    // `__bfSlot`, and this effect re-renders it when its deps change (#1663).
-    // The `let` tracker carries the replaced node across reactive re-runs.
-    lines.push(`${indent}let __anchor_${v} = $t(__branchScope, '${te.slotId}')[0]`)
-    lines.push(`${indent}__disposers.push(createDisposableEffect(() => {`)
-    lines.push(`${indent}  const __val = ${te.expression}`)
-    lines.push(`${indent}  __anchor_${v} = __bfText(__anchor_${v}, __val)`)
-    lines.push(`${indent}}${bindingBfId(te.slotId)}))`)
+    // "[object HTMLElement]" — the same contract `__bfText` used to provide
+    // (#1663). Built fresh here, inside this arm's `bindEvents` body, so
+    // every branch activation re-claims against that swap's own
+    // `__branchScope` DOM (spec/slot-unification.md §5-A3's "branch-internal
+    // slots re-claim per branch activation").
+    const slots: ClaimSlotSpec[] = body.textEffects.map(te => ({ id: te.slotId, kind: 'markup', path: [] }))
+    const writer = claimWriterVarName(slots, varSlotId)
+    lines.push(`${indent}const ${writer} = lazySlots(__branchScope, ${claimPlanLiteral(slots)})`)
+    for (const te of body.textEffects) {
+      lines.push(`${indent}__disposers.push(createDisposableEffect(() => { ${writer}('${te.slotId}', ${te.expression}) }${bindingBfId(te.slotId)}))`)
+    }
   }
 
   // Branch loops, now fully Plan-built. The stringifier writes its own

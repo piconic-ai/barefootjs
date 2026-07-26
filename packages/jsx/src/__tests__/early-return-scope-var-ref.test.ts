@@ -97,9 +97,10 @@ describe('JSX expression referencing a local declared inside an early-return if-
     const content = clientJsContent(result)
     // The bare `label` identifier must not appear in the emitted init
     // function — it's resolved to its initializer value at IR-build
-    // time.
-    expect(content).not.toMatch(/updateClientMarker\([^)]*\blabel\b[^)]*\)/)
-    expect(content).toContain("updateClientMarker(__scope, 's4', 'hello')")
+    // time. Slot unification A3: `@client` writes through a claimed
+    // 'text' slot writer instead of `updateClientMarker`.
+    expect(content).not.toMatch(/__bfw_\w+\([^)]*\blabel\b[^)]*\)/)
+    expect(content).toContain("__bfw_s4('s4', 'hello')")
   })
 
   test('ternary scope var (`readOnly ? null : <jsx/>`) routes to client-only conditional', () => {

@@ -1,4 +1,4 @@
-import { $, $c, $t, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2991,8 +2991,8 @@ export function initCarouselPreviewDemo(__scope, _p = {}) {
     [1, 2, 3, 4, 5].forEach((n, __idx) => {
       let __iterEl = _s2.children[__idx]
       if (__iterEl) {
-        { const [__rt_s0] = $t(__iterEl, '^s0')
-        if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(n) }) }
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('^s0', String(n)) })
       }
     })
   }
@@ -3027,8 +3027,8 @@ export function initCarouselSizesDemo(__scope, _p = {}) {
     [1, 2, 3, 4, 5, 6].forEach((n, __idx) => {
       let __iterEl = _s2.children[__idx]
       if (__iterEl) {
-        { const [__rt_s0] = $t(__iterEl, '^s0')
-        if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(n) }) }
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('^s0', String(n)) })
       }
     })
   }
@@ -3063,8 +3063,8 @@ export function initCarouselOrientationDemo(__scope, _p = {}) {
     [1, 2, 3, 4, 5].forEach((n, __idx) => {
       let __iterEl = _s2.children[__idx]
       if (__iterEl) {
-        { const [__rt_s0] = $t(__iterEl, '^s0')
-        if (__rt_s0) createEffect(() => { __rt_s0.textContent = String(n) }) }
+        const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
+        createEffect(() => { __bfw_s0('^s0', String(n)) })
       }
     })
   }

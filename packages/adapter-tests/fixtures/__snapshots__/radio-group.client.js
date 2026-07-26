@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfText, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, hydrate, initChild, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, hydrate, initChild, lazySlots, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var RadioGroupContext = RadioGroupContext ?? createContext()
 
@@ -100,13 +100,12 @@ export function initRadioGroupBasicDemo(__scope, _p = {}) {
 
   const [density, setDensity] = createSignal('default')
 
-  const [_s4] = $t(__scope, 's4')
   const [_s3, _s0, _s1, _s2] = $c(__scope, 's3', 's0', 's1', 's2')
 
-  let __anchor_s4 = _s4
+  const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = density()
-    __anchor_s4 = __bfText(__anchor_s4, __val)
+    __bfw_s4('s4', __val)
   })
 
 
@@ -128,13 +127,12 @@ export function initRadioGroupFormDemo(__scope, _p = {}) {
   const summary = createMemo(() =>
     `Notifications: ${notifyType()}, Theme: ${theme()}`)
 
-  const [_s8] = $t(__scope, 's8')
   const [_s3, _s0, _s1, _s2, _s7, _s4, _s5, _s6] = $c(__scope, 's3', 's0', 's1', 's2', 's7', 's4', 's5', 's6')
 
-  let __anchor_s8 = _s8
+  const __bfw_s8 = lazySlots(__scope, [{ id: 's8', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = summary()
-    __anchor_s8 = __bfText(__anchor_s8, __val)
+    __bfw_s8('s8', __val)
   })
 
 
@@ -157,13 +155,12 @@ export function initRadioGroupCardDemo(__scope, _p = {}) {
 
   const [plan, setPlan] = createSignal('startup')
 
-  const [_s4] = $t(__scope, 's4')
   const [_s3, _s0, _s1, _s2] = $c(__scope, 's3', 's0', 's1', 's2')
 
-  let __anchor_s4 = _s4
+  const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = plan()
-    __anchor_s4 = __bfText(__anchor_s4, __val)
+    __bfw_s4('s4', __val)
   })
 
 

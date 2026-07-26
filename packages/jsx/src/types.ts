@@ -386,7 +386,8 @@ export interface IRExpression {
    * intersect the enclosing loop's `preamble.declaredNames`. Excludes the
    * node from `collectLoopChildReactiveTexts` (which patches via
    * `.textContent`, wrong for markup) regardless of `reactive` / `slotId` —
-   * the region-patch effect (`patchSlotRange`) is its only wiring.
+   * the region-patch effect (a claimed 'markup' slot writer, slot
+   * unification A3) is its only wiring.
    */
   preambleRegion?: boolean
   /** When true, expression calls signal getters or memos (has reactive `foo()` pattern). */
@@ -723,7 +724,7 @@ export interface IRLoop {
    * `slotId` is emitted as the usual `<!--bf:sN-->...<!--/-->` marker pair
    * (same door as a reactive text slot — `irToHtmlTemplate` / Hono's
    * `renderExpression` key off `slotId` alone), but the CLIENT wiring is a
-   * distinct `patchSlotRange`-based region-patch effect (`preambleRegions`
+   * distinct claimed 'markup'-slot region-patch effect (`preambleRegions`
    * in the client-JS loop plan), NOT a `reactiveTexts` entry — patching via
    * `.textContent` would escape markup that a `joinArrayChild` region must
    * render raw. `collectLoopChildReactiveTexts` excludes any node collected

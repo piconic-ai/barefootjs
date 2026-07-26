@@ -8,13 +8,17 @@ import { isClientBuiltinName } from '../builtins.ts'
 // All exports from @barefootjs/client/runtime that may be used in generated code
 export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
-  'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'patchLeaf', 'patchSlotRange', 'createDisposableEffect',
-  'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild', 'updateClientMarker',
+  'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'patchLeaf', 'createDisposableEffect',
+  'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText',
   'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
   'tAfter',
+  // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
+  // — the "one claim mechanism" that replaced `patchSlotRange` and
+  // `updateClientMarker` (both deleted) as the content-slot update door.
+  'claimSlots', 'lazySlots',
   // Profile mode (#1690, SR3) — turn-boundary markers around event handlers.
   'beginTurn', 'endTurn',
   // Catalogued `Date` lowering (#2274/#2292) — the client counterpart to

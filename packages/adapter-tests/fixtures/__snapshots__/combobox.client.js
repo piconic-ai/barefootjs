@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfSlot, __bfText, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2883,12 +2883,11 @@ export function initComboboxValue(__scope, _p = {}) {
   }
 
   const [_s1] = $(__scope, 's1')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.placeholder ?? ''
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', __val)
   })
 
   createEffect(() => {
@@ -3258,11 +3257,8 @@ export function initComboboxGroup(__scope, _p = {}) {
     template: () => { const __slots = []; return { html: `<div bf-c="s0" data-slot="combobox-group-heading" aria-hidden="true" bf="s2"><!--bf:s1-->${__bfSlot(_p.heading, __slots)}<!--/--></div>`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
-      let __anchor_s1 = $t(__branchScope, 's1')[0]
-      __disposers.push(createDisposableEffect(() => {
-        const __val = _p.heading
-        __anchor_s1 = __bfText(__anchor_s1, __val)
-      }))
+      const __bfw_s1 = lazySlots(__branchScope, [{ id: 's1', kind: 'markup', path: [] }])
+      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', _p.heading) }))
       return () => __disposers.forEach(d => d())
     }
   }, {
@@ -3304,13 +3300,12 @@ export function initComboboxBasicDemo(__scope, _p = {}) {
 
   const [value, setValue] = createSignal('')
 
-  const [_s11] = $t(__scope, 's11')
   const [_s10, _s1, _s0, _s9, _s2, _s3, _s4, _s5, _s6, _s7, _s8] = $c(__scope, 's10', 's1', 's0', 's9', 's2', 's3', 's4', 's5', 's6', 's7', 's8')
 
-  let __anchor_s11 = _s11
+  const __bfw_s11 = lazySlots(__scope, [{ id: 's11', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = value() || 'None'
-    __anchor_s11 = __bfText(__anchor_s11, __val)
+    __bfw_s11('s11', __val)
   })
 
 
@@ -3360,13 +3355,12 @@ export function initComboboxFormDemo(__scope, _p = {}) {
     return parts.length > 0 ? parts.join(' ') : 'No selections yet'
   })
 
-  const [_s22] = $t(__scope, 's22')
   const [_s10, _s21, _s1, _s0, _s9, _s2, _s3, _s4, _s5, _s6, _s7, _s8, _s12, _s11, _s20, _s13, _s14, _s15, _s16, _s17, _s18, _s19] = $c(__scope, 's10', 's21', 's1', 's0', 's9', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's12', 's11', 's20', 's13', 's14', 's15', 's16', 's17', 's18', 's19')
 
-  let __anchor_s22 = _s22
+  const __bfw_s22 = lazySlots(__scope, [{ id: 's22', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = summary()
-    __anchor_s22 = __bfText(__anchor_s22, __val)
+    __bfw_s22('s22', __val)
   })
 
 
@@ -3434,13 +3428,12 @@ export function initComboboxGroupedDemo(__scope, _p = {}) {
 
   const [timezone, setTimezone] = createSignal('')
 
-  const [_s21] = $t(__scope, 's21')
   const [_s20, _s1, _s0, _s19, _s2, _s3, _s8, _s4, _s5, _s6, _s7, _s9, _s13, _s10, _s11, _s12, _s14, _s18, _s15, _s16, _s17] = $c(__scope, 's20', 's1', 's0', 's19', 's2', 's3', 's8', 's4', 's5', 's6', 's7', 's9', 's13', 's10', 's11', 's12', 's14', 's18', 's15', 's16', 's17')
 
-  let __anchor_s21 = _s21
+  const __bfw_s21 = lazySlots(__scope, [{ id: 's21', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = timezone() || 'None'
-    __anchor_s21 = __bfText(__anchor_s21, __val)
+    __bfw_s21('s21', __val)
   })
 
 
