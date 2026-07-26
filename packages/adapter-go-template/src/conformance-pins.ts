@@ -48,6 +48,12 @@ export const conformancePins: ConformancePins = {
   // neutral nested-loop IR this adapter templatizes natively.
   // See spec/callback-fidelity.md.
   'tag-cloud': [{ code: 'BF021', severity: 'error' }],
+  // A keyed `.map()` row body whose preamble builds a JSX leaf from item
+  // state (`cells.push(<td>{stateLabel}</td>)`) embedded as `{cells}` — the
+  // Stage 3 array-builder carrier, jsRuntime-only: a JS runtime runs it
+  // verbatim (and patches the region on same-key updates, #2389), a DSL
+  // adapter refuses with BF021 + `/* @client */`. See spec/callback-fidelity.md.
+  'preamble-cells': [{ code: 'BF021', severity: 'error' }],
   // `style-object-dynamic` / `style-3-signals` no longer pinned — a
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic
   // values interpolated (`background-color:{{.Color}};padding:8px`) via

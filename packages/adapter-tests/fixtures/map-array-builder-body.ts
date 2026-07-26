@@ -39,6 +39,6 @@ export { TableBuilder }
 `,
   props: { rows: [{ id: '1', cells: ['a', 'b'] }, { id: '2', cells: ['c', 'd'] }] },
   expectedHtml: `
-    <table bf-s="test"><tbody bf="s0"><tr data-key="1"><td>a</td><td>b</td></tr><tr data-key="2"><td>c</td><td>d</td></tr></tbody></table>
+    <table bf-s="test"><tbody bf="s1"><tr data-key="1"><!--bf:s0--><td>a</td><td>b</td><!--/--></tr><tr data-key="2"><!--bf:s0--><td>c</td><td>d</td><!--/--></tr></tbody></table>
   `,
 })

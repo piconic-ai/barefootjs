@@ -74,11 +74,13 @@ describe('delegated-handler preamble splicing (BUG-3 / BUG-4)', () => {
 
     // The preamble (`cells`) is never read by the click handler
     // (`() => del(t.id)`) — it must not be spliced into the dispatcher at
-    // all. `cells.push` legitimately appears twice elsewhere (the mapArray
-    // row-render callback and the SSR-template literal it mirrors); it must
-    // not appear a third time in the handler.
+    // all. `cells.push` legitimately appears three times elsewhere: the
+    // mapArray row-render callback, the SSR-template literal it mirrors,
+    // and (#2389 patch-on-update) the `{cells}` region-patch effect, which
+    // re-runs the preamble so it re-reads the live per-item signal. It must
+    // not appear a FOURTH time, in the handler.
     expect(handler).not.toContain('cells.push')
-    expect(js.split('cells.push')).toHaveLength(3) // two occurrences total
+    expect(js.split('cells.push')).toHaveLength(4) // three occurrences total
 
     // The item guard still gates the handler call.
     expect(handler).toContain('if (t) {')

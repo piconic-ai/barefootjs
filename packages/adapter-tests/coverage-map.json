@@ -3000,6 +3000,31 @@
         "text"
       ]
     },
+    "preamble-cells": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "props-reactive": {
       "kinds": [
         "call",
@@ -4484,21 +4509,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 64,
+    "array-literal": 65,
     "array-method": 65,
-    "arrow": 62,
-    "binary": 75,
-    "call": 174,
-    "conditional": 20,
-    "identifier": 260,
+    "arrow": 63,
+    "binary": 76,
+    "call": 175,
+    "conditional": 21,
+    "identifier": 261,
     "index-access": 12,
-    "literal": 214,
+    "literal": 215,
     "logical": 43,
-    "member": 139,
-    "object-literal": 46,
+    "member": 140,
+    "object-literal": 47,
     "template-literal": 29,
     "unary": 22,
-    "unsupported": 30
+    "unsupported": 31
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -4532,13 +4557,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 38,
+    "binary:===": 39,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 38,
+    "literal:boolean": 39,
     "literal:null": 22,
-    "literal:number": 90,
-    "literal:string": 154,
+    "literal:number": 91,
+    "literal:string": 155,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,

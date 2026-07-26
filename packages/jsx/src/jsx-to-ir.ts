@@ -28,6 +28,7 @@ import {
   type FlatMapCallback,
   type MapCallbackPreamble,
   type PreambleSegment,
+  type PreambleRegionSource,
   tsxSourceText,
   type SourceLocation,
   type TypeInfo,
@@ -4646,6 +4647,17 @@ function transformMapCall(
     // already handles correctly.
     && !objectIteration
 
+  // #2389 patch-on-update — a signal-backed (non-static) loop whose body has
+  // a preamble may reference a preamble-declared local directly as a child
+  // expression (`{cells}`, `{stateLabel}`). `mapArray` reuses the same DOM
+  // node on a same-key update, re-running only the wired text/attr slots —
+  // this child has neither, so without a dedicated region-patch effect it
+  // freezes at its mount-time value. Static arrays are never recreated via
+  // signals, so there is nothing to patch; skip them entirely.
+  const preambleRegions = preamble && !isStaticArray
+    ? collectPreambleRegions(children, new Set(preamble.declaredNames), ctx)
+    : undefined
+
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
   // Dynamic arrays with native root + component descendants: enables reconcileElements
@@ -4688,6 +4700,7 @@ function transformMapCall(
     depth,
     clientOnly: isClientOnly || undefined,
     preamble,
+    preambleRegions: preambleRegions && preambleRegions.length > 0 ? preambleRegions : undefined,
     paramType,
     indexType,
     paramBindings,
@@ -4973,6 +4986,61 @@ function flagArrayChildExpressions(nodes: IRNode[], declared: ReadonlySet<string
         break
     }
   }
+}
+
+/**
+ * #2389 patch-on-update — walk loop-body children and classify each
+ * `IRExpression` whose free identifiers intersect `declared` (the enclosing
+ * `.map()` preamble's `declaredNames`) as a preamble-patched region. Unlike
+ * {@link flagArrayChildExpressions} (which only recognizes the exact bare
+ * `{out}` shape for the array-join coercion), this is deliberately broader —
+ * ANY expression reading a preamble local needs the region-patch effect,
+ * whether it's a builder array (`{cells}`, `joinArrayChild` already set by
+ * `flagArrayChildExpressions`, called earlier for the same `children`) or a
+ * plain value (`{stateLabel}`).
+ *
+ * Reuses an existing `slotId` when the node already has one (e.g. it also
+ * reads the loop param and so already qualified via the ordinary reactive-
+ * text path) rather than allocating a second slot — `node.preambleRegion`
+ * is the single source of truth downstream, so `collectLoopChildReactiveTexts`
+ * can unconditionally defer to it.
+ */
+function collectPreambleRegions(
+  nodes: IRNode[],
+  declared: ReadonlySet<string>,
+  ctx: TransformContext,
+): PreambleRegionSource[] {
+  const regions: PreambleRegionSource[] = []
+  const visit = (list: IRNode[]): void => {
+    for (const node of list) {
+      switch (node.type) {
+        case 'expression': {
+          const refs = extractFreeIdentifiersFromText(node.expr)
+          const usesPreambleLocal = [...refs].some((r) => declared.has(r))
+          if (usesPreambleLocal) {
+            if (!node.slotId) node.slotId = generateSlotId(ctx)
+            node.preambleRegion = true
+            node.reactive = true
+            regions.push({
+              slotId: node.slotId,
+              expr: node.expr,
+              joinArrayChild: node.joinArrayChild || undefined,
+            })
+          }
+          break
+        }
+        case 'element':
+        case 'fragment':
+          visit(node.children)
+          break
+        case 'conditional':
+          visit([node.whenTrue, ...(node.whenFalse ? [node.whenFalse] : [])])
+          break
+      }
+    }
+  }
+  visit(nodes)
+  return regions
 }
 
 /**

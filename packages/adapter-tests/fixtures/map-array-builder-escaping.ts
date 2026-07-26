@@ -38,6 +38,6 @@ export { EscapeTable }
     ],
   },
   expectedHtml: `
-    <table bf-s="test"><tbody bf="s0"><tr data-key="1"><td>&lt;b&gt;bold&lt;/b&gt;</td><td>a &amp; b</td></tr><tr data-key="2"><td>&quot;quoted&quot;</td><td>it&#39;s</td></tr></tbody></table>
+    <table bf-s="test"><tbody bf="s1"><tr data-key="1"><!--bf:s0--><td>&lt;b&gt;bold&lt;/b&gt;</td><td>a &amp; b</td><!--/--></tr><tr data-key="2"><!--bf:s0--><td>&quot;quoted&quot;</td><td>it&#39;s</td><!--/--></tr></tbody></table>
   `,
 })

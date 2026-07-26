@@ -790,6 +790,32 @@ function getDualScopeIds(scope: Element | null): string[] {
   return id ? [id] : []
 }
 
+// --- $pre: preamble-region comment finder ---
+
+/**
+ * Find the START comment of a `<!--bf:sN-->...<!--/-->` marker pair for a
+ * `.map()` preamble-patched loop region (#2389 — see `patchSlotRange`).
+ * Returns the Comment itself (not the text/content after it, unlike `$t`)
+ * since a region's content is markup, not a single Text node.
+ *
+ * Deliberately simpler than `$t`: `$t` guards against a nested child
+ * component's own `bf:sN` markers colliding with the parent's, via
+ * `commentBelongsToScope`. A loop row element is never a component scope
+ * (no `bf-s`, no comment-scope registration) — `$t`'s ownership check would
+ * be a no-op here (`isComponentScope` false) — so a plain forward
+ * `TreeWalker` scan already gives the same result with less code.
+ */
+export function $pre(scope: Element | null, id: string): Comment | null {
+  if (!scope) return null
+  const marker = `bf:${id}`
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
+  while (walker.nextNode()) {
+    const comment = walker.currentNode as Comment
+    if (comment.nodeValue === marker) return comment
+  }
+  return null
+}
+
 // --- $t: text node finder via comment markers ---
 
 /**

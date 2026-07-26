@@ -8,7 +8,7 @@ import { isClientBuiltinName } from '../builtins.ts'
 // All exports from @barefootjs/client/runtime that may be used in generated code
 export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
-  'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'patchLeaf', 'createDisposableEffect',
+  'hydrate', 'insert', 'reconcileElements', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'patchLeaf', 'patchSlotRange', 'createDisposableEffect',
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild', 'updateClientMarker',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
@@ -53,6 +53,10 @@ export function detectUsedImports(code: string): Set<string> {
   // Match $t( for text node finders
   if (/\$t\s*\(/.test(code)) {
     used.add('$t')
+  }
+  // Match $pre( for preamble-region comment finders (#2389)
+  if (/\$pre\s*\(/.test(code)) {
+    used.add('$pre')
   }
   // Match $( but not $c( or $t( - use negative lookahead
   if (/\$\s*\(/.test(code)) {

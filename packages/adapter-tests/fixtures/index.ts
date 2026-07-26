@@ -26,6 +26,11 @@ import { fixture as form } from './form'
 import { fixture as portal } from './portal'
 import { fixture as todoApp } from './todo-app'
 import { fixture as tagCloud } from './tag-cloud'
+// #2389 patch-on-update: a keyed .map() row whose preamble builds a JSX
+// leaf from item state and embeds it as a bare interpolation (`{cells}`) —
+// same-key updates must patch that region in place, not freeze it. DSL-
+// refused (BF021, preamble+JSX is jsRuntime-only) like tagCloud above.
+import { fixture as preambleCells } from './preamble-cells'
 import { fixture as todoAppSsr } from './todo-app-ssr'
 import { fixture as aiChat } from './ai-chat'
 // #1467 Phase 2a: first `site/ui` source-root fixture (Button + its
@@ -439,6 +444,7 @@ export const jsxFixtures: JSXFixture[] = [
   portal,
   todoApp,
   tagCloud,
+  preambleCells,
   todoAppSsr,
   aiChat,
   button,
