@@ -114,6 +114,52 @@ export function F() {
     expect(errs[0].message).toContain('cannot carry')
   })
 
+  test('a fragment leaf refuses loudly (descriptor path is single-element)', () => {
+    // The renderItem adopts `template.content.firstElementChild` and
+    // patchLeaf patches ONE element root — a fragment leaf would silently
+    // drop its siblings client-side while SSR renders them all.
+    const src = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function F() {
+  const [todos, setTodos] = createSignal<{ id: number; tags: string[] }[]>([])
+  return <ul>{todos().flatMap((t) => {
+    return t.tags.map((tag) => <><b>{tag}</b><i>{tag}</i></>)
+  })}</ul>
+}
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    const errs = r.errors.filter(e => e.severity === 'error')
+    expect(errs.length).toBeGreaterThan(0)
+    expect(errs.some(e => e.message.includes('must be a single'))).toBe(true)
+  })
+
+  test('the structural net stays armed when an unrelated diagnostic fired earlier', () => {
+    // The scalar-fallthrough net de-dups against refusals fired during the
+    // SAME map call (entry-count gate), never against diagnostics recorded
+    // earlier in the file — a prior error in another loop must not let raw
+    // JSX splice silently into the bundle.
+    const src = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function F() {
+  const [todos, setTodos] = createSignal<{ id: number; tags: string[] }[]>([])
+  const wrap = (n: unknown) => n
+  return <div>
+    <ul>{todos().flatMap((t) => {
+      return t.tags.map((tag) => <li key={tag} onClick={() => console.log(tag)}>{tag}</li>)
+    })}</ul>
+    <ol>{todos().map((t) => wrap(<li>{t.id}</li>))}</ol>
+  </div>
+}
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    const errs = r.errors.filter(e => e.severity === 'error')
+    // One refusal per loop: the leaf-wiring refusal AND the structural net.
+    expect(errs.some(e => e.message.includes('cannot carry'))).toBe(true)
+    expect(errs.some(e => e.message.includes('would leak verbatim'))).toBe(true)
+  })
+
   test('TS type annotations in the block body are stripped from the client bundle', () => {
     const src = `
 function F({ items }: { items: { id: string; labels: string[] }[] }) {

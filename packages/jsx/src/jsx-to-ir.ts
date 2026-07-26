@@ -3720,6 +3720,10 @@ function transformMapCall(
   // Capture nesting depth before we register this map's own params.
   // ctx.loopParams is populated by the *outer* map; if non-empty we are inside one.
   const isNested = ctx.loopParams.size > 0
+  // Diagnostic count at entry — the structural net at the scalar fallthrough
+  // de-dups against refusals fired DURING this call (leaf-wiring, DSL gates),
+  // never against unrelated diagnostics recorded before it.
+  const diagCountAtEntry = ctx.analyzer.errors.length
   // This loop's own depth (0 = outermost) is however many enclosing
   // loops are already active, captured before `ctx.loopDepth` below is
   // bumped for THIS loop's own descendants.
@@ -4336,10 +4340,13 @@ function transformMapCall(
     // inline JSX literal and legitimately stays on the reactive-text path.)
     const cb = node.arguments[0]
     const cbBody = cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) ? cb.body : undefined
-    // `errors.length === 0` gate: a more specific refusal already fired for
-    // this shape (e.g. the flatMap leaf-wiring check) — don't stack the
-    // generic message on top of it.
-    if (cbBody && containsJsxInExpression(cbBody) && ctx.analyzer.errors.length === 0) {
+    // Entry-count gate: a more specific refusal already fired for THIS call
+    // (e.g. the flatMap leaf-wiring check) — don't stack the generic message
+    // on top of it. Comparing against the count captured at entry (not
+    // `=== 0`) keeps the net armed when an unrelated diagnostic was recorded
+    // earlier in the file — a warning elsewhere must never silence the leak
+    // guard for this callback.
+    if (cbBody && containsJsxInExpression(cbBody) && ctx.analyzer.errors.length === diagCountAtEntry) {
       ctx.analyzer.errors.push(
         createError(
           ErrorCodes.UNSUPPORTED_JSX_PATTERN,
@@ -4652,6 +4659,32 @@ function buildFlatMapCallback(
   // preambles — but deliberately NOT refusing reactive expressions: whole-
   // leaf patching covers those.
   for (const leafIr of leafIrs) {
+    // The descriptor path renders each leaf as ONE keyed element — the
+    // renderItem adopts `template.content.firstElementChild` and `patchLeaf`
+    // patches a single element root. A fragment (or any non-element) root
+    // would silently drop siblings client-side while SSR renders them all —
+    // the exact divergence class this carrier forbids. Refuse loudly.
+    if (leafIr.type !== 'element') {
+      const loc = 'loc' in leafIr && leafIr.loc
+        ? leafIr.loc
+        : getSourceLocation(body, ctx.sourceFile, ctx.filePath)
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+          loc,
+          {
+            message:
+              'A JSX leaf produced by a .flatMap() callback must be a single ' +
+              'element — a fragment or non-element root cannot ride the keyed ' +
+              'descriptor path (each leaf hydrates and patches as one element).',
+            suggestion: {
+              message: 'Wrap the leaf content in a single keyed element.',
+            },
+          }
+        )
+      )
+      return undefined
+    }
     if (flatMapLeafNeedsWiring(leafIr)) {
       const loc = 'loc' in leafIr && leafIr.loc
         ? leafIr.loc
