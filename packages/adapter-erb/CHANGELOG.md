@@ -1,5 +1,11 @@
 # @barefootjs/erb
 
+## 0.26.4
+
+### Patch Changes
+
+- @barefootjs/shared@0.26.4
+
 ## 0.26.3
 
 ### Patch Changes

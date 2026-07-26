@@ -1,5 +1,13 @@
 # @barefootjs/client
 
+## 0.26.4
+
+### Patch Changes
+
+- 6114df8: Rewire the client side of JSX-returning `.flatMap()` loops onto flattened leaf descriptors. Previously the emitted `mapArray` reconciled the UN-flattened source items against the flattened SSR leaves with a null keyFn and an EMPTY item template — leaves vanished at hydration with zero interaction, adding an item crashed on `cloneNode(null)`, and the list never reacted to data changes. The accessor now flattens through the callback body producing `({ k, h })` descriptors per leaf (keyed by the leaf's own `key`, index fallback), renderItem builds new leaves from the descriptor HTML and patches existing ones in place via the new `patchLeaf` runtime helper, and leaf `data-key` moved off the string templates onto `mapArray`'s `setAttribute` path (closing the CSR/SSR data-key asymmetry, escaping included). A flatMap leaf carrying an event handler, component, nested loop, or spread now refuses loudly instead of rendering silently-dead DOM.
+- b0817cc: Fix a keyed `.map()` loop whose row body has a preamble-built leaf child (`const cells = []; cells.push(<td>{stateLabel}</td>); return <tr key={t.id}>{cells}<td>{t.name}</td></tr>`) going stale on same-key item updates. `mapArray` reuses the same row DOM node via per-item `setItem`, re-running only the row's wired text/attr slots — a preamble-derived child like `{cells}` had neither, so it froze at its mount-time content forever while sibling wired slots (`{t.name}`) updated normally. A loop-body expression child whose free identifiers reference a preamble-declared local is now classified as a preamble-patched region: it renders with the same `<!--bf:sN-->...<!--/-->` slot marker a reactive text uses (so SSR/CSR row templates stay byte-identical), but the client wires it via a dedicated region-patch effect — `patchSlotRange` (new `@barefootjs/client` runtime helper) replaces the marker-delimited DOM range in place whenever the re-run preamble produces different content, instead of a `.textContent` assignment that would corrupt markup.
+  - @barefootjs/shared@0.26.4
+
 ## 0.26.3
 
 ### Patch Changes
