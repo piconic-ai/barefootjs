@@ -48,7 +48,11 @@ const appsRoot = join(ssrDir, 'apps')
 const repoRoot = join(ssrDir, '..', '..')
 const resultsDir = join(ssrDir, '..', 'results')
 
-const ALL_FRAMEWORKS = ['react', 'solid', 'barefoot'] as const
+// 'barefoot-claim' is the spec/slot-unification.md Stage 0 measurement
+// spike (claim-once hydration prototype) — see
+// benchmarks/ssr/apps/barefoot-claim/build.ts. Same methodology, extra
+// column; not a real framework, throwaway per that spec's Stage 0.
+const ALL_FRAMEWORKS = ['react', 'solid', 'barefoot', 'barefoot-claim'] as const
 type Framework = (typeof ALL_FRAMEWORKS)[number]
 
 // ---------------------------------------------------------------------------
@@ -73,6 +77,7 @@ const RENDER_SERVER_MODULE: Record<Framework, string> = {
   react: join(appsRoot, 'react', 'src', 'render-server.tsx'),
   solid: join(appsRoot, 'solid', 'src', 'render-server.ts'),
   barefoot: join(appsRoot, 'barefoot', 'lib', 'render-server.ts'),
+  'barefoot-claim': join(appsRoot, 'barefoot-claim', 'lib', 'render-server.ts'),
 }
 
 async function measureServerRender(framework: Framework): Promise<{ iterations: number[]; stats: Stats; html: string }> {
