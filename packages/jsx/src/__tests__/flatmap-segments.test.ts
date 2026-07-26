@@ -22,9 +22,13 @@ import { TestAdapter } from '../adapters/test-adapter'
 
 describe('flatMap block bodies on structured segments', () => {
   test('leaf text interpolations are escapeText-wrapped in the client bundle', () => {
+    // The early return keeps this a STATEMENT-carrying body (segments
+    // carrier) — a pure single-`return` projection now lowers to neutral
+    // nested-loop IR instead (see the projection tests below).
     const src = `
 function F({ items }: { items: { id: string; tags: string[] }[] }) {
   return <ul>{items.flatMap((it) => {
+    if (it.tags.length > 9) return []
     return it.tags.map((t) => <li key={t}>{t}</li>)
   })}</ul>
 }
@@ -57,6 +61,83 @@ export { F }
     const tpl = cj.match(/template: \(_p\) => `[\s\S]*?` \}\)/)?.[0] ?? ''
     expect(tpl).toMatch(/_p\.limit/)
     expect(tpl).not.toMatch(/[^.\w]limit\b/)
+  })
+
+  test('projection expression bodies lower to neutral IR + descriptor client', () => {
+    // `it => it.tags.map(...)` (no braces, no statements) is a pure
+    // nested-loop PROJECTION: it lowers to neutral IR (inner IRLoop child)
+    // that every SSR adapter templatizes — including DSL backends, per
+    // spec/callback-fidelity.md's fidelity table — while the client
+    // reconciles the flattened leaves through the descriptor mapArray path
+    // synthesized from the same inner loop. Pre-fix it fell through to the
+    // IRExpression scalar path and spliced raw JSX into the bundle.
+    const src = `
+function F({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <li key={t}>{t}</li>))}</ul>
+}
+export { F }
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    expect(r.errors).toHaveLength(0)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    // No raw JSX anywhere in the bundle.
+    expect(cj).not.toMatch(/<li key=\{t\}>/)
+    expect(cj).not.toMatch(/__BF_JSX_/)
+    if (cj.includes('mapArray(')) {
+      // Descriptor accessor flattens through the inner loop with the leaf key.
+      expect(cj).toMatch(/\.flatMap\(\(it\) => it\.tags\.map\(\(t\) => \(\{ k: \(t\), h: `<li/)
+      expect(cj).toMatch(/String\(__bfD\.k \?\? __bfI\)/)
+    }
+  })
+
+  test('a member-expression tag leaf is a component, not a projection leaf', () => {
+    // `<icons.Tag/>` starts lowercase but is a component per JSX semantics —
+    // the wireless-leaf gate must not admit it to the projection route
+    // (which cannot wire components). It falls to the segments carrier,
+    // where a DSL-tier adapter refuses loudly instead of templatizing a
+    // component tag as literal HTML.
+    const src = `
+import { icons } from './icons'
+function F({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <icons.Tag key={t} label={t} />))}</ul>
+}
+export { F }
+`
+    const dsl = new TestAdapter()
+    ;(dsl as { acceptsCallbackBody?: () => boolean }).acceptsCallbackBody = () => false
+    const r = compileJSX(src, 'F.tsx', { adapter: dsl })
+    expect(r.errors.filter(e => e.severity === 'error').length).toBeGreaterThan(0)
+  })
+
+  test('single-return block projection lowers identically (DSL adapters accept it)', () => {
+    const src = `
+function F({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => {
+    return it.tags.map((t) => <li key={t}>{t}</li>)
+  })}</ul>
+}
+export { F }
+`
+    const dsl = new TestAdapter()
+    ;(dsl as { acceptsCallbackBody?: () => boolean }).acceptsCallbackBody = () => false
+    const r = compileJSX(src, 'F.tsx', { adapter: dsl })
+    // Neutral IR — no BF021 gate on a DSL-tier adapter.
+    expect(r.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+  })
+
+  test('destructured prop refs rewrite to _p.xxx in expression-body hydrate templates', () => {
+    const src = `
+function F({ owner, items }: { owner: string; items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <li key={t}>{t} ({owner})</li>))}</ul>
+}
+export { F }
+`
+    const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
+    expect(r.errors).toHaveLength(0)
+    const cj = r.files.find(f => f.type === 'clientJs')!.content
+    const tpl = cj.match(/template: \(_p\) => `[\s\S]*?` \}\)/)?.[0] ?? ''
+    expect(tpl).toMatch(/_p\.owner/)
+    expect(tpl).not.toMatch(/[^.\w]owner\b/)
   })
 
   test('client loop reconciles the FLATTENED descriptors, not the source items', () => {

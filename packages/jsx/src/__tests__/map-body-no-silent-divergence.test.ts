@@ -261,6 +261,51 @@ function T({ groups }: { groups: { id: string; items: { id: string; tags: string
 export { T }`,
   },
   {
+    id: 'flatmap-expression-body',
+    // The unbraced twin of flatmap-block-body: `t => t.tags.map(...)` with no
+    // block. Pre-fix this fell through every dispatch arm to the IRExpression
+    // scalar path and spliced the raw callback — JSX included — verbatim into
+    // the client bundle (a silent SyntaxError caught only by parseErrors).
+    dslTier: true,
+    source: `
+function T({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => it.tags.map((t) => <li key={t}>{t}</li>))}</ul>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-expression-body-parenthesized',
+    source: `
+function T({ items }: { items: { id: string; tags: string[] }[] }) {
+  return <ul>{items.flatMap((it) => (it.tags.map((t) => <li key={t}>{t}</li>)))}</ul>
+}
+export { T }`,
+  },
+  {
+    id: 'flatmap-expression-body-signal-array',
+    source: `
+'use client'
+import { createSignal } from '@barefootjs/client'
+function T() {
+  const [items] = createSignal([{ id: '1', tags: ['a'] }])
+  return <ul>{items().flatMap((it) => it.tags.map((t) => <li key={t}>{t}</li>))}</ul>
+}
+export { T }`,
+  },
+  {
+    id: 'map-jsx-inside-unrecognized-call',
+    // An inline JSX literal in a body shape no dispatch arm recognizes (a call
+    // wrapping JSX). The structural net refuses loudly instead of letting the
+    // scalar fallback splice the raw JSX into the bundle.
+    dslTier: true,
+    source: `
+declare function wrap(x: unknown): unknown
+function T({ items }: { items: { id: string }[] }) {
+  return <ul>{items.map((it) => wrap(<li key={it.id}>{it.id}</li>))}</ul>
+}
+export { T }`,
+  },
+  {
     id: 'flatmap-leaf-in-template-literal',
     // A leaf inside a template literal is refused (segment boundary would
     // split the literal's lexical state) — same rule as map preambles.

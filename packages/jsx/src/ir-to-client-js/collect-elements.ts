@@ -6,7 +6,7 @@ import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity.ts'
-import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
+import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { templateRootIsSvg } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity } from './prop-handling.ts'
 import { walkIR, stopAt } from './walker.ts'
@@ -650,10 +650,26 @@ export function collectElements(
       // are extracted explicitly below for the closure capture set.
       if (!l.slotId || inCond) return
 
+      // flatMap PROJECTION loop: the only child is a nested IRLoop lowered
+      // from `flatMap(it => it.tags.map(...))`. The children exist for SSR
+      // templatization (nested {{range}} on DSL adapters); the CLIENT
+      // reconciles the flattened leaves through the descriptor mapArray
+      // path synthesized from the same inner loop, so none of the
+      // children-derived client machinery (bindings, inner-loop plans,
+      // per-row template) applies — leaf wiring was refused at IR build.
+      const projectionInner =
+        l.method === 'flatMap' && l.children.length === 1 && l.children[0].type === 'loop'
+          ? l.children[0]
+          : undefined
+
       const childHandlers: string[] = []
-      const bindings = collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings)
-      for (const child of l.children) {
-        childHandlers.push(...collectEventHandlersFromIR(child))
+      const bindings = projectionInner
+        ? emptyLoopChildBindings()
+        : collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings)
+      if (!projectionInner) {
+        for (const child of l.children) {
+          childHandlers.push(...collectEventHandlersFromIR(child))
+        }
       }
 
       if (l.childComponent) {
@@ -668,7 +684,9 @@ export function collectElements(
       // Determine rendering strategy for dynamic arrays:
       // Use element reconciliation when the loop body has nested components,
       // or when inner loops need their own mapArray for events/reactive text.
-      const { useElementReconciliation, innerLoops } = decideLoopRendering(l, siblingOffsets, ctx)
+      const { useElementReconciliation, innerLoops } = projectionInner
+        ? { useElementReconciliation: false, innerLoops: undefined }
+        : decideLoopRendering(l, siblingOffsets, ctx)
 
       let template = ''
       let staticItemTemplate: string | undefined
@@ -691,7 +709,7 @@ export function collectElements(
           // `data-key`, mirroring the SSR template's renderChild emit.
           staticItemTemplate = irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, undefined, undefined, /* insideLoop */ true)
         }
-      } else if (l.children[0]) {
+      } else if (l.children[0] && !projectionInner) {
         // Pass loopParams so expressions are wrapped at generation time,
         // avoiding post-hoc regex wrapping that corrupts literal attribute values.
         // Forward destructured bindings (#951) so references like `cfg.color`
@@ -777,13 +795,19 @@ export function collectElements(
         } : undefined,
         chainOrder: l.chainOrder,
         preamble: l.preamble,
-        flatMapClient: l.flatMapCallback
+        flatMapClient: projectionInner
           ? {
-              params: l.flatMapCallback.params,
-              body: renderFlatMapClientBody(l.flatMapCallback, buildRestSpreadNames(ctx)),
-              keyed: flatMapCallbackHasKeyedLeaf(l.flatMapCallback),
+              params: l.index ? `(${l.param}, ${l.index})` : `(${l.param})`,
+              body: renderFlatMapProjectionClientBody(projectionInner, buildRestSpreadNames(ctx)),
+              keyed: projectionInner.key !== null,
             }
-          : undefined,
+          : l.flatMapCallback
+            ? {
+                params: l.flatMapCallback.params,
+                body: renderFlatMapClientBody(l.flatMapCallback, buildRestSpreadNames(ctx)),
+                keyed: flatMapCallbackHasKeyedLeaf(l.flatMapCallback),
+              }
+            : undefined,
       })
       // Don't descend — loop-scoped variables are only available inside the iteration.
     },
@@ -1076,8 +1100,16 @@ function collectBranchLoops(
       // reactive-text collection on inner loops reached from this call path
       // is handled at the enclosing branch-loop level below (`if (ctx)` block
       // around `collectLoopChildReactiveTexts`), not per inner loop.
-      const { useElementReconciliation, innerLoops: innerLoopsCollected } =
-        decideLoopRendering(n, siblingOffsets, undefined)
+      // flatMap PROJECTION loop — see the top-level handler's note: children
+      // are SSR-only; the client rides the descriptor mapArray path.
+      const projectionInner =
+        n.method === 'flatMap' && n.children.length === 1 && n.children[0].type === 'loop'
+          ? n.children[0]
+          : undefined
+
+      const { useElementReconciliation, innerLoops: innerLoopsCollected } = projectionInner
+        ? { useElementReconciliation: false, innerLoops: undefined }
+        : decideLoopRendering(n, siblingOffsets, undefined)
 
       // Build the item template from loop children.
       // Use loopDepth=0: this loop gets its own reconcileElements (independent
@@ -1087,7 +1119,9 @@ function collectBranchLoops(
       // use `param()` to read the current item value.
       let childTemplate: string
       const branchLoopParamSpec = [{ param: n.param, bindings: n.paramBindings }]
-      if (useElementReconciliation && n.children[0]) {
+      if (projectionInner) {
+        childTemplate = '' // descriptor renderItem builds from d.h, not a row template
+      } else if (useElementReconciliation && n.children[0]) {
         childTemplate = irToPlaceholderTemplate(n.children[0], restNames, 0, branchLoopParamSpec)
       } else {
         childTemplate = n.children.map(c => irToHtmlTemplate(c, undefined, 0, branchLoopParamSpec)).join('')
@@ -1099,7 +1133,7 @@ function collectBranchLoops(
       // memos). Previously these were only collected for composite loops,
       // which caused reactive reads inside simple loop bodies to silently
       // no-op for existing items.
-      const branchBindings = ctx
+      const branchBindings = ctx && !projectionInner
         ? collectLoopChildBindings(n.children, ctx, siblingOffsets, n.param, n.paramBindings)
         : emptyLoopChildBindings()
 
@@ -1133,13 +1167,19 @@ function collectBranchLoops(
           raw: n.sortComparator.raw,
         } : undefined,
         chainOrder: n.chainOrder,
-        flatMapClient: n.flatMapCallback
+        flatMapClient: projectionInner
           ? {
-              params: n.flatMapCallback.params,
-              body: renderFlatMapClientBody(n.flatMapCallback, restNames),
-              keyed: flatMapCallbackHasKeyedLeaf(n.flatMapCallback),
+              params: n.index ? `(${n.param}, ${n.index})` : `(${n.param})`,
+              body: renderFlatMapProjectionClientBody(projectionInner, restNames),
+              keyed: projectionInner.key !== null,
             }
-          : undefined,
+          : n.flatMapCallback
+            ? {
+                params: n.flatMapCallback.params,
+                body: renderFlatMapClientBody(n.flatMapCallback, restNames),
+                keyed: flatMapCallbackHasKeyedLeaf(n.flatMapCallback),
+              }
+            : undefined,
       })
       // Don't recurse into the loop — nested loops are handled by the loop's own reconciliation.
     },

@@ -39,11 +39,14 @@ export const conformancePins: ConformancePins = {
   'reduce-typeof-body': [{ code: 'BF101', severity: 'error' }],
   'reduce-right-typeof-body': [{ code: 'BF101', severity: 'error' }],
   'flatmap-typeof-projection': [{ code: 'BF101', severity: 'error' }],
-  // JSX-returning `.flatMap()` body carried as structured segments — one
-  // with STATEMENTS (early returns, consts): a JS runtime executes it
+  // JSX-returning `.flatMap()` body carried as structured segments — i.e.
+  // one with STATEMENTS (early returns, consts): a JS runtime executes it
   // verbatim; a DSL template runtime can't, so it refuses with BF021 +
   // `/* @client */` (pre-gate this emitted an empty loop body — silent
-  // divergence). See spec/callback-fidelity.md.
+  // divergence). A pure PROJECTION body (`flatMap(it => it.tags.map(...))`,
+  // e.g. the `flatmap-expression-body` fixture) is NOT pinned: it lowers to
+  // neutral nested-loop IR this adapter templatizes natively.
+  // See spec/callback-fidelity.md.
   'tag-cloud': [{ code: 'BF021', severity: 'error' }],
   // `style-object-dynamic` / `style-3-signals` no longer pinned — a
   // `style={{ … }}` object literal now lowers to a CSS string with dynamic

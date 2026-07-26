@@ -128,6 +128,7 @@ import { fixture as everyTypeofPredicate } from './every-typeof-predicate'
 import { fixture as reduceTypeofBody } from './reduce-typeof-body'
 import { fixture as reduceRightTypeofBody } from './reduce-right-typeof-body'
 import { fixture as flatMapTypeofProjection } from './flatmap-typeof-projection'
+import { fixture as flatMapExpressionBody } from './flatmap-expression-body'
 import { fixture as mapIfChainBody } from './map-if-chain-body'
 import { fixture as mapSwitchFallthroughBody } from './map-switch-fallthrough-body'
 import { fixture as mapPreambleBranchBody } from './map-preamble-branch-body'
@@ -498,6 +499,7 @@ export const jsxFixtures: JSXFixture[] = [
   reduceTypeofBody,
   reduceRightTypeofBody,
   flatMapTypeofProjection,
+  flatMapExpressionBody,
   mapIfChainBody,
   mapSwitchFallthroughBody,
   mapPreambleBranchBody,

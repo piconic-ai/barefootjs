@@ -3637,6 +3637,99 @@ function checkLoopKey(
  * item; multi-root bodies (e.g. `<><path/><path/></>`) need per-item
  * boundary markers and multi-root template cloning (#1212).
  */
+/**
+ * Recognize a flatMap PROJECTION body: a bare map-like call
+ * (`it.tags.map(...)` / nested `.flatMap(...)`) as the whole body — either
+ * an expression body (parenthesized or not) or a block whose ONLY statement
+ * is `return <call>`. Anything carrying additional statements does not
+ * qualify (it rides the structured-segments carrier instead). Returns the
+ * call expression to lower as the loop's nested-loop child, or null.
+ */
+function flatMapProjectionCall(body: ts.ConciseBody): ts.CallExpression | null {
+  let expr: ts.Expression | undefined
+  if (ts.isBlock(body)) {
+    const real = body.statements
+    if (real.length !== 1 || !ts.isReturnStatement(real[0]) || !real[0].expression) return null
+    expr = real[0].expression
+  } else {
+    expr = body
+  }
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isCallExpression(expr)) return null
+  if (!getMapLikeMethod(expr)) return null
+  // The descriptor synthesis renders the inner callback's raw params into
+  // the client accessor (`.map((tag, i) => ({ k, h }))`), which is only
+  // sound for plain-identifier params — a destructure pattern rides the
+  // segments carrier instead.
+  const cb = expr.arguments[0]
+  if (!cb || (!ts.isArrowFunction(cb) && !ts.isFunctionExpression(cb))) return null
+  for (const p of cb.parameters) {
+    if (!ts.isIdentifier(p.name)) return null
+  }
+  // The client descriptor is one element per flattened leaf, so the inner
+  // callback must produce a single element root (a JSX element, or a ternary
+  // whose branches are elements). Fragments / array literals ride the
+  // segments carrier.
+  let innerBody: ts.Node = cb.body
+  if (ts.isBlock(innerBody)) {
+    const ret = innerBody.statements.find(
+      (s): s is ts.ReturnStatement => ts.isReturnStatement(s) && s.expression != null,
+    )
+    if (innerBody.statements.length !== 1 || !ret?.expression) return null
+    innerBody = ret.expression
+  }
+  while (ts.isParenthesizedExpression(innerBody)) innerBody = innerBody.expression
+  const isElementish = (n: ts.Node): boolean => {
+    let m = n
+    while (ts.isParenthesizedExpression(m)) m = m.expression
+    if (ts.isJsxElement(m) || ts.isJsxSelfClosingElement(m)) return leafIsWirelessElement(m)
+    if (ts.isConditionalExpression(m)) return isElementish(m.whenTrue) && isElementish(m.whenFalse)
+    return false
+  }
+  if (!isElementish(innerBody)) return null
+  return expr
+}
+
+/**
+ * Syntactic pre-check that a projection leaf carries no per-element wiring —
+ * no event handlers, spreads, component tags, or nested JSX-bearing loops.
+ * Runs BEFORE the leaf is transformed (the accept/reject decision must not
+ * leave transform side effects — slot ids, collected events — behind when
+ * the shape falls back to the segments carrier, whose own transform would
+ * then double-register them).
+ */
+function leafIsWirelessElement(el: ts.JsxElement | ts.JsxSelfClosingElement): boolean {
+  let ok = true
+  const visit = (n: ts.Node): void => {
+    if (!ok) return
+    if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
+      // Only a lowercase plain identifier (or a namespaced name like
+      // `svg:path`) is an intrinsic element. A member/this tag
+      // (`<icons.Tag/>`, `<this.Tag/>`) is a component per JSX semantics
+      // regardless of case — the case test alone would let it through.
+      const tagNode = n.tagName
+      const isIntrinsic = ts.isIdentifier(tagNode)
+        ? !/^[A-Z]/.test(tagNode.text)
+        : ts.isJsxNamespacedName(tagNode)
+      if (!isIntrinsic) { ok = false; return }
+      for (const attr of n.attributes.properties) {
+        if (ts.isJsxSpreadAttribute(attr)) { ok = false; return }
+        if (ts.isJsxAttribute(attr)) {
+          const name = attr.name.getText()
+          if (/^on[A-Z]/.test(name)) { ok = false; return }
+        }
+      }
+    }
+    if (ts.isCallExpression(n) && getMapLikeMethod(n) && containsJsxInExpression(n)) {
+      ok = false
+      return
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(el)
+  return ok
+}
+
 function loopBodyIsMultiRoot(children: IRNode[]): boolean {
   const real = children.filter(
     (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
@@ -4275,12 +4368,50 @@ function transformMapCall(
       }
 
       // flatMap block body fallback: compile JSX inline when children
-      // couldn't be extracted via the standard single-return path.
-      if (method === 'flatMap' && children.length === 0) {
+      // couldn't be extracted via the standard single-return path. A pure
+      // single-`return <call>` projection is NOT taken here — it lowers to
+      // neutral IR below (nested-loop child), which DSL adapters templatize.
+      if (method === 'flatMap' && children.length === 0 && !flatMapProjectionCall(body)) {
         flatMapCallback = buildFlatMapCallback(callback, body, ctx)
       }
     } else {
       tryTransformRenderableBody(body)
+    }
+
+    // flatMap PROJECTION body — the canonical `flatMap(it => it.tags.map(tag
+    // => <li key={...}/>))`, as an expression body or a single-`return` block
+    // (parenthesized or not). This is a pure nested-loop projection, so it
+    // lowers to NEUTRAL IR — an inner IRLoop as the loop's only child — which
+    // every SSR adapter can templatize (nested `{{range}}` on DSL backends),
+    // per spec/callback-fidelity.md's fidelity table ("single expr" row) and
+    // the array-literal flatMap precedent. Only bodies carrying STATEMENTS
+    // (early returns, consts) fall through to the segments carrier below and
+    // its DSL gate. The client reconciles the flattened leaves through the
+    // descriptor mapArray path, synthesized from this same neutral IR
+    // (`renderFlatMapProjectionClientBody`); the leaf `key` renders as the
+    // usual nested-loop `data-key-1` on both the SSR and client string
+    // sides, and the flattened reconciliation identity (`data-key`) is
+    // stamped by mapArray from the inner loop's `key` field.
+    if (method === 'flatMap' && children.length === 0 && !flatMapCallback) {
+      const projection = flatMapProjectionCall(body)
+      if (projection) {
+        const transformed = transformJsxExpression(projection, ctx, isClientOnly)
+        if (transformed && transformed.type === 'loop') {
+          children = [transformed]
+        }
+      }
+    }
+
+    // flatMap EXPRESSION body containing JSX in a non-projection shape —
+    // e.g. a call wrapping JSX. The block-body form already rides the
+    // structured-segments carrier in the isBlock branch above; an unbraced
+    // body is the same shape minus the braces, so route it through the same
+    // door. Without this the dispatch falls to the IRExpression scalar path,
+    // which splices the raw callback — JSX included — verbatim into the
+    // client bundle: a silent SyntaxError that kills the whole component's
+    // hydration.
+    if (method === 'flatMap' && children.length === 0 && !flatMapCallback && !ts.isBlock(body)) {
+      flatMapCallback = buildFlatMapCallback(callback, body, ctx)
     }
 
     // A flatMapCallback carries the WHOLE body (statements included) as
@@ -4601,15 +4732,19 @@ function containsJsx(node: ts.Node): boolean {
 }
 
 /**
- * Build a FlatMapCallback for complex flatMap block bodies (conditional
- * returns, variable-assigned JSX, etc.). Walks the callback body AST and
- * carries it as structured segments — JS text (types stripped) interleaved
- * with compiled JSX-leaf IR — never as a sentinel-bearing string (the
- * write-side rule in CLAUDE.md; same shape as the map-preamble carrier).
+ * Build a FlatMapCallback for complex flatMap bodies (conditional returns,
+ * variable-assigned JSX, etc.). Accepts a block body OR an expression body
+ * (`t => t.tags.map(tag => <li/>)`) — segment reconstruction and the SSR
+ * rawBody are position-based, so both shapes flow through identically (a
+ * block's text keeps its braces; an expression's text is a valid arrow body
+ * as-is). Walks the callback body AST and carries it as structured segments
+ * — JS text (types stripped) interleaved with compiled JSX-leaf IR — never
+ * as a sentinel-bearing string (the write-side rule in CLAUDE.md; same shape
+ * as the map-preamble carrier).
  */
 function buildFlatMapCallback(
   callback: ts.ArrowFunction | ts.FunctionExpression,
-  body: ts.Block,
+  body: ts.Block | ts.Expression,
   ctx: TransformContext,
 ): FlatMapCallback | undefined {
   if (!containsJsx(body)) return undefined

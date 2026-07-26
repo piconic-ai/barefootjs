@@ -22,7 +22,15 @@
 > construction is string-templated (declared per plan variant via
 > `rowConstruction`); a body whose return has no single element root, a
 > builder feeding a component root, and a leaf inside a template literal
-> refuse loudly with restructuring guidance. The no-silent-divergence
+> refuse loudly with restructuring guidance. JSX-returning `flatMap` rides
+> the same machinery in two tiers: a pure nested-loop **projection**
+> (`it => it.tags.map(...)`, expression or single-`return` block) lowers to
+> neutral IR — an inner `IRLoop` child every adapter templatizes, with the
+> client reconciling the FLATTENED leaves through a `({ k, h })` descriptor
+> `mapArray` (`patchLeaf` updates a same-key leaf in place) — while a
+> statement-carrying body stays on the structured-segments carrier
+> (`FlatMapCallback`), verbatim on JS runtimes and BF021 + `/* @client */`
+> on DSL backends. The no-silent-divergence
 > invariant is executable: `map-body-no-silent-divergence.test.ts` sweeps the
 > shape axes and pins every shape as sound-or-loud, with its known-hole set
 > empty and shrink-only. SSR/CSR escaping parity for lowered leaves is decided
@@ -177,6 +185,8 @@ opt-in on that backend to render (client-only). `verbatim` = run as native JS.
 | `some`, `every`, `reduce`, `reduceRight` | ✓ SSR verbatim | ✓ SSR (evaluator) | error + `@client` |
 | value-`map`, `flatMap` (projection) | ✓ SSR verbatim | ✓ SSR (evaluator) | error + `@client` |
 | JSX-`map` / `flatMap` (single expr / ternary / logical) | ✓ SSR | ✓ SSR (templatized) | — |
+| JSX-`flatMap` projection (`it => it.tags.map(t => <li/>)`, expression or single-`return` block) | ✓ SSR (neutral nested-loop IR) | ✓ SSR (templatized) | — |
+| JSX-`flatMap` statement body (early `return` / `const` before the projection) | ✓ SSR verbatim (segments carrier) | @client | @client |
 | JSX-`map` if/switch chain | ✓ SSR (fold → conditional) | ✓ SSR (fold → conditional) | — |
 | JSX-`map` arbitrary body (preamble+loops) | ✓ SSR verbatim (Stage 3) | @client | @client |
 | `forEach` | n/a (no render value) — advisory error | n/a | n/a |
