@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": patch
----
-
-Make JSX-returning `.flatMap()` expression bodies sound on every tier. The canonical PROJECTION (`items.flatMap(it => it.tags.map(tag => <li key={...}/>))`, expression or single-`return` block) lowers to neutral nested-loop IR per the fidelity table in `spec/callback-fidelity.md`: every SSR adapter — DSL backends included — templatizes it natively (nested `{{range}}` on Go etc.), and the client reconciles the flattened leaves through the descriptor `mapArray` path synthesized from the same neutral IR. Non-projection expression bodies ride the structured-segments carrier like block bodies (previously they fell through to the scalar path and spliced raw JSX verbatim into the client bundle — an invalid-JS module that silently killed the whole component's hydration). Also fixes `data-key`/`data-key-N` interpolations in client string templates to be `escapeAttr`-wrapped like every other dynamic attribute — an adversarial `"` in a key corrupted the client-assembled HTML and diverged from the SSR bytes.
