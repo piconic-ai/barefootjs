@@ -276,7 +276,10 @@ export function stringifyLoopChildArm(
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`${armIndent}const ${writer} = lazySlots(__branchScope, ${claimPlanLiteral(slots)})`)
     for (const text of arm.texts) {
-      lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => { ${writer}('${text.slotId}', ${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}))`)
+      // `escapeTextOrNode`: see emit-reactive.ts's identical wrap for why a
+      // string value must be escaped before a 'markup' writer's
+      // `innerHTML =` insertion, while a live Node passes through untouched.
+      lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => { ${writer}('${text.slotId}', escapeTextOrNode(${text.wrappedExpression})) }${profileBindingId(pc, text.slotId)}))`)
     }
   }
 

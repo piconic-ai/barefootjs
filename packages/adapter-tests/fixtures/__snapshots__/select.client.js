@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, forwardProps, hydrate, initChild, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2878,7 +2878,7 @@ export function initSelectValue(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.placeholder ?? ''
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -3209,7 +3209,7 @@ export function initSelectBasicDemo(__scope, _p = {}) {
   const __bfw_s9 = lazySlots(__scope, [{ id: 's9', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = value() || 'None'
-    __bfw_s9('s9', __val)
+    __bfw_s9('s9', escapeTextOrNode(__val))
   })
 
 
@@ -3264,7 +3264,7 @@ export function initSelectFormDemo(__scope, _p = {}) {
   const __bfw_s24 = lazySlots(__scope, [{ id: 's24', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = summary()
-    __bfw_s24('s24', __val)
+    __bfw_s24('s24', escapeTextOrNode(__val))
   })
 
 
@@ -3349,7 +3349,7 @@ export function initSelectGroupedDemo(__scope, _p = {}) {
   const __bfw_s22 = lazySlots(__scope, [{ id: 's22', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = timezone() || 'None'
-    __bfw_s22('s22', __val)
+    __bfw_s22('s22', escapeTextOrNode(__val))
   })
 
 

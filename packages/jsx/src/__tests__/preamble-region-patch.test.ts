@@ -90,8 +90,8 @@ describe('preamble-region-patch (#2389)', () => {
     // wrap (`t().done`), not the plain (`t.done`) form used at the
     // top-level construction line.
     expect(clientJs).toMatch(/createEffect\(\(\) => \{\s*const stateLabel = t\(\)\.done/)
-    // The write goes through the claimed 'markup' writer — trust-first-run
-    // (record without patching on the very first write) and dedup now live
+    // The write goes through the claimed 'markup' writer — dedup (skip an
+    // unchanged string, on every write including the first) now lives
     // inside `writeMarkup` itself (`claim-slots.ts`), not a per-region
     // `__last` local next to the write call.
     expect(clientJs).toMatch(/__bfw_\w+\('s\d+', Array\.isArray\(cells\)/)

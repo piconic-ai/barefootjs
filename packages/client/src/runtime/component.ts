@@ -483,6 +483,31 @@ export function escapeText(value: unknown): string {
   return escapeAttr(value)
 }
 
+/**
+ * `escapeText`'s counterpart for a claimed 'markup' slot's REACTIVE write
+ * (slot unification A3 follow-up), where the value is a plain-JS expression
+ * that may resolve to either a string or a live `Node` (e.g. `{cond &&
+ * logo(id)}`, a hoisted `renderNode` callback, #1213). `writeMarkup`
+ * (`claim-slots.ts`) inserts a string via `<template>.innerHTML =`, which —
+ * unlike the old `__bfText`'s plain `Text.nodeValue =` assignment — DOES
+ * interpret HTML, so a raw un-escaped string is an injection/corruption
+ * risk exactly where the initial SSR/CSR TEMPLATE already calls
+ * `escapeText` on the same expression (`html-template.ts`'s
+ * `escapeTextSlotExpr`). A live `Node`, by contrast, must pass through
+ * untouched — `escapeText(node)` would stringify it to garbage, and
+ * `writeMarkup`'s own `instanceof Node` check needs the real object to
+ * splice in by identity. This is the single call every "dynamic JSX/text
+ * slot, value may be a Node" emission site (`emit-reactive.ts`,
+ * `stringify/loop-child-arm.ts`, `stringify/insert.ts`) wraps the value in
+ * before handing it to a 'markup' writer — NOT the preamble-region case
+ * (`stringify/loop.ts`), whose value is already-built HTML from a nested
+ * compiled render and must stay unescaped.
+ */
+export function escapeTextOrNode(value: unknown): string | Node {
+  if (typeof Node !== 'undefined' && value instanceof Node) return value
+  return escapeText(value)
+}
+
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 /**

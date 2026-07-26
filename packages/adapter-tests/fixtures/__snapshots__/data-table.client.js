@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -2961,7 +2961,7 @@ export function initDataTableColumnHeader(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = title
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -3319,13 +3319,13 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
   const __bfw_s19 = lazySlots(__scope, [{ id: '^s19', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = page() + 1
-    __bfw_s19('^s19', __val)
+    __bfw_s19('^s19', escapeTextOrNode(__val))
   })
 
   const __bfw_s20 = lazySlots(__scope, [{ id: '^s20', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = pageCount()
-    __bfw_s20('^s20', __val)
+    __bfw_s20('^s20', escapeTextOrNode(__val))
   })
 
 
@@ -3504,13 +3504,13 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
   const __bfw_s18 = lazySlots(__scope, [{ id: '^s18', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = page() + 1
-    __bfw_s18('^s18', __val)
+    __bfw_s18('^s18', escapeTextOrNode(__val))
   })
 
   const __bfw_s19 = lazySlots(__scope, [{ id: '^s19', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = pageCount()
-    __bfw_s19('^s19', __val)
+    __bfw_s19('^s19', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -3643,7 +3643,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
   const __bfw_s21 = lazySlots(__scope, [{ id: 's21', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = selectedCount()
-    __bfw_s21('s21', __val)
+    __bfw_s21('s21', escapeTextOrNode(__val))
   })
 
 

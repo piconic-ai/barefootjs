@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, insert, lazySlots, mapArray, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, insert, lazySlots, mapArray, qsa } from '@barefootjs/client/runtime'
 
 
 export function initAIChatInteractive(__scope, _p = {}) {
@@ -63,7 +63,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
       const __bfw_s3 = lazySlots(__branchScope, [{ id: 's3', kind: 'markup', path: [] }])
-      __disposers.push(createDisposableEffect(() => { __bfw_s3('s3', streamingText()) }))
+      __disposers.push(createDisposableEffect(() => { __bfw_s3('s3', escapeTextOrNode(streamingText())) }))
       return () => __disposers.forEach(d => d())
     }
   }, {

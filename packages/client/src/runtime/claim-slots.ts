@@ -45,15 +45,20 @@
  * within the claim root, using the same ownership rule as
  * `patchSlotRange`/`query.ts`'s `$t`: a `bf:sN` comment owned by a nested
  * `bf-s` scope (a child component's own same-numbered slot — ids are
- * assigned per component, so collisions are expected) is never a candidate.
- * If neither the path nor the fallback scan finds an owned marker, that one
- * slot is dropped with a `console.warn` and the rest of the plan still
- * claims — never guess a boundary, and never let one bad slot sink its
- * siblings. An EMPTY path (`[]`) skips straight to the scan without that
- * first warning — the compiler emits `path: []` deliberately when a slot's
- * position can't be statically pathed (slot unification A3), so a miss
- * there is expected, not drift; only a non-empty path that fails to resolve
- * signals a real shape mismatch worth warning about.
+ * assigned per component, so collisions are expected) is never a candidate
+ * — UNLESS the id is `^`-prefixed (`BF_PARENT_OWNED_PREFIX`), meaning the
+ * marker is content the claiming component itself authored and merely
+ * forwarded through one or more descendants' `children` (see
+ * `findOwnedMarker`'s docstring); for those the ownership walk is skipped
+ * outright, matching `query.ts`'s `$()`. If neither the path nor the
+ * fallback scan finds an owned marker, that one slot is dropped with a
+ * `console.warn` and the rest of the plan still claims — never guess a
+ * boundary, and never let one bad slot sink its siblings. An EMPTY path
+ * (`[]`) skips straight to the scan without that first warning — the
+ * compiler emits `path: []` deliberately when a slot's position can't be
+ * statically pathed (slot unification A3), so a miss there is expected, not
+ * drift; only a non-empty path that fails to resolve signals a real shape
+ * mismatch worth warning about.
  *
  * Row-pristine lazy claim (§3(a)): `lazySlots` touches NOTHING until the
  * first write, and that first write claims the WHOLE plan at once (not just
@@ -64,25 +69,41 @@
  * paths that mutate row content before any write would occur, per §6's
  * risk note) — it claims every slot in the plan immediately.
  *
- * Trust-first-run + dedup (slot unification A3, spec §5/§6): a 'markup'
- * slot's write door now holds a `last` value alongside its boundary refs.
- * The FIRST write ever made to a slot only RECORDS `last` — it never
- * touches the DOM, trusting that the claimed range already holds matching
- * SSR/CSR content (the same discipline `patchSlotRange`'s per-effect
- * `__last === undefined` seed used to provide at the call site; A3 moves it
- * into the writer so every 'markup' caller gets it for free). Every write
- * after the first skips the DOM patch when the new string equals `last`
- * (dedup) and otherwise clears-and-inserts as before. A `Node` write is
- * deduped by identity (mirrors `__bfText`'s `value === current` check) but
- * is NEVER trust-first-run-seeded — the first render of a live Node (e.g. a
- * freshly `createComponent`-built element) is a distinct object from
- * whatever the SSR markup rendered, so it always splices on its first
- * write, exactly like `__bfText` always did. 'text' writes stay a plain
+ * Dedup, no trust-first-run (slot unification A3 follow-up): a 'markup'
+ * slot's write door holds a `last` value alongside its boundary refs. Every
+ * write — INCLUDING THE FIRST — clears-and-inserts unless the new string
+ * equals `last`, in which case the DOM touch is skipped. `last` starts
+ * `undefined`, which never equals a `String(...)`-coerced value, so the
+ * first write can never dedup away; it always patches. A `Node` write is
+ * deduped by identity (mirrors `__bfText`'s `value === current` check) and,
+ * like the string case, is never skipped on the first write — a freshly
+ * `createComponent`-built element is a distinct object from whatever the
+ * SSR markup rendered, so it always splices. 'text' writes stay a plain
  * `nodeValue` assignment (already idempotent, per §5's design note) — no
  * dedup state needed.
+ *
+ * An EARLIER revision of this module skipped the first write entirely
+ * ("trust-first-run": assume the claimed range already holds matching
+ * SSR/CSR content, so recording `last` without touching the DOM is safe).
+ * That assumption is true ONLY for the narrow case it was lifted from —
+ * `patchSlotRange`'s preamble-region reuse, where the row's SSR content and
+ * the effect's mount-time recomputation are both derived from the exact
+ * same source data, so they cannot disagree. It is false in general: any
+ * markup slot whose value comes from client-only state that the server
+ * cannot see — `createSignal(readFromLocalStorage())`, a client-side region
+ * swap adopting HTML the server rendered from a different default — can
+ * genuinely differ from the SSR/CSR content on the very first write, and
+ * trust-first-run silently discarded that first real value, leaving the
+ * stale SSR default on screen until the NEXT change (site/ui's
+ * `admin-gallery.spec.ts` cross-page time-range persistence regression).
+ * The old `__bfText`/`$t` mechanism this module superseded never had this
+ * skip — every write, first or not, unconditionally applied — so removing
+ * it here restores that guarantee for every 'markup' caller, including the
+ * preamble-region case (which merely loses a same-value redundant-patch
+ * skip on mount, not correctness).
  */
 
-import { BF_SCOPE } from '@barefootjs/shared'
+import { BF_SCOPE, BF_PARENT_OWNED_PREFIX } from '@barefootjs/shared'
 import { textNodeAfterComment, commentsInScope } from './query.ts'
 import { commentScopeRegistry } from './scope.ts'
 
@@ -173,13 +194,28 @@ function isSlotComment(node: Node | null, id: string): node is Comment {
  * every node in a comment-scope's range shares the registered comment's
  * OWN parent element, so that (not the unreachable proxy `root`) is where
  * the ancestor walk must stop.
+ *
+ * Parent-owned slots (`^`-prefixed id, `BF_PARENT_OWNED_PREFIX`) skip the
+ * ownership walk entirely — same carve-out as `query.ts`'s `$()` and its
+ * `findText` marker map. A `^sN` id is JSX children the CLAIMING component
+ * itself authored (e.g. `<Button><span>{displayText()}</span></Button>`)
+ * that only physically lands inside descendant components' DOM because it
+ * was forwarded through their `children` prop — every one of those
+ * descendants (Button, its own children, …) legitimately carries its own
+ * `bf-s` scope attribute, but that scope boundary says nothing about who
+ * authored THIS content. Without the carve-out, any slot forwarded more
+ * than zero levels deep is unfindable — every ordinary ancestor bf-s
+ * attribute trips the "nested scope" rejection meant for a same-numbered
+ * marker some unrelated component happens to render for itself.
  */
 function findOwnedMarker(root: Element, id: string): Comment | null {
   const marker = `bf:${id}`
+  const parentOwned = id.startsWith(BF_PARENT_OWNED_PREFIX)
   const registryInfo = commentScopeRegistry.get(root)
   const boundary = registryInfo ? registryInfo.commentNode.parentElement : root
   for (const comment of commentsInScope(root)) {
     if (comment.nodeValue !== marker) continue
+    if (parentOwned) return comment
     let owned = true
     for (let el = comment.parentElement; el && el !== boundary; el = el.parentElement) {
       if (el.hasAttribute(BF_SCOPE)) {
@@ -291,15 +327,16 @@ function writeMarkup(ref: ClaimedMarkupSlot, value: unknown): void {
   // Slot markers (`__slot()`, `@barefootjs/client/slot.ts`): a caller-passed
   // JSX prop that itself contains a component. Leave the server-rendered DOM
   // untouched entirely — no write, no `last` update either, so a later real
-  // value still gets a correct trust-first-run/dedup read. Mirrors
-  // `__bfText`'s identical guard (#1663).
+  // value still gets a correct dedup read. Mirrors `__bfText`'s identical
+  // guard (#1663).
   if (value != null && (value as { __isSlot?: boolean }).__isSlot) return
 
   if (typeof Node !== 'undefined' && value instanceof Node) {
     // Identity dedup, mirrors `__bfText`'s `value === current` check — the
-    // same live node handed back again is a no-op. Never trust-first-run
-    // seeded: a freshly rendered Node is never the SSR-rendered markup by
-    // identity, so the very first Node write always splices.
+    // same live node handed back again is a no-op. `ref.last` starts
+    // `undefined`, which no real Node is ever `===` to, so the first Node
+    // write always splices — a freshly rendered Node is never the
+    // SSR-rendered markup by identity.
     if (value === ref.last) return
     clearMarkupRange(start, end)
     parent.insertBefore(value, end)
@@ -308,12 +345,6 @@ function writeMarkup(ref: ClaimedMarkupSlot, value: unknown): void {
   }
 
   const text = String(value ?? '')
-  if (ref.last === undefined) {
-    // Trust-first-run: the claimed range already holds matching SSR/CSR
-    // content (row-pristine invariant, §3(a)) — record without patching.
-    ref.last = text
-    return
-  }
   if (text === ref.last) return // dedup: identical string, skip the DOM touch
   clearMarkupRange(start, end)
   const tpl = document.createElement('template')

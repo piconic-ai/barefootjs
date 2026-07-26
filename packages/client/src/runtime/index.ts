@@ -101,6 +101,7 @@ export {
   parseHTML,
   escapeAttr,
   escapeText,
+  escapeTextOrNode,
 } from './component.ts'
 
 // Spread props helpers

@@ -1,4 +1,4 @@
-import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initConditionalReturn(__scope, _p = {}) {
@@ -12,8 +12,8 @@ export function initConditionalReturn(__scope, _p = {}) {
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }, { id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __bfw_s2('s2', __val)
-    __bfw_s2('s0', __val)
+    __bfw_s2('s2', escapeTextOrNode(__val))
+    __bfw_s2('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {

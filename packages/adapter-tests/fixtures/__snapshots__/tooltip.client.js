@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 
 export function initTooltip(__scope, _p = {}) {
   if (!__scope) return
@@ -59,7 +59,7 @@ export function initTooltip(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.content
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {

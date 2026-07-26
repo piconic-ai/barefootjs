@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, onCleanup, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, onCleanup, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3328,7 +3328,7 @@ export function initCommandGroup(__scope, _p = {}) {
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
       const __bfw_s1 = lazySlots(__branchScope, [{ id: 's1', kind: 'markup', path: [] }])
-      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', _p.heading) }))
+      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', escapeTextOrNode(_p.heading)) }))
       return () => __disposers.forEach(d => d())
     }
   }, {

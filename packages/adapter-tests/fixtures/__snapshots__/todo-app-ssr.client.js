@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, insert, lazySlots, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, insert, lazySlots, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -9,7 +9,7 @@ export function initTodoItem(__scope, _p = {}) {
   const __bfw_s1 = lazySlots(__scope, [{ id: 's1', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.todo.text
-    __bfw_s1('s1', __val)
+    __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -162,7 +162,7 @@ export function initTodoAppSSR(__scope, _p = {}) {
   const __bfw_s6 = lazySlots(__scope, [{ id: 's6', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = todos().filter(t => !t.done).length
-    __bfw_s6('s6', __val)
+    __bfw_s6('s6', escapeTextOrNode(__val))
   })
 
   createEffect(() => {

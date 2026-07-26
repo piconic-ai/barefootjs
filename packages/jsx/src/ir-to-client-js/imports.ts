@@ -12,7 +12,7 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
-  'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText',
+  'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
   'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
   'tAfter',
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)

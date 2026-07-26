@@ -11,17 +11,17 @@
  * an effect OUTSIDE the conditional's own `insert()` `bindEvents`. That
  * effect re-resolves its anchor via `$t(__scope, slotId)` on EVERY run
  * because `insert()` may swap the branch independently of this effect's own
- * reruns — a cached `lazySlots` claim would go stale across such a swap,
- * and a 'markup' slot's dedup/trust-first-run `last` state can't safely
- * survive being re-claimed fresh every run either (a fresh claim's `last`
- * always starts `undefined`, so re-claiming per-run would trust-first-run
- * away every write forever, never patching real changes — unlike the
- * 'text'-kind conditional cases elsewhere in the compiler, which have no
- * such state to go stale and so DO re-claim fresh each run safely). Moving
- * this one case onto the claim-plan model needs the slot's claim door tied
- * to the branch's OWN activation lifecycle instead of this separate
- * effect's — real architectural work, not a mechanical swap — so it stays
- * on `$t`/`__bfText` for now.
+ * reruns — a cached `lazySlots` claim would go stale across such a swap, and
+ * a 'markup' slot's dedup `last` state can't safely survive being re-claimed
+ * fresh every run either: a fresh claim's `last` always starts `undefined`,
+ * so re-claiming per-run would throw away the dedup skip on every single
+ * run (every write would re-clear-and-reparse even when the value hasn't
+ * changed) — unlike the 'text'-kind conditional cases elsewhere in the
+ * compiler, which have no such state to go stale and so DO re-claim fresh
+ * each run safely. Moving this one case onto the claim-plan model needs the
+ * slot's claim door tied to the branch's OWN activation lifecycle instead of
+ * this separate effect's — real architectural work, not a mechanical swap —
+ * so it stays on `$t`/`__bfText` for now.
  *
  * The mechanism itself, for the reader who lands here from that one site:
  * the compiler wraps reactive child expressions (`<div>{expr}</div>`) in a

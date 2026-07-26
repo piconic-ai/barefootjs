@@ -186,7 +186,10 @@ function emitArmBody(
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`${indent}const ${writer} = lazySlots(__branchScope, ${claimPlanLiteral(slots)})`)
     for (const te of body.textEffects) {
-      lines.push(`${indent}__disposers.push(createDisposableEffect(() => { ${writer}('${te.slotId}', ${te.expression}) }${bindingBfId(te.slotId)}))`)
+      // `escapeTextOrNode`: see emit-reactive.ts's identical wrap for why a
+      // string value must be escaped before a 'markup' writer's
+      // `innerHTML =` insertion, while a live Node passes through untouched.
+      lines.push(`${indent}__disposers.push(createDisposableEffect(() => { ${writer}('${te.slotId}', escapeTextOrNode(${te.expression})) }${bindingBfId(te.slotId)}))`)
     }
   }
 

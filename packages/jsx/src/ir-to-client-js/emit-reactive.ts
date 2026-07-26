@@ -323,18 +323,25 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
       if (normalElems.length > 0) {
         // Expression is always evaluated for non-conditional elements
         lines.push(`    const __val = ${expr}`)
+        // `escapeTextOrNode`: `writeMarkup` inserts a string via
+        // `innerHTML =`, which — unlike the plain `Text.nodeValue =`
+        // assignment the initial SSR/CSR TEMPLATE's `escapeText(${expr})`
+        // was standing in for — DOES interpret HTML, so a raw un-escaped
+        // string here is an injection/byte-parity gap; a live Node (this
+        // expression may return one) must pass through untouched instead.
         for (const elem of normalElems) {
-          lines.push(`    ${writer}('${elem.slotId}', __val)`)
+          lines.push(`    ${writer}('${elem.slotId}', escapeTextOrNode(__val))`)
         }
         // Conditional elements: deferred from slot unification A3 — see
         // `__bfText`'s docstring for why. `insert()` may swap the branch's
         // DOM independently of this effect's own reruns, and a cached claim
-        // door's dedup/trust-first-run state would go stale across that
-        // swap (unlike the 'text'-kind conditional cases elsewhere in the
-        // compiler, this slot's value may be a live Node, so it can't reuse
-        // the "just re-claim fresh every run" trick those use — a fresh
-        // 'markup' claim's `last` always starts `undefined`, which would
-        // trust-first-run away every write forever). Keeps `$t` + `__bfText`.
+        // door's dedup state would go stale across that swap (unlike the
+        // 'text'-kind conditional cases elsewhere in the compiler, this
+        // slot's value may be a live Node, so it can't reuse the "just
+        // re-claim fresh every run" trick those use — a fresh 'markup'
+        // claim's dedup state always starts empty, so re-claiming per-run
+        // would throw away the unchanged-value skip on every single run).
+        // Keeps `$t` + `__bfText`.
         for (const elem of conditionalElems) {
           const v = varSlotId(elem.slotId)
           lines.push(`    const [__el_${v}] = $t(__scope, '${elem.slotId}')`)

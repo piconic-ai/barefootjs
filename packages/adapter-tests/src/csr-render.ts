@@ -274,6 +274,14 @@ const escapeAttr = (value) =>
 // value renders as empty text (JSX/Solid semantics; #2137) — otherwise a
 // bare \`{props.x}\` on an absent prop would surface literal "undefined".
 const escapeText = (value) => value == null ? '' : escapeAttr(value)
+// Mirror @barefootjs/client/runtime escapeTextOrNode: a claimed 'markup'
+// writer's value may be a live Node (spliced by identity) or a plain value
+// (escaped like escapeText, above) — generated code calls this wrapper so
+// a string never reaches \`writeMarkup\`'s \`innerHTML =\` unescaped. The
+// harness never constructs a real Node, but must still mirror the branch
+// so a template evaluating this call doesn't throw on a string value.
+const escapeTextOrNode = (value) =>
+  (typeof Node !== 'undefined' && value instanceof Node) ? value : escapeText(value)
 // Mirror @barefootjs/client/runtime/spread-attrs.ts: format a record of
 // attributes as an HTML attribute string for use inside template literals.
 // The real runtime helper is imported by generated client JS, but the

@@ -81,14 +81,37 @@ describe('claimSlots — text kind', () => {
 })
 
 describe('claimSlots — markup kind', () => {
-  test('trust-first-run: the first write only records, never patches', () => {
-    const root = mount('<div><!--bf:s3-->old<!--/--></div>')
+  // Regression pin (slot unification A3 follow-up): an earlier revision
+  // skipped the DOM patch on a 'markup' slot's first-ever write, "trusting"
+  // that the claimed range already held matching SSR/CSR content — sound
+  // only for the narrow loop-row-reuse case that discipline was lifted
+  // from, not in general. A first write whose value genuinely differs from
+  // what's already in the DOM (client-only state a server-rendered range
+  // can't have known about, e.g. `createSignal(readFromLocalStorage())`
+  // after a client-side region swap) must still land.
+  test('the first write patches even when the value differs from the content already in the range', () => {
+    const root = mount('<div><!--bf:s3-->stale-default<!--/--></div>')
     const row = root.firstElementChild as HTMLElement
     const plan: SlotSpec[] = [{ id: 's3', kind: 'markup', path: [0] }]
 
     const claimed = claimSlots(row, plan)
-    claimed.write('s3', 'old') // matches the SSR content already in the range
-    expect(row.innerHTML).toBe('<!--bf:s3-->old<!--/-->') // untouched, not re-parsed
+    claimed.write('s3', 'real-value') // first write ever — must not be swallowed
+    expect(row.innerHTML).toBe('<!--bf:s3-->real-value<!--/-->')
+  })
+
+  test('the first write re-parses the range even when the value happens to match the SSR/CSR content', () => {
+    const root = mount('<div><!--bf:s3z-->old<!--/--></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's3z', kind: 'markup', path: [0] }]
+    const originalTextNode = row.childNodes[1]
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s3z', 'old') // same string as the SSR content — still patches
+    expect(row.innerHTML).toBe('<!--bf:s3z-->old<!--/-->')
+    // Content reads the same, but the write actually ran: the original SSR
+    // text node was cleared and a freshly template-parsed one took its
+    // place, proving this wasn't skipped.
+    expect(row.childNodes[1]).not.toBe(originalTextNode)
   })
 
   test('holds boundaries and patches string content on the second write', () => {
@@ -97,7 +120,7 @@ describe('claimSlots — markup kind', () => {
     const plan: SlotSpec[] = [{ id: 's3', kind: 'markup', path: [0] }]
 
     const claimed = claimSlots(row, plan)
-    claimed.write('s3', 'old') // first write: trust-first-run seed, no patch
+    claimed.write('s3', 'old') // first write: patches immediately (no seed-without-patch)
     claimed.write('s3', '<b>new</b>')
     expect(row.innerHTML).toBe('<!--bf:s3--><b>new</b><!--/-->')
   })
@@ -108,7 +131,7 @@ describe('claimSlots — markup kind', () => {
     const plan: SlotSpec[] = [{ id: 's3b', kind: 'markup', path: [0] }]
 
     const claimed = claimSlots(row, plan)
-    claimed.write('s3b', 'old') // seed
+    claimed.write('s3b', 'old') // first write (patches; content happens to already read 'old')
     const textNode = row.childNodes[1]
     claimed.write('s3b', 'old') // same value again — must not clear/re-insert
     expect(row.childNodes[1]).toBe(textNode) // identity preserved, no patch happened
@@ -123,7 +146,7 @@ describe('claimSlots — markup kind', () => {
     const plan: SlotSpec[] = [{ id: 's4', kind: 'markup', path: [0] }]
 
     const claimed = claimSlots(row, plan)
-    claimed.write('s4', 'outer<!--bf:s9-->inner<!--/-->tail') // seed (matches SSR range)
+    claimed.write('s4', 'outer<!--bf:s9-->inner<!--/-->tail') // first write (matches SSR range)
     claimed.write('s4', '<span>replaced</span>')
     expect(row.innerHTML).toBe('<!--bf:s4--><span>replaced</span><!--/--><p>after</p>')
   })
@@ -137,7 +160,7 @@ describe('claimSlots — markup kind', () => {
     const start = row.childNodes[0]
     const end = row.childNodes[1]
 
-    claimed.write('s5', '') // seed: SSR range was already empty
+    claimed.write('s5', '') // first write: SSR range was already empty
     claimed.write('s5', 'hello')
     expect(row.innerHTML).toBe('<!--bf:s5-->hello<!--/-->')
     claimed.write('s5', '')
@@ -234,7 +257,7 @@ describe('claimSlots — markup kind', () => {
   // a caller-passed JSX prop containing a component is wrapped with
   // `__slot()`; writing it must leave the server-rendered DOM untouched
   // entirely — no clear, no re-parse, and no `last` update (so a later real
-  // value still gets a correct trust-first-run/dedup read).
+  // value still gets a correct dedup read).
   test('preserves server-rendered DOM for __isSlot markers, and does not disturb dedup state', () => {
     const root = mount('<div><!--bf:s6e-->ssr<!--/--></div>')
     const row = root.firstElementChild as HTMLElement
@@ -245,8 +268,9 @@ describe('claimSlots — markup kind', () => {
     claimed.write('s6e', slotMarker)
     expect(row.innerHTML).toBe('<!--bf:s6e-->ssr<!--/-->') // untouched
 
-    // The __isSlot write never seeded `last` — this first REAL write is
-    // still treated as trust-first-run (matches the SSR content, no patch).
+    // The __isSlot write never seeded `last` — this first REAL write still
+    // patches (content happens to read the same, since it matches the SSR
+    // text) and THEN seeds `last`, so the next unchanged write dedups.
     claimed.write('s6e', 'ssr')
     expect(row.innerHTML).toBe('<!--bf:s6e-->ssr<!--/-->')
     claimed.write('s6e', 'changed')
@@ -281,7 +305,7 @@ describe('lazySlots', () => {
 
     const write = lazySlots(row, plan)
     write('sA', 'A1') // claims sA AND sB now, holding sB's TRUE end ref
-    write('sB', 'B0') // trust-first-run seed for sB — records, does not patch
+    write('sB', 'B0') // first write for sB — patches (content matches SSR already)
 
     // External mutation: inject a spurious `/`-comment inside sB's range,
     // strictly before the TRUE end comment already held.
@@ -334,7 +358,7 @@ describe('comment-scope proxy claim root (#1665 whole-item loop conditionals)', 
     const plan: SlotSpec[] = [{ id: 's2', kind: 'markup', path: [] }]
 
     const claimed = claimSlots(proxy, plan)
-    claimed.write('s2', 'a') // trust-first-run seed
+    claimed.write('s2', 'a') // first write (patches; content matches SSR already)
     claimed.write('s2', 'b')
 
     expect(root.innerHTML).toBe(

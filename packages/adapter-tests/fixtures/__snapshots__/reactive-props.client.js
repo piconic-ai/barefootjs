@@ -1,4 +1,4 @@
-import { $, $c, createComponent, createEffect, createMemo, createSignal, escapeText, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, createComponent, createEffect, createMemo, createSignal, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 
 export function initReactiveChild(__scope, _p = {}) {
   if (!__scope) return
@@ -9,13 +9,13 @@ export function initReactiveChild(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.label
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.value
-    __bfw_s2('s2', __val)
+    __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
   if (_s4) _s4.addEventListener('click', () => { _p.onIncrement() })
@@ -36,13 +36,13 @@ export function initReactiveProps(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = doubled()
-    __bfw_s2('s2', __val)
+    __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
   if (_s4) _s4.addEventListener('click', () => { setCount(n => n + 1) })
@@ -89,19 +89,19 @@ export function initPropsStyleChild(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.label
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.value
-    __bfw_s2('s2', __val)
+    __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
   const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = displayValue()
-    __bfw_s4('s4', __val)
+    __bfw_s4('s4', escapeTextOrNode(__val))
   })
 
 }
@@ -120,19 +120,19 @@ export function initDestructuredStyleChild(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = label
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = value
-    __bfw_s2('s2', __val)
+    __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
   const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = displayValue()
-    __bfw_s4('s4', __val)
+    __bfw_s4('s4', escapeTextOrNode(__val))
   })
 
 }
@@ -151,7 +151,7 @@ export function initPropsReactivityComparison(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   if (_s2) _s2.addEventListener('click', () => { setCount(n => n + 1) })

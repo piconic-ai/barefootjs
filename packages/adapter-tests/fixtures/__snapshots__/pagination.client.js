@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, lazySlots, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3021,7 +3021,7 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
   const __bfw_s16 = lazySlots(__scope, [{ id: 's16', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = currentPage()
-    __bfw_s16('s16', __val)
+    __bfw_s16('s16', escapeTextOrNode(__val))
   })
 
 

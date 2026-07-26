@@ -72,13 +72,17 @@ export function emitLoopChildRefs(
  * The effect re-runs the (loop-param-accessor-wrapped) preamble on every
  * reactive tick so it re-reads the current per-item signal, recomputes the
  * region's value, and writes it through a claimed 'markup' slot (slot
- * unification A3) — trust-first-run (record without patching on the very
- * first write, trusting the SSR/CSR mount-time content already in the DOM)
- * and dedup (skip an unchanged string) now live inside the writer itself
+ * unification A3) — dedup (skip an unchanged string, on every write
+ * including the first) now lives inside the writer itself
  * (`@barefootjs/client/runtime/claim-slots.ts`), replacing the per-region
  * `__last` local this used to carry. `lazySlots` defers the marker lookup
  * to the first actual write, so a row that never changes still pays zero
- * lookup cost at mount/adoption.
+ * lookup cost at mount/adoption. (An earlier revision also skipped the DOM
+ * patch on that first write, "trusting" mount-time SSR/CSR content already
+ * matched — removed as unsound in general: a region's value can genuinely
+ * differ from what's in the DOM on the first write, e.g. after a
+ * client-side region swap adopts server HTML rendered from a different
+ * default. See `claim-slots.ts`'s module docstring.)
  *
  * Non-empty `regions` forces the caller's multi-line renderItem layout (the
  * effect needs `__el` as a query root), mirroring `emitLoopChildRefs`.

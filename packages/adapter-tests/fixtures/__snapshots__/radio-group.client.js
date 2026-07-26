@@ -1,4 +1,4 @@
-import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, hydrate, initChild, lazySlots, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, lazySlots, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var RadioGroupContext = RadioGroupContext ?? createContext()
 
@@ -105,7 +105,7 @@ export function initRadioGroupBasicDemo(__scope, _p = {}) {
   const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = density()
-    __bfw_s4('s4', __val)
+    __bfw_s4('s4', escapeTextOrNode(__val))
   })
 
 
@@ -132,7 +132,7 @@ export function initRadioGroupFormDemo(__scope, _p = {}) {
   const __bfw_s8 = lazySlots(__scope, [{ id: 's8', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = summary()
-    __bfw_s8('s8', __val)
+    __bfw_s8('s8', escapeTextOrNode(__val))
   })
 
 
@@ -160,7 +160,7 @@ export function initRadioGroupCardDemo(__scope, _p = {}) {
   const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = plan()
-    __bfw_s4('s4', __val)
+    __bfw_s4('s4', escapeTextOrNode(__val))
   })
 
 

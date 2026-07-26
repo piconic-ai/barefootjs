@@ -180,8 +180,21 @@ by node count/memory (§5a), not transfer size.
 - **Byte parity**: Step A leaves SSR bytes unchanged (except the dead
   `bf-client:` comment); Step B changes them through the single doors
   with a one-shot fixture regeneration.
-- **Hydration adoption**: `'text'` keeps create-if-absent; `'markup'`
-  keeps trust-first-run (claim records, never patches on first run).
+- **Hydration adoption**: `'text'` keeps create-if-absent. `'markup'` was
+  originally specified to keep trust-first-run (claim records, never
+  patches on first run) — implemented in A3, then REMOVED as an A3
+  follow-up fix: trust-first-run is sound only for the narrow loop-row-reuse
+  case it was lifted from (`patchSlotRange`'s preamble-region reuse, where
+  the row's SSR content and its mount-time recomputation are both derived
+  from the same source data and so cannot disagree), not for the general
+  'markup' slot. A slot whose value comes from client-only state the server
+  can't see (`createSignal(readFromLocalStorage())`; a client-side region
+  swap adopting HTML the server rendered from a different default) can
+  genuinely diverge from the DOM on its first write, and trust-first-run
+  silently discarded that first real value. `'markup'` now patches
+  unconditionally on every write, including the first; only the
+  unchanged-value dedup (§5-A3) survives. See `claim-slots.ts`'s module
+  docstring.
 - **Effect-held references**: emission sites that capture nodes in
   closures are the audit checklist when their mechanism migrates.
 - **Shape drift**: path claiming makes SSR/CSR shape agreement a harder

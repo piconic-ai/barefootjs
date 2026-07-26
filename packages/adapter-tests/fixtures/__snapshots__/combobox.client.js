@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2887,7 +2887,7 @@ export function initComboboxValue(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.placeholder ?? ''
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -3258,7 +3258,7 @@ export function initComboboxGroup(__scope, _p = {}) {
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
       const __bfw_s1 = lazySlots(__branchScope, [{ id: 's1', kind: 'markup', path: [] }])
-      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', _p.heading) }))
+      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', escapeTextOrNode(_p.heading)) }))
       return () => __disposers.forEach(d => d())
     }
   }, {
@@ -3305,7 +3305,7 @@ export function initComboboxBasicDemo(__scope, _p = {}) {
   const __bfw_s11 = lazySlots(__scope, [{ id: 's11', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = value() || 'None'
-    __bfw_s11('s11', __val)
+    __bfw_s11('s11', escapeTextOrNode(__val))
   })
 
 
@@ -3360,7 +3360,7 @@ export function initComboboxFormDemo(__scope, _p = {}) {
   const __bfw_s22 = lazySlots(__scope, [{ id: 's22', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = summary()
-    __bfw_s22('s22', __val)
+    __bfw_s22('s22', escapeTextOrNode(__val))
   })
 
 
@@ -3433,7 +3433,7 @@ export function initComboboxGroupedDemo(__scope, _p = {}) {
   const __bfw_s21 = lazySlots(__scope, [{ id: 's21', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = timezone() || 'None'
-    __bfw_s21('s21', __val)
+    __bfw_s21('s21', escapeTextOrNode(__val))
   })
 
 

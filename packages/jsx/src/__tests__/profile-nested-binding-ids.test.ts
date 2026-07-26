@@ -115,8 +115,12 @@ describe('nested loop binding ids (#1795 Phase 3)', () => {
     // a claimed 'markup' slot writer (slot unification A3), built fresh in
     // the branch's own bindEvents, so a Child-position expression whose
     // value is a live Node splices by identity instead of stringifying
-    // (#2347) — the same contract `__bfText` used to provide.
-    expect(on).toMatch(/__bfw_\w+\('s\d+', r\(\)\.label\) }, "Nested#binding:s\d+"\)/)
+    // (#2347) — the same contract `__bfText` used to provide. Wrapped in
+    // `escapeTextOrNode` (A3 follow-up): a string value must be escaped
+    // before this 'markup' writer's `innerHTML =` insertion, matching what
+    // the initial SSR/CSR template already does for the same expression;
+    // a live Node passes through untouched.
+    expect(on).toMatch(/__bfw_\w+\('s\d+', escapeTextOrNode\(r\(\)\.label\)\) }, "Nested#binding:s\d+"\)/)
     // The inner loop's child text (`{t}`).
     expect(on).toMatch(/String\(t\(\)\)\) }, "Nested#binding:s\d+"\)/)
   })

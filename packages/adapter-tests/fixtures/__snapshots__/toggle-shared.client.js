@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, insert, lazySlots, mapArray, renderChild, styleToCss } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, insert, lazySlots, mapArray, renderChild, styleToCss } from '@barefootjs/client/runtime'
 
 export function initToggleItem(__scope, _p = {}) {
   if (!__scope) return
@@ -11,7 +11,7 @@ export function initToggleItem(__scope, _p = {}) {
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.label
-    __bfw_s0('s0', __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
