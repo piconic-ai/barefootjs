@@ -4148,6 +4148,30 @@
         "text"
       ]
     },
+    "tag-cloud": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:slice",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "tagged-template-classname": {
       "kinds": [
         "call",
@@ -4447,21 +4471,21 @@
     }
   },
   "kindCounts": {
-    "array-literal": 63,
-    "array-method": 64,
-    "arrow": 61,
+    "array-literal": 64,
+    "array-method": 65,
+    "arrow": 62,
     "binary": 75,
-    "call": 173,
+    "call": 174,
     "conditional": 20,
-    "identifier": 258,
+    "identifier": 259,
     "index-access": 12,
-    "literal": 213,
-    "logical": 42,
-    "member": 137,
+    "literal": 214,
+    "logical": 43,
+    "member": 138,
     "object-literal": 46,
-    "template-literal": 27,
+    "template-literal": 28,
     "unary": 22,
-    "unsupported": 29
+    "unsupported": 30
   },
   "axisCounts": {
     "array-method:at": 2,
@@ -4478,7 +4502,7 @@
     "array-method:replace": 1,
     "array-method:replaceAll": 1,
     "array-method:reverse": 1,
-    "array-method:slice": 4,
+    "array-method:slice": 5,
     "array-method:split": 2,
     "array-method:startsWith": 3,
     "array-method:toFixed": 2,
@@ -4500,10 +4524,10 @@
     "binary:>=": 1,
     "literal:boolean": 38,
     "literal:null": 22,
-    "literal:number": 89,
+    "literal:number": 90,
     "literal:string": 154,
     "logical:&&": 7,
-    "logical:??": 37,
+    "logical:??": 38,
     "logical:||": 13,
     "member:computed": 8,
     "member:optional": 1,

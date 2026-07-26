@@ -92,7 +92,7 @@ async function writeUiChildModules(
   spec: SharedFixtureSpec,
 ): Promise<Record<string, string> | undefined> {
   const root = fixtureSourceRoot(spec)
-  if (root === 'shared') return undefined
+  if (root === 'shared' || root === 'fixture') return undefined
   const entries = resolveSiblingSpecifiers(spec)
   if (entries.size === 0) return undefined
 

@@ -130,6 +130,30 @@ export function stringifyPlainLoop(
     anchorKeyExpr,
   } = plan
 
+  // flatMap descriptor mode: the accessor flattens the source through the
+  // callback body (each leaf a `({ k, h })` descriptor), mapArray keys on
+  // `d.k`, and each item element is built from — and patched against — its
+  // rendered HTML. Hydration adopts the SSR leaf in place (`__last` seeds
+  // undefined so the first effect run records without patching — trust SSR,
+  // same contract as plain rows); a later same-key HTML change patches the
+  // element wholesale via `patchLeaf` (flatMap leaves carry no per-slot
+  // wiring by construction — the compiler refuses leaves that would).
+  if (plan.flatMapLeafItem) {
+    const loopBfIdArg = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
+    lines.push(`${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (__bfD, ${indexParam}, __existing) => {`)
+    lines.push(`${topIndent}  let __el = __existing`)
+    lines.push(`${topIndent}  if (!__el) { const __tpl = document.createElement('template'); __tpl.innerHTML = __bfD().h; __el = __tpl.content.firstElementChild }`)
+    lines.push(`${topIndent}  let __last = __existing ? undefined : __bfD().h`)
+    lines.push(`${topIndent}  createEffect(() => {`)
+    lines.push(`${topIndent}    const __html = __bfD().h`)
+    lines.push(`${topIndent}    if (__last === undefined) { __last = __html; return }`)
+    lines.push(`${topIndent}    if (__html !== __last) { __last = __html; patchLeaf(__el, __html) }`)
+    lines.push(`${topIndent}  })`)
+    lines.push(`${topIndent}  return __el`)
+    lines.push(`${topIndent}}, '${markerId}'${loopBfIdArg})`)
+    return
+  }
+
   // Whole-item conditional loops (#1665) render 0-or-1 element per item, so
   // they route through `mapArrayAnchored`. The renderItem returns a fragment
   // headed by a `<!--bf-loop-i:KEY-->` anchor and seeded with the

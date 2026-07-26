@@ -20,6 +20,12 @@ import type { EventDelegationPlan } from './event-delegation.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 
 export interface BranchPlainLoopPlan {
+  /**
+   * flatMap descriptor mode — see `PlainLoopVariant.flatMapLeafItem`
+   * (plan/loop.ts): `arrayExpr` already flattens through the descriptor
+   * body and the stringifier emits the build-or-patch renderItem.
+   */
+  flatMapLeafItem?: boolean
   kind: 'plain'
   /** See LoopPlanCommon.rowConstruction — required on every variant. */
   rowConstruction: 'string-template' | 'dom-ops'

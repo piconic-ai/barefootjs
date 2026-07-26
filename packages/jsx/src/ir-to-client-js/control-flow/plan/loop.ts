@@ -146,6 +146,15 @@ interface PlainLoopVariant extends DynamicLoopCommon {
    * Empty when the loop has no key (only meaningful when `anchored`).
    */
   anchorKeyExpr: string
+  /**
+   * flatMap descriptor mode (`LoopCore.flatMapClient`): `arrayExpr` already
+   * includes the `.flatMap(params => descriptorBody)` projection — the
+   * runtime reconciles the FLATTENED `({ k, h })` leaves — and `keyFn` keys
+   * on `d.k` (index fallback). The stringifier emits the build-or-patch
+   * renderItem (`patchLeaf`) instead of the template-clone shape; `template`
+   * is empty and `mapPreambleWrapped` unused in this mode.
+   */
+  flatMapLeafItem?: boolean
 }
 
 /**

@@ -69,6 +69,25 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
   // both the effect and its dependency subscriptions (observation O-2).
   lines.push(`      __disposers.push(createDisposableEffect(() => {`)
 
+  // flatMap descriptor mode — build-or-patch renderItem, mirrors the
+  // top-level shape in stringify/loop.ts (see comment there).
+  if (plan.flatMapLeafItem) {
+    lines.push(`        if (${containerVar}) mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (__bfD, ${indexParam}, __existing) => {`)
+    lines.push(`          let __el = __existing`)
+    lines.push(`          if (!__el) { const __tpl = document.createElement('template'); __tpl.innerHTML = __bfD().h; __el = __tpl.content.firstElementChild }`)
+    lines.push(`          let __last = __existing ? undefined : __bfD().h`)
+    lines.push(`          createEffect(() => {`)
+    lines.push(`            const __html = __bfD().h`)
+    lines.push(`            if (__last === undefined) { __last = __html; return }`)
+    lines.push(`            if (__html !== __last) { __last = __html; patchLeaf(__el, __html) }`)
+    lines.push(`          })`)
+    lines.push(`          return __el`)
+    lines.push(`        }, '${markerId}'${loopBfId})`)
+    lines.push(`      }))`)
+    stringifyEventDelegation(lines, eventDelegation)
+    return
+  }
+
   // Non-empty `childRefs` need `__el` as a handle inside the factory body,
   // so force the multi-line layout (#1244).
   if (reactiveEffects === null && !bodyIsMultiRoot && childRefs.length === 0) {

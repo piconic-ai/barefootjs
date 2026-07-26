@@ -82,6 +82,7 @@ export { reconcileList, type RenderItemFn } from './list.ts'
 export { reconcileElements, getLoopChildren, getLoopNodes } from './reconcile-elements.ts'
 export { qsaItem, upsertChildItem } from './qsa-item.ts'
 export { mapArray, mapArrayAnchored } from './map-array.ts'
+export { patchLeaf } from './patch-leaf.ts'
 
 // Template registry
 export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './template.ts'

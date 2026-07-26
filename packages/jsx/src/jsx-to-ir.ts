@@ -4279,6 +4279,39 @@ function transformMapCall(
       tryTransformRenderableBody(body)
     }
 
+    // A flatMapCallback carries the WHOLE body (statements included) as
+    // structured segments — the generic statements-before-return `preamble`
+    // the block-body path may have collected above is a duplicate carrier.
+    // Worse, it isn't one: spliced into a mapArray renderItem it re-runs the
+    // body's control flow against the wrong binding shape (the audited
+    // `if (t().tags.length > maxTags) return [];` renderItem residue).
+    // The segments carrier is the single door; drop the shadow copy.
+    if (flatMapCallback) preamble = undefined
+
+    // Adapter gate (spec/callback-fidelity.md fidelity model): a flatMap body
+    // carried as structured segments runs verbatim on a JS runtime; a DSL
+    // template runtime cannot execute it at SSR — pre-gate, e.g. the Go
+    // adapter emitted `{{range …}}{{end}}` with an EMPTY body (silent
+    // divergence, the exact failure class the sound-or-loud invariant
+    // forbids). Refuse loudly with the /* @client */ escape, mirroring the
+    // const-preamble and array-builder gates above.
+    if (flatMapCallback && !isClientOnly && !(ctx.analyzer.acceptsCallbackBody?.('flatMap') ?? false)) {
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+          getSourceLocation(body, ctx.sourceFile, ctx.filePath),
+          {
+            message:
+              'A .flatMap() callback body with statements or a nested projection ' +
+              'cannot be lowered to a template on this backend.',
+            suggestion: {
+              message: 'Add /* @client */ to render this loop on the client only',
+            },
+          }
+        )
+      )
+    }
+
     // Unregister loop params
     if (paramBindings) {
       for (const b of paramBindings) ctx.loopParams.delete(b.name)
@@ -4293,6 +4326,40 @@ function transformMapCall(
   // fall back to treating the entire expression as an IRExpression — unless
   // flatMap already built a compiled callback (flatMapCallback).
   if (children.length === 0 && !flatMapCallback) {
+    // Structural net (sound-or-loud, spec/callback-fidelity.md): a callback
+    // body that carries an INLINE JSX literal but produced no loop lowering
+    // must never fall through to the IRExpression scalar path — `ctx.getJS`
+    // strips types, not JSX, so the raw `<li …>` would splice verbatim into
+    // the emitted client bundle as a silent SyntaxError. Any recognizer gap
+    // for a JSX-bearing shape becomes a loud diagnostic here instead of a
+    // leak. (A JSX-helper CALL — `map(t => renderItem(t))` — carries no
+    // inline JSX literal and legitimately stays on the reactive-text path.)
+    const cb = node.arguments[0]
+    const cbBody = cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) ? cb.body : undefined
+    // `errors.length === 0` gate: a more specific refusal already fired for
+    // this shape (e.g. the flatMap leaf-wiring check) — don't stack the
+    // generic message on top of it.
+    if (cbBody && containsJsxInExpression(cbBody) && ctx.analyzer.errors.length === 0) {
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+          getSourceLocation(cbBody, ctx.sourceFile, ctx.filePath),
+          {
+            message:
+              `A .${method}() callback that builds JSX in this shape cannot be ` +
+              'compiled — the JSX would leak verbatim into the client bundle. ' +
+              'Recognized bodies: a JSX element/fragment, a ternary or ' +
+              '&& / || / ?? expression, an array literal (flatMap), or a block ' +
+              'body whose return the compiler can lower.',
+            suggestion: {
+              message:
+                'Restructure the callback to return the JSX element directly ' +
+                '(or via a block body with a plain `return`).',
+            },
+          }
+        )
+      )
+    }
     return null
   }
 
@@ -4577,6 +4644,39 @@ function buildFlatMapCallback(
     return undefined
   }
 
+  // A leaf that carries wiring the descriptor render path can't honour —
+  // an event handler, a component, a nested loop, or a spread — would be
+  // silently dead DOM on the client (the leaf renders as a keyed HTML
+  // string, patched wholesale on change, with no per-slot wiring). Refuse
+  // loudly (sound-or-loud), mirroring `preambleFragmentNeedsWiring` for map
+  // preambles — but deliberately NOT refusing reactive expressions: whole-
+  // leaf patching covers those.
+  for (const leafIr of leafIrs) {
+    if (flatMapLeafNeedsWiring(leafIr)) {
+      const loc = 'loc' in leafIr && leafIr.loc
+        ? leafIr.loc
+        : getSourceLocation(body, ctx.sourceFile, ctx.filePath)
+      ctx.analyzer.errors.push(
+        createError(
+          ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+          loc,
+          {
+            message:
+              'A JSX element produced by a .flatMap() callback cannot carry ' +
+              'event handlers, components, nested loops, or spreads — the ' +
+              'leaf renders as a keyed HTML string with no per-element wiring.',
+            suggestion: {
+              message:
+                'Restructure so the interactive element lives in a .map() body, ' +
+                'or add /* @client */ to render the loop on the client only.',
+            },
+          }
+        )
+      )
+      return undefined
+    }
+  }
+
   const pieces = reconstructAsSegments(body, ctx.sourceFile, ctx.analyzer.typeExcludeRanges, leafSpans)
   const segments: PreambleSegment[] = pieces.map((piece) => {
     if ('marker' in piece) return { kind: 'jsx', ir: leafIrs[piece.marker] }
@@ -4608,6 +4708,35 @@ interface PreambleCollection {
   preamble: MapCallbackPreamble
   /** Set when a leaf carries wiring the verbatim path can't render (D-E). */
   refusalNode?: ts.Node
+}
+
+/**
+ * Does a flatMap segment leaf carry wiring the descriptor render path can't
+ * honour? Narrower than {@link preambleFragmentNeedsWiring}: reactive
+ * expressions are ALLOWED (the client renders each leaf as a keyed
+ * `{ k, h }` descriptor and patches the whole leaf when its HTML changes),
+ * but events, components, nested loops, and spreads have no wiring on that
+ * path and would be silently dead.
+ */
+function flatMapLeafNeedsWiring(ir: IRNode): boolean {
+  switch (ir.type) {
+    case 'component':
+    case 'loop':
+      return true
+    case 'element':
+      if (ir.events.length > 0) return true
+      if (ir.attrs.some((a) => a.name.startsWith('...'))) return true
+      return ir.children.some(flatMapLeafNeedsWiring)
+    case 'conditional':
+      return (
+        flatMapLeafNeedsWiring(ir.whenTrue) ||
+        (ir.whenFalse ? flatMapLeafNeedsWiring(ir.whenFalse) : false)
+      )
+    case 'fragment':
+      return ir.children.some(flatMapLeafNeedsWiring)
+    default:
+      return false
+  }
 }
 
 /**
