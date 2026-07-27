@@ -96,8 +96,6 @@ export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './t
 export {
   createComponent,
   renderChild,
-  getPropsUpdateFn,
-  getComponentProps,
   parseHTML,
   escapeAttr,
   escapeText,

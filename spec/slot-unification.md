@@ -1,15 +1,20 @@
-# Slot unification (proposal — not yet implemented)
+# Slot unification
 
-Status: **draft for review, revision 2**. Root-cure design prompted by the
-#2389/#2393 review. Revision 2 replaces the scan-based `updateSlot` door
-from revision 1 with a claim-once model, informed by how SolidJS resolves
-dynamic positions — and identifies where BarefootJS's own constraints
-(multi-backend SSR, byte parity) suggest different choices than Solid's.
-No code change ships with this document.
+Status: **implemented (Steps A+B, PRs #2396–#2400; revision history in
+git)**. Root-cure design prompted by the #2389/#2393 review. Revision 2
+replaced the scan-based `updateSlot` door from revision 1 with a
+claim-once model, informed by how SolidJS resolves dynamic positions — and
+identified where BarefootJS's own constraints (multi-backend SSR, byte
+parity) suggested different choices than Solid's. Deferred follow-up work
+is tracked in §8.
 
-## 1. Current state — the inventory
+## 1. Pre-unification inventory
 
-Reactive content-update mechanisms, by addressing scheme:
+The mechanisms below are what existed before Steps A+B. Rows #1–#4 and #9
+were replaced by the claim-plan model (§4) and no longer exist in the
+codebase; rows #5–#8 were kept as-is (§7 non-goals) and remain current.
+Reactive content-update mechanisms, by addressing scheme, as they stood at
+the time this design was proposed:
 
 | # | Mechanism | Marker / anchor | Value | Update discipline |
 |---|-----------|-----------------|-------|-------------------|
@@ -23,7 +28,7 @@ Reactive content-update mechanisms, by addressing scheme:
 | 8 | attr effects | `bf="sN"` attr | string/bool | setAttribute/property |
 | 9 | `reconcileElements` / `reconcileList` | loop pair + `data-key` | elements | **dead — no compiler emission site** |
 
-Facts that shape the design:
+Facts that shaped the design:
 
 - Rows #1–#3 share one marker format with three different lookups and
   three ownership rules.
@@ -47,8 +52,9 @@ on update — is the core of this proposal. A path is only required to be
 valid at the moment of claim, and at mount the row DOM is always in its
 pristine template shape on both SSR and CSR, so later variable-length
 changes cannot invalidate anything: the claim captures boundary/text
-references and paths are never consulted again. BarefootJS already has
-this shape in embryo: the hoisted `tAfter(__p[i])` path (#2143).
+references and paths are never consulted again. BarefootJS already had
+this shape in embryo: the hoisted `tAfter(__p[i])` path (#2143), later
+generalized by the claim-plan mechanism (§4) that superseded it.
 
 ## 3. Where BarefootJS's constraints suggest different choices
 
@@ -311,41 +317,47 @@ pass (e.g. hoisting the plan literal's static `id`/`kind` fields once per
 loop instead of re-allocating them every row), not a shortfall in what
 this fix set out to do.
 
-## 5. Migration — two steps, stacked semantic PRs
+## 5. Migration — what shipped, two steps of stacked semantic PRs
 
-Compatibility with the current emitted grammar is explicitly NOT a goal
-(pre-1.0; fixtures and snapshots regenerate wholesale). What survives is
-not compatibility but **verifiability**: Step A keeps SSR bytes unchanged
-so the new client is validated against known-good SSR output — the
-existing byte-parity corpus is the debugging baseline. The old five-stage
-coexistence plan (mechanisms folded one at a time) is retired.
+Compatibility with the pre-unification emitted grammar was explicitly NOT
+a goal (pre-1.0; fixtures and snapshots regenerated wholesale). What
+survived was not compatibility but **verifiability**: Step A kept SSR
+bytes unchanged so the new client was validated against known-good SSR
+output — the existing byte-parity corpus was the debugging baseline. The
+old five-stage coexistence plan (mechanisms folded one at a time) was
+retired in favor of this two-step plan.
 
 **Step A — claim infrastructure, wholesale (SSR bytes unchanged).**
-Replace all four content mechanisms (`$t`-effect text slots, `__bfText`,
+Replaced all four content mechanisms (`$t`-effect text slots, `__bfText`,
 `patchSlotRange`, `updateClientMarker`) in one series of stacked PRs; old
-mechanisms are deleted, not shimmed:
+mechanisms were deleted, not shimmed:
 
-- **A1 (this revision)**: spec.
-- **A2 — runtime**: claim-plan interpreter + claimed-slot primitives in
-  `@barefootjs/client/runtime` (claim a row/scope from a compile-time
-  plan; held-ref writes for `'text'`/`'markup'`/`Node`; row-level lazy
-  claim with the row-pristine invariant; eager-claim escape for the
-  streaming/portal paths enumerated below). Unit-tested standalone; no
-  compiler change yet.
-- **A3 — compiler switch**: emit claim plans (data) for every content
-  slot; all four old emission forms and their runtime exports removed;
-  snapshots and CSR/fixture goldens regenerate once. `bf-client:` markers
-  stop being emitted (its SSR comment was claim-input only; removing it
-  is the one SSR byte change allowed in Step A, since nothing adopts it).
-- **A4 — cleanup**: remove dead exports (`reconcileElements`,
-  `reconcileList`); re-run the SSR bench and record real (non-ceiling)
-  numbers here.
+- **A1** (#2396): spec (this document, revision 3).
+- **A2 — runtime** (#2397): claim-plan interpreter + claimed-slot
+  primitives in `@barefootjs/client/runtime` (claim a row/scope from a
+  compile-time plan; held-ref writes for `'text'`/`'markup'`/`Node`;
+  row-level lazy claim with the row-pristine invariant; eager-claim escape
+  for the streaming/portal paths enumerated in §6). Unit-tested
+  standalone; no compiler change yet.
+- **A3 — compiler switch** (#2398): emit claim plans (data) for every
+  content slot; all four old emission forms and their runtime exports
+  removed; snapshots and CSR/fixture goldens regenerated once. `bf-client:`
+  markers stopped being emitted (its SSR comment was claim-input only;
+  removing it was the one SSR byte change Step A allowed, since nothing
+  adopted it). A follow-up fix (§6) removed trust-first-run for 'markup'
+  slots.
+- **A4 — cleanup** (#2399): removed dead exports (`reconcileElements`,
+  `reconcileList`); re-ran the SSR bench and recorded real (non-ceiling)
+  numbers in §5a.
 
-**Step B — marker elision.** Drop markers outside (i)–(iii) from both SSR
-and CSR templates through the single doors (nine adapters + goldens in
-one PR), and land claim-plan verification (d) with it: conformance
-mechanically checks every adapter's output against the plans. Justified
-by node count/memory (§5a), not transfer size.
+**Step B — marker elision** (#2400): dropped markers outside (i)–(iii)
+from both SSR and CSR templates through the single doors, for the
+narrow slice described in §5a's "Step B measured" section (`/* @client */`
+text slots outside any loop/conditional, one elided slot per static
+subtree), and landed claim-plan verification (d) alongside it:
+conformance mechanically checks every adapter's output against the plans.
+Justified by node count/memory (§5a), not transfer size. The general case
+(ordinary reactive text in loop rows) was deferred — see §8.
 
 ## 6. Constraints and risks
 
@@ -387,7 +399,11 @@ by node count/memory (§5a), not transfer size.
 
 ## 8. Follow-ups
 
-- **Row-granularity effects (§3(c)) — DONE.** Plain loop rows (top-level
+Work this proposal identified but did not ship, tracked here so it isn't
+re-discovered from scratch:
+
+- **Row-granularity effects (§3(c)) — effect-count consolidation DONE;
+  lazy effect-graph construction remains.** Plain loop rows (top-level
   `mapArray` and the structurally-identical branch-scoped shape) emit ONE
   `createEffect` per row covering every reactive attr, outer text, and
   preamble region, sharing one mixed-kind `lazySlots` writer for the
@@ -398,13 +414,26 @@ by node count/memory (§5a), not transfer size.
   loops were left untouched — out of this pass's mechanically-verified
   scope (they never carry preamble regions, the shape that made the
   three-way merge possible). Profile mode keeps the old per-slot/per-attr
-  emission so per-binding profiler ids survive.
-- **General marker elision remains** (§3(b), deferred past Step B):
-  ordinary reactive loop-row text (the 1k-row bench's actual hot path) is
-  still marker-based — only `/* @client */` text elides its marker pair
-  today. The data-dependent-width problem Step B's own note describes
-  (a later sibling's path is only valid for the width THIS request
-  produced) is unsolved for the general case.
+  emission so per-binding profiler ids survive. What did NOT ship is the
+  row-level lazy EFFECT-GRAPH construction that §5a's −57% memory ceiling
+  assumes: every row's reactive graph (signals, subscriptions, the one
+  effect closure) is still built eagerly at hydration regardless of
+  whether that row is ever written to. That deferral needs its own
+  measured PR, the way A4 and Step B measured their own slices.
+- **General-case marker elision (element-path vocabulary beyond `'text'`
+  slots).** Step B's `client-only-elision.ts` only elides `/* @client */`
+  text slots outside any loop/conditional (§5a "Step B measured" explains
+  why: their SSR-rendered width is the one case that's deterministically
+  zero on every request). Ordinary reactive text in loop rows — the actual
+  1k-row benchmark hot path — stays marker-owned because a later sibling's
+  absolute child-index path is only valid for the specific width THIS
+  request produced. The identified path forward (freeze-after-first,
+  minus the `clientOnly` restriction, decided where loop-row `'text'`-kind
+  classification already happens in `collect-elements.ts` /
+  `ir-to-client-js/control-flow/plan/loop.ts`) needs the elision decision
+  moved inside `generateClientJs` instead of running as a pre-pass before
+  `adapter.generate` — re-verifying that reordering against the loop-row
+  planner's own invariants is real, unstarted work.
 - **Claim-mechanism allocation shape**: §5a's row-granularity measurement
   section notes a residual ~10KB/1k-rows gap between this fix's result and
   the pre-migration baseline, attributable to the `lazySlots` writer
@@ -416,3 +445,9 @@ by node count/memory (§5a), not transfer size.
   mechanically-identified candidate for a future pass (e.g. hoisting each
   slot's static `id`/`kind` once per loop and only threading a per-row
   `path`, instead of re-allocating full `SlotSpec` objects every row).
+- **`getComponentProps`/`getPropsUpdateFn` dead-export removal.** Flagged
+  consumer-less in A4's report after `reconcileList` (their only reader)
+  was deleted. Removed in the post-migration cleanup that added this
+  section, along with the now-dead `propsMap`/`propsUpdateMap` bookkeeping
+  those two functions existed to expose (`packages/client/src/runtime/
+  component.ts`).

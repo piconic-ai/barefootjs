@@ -32,22 +32,39 @@ See [JSX Compatibility — Limitations](./jsx-compatibility.md#limitations) for 
 
 ## How It Works
 
-The compiler skips template generation for the expression. The server outputs a comment marker; the client JS evaluates it:
+The compiler skips template generation for the expression: the server can never evaluate it, so the SSR-rendered width is always zero. The client claims a slot for it and writes the real value once the browser evaluates the expression — the general case behind both compiled shapes below (`spec/slot-unification.md` §4).
 
-**Server output:**
+**Claimed slot (the common case):** a marker pair is still emitted so the client has an anchor comment to claim against.
 
 ```html
-<!--bf-client:s2--><!--/-->
+<!-- server output -->
+<!--bf:s0--><!--/--> items left
 ```
-
-**Client JS:**
 
 ```js
-// @client: s2
+// client JS
+{ const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [] }])
 createEffect(() => {
-  updateClientMarker(__scope, 's2', todos().filter(t => !t.done).length)
-})
+  __bfw_s0('s0', todos().filter(t => !t.done).length)
+}) }
 ```
+
+**Markerless elision (Step B):** when the expression is the ONLY content of its own element — not adjacent to other text/expressions, and not inside a loop or conditional branch — the compiler proves a static child-index path to the slot's position and drops the marker pair entirely from both SSR and CSR output. `<strong>{/* @client */ todos().filter(t => !t.done).length}</strong>` from the [TodoApp example](https://github.com/piconic-ai/barefootjs/blob/main/integrations/shared/components/TodoApp.tsx) qualifies:
+
+```html
+<!-- server output -->
+<strong bf="s1"></strong>
+```
+
+```js
+// client JS
+{ const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'text', path: [0, 0], markerless: true }])
+createEffect(() => {
+  __bfw_s0('s0', todos().filter(t => !t.done).length)
+}) }
+```
+
+Either way, the claim happens lazily on the first write — nothing is touched until the effect actually runs — and every later write goes through the held reference, never re-scanning the DOM (`packages/client/src/runtime/claim-slots.ts`).
 
 
 ## Examples
