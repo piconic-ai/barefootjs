@@ -12,11 +12,12 @@
  * region — slot-marked like an ordinary reactive text (so SSR/CSR row
  * templates render `<!--bf:sN-->...<!--/-->` / `{bfText("sN")}` the same
  * door a reactive text uses), but wired on the client via a claimed
- * 'markup' slot writer (slot unification A3, `@barefootjs/client/runtime/
- * claim-slots.ts`) rather than a `reactiveTexts` `.textContent` assignment
- * (which would corrupt the array-joined markup). Trust-first-run and
- * dedup — previously a per-region `__last` local next to a `patchSlotRange`
- * call — now live inside the writer itself.
+ * 'markup' slot writer (`@barefootjs/client/runtime/claim-slots.ts`) rather
+ * than a `reactiveTexts` `.textContent` assignment (which would corrupt the
+ * array-joined markup). Dedup — skip the DOM write when the new value
+ * matches the writer's own held `last` value — lives inside that writer;
+ * every write, including the first, applies unless deduped (see
+ * `claim-slots.ts`'s module docstring).
  */
 
 import { describe, test, expect } from 'bun:test'

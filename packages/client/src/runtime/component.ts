@@ -25,20 +25,6 @@ export function setParentScopeId(id: string | null): void {
   _parentScopeId = id
 }
 
-// WeakMap to store props update functions for each component element.
-// Originally read by the (removed, slot unification A4) `reconcileList`
-// element-reconciler to update props when an element was reused; mapArray's
-// reuse path goes through `initChild` instead (`./map-array.ts`), so
-// `getPropsUpdateFn` currently has no caller. Left in place — it's cheap
-// bookkeeping populated on every component creation, not a live bug.
-const propsUpdateMap = new WeakMap<HTMLElement, (props: Record<string, unknown>) => void>()
-
-// WeakMap to store the current props for each component element.
-// Same history as `propsUpdateMap` above — `getComponentProps` currently
-// has no caller now that `reconcileList` is gone.
-const propsMap = new WeakMap<HTMLElement, Record<string, unknown>>()
-
-
 /**
  * Create a component instance with DOM element and initialized state.
  *
@@ -219,14 +205,12 @@ export function createComponent(
     if (materialised && !materialised.hasAttribute(BF_PLACEHOLDER)) {
       // The deferred child was created in place of the placeholder.
       // `materialised` is the child's OWN element, created via
-      // upsertChild -> createComponent, which already registered itself
-      // (hydratedScopes / propsMap / registerPropsUpdate) keyed to the
-      // child with the child's own props. We must NOT re-register it here:
-      // overwriting propsMap/registerPropsUpdate with the *parent's* props
-      // would mis-key the child (e.g. a later getComponentProps would read
-      // the parent's props), and re-running the parent's init on an element
-      // whose placeholder is already gone could not re-materialise. So just
-      // restore the scope and return the already-registered child.
+      // upsertChild -> createComponent, which already marked itself
+      // hydrated with its own props. We must NOT re-run this function's
+      // own registration steps on it here — that would re-run the
+      // *parent's* init on an element whose placeholder is already gone
+      // and could not re-materialise. So just restore the scope and
+      // return the already-registered child.
       // (Parent-scope effects are unaffected: createEffect ownership lives
       // in the EffectContext tree, not the discarded placeholder element.)
       setCurrentScope(prevScope)
@@ -253,53 +237,8 @@ export function createComponent(
   // 12. Mark element as initialized
   hydratedScopes.add(element)
 
-  // 13. Store props and register update function for element reuse (see
-  //     propsUpdateMap/propsMap docstrings above)
-  propsMap.set(element, props)
-  registerPropsUpdate(element, name, props)
-
   return element
 }
-
-/**
- * Get the props stored for a component element.
- * See `propsMap`'s docstring — currently unused now that `reconcileList` is
- * gone, kept for the WeakMap it reads.
- */
-export function getComponentProps(element: HTMLElement): Record<string, unknown> | undefined {
-  return propsMap.get(element)
-}
-
-/**
- * Register a props update function for a component element.
- * When called, this function re-initializes the component with new props.
- */
-function registerPropsUpdate(
-  element: HTMLElement,
-  name: string,
-  _initialProps: Record<string, unknown>
-): void {
-  // Register update function (see `propsUpdateMap`'s docstring above)
-  propsUpdateMap.set(element, (newProps: Record<string, unknown>) => {
-    // Re-initialize the component with new props
-    // This allows the component to capture new values (e.g., todo with editing: true)
-    // and set up new effects that reference the new values
-    const init = getComponentInit(name)
-    if (init) {
-      init(element, newProps)
-    }
-  })
-}
-
-/**
- * Get the props update function for an element.
- * See `propsUpdateMap`'s docstring — currently unused now that
- * `reconcileList` is gone, kept for the WeakMap it reads.
- */
-export function getPropsUpdateFn(element: HTMLElement): ((props: Record<string, unknown>) => void) | undefined {
-  return propsUpdateMap.get(element)
-}
-
 
 /**
  * Render a child component's template to an HTML string.
@@ -479,12 +418,13 @@ export function escapeAttr(value: unknown): string {
  *
  * A nullish value renders as empty text — the JSX/Solid semantics the Hono
  * SSR reference follows (`{undefined}` / `{null}` produce no text), and
- * what the reactive text-update path already does (`dynamic-text.ts` and
- * `client-marker.ts` both `String(value ?? '')`). Only this initial-render
- * escape site used to stringify `undefined` / `null` into literal
- * "undefined" / "null" text, so a bare `{props.x}` on an absent prop
- * diverged from SSR at first paint (#2137). Non-nullish values (including
- * `0` and `false`) keep their `String()` form, matching the reactive path.
+ * what the reactive text-update path already does (`claim-slots.ts`'s
+ * `writeText`/`writeMarkup` and `dynamic-text.ts` all `String(value ?? '')`).
+ * Only this initial-render escape site used to stringify `undefined` /
+ * `null` into literal "undefined" / "null" text, so a bare `{props.x}` on
+ * an absent prop diverged from SSR at first paint (#2137). Non-nullish
+ * values (including `0` and `false`) keep their `String()` form, matching
+ * the reactive path.
  */
 export function escapeText(value: unknown): string {
   if (value == null) return ''
@@ -625,9 +565,6 @@ function createComponentFromDef(
 
   // Mark as initialized
   hydratedScopes.add(element)
-
-  // Store props for element reuse
-  propsMap.set(element, props)
 
   return element
 }

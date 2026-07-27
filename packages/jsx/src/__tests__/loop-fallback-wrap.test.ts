@@ -89,8 +89,8 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
 
   test('inline literal array stays static (optimisation preserved)', () => {
     // `[1, 2, 3]` is an ArrayLiteralExpression with no calls — the
-    // existing static-render path is the right call. No reconcileList /
-    // mapArray should appear.
+    // existing static-render path is the right call. No `mapArray` call
+    // should appear.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -107,7 +107,6 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
 
     const clientJs = getClientJs(source, 'List.tsx')
     expect(clientJs).not.toMatch(/\bmapArray\s*\(/)
-    expect(clientJs).not.toMatch(/\breconcileList\s*\(/)
   })
 
   test('prop array compiles to mapArray (#1586)', () => {

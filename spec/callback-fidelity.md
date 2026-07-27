@@ -45,9 +45,11 @@
 > node on a same-key `setItem` update and re-runs only wired slots — without
 > the region, a preamble-derived child froze at its mount-time value forever
 > while sibling wired slots (`{t.name}`) updated normally. The effect re-runs
-> the preamble (accessor-wrapped) and patches the marker-delimited DOM range
-> via `patchSlotRange` (`@barefootjs/client`) only when the recomputed value
-> changed — the first run always just records, trusting the SSR/CSR mount.
+> the preamble (accessor-wrapped) and writes the recomputed value through a
+> claimed 'markup' slot (`@barefootjs/client/runtime/claim-slots.ts`,
+> `spec/slot-unification.md`), which patches the marker-delimited DOM range
+> only when the value actually changed — every write, including the first,
+> goes through that dedup, never skipped just for being first.
 > #2389, `preamble-region-patch.test.ts` + the `preamble-cells` fixture.
 
 ## Vision

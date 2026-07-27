@@ -14,7 +14,6 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
   'qsa', 'qsaItem', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
-  'tAfter',
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
   // — the "one claim mechanism" that replaced `patchSlotRange` and
   // `updateClientMarker` (both deleted) as the content-slot update door.
