@@ -82,7 +82,7 @@ export function Counter({ __instanceId, ... }) {
 Client JS (Phase 2b):
 
 ```js
-import { $, $t, createEffect, createSignal, hydrate } from '@barefootjs/client'
+import { $, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initCounter(__scope, _p = {}) {
   if (!__scope) return
@@ -90,11 +90,13 @@ export function initCounter(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s1] = $(__scope, 's1')       // element lookup
-  const [_s0] = $t(__scope, 's0')      // text node lookup
 
+  // Content slot: claimed lazily from the <!--bf:s0-->…<!--/--> marker
+  // pair on first write, then updated through the held reference
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    if (_s0) _s0.nodeValue = String(__val ?? '')
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
@@ -102,7 +104,7 @@ export function initCounter(__scope, _p = {}) {
 
 hydrate('Counter', {
   init: initCounter,
-  template: (_p) => `<button bf="s1"> Count: <!--bf:s0-->${(0)}<!--/--></button>`
+  template: (_p) => `<button bf="s1"> Count: <!--bf:s0-->${escapeText((0))}<!--/--></button>`
 })
 ```
 
@@ -135,9 +137,11 @@ Marker-driven hydration attaches behavior to server-rendered HTML.
 4. Init function runs per scope — signals, effects, handlers
 5. Runtime tracks scopes to prevent double initialization
 
-### Scoped Queries
+### Scoped Queries and Slot Claiming
 
-`$()` and `$t()` search within a scope, excluding child component scopes:
+Element lookups (`$()`) and content-slot claims (`claimSlots()` /
+`lazySlots()`) both operate within a scope, excluding child component
+scopes:
 
 ```html
 <div bf-s="TodoApp_x1">
@@ -148,4 +152,16 @@ Marker-driven hydration attaches behavior to server-rendered HTML.
 </div>
 ```
 
-`$(__scope, 's0')` in TodoApp finds `<h1>`, not the `<span>` inside TodoItem. The `~` prefix marks a child scope excluded from parent queries.
+`$(__scope, 's0')` in TodoApp finds `<h1>`, not the `<span>` inside
+TodoItem. The `~` prefix marks a child scope excluded from parent
+queries.
+
+Dynamic *content* (reactive text and markup regions) is not looked up
+per update. Instead the compiler emits a **claim plan** — a data
+description of each slot (`{ id, kind, path }`) — and the runtime claims
+the slot's DOM position **once**: `lazySlots()` scans for the slot's
+`<!--bf:id-->…<!--/-->` marker pair on the first write (skipping child
+scopes, same as `$()`), holds the reference, and every later write goes
+through that held reference with no re-scanning. `claimSlots()` is the
+eager variant used where content may be mutated before the first write
+(streaming, portals).
