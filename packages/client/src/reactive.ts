@@ -319,7 +319,8 @@ export function createSignal<T>(initialValue: T, __bfId?: string): Signal<T> {
 export function createEffect(fn: EffectFn, __bfId?: string, __bfKind: SubscriberKind = 'effect'): void {
   // Note: Nested effects are now allowed. runEffect() properly saves/restores
   // prevEffect, so nested effects correctly track their own dependencies.
-  // This enables synchronous component initialization in reconcileList.
+  // This enables synchronous component initialization inside loop reconcilers
+  // (mapArray/mapArrayAnchored).
 
   const effect: EffectContext = {
     fn,

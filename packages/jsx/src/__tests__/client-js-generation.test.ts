@@ -151,7 +151,7 @@ describe('Client JS generation', () => {
   })
 
   describe('map with index parameter', () => {
-    test('includes index parameter in reconcileElements renderItem callback', () => {
+    test('includes index parameter in mapArray renderItem callback', () => {
       const source = `
         'use client'
         import { createMemo } from '@barefootjs/client'

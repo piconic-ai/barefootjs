@@ -203,7 +203,7 @@ describe('#1128 — template body never reaches init-scope identifiers', () => {
 
     expect(tpl).not.toMatch(/\bitems\b/)
     // Bare `undefined.map(...)` would throw; substitute `[]` so the
-    // template renders an empty list and reconcileList populates it.
+    // template renders an empty list and mapArray populates it.
     expect(tpl).toMatch(/\$\{\[\]\.map\(/)
   })
 

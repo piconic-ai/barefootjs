@@ -180,7 +180,7 @@ export function applyObjectIterationWrap(
 }
 
 /**
- * Build the chained array expression for reconcileList. Thin
+ * Build the chained array expression for mapArray/mapArrayAnchored. Thin
  * adapter over `buildLoopChainExpr` that unpacks the collected
  * `TopLevelLoop` / `BranchLoop` shape into the primitive inputs.
  * Branch loops carry the same `filterPredicate` / `sortComparator`

@@ -4610,8 +4610,8 @@ function transformMapCall(
   const bodyIsMultiRoot = loopBodyIsMultiRoot(children)
 
   // Determine if array is static (prop) or dynamic (signal/memo).
-  // Static arrays don't need reconcileList — SSR elements are hydrated
-  // directly. Signal / memo arrays need reconcileList for dynamic DOM
+  // Static arrays don't need mapArray/mapArrayAnchored — SSR elements are
+  // hydrated directly. Signal / memo arrays need mapArray for dynamic DOM
   // updates.
   //
   // Solid-style wrap-by-default fallback (#943, follow-up to
@@ -4621,7 +4621,7 @@ function transformMapCall(
   // where `getItems` is an imported helper previously silent-dropped
   // into the static-render path, freezing the SSR-time list on the
   // client. Over-reconciling an array that happens to contain a pure
-  // call costs one extra `reconcileList` per loop; under-reconciling
+  // call costs one extra `mapArray` per loop; under-reconciling
   // is the silent-drop bug this closes.
   //
   // Destructured map params (`([, cfg]) => ...`, `({ a, b }) => ...`,
@@ -4660,8 +4660,9 @@ function transformMapCall(
 
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
-  // Dynamic arrays with native root + component descendants: enables reconcileElements
-  // with composite rendering (placeholder + createComponent replacement).
+  // Dynamic arrays with native root + component descendants: enables
+  // mapArray/mapArrayAnchored with composite rendering (placeholder +
+  // createComponent replacement).
   const nestedComponents = collectNestedComponents(children).filter(c => c.name !== childComponent?.name)
 
   return {
@@ -6564,7 +6565,7 @@ function isArrayExprDirectPropRef(arrayExpr: ts.Expression, ctx: TransformContex
 
 /**
  * Check if array expression is a signal or memo getter call.
- * Used to determine if a loop needs reconcileList for dynamic DOM updates.
+ * Used to determine if a loop needs mapArray for dynamic DOM updates.
  * Props and local constants are considered static (don't change at runtime).
  */
 function isSignalOrMemoArray(array: string, ctx: TransformContext): boolean {
@@ -6767,7 +6768,7 @@ function attrValueReactivityProbe(value: AttrValue): string | null {
 
 /**
  * Propagate slotId to loop children that need it.
- * Loops need to use their parent element's slotId for reconcileList.
+ * Loops need to use their parent element's slotId for mapArray.
  * This handles loops directly in children or nested in fragments.
  */
 function propagateSlotIdToLoops(children: IRNode[], slotId: string): void {

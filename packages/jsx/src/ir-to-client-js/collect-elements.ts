@@ -414,8 +414,8 @@ export function collectInnerLoops(
 
 /**
  * Decide whether a loop's runtime rendering needs element reconciliation
- * (reconcileElements + composite item rendering) rather than the simple
- * template-per-item path, and collect inner-loop metadata for its body.
+ * (mapArray/mapArrayAnchored + composite item rendering) rather than the
+ * simple template-per-item path, and collect inner-loop metadata for its body.
  *
  * Used by both the top-level `case 'loop'` in `collectElements` and the
  * branch-loop collector in `collectBranchLoops`. Each call site applies
@@ -1113,7 +1113,7 @@ function collectBranchLoops(
         : decideLoopRendering(n, siblingOffsets, undefined)
 
       // Build the item template from loop children.
-      // Use loopDepth=0: this loop gets its own reconcileElements (independent
+      // Use loopDepth=0: this loop gets its own mapArray/mapArrayAnchored call (independent
       // from the conditional's template), so items use data-key (not data-key-1).
       // Pass loopParams so expressions reference the per-item signal accessor,
       // keeping the template consistent with reactive effect expressions that

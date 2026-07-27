@@ -4,7 +4,7 @@
  * These three functions are called from `generate-init.ts` to emit the
  * client-side runtime calls that drive reactive conditionals
  * (`insert(...)`) and reactive loops (`mapArray(...)` /
- * `reconcileElements`) for a single component.
+ * `mapArrayAnchored(...)`) for a single component.
  *
  * Each entry point thinly wraps the Plan layer:
  *

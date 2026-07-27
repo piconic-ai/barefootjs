@@ -29,7 +29,7 @@ import {
 } from '../csr-substitute.ts'
 
 /**
- * Build the `keyFn` argument for mapArray / reconcileElements. `null` when
+ * Build the `keyFn` argument for mapArray / mapArrayAnchored. `null` when
  * the loop has no key expression. Every `CollectedLoop` variant (top-level /
  * branch / nested) carries an `index: string | null` field (#2218 threaded
  * it onto `NestedLoop` too), so the index param — when present — is always

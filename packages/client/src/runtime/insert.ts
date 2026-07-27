@@ -338,7 +338,7 @@ export function insert(
 function autoFocusConditionalElement(region: CondRegion, id: string): void {
   // Use requestAnimationFrame to defer focus until after DOM updates.
   // This is necessary because createComponent() may call insert() before
-  // the element is added to the document by reconcileList().
+  // the element is added to the document by mapArray()/mapArrayAnchored().
   requestAnimationFrame(() => {
     const condEl = region.anchor
       ? findCondElInRange(region.anchor, id)
