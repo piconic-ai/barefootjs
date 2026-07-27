@@ -85,14 +85,16 @@ export function initAIChatInteractive(__scope, _p = {}) {
   __tpl_l0.innerHTML = `<div data-key="" bf="s1"><div class="chat-bubble"><p><!--bf:s0--><!--/--></p></div></div>`
   mapArray(() => messages(), _s5, (msg) => String(msg.id), (msg, __idx, __existing) => {
     const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    { const __ra_s1 = qsa(__el, '[bf="s1"]')
-    if (__ra_s1) {
-      createEffect(() => {
-        { const __v = `chat-msg chat-${msg().role}`; if (__v != null) __ra_s1.setAttribute('class', String(__v)); else __ra_s1.removeAttribute('class') }
-      })
-    } }
+    const __ra_s1 = qsa(__el, '[bf="s1"]')
     const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s0('s0', String(msg().content)) })
+    createEffect(() => {
+      if (__ra_s1) {
+        {
+          { const __v = `chat-msg chat-${msg().role}`; if (__v != null) __ra_s1.setAttribute('class', String(__v)); else __ra_s1.removeAttribute('class') }
+        }
+      }
+      __bfw_s0('s0', String(msg().content))
+    })
     return __el
   }, 'l0')
 
