@@ -63,7 +63,7 @@ export function Counter({ __instanceId, ... }) {
 **Client script** — Wires up only the interactive parts:
 
 ```js
-import { $, $t, createEffect, createSignal, hydrate } from '@barefootjs/client'
+import { $, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 export function initCounter(__scope, _p = {}) {
   if (!__scope) return
@@ -71,11 +71,13 @@ export function initCounter(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s1] = $(__scope, 's1')       // find element with bf="s1"
-  const [_s0] = $t(__scope, 's0')      // find text node at <!--bf:s0-->
 
+  // Claim the content slot between <!--bf:s0--> and <!--/--> on first
+  // write; later writes reuse the claimed reference (no re-scanning)
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    if (_s0) _s0.nodeValue = String(__val ?? '')
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   if (_s1) _s1.addEventListener('click', () => { setCount(n => n + 1) })
@@ -83,6 +85,6 @@ export function initCounter(__scope, _p = {}) {
 
 hydrate('Counter', {
   init: initCounter,
-  template: (_p) => `<button bf="s1"> Count: <!--bf:s0-->${(0)}<!--/--></button>`
+  template: (_p) => `<button bf="s1"> Count: <!--bf:s0-->${escapeText((0))}<!--/--></button>`
 })
 ```

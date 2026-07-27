@@ -195,7 +195,7 @@ createEffect(() => {
 ### 4. Code Generation Order
 
 ```javascript
-import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from '@barefootjs/client'
+import { $, createEffect, createMemo, createSignal, escapeTextOrNode, hydrate, lazySlots, onMount } from '@barefootjs/client/runtime'
 
 export function initCounter(__scope, _p = {}) {
   if (!__scope) return
@@ -216,15 +216,16 @@ export function initCounter(__scope, _p = {}) {
   const doubled = createMemo(() => count() * 2)
 
   // 4. Element references (always destructured, always returns array)
-  //    $()  — regular elements:  querySelector('[bf="id"]') within scope
-  //    $t() — text nodes:        find comment marker <!--bf:id-->
+  //    $() — regular elements: querySelector('[bf="id"]') within scope
   const [_s3] = $(__scope, 's3')
-  const [_s0, _s2] = $t(__scope, 's0', 's2')
 
-  // 5. Dynamic text updates
+  // 5. Dynamic content updates — the compiler emits a claim plan (data)
+  //    per slot; lazySlots() claims the <!--bf:id-->…<!--/--> marker
+  //    range once on first write, then writes through the held reference
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    if (_s0 && !__val?.__isSlot) _s0.nodeValue = String(__val ?? '')
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   // 6. Reactive attribute updates
@@ -266,7 +267,7 @@ hydrate('Counter', {
 Only used imports are included:
 
 ```javascript
-import { $, $t, createEffect, createMemo, createSignal, hydrate, onMount } from '@barefootjs/client'
+import { $, createEffect, createMemo, createSignal, escapeTextOrNode, hydrate, lazySlots, onMount } from '@barefootjs/client/runtime'
 ```
 
 ### 6. Template Registration
