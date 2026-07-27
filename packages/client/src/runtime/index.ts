@@ -85,6 +85,10 @@ export { mapArray, mapArrayAnchored } from './map-array.ts'
 export { patchLeaf } from './patch-leaf.ts'
 export { patchSlotRange } from './patch-slot-range.ts'
 
+// Claim-plan interpreter (slot unification A2, spec/slot-unification.md).
+// Standalone for now — no compiler emission site yet (that's A3).
+export { claimSlots, lazySlots, type SlotSpec, type ClaimPlan, type ClaimedSlots, type SlotWriter } from './claim-slots.ts'
+
 // Template registry
 export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './template.ts'
 
