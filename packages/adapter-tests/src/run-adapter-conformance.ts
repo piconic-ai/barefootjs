@@ -28,6 +28,7 @@ import { runJSXConformanceTests, type RenderOptions } from './jsx-runner'
 import { runConformanceSuite } from './conformance'
 import { runDataPointConformance } from './data-point-conformance'
 import { runMarkerConformance } from './marker-conformance'
+import { runClaimPlanConformance } from './claim-plan-conformance'
 import type { ExpectedDiagnostic } from './types'
 import {
   templatePrimitiveCases,
@@ -76,6 +77,14 @@ export interface RunAdapterConformanceOptions {
    * allowed, missing ids are not. See `marker-conformance.ts`.
    */
   skipMarkerConformance?: ReadonlySet<string>
+  /**
+   * Fixture ids whose claim-plan-vs-real-SSR-DOM check (slot unification
+   * Step B, spec item (d) — `claim-plan-conformance.ts`) is consciously
+   * drifting on this adapter. Each entry should be paired with a comment
+   * naming the divergence and the follow-up issue; missing entries default
+   * to "skip nothing".
+   */
+  skipClaimPlanConformance?: ReadonlySet<string>
   /**
    * Skip the render-stage contract suite (#2158) for this adapter.
    * Each skip must carry a comment naming the follow-up issue that will
@@ -132,6 +141,22 @@ export function runAdapterConformanceTests(
     name: opts.name,
     factory: opts.factory,
     skipFixtures: opts.skipMarkerConformance,
+  })
+
+  runClaimPlanConformance({
+    name: opts.name,
+    factory: opts.factory,
+    render: opts.render,
+    onRenderError: opts.onRenderError,
+    // Fixtures the adapter already refuses at compile time (`skipJsx` /
+    // `expectedDiagnostics`) can't render at all — mirrors
+    // `runDataPointConformance`'s identical exclusion below, so adapters
+    // don't need a second, redundant skip entry for the same refusal.
+    skipFixtures: new Set([
+      ...(opts.skipJsx ?? []),
+      ...Object.keys(opts.expectedDiagnostics ?? {}),
+      ...(opts.skipClaimPlanConformance ?? []),
+    ]),
   })
 
   runDataPointConformance({

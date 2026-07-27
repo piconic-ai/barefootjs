@@ -595,7 +595,11 @@ export function collectElements(
     },
     expression: ({ node: ex, scope: inCond }) => {
       if (ex.clientOnly && ex.slotId) {
-        ctx.clientOnlyElements.push({ slotId: ex.slotId, expression: ex.expr })
+        ctx.clientOnlyElements.push({
+          slotId: ex.slotId,
+          expression: ex.expr,
+          elidedPath: ex.markerless ? ex.elidedPath : undefined,
+        })
         return
       }
       if (!ex.slotId || inCond) return

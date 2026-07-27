@@ -120,6 +120,20 @@ export interface SlotSpec {
   id: string
   kind: 'text' | 'markup'
   path: readonly number[]
+  /**
+   * Slot unification Step B (`spec/slot-unification.md` §3(b), §5 Step B):
+   * true when NO `<!--bf:id-->…<!--/-->` marker was emitted for this slot at
+   * all — `path` is then a path to the slot's POSITION itself (the LAST
+   * index is this slot's own index within its parent's `childNodes`, not an
+   * anchor comment to search from). Only ever set for `kind: 'text'` — a
+   * `'markup'` slot always keeps its markers (an empty-able range needs a
+   * physical anchor to splice into; see `spec/slot-unification.md` §3(b)
+   * case (ii)). Resolution CREATES a Text node at that position if SSR
+   * rendered the slot empty (nothing to adopt there yet) — see `claimOne`.
+   * The compiler emits this only when it has already proven the position
+   * safe (`client-only-elision.ts`); the runtime never re-derives it.
+   */
+  markerless?: boolean
 }
 
 export type ClaimPlan = readonly SlotSpec[]
@@ -284,8 +298,47 @@ function resolveAnchor(root: Element, spec: SlotSpec): Comment | null {
   return found
 }
 
+/**
+ * Resolve a `markerless` 'text' slot (slot unification Step B): `path`'s
+ * LAST index is the slot's own position within its parent's `childNodes` —
+ * there is no anchor comment to walk from or scan for, since the compiler
+ * only ever sets `markerless` when it has already proven no marker is
+ * needed (`client-only-elision.ts`). If SSR/CSR rendered the slot non-empty,
+ * a Text node already sits at that position — adopt it. If SSR rendered it
+ * empty (the only case Step B currently elides — `/* @client *\/`
+ * expressions, always empty at claim time), nothing sits there yet — create
+ * one and insert it before whatever currently occupies that index (or at
+ * the end, if the index is past the end of `childNodes`). Never falls back
+ * to a marker scan — there is no marker to find — so a path miss here is a
+ * genuine, loud failure, not the "cannot be statically pathed" case
+ * `resolveAnchor`'s empty-path allowance covers.
+ */
+function claimMarkerlessText(root: Element, spec: SlotSpec): ClaimedTextSlot | null {
+  if (spec.path.length === 0) {
+    console.warn(`[barefootjs] markerless slot ${spec.id} has an empty path; skipping`)
+    return null
+  }
+  const parentPath = spec.path.slice(0, -1)
+  const idx = spec.path[spec.path.length - 1]
+  const parent = resolvePath(root, parentPath)
+  if (!parent) {
+    console.warn(`[barefootjs] markerless claim path for slot ${spec.id} did not resolve to a parent node; skipping`)
+    return null
+  }
+  const existing = parent.childNodes[idx] as Node | undefined
+  if (existing && existing.nodeType === Node.TEXT_NODE) {
+    return { kind: 'text', node: existing as Text }
+  }
+  const node = document.createTextNode('')
+  parent.insertBefore(node, existing ?? null)
+  return { kind: 'text', node }
+}
+
 /** Claim one slot per its kind's contract. `null` on any failure (already warned). */
 function claimOne(root: Element, spec: SlotSpec): ClaimedSlotRef | null {
+  if (spec.kind === 'text' && spec.markerless) {
+    return claimMarkerlessText(root, spec)
+  }
   const anchor = resolveAnchor(root, spec)
   if (!anchor) return null
 

@@ -3648,10 +3648,13 @@ export function C() {
 
       const guarded = emit(expr, true)
       expect(guarded.errors).toEqual([])
-      // Client-only text slot → an ordinary claimed 'text' slot pair (slot
-      // unification A3): `{{bfTextStart "sN"}}{{bfTextEnd}}`, empty at SSR.
-      expect(guarded.template).toMatch(/bfTextStart "s\d+"/)
-      expect(guarded.template).toMatch(/bfTextEnd/)
+      // Slot unification Step B: this expression is the `<div>`'s only,
+      // non-adjacent child, so `client-only-elision.ts` elides its marker
+      // pair entirely — no `bfTextStart`/`bfTextEnd` reaches the SSR
+      // template at all (empty at SSR either way; the client's claim plan
+      // creates the missing Text node from `elidedPath` alone).
+      expect(guarded.template).not.toContain('bfTextStart')
+      expect(guarded.template).not.toContain('bfTextEnd')
       expect(guarded.template).not.toContain(badEmit)
     })
   }
@@ -3763,12 +3766,20 @@ export function C() {
     expect(result.template).toMatch(/bf_sort/)
   })
 
-  // End-to-end proof via `go run`: the `@client` form renders an empty
-  // claimed 'text' slot pair, `<!--bf:sN--><!--/-->` (slot unification A3).
-  // The bare form is now caught at build with BF101 and degrades to an
-  // empty, render-safe slot (no more `can't evaluate field …` crash), so we
-  // assert the build error rather than a render crash. Skipped on hosts
-  // without Go.
+  // End-to-end proof via `go run`: the `@client` form renders an empty,
+  // render-safe placeholder. Before slot unification Step B this was a
+  // claimed 'text' slot marker pair, `<!--bf:sN--><!--/-->` (A3). Step B's
+  // `client-only-elision.ts` now elides that pair for exactly this shape
+  // — a `/* @client */` text expression that is a `<div>`'s only,
+  // non-adjacent child, outside any loop/conditional — since the SSR
+  // width is deterministically zero, so the `<div>` renders with no
+  // marker at all; the client's claim plan creates the missing Text node
+  // from the compiled `elidedPath` alone at hydration (verified in the
+  // `.tmpl`-level test above via `not.toContain('bfTextStart'/'bfTextEnd')`;
+  // this test is the real-render proof of the same claim). The bare form
+  // is caught at build with BF101 and degrades to an empty, render-safe
+  // slot (no more `can't evaluate field …` crash), so we assert the build
+  // error rather than a render crash. Skipped on hosts without Go.
   test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
     // Uses the Tier C `charAt` (still refused) — earlier this test used
     // `repeat`, which has since landed its #1448 Tier B lowering.
@@ -3787,7 +3798,11 @@ export function C() {
 `.trimStart(),
         adapter: new GoTemplateAdapter(),
       })
-      expect(html).toContain('<!--bf:s0--><!--/-->')
+      // Slot unification Step B: no marker pair reaches SSR output for
+      // this eligible shape — the `<div>` renders fully empty.
+      expect(html).not.toContain('<!--bf:s0-->')
+      expect(html).not.toContain('<!--/-->')
+      expect(html).toMatch(/<div[^>]*bf="s1"><\/div>/)
     } catch (err) {
       if (err instanceof GoNotAvailableError) {
         console.log('Skipping #1448 @client e2e: go command not found')

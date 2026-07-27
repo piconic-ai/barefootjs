@@ -104,9 +104,11 @@ export function Viewer() {
     const files = Object.fromEntries(r.files.map(f => [f.path, f.content]))
     const ssr = Object.values(files).find(c => c.includes('export function Viewer'))
     expect(ssr).toBeDefined()
-    // Empty claimed 'text' slot pair (slot unification A3) — the expression
-    // can't be evaluated server-side, so the client's claim fills it in.
-    expect(ssr).toMatch(/bfText\("s\d+"\)\}\{bfTextEnd\(\)\}/)
+    // Slot unification Step B: `{val()}` is the SPAN's only, non-adjacent
+    // child, so its marker pair is elided entirely (see the identical note
+    // in module-level-signal.audit.test.ts) — the client's claim plan
+    // creates the missing Text node from `elidedPath` alone.
+    expect(ssr).not.toContain('bfText(')
     expect(ssr).not.toContain("const val = () =>")
   })
 

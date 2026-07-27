@@ -401,6 +401,28 @@ export interface IRExpression {
    * source of truth for free-reference / reactivity classification.
    */
   origin: OriginInfo
+  /**
+   * Slot unification Step B (`spec/slot-unification.md` §3(b), §5 Step B):
+   * true when this slot's `<!--bf:sN-->…<!--/-->` marker pair can be safely
+   * omitted from BOTH SSR and CSR output, because `elidedPath` already gives
+   * every claimer a real compile-time DOM path to the slot's position.
+   * Decided EXACTLY ONCE, by `client-only-elision.ts`, before either
+   * `adapter.generate()` (SSR) or `generateClientJs()` (CSR) run — every one
+   * of the nine SSR adapters' `renderExpression` and the CSR template
+   * emitters (`html-template.ts`) read this single flag and must never
+   * re-derive their own elision decision. Unset/false is always safe
+   * (keeps markers, today's behavior); only the compiler pass above may
+   * ever set it true.
+   */
+  markerless?: boolean
+  /**
+   * Root-relative child-index path to this slot's position (parent index
+   * chain, LAST element = the index of the slot itself within its parent's
+   * `childNodes`). Valid, and required, only when `markerless` is true —
+   * see `SlotSpec.markerless` in `@barefootjs/client/runtime/claim-slots.ts`
+   * for the claim-time resolve-or-create semantics this path feeds.
+   */
+  elidedPath?: readonly number[]
 }
 
 export interface IRConditional {

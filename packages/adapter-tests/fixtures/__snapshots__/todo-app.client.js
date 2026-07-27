@@ -160,7 +160,7 @@ export function initTodoApp(__scope, _p = {}) {
   const [_s0, _s10, _s11, _s12, _s14, _s1, _s4] = $(__scope, 's0', 's10', 's11', 's12', 's14', 's1', 's4')
 
   // @client: s6
-  { const __bfw_s6 = lazySlots(__scope, [{ id: 's6', kind: 'text', path: [] }])
+  { const __bfw_s6 = lazySlots(__scope, [{ id: 's6', kind: 'text', path: [2, 0, 0, 0], markerless: true }])
   createEffect(() => {
     __bfw_s6('s6', todos().filter(t => !t.done).length)
   }) }

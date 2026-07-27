@@ -13,6 +13,7 @@ import {
   generateClientJs,
   analyzeClientNeeds,
   listComponentFunctions,
+  decideClientOnlyElision,
   type ComponentIR,
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -67,6 +68,12 @@ function compileToClientJs(source: string, filePath: string): string {
     const ir = jsxToIR(ctx)
     if (!ir) return ''
     throwIfErrors(ctx, filePath)
+    // Slot unification Step B: mirror `compiler.ts`'s call before
+    // `generateClientJs` — this harness bypasses `compileJSX` entirely, so
+    // without this the CSR output here would never match the elision the
+    // production pipeline (and this same fixture's SSR adapter output)
+    // applies, a false byte-parity divergence.
+    decideClientOnlyElision(ir)
     const componentIR: ComponentIR = {
       version: '0.1',
       metadata: buildMetadata(ctx),
@@ -87,6 +94,8 @@ function compileToClientJs(source: string, filePath: string): string {
     const ir = jsxToIR(ctx)
     if (!ir) continue
     throwIfErrors(ctx, filePath)
+    // Slot unification Step B — see the fallback branch above for why.
+    decideClientOnlyElision(ir)
     const componentIR: ComponentIR = {
       version: '0.1',
       metadata: buildMetadata(ctx),

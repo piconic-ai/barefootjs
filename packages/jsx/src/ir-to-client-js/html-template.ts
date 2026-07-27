@@ -126,7 +126,11 @@ export function createTemplateAwareStringProtector(): {
   return { protect, restore, replaceProtectedCall }
 }
 
-const VOID_ELEMENTS = new Set([
+// Exported (not just module-local) so `client-only-elision.ts` (slot
+// unification Step B) can reuse the exact same void-element list when it
+// walks the IR tree computing markerless-eligible child-index paths —
+// duplicating this list would risk the two walks silently drifting apart.
+export const VOID_ELEMENTS = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img',
   'input', 'link', 'meta', 'param', 'source', 'track', 'wbr',
 ])
@@ -794,6 +798,16 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
 
     case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
+      // Slot unification Step B (`markerless`, decided once by
+      // `client-only-elision.ts` before this CSR pass runs): drop the
+      // marker pair and fall through to the same bare `${...}` shape the
+      // no-slotId branch below already uses — `elidedPath` (not this
+      // string) is what the claim plan resolves against, so no marker
+      // anchor is needed here at all.
+      if (node.markerless) {
+        const bare = wrapInterpolation(wrapExpr(node.expr))
+        return `\${${bare}}`
+      }
       const inner = wrapInterpolation(wrapExpr(node.expr))
       // Stage 3 / D4 — an element-array child ({out}) built by an arbitrary
       // .map() preamble is an array of HTML strings; join it rather than let
@@ -1120,7 +1134,9 @@ export interface SkeletonSlotPaths {
  * the loop keeps its hoisted-clone fast path, but every slot lookup falls
  * back to `qsa`/`$t`.
  */
-const SKELETON_PATH_HAZARD_TAGS = new Set([
+// Exported for reuse by `client-only-elision.ts` (Step B) — same hazard
+// class, same reasoning, must never drift out of sync with a second copy.
+export const SKELETON_PATH_HAZARD_TAGS = new Set([
   'table', 'thead', 'tbody', 'tfoot', 'caption', 'colgroup', 'col',
   'select', 'optgroup',
   'p',
@@ -1136,7 +1152,7 @@ const SKELETON_PATH_HAZARD_TAGS = new Set([
  * `<dt>` closes the `<dt>`). A skeleton hitting this bails on path
  * computation entirely (see `SKELETON_PATH_HAZARD_TAGS` doc).
  */
-const SKELETON_PATH_FORCE_CLOSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
+export const SKELETON_PATH_FORCE_CLOSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
   new Set(['a']),
   new Set(['button']),
   new Set(['form']),
@@ -1146,7 +1162,7 @@ const SKELETON_PATH_FORCE_CLOSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
   new Set(['li']),
 ]
 
-function skeletonForceCloseGroup(tag: string): number {
+export function skeletonForceCloseGroup(tag: string): number {
   return SKELETON_PATH_FORCE_CLOSE_GROUPS.findIndex(group => group.has(tag))
 }
 
@@ -1204,7 +1220,7 @@ function walkSkeletonPathNode(
 }
 
 /** True if `children` (already flattened) contains anything the HTML parser would foster-parent out of a `<tr>`. */
-function hasForeignTableRowContent(children: readonly IRNode[]): boolean {
+export function hasForeignTableRowContent(children: readonly IRNode[]): boolean {
   for (const child of children) {
     if (child.type === 'text') {
       if (child.value.trim() !== '') return true
@@ -1218,7 +1234,7 @@ function hasForeignTableRowContent(children: readonly IRNode[]): boolean {
 }
 
 /** Splice fragment children inline — a fragment contributes no DOM node of its own. */
-function flattenSkeletonChildren(children: readonly IRNode[]): IRNode[] {
+export function flattenSkeletonChildren(children: readonly IRNode[]): IRNode[] {
   const out: IRNode[] = []
   for (const child of children) {
     if (child.type === 'fragment') {

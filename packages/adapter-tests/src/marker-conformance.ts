@@ -41,6 +41,7 @@ import {
   analyzeComponent,
   jsxToIR,
   buildMetadata,
+  decideClientOnlyElision,
   type ComponentIR,
   type IRNode,
   type IRElement,
@@ -165,8 +166,13 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
       return
     }
     if (n.type === 'expression') {
-      const id = (n as IRExpression).slotId
-      if (id) out.slots.add(id)
+      const ex = n as IRExpression
+      // Slot unification Step B: a `markerless` slot's whole point is that
+      // NO marker reaches the template — `client-only-elision.ts` already
+      // proved the claim plan can resolve it from `elidedPath` alone. The
+      // IR-side expectation must match that, or every fixture with an
+      // elided slot would show as spurious drift here.
+      if (ex.slotId && !ex.markerless) out.slots.add(ex.slotId)
       return
     }
     if (n.type === 'element') {
@@ -213,6 +219,11 @@ function buildIRFromSource(source: string, filePath: string): ComponentIR | null
   if (!ctx.jsxReturn) return null
   const root = jsxToIR(ctx)
   if (!root) return null
+  // Slot unification Step B: `compileJSX` runs this before adapter.generate
+  // (see compiler.ts); this suite builds IR by hand, bypassing that call
+  // entirely, so it must run it here too or every elided fixture would look
+  // like marker drift instead of the intended elision.
+  decideClientOnlyElision(root)
   return {
     version: '0.1',
     metadata: buildMetadata(ctx),

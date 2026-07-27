@@ -3119,6 +3119,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // missing Text node on first write (A2's create-if-absent semantics).
     // Replaces the old unpaired `client:sN` comment, which nothing adopted.
     if (expr.clientOnly) {
+      // Slot unification Step B: the compiler already proved (once, before
+      // this adapter ran — `client-only-elision.ts`) that the claim plan
+      // can find/create this slot's Text node from `elidedPath` alone, with
+      // no marker to anchor against. SSR always renders empty here either
+      // way, so eliding the marker changes nothing but the marker bytes.
+      if (expr.markerless) return ''
       if (expr.slotId) {
         return `{{bfTextStart "${expr.slotId}"}}{{bfTextEnd}}`
       }

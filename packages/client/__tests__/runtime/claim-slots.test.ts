@@ -278,6 +278,126 @@ describe('claimSlots — markup kind', () => {
   })
 })
 
+describe('claimSlots — markerless text kind (slot unification Step B)', () => {
+  // No `<!--bf:id-->` marker at all — `path`'s last index is the slot's OWN
+  // position in its parent's childNodes, not an anchor comment.
+  test('adopts an existing Text node at the path position (SSR rendered non-empty)', () => {
+    const root = mount('<div><span>a</span>hello<b>z</b></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's20', kind: 'text', path: [1], markerless: true }]
+    const before = row.childNodes[1]
+    expect(before.nodeType).toBe(Node.TEXT_NODE)
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s20', 'updated')
+
+    expect(row.childNodes[1]).toBe(before) // adopted, not replaced
+    expect(row.innerHTML).toBe('<span>a</span>updated<b>z</b>')
+  })
+
+  test('creates a Text node at the path position when SSR emitted nothing there', () => {
+    const root = mount('<div><span>a</span><b>z</b></div>')
+    const row = root.firstElementChild as HTMLElement
+    // Position 1 is empty (the client-only slot rendered nothing at SSR) —
+    // <b> currently sits at index 1.
+    const plan: SlotSpec[] = [{ id: 's21', kind: 'text', path: [1], markerless: true }]
+
+    claimSlots(root.firstElementChild as HTMLElement, plan)
+    expect(row.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE)
+    expect(row.innerHTML).toBe('<span>a</span><b>z</b>')
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s21', 'hi')
+    expect(row.innerHTML).toBe('<span>a</span>hi<b>z</b>')
+  })
+
+  test('creates a Text node appended at the end when the path index is past childNodes.length', () => {
+    const root = mount('<div><span>a</span></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's22', kind: 'text', path: [1], markerless: true }]
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s22', 'tail')
+    expect(row.innerHTML).toBe('<span>a</span>tail')
+  })
+
+  test('writes preserve Text node identity across repeated writes', () => {
+    const root = mount('<div><span>a</span><b>z</b></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's23', kind: 'text', path: [1], markerless: true }]
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s23', 'one')
+    const ref = row.childNodes[1]
+    claimed.write('s23', 'two')
+    expect(row.childNodes[1]).toBe(ref)
+    expect(row.innerHTML).toBe('<span>a</span>two<b>z</b>')
+  })
+
+  test('a nested path resolves through an intermediate element', () => {
+    const root = mount('<div><p><span>a</span></p></div>')
+    const row = root.firstElementChild as HTMLElement
+    // path [0, 1]: row.childNodes[0] is <p>, then index 1 within <p> (after
+    // <span>, which sits at index 0) — nothing there yet.
+    const plan: SlotSpec[] = [{ id: 's24', kind: 'text', path: [0, 1], markerless: true }]
+
+    const claimed = claimSlots(row, plan)
+    claimed.write('s24', 'nested')
+    expect(row.innerHTML).toBe('<p><span>a</span>nested</p>')
+  })
+
+  test('an empty markerless path warns and drops the slot without touching the DOM', () => {
+    const root = mount('<div>hello</div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [{ id: 's25', kind: 'text', path: [], markerless: true }]
+    const before = row.innerHTML
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(row, plan)
+      claimed.write('s25', 'x')
+    })
+
+    expect(row.innerHTML).toBe(before)
+    expect(warnings.some(w => w.includes('s25') && w.includes('empty path'))).toBe(true)
+  })
+
+  test('a markerless path that misses its parent warns and drops only that slot', () => {
+    const root = mount('<div>hello</div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [
+      { id: 's26', kind: 'text', path: [99, 0], markerless: true },
+      { id: 's27', kind: 'text', path: [0], markerless: false },
+    ]
+
+    const warnings = withWarnings(() => {
+      const claimed = claimSlots(row, plan)
+      claimed.write('s26', 'never applied')
+      claimed.write('s27', 'still works')
+    })
+
+    // s27's write goes through the ordinary marker-scan path (no bf:s27
+    // marker exists, so it warns too, via the existing fallback) — the
+    // point of this test is that s26's failure doesn't take s27 down with
+    // it. Assert s26's specific warning is present.
+    expect(warnings.some(w => w.includes('s26') && w.includes('did not resolve to a parent'))).toBe(true)
+  })
+
+  test('lazySlots batch-claims a markerless slot alongside a marked one', () => {
+    const root = mount('<div><!--bf:s28-->x<!--/--><span>a</span></div>')
+    const row = root.firstElementChild as HTMLElement
+    const plan: SlotSpec[] = [
+      { id: 's28', kind: 'text', path: [0] },
+      { id: 's29', kind: 'text', path: [4], markerless: true }, // after <span>, nothing there yet
+    ]
+
+    const write = lazySlots(row, plan)
+    write('s28', 'y')
+    write('s29', 'z')
+
+    expect(row.innerHTML).toBe('<!--bf:s28-->y<!--/--><span>a</span>z')
+  })
+})
+
 describe('lazySlots', () => {
   test('does nothing to the DOM before the first write', () => {
     const root = mount('<div><!--bf:s7--><!--/--><!--bf:s8-->x<!--/--></div>')

@@ -379,7 +379,12 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
  */
 export function emitClientOnlyExpressions(lines: string[], ctx: ClientJsContext): void {
   for (const elem of ctx.clientOnlyElements) {
-    const slots: ClaimSlotSpec[] = [{ id: elem.slotId, kind: 'text', path: [] }]
+    // Slot unification Step B: `elem.elidedPath`, when present, was proven
+    // safe by `client-only-elision.ts` before this pass ran — use the real
+    // position-based path and skip the marker-scan fallback entirely.
+    const slots: ClaimSlotSpec[] = elem.elidedPath
+      ? [{ id: elem.slotId, kind: 'text', path: elem.elidedPath, markerless: true }]
+      : [{ id: elem.slotId, kind: 'text', path: [] }]
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`  // @client: ${elem.slotId}`)
     lines.push(`  { const ${writer} = lazySlots(__scope, ${claimPlanLiteral(slots)})`)
