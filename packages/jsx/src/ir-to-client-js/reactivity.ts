@@ -571,8 +571,9 @@ export function collectLoopChildReactiveTexts(
     expression: ({ node: n, scope: insideConditional }) => {
       if (!n.slotId) return
       // #2389 — a preamble-patched region (see `IRLoop.preambleRegions`) has
-      // its own `patchSlotRange`-based effect (`preambleRegions` in the
-      // client-JS loop plan); it must never ALSO become a `reactiveTexts`
+      // its own claimed 'markup'-slot effect (`preambleRegions` in the
+      // client-JS loop plan; slot unification A3, `@barefootjs/client/
+      // runtime/claim-slots.ts`); it must never ALSO become a `reactiveTexts`
       // entry, which would patch it via `.textContent` and corrupt markup
       // (a `joinArrayChild` region's value is raw HTML, not text).
       if (n.preambleRegion) return

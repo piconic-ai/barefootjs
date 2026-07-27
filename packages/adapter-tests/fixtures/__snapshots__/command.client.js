@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfSlot, __bfText, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insert, isSSRPortal, onCleanup, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, onCleanup, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3327,11 +3327,8 @@ export function initCommandGroup(__scope, _p = {}) {
     template: () => { const __slots = []; return { html: `<div bf-c="s0" data-slot="command-group-heading" aria-hidden="true" bf="s2"><!--bf:s1-->${__bfSlot(_p.heading, __slots)}<!--/--></div>`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const __disposers = []
-      let __anchor_s1 = $t(__branchScope, 's1')[0]
-      __disposers.push(createDisposableEffect(() => {
-        const __val = _p.heading
-        __anchor_s1 = __bfText(__anchor_s1, __val)
-      }))
+      const __bfw_s1 = lazySlots(__branchScope, [{ id: 's1', kind: 'markup', path: [] }])
+      __disposers.push(createDisposableEffect(() => { __bfw_s1('s1', escapeTextOrNode(_p.heading)) }))
       return () => __disposers.forEach(d => d())
     }
   }, {

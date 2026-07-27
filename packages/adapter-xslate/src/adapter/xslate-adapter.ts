@@ -584,9 +584,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // ===========================================================================
 
   renderExpression(expr: IRExpression): string {
+    // @client: an ordinary claimed 'text' slot pair (slot unification A3,
+    // spec/slot-unification.md §5-A3), empty at SSR since the expression
+    // can't be evaluated server-side — the client's claim creates the
+    // missing Text node on first write (A2's create-if-absent semantics).
+    // Replaces the old unpaired `client:sN` comment, which nothing adopted.
     if (expr.clientOnly) {
       if (expr.slotId) {
-        return `<: $bf.comment("client:${expr.slotId}") | mark_raw :>`
+        return `<: $bf.text_start("${expr.slotId}") | mark_raw :><: $bf.text_end() | mark_raw :>`
       }
       return ''
     }

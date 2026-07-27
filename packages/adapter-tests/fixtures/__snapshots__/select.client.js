@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfText, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, findSiblingSlot, forwardProps, hydrate, initChild, isSSRPortal, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, findSiblingSlot, forwardProps, hydrate, initChild, isSSRPortal, lazySlots, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2874,12 +2874,11 @@ export function initSelectValue(__scope, _p = {}) {
   }
 
   const [_s1] = $(__scope, 's1')
-  const [_s0] = $t(__scope, 's0')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.placeholder ?? ''
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -3205,13 +3204,12 @@ export function initSelectBasicDemo(__scope, _p = {}) {
 
   const [value, setValue] = createSignal('')
 
-  const [_s9] = $t(__scope, 's9')
   const [_s8, _s1, _s0, _s7, _s2, _s3, _s4, _s5, _s6] = $c(__scope, 's8', 's1', 's0', 's7', 's2', 's3', 's4', 's5', 's6')
 
-  let __anchor_s9 = _s9
+  const __bfw_s9 = lazySlots(__scope, [{ id: 's9', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = value() || 'None'
-    __anchor_s9 = __bfText(__anchor_s9, __val)
+    __bfw_s9('s9', escapeTextOrNode(__val))
   })
 
 
@@ -3261,13 +3259,12 @@ export function initSelectFormDemo(__scope, _p = {}) {
     return parts.length > 0 ? parts.join(' ') : 'No selections yet'
   })
 
-  const [_s24] = $t(__scope, 's24')
   const [_s7, _s15, _s23, _s1, _s0, _s6, _s2, _s3, _s4, _s5, _s9, _s8, _s14, _s10, _s11, _s12, _s13, _s17, _s16, _s22, _s18, _s19, _s20, _s21] = $c(__scope, 's7', 's15', 's23', 's1', 's0', 's6', 's2', 's3', 's4', 's5', 's9', 's8', 's14', 's10', 's11', 's12', 's13', 's17', 's16', 's22', 's18', 's19', 's20', 's21')
 
-  let __anchor_s24 = _s24
+  const __bfw_s24 = lazySlots(__scope, [{ id: 's24', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = summary()
-    __anchor_s24 = __bfText(__anchor_s24, __val)
+    __bfw_s24('s24', escapeTextOrNode(__val))
   })
 
 
@@ -3347,13 +3344,12 @@ export function initSelectGroupedDemo(__scope, _p = {}) {
 
   const [timezone, setTimezone] = createSignal('')
 
-  const [_s22] = $t(__scope, 's22')
   const [_s21, _s1, _s0, _s20, _s7, _s2, _s3, _s4, _s5, _s6, _s8, _s13, _s9, _s10, _s11, _s12, _s14, _s19, _s15, _s16, _s17, _s18] = $c(__scope, 's21', 's1', 's0', 's20', 's7', 's2', 's3', 's4', 's5', 's6', 's8', 's13', 's9', 's10', 's11', 's12', 's14', 's19', 's15', 's16', 's17', 's18')
 
-  let __anchor_s22 = _s22
+  const __bfw_s22 = lazySlots(__scope, [{ id: 's22', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = timezone() || 'None'
-    __anchor_s22 = __bfText(__anchor_s22, __val)
+    __bfw_s22('s22', escapeTextOrNode(__val))
   })
 
 

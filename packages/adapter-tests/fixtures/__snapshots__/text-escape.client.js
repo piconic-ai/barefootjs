@@ -1,4 +1,4 @@
-import { $, $t, __bfText, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeText, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 
 export function initTextEscape(__scope, _p = {}) {
@@ -8,18 +8,17 @@ export function initTextEscape(__scope, _p = {}) {
   const [count, setCount] = createSignal(0)
 
   const [_s3] = $(__scope, 's3')
-  const [_s0, _s2] = $t(__scope, 's0', 's2')
 
-  let __anchor_s0 = _s0
+  const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.label
-    __anchor_s0 = __bfText(__anchor_s0, __val)
+    __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  let __anchor_s2 = _s2
+  const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = count()
-    __anchor_s2 = __bfText(__anchor_s2, __val)
+    __bfw_s2('s2', escapeTextOrNode(__val))
   })
 
   if (_s3) _s3.addEventListener('click', () => { setCount(count() + 1) })

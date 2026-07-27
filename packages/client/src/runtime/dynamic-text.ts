@@ -1,7 +1,30 @@
 /**
  * Dynamic text/JSX slot updater (#1663).
  *
- * The compiler wraps reactive child expressions (`<div>{expr}</div>`) in a
+ * Slot unification A3 (`spec/slot-unification.md` §5-A3) replaced every
+ * OTHER `__bfText` call site with a claimed 'markup' slot writer
+ * (`claim-slots.ts`'s `writeMarkup` provides the identical Node/text
+ * contract). ONE emission site still calls `__bfText` directly and is
+ * deliberately deferred: `emitDynamicTextUpdates`'s `conditionalElems`
+ * path (`ir-to-client-js/emit-reactive.ts`) — a dynamic text/JSX
+ * expression nested inside a top-level (non-loop) conditional, tracked by
+ * an effect OUTSIDE the conditional's own `insert()` `bindEvents`. That
+ * effect re-resolves its anchor via `$t(__scope, slotId)` on EVERY run
+ * because `insert()` may swap the branch independently of this effect's own
+ * reruns — a cached `lazySlots` claim would go stale across such a swap, and
+ * a 'markup' slot's dedup `last` state can't safely survive being re-claimed
+ * fresh every run either: a fresh claim's `last` always starts `undefined`,
+ * so re-claiming per-run would throw away the dedup skip on every single
+ * run (every write would re-clear-and-reparse even when the value hasn't
+ * changed) — unlike the 'text'-kind conditional cases elsewhere in the
+ * compiler, which have no such state to go stale and so DO re-claim fresh
+ * each run safely. Moving this one case onto the claim-plan model needs the
+ * slot's claim door tied to the branch's OWN activation lifecycle instead of
+ * this separate effect's — real architectural work, not a mechanical swap —
+ * so it stays on `$t`/`__bfText` for now.
+ *
+ * The mechanism itself, for the reader who lands here from that one site:
+ * the compiler wraps reactive child expressions (`<div>{expr}</div>`) in a
  * `createEffect` that writes the value into the text node sitting between
  * the slot's `<!--bf:sX-->` / `<!--/-->` comment markers. That was a pure
  * `nodeValue = String(value)` assignment, which is correct for primitives

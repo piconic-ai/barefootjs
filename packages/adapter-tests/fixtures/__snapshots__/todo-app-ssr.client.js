@@ -1,16 +1,15 @@
-import { $, $t, __bfSlot, __bfText, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, hydrate, initChild, insert, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, initChild, insert, lazySlots, mapArray, onMount, qsa, renderChild } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
   const [_s0, _s2, _s3, _s4, _s5] = $(__scope, 's0', 's2', 's3', 's4', 's5')
-  const [_s1] = $t(__scope, 's1')
 
-  let __anchor_s1 = _s1
+  const __bfw_s1 = lazySlots(__scope, [{ id: 's1', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = _p.todo.text
-    __anchor_s1 = __bfText(__anchor_s1, __val)
+    __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
   createEffect(() => {
@@ -159,12 +158,11 @@ export function initTodoAppSSR(__scope, _p = {}) {
   }
 
   const [_s0, _s10, _s11, _s12, _s1, _s8, _s13, _s4] = $(__scope, 's0', 's10', 's11', 's12', 's1', 's8', 's13', 's4')
-  const [_s6] = $t(__scope, 's6')
 
-  let __anchor_s6 = _s6
+  const __bfw_s6 = lazySlots(__scope, [{ id: 's6', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = todos().filter(t => !t.done).length
-    __anchor_s6 = __bfText(__anchor_s6, __val)
+    __bfw_s6('s6', escapeTextOrNode(__val))
   })
 
   createEffect(() => {

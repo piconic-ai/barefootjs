@@ -50,9 +50,10 @@ describe('loop-child binding-effect ids (#1795 Phase 2)', () => {
 
   test('profile on: loop-child text effects carry #binding ids', () => {
     const on = clientJs(true)
-    // Both `{it.t}` and `{it.n}` text effects.
-    expect(on).toMatch(/__rt_s\d+\.textContent = String\(it\(\)\.t\) }, "List#binding:s\d+"\)/)
-    expect(on).toMatch(/__rt_s\d+\.textContent = String\(it\(\)\.n\) }, "List#binding:s\d+"\)/)
+    // Both `{it.t}` and `{it.n}` text effects write through the row's
+    // claimed 'text' slot writer (slot unification A3).
+    expect(on).toMatch(/__bfw_\w+\('s\d+', String\(it\(\)\.t\)\) }, "List#binding:s\d+"\)/)
+    expect(on).toMatch(/__bfw_\w+\('s\d+', String\(it\(\)\.n\)\) }, "List#binding:s\d+"\)/)
   })
 
   test('profile on: the loop-child attribute effect carries a #binding id', () => {

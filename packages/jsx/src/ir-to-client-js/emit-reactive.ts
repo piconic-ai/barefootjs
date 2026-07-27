@@ -9,6 +9,7 @@ import type { AttrMeta, IRMetadata } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import type { ClientJsContext } from './types.ts'
 import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './control-flow/stringify/claim-plan.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
 import { datePlugin, DATE_METHODS } from '../date-lowering.ts'
 import { toLocaleDatePlugin, foldedArgToClientJs } from '../to-locale-date-lowering.ts'
@@ -303,24 +304,44 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
     const normalElems = elems.filter(e => !e.insideConditional)
 
     if (normalElems.length > 0 || conditionalElems.length > 0) {
-      // Persistent slot trackers for non-conditional elements. `__bfText`
-      // returns the node now occupying the slot; a JSX-valued expression
-      // (`{themeLogo(id)}`) replaces the text node with a live element, so
-      // the next reactive run must operate on that element, not the stale
-      // text node (#1663). Primitive values keep the same text node.
-      for (const elem of normalElems) {
-        const v = varSlotId(elem.slotId)
-        lines.push(`  let __anchor_${v} = _${v}`)
-      }
       const __textSlot = (normalElems[0] ?? conditionalElems[0])?.slotId
+
+      // Non-conditional elements: ONE claimed 'markup' writer covering every
+      // slot this expression feeds (slot unification A3, row-level claim at
+      // `__scope` — spec/slot-unification.md §3(a)/§5-A3). 'markup' (not
+      // 'text') because the value may be a live Node (e.g. a JSX-returning
+      // call like `{themeLogo(id)}`) — the writer splices a Node in by
+      // identity, exactly the contract `__bfText` used to provide (#1663).
+      let writer = ''
+      if (normalElems.length > 0) {
+        const slots: ClaimSlotSpec[] = normalElems.map(elem => ({ id: elem.slotId, kind: 'markup', path: [] }))
+        writer = claimWriterVarName(slots, varSlotId)
+        lines.push(`  const ${writer} = lazySlots(__scope, ${claimPlanLiteral(slots)})`)
+      }
+
       lines.push(`  createEffect(() => {`)
       if (normalElems.length > 0) {
         // Expression is always evaluated for non-conditional elements
         lines.push(`    const __val = ${expr}`)
+        // `escapeTextOrNode`: `writeMarkup` inserts a string via
+        // `innerHTML =`, which — unlike the plain `Text.nodeValue =`
+        // assignment the initial SSR/CSR TEMPLATE's `escapeText(${expr})`
+        // was standing in for — DOES interpret HTML, so a raw un-escaped
+        // string here is an injection/byte-parity gap; a live Node (this
+        // expression may return one) must pass through untouched instead.
         for (const elem of normalElems) {
-          const v = varSlotId(elem.slotId)
-          lines.push(`    __anchor_${v} = __bfText(__anchor_${v}, __val)`)
+          lines.push(`    ${writer}('${elem.slotId}', escapeTextOrNode(__val))`)
         }
+        // Conditional elements: deferred from slot unification A3 — see
+        // `__bfText`'s docstring for why. `insert()` may swap the branch's
+        // DOM independently of this effect's own reruns, and a cached claim
+        // door's dedup state would go stale across that swap (unlike the
+        // 'text'-kind conditional cases elsewhere in the compiler, this
+        // slot's value may be a live Node, so it can't reuse the "just
+        // re-claim fresh every run" trick those use — a fresh 'markup'
+        // claim's dedup state always starts empty, so re-claiming per-run
+        // would throw away the unchanged-value skip on every single run).
+        // Keeps `$t` + `__bfText`.
         for (const elem of conditionalElems) {
           const v = varSlotId(elem.slotId)
           lines.push(`    const [__el_${v}] = $t(__scope, '${elem.slotId}')`)
@@ -348,13 +369,23 @@ export function emitDynamicTextUpdates(lines: string[], ctx: ClientJsContext): v
   }
 }
 
-/** Emit createEffect blocks for client-only expressions using comment markers. */
+/**
+ * Emit createEffect blocks for `@client` expressions. Slot unification A3:
+ * these are ordinary claimed 'text' slots now (never Node-valued — `@client`
+ * only ever evaluates a plain expression), one writer per slot at `__scope`,
+ * replacing `updateClientMarker`'s full-tree rescan + zero-width-space
+ * managed-node marker (no longer needed: a claimed Text node's identity is
+ * already known, so there's nothing to disambiguate from other content).
+ */
 export function emitClientOnlyExpressions(lines: string[], ctx: ClientJsContext): void {
   for (const elem of ctx.clientOnlyElements) {
+    const slots: ClaimSlotSpec[] = [{ id: elem.slotId, kind: 'text', path: [] }]
+    const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`  // @client: ${elem.slotId}`)
+    lines.push(`  { const ${writer} = lazySlots(__scope, ${claimPlanLiteral(slots)})`)
     lines.push(`  createEffect(() => {`)
-    lines.push(`    updateClientMarker(__scope, '${elem.slotId}', ${elem.expression})`)
-    lines.push(`  }${bindingIdArg(ctx, elem.slotId)})`)
+    lines.push(`    ${writer}('${elem.slotId}', ${elem.expression})`)
+    lines.push(`  }${bindingIdArg(ctx, elem.slotId)}) }`)
     lines.push('')
   }
 }

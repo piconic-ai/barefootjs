@@ -17,6 +17,7 @@ import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { templateRootIsSvg } from './template-parse.ts'
 import { emitListenerLine } from './event-listener.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
   BranchChildComponentInitsPlan,
   BranchEventBindingsPlan,
@@ -153,15 +154,22 @@ export function stringifyBranchInnerLoops(
         inner.outerLoopParamBindings,
       )
     }
-    for (const text of inner.reactiveTexts) {
+    const conditionalTexts = inner.reactiveTexts.filter(t => t.insideConditional)
+    const plainTexts = inner.reactiveTexts.filter(t => !t.insideConditional)
+    for (const text of conditionalTexts) {
       const bf = profileBindingId(pc, text.slotId)
-      if (text.insideConditional) {
-        // Re-query $t inside the effect: insert() may swap the text node so a
-        // captured reference would silently stop updating.
-        lines.push(`${indent}  createEffect(() => { const [__rt] = $t(__bel${uid}, '${text.slotId}'); if (__rt) __rt.textContent = String(${text.wrappedExpression}) }${bf})`)
-      } else {
-        lines.push(`${indent}  { const [__rt] = $t(__bel${uid}, '${text.slotId}')`)
-        lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }${bf}) }`)
+      // Fresh `claimSlots` claim every run (not the cached `lazySlots` door):
+      // insert() may swap the branch's DOM between runs, and a 'text' write
+      // is a plain, idempotent `nodeValue` assignment with no dedup state to
+      // go stale — replaces the old re-query-$t-on-every-run discipline.
+      lines.push(`${indent}  createEffect(() => { claimSlots(__bel${uid}, [{ id: '${text.slotId}', kind: 'text', path: [] }]).write('${text.slotId}', String(${text.wrappedExpression})) }${bf})`)
+    }
+    if (plainTexts.length > 0) {
+      const slots: ClaimSlotSpec[] = plainTexts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+      const writer = claimWriterVarName(slots, varSlotId)
+      lines.push(`${indent}  const ${writer} = lazySlots(__bel${uid}, ${claimPlanLiteral(slots)})`)
+      for (const text of plainTexts) {
+        lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) }${profileBindingId(pc, text.slotId)})`)
       }
     }
     if (inner.nestedConditionals.length > 0) {
@@ -254,14 +262,25 @@ export function stringifyLoopChildArm(
     lines.push(`${armIndent}}))`)
   }
 
-  for (const text of arm.texts) {
-    // __bfText (not a naive `.textContent = String(...)`) so a Child-position
-    // expression whose value is a live Node (e.g. a hoisted `renderNode={(n)
-    // => <PillNode/>}` callback, #1213) is spliced into the slot by identity
-    // instead of being stringified to "[object HTMLElement]" (#2347).
-    const varName = `__rt_${varSlotId(text.slotId)}`
-    lines.push(`${armIndent}let ${varName} = $t(__branchScope, '${text.slotId}')[0]`)
-    lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => { ${varName} = __bfText(${varName}, ${text.wrappedExpression}) }${profileBindingId(pc, text.slotId)}))`)
+  if (arm.texts.length > 0) {
+    // 'markup' kind (not 'text') because a Child-position expression's value
+    // may be a live Node (e.g. a hoisted `renderNode={(n) => <PillNode/>}`
+    // callback, #1213) — claim-slots' markup writer splices a Node in by
+    // identity instead of stringifying it to "[object HTMLElement]" (#2347),
+    // the same contract `__bfText` used to provide. The writer is built
+    // fresh HERE, inside this arm's `bindEvents` body, so every branch
+    // activation re-claims against that swap's own `__branchScope` DOM
+    // (spec/slot-unification.md §5-A3's "branch-internal slots re-claim per
+    // branch activation").
+    const slots: ClaimSlotSpec[] = arm.texts.map(t => ({ id: t.slotId, kind: 'markup', path: [] }))
+    const writer = claimWriterVarName(slots, varSlotId)
+    lines.push(`${armIndent}const ${writer} = lazySlots(__branchScope, ${claimPlanLiteral(slots)})`)
+    for (const text of arm.texts) {
+      // `escapeTextOrNode`: see emit-reactive.ts's identical wrap for why a
+      // string value must be escaped before a 'markup' writer's
+      // `innerHTML =` insertion, while a live Node passes through untouched.
+      lines.push(`${armIndent}__disposers.push(createDisposableEffect(() => { ${writer}('${text.slotId}', escapeTextOrNode(${text.wrappedExpression})) }${profileBindingId(pc, text.slotId)}))`)
+    }
   }
 
   lines.push(`${armIndent}return () => __disposers.forEach(d => d())`)

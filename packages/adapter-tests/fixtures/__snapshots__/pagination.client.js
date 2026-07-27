@@ -1,4 +1,4 @@
-import { $, $c, $t, __bfText, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, lazySlots, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3016,13 +3016,12 @@ export function initPaginationDynamicDemo(__scope, _p = {}) {
     }
   }
 
-  const [_s16] = $t(__scope, 's16')
   const [_s15, _s14, _s1, _s0, _s3, _s2, _s5, _s4, _s7, _s6, _s9, _s8, _s11, _s10, _s13, _s12] = $c(__scope, 's15', 's14', 's1', 's0', 's3', 's2', 's5', 's4', 's7', 's6', 's9', 's8', 's11', 's10', 's13', 's12')
 
-  let __anchor_s16 = _s16
+  const __bfw_s16 = lazySlots(__scope, [{ id: 's16', kind: 'markup', path: [] }])
   createEffect(() => {
     const __val = currentPage()
-    __anchor_s16 = __bfText(__anchor_s16, __val)
+    __bfw_s16('s16', escapeTextOrNode(__val))
   })
 
 

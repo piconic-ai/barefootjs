@@ -83,10 +83,10 @@ export { reconcileElements, getLoopChildren, getLoopNodes } from './reconcile-el
 export { qsaItem, upsertChildItem } from './qsa-item.ts'
 export { mapArray, mapArrayAnchored } from './map-array.ts'
 export { patchLeaf } from './patch-leaf.ts'
-export { patchSlotRange } from './patch-slot-range.ts'
 
-// Claim-plan interpreter (slot unification A2, spec/slot-unification.md).
-// Standalone for now — no compiler emission site yet (that's A3).
+// Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
+// — the ONE content-slot update mechanism, wired up by the compiler in A3.
+// Supersedes (deleted) `patchSlotRange` and `updateClientMarker`.
 export { claimSlots, lazySlots, type SlotSpec, type ClaimPlan, type ClaimedSlots, type SlotWriter } from './claim-slots.ts'
 
 // Template registry
@@ -101,6 +101,7 @@ export {
   parseHTML,
   escapeAttr,
   escapeText,
+  escapeTextOrNode,
 } from './component.ts'
 
 // Spread props helpers
@@ -115,8 +116,14 @@ export { hydrate, rehydrateAll, rehydrateScope, disposeScope, flushHydration, ge
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry.ts'
 export { insert, type BranchConfig, type BranchTemplateResult } from './insert.ts'
 export { __bfSlot } from './branch-slot.ts'
+// `__bfText` (dynamic-text.ts) and `$t` (query.ts) are kept: one narrow
+// emission site — a `@client`-nested-inside-a-top-level-conditional dynamic
+// text/JSX expression (`emitDynamicTextUpdates`'s `conditionalElems` path in
+// `ir-to-client-js/emit-reactive.ts`) still uses them, deferred from slot
+// unification A3 (see that function's docstring for why the claim-plan
+// model doesn't fit that one case cleanly). `updateClientMarker` had no
+// such holdout and is fully deleted.
 export { __bfText } from './dynamic-text.ts'
-export { updateClientMarker } from './client-marker.ts'
 
 // Hydration state
 export { hydratedScopes } from './hydration-state.ts'

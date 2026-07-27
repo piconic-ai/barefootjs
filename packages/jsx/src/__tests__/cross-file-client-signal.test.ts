@@ -104,7 +104,9 @@ export function Viewer() {
     const files = Object.fromEntries(r.files.map(f => [f.path, f.content]))
     const ssr = Object.values(files).find(c => c.includes('export function Viewer'))
     expect(ssr).toBeDefined()
-    expect(ssr).toContain('client:s')
+    // Empty claimed 'text' slot pair (slot unification A3) — the expression
+    // can't be evaluated server-side, so the client's claim fills it in.
+    expect(ssr).toMatch(/bfText\("s\d+"\)\}\{bfTextEnd\(\)\}/)
     expect(ssr).not.toContain("const val = () =>")
   })
 

@@ -359,11 +359,12 @@ describe('JSX props (#559)', () => {
 
       const clientJs = result.files.find(f => f.type === 'clientJs')
       expect(clientJs).toBeDefined()
-      // The text update routes through `__bfText`, which preserves the
-      // server-rendered DOM for `__isSlot` values (and splices live Nodes
-      // by identity) instead of the old inline `nodeValue = String(...)`
-      // assignment. The `__isSlot` guard now lives inside that helper (#1663).
-      expect(clientJs!.content).toContain('__bfText')
+      // The text update routes through a claimed 'markup' slot writer (slot
+      // unification A3), whose `writeMarkup` preserves the server-rendered
+      // DOM for `__isSlot` values (and splices live Nodes by identity)
+      // instead of the old inline `nodeValue = String(...)` assignment —
+      // the same contract `__bfText` used to provide (#1663).
+      expect(clientJs!.content).toContain("kind: 'markup'")
     })
   })
 })

@@ -31,6 +31,7 @@ import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateD
 import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.ts'
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
 import type { PreambleRegionPlan } from '../plan/loop.ts'
 
@@ -70,11 +71,18 @@ export function emitLoopChildRefs(
  * `arr.map(t => { const cells = []; ...; return <tr>{cells}<td>{t.name}</td></tr> })`).
  * The effect re-runs the (loop-param-accessor-wrapped) preamble on every
  * reactive tick so it re-reads the current per-item signal, recomputes the
- * region's value, and — past the FIRST run (which only records, trusting
- * the SSR/CSR mount-time content already in the DOM) — patches the DOM
- * range via `patchSlotRange(__el, 'sN', html)`. The marker lookup lives
- * inside `patchSlotRange`, so a row that never changes pays zero lookup
- * cost at mount/adoption.
+ * region's value, and writes it through a claimed 'markup' slot (slot
+ * unification A3) — dedup (skip an unchanged string, on every write
+ * including the first) now lives inside the writer itself
+ * (`@barefootjs/client/runtime/claim-slots.ts`), replacing the per-region
+ * `__last` local this used to carry. `lazySlots` defers the marker lookup
+ * to the first actual write, so a row that never changes still pays zero
+ * lookup cost at mount/adoption. (An earlier revision also skipped the DOM
+ * patch on that first write, "trusting" mount-time SSR/CSR content already
+ * matched — removed as unsound in general: a region's value can genuinely
+ * differ from what's in the DOM on the first write, e.g. after a
+ * client-side region swap adopts server HTML rendered from a different
+ * default. See `claim-slots.ts`'s module docstring.)
  *
  * Non-empty `regions` forces the caller's multi-line renderItem layout (the
  * effect needs `__el` as a query root), mirroring `emitLoopChildRefs`.
@@ -87,15 +95,14 @@ export function emitPreambleRegionEffects(
 ): void {
   if (regions.length === 0) return
   const { indent, elVar } = opts
+  const slots: ClaimSlotSpec[] = regions.map(r => ({ id: r.slotId, kind: 'markup', path: [] }))
+  const writer = claimWriterVarName(slots, varSlotId)
+  lines.push(`${indent}const ${writer} = lazySlots(${elVar}, ${claimPlanLiteral(slots)})`)
   for (const region of regions) {
-    const v = varSlotId(region.slotId)
-    lines.push(`${indent}{ let __last_${v}`)
     lines.push(`${indent}createEffect(() => {`)
     if (mapPreambleWrapped) lines.push(`${indent}  ${mapPreambleWrapped}`)
-    lines.push(`${indent}  const __html_${v} = ${region.valueExpr}`)
-    lines.push(`${indent}  if (__last_${v} === undefined) { __last_${v} = __html_${v}; return }`)
-    lines.push(`${indent}  if (__html_${v} !== __last_${v}) { __last_${v} = __html_${v}; patchSlotRange(${elVar}, '${region.slotId}', __html_${v}) }`)
-    lines.push(`${indent}}) }`)
+    lines.push(`${indent}  ${writer}('${region.slotId}', ${region.valueExpr})`)
+    lines.push(`${indent}})`)
   }
 }
 
@@ -254,20 +261,31 @@ export function stringifyPlainLoop(
   // `reactiveEffects.conditionals` is always empty here and needs no path
   // handling. `__p` is `null` on the hydration branch (`__existing` truthy)
   // since the skeleton's empty markers/omitted attrs don't describe the
-  // SSR-rendered tree; every resolution falls back to qsa/$t there.
+  // SSR-rendered tree; every resolution falls back to qsa/$t there. Attr/ref
+  // slots still resolve through `__p` (unchanged by slot unification A3 —
+  // only CONTENT slots migrate to claim plans); text slots below embed the
+  // same skeleton path directly into their claim-plan entry, guarded by the
+  // same `__existing ? [] : […]` ternary so a hydrated row never tries a
+  // path the skeleton doesn't actually describe.
   let pathPlan: SkeletonPathPlan | null = null
   if (hoistedTpl && plan.skeletonPaths) {
     const elementSlotIds = [
       ...(reactiveEffects?.attrSlots.map(s => s.slotId) ?? []),
       ...childRefs.map(r => r.childSlotId),
     ]
-    const textSlotIds = reactiveEffects?.outerTexts.map(t => t.slotId) ?? []
-    if (elementSlotIds.length > 0 || textSlotIds.length > 0) {
-      const built = buildSkeletonPathPlan(plan.skeletonPaths, '__el', { elementSlotIds, textSlotIds })
+    if (elementSlotIds.length > 0) {
+      const built = buildSkeletonPathPlan(plan.skeletonPaths, '__el', { elementSlotIds, textSlotIds: [] })
       if (built.arrayElems.length > 0) {
         pathPlan = built
         lines.push(`${bodyIndent}const __p = __existing ? null : [${built.arrayElems.join(', ')}]`)
       }
+    }
+  }
+  const textClaimPathExprs = new Map<string, string>()
+  if (hoistedTpl && plan.skeletonPaths) {
+    for (const text of reactiveEffects?.outerTexts ?? []) {
+      const path = plan.skeletonPaths.textMarkerPaths.get(text.slotId)
+      if (path) textClaimPathExprs.set(text.slotId, `__existing ? [] : [${path.join(', ')}]`)
     }
   }
   if (reactiveEffects !== null) {
@@ -276,7 +294,7 @@ export function stringifyPlainLoop(
       elVar: '__el',
       bodyIsMultiRoot,
       elementIndexBySlot: pathPlan?.elementIndexBySlot,
-      textIndexBySlot: pathPlan?.textIndexBySlot,
+      textClaimPathExprs,
     })
   }
   emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot, elementIndexBySlot: pathPlan?.elementIndexBySlot })
@@ -433,10 +451,13 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     }
     lines.push(`        }`)
   }
-  for (const text of texts) {
-    const vn = `__rt_${varSlotId(text.slotId)}`
-    lines.push(`        { const [${vn}] = $t(__iterEl, '${text.slotId}')`)
-    lines.push(`        if (${vn}) createEffect(() => { ${vn}.textContent = String(${text.expression}) }${profileBindingId(pc, text.slotId)}) }`)
+  if (texts.length > 0) {
+    const slots: ClaimSlotSpec[] = texts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const writer = claimWriterVarName(slots, varSlotId)
+    lines.push(`        const ${writer} = lazySlots(__iterEl, ${claimPlanLiteral(slots)})`)
+    for (const text of texts) {
+      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', String(${text.expression})) }${profileBindingId(pc, text.slotId)})`)
+    }
   }
   // Ref callbacks fire on every forEach iteration — initial mount and any
   // future array-change-driven re-iteration (#1244). For static arrays the

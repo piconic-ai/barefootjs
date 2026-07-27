@@ -247,7 +247,13 @@ const onMount = () => {}
 const onCleanup = () => {}
 const insert = () => {}
 const reconcileElements = () => {}
-const updateClientMarker = () => {}
+// Claim-plan interpreter stubs (slot unification A2/A3): \`lazySlots\`/
+// \`claimSlots\` are called at init time (not deferred inside \`createEffect\`),
+// so — like \`$\`/\`$t\`/\`$c\` above — they must at least return a benign no-op
+// writer rather than throw, even though this harness never executes an
+// actual DOM claim.
+const lazySlots = () => () => {}
+const claimSlots = () => ({ write: () => {} })
 const initChild = (name, _scope, props) => { __runInit(name, props) }
 const createComponent = () => null
 const createPortal = () => {}
@@ -268,6 +274,14 @@ const escapeAttr = (value) =>
 // value renders as empty text (JSX/Solid semantics; #2137) — otherwise a
 // bare \`{props.x}\` on an absent prop would surface literal "undefined".
 const escapeText = (value) => value == null ? '' : escapeAttr(value)
+// Mirror @barefootjs/client/runtime escapeTextOrNode: a claimed 'markup'
+// writer's value may be a live Node (spliced by identity) or a plain value
+// (escaped like escapeText, above) — generated code calls this wrapper so
+// a string never reaches \`writeMarkup\`'s \`innerHTML =\` unescaped. The
+// harness never constructs a real Node, but must still mirror the branch
+// so a template evaluating this call doesn't throw on a string value.
+const escapeTextOrNode = (value) =>
+  (typeof Node !== 'undefined' && value instanceof Node) ? value : escapeText(value)
 // Mirror @barefootjs/client/runtime/spread-attrs.ts: format a record of
 // attributes as an HTML attribute string for use inside template literals.
 // The real runtime helper is imported by generated client JS, but the

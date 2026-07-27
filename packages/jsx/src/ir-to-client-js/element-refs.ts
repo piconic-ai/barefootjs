@@ -2,12 +2,17 @@
  * Element ref declarations — `const [_s0, _s1] = $(…, 's0', 's1')`.
  *
  * Every element the init body needs to find at hydration time (events,
- * dynamic text, loops, refs, reactive attrs, reactive props, rest-attr
- * elements, child component slots) is emitted via one of three finders:
+ * loops, refs, reactive attrs, reactive props, rest-attr elements, child
+ * component slots) is emitted via one of two finders:
  *
  *   `$(…)`  — regular DOM elements (bf-*)
- *   `$t(…)` — text comment markers for dynamic text (`<!--bf:sN-->`)
  *   `$c(…)` — component slots (bf-s, component-rooted)
+ *
+ * Dynamic text/JSX content slots (`<!--bf:sN-->` markers) don't need a ref
+ * here at all — they resolve through a claimed-slot writer built where
+ * they're used (`emitDynamicTextUpdates`/`emitClientOnlyExpressions` in
+ * `ir-to-client-js/emit-reactive.ts`, slot unification A3), not a
+ * pre-resolved `_sN` var.
  *
  * Slots inside conditional branches are excluded here because
  * `insert()` bindEvents re-queries them when the branch activates.
@@ -26,18 +31,12 @@ import { varSlotId } from './utils.ts'
  */
 export function generateElementRefs(ctx: ClientJsContext): string {
   const regularSlots = new Set<string>()
-  const textSlots = new Set<string>()
   const componentSlots = new Set<string>()
   const conditionalSlotIds = collectConditionalSlotIds(ctx)
 
   for (const elem of ctx.interactiveElements) {
     if (elem.slotId !== '__scope' && !conditionalSlotIds.has(elem.slotId)) {
       regularSlots.add(elem.slotId)
-    }
-  }
-  for (const elem of ctx.dynamicElements) {
-    if (!elem.insideConditional) {
-      textSlots.add(elem.slotId)
     }
   }
   for (const elem of ctx.conditionalElements) {
@@ -72,11 +71,10 @@ export function generateElementRefs(ctx: ClientJsContext): string {
     regularSlots.delete(slotId)
   }
 
-  if (regularSlots.size === 0 && textSlots.size === 0 && componentSlots.size === 0) return ''
+  if (regularSlots.size === 0 && componentSlots.size === 0) return ''
 
   const refLines: string[] = []
   emitSlotRefs(refLines, [...regularSlots], '$')
-  emitSlotRefs(refLines, [...textSlots], '$t')
   emitSlotRefs(refLines, [...componentSlots], '$c')
   return refLines.join('\n')
 }

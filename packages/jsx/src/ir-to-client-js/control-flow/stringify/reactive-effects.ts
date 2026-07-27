@@ -11,6 +11,7 @@
 import { varSlotId, profileBindingId } from '../../utils.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { stringifyLoopChildArm } from './loop-child-arm.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
   NestedConditionalPlan,
   ReactiveEffectsPlan,
@@ -23,7 +24,7 @@ export interface StringifyReactiveEffectsOptions {
   /**
    * Element variable to attach effects to (e.g., `__el`, `__existing`,
    * `__csrEl`). The stringifier never inspects it — it is simply substituted
-   * into the qsa() / $t() / insert() call shapes.
+   * into the qsa() / lazySlots() / insert() call shapes.
    */
   elVar: string
   /**
@@ -42,8 +43,20 @@ export interface StringifyReactiveEffectsOptions {
    * still resolves through the battle-tested runtime lookup.
    */
   elementIndexBySlot?: ReadonlyMap<string, number>
-  /** Same as `elementIndexBySlot`, for text-marker slots (`$t`). */
-  textIndexBySlot?: ReadonlyMap<string, number>
+  /**
+   * Rendered path EXPRESSION source (not a plain array — see
+   * `ClaimSlotSpec.pathExpr`) for outer text slots, keyed by slotId: perf,
+   * #2143's hoisted single-root loop skeleton
+   * (`SkeletonSlotPaths.textMarkerPaths`), guarded by `__existing` the same
+   * way `__p` is nulled on the hydration branch (the skeleton's simplified
+   * markup doesn't describe the real SSR-rendered tree). Only
+   * `stringifyPlainLoop`'s hoisted-skeleton path supplies these; every other
+   * caller omits it and each text slot's claim-plan entry gets `path: []`
+   * — A2's marker-scan fallback resolves it at claim time (sound, just
+   * slower), per `spec/slot-unification.md` §5-A3's explicit "cannot be
+   * statically pathed" allowance.
+   */
+  textClaimPathExprs?: ReadonlyMap<string, string>
 }
 
 export function stringifyReactiveEffects(
@@ -51,7 +64,7 @@ export function stringifyReactiveEffects(
   plan: ReactiveEffectsPlan,
   opts: StringifyReactiveEffectsOptions,
 ): void {
-  const { indent, elVar, bodyIsMultiRoot, elementIndexBySlot, textIndexBySlot } = opts
+  const { indent, elVar, bodyIsMultiRoot, elementIndexBySlot, textClaimPathExprs } = opts
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
   const pc = plan.profileComponentName
   const bindingBfId = (slotId: string): string => profileBindingId(pc, slotId)
@@ -75,10 +88,12 @@ export function stringifyReactiveEffects(
     lines.push(`${indent}} }`)
   }
 
-  // 2. Outer text effects (slots NOT inside any conditional branch).
-  for (const text of plan.outerTexts) {
-    emitOuterText(lines, indent, elVar, text, bindingBfId(text.slotId), textIndexBySlot?.get(text.slotId))
-  }
+  // 2. Outer text effects (slots NOT inside any conditional branch), via ONE
+  //    claimed-slot writer covering every text slot in this scope (row-level
+  //    claim, `spec/slot-unification.md` §3(a)/§5-A3). `lazySlots` touches
+  //    nothing until the first `createEffect` fires, and that first write
+  //    claims every slot in the plan at once.
+  emitOuterTexts(lines, indent, elVar, plan.outerTexts, bindingBfId, textClaimPathExprs)
 
   // 3. Reactive conditionals — each emits an insert(...) over `elVar` whose
   //    arm bodies dispatch through the per-arm stringifiers.
@@ -87,23 +102,26 @@ export function stringifyReactiveEffects(
   }
 }
 
-function emitOuterText(
+function emitOuterTexts(
   lines: string[],
   indent: string,
   elVar: string,
-  text: ReactiveTextEffect,
-  bfId: string = '',
-  pIdx?: number,
+  texts: readonly ReactiveTextEffect[],
+  bindingBfId: (slotId: string) => string,
+  textClaimPathExprs?: ReadonlyMap<string, string>,
 ): void {
-  const varName = `__rt_${varSlotId(text.slotId)}`
-  if (pIdx !== undefined) {
-    // Direct-path resolution (#2143): `__p` holds the marker Comment node;
-    // `tAfter` mirrors `$t`'s create-if-absent Text-node semantics exactly.
-    lines.push(`${indent}{ const ${varName} = __p ? tAfter(__p[${pIdx}]) : $t(${elVar}, '${text.slotId}')[0]`)
-  } else {
-    lines.push(`${indent}{ const [${varName}] = $t(${elVar}, '${text.slotId}')`)
+  if (texts.length === 0) return
+  const slots: ClaimSlotSpec[] = texts.map(t => ({
+    id: t.slotId,
+    kind: 'text',
+    path: [],
+    pathExpr: textClaimPathExprs?.get(t.slotId),
+  }))
+  const writer = claimWriterVarName(slots, varSlotId)
+  lines.push(`${indent}const ${writer} = lazySlots(${elVar}, ${claimPlanLiteral(slots)})`)
+  for (const text of texts) {
+    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) }${bindingBfId(text.slotId)})`)
   }
-  lines.push(`${indent}if (${varName}) createEffect(() => { ${varName}.textContent = String(${text.wrappedExpression}) }${bfId}) }`)
 }
 
 function emitOuterConditional(

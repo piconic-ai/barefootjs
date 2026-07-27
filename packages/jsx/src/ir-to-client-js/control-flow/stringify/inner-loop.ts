@@ -30,11 +30,12 @@
  *     <indent>}) }
  */
 
-import { keyAttrName, profileBindingId } from '../../utils.ts'
+import { keyAttrName, profileBindingId, varSlotId } from '../../utils.ts'
 import { emitComponentAndEventSetup } from '../shared.ts'
 import { emitAttrUpdate } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines, templateRootIsSvg } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
+import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
   InnerLoopPlan,
   InnerLoopsPlan,
@@ -110,15 +111,23 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
   if (inner.childLevels.length > 0) {
     stringifyInnerLoops(lines, inner.childLevels, `${indent}  `, pc)
   }
-  for (const text of emit.reactiveTexts) {
+  const conditionalTexts = emit.reactiveTexts.filter(t => t.insideConditional)
+  const plainTexts = emit.reactiveTexts.filter(t => !t.insideConditional)
+  for (const text of conditionalTexts) {
     const bf = profileBindingId(pc, text.slotId)
-    if (text.insideConditional) {
-      // Re-query $t inside the effect: insert() may swap the text node so a
-      // captured reference would silently stop updating.
-      lines.push(`${indent}  createEffect(() => { const [__rt] = $t(__innerEl${uid}, '${text.slotId}'); if (__rt) __rt.textContent = String(${text.wrappedExpression}) }${bf})`)
-    } else {
-      lines.push(`${indent}  { const [__rt] = $t(__innerEl${uid}, '${text.slotId}')`)
-      lines.push(`${indent}  if (__rt) createEffect(() => { __rt.textContent = String(${text.wrappedExpression}) }${bf}) }`)
+    // A fresh `claimSlots` claim on every run (not the cached `lazySlots`
+    // door): insert() may swap the branch's DOM between runs, and 'text'
+    // writes are a plain, idempotent `nodeValue` assignment with no
+    // dedup/trust-first-run state to go stale — so re-claiming here is exactly
+    // as safe as, and replaces, the old re-query-$t-on-every-run discipline.
+    lines.push(`${indent}  createEffect(() => { claimSlots(__innerEl${uid}, [{ id: '${text.slotId}', kind: 'text', path: [] }]).write('${text.slotId}', String(${text.wrappedExpression})) }${bf})`)
+  }
+  if (plainTexts.length > 0) {
+    const slots: ClaimSlotSpec[] = plainTexts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const writer = claimWriterVarName(slots, varSlotId)
+    lines.push(`${indent}  const ${writer} = lazySlots(__innerEl${uid}, ${claimPlanLiteral(slots)})`)
+    for (const text of plainTexts) {
+      lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) }${profileBindingId(pc, text.slotId)})`)
     }
   }
   for (const attr of emit.reactiveAttrs) {

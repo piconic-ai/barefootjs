@@ -745,9 +745,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (expr.expr === 'null' || expr.expr === 'undefined') {
       return 'null'
     }
-    // Handle @client directive - render comment marker for client-side evaluation
+    // Handle @client directive - render an ordinary claimed 'text' slot pair
+    // (slot unification A3, spec/slot-unification.md §5-A3). The expression
+    // can't be evaluated server-side, so the range is EMPTY at SSR — the
+    // client's claim creates the missing Text node on first write (A2's
+    // `textNodeAfterComment`/`tAfter` create-if-absent semantics), same as
+    // any other reactive text slot whose SSR value happens to be ''. This
+    // replaces the old unpaired `<!--bf-client:sN-->` marker, which nothing
+    // ever adopted — the one SSR byte change Step A allows.
     if (expr.clientOnly && expr.slotId) {
-      return `{bfComment("client:${expr.slotId}")}`
+      return `{bfText("${expr.slotId}")}{bfTextEnd()}`
     }
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions
