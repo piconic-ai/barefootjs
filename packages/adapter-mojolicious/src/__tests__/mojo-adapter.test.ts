@@ -1982,11 +1982,19 @@ export function C() {
   })
 
   // End-to-end proof via perl + Mojolicious: the `@client` form renders an
-  // empty claimed 'text' slot pair, `<!--bf:sN--><!--/-->` (slot unification
-  // A3). The bare form is now caught at build with BF101 and degrades to an
-  // empty, render-safe slot (no more `HASH ref` crash), so we assert the
-  // build error rather than a render crash. Skipped on hosts without
-  // Mojolicious installed.
+  // empty, render-safe placeholder. Before slot unification Step B this was
+  // a claimed 'text' slot marker pair, `<!--bf:sN--><!--/-->` (A3). Step B's
+  // `client-only-elision.ts` now elides that pair for exactly this shape
+  // — a `/* @client */` text expression that is a `<div>`'s only,
+  // non-adjacent child, outside any loop/conditional — since the SSR
+  // width is deterministically zero, so the `<div>` renders with no
+  // marker at all; the client's claim plan creates the missing Text node
+  // from the compiled `elidedPath` alone at hydration (verified in the
+  // `.tmpl`-level test above via the same "Slot unification Step B" note;
+  // this test is the real-render proof of the same claim). The bare form
+  // is caught at build with BF101 and degrades to an empty, render-safe
+  // slot (no more `HASH ref` crash), so we assert the build error rather
+  // than a render crash. Skipped on hosts without Mojolicious installed.
   test('e2e: @client renders placeholder; bare is caught at build with BF101', async () => {
     // Uses the Tier C `charAt` (still refused) — earlier this test used
     // `repeat`, which has since landed its #1448 Tier B lowering.
@@ -2005,7 +2013,11 @@ export function C() {
 `.trimStart(),
         adapter: new MojoAdapter(),
       })
-      expect(html).toContain('<!--bf:s0--><!--/-->')
+      // Slot unification Step B: no marker pair reaches SSR output for
+      // this eligible shape — the `<div>` renders fully empty.
+      expect(html).not.toContain('<!--bf:s0-->')
+      expect(html).not.toContain('<!--/-->')
+      expect(html).toMatch(/<div[^>]*bf="s1"><\/div>/)
     } catch (err) {
       if (err instanceof PerlNotAvailableError) {
         console.log('Skipping #1448 @client e2e: perl/Mojolicious not found')
