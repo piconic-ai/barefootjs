@@ -68,8 +68,9 @@ if (!await Bun.file(domDistFile).exists()) {
 // Fully minify the runtime at copy time (identifier mangling included —
 // unlike component client JS, only the runtime's ESM export names must
 // survive, and Bun.build preserves those). The runtime is the largest
-// single script the site serves, and the LP's "~14 kB gzipped" claim is
-// measured on this minified build.
+// single script the site serves, and the LP's runtime-size claim
+// (hero.tsx, "min+gzip") is measured on this minified build — re-measure
+// and update hero.tsx when runtime changes move it.
 const runtimeBuild = await Bun.build({
   entrypoints: [domDistFile],
   target: 'browser',
