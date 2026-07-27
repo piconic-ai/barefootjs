@@ -65,12 +65,10 @@ describe('JSX expression referencing a local declared inside an early-return if-
 
     const content = clientJsContent(result)
 
-    // Pre-fix: emitted `updateClientMarker(__scope, 's4', aLocal)` at
-    // outer init scope — `aLocal` undefined. Post-fix: the JSX is
-    // inlined directly into the template, so the createEffect /
-    // updateClientMarker block is not needed at all for this static
-    // shape.
-    expect(content).not.toContain('updateClientMarker')
+    // Pre-fix, `aLocal` leaked into a reactive-update block at outer init
+    // scope where it doesn't exist (see file docstring). Post-fix: the JSX
+    // is inlined directly into the template, so no reactive-update block is
+    // needed at all for this static shape.
     expect(content).not.toMatch(/\baLocal\b/)
 
     const hydrate = hydrateLine(result)
@@ -97,8 +95,8 @@ describe('JSX expression referencing a local declared inside an early-return if-
     const content = clientJsContent(result)
     // The bare `label` identifier must not appear in the emitted init
     // function — it's resolved to its initializer value at IR-build
-    // time. Slot unification A3: `@client` writes through a claimed
-    // 'text' slot writer instead of `updateClientMarker`.
+    // time. `@client` writes through a claimed 'text' slot writer
+    // (`claim-slots.ts`).
     expect(content).not.toMatch(/__bfw_\w+\([^)]*\blabel\b[^)]*\)/)
     expect(content).toContain("__bfw_s4('s4', 'hello')")
   })
@@ -125,8 +123,8 @@ describe('JSX expression referencing a local declared inside an early-return if-
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
 
     const content = clientJsContent(result)
-    // Pre-fix: `updateClientMarker(__scope, 's*', compactResize)`
-    // referenced an undeclared name. Post-fix: the ternary becomes an
+    // Pre-fix, `compactResize` leaked into the emitted reactive-update
+    // block as an undeclared name. Post-fix: the ternary becomes an
     // IRConditional with `clientOnly: true`, routed through `insert()`
     // — and `props.readOnly` is rewritten to `_p.readOnly`.
     expect(content).not.toMatch(/\bcompactResize\b/)

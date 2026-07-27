@@ -30,21 +30,22 @@
  *     — the Text node's identity never changes, which is the guarantee
  *     effect closures and `mapArray`'s same-key path rely on.
  *   - 'markup': held ref is BOTH boundary comments (start = anchor, end =
- *     the matching `<!--/-->` found by the same nesting-depth rule as
- *     `patchSlotRange`). A string write clears everything strictly between
- *     the boundaries and inserts freshly `<template>`-parsed HTML before
- *     the end comment; a `Node` write clears the range and splices the node
- *     in by identity (the `__bfText` live-Node case). The boundaries
- *     themselves are never removed — same "permanent range" contract as
- *     `patchSlotRange`. Because the end ref is already held, a write never
- *     needs to re-walk for nesting depth — only the CLAIM does.
+ *     the matching `<!--/-->` found by a nesting-depth walk (any further
+ *     `bf:`-prefixed comment along the way opens a nested region). A string
+ *     write clears everything strictly between the boundaries and inserts
+ *     freshly `<template>`-parsed HTML before the end comment; a `Node`
+ *     write clears the range and splices the node in by identity (the
+ *     `__bfText` live-Node case). The boundaries themselves are never
+ *     removed, so the range stays writeable on every later write. Because
+ *     the end ref is already held, a write never needs to re-walk for
+ *     nesting depth — only the CLAIM does.
  *
  * Warn-don't-guess (§4, "one ownership rule"): a path that fails to resolve
  * to its slot's own `bf:sN` comment — out of range, or shape drift where
  * the path now lands on some other node — falls back to a marker scan
- * within the claim root, using the same ownership rule as
- * `patchSlotRange`/`query.ts`'s `$t`: a `bf:sN` comment owned by a nested
- * `bf-s` scope (a child component's own same-numbered slot — ids are
+ * within the claim root, using the same ownership rule as `query.ts`'s `$t`:
+ * a `bf:sN` comment owned by a nested `bf-s` scope (a child component's own
+ * same-numbered slot — ids are
  * assigned per component, so collisions are expected) is never a candidate
  * — UNLESS the id is `^`-prefixed (`BF_PARENT_OWNED_PREFIX`), meaning the
  * marker is content the claiming component itself authored and merely
@@ -82,25 +83,22 @@
  * `nodeValue` assignment (already idempotent, per §5's design note) — no
  * dedup state needed.
  *
- * An EARLIER revision of this module skipped the first write entirely
- * ("trust-first-run": assume the claimed range already holds matching
- * SSR/CSR content, so recording `last` without touching the DOM is safe).
- * That assumption is true ONLY for the narrow case it was lifted from —
- * `patchSlotRange`'s preamble-region reuse, where the row's SSR content and
+ * The first write is never skipped on the assumption that the claimed
+ * range already matches SSR/CSR content ("trust-first-run") — that
+ * assumption only holds for a preamble-region row whose SSR content and
  * the effect's mount-time recomputation are both derived from the exact
  * same source data, so they cannot disagree. It is false in general: any
  * markup slot whose value comes from client-only state that the server
  * cannot see — `createSignal(readFromLocalStorage())`, a client-side region
  * swap adopting HTML the server rendered from a different default — can
  * genuinely differ from the SSR/CSR content on the very first write, and
- * trust-first-run silently discarded that first real value, leaving the
- * stale SSR default on screen until the NEXT change (site/ui's
- * `admin-gallery.spec.ts` cross-page time-range persistence regression).
- * The old `__bfText`/`$t` mechanism this module superseded never had this
- * skip — every write, first or not, unconditionally applied — so removing
- * it here restores that guarantee for every 'markup' caller, including the
- * preamble-region case (which merely loses a same-value redundant-patch
- * skip on mount, not correctness).
+ * skipping that first write would silently leave the stale SSR default on
+ * screen until the NEXT change (regression pin: site/ui's
+ * `admin-gallery.spec.ts` cross-page time-range persistence test). So every
+ * write unconditionally applies unless deduped by value/identity — never
+ * because it happens to be the first one — for every 'markup' caller,
+ * including the preamble-region case (which only loses a same-value
+ * redundant-patch skip on mount, not correctness).
  */
 
 import { BF_SCOPE, BF_PARENT_OWNED_PREFIX } from '@barefootjs/shared'
@@ -193,10 +191,10 @@ function isSlotComment(node: Node | null, id: string): node is Comment {
 /**
  * Fallback marker scan, used only when a slot's compile-time path fails to
  * resolve to its own `bf:sN` comment (shape drift, or a plan built against
- * a differently-shaped claim root). Mirrors `patchSlotRange`'s ownership
- * loop: a same-id marker owned by a nested `bf-s` scope (a child
- * component's own slot — ids collide across components by design) is
- * skipped so the fallback can never claim into a child's content.
+ * a differently-shaped claim root). The ownership rule: a same-id marker
+ * owned by a nested `bf-s` scope (a child component's own slot — ids
+ * collide across components by design) is skipped so the fallback can
+ * never claim into a child's content.
  *
  * `commentsInScope` (not a bare `document.createTreeWalker(root, …)`) so a
  * whole-item loop conditional's claim root (`insert.ts`'s detached
@@ -244,10 +242,9 @@ function findOwnedMarker(root: Element, id: string): Comment | null {
 
 /**
  * Find the matching `<!--/-->` end comment for a 'markup' slot's start
- * comment, using the same nesting-depth rule as `patchSlotRange`: any
- * further `bf:`-prefixed comment along the way opens a nested region (a
- * leaf rendered inside this one can carry its own ordinary slot markers)
- * and increments a depth counter so that region's own `/` doesn't
+ * comment: any further `bf:`-prefixed comment along the way opens a nested
+ * region (a leaf rendered inside this one can carry its own ordinary slot
+ * markers) and increments a depth counter so that region's own `/` doesn't
  * prematurely close this outer range. Runs once, at claim time — writes
  * never need this since the end ref is held afterward.
  */
