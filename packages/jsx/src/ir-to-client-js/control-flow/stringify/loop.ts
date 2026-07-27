@@ -1,7 +1,7 @@
 /**
  * Stringify LoopPlan variants to source lines.
  *
- * Output shapes (preserved byte-identical from the legacy emitter):
+ * Output shapes:
  *
  *   PlainLoopPlan, no reactive effects (single-line renderItem):
  *     <indent>mapArray(() => <arr>, <container>, <keyFn>, (<head>, <idx>, __existing) =>
@@ -12,13 +12,18 @@
  *     <indent>  <unwrap?>
  *     <indent>  <preamble?>
  *     <indent>  const __el = __existing ?? (() => { ... })()
- *     <indent>  <reactive effects via stringifyReactiveEffects>
+ *     <indent>  <reactive effects + preamble regions via stringifyReactiveEffects —
+ *     <indent>   row-granularity (spec/slot-unification.md §3(c)): attrs, outer
+ *     <indent>   texts, and preamble regions merge into ONE createEffect per row
+ *     <indent>   in normal builds; profile-mode builds keep the legacy
+ *     <indent>   one-effect-per-slot shape (see that module's docstring)>
  *     <indent>  return __el
  *     <indent>})
  *
  *   StaticLoopPlan: two parallel forEach blocks (attrs / texts) — see
  *     emitStaticLoop. The forEach-duplication noted in observation O-4 is
- *     preserved bug-for-bug; PR 5+ collapses them.
+ *     preserved bug-for-bug; PR 5+ collapses them. Left untouched by the
+ *     row-granularity pass above — a different (forEach, not mapArray) shape.
  *
  * Indent convention for plain loops: top-level emission uses `'  '` (2 sp);
  * passed in via `topIndent`.
@@ -33,7 +38,6 @@ import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
-import type { PreambleRegionPlan } from '../plan/loop.ts'
 
 /**
  * Emit `(callback)(__rf)` for each ref on a per-item slot, looking up the
@@ -67,44 +71,16 @@ export function emitLoopChildRefs(
 }
 
 /**
- * Emit the region-patch effect for each preamble-patched region (#2389 —
- * `arr.map(t => { const cells = []; ...; return <tr>{cells}<td>{t.name}</td></tr> })`).
- * The effect re-runs the (loop-param-accessor-wrapped) preamble on every
- * reactive tick so it re-reads the current per-item signal, recomputes the
- * region's value, and writes it through a claimed 'markup' slot (slot
- * unification A3) — dedup (skip an unchanged string, on every write
- * including the first) now lives inside the writer itself
- * (`@barefootjs/client/runtime/claim-slots.ts`), replacing the per-region
- * `__last` local this used to carry. `lazySlots` defers the marker lookup
- * to the first actual write, so a row that never changes still pays zero
- * lookup cost at mount/adoption. (An earlier revision also skipped the DOM
- * patch on that first write, "trusting" mount-time SSR/CSR content already
- * matched — removed as unsound in general: a region's value can genuinely
- * differ from what's in the DOM on the first write, e.g. after a
- * client-side region swap adopts server HTML rendered from a different
- * default. See `claim-slots.ts`'s module docstring.)
- *
- * Non-empty `regions` forces the caller's multi-line renderItem layout (the
- * effect needs `__el` as a query root), mirroring `emitLoopChildRefs`.
+ * Preamble-patched regions (#2389 — `arr.map(t => { const cells = []; ...;
+ * return <tr>{cells}<td>{t.name}</td></tr> })`) used to get their own
+ * per-region `createEffect` here. Row-granularity effects (perf,
+ * spec/slot-unification.md §3(c)/§8) merged that into the SAME single row
+ * effect `stringifyReactiveEffects` now emits for attrs/outer texts — see
+ * that module's docstring. Both plain-loop-row call sites
+ * (`stringifyPlainLoop` below, `stringify/branch-loop.ts`'s `emitPlain`) pass
+ * `preambleRegions`/`mapPreambleWrapped` straight into
+ * `stringifyReactiveEffects` instead of calling a separate emitter.
  */
-export function emitPreambleRegionEffects(
-  lines: string[],
-  regions: readonly PreambleRegionPlan[],
-  mapPreambleWrapped: string,
-  opts: { indent: string; elVar: string },
-): void {
-  if (regions.length === 0) return
-  const { indent, elVar } = opts
-  const slots: ClaimSlotSpec[] = regions.map(r => ({ id: r.slotId, kind: 'markup', path: [] }))
-  const writer = claimWriterVarName(slots, varSlotId)
-  lines.push(`${indent}const ${writer} = lazySlots(${elVar}, ${claimPlanLiteral(slots)})`)
-  for (const region of regions) {
-    lines.push(`${indent}createEffect(() => {`)
-    if (mapPreambleWrapped) lines.push(`${indent}  ${mapPreambleWrapped}`)
-    lines.push(`${indent}  ${writer}('${region.slotId}', ${region.valueExpr})`)
-    lines.push(`${indent}})`)
-  }
-}
 
 /**
  * Single dispatch over `LoopPlan` (#1253). Narrows on `plan.kind` and
@@ -288,17 +264,22 @@ export function stringifyPlainLoop(
       if (path) textClaimPathExprs.set(text.slotId, `__existing ? [] : [${path.join(', ')}]`)
     }
   }
-  if (reactiveEffects !== null) {
+  if (reactiveEffects !== null || preambleRegions.length > 0) {
+    // Row-granularity effects (§3(c)): attrs, outer texts, AND preamble
+    // regions all merge into the SAME single row `createEffect` — pass
+    // `preambleRegions`/`mapPreambleWrapped` straight through instead of a
+    // separate emitter call (see `stringifyReactiveEffects`'s docstring).
     stringifyReactiveEffects(lines, reactiveEffects, {
       indent: bodyIndent,
       elVar: '__el',
       bodyIsMultiRoot,
       elementIndexBySlot: pathPlan?.elementIndexBySlot,
       textClaimPathExprs,
+      preambleRegions,
+      mapPreambleWrapped,
     })
   }
   emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot, elementIndexBySlot: pathPlan?.elementIndexBySlot })
-  emitPreambleRegionEffects(lines, preambleRegions, mapPreambleWrapped, { indent: bodyIndent, elVar: '__el' })
   lines.push(`${bodyIndent}return __el`)
   lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }

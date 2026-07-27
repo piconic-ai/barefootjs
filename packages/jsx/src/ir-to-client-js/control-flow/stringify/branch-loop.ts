@@ -14,7 +14,7 @@ import { stringifyCompositeLoop } from './composite-loop.ts'
 import { stringifyEventDelegation } from './event-delegation.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
-import { emitLoopChildRefs, emitPreambleRegionEffects } from './loop.ts'
+import { emitLoopChildRefs } from './loop.ts'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
@@ -115,11 +115,19 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
       indent: '          ',
       singleRootLayout: 'inline',
     })
-    if (reactiveEffects !== null) {
-      stringifyReactiveEffects(lines, reactiveEffects, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
+    if (reactiveEffects !== null || preambleRegions.length > 0) {
+      // Row-granularity effects (§3(c)): mirrors `stringifyPlainLoop`'s
+      // top-level call — attrs, outer texts, and preamble regions merge
+      // into ONE row effect (see `stringifyReactiveEffects`'s docstring).
+      stringifyReactiveEffects(lines, reactiveEffects, {
+        indent: '          ',
+        elVar: '__el',
+        bodyIsMultiRoot,
+        preambleRegions,
+        mapPreambleWrapped,
+      })
     }
     emitLoopChildRefs(lines, childRefs, { indent: '          ', elVar: '__el', bodyIsMultiRoot })
-    emitPreambleRegionEffects(lines, preambleRegions, mapPreambleWrapped, { indent: '          ', elVar: '__el' })
     lines.push(`          return __el`)
     lines.push(`        }, '${markerId}'${loopBfId})`)
   }
