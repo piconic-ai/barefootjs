@@ -18,6 +18,7 @@
 import type { CompositeLoopPlan, LoopChildRefBinding, PreambleRegionPlan } from './loop.ts'
 import type { EventDelegationPlan } from './event-delegation.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
+import type { LazyRowPlanData } from './build-lazy-row.ts'
 
 export interface BranchPlainLoopPlan {
   /**
@@ -89,6 +90,11 @@ export interface BranchPlainLoopPlan {
    * renderItem layout, mirroring the top-level plain plan.
    */
   preambleRegions: readonly PreambleRegionPlan[]
+  /**
+   * Lazy row graph plan (`spec/slot-unification.md` §9, L3) — see
+   * `PlainLoopVariant.lazyRow`. Undefined ⇒ today's eager emission.
+   */
+  lazyRow?: LazyRowPlanData
 }
 
 export interface BranchCompositeLoopPlan {

@@ -26,6 +26,7 @@ import type { IRLoopChildComponent } from '../../../types.ts'
 import type { SkeletonSlotPaths } from '../../html-template.ts'
 import type { ReactiveEffectsPlan } from './reactive-effects.ts'
 import type { InnerLoopsPlan } from './inner-loop.ts'
+import type { LazyRowPlanData } from './build-lazy-row.ts'
 
 /** Fields shared by every `LoopPlan` variant. */
 interface LoopPlanCommon {
@@ -174,6 +175,15 @@ interface PlainLoopVariant extends DynamicLoopCommon {
    * `__el` to query against.
    */
   preambleRegions: readonly PreambleRegionPlan[]
+  /**
+   * Lazy row graph plan (`spec/slot-unification.md` §9, L3). Non-null when
+   * `lazyRowEligibility` accepted this loop: the stringifier emits
+   * `mapArrayLazy(...)` with this row plan instead of `mapArray(...)` +
+   * renderItem, and the row carries NO per-row reactive resources.
+   * Undefined for every ineligible loop — those keep today's emission
+   * byte-for-byte (sound-or-loud, `plan/lazy-row-eligibility.ts`).
+   */
+  lazyRow?: LazyRowPlanData
 }
 
 /**

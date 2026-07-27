@@ -58,7 +58,7 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     const clientJs = getClientJs(source, 'List.tsx')
     // Dynamic loops emit a `mapArray(` call site. Tighter than
     // `/mapArray|reconcile/` which would fire on any stray mention.
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     expect(clientJs).toContain('items()')
   })
 
@@ -83,7 +83,7 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'List.tsx')
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     expect(clientJs).toContain('getItems()')
   })
 
@@ -124,7 +124,11 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'List.tsx')
-    expect(clientJs).toMatch(/\bmapArray\s*\(/)
+    // `mapArrayLazy` counts: a keyed, single-root, conditional-free row over a
+    // PROP array is lazy-row-eligible (spec/slot-unification.md §9.4 — props
+    // are the canonical hydration-consistent source), so it takes the lazy
+    // reconciler. What #1586 pins is "reconciles at all", not which family.
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
   })
 
   test('unrecognised-call chain with filter now reconciles', () => {
@@ -149,7 +153,7 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'DoneList.tsx')
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     expect(clientJs).toContain('computeItems()')
   })
 
@@ -181,7 +185,7 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     // Outer reconciles via mapArray. Also assert the inner loop's array
     // expression (`o.children`) appears in the emitted template — without
     // this, the test would pass even if the inner loop were dropped.
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     expect(clientJs).toContain('outer()')
     expect(clientJs).toContain('o.children')
   })
@@ -219,8 +223,13 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     // mapArray is emitted (widening now applies). renderItem uses the
     // synthetic `__bfItem` param; references to `cfg` are rewritten
     // inline and no unwrap statement is emitted.
-    expect(clientJs).toContain('mapArray(')
-    expect(clientJs).toContain('(__bfItem, ')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
+    // The synthetic accessor param, in whichever reconciler shape applies:
+    // `mapArray`'s renderItem head `(__bfItem, __idx, __existing) =>`, or a
+    // lazy row plan's `const __bfItem = () => __e.item` binding
+    // (spec/slot-unification.md §9). Either way the destructured references
+    // below must read through the accessor, which is what this pins.
+    expect(clientJs).toMatch(/\(__bfItem, |const __bfItem = \(\) => __e\.item/)
     expect(clientJs).not.toContain('const [, cfg] = __bfItem();')
     expect(clientJs).toContain('__bfItem()[1].color')
   })
@@ -247,7 +256,7 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'Shelf.tsx')
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     expect(clientJs).toContain('listOf()')
   })
 
@@ -278,8 +287,13 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'TypedLegend.tsx')
-    expect(clientJs).toContain('mapArray(')
-    expect(clientJs).toContain('(__bfItem, ')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
+    // The synthetic accessor param, in whichever reconciler shape applies:
+    // `mapArray`'s renderItem head `(__bfItem, __idx, __existing) =>`, or a
+    // lazy row plan's `const __bfItem = () => __e.item` binding
+    // (spec/slot-unification.md §9). Either way the destructured references
+    // below must read through the accessor, which is what this pins.
+    expect(clientJs).toMatch(/\(__bfItem, |const __bfItem = \(\) => __e\.item/)
     expect(clientJs).not.toContain('const [, cfg] = __bfItem();')
     expect(clientJs).toContain('__bfItem()[1].color')
   })
@@ -309,8 +323,13 @@ describe('Solid-style wrap-by-default fallback for loops (#943)', () => {
     `
 
     const clientJs = getClientJs(source, 'Fields.tsx')
-    expect(clientJs).toContain('mapArray(')
-    expect(clientJs).toContain('(__bfItem, ')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
+    // The synthetic accessor param, in whichever reconciler shape applies:
+    // `mapArray`'s renderItem head `(__bfItem, __idx, __existing) =>`, or a
+    // lazy row plan's `const __bfItem = () => __e.item` binding
+    // (spec/slot-unification.md §9). Either way the destructured references
+    // below must read through the accessor, which is what this pins.
+    expect(clientJs).toMatch(/\(__bfItem, |const __bfItem = \(\) => __e\.item/)
     expect(clientJs).not.toContain('const { label, value } = __bfItem();')
     expect(clientJs).toContain('__bfItem().label')
     expect(clientJs).toContain('__bfItem().value')

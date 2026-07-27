@@ -15,6 +15,7 @@ import { stringifyEventDelegation } from './event-delegation.ts'
 import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitTemplateCloneInline, emitLoopItemElementSetup } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
+import { stringifyLazyRowLoop } from './lazy-row.ts'
 import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
@@ -84,6 +85,27 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     lines.push(`          })`)
     lines.push(`          return __el`)
     lines.push(`        }, '${markerId}'${loopBfId})`)
+    lines.push(`      }))`)
+    stringifyEventDelegation(lines, eventDelegation)
+    return
+  }
+
+  // Lazy row graph (spec/slot-unification.md §9, L3) — same gate and same
+  // emitter as the top-level plain loop; only the container guard and indent
+  // differ. Ineligible loops fall through to the eager emission below.
+  if (plan.lazyRow) {
+    stringifyLazyRowLoop(lines, {
+      indent: '        ',
+      containerVar,
+      guardContainer: true,
+      markerId,
+      arrayExpr,
+      keyFn,
+      paramHead,
+      indexParam,
+      template,
+      lazyRow: plan.lazyRow,
+    })
     lines.push(`      }))`)
     stringifyEventDelegation(lines, eventDelegation)
     return

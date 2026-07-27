@@ -2323,6 +2323,46 @@
         "text"
       ]
     },
+    "lazy-row-ineligible-fallback": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "lazy-row-outer-class": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "local-record-union-index": {
       "kinds": [
         "literal",
@@ -4509,18 +4549,18 @@
     }
   },
   "kindCounts": {
-    "array-literal": 65,
+    "array-literal": 67,
     "array-method": 65,
     "arrow": 63,
     "binary": 76,
-    "call": 175,
+    "call": 177,
     "conditional": 21,
-    "identifier": 261,
+    "identifier": 263,
     "index-access": 12,
-    "literal": 215,
+    "literal": 217,
     "logical": 43,
-    "member": 140,
-    "object-literal": 47,
+    "member": 142,
+    "object-literal": 49,
     "template-literal": 29,
     "unary": 22,
     "unsupported": 31
@@ -4560,10 +4600,10 @@
     "binary:===": 39,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 39,
+    "literal:boolean": 40,
     "literal:null": 22,
-    "literal:number": 91,
-    "literal:string": 155,
+    "literal:number": 93,
+    "literal:string": 157,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,

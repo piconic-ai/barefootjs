@@ -95,7 +95,12 @@ describe('#1247 — static-loop CSR self-heal', () => {
       }
     `
     const clientJs = getClientJs(source, 'PropList.tsx')
-    expect(clientJs).toMatch(/\bmapArray\s*\(/)
+    // Either reconciler shape satisfies the point of this test — the loop must
+    // go through the keyed `mapArray` family, not the static `forEach` path.
+    // A keyed, single-root, conditional-free row over a prop array is
+    // lazy-row-eligible (spec/slot-unification.md §9.4), so it emits
+    // `mapArrayLazy`; widen (don't narrow) the assertion.
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
     expect(clientJs).not.toMatch(/\.forEach\s*\(/)
   })
 

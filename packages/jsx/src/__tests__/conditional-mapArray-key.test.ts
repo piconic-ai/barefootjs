@@ -29,11 +29,17 @@ function clientJs(source: string, file = 'CondKey.tsx'): string {
   return cjs!.content
 }
 
+/**
+ * Reconciler call sites, whichever family they use. A lazy-row-eligible loop
+ * (spec/slot-unification.md §9.4) emits `mapArrayLazy(`; everything else keeps
+ * `mapArray(`. The key expression this suite asserts on is the same third
+ * argument in both shapes, so match the family, not one member of it.
+ */
 function mapArrayCalls(content: string): string[] {
   return content
     .split('\n')
     .map((ln) => ln.trim())
-    .filter((ln) => ln.startsWith('mapArray('))
+    .filter((ln) => ln.startsWith('mapArray(') || ln.startsWith('mapArrayLazy('))
 }
 
 describe('mapArray key extraction across conditional branches (#1098)', () => {

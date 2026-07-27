@@ -53,7 +53,10 @@ describe('composite loops inside conditional branches (#724)', () => {
     const js = clientJs!.content
 
     // Should use mapArray inside the branch's bindEvents
-    expect(js).toContain('mapArray(')
+    // `mapArray(` or `mapArrayLazy(` — a lazy-row-eligible branch loop
+    // (spec/slot-unification.md §9.4) uses the latter; either satisfies
+    // "keyed reconciliation, not a composite/component shape".
+    expect(js).toMatch(/\bmapArray(Lazy)?\(/)
 
     // After O-1's mode-collapse PR, child component init goes through the
     // runtime `upsertChild` helper instead of an emit-side
@@ -96,7 +99,10 @@ describe('composite loops inside conditional branches (#724)', () => {
     const js = clientJs!.content
 
     // Should use mapArray for per-item reactivity
-    expect(js).toContain('mapArray(')
+    // `mapArray(` or `mapArrayLazy(` — a lazy-row-eligible branch loop
+    // (spec/slot-unification.md §9.4) uses the latter; either satisfies
+    // "keyed reconciliation, not a composite/component shape".
+    expect(js).toMatch(/\bmapArray(Lazy)?\(/)
 
     // Should NOT use createComponent inside the init body (no child
     // components in this fixture). The CLI also emits a callable shim
@@ -147,7 +153,10 @@ describe('composite loops inside conditional branches (#724)', () => {
     const js = clientJs!.content
 
     // Should use mapArray for the loop
-    expect(js).toContain('mapArray(')
+    // `mapArray(` or `mapArrayLazy(` — a lazy-row-eligible branch loop
+    // (spec/slot-unification.md §9.4) uses the latter; either satisfies
+    // "keyed reconciliation, not a composite/component shape".
+    expect(js).toMatch(/\bmapArray(Lazy)?\(/)
 
     // Should have event delegation (addEventListener + closest pattern)
     expect(js).toContain(".addEventListener('click', (__bfEvt) => {")

@@ -37,6 +37,7 @@ import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.t
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
+import { stringifyLazyRowLoop } from './lazy-row.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
 
 /**
@@ -179,6 +180,28 @@ export function stringifyPlainLoop(
   // conditional's markers; `insert(__anchor, …)` then owns the content.
   if (anchored) {
     stringifyAnchoredLoop(lines, plan, topIndent, anchorKeyExpr)
+    return
+  }
+
+  // Lazy row graph (spec/slot-unification.md §9, L3): rows carry NO per-row
+  // reactive resources. `plan.lazyRow` is set only when
+  // `lazyRowEligibility` accepted this loop; every other loop falls through
+  // to the eager emission below, byte-for-byte unchanged.
+  if (plan.lazyRow) {
+    stringifyLazyRowLoop(lines, {
+      indent: topIndent,
+      containerVar,
+      guardContainer: false,
+      markerId,
+      arrayExpr,
+      keyFn,
+      paramHead,
+      indexParam,
+      template,
+      skeletonTemplate,
+      skeletonPaths: plan.skeletonPaths,
+      lazyRow: plan.lazyRow,
+    })
     return
   }
 

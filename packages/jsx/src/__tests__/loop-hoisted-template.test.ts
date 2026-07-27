@@ -72,16 +72,20 @@ describe('hoisted loop-body skeleton template (perf)', () => {
     `
     const { clientJs, template } = compile(source, 'Bench.tsx')
 
-    // Hoisted declaration present, before the mapArray call.
+    // Hoisted declaration present, before the reconciler call. This row shape
+    // is also lazy-row-eligible (spec/slot-unification.md §9.4), so the
+    // reconciler is `mapArrayLazy` and the clone happens in the row plan's
+    // `createRow` rather than in a `mapArray` renderItem — the hoisting
+    // question this suite pins is orthogonal to which reconciler consumes it.
     const declIdx = clientJs.indexOf('.innerHTML = `<tr')
-    const mapArrayIdx = clientJs.indexOf('mapArray(')
+    const mapArrayIdx = clientJs.search(/\bmapArray(Lazy)?\(/)
     expect(declIdx).toBeGreaterThan(-1)
     expect(mapArrayIdx).toBeGreaterThan(-1)
     expect(declIdx).toBeLessThan(mapArrayIdx)
 
-    // renderItem clones from the hoisted template instead of re-parsing
+    // The row is built by cloning the hoisted template instead of re-parsing
     // innerHTML per row.
-    expect(clientJs).toMatch(/const __el = __existing \?\? __tpl_\w+\.content\.firstElementChild\.cloneNode\(true\)/)
+    expect(clientJs).toMatch(/const __el = __tpl_\w+\.content\.firstElementChild\.cloneNode\(true\)/)
 
     // The hoisted template itself carries no interpolations and no dynamic
     // `class` attribute (that's covered by the reactive-attr createEffect).
@@ -172,7 +176,7 @@ describe('hoisted loop-body skeleton template (perf)', () => {
       }
     `
     const { clientJs } = compile(source, 'SpreadList.tsx')
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     expect(clientJs).not.toMatch(/__tpl_\w+ = document\.createElement\('template'\)/)
   })
 
@@ -195,7 +199,7 @@ describe('hoisted loop-body skeleton template (perf)', () => {
       }
     `
     const { clientJs } = compile(source, 'Dots.tsx')
-    expect(clientJs).toContain('mapArray(')
+    expect(clientJs).toMatch(/\bmapArray(Lazy)?\(/)
     // A `<circle>` root with only dynamic attrs (all covered by reactive-attr
     // createEffects) and a literal `r="4"` is exactly the shape the fast path
     // proves safe — this DOES hoist, and it must wrap in a synthetic `<svg>`
