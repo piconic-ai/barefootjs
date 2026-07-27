@@ -1,5 +1,89 @@
 # @barefootjs/client
 
+## 0.27.0
+
+### Minor Changes
+
+- 17af2ae: Unify content-slot updates onto a single claim-based mechanism (slot
+  unification Step A, spec/slot-unification.md). The compiler now emits
+  claim plans for every content slot (loop-row text, preamble regions,
+  dynamic text/JSX slots, `@client` expressions) instead of the four
+  per-mechanism paths this replaces — `$t`-effect text slots, `__bfText`,
+  `patchSlotRange`, and `updateClientMarker` — all of which are deleted
+  along with the `bf-client:` marker grammar they depended on.
+
+  This cleanup step (A4) additionally removes the dead
+  `reconcileElements`/`reconcileList` runtime exports: no compiler emission
+  path has called them since element/list reconciliation moved to
+  `mapArray`/`mapArrayAnchored`, so they were unreachable dead code kept
+  alive only by their own unit tests. `getLoopChildren`/`getLoopNodes` (real
+  consumers remain in `mapArray`'s clearing path) move to a new
+  `runtime/loop-markers.ts` module with the same public export names — no
+  consumer-facing change.
+
+- 76f0dea: Elide `<!--bf:sN-->…<!--/-->` markers for `/* @client */` text slots
+  outside loops/conditionals (slot unification Step B, spec/
+  slot-unification.md §3(b)) — the one 'text'-kind slot whose rendered
+  width is deterministically zero on every request, which is what makes a
+  real compile-time claim path sound without a marker to fall back on.
+  `client-only-elision.ts` decides this once, before either
+  `adapter.generate` or `generateClientJs` run, so all nine SSR adapters
+  and the CSR template emitter drop the same marker consistently.
+
+  Extends the claim-plan interpreter (`@barefootjs/client/runtime/
+claim-slots.ts`) with a `markerless` `SlotSpec` flag: a markerless 'text'
+  slot's path resolves directly to its position (adopting an existing Text
+  node, or creating one at that exact index when SSR rendered nothing
+  there) instead of scanning for an anchor comment.
+
+  Adds claim-plan conformance (`packages/adapter-tests`): for every fixture
+  and every adapter, resolves the emitted claim plan's statically-known
+  paths against real SSR-rendered DOM and asserts each lands on the
+  expected anchor/position kind.
+
+  Ordinary reactive text slots (loop rows, conditional branches) are NOT
+  elided by this change — their rendered width is data-dependent per
+  request, which needs a different, not-yet-implemented safety argument
+  (see `client-only-elision.ts`'s module docstring and
+  spec/slot-unification.md §5a's "Step B measured" note).
+
+### Patch Changes
+
+- 807b1a5: Remove dead runtime surface left by the slot unification: `getComponentProps`, `getPropsUpdateFn`, and `registerPropsUpdate` (consumer-less since `reconcileList`'s removal) are deleted from `@barefootjs/client/runtime`, and `tAfter` is dropped from the compiler's runtime-import candidates (no emission site remains). Documentation for the `/* @client */` directive is rewritten to describe the claimed-slot behavior that actually ships.
+- e71e19d: Fix a CSR memory/update regression introduced by the slot-unification
+  migration (slot unification A3 → A3b, spec/slot-unification.md §3(c)/§8):
+  loop-row emission was still wiring one `createEffect` per reactive attr,
+  per reactive text, and per preamble region — 3 separate effect closures and
+  subscription-list entries for even the simple two-text-and-one-attr row in
+  the DOM benchmark's `Bench` table, up from the pre-migration baseline's
+  same 3 effects but with the new claim-plan writer/`Map`/refs stacked on
+  top of them.
+
+  For the plain-loop-row shape (top-level `mapArray` rows and their
+  branch-scoped equivalent) the compiler now emits ONE `createEffect` per
+  row that writes every reactive attr, outer text, and preamble region for
+  that row through a single claimed-slot writer — outer texts and preamble
+  regions share one `lazySlots` call (mixed `'text'`/`'markup'` claim
+  kinds), removing the N-1 extra effect objects and their subscription
+  entries per row. Composite loops, component loops, the anchored
+  (whole-item-conditional) loop shape, and static (`forEach`) loops are
+  unchanged — their `reactiveEffects` never carry preamble regions, and this
+  pass only touched the shape it could mechanically verify.
+
+  Profile mode (`bf debug profile`, #1690) keeps the previous per-slot/
+  per-attr effect emission so the profiler's `<Component>#binding:<slotId>`
+  ids still attribute a re-run to its own binding; only normal (non-profile)
+  builds get the consolidated row effect.
+
+  Measured on `benchmarks/apps/barefoot` (CI quick-mode DOM suite,
+  `benchmarks/runner/bench-dom.ts`): 1k-row memory 2046.4KB → ~1767KB
+  (-13.6%, within ~0.6% of the pre-migration same-hardware baseline of
+  1756.9KB); update10th settled back into the ~1.0-1.17x-vanilla band
+  observed pre-migration. Shipped JS size is materially unchanged (the win
+  is runtime object count, not source bytes).
+
+  - @barefootjs/shared@0.27.0
+
 ## 0.26.4
 
 ### Patch Changes
