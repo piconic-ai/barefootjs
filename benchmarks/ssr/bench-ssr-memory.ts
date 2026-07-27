@@ -36,7 +36,9 @@ import { chromiumLaunchOptions } from '../runner/chromium.ts'
 import { median, computeStats } from '../runner/stats.ts'
 import { startServer } from './serve.ts'
 
-const FRAMEWORKS = ['react', 'solid', 'barefoot'] as const
+// Spike wiring: 'barefoot-lazy' is the lazy effect-graph measurement spike
+// (spec/slot-unification.md §8) — see benchmarks/ssr/apps/barefoot-lazy/.
+const FRAMEWORKS = ['react', 'solid', 'barefoot', 'barefoot-lazy'] as const
 const ITERS = 3
 
 async function waitHydrated(page: Page): Promise<void> {

@@ -48,7 +48,12 @@ const appsRoot = join(ssrDir, 'apps')
 const repoRoot = join(ssrDir, '..', '..')
 const resultsDir = join(ssrDir, '..', 'results')
 
-const ALL_FRAMEWORKS = ['react', 'solid', 'barefoot'] as const
+// 'barefoot-lazy' is the lazy effect-graph measurement spike tracked in
+// spec/slot-unification.md §8 (row-level lazy effect-graph construction) —
+// the eager barefoot app's built bundle with a hand-edited lazy loop, see
+// benchmarks/ssr/apps/barefoot-lazy/build.ts. Same methodology, extra
+// column; not a real framework, throwaway spike wiring.
+const ALL_FRAMEWORKS = ['react', 'solid', 'barefoot', 'barefoot-lazy'] as const
 type Framework = (typeof ALL_FRAMEWORKS)[number]
 
 // ---------------------------------------------------------------------------
@@ -73,6 +78,9 @@ const RENDER_SERVER_MODULE: Record<Framework, string> = {
   react: join(appsRoot, 'react', 'src', 'render-server.tsx'),
   solid: join(appsRoot, 'solid', 'src', 'render-server.ts'),
   barefoot: join(appsRoot, 'barefoot', 'lib', 'render-server.ts'),
+  // Spike wiring: re-exports the eager barefoot app's render module (the
+  // lazy prototype only changes the client-side loop hydration model).
+  'barefoot-lazy': join(appsRoot, 'barefoot-lazy', 'lib', 'render-server.ts'),
 }
 
 async function measureServerRender(framework: Framework): Promise<{ iterations: number[]; stats: Stats; html: string }> {
