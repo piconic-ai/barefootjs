@@ -90,7 +90,14 @@ every adapter's output against the plans — turning the existing byte-
 parity invariant into a per-slot, per-backend checked guarantee. This axis
 only exists because we have nine SSR backends.
 
-All four are hypotheses to be measured, not assumed (see Stage 0).
+All four were hypotheses; Stage 0 measured them (see §5a). The essence of
+(a)+(c) is **pay-per-use**: the reactive graph (per-item signal, per-slot
+effect closures, subscription entries, held DOM wrappers) is built only
+for rows that are actually written to, instead of being paid up front for
+every row at hydration. In a write-heavy app the saving converges toward
+the constant-factor gains (one effect per row instead of N; no
+subscriptions or wrappers for static slots); on static-heavy SSR pages —
+the common case — most of the per-row graph is simply never built.
 
 ## 4. Target architecture
 
@@ -104,38 +111,75 @@ All four are hypotheses to be measured, not assumed (see Stage 0).
 - `patchLeaf` stays (element identity + attrs-sync is a different
   contract). `insert`/`mapArray` stay (subtree lifecycle, not content).
 
-## 5. Staged migration (each lands green and alone)
+## 5a. Stage 0 results (measured 2026-07-26, spike PR #2395)
 
-**Stage 0 — measurement spike.** Prototype (b) marker elision and (c)
-row-granularity effects on a benchmark branch; measure HTML size,
-hydration time, memory against the current suite. Numbers decide how far
-stages 3–5 go.
+A fourth SSR-bench app prototyped the claim-once model: marker-stripped
+real barefoot SSR output + a hand-written client doing one delegated
+listener at hydration and row-level lazy claim on first write. Same
+interactivity gate, same fencing; two agent runs plus an independent
+re-run, all consistent (CI reproduced the direction independently).
 
-**Stage 1 — claim infrastructure.** Generalize `tAfter` into per-row claim
-plans (data, not code); introduce the claimed-slot update helpers;
-reimplement `patchSlotRange` on held boundary refs and switch the
-preamble-region emission. No SSR byte change.
+| Metric | solid | barefoot | claim prototype |
+|---|---|---|---|
+| Hydration (median, n=10) | 20–26ms | 28–32ms | **22–30ms** |
+| HTML (raw / gzip) | 235.9 / 18.6KB | 318.6 / 19.5KB | **263.9 / 18.9KB** |
+| Post-hydration heap (n=3, stdev ≤4KB) | 2586KB | 2729KB | **1169KB** |
 
-**Stage 2 — fold `__bfText` and the text-slot emission variants** onto
-claimed slots; collapse caller-side `__anchor_sN` trackers. No SSR byte
-change.
+Readings that bind the plan:
 
-**Stage 3 — retire `bf-client:`.** `@client` expressions become ordinary
-claimed slots (SSR byte change → fixtures regenerate in the same PR).
+- **Memory is the headline** (−57% vs current, ceiling): the per-row
+  reactive graph costs ~1.6KB/row up front today; lazy claim defers it to
+  first write. The prototype ships no runtime, so the real number lands
+  between the columns — but the headroom is real and perfectly
+  reproducible.
+- **Hydration**: mechanism proven (zero per-row work) but only ~10% at 1k
+  rows — navigation/parse dominates. Not the primary justification.
+- **(b) corrected**: raw −54.7KB matched the marker census byte-for-byte,
+  but gzip saved only 0.6KB — markers compress too well for a transfer
+  win. (b)'s value routes through **DOM node count** (4,000 comments +
+  2,001 attrs per 1k rows) into memory and parse, not the wire.
 
-**Stage 4 — marker elision.** Drop markers outside (i)–(iii) from both
-SSR and CSR templates through the single doors, gated on Stage 0 numbers.
-SSR byte change; conformance fixtures regenerate; claim-plan verification
-(d) lands with it.
+## 5. Migration — two steps, stacked semantic PRs
 
-**Stage 5 — cleanup.** Remove dead exports (`reconcileElements`,
-`reconcileList`); document the final marker grammar in
-`shared/src/markers.ts` and here.
+Compatibility with the current emitted grammar is explicitly NOT a goal
+(pre-1.0; fixtures and snapshots regenerate wholesale). What survives is
+not compatibility but **verifiability**: Step A keeps SSR bytes unchanged
+so the new client is validated against known-good SSR output — the
+existing byte-parity corpus is the debugging baseline. The old five-stage
+coexistence plan (mechanisms folded one at a time) is retired.
+
+**Step A — claim infrastructure, wholesale (SSR bytes unchanged).**
+Replace all four content mechanisms (`$t`-effect text slots, `__bfText`,
+`patchSlotRange`, `updateClientMarker`) in one series of stacked PRs; old
+mechanisms are deleted, not shimmed:
+
+- **A1 (this revision)**: spec.
+- **A2 — runtime**: claim-plan interpreter + claimed-slot primitives in
+  `@barefootjs/client/runtime` (claim a row/scope from a compile-time
+  plan; held-ref writes for `'text'`/`'markup'`/`Node`; row-level lazy
+  claim with the row-pristine invariant; eager-claim escape for the
+  streaming/portal paths enumerated below). Unit-tested standalone; no
+  compiler change yet.
+- **A3 — compiler switch**: emit claim plans (data) for every content
+  slot; all four old emission forms and their runtime exports removed;
+  snapshots and CSR/fixture goldens regenerate once. `bf-client:` markers
+  stop being emitted (its SSR comment was claim-input only; removing it
+  is the one SSR byte change allowed in Step A, since nothing adopts it).
+- **A4 — cleanup**: remove dead exports (`reconcileElements`,
+  `reconcileList`); re-run the SSR bench and record real (non-ceiling)
+  numbers here.
+
+**Step B — marker elision.** Drop markers outside (i)–(iii) from both SSR
+and CSR templates through the single doors (nine adapters + goldens in
+one PR), and land claim-plan verification (d) with it: conformance
+mechanically checks every adapter's output against the plans. Justified
+by node count/memory (§5a), not transfer size.
 
 ## 6. Constraints and risks
 
-- **Byte parity**: stages 1–2 are client-only; 3–4 change SSR bytes and
-  must flow through the single doors with fixture regeneration.
+- **Byte parity**: Step A leaves SSR bytes unchanged (except the dead
+  `bf-client:` comment); Step B changes them through the single doors
+  with a one-shot fixture regeneration.
 - **Hydration adoption**: `'text'` keeps create-if-absent; `'markup'`
   keeps trust-first-run (claim records, never patches on first run).
 - **Effect-held references**: emission sites that capture nodes in
@@ -146,8 +190,7 @@ SSR byte change; conformance fixtures regenerate; claim-plan verification
   assumption.
 - **Row-pristine invariant** for lazy claim: claims batch per row; any
   code path that mutates row content before claim (streaming swaps,
-  portals) must either claim eagerly or be excluded — enumerate during
-  Stage 1.
+  portals) must either claim eagerly or be excluded — enumerated in A2.
 
 ## 7. Non-goals
 
