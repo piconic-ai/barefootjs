@@ -418,8 +418,9 @@ re-discovered from scratch:
   row-level lazy EFFECT-GRAPH construction that §5a's −57% memory ceiling
   assumes: every row's reactive graph (signals, subscriptions, the one
   effect closure) is still built eagerly at hydration regardless of
-  whether that row is ever written to. That deferral needs its own
-  measured PR, the way A4 and Step B measured their own slices.
+  whether that row is ever written to. That deferral is now designed and
+  spike-measured in §9 (lazy row graph) and is being implemented as its
+  own stacked PR series.
 - **General-case marker elision (element-path vocabulary beyond `'text'`
   slots).** Step B's `client-only-elision.ts` only elides `/* @client */`
   text slots outside any loop/conditional (§5a "Step B measured" explains
@@ -451,3 +452,146 @@ re-discovered from scratch:
   section, along with the now-dead `propsMap`/`propsUpdateMap` bookkeeping
   those two functions existed to expose (`packages/client/src/runtime/
   component.ts`).
+
+## 9. Lazy row graph — §3(c) completion (designed 2026-07-27, spike-measured)
+
+Status: **implementing** (stacked PR series L1–L4 below). Measurement
+spike: branch `claude/lazy-effect-spike` (commit 59d1bef7), full report at
+`benchmarks/results/lazy-effect-spike.md` on that branch.
+
+### 9.1 The observation that makes rows non-reactive
+
+A plain loop row's update paths are exactly two, and both are already
+known without per-row reactivity:
+
+1. **Item-driven changes.** The keyed reconciler (`mapArray`'s diff)
+   detects them itself — `!Object.is(oldItem, newItem)` per key. The
+   per-item signal + per-row effect exist only to RE-DELIVER that
+   knowledge back to the row; the reconciler can call the row's update
+   function directly instead.
+2. **Outer-signal reads** (`class={selected() === row.id ? … : …}`).
+   When an outer signal changes, every row's effect re-runs anyway
+   (they all subscribe to it). ONE loop-level effect iterating all
+   entries does the same total work with per-entry dedup — without N
+   effect objects and N subscription entries.
+
+Event handlers need nothing per row either: delegation to the loop
+container already shipped. So for the plain shape, the per-row reactive
+graph (createRoot + per-item signal + effect + subscriptions) carries no
+information the loop doesn't already have — it can be deleted, not
+deferred.
+
+### 9.2 The model
+
+Per eligible loop, the compiler emits a **row plan** (functions + data,
+no per-row closures at hydration) consumed by a new runtime entry point
+(`mapArrayLazy`, working name):
+
+- **Hydration first run**: partition SSR rows (same marker walk as
+  `mapArray`), build plain entries `{ key, startMarker, primaryEl,
+  extras, item, refs: null, last: null }`. `key` comes from the
+  SSR-rendered `data-key` attribute (read, never written). NO root, NO
+  signal, NO effect, NO query, NO claim, NO DOM write per row.
+- **Item-driven updates**: on `!Object.is` the reconciler directly calls
+  the plan's `applyItem(entry)` — claims the row's slot refs lazily on
+  that row's first update (scan inside that one row; cached on
+  `entry.refs`; CSR-created rows record refs from known clone paths with
+  no scan), then writes each item-driven binding through per-binding
+  last-value dedup stored on the entry.
+- **Outer-involving bindings** (any binding whose dependency set includes
+  a signal from outside the row — including mixed item+outer bindings
+  like the selected-class): the compiler emits ONE loop-level
+  `createEffect` that reads the outer signals and applies those bindings
+  to every entry with the same per-binding dedup. Emitted only when such
+  bindings exist. Mixed bindings are also included in `applyItem` (an
+  item change can flip them); dedup makes the overlap idempotent.
+- **CSR creation / removal / reorder**: template clone + direct writes
+  for new rows; disposal is trivial (entries hold no reactive
+  resources); the LIS minimal-move reorder is carried over from
+  `mapArray` unchanged.
+
+### 9.3 Soundness — two layers, no trust-first-run regression
+
+The A3 follow-up removed trust-first-run for `'markup'` slots because a
+first write can carry client-only state the server never saw (§6). The
+lazy row graph must not reintroduce that hole. Two distinct consistency
+questions get two distinct answers:
+
+1. **Outer-involving bindings** (first run of the loop-level effect):
+   **read-compare-write seeding.** The first run computes each entry's
+   value and READS the current DOM (`getAttribute` / `nodeValue`) to
+   seed the dedup state, writing only where computed ≠ DOM. Sound
+   unconditionally — client-only outer state (a `createSignal(
+   readFromLocalStorage())` feeding the binding) diverges from SSR and
+   gets patched on that first run, exactly like today. Cost: O(rows)
+   attribute/text reads at hydration, no writes on the consistent path.
+   (The spike used skip-first-run seeding instead; the production choice
+   is read-compare-write — same asymptotics, unconditionally sound.)
+2. **Item-driven bindings**: their first evaluation is deferred until
+   the reconciler sees an item CHANGE — so hydration-time consistency
+   between the SSR rows and the first client `items()` read is TRUSTED,
+   not verified. That trust is sound only when both derive from the
+   same data. This is a **compile-time eligibility gate** (below), not
+   a runtime check: when the loop's data source is provably
+   hydration-consistent (derived from props / server-serialized values
+   — the `bf-p` protocol makes props identical by construction), lazy
+   adoption is sound; when it is not provable, the loop falls back to
+   the current eager emission. Sound-or-loud: eligibility is a
+   mechanical decision with a defined fallback, never a silent
+   divergence.
+
+### 9.4 Eligibility v1 (fallback = current eager emission)
+
+A loop is lazy-eligible when ALL hold; otherwise it keeps today's
+A3b-consolidated eager emission:
+
+- Plain loop-row shape — the same boundary A3b drew:
+  `stringifyPlainLoop` and the branch-scoped `emitPlain`. Composite,
+  component, anchored, and static shapes are untouched.
+- Single-root rows. (Multi-root rows need `startMarker` bookkeeping the
+  spike deliberately dropped; widen later.)
+- The loop source passes the hydration-consistency gate (§9.3(2)):
+  its dependency chain reaches only props, literals, and derivations
+  thereof — no client-only environment reads (storage, `Date`-lowered
+  formatting with client timezone, etc.).
+- No row-local reactive declarations (a preamble that creates per-row
+  signals/memos needs per-row reactivity by definition).
+- Keyed with SSR-rendered `data-key` (already emitted by the SSR
+  templates for keyed loops; claim-plan conformance can assert it).
+- Profile mode (`profileComponentName`) is NOT lazy — it keeps the
+  granular eager emission so `#binding:<slotId>` attribution and
+  turn-boundary accounting stay truthful, same policy as A3b.
+
+### 9.5 Spike results (2026-07-27, sandbox; independently re-verified)
+
+| Measurement | eager barefoot | lazy prototype | solid |
+|---|---|---|---|
+| SSR post-hydration heap (forced GC, n=3, stdev ≤ 1KB) | 2718KB | **1580KB (−42%)** | 2578–2589KB |
+| DOM-suite memory (1k rows created CSR) | 1766KB | **481KB (−73%)** | 1484KB |
+| Hydration median (n=10, two runs) | 49.1 / 55.8ms | 46.9 / 50.0ms | 38.3 / 41.6ms |
+| update10th / select / swap / clear | — | neutral or better in both runs | — |
+
+The memory numbers are the honest framework-shaped bound (full real
+runtime + hydration walker + keyed reconciler attached), unlike Stage
+0's runtime-less 1169KB stunt floor. Hydration time improves only a few
+ms at 1k rows: per-row work is no longer the dominant term —
+navigation/parse and the fixed non-row costs (module eval, `bf-p` JSON
+parse, document scope walk) are, and those are a separate follow-up
+axis. Correctness gates (select A→B→A transitions, update10th
+spot-checks, swap/remove/clear/10k/append/replace) all pass in real
+Chromium; the gate scripts are committed with the spike.
+
+### 9.6 Migration — stacked semantic PRs
+
+- **L1 — spec** (this section).
+- **L2 — runtime**: `mapArrayLazy` + entry/row-plan contract in
+  `@barefootjs/client/runtime`, unit-tested standalone (adoption,
+  direct-call updates, lazy ref claim, read-compare-write seeding
+  helper, LIS reuse, dispose-on-remove). No compiler change.
+- **L3 — compiler switch**: eligibility analysis + row-plan emission for
+  eligible plain loops; ineligible loops and profile mode keep the A3b
+  emission; snapshots/CSR goldens regenerated once; a CSR-conformance
+  fixture exercising an eligible loop and an ineligible fallback loop
+  lands in the same PR.
+- **L4 — measure + record**: re-run the DOM/SSR benches on the real
+  implementation, record results here (§5a discipline), changesets.
