@@ -260,6 +260,63 @@ are the load-bearing claim here and they're deterministic build outputs,
 not timing-sensitive; hydration/server-render numbers above are
 consistent with A4's jitter range and are not this note's point.)
 
+### Row-granularity effects (A3b) — regression confirmed and fixed (measured 2026-07-27)
+
+A3's compiler switch (above) kept per-slot effect emission — one
+`createEffect` per reactive attr, per reactive text, and per preamble
+region — stacked on top of the NEW per-row claim-plan allocations (a
+`lazySlots` writer closure, its plan-literal array, and the `Map` +
+per-slot refs the first write allocates). CI's quick-mode DOM benchmark
+(`benchmarks/runner/bench-dom.ts`, `benchmarks/apps/barefoot`) caught the
+result as a real regression, confirmed on identical sandbox hardware
+against the pre-migration merge commit (`011126f8`):
+
+| Metric | pre-migration (011126f8) | post-A3 (regressed) | post-A3b (this fix) |
+|---|---|---|---|
+| memory (1k rows) | 1756.9KB | 2046.4KB (+16.5%) | ~1767KB (-13.6% vs regressed) |
+| update10th | 12.00ms (1.00x vanilla) | 12.6-12.7ms (1.09-1.24x, noisy) | 14.1-16.0ms (1.04-1.17x) |
+| shipped JS (raw/gzip) | 23.8 / 8.7KB | 26.0 / 9.3KB | 26.0 / 9.3KB (unchanged — the win is runtime object count, not source bytes) |
+
+Per-row inventory at the regressed commit (`bf build`'s emitted
+`renderItem` for the bench table row — one reactive `class` attr, two
+reactive texts, no preamble region): 3 separate `createEffect` calls
+(unchanged from pre-migration's own 3), PLUS a NEW `lazySlots` call whose
+plan literal (2 `SlotSpec` objects + an array) is allocated fresh every
+row regardless of whether the row ever updates, and whose first write
+(fired synchronously by `createEffect`'s initial run — not deferred in
+practice for a freshly-created row) allocates a `Map` + one
+`ClaimedTextSlot` ref per text slot. The regression's dominant cost was
+this claim-mechanism allocation, not the effect count — §3(c)'s own
+"remove N-1 effect objects" framing undersold the fix's actual ceiling,
+noted honestly here rather than silently.
+
+**The fix** (§3(c), row-granularity effects, implemented): for the plain
+loop-row shape (top-level `mapArray` rows, `stringify/loop.ts`'s
+`stringifyPlainLoop`, and the structurally-identical branch-scoped rows in
+`stringify/branch-loop.ts`'s `emitPlain`) every reactive attr, outer text,
+and preamble region for a row now shares ONE `createEffect` and (for the
+texts/regions) ONE `lazySlots` writer over a mixed `'text'`/`'markup'`
+claim plan — cutting the bench row's 3 effects to 1. Composite loops,
+component loops, the anchored (whole-item-conditional) shape, and static
+(`forEach`) loops are untouched (they never carry preamble regions, and
+this pass only mechanically verified the plain-row shape). Profile mode
+keeps the old per-slot/per-attr emission so `<Component>#binding:<slotId>`
+ids still attribute a re-run to its own binding.
+
+**Result**: memory recovered to within ~0.6% of the pre-migration
+same-hardware baseline (three consistent measurements: two quick-mode runs
+at 1767.3-1769.4KB, one full 3-iteration run at 1767.4KB) — a real,
+reproducible ~279KB/13.6% win over the regressed state, though not
+strictly BELOW the pre-migration number. The residual ~10KB gap is
+mechanically attributable to the claim-mechanism's own allocations (the
+writer closure + `Map` + refs the per-row inventory above describes),
+which the effect-count consolidation does not touch and which was out of
+this pass's explicit scope (design agreed for §3(c) was "one effect per
+row", not "rework claim-plan allocation shape") — a candidate for a future
+pass (e.g. hoisting the plan literal's static `id`/`kind` fields once per
+loop instead of re-allocating them every row), not a shortfall in what
+this fix set out to do.
+
 ## 5. Migration — what shipped, two steps of stacked semantic PRs
 
 Compatibility with the pre-unification emitted grammar was explicitly NOT
@@ -345,15 +402,24 @@ Justified by node count/memory (§5a), not transfer size. The general case
 Work this proposal identified but did not ship, tracked here so it isn't
 re-discovered from scratch:
 
-- **Row-granularity / lazy effects (§3(c)).** The compiler still builds one
-  effect closure per binding rather than one effect per row driving a
-  compiled slot table. Row-level lazy CLAIM shipped (`lazySlots`, A2); the
+- **Row-granularity effects (§3(c)) — effect-count consolidation DONE;
+  lazy effect-graph construction remains.** Plain loop rows (top-level
+  `mapArray` and the structurally-identical branch-scoped shape) emit ONE
+  `createEffect` per row covering every reactive attr, outer text, and
+  preamble region, sharing one mixed-kind `lazySlots` writer for the
+  texts/regions. Fixed the A3-introduced CSR memory/update regression
+  (§5a's "Row-granularity effects (A3b)" measurement) back to within
+  ~0.6% of the pre-migration baseline. Composite loops, component loops,
+  the anchored (whole-item-conditional) shape, and static (`forEach`)
+  loops were left untouched — out of this pass's mechanically-verified
+  scope (they never carry preamble regions, the shape that made the
+  three-way merge possible). Profile mode keeps the old per-slot/per-attr
+  emission so per-binding profiler ids survive. What did NOT ship is the
   row-level lazy EFFECT-GRAPH construction that §5a's −57% memory ceiling
-  assumes did not — every row's reactive graph (signals, subscriptions,
-  effect closures) is still built eagerly at hydration regardless of
-  whether that row is ever written to. Needs its own measured PR against
-  the real (non-prototype) pipeline, the way A4 and Step B measured their
-  own slices.
+  assumes: every row's reactive graph (signals, subscriptions, the one
+  effect closure) is still built eagerly at hydration regardless of
+  whether that row is ever written to. That deferral needs its own
+  measured PR, the way A4 and Step B measured their own slices.
 - **General-case marker elision (element-path vocabulary beyond `'text'`
   slots).** Step B's `client-only-elision.ts` only elides `/* @client */`
   text slots outside any loop/conditional (§5a "Step B measured" explains
@@ -368,6 +434,17 @@ re-discovered from scratch:
   moved inside `generateClientJs` instead of running as a pre-pass before
   `adapter.generate` — re-verifying that reordering against the loop-row
   planner's own invariants is real, unstarted work.
+- **Claim-mechanism allocation shape**: §5a's row-granularity measurement
+  section notes a residual ~10KB/1k-rows gap between this fix's result and
+  the pre-migration baseline, attributable to the `lazySlots` writer
+  closure + claim `Map` + per-slot refs every row still allocates (even a
+  row that never updates, since `createEffect`'s synchronous initial run
+  triggers the first write in practice for a freshly-created row). Not
+  addressed here — the design agreed for this pass was effect-count
+  consolidation, not a rework of claim-plan allocation — but a real,
+  mechanically-identified candidate for a future pass (e.g. hoisting each
+  slot's static `id`/`kind` once per loop and only threading a per-row
+  `path`, instead of re-allocating full `SlotSpec` objects every row).
 - **`getComponentProps`/`getPropsUpdateFn` dead-export removal.** Flagged
   consumer-less in A4's report after `reconcileList` (their only reader)
   was deleted. Removed in the post-migration cleanup that added this

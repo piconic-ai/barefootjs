@@ -35,7 +35,11 @@ headless Chromium:
 
 Plus per-framework **startup** (navigation → interactive), **memory**
 (JS heap delta for 1,000 rows, after forced GC), and **shipped JS**
-(raw + gzip bytes of the production bundle).
+(raw + gzip bytes of the production bundle). The memory metric is
+sensitive to per-row effect granularity: BarefootJS emits one
+consolidated `createEffect` per plain loop row (slot unification row
+granularity, `spec/slot-unification.md` §5a), so a compiler change that
+splits or multiplies per-row effects shows up here first.
 
 ### 2. SSR + hydration (`ssr/bench-ssr.ts`)
 
