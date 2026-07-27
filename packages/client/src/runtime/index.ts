@@ -82,6 +82,10 @@ export {
 export { getLoopChildren, getLoopNodes } from './loop-markers.ts'
 export { qsaItem, upsertChildItem } from './qsa-item.ts'
 export { mapArray, mapArrayAnchored } from './map-array.ts'
+// Lazy row graph (slot unification §9, L2) — keyed list rendering with no
+// per-row reactive resources; compiler targets it for eligible plain loops
+// (L3). See ./map-array-lazy.ts for the pinned row-plan contract.
+export { mapArrayLazy, type LazyRowEntry, type LazyRowPlan } from './map-array-lazy.ts'
 export { patchLeaf } from './patch-leaf.ts'
 
 // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
