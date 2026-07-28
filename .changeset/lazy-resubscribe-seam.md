@@ -2,7 +2,7 @@
 "@barefootjs/client": patch
 ---
 
-Add an opt-in re-subscribe seam to `mapArrayLazy` (`LazyRowPlan.outerNeedsResubscribe`).
+Add a re-subscribe seam to `mapArrayLazy`'s loop-level outer effect.
 
 `applyOuter` runs in one loop-level effect that subscribes to whatever its
 body reads. For a primed signal/memo getter that set is independent of the
@@ -15,7 +15,14 @@ already-subscribed key flips, and an item change that moves the value a
 binding keys on. All three were reproduced before this was written; each is
 now a regression test.
 
-A loop that sets the flag re-runs `applyOuter` after any reconcile that
-created a row or changed an item (removals strand nothing). Loops that do
-not set it are byte-identical to before and pay nothing — the flag exists so
-the extra pass lands only where correctness needs it.
+Every loop with an `applyOuter` now re-runs it after any reconcile that
+created a row or changed an item (removals strand nothing). This is
+deliberately unconditional rather than gated on a compiler judgement about
+which outer reads are per-key: that gate would turn a MISCLASSIFICATION into
+a silent staleness bug, while unconditional makes the same mistake merely
+wasteful. Forcing it on for a loop that does not need it measured below this
+repo's benchmark floor (post-hydration heap 1815.5KB -> 1809.1KB, i.e. it
+came out lower — noise, not signal).
+
+This inverts the earlier contract that a reconcile never re-runs the outer
+effect; the test that pinned it is updated with the reason.

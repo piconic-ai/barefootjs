@@ -51,19 +51,19 @@
  *   effect can never observe a half-reconciled list, and read
  *   non-reactively so the effect re-runs ONLY on the outer signals
  *   `applyOuter` itself reads, never because the list was reconciled.
- * - **Re-subscribe seam** (`plan.outerNeedsResubscribe`): the previous
- *   bullet's "reconciles never re-run this effect" contract holds only when
- *   every outer read subscribes independently of the entries — true for a
- *   primed signal/memo getter, FALSE for a per-key subscription such as
- *   `createSelector`, whose selector subscribes the caller to the specific
- *   keys it was called with. For those, a reconcile can leave the effect
- *   subscribed to keys that no longer matter and NOT subscribed to keys that
- *   now do, so a loop that opts in re-runs `applyOuter` after any reconcile
- *   that created a row or changed an item (removals strand nothing). The
- *   opt-in is per loop: loops that do not set the flag keep the cheaper
- *   contract and pay nothing. See the seam's own comment inside
- *   `mapArrayLazy` for the three stranding sequences it exists to prevent,
- *   each of which was reproduced before it was written.
+ * - **Re-subscribe seam**: the previous bullet's "reconciles never re-run
+ *   this effect" contract holds only when every outer read subscribes
+ *   independently of the entries. That is true for a plain signal/memo
+ *   getter and FALSE for a per-key subscription such as `createSelector`,
+ *   whose selector subscribes the caller only to the specific keys it was
+ *   called with — so a reconcile can leave the effect subscribed to keys
+ *   that no longer matter and NOT subscribed to keys that now do. Every
+ *   loop with an `applyOuter` therefore re-runs it after any reconcile that
+ *   created a row or changed an item (removals strand nothing). Applied
+ *   unconditionally rather than gated on a compiler judgement about which
+ *   reads are per-key: see the seam's comment inside `mapArrayLazy` for why
+ *   (a misclassification must be harmless, not silently wrong) and for the
+ *   three stranding sequences it prevents, each reproduced before it existed.
  *
  * **Plan (compiler-emitted) obligations:**
  * - `createRow` MUST write ALL bindings — item-driven AND outer-involving —
@@ -155,16 +155,6 @@ export interface LazyRowPlan<T> {
    *  nodeValue) to initialize its dedup value and write only where the
    *  computed value differs (read-compare-write, spec §9.3(1)). */
   applyOuter?(entries: ReadonlyArray<LazyRowEntry<T>>, seed: boolean): void
-  /**
-   * Set when `applyOuter`'s subscriptions can be STRANDED by a reconcile, so
-   * the runtime must re-run it after one (see `mapArrayLazy`'s docstring,
-   * "Re-subscribe seam"). Required whenever an outer read is not a plain
-   * signal/memo getter the emitter primed — the per-key case
-   * (`createSelector`) being the motivating one. Omitted (falsy) keeps the
-   * cheaper contract: `applyOuter` re-runs ONLY on the outer signals it
-   * reads, and a reconcile never triggers it.
-   */
-  outerNeedsResubscribe?: boolean
 }
 
 /**
@@ -216,11 +206,18 @@ export function mapArrayLazy<T>(
    * "the list became non-empty". Removals strand nothing — the surviving
    * entries keep their subscriptions — so they do not bump.
    *
-   * Only loops whose plan sets `outerNeedsResubscribe` pay for this: a
-   * primed signal/memo read subscribes regardless of entry count and is not
-   * per-key, so those loops keep the cheaper "outer signals only" contract.
+   * Unconditional for every loop that has an `applyOuter`, deliberately.
+   * Gating it on "the compiler believes this loop's outer reads are not
+   * primable" would make a MISCLASSIFICATION silently wrong — a read the
+   * compiler thought was a plain signal but that subscribes per key would
+   * strand exactly as above, with no test able to see it. Unconditional
+   * makes the same mistake harmless. The price is one extra dedup-guarded
+   * `applyOuter` pass per row-creating or item-changing reconcile, measured
+   * as below this repo's benchmark floor: forcing it on for a loop that does
+   * not need it moved post-hydration heap 1815.5KB -> 1809.1KB and hydration
+   * 44.15ms -> 24.55ms, i.e. it measured FASTER, which is noise, not signal.
    */
-  const needsResubscribe = plan.outerNeedsResubscribe === true && plan.applyOuter !== undefined
+  const needsResubscribe = plan.applyOuter !== undefined
   const [generation, bumpGeneration] = needsResubscribe ? createSignal(0) : [null, null]
   let stranded = false
   const markStranded = (): void => {

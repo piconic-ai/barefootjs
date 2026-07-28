@@ -422,7 +422,7 @@ describe('mapArrayLazy — applyOuter loop-level effect', () => {
     expect(lis[1].getAttribute('class')).toBe('sel')
   })
 
-  test('re-runs on outer-signal change with seed=false; reconciles do not re-run it', () => {
+  test('re-runs on outer-signal change with seed=false, and again after a row-creating reconcile', () => {
     const [selected, setSelected] = createSignal('1')
     const a = item('1', 'A')
     const b = item('2', 'B')
@@ -441,16 +441,26 @@ describe('mapArrayLazy — applyOuter loop-level effect', () => {
     expect(lis[0].getAttribute('class')).toBe('')
     expect(lis[1].getAttribute('class')).toBe('sel')
 
-    // Reconcile (append + reorder) must NOT re-run the outer effect...
+    // A row-creating reconcile DOES re-run the outer effect — the
+    // re-subscribe seam. This inverts the original L2 contract ("reconciles
+    // never re-run it") on purpose: an outer read may subscribe PER KEY
+    // (createSelector), in which case a freshly created row's key was never
+    // registered and a later selection of it would be missed. See the seam's
+    // comment in map-array-lazy.ts for the three reproduced sequences.
     setItems([item('3', 'C'), a, b])
-    expect(applyOuterCalls.length).toBe(2)
-    // ...the created row is already consistent (createRow wrote the class).
+    expect(applyOuterCalls.length).toBe(3)
+    expect(applyOuterCalls[2].seed).toBe(false)
+    // The created row was already consistent before that pass (createRow
+    // wrote the class), so the extra run is dedup-guarded work, not a fix.
     expect(container.querySelector('[data-key="3"]')!.getAttribute('class')).toBe('')
 
-    // ...but the NEXT outer run sees the post-reconcile entry list in order.
-    setSelected('3')
-    expect(applyOuterCalls.length).toBe(3)
+    // That pass already saw the post-reconcile entry list, in order.
     expect(applyOuterCalls[2].keys).toEqual(['3', '1', '2'])
+
+    // And a subsequent outer change still lands on the same list.
+    setSelected('3')
+    expect(applyOuterCalls.length).toBe(4)
+    expect(applyOuterCalls[3].keys).toEqual(['3', '1', '2'])
     expect(container.querySelector('[data-key="3"]')!.getAttribute('class')).toBe('sel')
     expect(container.querySelector('[data-key="2"]')!.getAttribute('class')).toBe('')
   })
@@ -510,7 +520,7 @@ describe('mapArrayLazy — reconciler tracking isolation', () => {
 })
 
 /**
- * Re-subscribe seam (`outerNeedsResubscribe`). `applyOuter` subscribes to
+ * Re-subscribe seam. `applyOuter` subscribes to
  * whatever its body reads; when an outer read is NOT a primable signal
  * getter — `createSelector`, whose returned selector subscribes the caller
  * per KEY — that set depends on the entries it iterated, so a reconcile can
@@ -520,7 +530,7 @@ describe('mapArrayLazy — reconciler tracking isolation', () => {
 describe('mapArrayLazy — re-subscribe seam', () => {
   type Row = { id: number; tag?: string }
 
-  function perKeyLoop(opts: { initial: Row[]; seam: boolean; key?: (r: Row) => string }) {
+  function perKeyLoop(opts: { initial: Row[]; key?: (r: Row) => string }) {
     const host = document.createElement('div')
     document.body.innerHTML = ''
     document.body.appendChild(host)
@@ -553,7 +563,6 @@ describe('mapArrayLazy — re-subscribe seam', () => {
         outerRuns++
         for (const e of entries) paint(e as never)
       },
-      ...(opts.seam ? { outerNeedsResubscribe: true } : {}),
     }, 'l0')
 
     return {
@@ -565,7 +574,7 @@ describe('mapArrayLazy — re-subscribe seam', () => {
   }
 
   test('empty at the first run: rows added later still react to the outer change', () => {
-    const t = perKeyLoop({ initial: [], seam: true })
+    const t = perKeyLoop({ initial: [] })
     t.setRows([{ id: 1 }, { id: 2 }])
     t.setSelected(1)
     expect(t.texts()).toEqual(['ON', 'off'])
@@ -574,7 +583,7 @@ describe('mapArrayLazy — re-subscribe seam', () => {
   test('a row created while nothing is selected, then selected, is not stranded', () => {
     // The list is NEVER empty here — which is why an empty -> non-empty
     // trigger would not have caught this.
-    const t = perKeyLoop({ initial: [{ id: 1 }, { id: 2 }], seam: true })
+    const t = perKeyLoop({ initial: [{ id: 1 }, { id: 2 }] })
     t.setRows([{ id: 1 }, { id: 2 }, { id: 3 }])
     t.setSelected(3)
     expect(t.texts()).toEqual(['off', 'off', 'ON'])
@@ -585,7 +594,6 @@ describe('mapArrayLazy — re-subscribe seam', () => {
     // stable key strands the old per-key subscription.
     const t = perKeyLoop({
       initial: [{ id: 1, tag: 'a' }],
-      seam: true,
       key: (r) => r.tag!,
     })
     t.setRows([{ id: 9, tag: 'a' }])
@@ -598,7 +606,7 @@ describe('mapArrayLazy — re-subscribe seam', () => {
     // with Object.is, so handing back a fresh `{ id: 1 }` would register as
     // an item change and legitimately bump. Removal on its own must not.
     const keep = { id: 1 }
-    const t = perKeyLoop({ initial: [keep, { id: 2 }], seam: true })
+    const t = perKeyLoop({ initial: [keep, { id: 2 }] })
     const before = t.runs()
     t.setRows([keep])
     expect(t.runs()).toBe(before)
@@ -607,16 +615,20 @@ describe('mapArrayLazy — re-subscribe seam', () => {
   test('an item change bumps even when identity is the only thing that moved', () => {
     // The flip side of the test above, pinned so the Object.is-based
     // stranding rule is explicit rather than incidental.
-    const t = perKeyLoop({ initial: [{ id: 1 }], seam: true })
+    const t = perKeyLoop({ initial: [{ id: 1 }] })
     const before = t.runs()
     t.setRows([{ id: 1 }])
     expect(t.runs()).toBe(before + 1)
   })
 
-  test('without the flag, a reconcile never re-runs applyOuter (opt-in cost)', () => {
-    const t = perKeyLoop({ initial: [{ id: 1 }], seam: false })
+  test('the seam is unconditional — no plan flag turns it off', () => {
+    // Deliberate: gating it on a compiler judgement about which outer reads
+    // are per-key would make a misclassification silently wrong instead of
+    // merely wasteful. Pinned so a future "optimization" that reintroduces
+    // an opt-out has to change this test on purpose.
+    const t = perKeyLoop({ initial: [{ id: 1 }] })
     const before = t.runs()
     t.setRows([{ id: 1 }, { id: 2 }])
-    expect(t.runs()).toBe(before)
+    expect(t.runs()).toBe(before + 1)
   })
 })
