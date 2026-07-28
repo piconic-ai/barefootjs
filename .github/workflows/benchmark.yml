@@ -1,11 +1,25 @@
 name: Benchmark
 
+# Trigger notes — two blind spots this configuration has, both hit for real:
+#
+#  - `branches: [main]` means a STACKED pull request (one based on another
+#    feature branch) never runs this workflow. Retargeting its base to main
+#    afterwards does NOT re-trigger, so the numbers get checked only if
+#    something is pushed after the retarget. Several PRs in the slot
+#    unification series merged with no benchmark run at all this way.
+#  - the workflow file was absent from its own `paths`, so a change to the
+#    benchmark steps could not test itself. The SSR-heap step below was added
+#    and merged without ever executing because of exactly that.
+#
+# `workflow_dispatch` exists so this can be run on demand against any ref —
+# the escape hatch for both cases, and how a workflow edit gets verified.
 on:
   pull_request:
-    branches: [main]
     paths:
       - 'packages/client/**'
       - 'benchmarks/**'
+      - '.github/workflows/benchmark.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
