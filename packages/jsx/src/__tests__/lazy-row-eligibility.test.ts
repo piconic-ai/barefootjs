@@ -171,7 +171,12 @@ describe('lazyRowEligibility — binding refusals', () => {
     expect((decision as { reason: string }).reason).toMatch(/cannot be primed: _p/)
   })
 
-  test('an outer-involving TEXT binding is refused (no DOM read-back for content slots)', () => {
+  // §9.5c(1), LIFTED: content slots now have a DOM read-back
+  // (`lazyClaimSlots(...).read(id)`), so an outer-involving text binding no
+  // longer sinks the loop. This test is the inverse of the refusal it
+  // replaces — if the gate ever starts refusing again, it fails here rather
+  // than as a silent eager-fallback regression.
+  test('an outer-involving TEXT binding is ELIGIBLE (content slots have a DOM read-back)', () => {
     const decision = lazyRowEligibility(args({
       bindings: [{
         kind: 'text',
@@ -189,8 +194,23 @@ describe('lazyRowEligibility — binding refusals', () => {
         ]),
       }),
     }))
+    expect(decision).toEqual({ eligible: true })
+  })
+
+  test('an outer-only TEXT binding whose outer name is OPAQUE is still refused', () => {
+    const decision = lazyRowEligibility(args({
+      bindings: [{
+        kind: 'text',
+        slotId: 's1',
+        readsItem: true,
+        readsOuter: true,
+        reactiveOuterNames: [],
+        opaqueOuterNames: ['isSelected'],
+        referencesIndex: false,
+      }],
+    }))
     expect(decision.eligible).toBe(false)
-    expect((decision as { reason: string }).reason).toMatch(/outer-involving text binding/)
+    expect((decision as { reason: string }).reason).toMatch(/cannot be primed: isSelected/)
   })
 })
 
@@ -408,6 +428,95 @@ describe('lazy row emission — eligible loop', () => {
   test('the lazy claim helper scans inside ONE row and is shared by both apply paths', () => {
     expect(js).toContain('const __lzc_l0 = (__e) => {')
     expect(js).toContain('const __el = __e.primaryEl')
+  })
+
+  /**
+   * No-regression pin for the cheap door. This loop's texts are all
+   * item-driven, so it must keep the single-closure `lazySlots` writer and
+   * the BARE call form — the read-capable door costs an extra closure on
+   * every row and may only be taken by loops that actually seed content.
+   */
+  test('an attr-only-outer loop keeps the write-only lazySlots door and the bare call form', () => {
+    expect(js).toContain('lazySlots(')
+    expect(js).not.toContain('lazyClaimSlots(')
+    expect(js).toContain("__r[1]('s0', String(__x))")
+    expect(js).not.toContain('.write(')
+    expect(js).not.toContain('.read(')
+  })
+})
+
+/**
+ * §9.5c(1) lifted: an outer-involving TEXT binding. The row renders an
+ * item-driven text alongside a text that depends on a component signal, so
+ * the loop needs the READ-capable claim door to seed the second one by
+ * read-compare-write instead of writing blindly at hydration.
+ */
+const ELIGIBLE_OUTER_TEXT = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string }
+export function LazyOuterTextRows() {
+  const [rows, setRows] = createSignal<Row[]>([])
+  const [selected, setSelected] = createSignal(0)
+  return (
+    <tbody>
+      {rows().map(row => (
+        <tr key={row.id}>
+          <td>{row.label}</td>
+          <td>{String(selected() === row.id ? 'YES' : 'NO')}</td>
+        </tr>
+      ))}
+    </tbody>
+  )
+}
+`
+
+describe('lazy row emission — outer-involving TEXT binding (§9.5c(1) lifted)', () => {
+  const js = clientJs(ELIGIBLE_OUTER_TEXT, 'LazyOuterTextRows.tsx')
+
+  test('the loop is eligible — it is no longer refused for having an outer text', () => {
+    expect(js).toContain('mapArrayLazy(')
+    expect(js).not.toMatch(/\bmapArray\(/)
+  })
+
+  test('claims through the READ-capable door and imports it', () => {
+    expect(js).toContain('lazyClaimSlots(')
+    expect(js).not.toMatch(/\blazySlots\(/)
+    expect(js).toMatch(/import \{[^}]*\blazyClaimSlots\b[^}]*\} from '@barefootjs\/client\/runtime'/)
+  })
+
+  test('every text write goes through the door\'s .write() method', () => {
+    expect(js).toContain(".write('s0', String(__x))")
+    expect(js).toContain(".write('s1', String(__x))")
+    // The bare call form belongs to the write-only door and must not survive
+    // alongside the RW one.
+    expect(js).not.toContain("__r[0]('s0'")
+    expect(js).not.toContain("__r[0]('s1'")
+  })
+
+  test('applyOuter seeds the content slot by read-compare-write (§9.3(1))', () => {
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    // A real branch, not one ternary guard: the seed path binds the string
+    // ONCE and reuses it for the compare and the write, so a value with a
+    // side-effecting `toString` is not stringified twice.
+    expect(applyOuter).toContain('if (__seed) {')
+    expect(applyOuter).toContain('const __s = String(__x)')
+    expect(applyOuter).toContain("if (__r[0].read('s1') !== __s) __r[0].write('s1', __s)")
+    expect(applyOuter).not.toContain("read('s1') !== String(__x)")
+    // …and falls back to the ordinary entry.last dedup on every later run,
+    // where the string is built only when the write actually happens.
+    expect(applyOuter).toContain('} else if (!(1 in __l) || !Object.is(__l[1], __x))')
+    expect(applyOuter).toContain('__l[1] = __x')
+  })
+
+  test('the outer text ALSO applies on item change, because it reads the item too', () => {
+    const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
+    expect(applyItem).toContain("__r[0].write('s1', String(__x))")
+  })
+
+  test('the item-only text is NOT emitted into applyOuter', () => {
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    expect(applyOuter).not.toContain("'s0'")
   })
 })
 

@@ -48,13 +48,11 @@
  *    is per attribute KIND and pairs with `emitAttrUpdate`'s dispatch
  *    (`emit-reactive.ts`); any kind this module does not recognise falls back
  *    to `true` (always write on seed), which is conservative, never wrong.
+ *    CONTENT slots seed the same way through the claim's `read(id)` door
+ *    (§9.5c(1), lifted) — see `refParts` for the per-loop door choice.
  *
- * Content (text) slots are never outer-involving here — `lazySlots`' writer
- * is write-only, so there is no DOM read-back to seed against, and the
- * eligibility gate refuses such loops rather than reintroducing an
- * unconditional per-row hydration write. Consequently a lazy row's text
- * bindings are all item-driven, and a loop with NO outer binding emits no
- * `applyOuter` at all — its rows do literally nothing at hydration.
+ * A loop with NO outer binding emits no `applyOuter` at all — its rows do
+ * literally nothing at hydration.
  */
 
 import { isBooleanAttr } from '../../../html-constants.ts'
@@ -95,6 +93,10 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   const claimVar = `__lzc_${mid}`
   const hasRefs = lazyRow.attrSlotIds.length > 0 || lazyRow.texts.length > 0
   const hasBindings = lazyRow.attrs.length > 0 || lazyRow.texts.length > 0
+  // ONE per-loop door decision (see `refParts`): the read-capable claim, or
+  // today's write-only writer. Never decided per binding — the door is
+  // allocated once per ROW.
+  const rwDoor = lazyRow.textNeedsRead
 
   // Hoisted once-per-loop skeleton (perf, #2143): clone an already-parsed
   // node per row instead of re-running an `innerHTML` parse. The skeleton
@@ -158,7 +160,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   if (hasBindings) {
     lines.push(`${b2}const __l = __e.last = []`)
     for (const a of lazyRow.attrs) emitAttrBinding(lines, b2, a, 'create')
-    for (const t of lazyRow.texts) emitTextBinding(lines, b2, t, lazyRow.writerIndex, false)
+    for (const t of lazyRow.texts) emitTextBinding(lines, b2, t, lazyRow.writerIndex, 'create', rwDoor)
   }
   lines.push(`${b2}return __el`)
   lines.push(`${b1}},`)
@@ -174,13 +176,14 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${b2}const __r = __e.refs ?? (__e.refs = ${claimVar}(__e))`)
     lines.push(`${b2}const __l = __e.last ?? (__e.last = [])`)
     for (const a of itemAttrs) emitAttrBinding(lines, b2, a, 'item')
-    for (const t of itemTexts) emitTextBinding(lines, b2, t, lazyRow.writerIndex, true)
+    for (const t of itemTexts) emitTextBinding(lines, b2, t, lazyRow.writerIndex, 'item', rwDoor)
     lines.push(`${b1}},`)
   }
 
   // --- applyOuter (only when some binding is outer-involving) -------------
   const outerAttrs = lazyRow.attrs.filter(a => a.readsOuter)
-  if (outerAttrs.length > 0) {
+  const outerTexts = lazyRow.texts.filter(t => t.readsOuter)
+  if (outerAttrs.length > 0 || outerTexts.length > 0) {
     const b3 = `${indent}      `
     lines.push(`${b1}applyOuter: (__es, __seed) => {`)
     // Prime the outer reads so this ONE loop-level effect subscribes even
@@ -191,6 +194,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${b3}const __r = __e.refs ?? (__e.refs = ${claimVar}(__e))`)
     lines.push(`${b3}const __l = __e.last ?? (__e.last = [])`)
     for (const a of outerAttrs) emitAttrBinding(lines, b3, a, 'outer')
+    for (const t of outerTexts) emitTextBinding(lines, b3, t, lazyRow.writerIndex, 'outer', rwDoor)
     lines.push(`${b2}}`)
     lines.push(`${b1}},`)
   }
@@ -201,7 +205,24 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
 /**
  * The `entry.refs` array contents: one element ref per reactive-attr slot
  * (in `attrSlotIds` order), then — when the row has text slots — the
- * `lazySlots` writer at `writerIndex`.
+ * claimed-slot door at `writerIndex`.
+ *
+ * **Which door (per LOOP, never per binding).** `lazySlots` returns a bare
+ * write function; `lazyClaimSlots` returns the `{ write, read }` pair over
+ * the SAME claim, at the cost of an extra closure on EVERY row of the list
+ * (`claim-slots.ts` measured ~40-84KB/1k rows). So the RW door is taken only
+ * when this loop actually has an outer-involving text binding to seed by
+ * read-compare-write (`plan.textNeedsRead`, decided once in
+ * `build-lazy-row.ts`); every other loop keeps today's writer byte-for-byte.
+ *
+ * **Honest cost note.** Reading a text slot CLAIMS that row's whole plan
+ * (§2's claim-once rule — `read` and `write` share `claimRefs`), so a loop
+ * with an outer-involving text pays one claim per row at hydration instead
+ * of the row-pristine zero. That is inherent to read-compare-write for
+ * content: you cannot compare what you have not resolved. It is still far
+ * cheaper than the eager path this replaces, which pays a root + a signal +
+ * an effect per row. Attr-only loops are entirely unaffected — they keep the
+ * write-only door and never claim at seed.
  *
  * `skeletonPaths` non-null = fresh-clone context (`createRow`): resolve via
  * compile-time child-index chains, no scan. Null = adopted-row context
@@ -227,7 +248,8 @@ function refParts(
       path: [],
       pathExpr: textPathVar ? `${textPathVar}[${i}]` : undefined,
     }))
-    parts.push(`lazySlots(${elVar}, ${claimPlanLiteral(slots)})`)
+    const door = lazyRow.textNeedsRead ? 'lazyClaimSlots' : 'lazySlots'
+    parts.push(`${door}(${elVar}, ${claimPlanLiteral(slots)})`)
   }
   return parts
 }
@@ -262,19 +284,48 @@ function emitAttrBinding(
   lines.push(`${ind}} }`)
 }
 
+/**
+ * A content-slot write, in the same three modes as {@link emitAttrBinding}.
+ *
+ * `'outer'` seeds by read-compare-write (§9.3(1)) through the RW door's
+ * `read(id)`. `read` returns `null` when it cannot answer (slot never
+ * claimed, or not a 'text' slot) and `null !== <the string>` is always true,
+ * so the comparison already fails safe into "write it" — no explicit null
+ * handling is needed or wanted here.
+ *
+ * The `'outer'` mode emits a real `if`/`else if` rather than one ternary
+ * guard so the seed branch can bind `String(__x)` ONCE and use it for both
+ * the comparison and the write. A ternary would stringify twice on the seed
+ * path, which double-invokes a user value's `toString` — observable when it
+ * has side effects, wasted work when it doesn't. Hoisting the string above
+ * the branch instead would fix that but would also stringify on the
+ * non-seed path even when dedup skips the write, i.e. on every later tick;
+ * the branch keeps exactly one stringification per path taken.
+ */
 function emitTextBinding(
   lines: string[],
   ind: string,
   t: LazyRowTextBinding,
   writerIndex: number,
-  dedup: boolean,
+  mode: 'create' | 'item' | 'outer',
+  rwDoor: boolean,
 ): void {
   lines.push(`${ind}{ const __x = ${t.wrappedExpression}`)
-  const write = `__r[${writerIndex}]('${t.slotId}', String(__x))`
-  if (dedup) {
-    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${write}`)
+  const doorExpr = `__r[${writerIndex}]`
+  const writeOf = (valueExpr: string): string =>
+    rwDoor
+      ? `${doorExpr}.write('${t.slotId}', ${valueExpr})`
+      : `${doorExpr}('${t.slotId}', ${valueExpr})`
+
+  if (mode === 'outer') {
+    lines.push(`${ind}if (__seed) {`)
+    lines.push(`${ind}  const __s = String(__x)`)
+    lines.push(`${ind}  if (${doorExpr}.read('${t.slotId}') !== __s) ${writeOf('__s')}`)
+    lines.push(`${ind}} else if (${dedupGuard(t.ordinal)}) ${writeOf('String(__x)')}`)
+  } else if (mode === 'item') {
+    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${writeOf('String(__x)')}`)
   } else {
-    lines.push(`${ind}${write}`)
+    lines.push(`${ind}${writeOf('String(__x)')}`)
   }
   lines.push(`${ind}__l[${t.ordinal}] = __x }`)
 }

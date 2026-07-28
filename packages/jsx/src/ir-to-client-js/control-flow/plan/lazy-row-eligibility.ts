@@ -41,17 +41,16 @@
  *     the `inert` set names them only so the refusal can say which one.
  *     Genuinely ignorable are the names that cannot carry a reactive read
  *     at all: literal-derived local / module constants and pure globals.
- *  4. **No outer-involving TEXT binding.** §9.3(1) requires read-compare-
- *     write seeding on `applyOuter`'s first run: compute the value, READ the
- *     current DOM, write only on difference. For an attribute that read is
- *     `getAttribute` / a DOM property on the held element ref. For a content
- *     slot there is no read-back door — `lazySlots`' writer is write-only
- *     (`claim-slots.ts`), and the runtime contract is PINNED for L3. Rather
- *     than write unconditionally at hydration (sound, but it reintroduces
- *     exactly the per-row hydration DOM write §9 exists to remove), an
- *     outer-involving text binding makes the whole loop ineligible. Widening
- *     this needs a runtime read door, i.e. an L5 change to the pinned
- *     contract.
+ *  4. **Outer-involving TEXT bindings are ACCEPTED** (§9.5c(1), lifted).
+ *     §9.3(1) requires read-compare-write seeding on `applyOuter`'s first
+ *     run: compute the value, READ the current DOM, write only on
+ *     difference. For an attribute that read is `getAttribute` / a DOM
+ *     property on the held element ref. For a content slot the read door is
+ *     `lazyClaimSlots`' `read(id)` (`claim-slots.ts`), the read-capable twin
+ *     of `lazySlots` over the SAME claim. The emitter picks the door per
+ *     LOOP — a loop with no outer-involving text keeps the single-closure
+ *     writer — so this widening costs nothing for loops that do not use it
+ *     (see `refParts` in `stringify/lazy-row.ts`).
  *  5. **Loop-source hydration consistency** (§9.3(2)): item-driven bindings
  *     are never evaluated at hydration, so the SSR rows and the first client
  *     `items()` read are TRUSTED to agree. That trust is only sound when
@@ -243,9 +242,6 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
       return NO(
         `binding on slot ${b.slotId} depends on an outer name that cannot be primed: ${b.opaqueOuterNames.join(', ')}`,
       )
-    }
-    if (b.kind === 'text' && b.readsOuter) {
-      return NO(`outer-involving text binding on slot ${b.slotId} (content slots have no DOM read-back for §9.3(1) seeding)`)
     }
   }
 
