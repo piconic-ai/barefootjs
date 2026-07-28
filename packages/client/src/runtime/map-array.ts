@@ -62,8 +62,11 @@ type ItemScope<T> = {
  * When omitted (e.g. hand-written tests that drop in unscoped markers),
  * falls back to the first start / first end found, matching either the
  * scoped or legacy unscoped form.
+ *
+ * Exported for `./map-array-lazy.ts` (internal reuse only — not re-exported
+ * from the runtime index).
  */
-function findLoopMarkers(
+export function findLoopMarkers(
   container: HTMLElement,
   markerId?: string,
 ): { start: Comment | null; end: Comment | null } {
@@ -171,8 +174,11 @@ function insertScope<T>(scope: ItemScope<T>, target: Node, anchor: Node | null):
  * (plus any brand-new one) needs to move. This is the same strategy
  * keyed-diff reconcilers in the udomdiff/Solid family use to turn an
  * arbitrary reorder into a minimal set of DOM moves.
+ *
+ * Exported for `./map-array-lazy.ts` (internal reuse only — not re-exported
+ * from the runtime index).
  */
-function longestIncreasingSubsequenceIndices(arr: number[]): number[] {
+export function longestIncreasingSubsequenceIndices(arr: number[]): number[] {
   const n = arr.length
   if (n === 0) return []
   // tails[k] = index into `arr` of the smallest possible tail value for an

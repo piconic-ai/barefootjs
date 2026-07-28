@@ -14,6 +14,16 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 beforeAll(() => {
   if (typeof window === 'undefined') {
     GlobalRegistrator.register({ url: 'https://example.test/list?sort=price' })
+  } else {
+    // Test-file execution order is filesystem-dependent: another DOM suite
+    // may have registered happy-dom first (default URL, no query). This
+    // suite's client-branch assertions depend on the URL below, and
+    // `searchParams()` reads the URL lazily on first access (which happens
+    // in the tests, after this hook) — so forcing the URL here makes the
+    // suite order-independent instead of first-registrar-wins.
+    ;(window as unknown as { happyDOM: { setURL(url: string): void } }).happyDOM.setURL(
+      'https://example.test/list?sort=price',
+    )
   }
 })
 
