@@ -15,7 +15,7 @@ beforeAll(() => {
   }
 })
 
-const { claimSlots, lazySlots } = await import('../../src/runtime/claim-slots.ts')
+const { claimSlots, lazySlots, lazyClaimSlots } = await import('../../src/runtime/claim-slots.ts')
 const { commentScopeRegistry } = await import('../../src/runtime/scope.ts')
 type SlotSpec = import('../../src/runtime/claim-slots.ts').SlotSpec
 
@@ -64,7 +64,6 @@ describe('claimSlots — text kind', () => {
     const claimed = claimSlots(row, plan)
     expect(row.childNodes.length).toBe(2)
     expect(row.childNodes[1]?.nodeType).toBe(Node.COMMENT_NODE)
-    expect(claimed.read('s1')).toBe('')
 
     // The write creates it, at the recorded position.
     claimed.write('s1', 'now')
@@ -302,22 +301,23 @@ describe('claimSlots — markerless text kind (slot unification Step B)', () => 
     expect(row.innerHTML).toBe('<span>a</span>updated<b>z</b>')
   })
 
-  test('claiming an empty path position creates nothing; the write inserts there', () => {
+  test('creates a Text node at the path position when SSR emitted nothing there', () => {
     const root = mount('<div><span>a</span><b>z</b></div>')
     const row = root.firstElementChild as HTMLElement
     // Position 1 is empty (the client-only slot rendered nothing at SSR) —
     // <b> currently sits at index 1.
     const plan: SlotSpec[] = [{ id: 's21', kind: 'text', path: [1], markerless: true }]
 
-    // Non-mutating claim: nothing is inserted until a write needs it.
-    const probe = claimSlots(root.firstElementChild as HTMLElement, plan)
-    expect(row.childNodes[1]?.nodeType).toBe(Node.ELEMENT_NODE)
+    // Markerless slots keep the original eager creation: Step B only elides
+    // `/* @client */` text OUTSIDE any loop, so no markerless slot is ever a
+    // lazy-row seed target and deferral would buy nothing (it would cost the
+    // parent+index pair the one-field text ref deliberately avoids).
+    claimSlots(root.firstElementChild as HTMLElement, plan)
+    expect(row.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE)
     expect(row.innerHTML).toBe('<span>a</span><b>z</b>')
-    expect(probe.read('s21')).toBe('')
 
     const claimed = claimSlots(row, plan)
     claimed.write('s21', 'hi')
-    expect(row.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE)
     expect(row.innerHTML).toBe('<span>a</span>hi<b>z</b>')
   })
 
@@ -588,14 +588,14 @@ describe('path-miss fallback', () => {
 describe('claimed-slot read door', () => {
   test('reads what SSR rendered', () => {
     const row = mount('<div><!--bf:s0-->hello<!--/--></div>').firstElementChild as HTMLElement
-    const claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    const claimed = lazyClaimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
     expect(claimed.read('s0')).toBe('hello')
   })
 
   test('an SSR-empty slot reads as the empty string without touching the DOM', () => {
     const row = mount('<div><!--bf:s0--><!--/--></div>').firstElementChild as HTMLElement
     const before = row.innerHTML
-    const claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    const claimed = lazyClaimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
     expect(claimed.read('s0')).toBe('')
     expect(row.innerHTML).toBe(before)
     expect(row.childNodes.length).toBe(2)
@@ -603,33 +603,32 @@ describe('claimed-slot read door', () => {
 
   test('reads the written value back through the held reference', () => {
     const row = mount('<div><!--bf:s0-->old<!--/--></div>').firstElementChild as HTMLElement
-    const claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    const claimed = lazyClaimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
     claimed.write('s0', 'new')
     expect(claimed.read('s0')).toBe('new')
   })
 
   test("a 'markup' slot reads null — the door answers only for text", () => {
     const row = mount('<div><!--bf:s0--><b>x</b><!--/--></div>').firstElementChild as HTMLElement
-    const claimed = claimSlots(row, [{ id: 's0', kind: 'markup', path: [] }])
+    const claimed = lazyClaimSlots(row, [{ id: 's0', kind: 'markup', path: [] }])
     expect(claimed.read('s0')).toBeNull()
   })
 
   test('an unclaimable slot reads null (unknown) and stays silent', () => {
     const row = mount('<div>no markers</div>').firstElementChild as HTMLElement
-    let claimed!: ReturnType<typeof claimSlots>
-    withWarnings(() => {
-      claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
-    })
-    const readWarnings = withWarnings(() => {
+    const claimed = lazyClaimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    // The claim itself warns (the slot really is missing); the READ that
+    // triggers it must not add a second complaint of its own.
+    const warnings = withWarnings(() => {
       expect(claimed.read('s0')).toBeNull()
     })
-    expect(readWarnings).toEqual([])
+    expect(warnings).toEqual(['[barefootjs] slot s0 marker not found; skipping'])
   })
 
-  test('lazySlots: a read claims the plan, and a later write needs no re-resolution', () => {
+  test('lazyClaimSlots: a read claims the plan, and a later write needs no re-resolution', () => {
     const row = mount('<div><!--bf:s0-->a<!--/--><!--bf:s1-->b<!--/--></div>')
       .firstElementChild as HTMLElement
-    const door = lazySlots(row, [
+    const door = lazyClaimSlots(row, [
       { id: 's0', kind: 'text', path: [] },
       { id: 's1', kind: 'text', path: [] },
     ])
@@ -642,14 +641,14 @@ describe('claimed-slot read door', () => {
     // instead write through the reference the read already claimed.
     const held = row.childNodes[1] as Text
     row.innerHTML = ''
-    door('s0', 'patched')
+    door.write('s0', 'patched')
     expect(held.nodeValue).toBe('patched')
   })
 
-  test('lazySlots: reading alone leaves an SSR-empty row untouched', () => {
+  test('lazyClaimSlots: reading alone leaves an SSR-empty row untouched', () => {
     const row = mount('<div><!--bf:s0--><!--/--></div>').firstElementChild as HTMLElement
     const before = row.innerHTML
-    const door = lazySlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    const door = lazyClaimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
     expect(door.read('s0')).toBe('')
     expect(row.innerHTML).toBe(before)
   })

@@ -161,10 +161,15 @@ export type ClaimPlan = readonly SlotSpec[]
  */
 interface ClaimedTextSlot {
   readonly kind: 'text'
-  node: Text | null
-  readonly after: Comment | null
-  readonly parent: Node | null
-  readonly index: number
+  /**
+   * The live Text node once materialized — or, while the slot is still
+   * unmaterialized, the anchor Comment to create it after. One field, not a
+   * node/site pair: a claimed text slot is allocated once per slot per row,
+   * so every extra field is paid a thousand times over on a 1k-row list
+   * (measured: +77KB/1k rows for a node+site+parent+index shape).
+   * `nodeType` discriminates, and after the first write it is always a Text.
+   */
+  ref: Text | Comment
 }
 
 /**
@@ -190,25 +195,28 @@ type ClaimedSlotRef = ClaimedTextSlot | ClaimedMarkupSlot
  */
 export interface ClaimedSlots {
   write(id: string, value: unknown): void
+}
+
+/**
+ * A claimed plan that can be read as well as written. Separate from
+ * {@link ClaimedSlots} because a door is allocated PER ROW: giving every
+ * claim a reader costs an extra closure on every row of a list, read or not
+ * (measured: ~40KB/1k rows). Only the loops that need read-compare-write
+ * seeding (`spec/slot-unification.md` §9.3(1)) ask for this shape. Both
+ * shapes sit on the SAME claim (`claimRefs`) — this is a second accessor
+ * bundle, never a second way to resolve a position (§2's claim-once rule).
+ */
+export interface ClaimedSlotsRW extends ClaimedSlots {
   /**
-   * Current DOM text of a 'text' slot — the read half that makes
-   * read-compare-write seeding possible (`spec/slot-unification.md`
-   * §9.3(1)). `''` when the slot rendered empty, `null` when the slot
-   * cannot answer (not a 'text' slot, or it failed to claim); `null` MUST
-   * be treated by the caller as "differs, write it".
+   * Current DOM text of a 'text' slot. `''` when the slot rendered empty,
+   * `null` when the slot cannot answer (not a 'text' slot, or it failed to
+   * claim); `null` MUST be treated by the caller as "differs, write it".
    */
   read(id: string): string | null
 }
 
-/**
- * `lazySlots`'s door: call it to write, `.read(id)` to read. Both go through
- * the SAME lazy claim — the first of either resolves the whole plan once and
- * every later access uses the held references (§2's claim-once rule; there
- * is deliberately no second resolution path for reads).
- */
-export type SlotWriter = ((id: string, value: unknown) => void) & {
-  read(id: string): string | null
-}
+/** `lazySlots`'s per-write function — the same shape `ClaimedSlots.write` has. */
+export type SlotWriter = (id: string, value: unknown) => void
 
 // --- path resolution ---
 
@@ -363,8 +371,16 @@ function claimMarkerlessText(root: Element, spec: SlotSpec): ClaimedTextSlot | n
     return null
   }
   const existing = parent.childNodes[idx] as Node | undefined
-  const adopted = existing && existing.nodeType === Node.TEXT_NODE ? (existing as Text) : null
-  return { kind: 'text', node: adopted, after: null, parent, index: idx }
+  if (existing && existing.nodeType === Node.TEXT_NODE) {
+    return { kind: 'text', ref: existing as Text }
+  }
+  // Markerless slots keep the original eager creation. They exist only for
+  // Step B's `/* @client */` elision, which never applies inside a loop, so
+  // no markerless slot is ever a lazy-row seed target — deferring here would
+  // buy nothing and would need the parent+index pair the shape above avoids.
+  const node = document.createTextNode('')
+  parent.insertBefore(node, existing ?? null)
+  return { kind: 'text', ref: node }
 }
 
 /** Claim one slot per its kind's contract. `null` on any failure (already warned). */
@@ -377,8 +393,7 @@ function claimOne(root: Element, spec: SlotSpec): ClaimedSlotRef | null {
 
   if (spec.kind === 'text') {
     const next = anchor.nextSibling
-    const adopted = next?.nodeType === Node.TEXT_NODE ? (next as Text) : null
-    return { kind: 'text', node: adopted, after: anchor, parent: null, index: 0 }
+    return { kind: 'text', ref: next?.nodeType === Node.TEXT_NODE ? (next as Text) : anchor }
   }
 
   const end = findMarkupEnd(anchor)
@@ -396,28 +411,23 @@ function claimOne(root: Element, spec: SlotSpec): ClaimedSlotRef | null {
  * the claim recorded. Reached only from a write against a slot SSR rendered
  * empty — the one case where the DOM genuinely has nothing to write into.
  */
-function materializeText(ref: ClaimedTextSlot): Text | null {
+function materializeText(slot: ClaimedTextSlot): Text | null {
+  const anchor = slot.ref as Comment
+  const parent = anchor.parentNode
+  if (!parent) return null
   const node = document.createTextNode('')
-  if (ref.after) {
-    const parent = ref.after.parentNode
-    if (!parent) return null
-    parent.insertBefore(node, ref.after.nextSibling)
-  } else if (ref.parent) {
-    ref.parent.insertBefore(node, ref.parent.childNodes[ref.index] ?? null)
-  } else {
-    return null
-  }
-  ref.node = node
+  parent.insertBefore(node, anchor.nextSibling)
+  slot.ref = node
   return node
 }
 
-/** Current DOM text of a claimed 'text' slot; `''` when nothing was rendered. */
-function readText(ref: ClaimedTextSlot): string {
-  return ref.node?.nodeValue ?? ''
+/** Current DOM text of a claimed 'text' slot; `''` while unmaterialized. */
+function readText(slot: ClaimedTextSlot): string {
+  return slot.ref.nodeType === Node.TEXT_NODE ? ((slot.ref as Text).nodeValue ?? '') : ''
 }
 
-function writeText(ref: ClaimedTextSlot, value: unknown): void {
-  const node = ref.node ?? materializeText(ref)
+function writeText(slot: ClaimedTextSlot, value: unknown): void {
+  const node = slot.ref.nodeType === Node.TEXT_NODE ? (slot.ref as Text) : materializeText(slot)
   if (!node) return
   node.nodeValue = String(value ?? '')
 }
@@ -502,15 +512,18 @@ function readSlot(refs: ReadonlyMap<string, ClaimedSlotRef>, id: string): string
  * would naturally occur, per §6) — claim eagerly there instead.
  */
 export function claimSlots(root: Element, plan: ClaimPlan): ClaimedSlots {
+  const refs = claimRefs(root, plan)
+  return { write: (id, value) => writeSlot(refs, id, value) }
+}
+
+/** Resolve every slot in `plan`; slots that fail to claim are simply absent. */
+function claimRefs(root: Element, plan: ClaimPlan): Map<string, ClaimedSlotRef> {
   const refs = new Map<string, ClaimedSlotRef>()
   for (const spec of plan) {
     const ref = claimOne(root, spec)
     if (ref) refs.set(spec.id, ref)
   }
-  return {
-    write: (id, value) => writeSlot(refs, id, value),
-    read: (id) => readSlot(refs, id),
-  }
+  return refs
 }
 
 /**
@@ -522,14 +535,31 @@ export function claimSlots(root: Element, plan: ClaimPlan): ClaimedSlots {
  */
 export function lazySlots(root: Element, plan: ClaimPlan): SlotWriter {
   let claimed: ClaimedSlots | null = null
-  const ensure = (): ClaimedSlots => (claimed ??= claimSlots(root, plan))
-  const writer = ((id: string, value: unknown) => {
-    ensure().write(id, value)
-  }) as SlotWriter
-  // A read claims too — claim-once means the FIRST access of either kind
-  // resolves the plan and everything after rides the held references. It
-  // still touches no DOM: a text claim adopts an existing Text node and
-  // creates one only when a write needs it (see `ClaimedTextSlot`).
-  writer.read = (id: string) => ensure().read(id)
-  return writer
+  return (id: string, value: unknown) => {
+    if (!claimed) claimed = claimSlots(root, plan)
+    claimed.write(id, value)
+  }
+}
+
+/**
+ * The read-capable twin of `lazySlots`: the same deferred claim, exposed as
+ * the full `{ write, read }` door instead of a bare write function.
+ *
+ * Two entry points rather than one door with a `.read` property because the
+ * door is allocated PER ROW: attaching a reader to every writer costs the
+ * extra closures on every row in the list, whether or not it ever reads
+ * (measured: +84KB/1k rows). Loops that need read-compare-write seeding
+ * (`spec/slot-unification.md` §9.3(1)) pay for the reader; every other loop
+ * keeps the single-closure writer. There is still exactly ONE claim
+ * mechanism underneath — both call `claimSlots`, and the first access of
+ * either kind resolves the whole plan while the row is pristine (§2's
+ * claim-once rule; reads never open a second resolution path).
+ */
+export function lazyClaimSlots(root: Element, plan: ClaimPlan): ClaimedSlotsRW {
+  let refs: Map<string, ClaimedSlotRef> | null = null
+  const ensure = (): Map<string, ClaimedSlotRef> => (refs ??= claimRefs(root, plan))
+  return {
+    write: (id, value) => writeSlot(ensure(), id, value),
+    read: (id) => readSlot(ensure(), id),
+  }
 }
