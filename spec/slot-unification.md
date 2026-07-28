@@ -456,7 +456,8 @@ re-discovered from scratch:
 ## 9. Lazy row graph — §3(c) completion (designed 2026-07-27, spike-measured)
 
 Status: **shipped for eligible plain loops** (L1–L4; measured results in
-§9.5b, remaining limits in §9.5c). Measurement spike: branch
+§9.5b). §9.5c tracks the gate's restrictions — outer-involving text was
+lifted in #2411/#2412; opaque outer reads remain. Measurement spike: branch
 `claude/lazy-effect-spike` (commit 59d1bef7), full report at
 `benchmarks/results/lazy-effect-spike.md` on that branch.
 
@@ -622,32 +623,75 @@ emitter (see the limits below), so that loop keeps the eager emission.
 The prototype's −73% DOM figure therefore remains unrealized in
 shipped code until the gate widens.
 
-### 9.5c Shipped limits (L3) — both sound-or-loud refusals
+### 9.5c Gate restrictions after L3 — one lifted, one open
 
 Neither is a silent divergence: each makes the loop ineligible, and the
 loop keeps today's eager emission with an explicit `reason`.
 
-1. **Outer-involving TEXT bindings refuse the loop.** `lazySlots` is a
-   write-only door, so §9.3(1)'s read-compare-write seeding has no DOM
-   read-back for content slots. Writing unconditionally at seed would
-   reintroduce exactly the per-row hydration write this design removes,
-   and skipping the write is the unsound trust-first-run §6 deleted.
-   Widening requires a runtime READ door on claimed slots (a contract
-   addition, hence its own slice). Outer-involving ATTR bindings are
-   supported today because `getAttribute` is the read-back.
-2. **Opaque outer reads refuse the loop.** A local like
+1. **Outer-involving TEXT bindings — LIFTED** (runtime #2411, compiler
+   #2412). Originally refused: `lazySlots` was a write-only door, so
+   §9.3(1)'s read-compare-write seeding had no DOM read-back for content
+   slots. That turned out to be an API gap, not a design limit — and the
+   obstacle behind it was that claiming a text slot MUTATED the DOM
+   (`textNodeAfterComment` created an empty Text node when SSR rendered
+   the slot empty), so "claim it, then read the held node" would have
+   left a trail of empty Text nodes across every row it inspected.
+
+   Fixed at the cause: a text claim now adopts an existing Text node and
+   otherwise holds its anchor Comment as the record of where the node
+   must go, deferring creation to the first write that needs it. With
+   claims non-mutating, the read door is a straight addition —
+   `lazyClaimSlots` / `ClaimedSlotsRW`, the read-capable twin of
+   `lazySlots` over the SAME claim. The emitter picks the door per LOOP,
+   so a loop with no outer-involving text keeps the single-closure
+   writer and pays nothing for the widening.
+
+   A claim-free "peek" (resolve the marker, read, discard the
+   resolution) was designed first and rejected: it adds a second
+   position-resolution path and re-scans on the next update, breaking
+   §2's claim-once rule.
+
+   **What this does and does not reach.** Concatenations
+   (`{prefix() + row.label}`), template literals, and explicit
+   `String(cond ? a : b)` are lazy now. A BARE ternary in child position
+   (`{cond ? a : b}`) is still eager — it lowers to a reactive
+   conditional (`insert()`), which §9.4 refuses as a conditional, not as
+   a text binding. Read "outer-involving row text is lazy" with that
+   caveat attached.
+
+2. **Opaque outer reads still refuse the loop.** A local like
    `const isSelected = createSelector(selected)` is an ordinary const
-   whose call is the reactive read. The `applyOuter` effect must
+   whose CALL is the reactive read. The `applyOuter` effect must
    subscribe on its FIRST run, and when the entry list is empty at that
    moment the per-entry reads never execute — so the effect subscribes
    to nothing and never re-runs, while rows added later (correct at
    creation via `createRow`) go stale on the next outer change. The
    emitter cannot synthesize a priming call for an opaque callee, so it
-   refuses. Two ways out, either of which widens the gate materially:
-   emit a priming read where the callee's signal dependencies ARE
-   statically known, or give the runtime a re-subscribe seam (re-run
-   `applyOuter` when the entry list transitions empty → non-empty),
-   which removes the priming obligation from the compiler entirely.
+   refuses.
+
+   Two ways out. **Compiler priming** — emit a priming read where the
+   callee's signal dependencies are statically known — is not a general
+   answer: `createSelector`'s dependency chain runs through an IMPORT,
+   so provability breaks unless framework primitives are catalogued.
+   **A runtime re-subscribe seam** removes the priming obligation from
+   the compiler entirely and is the better direction.
+
+   **Correction to this section's earlier prescription.** It said the
+   seam should "re-run `applyOuter` when the entry list transitions
+   empty → non-empty". That is INSUFFICIENT for a per-key subscription
+   model, which is exactly what `createSelector` implements: its
+   returned selector subscribes the CALLING computation to a per-key
+   set, and its internal effect wakes only the subscribers of keys whose
+   predicate FLIPPED. So with rows A and B present, `applyOuter` is
+   subscribed to keys A and B only; add row C (written correctly by
+   `createRow`, under `untrack`, so C's key is never registered), then
+   select C — only key C flips, nobody is subscribed to it, and C's
+   binding goes stale. An empty → non-empty trigger never sees that
+   sequence. The seam must re-run `applyOuter` whenever the entry
+   SET changes membership (any create or remove), which re-subscribes
+   against the current key set. Cost is one loop-level signal plus an
+   O(rows) dedup-guarded pass on reconciles that add or remove rows —
+   work `applyOuter` already does on any outer change.
 
 ### 9.6 Migration — stacked semantic PRs
 
