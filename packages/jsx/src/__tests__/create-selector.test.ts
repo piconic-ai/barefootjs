@@ -12,7 +12,7 @@
  *     was lifted this shape was gate-INELIGIBLE (an opaque local whose call
  *     is the reactive read could not be primed) and compiled to one per-row
  *     `createEffect`; the runtime re-subscribe seam replaced that, so the
- *     loop now opts in via `outerNeedsResubscribe`. Either way it is never
+ *     loop is emitted like any other. Either way it is never
  *     the legacy `selected() === row.id` shape, which subscribes every row
  *     to the raw signal.
  *   - the loop-param accessor wrap applies only to the call ARGUMENT
@@ -80,10 +80,11 @@ describe('createSelector (perf, #2143 gap 5)', () => {
     expect(clientJs).toContain('mapArrayLazy(')
     expect(clientJs).not.toContain('selected() ===')
 
-    // `isSelected` is an opaque local (its CALL is the reactive read), so the
-    // loop opts into the runtime re-subscribe seam — without it the
-    // loop-level effect could be stranded by a reconcile (§9.5c(2)).
-    expect(clientJs).toContain('outerNeedsResubscribe: true')
+    // `isSelected` is an opaque local (its CALL is the reactive read). Nothing
+    // in the emission marks that: the runtime's re-subscribe seam applies to
+    // every loop-level outer effect, so the compiler has no judgement to
+    // encode here (§9.5c(2)).
+    expect(clientJs).not.toContain('outerNeedsResubscribe')
 
     // The hoisted skeleton fast path (#2223) still fires: a single-line
     // renderItem clones from a once-per-loop template.

@@ -88,22 +88,6 @@ export interface LazyRowPlanData {
   outerPrimeGetters: readonly string[]
   /** True when at least one binding is outer-involving. */
   hasOuter: boolean
-  /**
-   * Emit `outerNeedsResubscribe: true` in the plan literal
-   * (`LazyRowPlan.outerNeedsResubscribe`, §9.5c(2)). Set when a binding
-   * depends on an outer name the emitter cannot prime — a local whose CALL
-   * is the reactive read (`const isSelected = createSelector(selected)`), a
-   * prop accessor that may be a getter over a parent signal, or a name the
-   * compiler cannot classify. Those reads may subscribe PER KEY, so the
-   * loop-level effect's subscription set depends on the entries it iterated
-   * and a reconcile can strand it; the runtime seam re-runs `applyOuter`
-   * after a reconcile that created a row or changed an item.
-   *
-   * False whenever every outer read is a primed signal/memo getter — those
-   * subscribe independently of the entries, so the loop keeps the cheaper
-   * contract and never pays the extra pass.
-   */
-  outerNeedsResubscribe: boolean
 }
 
 export interface BuildLazyRowArgs {
@@ -232,12 +216,10 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
   })
 
   const outerPrimeGetters: string[] = []
-  let hasOpaqueOuter = false
   for (const c of classified) {
     for (const name of c.reactiveOuterNames) {
       if (!outerPrimeGetters.includes(name)) outerPrimeGetters.push(name)
     }
-    if (c.opaqueOuterNames.length > 0) hasOpaqueOuter = true
   }
 
   return {
@@ -250,7 +232,6 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       lastCount: ordinal,
       outerPrimeGetters,
       hasOuter: attrs.some(a => a.readsOuter) || texts.some(t => t.readsOuter),
-      outerNeedsResubscribe: hasOpaqueOuter,
     },
     decision,
   }

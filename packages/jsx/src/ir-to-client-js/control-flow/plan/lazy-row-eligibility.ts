@@ -260,10 +260,12 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
     // loop-level effect must subscribe on its FIRST run, and with an empty
     // entry list the per-entry reads never execute, so it would subscribe to
     // nothing and go permanently dead. The runtime's re-subscribe seam
-    // (`LazyRowPlan.outerNeedsResubscribe`) removes that obligation from the
-    // compiler — see `outerNeedsResubscribe` below and §9.5c(2). Nothing to
-    // check here any more; the plan builder sets the flag when any binding
-    // carries an opaque outer name.
+    // in `mapArrayLazy` removes that obligation from the compiler (§9.5c(2)):
+    // every loop-level outer effect re-runs after a reconcile that created a
+    // row or changed an item, so its subscription set is rebuilt against the
+    // current entries no matter what the reads turn out to be. Nothing to
+    // check here any more — and nothing to signal either, since the seam is
+    // unconditional rather than something the compiler opts a loop into.
   }
 
   // (7) Hydration-consistency gate on the loop source (§9.3(2)).

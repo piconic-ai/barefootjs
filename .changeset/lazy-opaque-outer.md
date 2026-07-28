@@ -8,10 +8,10 @@ An outer name the emitter cannot prime — a local whose CALL is the reactive
 read (`const isSelected = createSelector(selected)`), a prop accessor, or an
 unclassifiable name — used to refuse the loop, because the loop-level effect
 had to subscribe on its first run and an empty entry list left it subscribed
-to nothing. The runtime re-subscribe seam takes that obligation over, so such
-loops now emit `mapArrayLazy` with `outerNeedsResubscribe: true`. Loops whose
-outer reads are all primed signal/memo getters are unchanged and do not set
-the flag.
+to nothing. The runtime's unconditional re-subscribe seam takes that
+obligation over, so such loops are simply eligible — there is no flag or
+second emission shape, and loops whose outer reads are all primed getters are
+unchanged.
 
 One case still refuses, and it is a different kind: when free-identifier
 analysis produces NOTHING (`free === null`), the classifier knows neither the

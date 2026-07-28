@@ -156,7 +156,7 @@ describe('lazyRowEligibility — binding refusals', () => {
   })
 
   // §9.5c(2), LIFTED: an outer name the emitter cannot prime no longer sinks
-  // the loop. The runtime re-subscribe seam (`outerNeedsResubscribe`) keeps
+  // the loop. The runtime's unconditional re-subscribe seam keeps
   // the loop-level effect subscribed across reconciles, which is the
   // obligation priming used to carry. Inverted from the refusal it replaces
   // so a gate that starts refusing again fails here by name.
@@ -346,9 +346,8 @@ describe('classifyLazyBinding — fail-safe', () => {
     expect(c.opaqueOuterNames.sort()).toEqual(['clsx', 'isSelected'])
     // Opaque NAMES no longer refuse the loop (§9.5c(2) lifted) — the
     // identifier set is known here, so only primability was missing and the
-    // runtime seam supplies that. What matters is that they land in
-    // `opaqueOuterNames` at all, since that is what makes the plan builder
-    // set `outerNeedsResubscribe`.
+    // runtime seam supplies that unconditionally. They still land in
+    // `opaqueOuterNames` so a refusal elsewhere can name them precisely.
     expect(lazyRowEligibility(args({ bindings: [c], scope: selScope })).eligible).toBe(true)
   })
 
