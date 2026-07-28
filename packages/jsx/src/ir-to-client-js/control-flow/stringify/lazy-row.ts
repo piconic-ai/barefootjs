@@ -197,6 +197,16 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     for (const t of outerTexts) emitTextBinding(lines, b3, t, lazyRow.writerIndex, 'outer', rwDoor)
     lines.push(`${b2}}`)
     lines.push(`${b1}},`)
+    // Opt into the runtime re-subscribe seam (§9.5c(2)) when some outer read
+    // is one the primer above cannot cover — a local whose CALL is the
+    // reactive read, a prop accessor, or an unclassifiable name. Such reads
+    // may subscribe PER KEY, so this effect's subscription set depends on the
+    // entries it iterated and a reconcile can strand it. Loops whose outer
+    // reads are all primed getters omit the flag and keep the cheaper
+    // contract (no re-run on reconcile).
+    if (lazyRow.outerNeedsResubscribe) {
+      lines.push(`${b1}outerNeedsResubscribe: true,`)
+    }
   }
 
   lines.push(`${indent}}, '${o.markerId}')`)

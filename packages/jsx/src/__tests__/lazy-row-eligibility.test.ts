@@ -155,7 +155,12 @@ describe('lazyRowEligibility — binding refusals', () => {
     expect((decision as { reason: string }).reason).toMatch(/index parameter/)
   })
 
-  test('an unprimable outer dependency (a prop accessor) is refused', () => {
+  // §9.5c(2), LIFTED: an outer name the emitter cannot prime no longer sinks
+  // the loop. The runtime re-subscribe seam (`outerNeedsResubscribe`) keeps
+  // the loop-level effect subscribed across reconciles, which is the
+  // obligation priming used to carry. Inverted from the refusal it replaces
+  // so a gate that starts refusing again fails here by name.
+  test('an unprimable outer dependency (a prop accessor) is ELIGIBLE via the seam', () => {
     const decision = lazyRowEligibility(args({
       bindings: [{
         kind: 'attr',
@@ -167,8 +172,7 @@ describe('lazyRowEligibility — binding refusals', () => {
         referencesIndex: false,
       }],
     }))
-    expect(decision.eligible).toBe(false)
-    expect((decision as { reason: string }).reason).toMatch(/cannot be primed: _p/)
+    expect(decision).toEqual({ eligible: true })
   })
 
   // §9.5c(1), LIFTED: content slots now have a DOM read-back
@@ -197,7 +201,9 @@ describe('lazyRowEligibility — binding refusals', () => {
     expect(decision).toEqual({ eligible: true })
   })
 
-  test('an outer-only TEXT binding whose outer name is OPAQUE is still refused', () => {
+  test('an OPAQUE outer name on a TEXT binding is eligible too (seam + read door)', () => {
+    // Both former limits at once: an opaque outer read (§9.5c(2), covered by
+    // the seam) on a content slot (§9.5c(1), covered by the read door).
     const decision = lazyRowEligibility(args({
       bindings: [{
         kind: 'text',
@@ -209,8 +215,7 @@ describe('lazyRowEligibility — binding refusals', () => {
         referencesIndex: false,
       }],
     }))
-    expect(decision.eligible).toBe(false)
-    expect((decision as { reason: string }).reason).toMatch(/cannot be primed: isSelected/)
+    expect(decision).toEqual({ eligible: true })
   })
 })
 
@@ -293,10 +298,15 @@ describe('classifyLazyBinding — fail-safe', () => {
     expect(c.readsItem).toBe(true)
     expect(c.readsOuter).toBe(true)
     expect(c.opaqueOuterNames).toEqual(['<unknown>'])
-    // …and the gate therefore refuses, rather than shipping an effect that
-    // could never subscribe.
+    // …and the gate STILL refuses, even though §9.5c(2) lifted the refusal
+    // for opaque NAMES. A name means the identifier set is known and only
+    // its primability is not — the seam handles that. This means the set
+    // itself is unknown, so `referencesIndex: false` above is an assumption
+    // rather than a fact, and neither applyItem nor applyOuter has an index
+    // parameter to fall back on.
     const decision = lazyRowEligibility(args({ bindings: [c], scope }))
     expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/no analyzable identifier set/)
   })
 
   test('a pure item read is item-only', () => {
@@ -323,7 +333,7 @@ describe('classifyLazyBinding — fail-safe', () => {
   test('an import, a local function, and a non-literal const are all OPAQUE, not inert', () => {
     // A reactive accessor hides behind ordinary-looking names — the
     // `createSelector` const is the canonical case. Guessing "inert" here
-    // would emit an applyOuter effect that never subscribes.
+    // would emit an applyOuter effect that reads them non-reactively.
     const selScope = makeScope({
       signals: scope.signals,
       constants: new Map<string, ReadonlySet<string> | null>([['isSelected', new Set(['createSelector', 'selected'])]]),
@@ -334,7 +344,12 @@ describe('classifyLazyBinding — fail-safe', () => {
     })
     expect(c.readsOuter).toBe(true)
     expect(c.opaqueOuterNames.sort()).toEqual(['clsx', 'isSelected'])
-    expect(lazyRowEligibility(args({ bindings: [c], scope: selScope })).eligible).toBe(false)
+    // Opaque NAMES no longer refuse the loop (§9.5c(2) lifted) — the
+    // identifier set is known here, so only primability was missing and the
+    // runtime seam supplies that. What matters is that they land in
+    // `opaqueOuterNames` at all, since that is what makes the plan builder
+    // set `outerNeedsResubscribe`.
+    expect(lazyRowEligibility(args({ bindings: [c], scope: selScope })).eligible).toBe(true)
   })
 
   test('the index parameter is flagged, not silently treated as outer', () => {
