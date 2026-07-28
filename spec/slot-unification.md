@@ -455,9 +455,9 @@ re-discovered from scratch:
 
 ## 9. Lazy row graph — §3(c) completion (designed 2026-07-27, spike-measured)
 
-Status: **shipped for eligible plain loops** (L1–L4; measured results
-in §9.5b, remaining limits in §9.5c). Measurement
-spike: branch `claude/lazy-effect-spike` (commit 59d1bef7), full report at
+Status: **shipped for eligible plain loops** (L1–L4; measured results in
+§9.5b, remaining limits in §9.5c). Measurement spike: branch
+`claude/lazy-effect-spike` (commit 59d1bef7), full report at
 `benchmarks/results/lazy-effect-spike.md` on that branch.
 
 ### 9.1 The observation that makes rows non-reactive
@@ -584,9 +584,9 @@ Chromium; the gate scripts are committed with the spike.
 
 ### 9.5b Shipped results (measured 2026-07-27, L3 on the real pipeline)
 
-The numbers above are the hand-written prototype's. These are the
-SHIPPED compiler emission's, same sandbox, two runs each,
-independently re-measured after L3:
+The numbers in §9.5 came from the hand-written prototype. The table
+below is the shipped compiler emission, measured on the same sandbox,
+two runs each, and independently re-measured after L3:
 
 | Metric | eager (pre-L3) | **shipped lazy (L3)** | solid |
 |---|---|---|---|
