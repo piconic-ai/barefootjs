@@ -496,9 +496,16 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5c(1) lifted)'
 
   test('applyOuter seeds the content slot by read-compare-write (§9.3(1))', () => {
     const applyOuter = js.slice(js.indexOf('applyOuter:'))
-    expect(applyOuter).toContain("__seed ? (__r[0].read('s1') !== String(__x))")
-    // …and falls back to the ordinary entry.last dedup on every later run.
-    expect(applyOuter).toContain(': (!(1 in __l) || !Object.is(__l[1], __x))')
+    // A real branch, not one ternary guard: the seed path binds the string
+    // ONCE and reuses it for the compare and the write, so a value with a
+    // side-effecting `toString` is not stringified twice.
+    expect(applyOuter).toContain('if (__seed) {')
+    expect(applyOuter).toContain('const __s = String(__x)')
+    expect(applyOuter).toContain("if (__r[0].read('s1') !== __s) __r[0].write('s1', __s)")
+    expect(applyOuter).not.toContain("read('s1') !== String(__x)")
+    // …and falls back to the ordinary entry.last dedup on every later run,
+    // where the string is built only when the write actually happens.
+    expect(applyOuter).toContain('} else if (!(1 in __l) || !Object.is(__l[1], __x))')
     expect(applyOuter).toContain('__l[1] = __x')
   })
 

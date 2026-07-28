@@ -289,9 +289,18 @@ function emitAttrBinding(
  *
  * `'outer'` seeds by read-compare-write (§9.3(1)) through the RW door's
  * `read(id)`. `read` returns `null` when it cannot answer (slot never
- * claimed, or not a 'text' slot) and `null !== String(__x)` is always true,
+ * claimed, or not a 'text' slot) and `null !== <the string>` is always true,
  * so the comparison already fails safe into "write it" — no explicit null
  * handling is needed or wanted here.
+ *
+ * The `'outer'` mode emits a real `if`/`else if` rather than one ternary
+ * guard so the seed branch can bind `String(__x)` ONCE and use it for both
+ * the comparison and the write. A ternary would stringify twice on the seed
+ * path, which double-invokes a user value's `toString` — observable when it
+ * has side effects, wasted work when it doesn't. Hoisting the string above
+ * the branch instead would fix that but would also stringify on the
+ * non-seed path even when dedup skips the write, i.e. on every later tick;
+ * the branch keeps exactly one stringification per path taken.
  */
 function emitTextBinding(
   lines: string[],
@@ -303,18 +312,20 @@ function emitTextBinding(
 ): void {
   lines.push(`${ind}{ const __x = ${t.wrappedExpression}`)
   const doorExpr = `__r[${writerIndex}]`
-  const write = rwDoor
-    ? `${doorExpr}.write('${t.slotId}', String(__x))`
-    : `${doorExpr}('${t.slotId}', String(__x))`
-  const guard = mode === 'create'
-    ? null
-    : mode === 'item'
-      ? dedupGuard(t.ordinal)
-      : `__seed ? (${doorExpr}.read('${t.slotId}') !== String(__x)) : (${dedupGuard(t.ordinal)})`
-  if (guard) {
-    lines.push(`${ind}if (${guard}) ${write}`)
+  const writeOf = (valueExpr: string): string =>
+    rwDoor
+      ? `${doorExpr}.write('${t.slotId}', ${valueExpr})`
+      : `${doorExpr}('${t.slotId}', ${valueExpr})`
+
+  if (mode === 'outer') {
+    lines.push(`${ind}if (__seed) {`)
+    lines.push(`${ind}  const __s = String(__x)`)
+    lines.push(`${ind}  if (${doorExpr}.read('${t.slotId}') !== __s) ${writeOf('__s')}`)
+    lines.push(`${ind}} else if (${dedupGuard(t.ordinal)}) ${writeOf('String(__x)')}`)
+  } else if (mode === 'item') {
+    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${writeOf('String(__x)')}`)
   } else {
-    lines.push(`${ind}${write}`)
+    lines.push(`${ind}${writeOf('String(__x)')}`)
   }
   lines.push(`${ind}__l[${t.ordinal}] = __x }`)
 }
