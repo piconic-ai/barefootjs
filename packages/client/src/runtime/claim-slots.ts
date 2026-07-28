@@ -25,10 +25,18 @@
  * Kind contracts (mirroring the mechanisms being superseded — this is the
  * "one slot concept with an identity contract" of §4):
  *   - 'text': held ref is the Text node immediately after the anchor
- *     comment, CREATED if SSR emitted an empty value (`textNodeAfterComment`,
- *     exactly `$t`'s `tAfter` behavior). Writes are a `nodeValue` assignment
- *     — the Text node's identity never changes, which is the guarantee
- *     effect closures and `mapArray`'s same-key path rely on.
+ *     comment. The CLAIM is non-mutating: it adopts that node when SSR
+ *     rendered the slot non-empty and otherwise holds the ANCHOR COMMENT
+ *     itself as a stand-in for the not-yet-created node, deferring
+ *     `document.createTextNode` to the first write that actually needs it
+ *     (`materializeText` reads the insertion point off that comment). That
+ *     one-field representation is deliberate — see `ClaimedTextSlot`. What
+ *     lets
+ *     `read` exist — a seed that only compares must be able to inspect a
+ *     slot without leaving an empty Text node behind on every row
+ *     (§9.3(1)). Writes are a `nodeValue` assignment, and once materialized
+ *     the node's identity never changes — the guarantee effect closures and
+ *     `mapArray`'s same-key path rely on.
  *   - 'markup': held ref is BOTH boundary comments (start = anchor, end =
  *     the matching `<!--/-->` found by a nesting-depth walk (any further
  *     `bf:`-prefixed comment along the way opens a nested region). A string
@@ -102,7 +110,7 @@
  */
 
 import { BF_SCOPE, BF_PARENT_OWNED_PREFIX } from '@barefootjs/shared'
-import { textNodeAfterComment, commentsInScope } from './query.ts'
+import { commentsInScope } from './query.ts'
 import { commentScopeRegistry } from './scope.ts'
 
 /**
@@ -136,10 +144,34 @@ export interface SlotSpec {
 
 export type ClaimPlan = readonly SlotSpec[]
 
-/** A claimed 'text' slot: the live Text node, held by identity forever. */
+/**
+ * A claimed 'text' slot, represented by ONE field. `ref` is the live Text
+ * node once the slot is materialized, and until then — only possible for a
+ * MARKED slot SSR rendered empty — the slot's anchor Comment, which doubles
+ * as the record of where the Text node must be created. `nodeType`
+ * discriminates the two.
+ *
+ * Claiming a marked text slot therefore never mutates the DOM, which is
+ * what the read door depends on: a seed that only compares must not leave a
+ * trail of empty Text nodes across every row (`spec/slot-unification.md`
+ * §9.3(1)). Markerless slots keep the original eager creation and so always
+ * arrive here already materialized — see `claimMarkerlessText` for why
+ * deferring them would cost more than it saves.
+ *
+ * One field rather than a node-plus-site pair because this object is
+ * allocated once per slot per row: on a 1k-row list every extra field is
+ * paid a thousand times over (measured: +77KB/1k rows for a
+ * node+after+parent+index shape). `materializeText` re-reads the insertion
+ * point off the anchor at creation time rather than capturing it at claim
+ * time, so a sibling slot's write in between cannot stale it.
+ *
+ * Once materialized the node is held by identity forever, exactly as
+ * before: effect closures and `mapArray`'s same-key path rely on that.
+ */
 interface ClaimedTextSlot {
   readonly kind: 'text'
-  readonly node: Text
+  /** Text node once materialized; the anchor Comment until then. */
+  ref: Text | Comment
 }
 
 /**
@@ -165,6 +197,24 @@ type ClaimedSlotRef = ClaimedTextSlot | ClaimedMarkupSlot
  */
 export interface ClaimedSlots {
   write(id: string, value: unknown): void
+}
+
+/**
+ * A claimed plan that can be read as well as written. Separate from
+ * {@link ClaimedSlots} because a door is allocated PER ROW: giving every
+ * claim a reader costs an extra closure on every row of a list, read or not
+ * (measured: ~40KB/1k rows). Only the loops that need read-compare-write
+ * seeding (`spec/slot-unification.md` §9.3(1)) ask for this shape. Both
+ * shapes sit on the SAME claim (`claimRefs`) — this is a second accessor
+ * bundle, never a second way to resolve a position (§2's claim-once rule).
+ */
+export interface ClaimedSlotsRW extends ClaimedSlots {
+  /**
+   * Current DOM text of a 'text' slot. `''` when the slot rendered empty,
+   * `null` when the slot cannot answer (not a 'text' slot, or it failed to
+   * claim); `null` MUST be treated by the caller as "differs, write it".
+   */
+  read(id: string): string | null
 }
 
 /** `lazySlots`'s per-write function — the same shape `ClaimedSlots.write` has. */
@@ -324,11 +374,15 @@ function claimMarkerlessText(root: Element, spec: SlotSpec): ClaimedTextSlot | n
   }
   const existing = parent.childNodes[idx] as Node | undefined
   if (existing && existing.nodeType === Node.TEXT_NODE) {
-    return { kind: 'text', node: existing as Text }
+    return { kind: 'text', ref: existing as Text }
   }
+  // Markerless slots keep the original eager creation. They exist only for
+  // Step B's `/* @client */` elision, which never applies inside a loop, so
+  // no markerless slot is ever a lazy-row seed target — deferring here would
+  // buy nothing and would need the parent+index pair the shape above avoids.
   const node = document.createTextNode('')
   parent.insertBefore(node, existing ?? null)
-  return { kind: 'text', node }
+  return { kind: 'text', ref: node }
 }
 
 /** Claim one slot per its kind's contract. `null` on any failure (already warned). */
@@ -340,7 +394,8 @@ function claimOne(root: Element, spec: SlotSpec): ClaimedSlotRef | null {
   if (!anchor) return null
 
   if (spec.kind === 'text') {
-    return { kind: 'text', node: textNodeAfterComment(anchor) }
+    const next = anchor.nextSibling
+    return { kind: 'text', ref: next?.nodeType === Node.TEXT_NODE ? (next as Text) : anchor }
   }
 
   const end = findMarkupEnd(anchor)
@@ -353,8 +408,30 @@ function claimOne(root: Element, spec: SlotSpec): ClaimedSlotRef | null {
 
 // --- writes ---
 
-function writeText(ref: ClaimedTextSlot, value: unknown): void {
-  ref.node.nodeValue = String(value ?? '')
+/**
+ * Create the Text node a claim deliberately did not create, at the position
+ * the claim recorded. Reached only from a write against a slot SSR rendered
+ * empty — the one case where the DOM genuinely has nothing to write into.
+ */
+function materializeText(slot: ClaimedTextSlot): Text | null {
+  const anchor = slot.ref as Comment
+  const parent = anchor.parentNode
+  if (!parent) return null
+  const node = document.createTextNode('')
+  parent.insertBefore(node, anchor.nextSibling)
+  slot.ref = node
+  return node
+}
+
+/** Current DOM text of a claimed 'text' slot; `''` while unmaterialized. */
+function readText(slot: ClaimedTextSlot): string {
+  return slot.ref.nodeType === Node.TEXT_NODE ? ((slot.ref as Text).nodeValue ?? '') : ''
+}
+
+function writeText(slot: ClaimedTextSlot, value: unknown): void {
+  const node = slot.ref.nodeType === Node.TEXT_NODE ? (slot.ref as Text) : materializeText(slot)
+  if (!node) return
+  node.nodeValue = String(value ?? '')
 }
 
 /** Remove every node strictly between `start` and `end` (both survive). */
@@ -416,6 +493,18 @@ function writeSlot(refs: ReadonlyMap<string, ClaimedSlotRef>, id: string, value:
   }
 }
 
+/**
+ * Read half of the door. `null` means "cannot answer" — the slot is not a
+ * 'text' slot, or it never claimed — and every caller must treat that as
+ * "differs" and write. Conservative, never unsound. Reads are silent: a
+ * slot that failed to claim already warned when it did so.
+ */
+function readSlot(refs: ReadonlyMap<string, ClaimedSlotRef>, id: string): string | null {
+  const ref = refs.get(id)
+  if (!ref || ref.kind !== 'text') return null
+  return readText(ref)
+}
+
 // --- public API ---
 
 /**
@@ -425,12 +514,18 @@ function writeSlot(refs: ReadonlyMap<string, ClaimedSlotRef>, id: string, value:
  * would naturally occur, per §6) — claim eagerly there instead.
  */
 export function claimSlots(root: Element, plan: ClaimPlan): ClaimedSlots {
+  const refs = claimRefs(root, plan)
+  return { write: (id, value) => writeSlot(refs, id, value) }
+}
+
+/** Resolve every slot in `plan`; slots that fail to claim are simply absent. */
+function claimRefs(root: Element, plan: ClaimPlan): Map<string, ClaimedSlotRef> {
   const refs = new Map<string, ClaimedSlotRef>()
   for (const spec of plan) {
     const ref = claimOne(root, spec)
     if (ref) refs.set(spec.id, ref)
   }
-  return { write: (id, value) => writeSlot(refs, id, value) }
+  return refs
 }
 
 /**
@@ -445,5 +540,29 @@ export function lazySlots(root: Element, plan: ClaimPlan): SlotWriter {
   return (id: string, value: unknown) => {
     if (!claimed) claimed = claimSlots(root, plan)
     claimed.write(id, value)
+  }
+}
+
+/**
+ * The read-capable twin of `lazySlots`: the same deferred claim, exposed as
+ * the full `{ write, read }` door instead of a bare write function.
+ *
+ * Two entry points rather than one door with a `.read` property because the
+ * door is allocated PER ROW: attaching a reader to every writer costs the
+ * extra closures on every row in the list, whether or not it ever reads
+ * (measured: +84KB/1k rows). Loops that need read-compare-write seeding
+ * (`spec/slot-unification.md` §9.3(1)) pay for the reader; every other loop
+ * keeps the single-closure writer. There is still exactly ONE claim
+ * mechanism underneath — every entry point resolves through `claimRefs`,
+ * and the first access of either kind resolves the whole plan while the row
+ * is pristine (§2's claim-once rule; reads never open a second resolution
+ * path).
+ */
+export function lazyClaimSlots(root: Element, plan: ClaimPlan): ClaimedSlotsRW {
+  let refs: Map<string, ClaimedSlotRef> | null = null
+  const ensure = (): Map<string, ClaimedSlotRef> => (refs ??= claimRefs(root, plan))
+  return {
+    write: (id, value) => writeSlot(ensure(), id, value),
+    read: (id) => readSlot(ensure(), id),
   }
 }

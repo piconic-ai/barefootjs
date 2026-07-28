@@ -91,7 +91,7 @@ export { patchLeaf } from './patch-leaf.ts'
 // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
 // — the ONE content-slot update mechanism, wired up by the compiler in A3.
 // Supersedes (deleted) `patchSlotRange` and `updateClientMarker`.
-export { claimSlots, lazySlots, type SlotSpec, type ClaimPlan, type ClaimedSlots, type SlotWriter } from './claim-slots.ts'
+export { claimSlots, lazySlots, lazyClaimSlots, type SlotSpec, type ClaimPlan, type ClaimedSlots, type ClaimedSlotsRW, type SlotWriter } from './claim-slots.ts'
 
 // Template registry
 export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './template.ts'
