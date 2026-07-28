@@ -455,8 +455,9 @@ re-discovered from scratch:
 
 ## 9. Lazy row graph — §3(c) completion (designed 2026-07-27, spike-measured)
 
-Status: **implementing** (stacked PR series L1–L4 below). Measurement
-spike: branch `claude/lazy-effect-spike` (commit 59d1bef7), full report at
+Status: **shipped for eligible plain loops** (L1–L4; measured results in
+§9.5b, remaining limits in §9.5c). Measurement spike: branch
+`claude/lazy-effect-spike` (commit 59d1bef7), full report at
 `benchmarks/results/lazy-effect-spike.md` on that branch.
 
 ### 9.1 The observation that makes rows non-reactive
@@ -581,6 +582,73 @@ axis. Correctness gates (select A→B→A transitions, update10th
 spot-checks, swap/remove/clear/10k/append/replace) all pass in real
 Chromium; the gate scripts are committed with the spike.
 
+### 9.5b Shipped results (measured 2026-07-27, L3 on the real pipeline)
+
+The numbers in §9.5 came from the hand-written prototype. The table
+below is the shipped compiler emission, measured on the same sandbox,
+two runs each, and independently re-measured after L3:
+
+| Metric | eager (pre-L3) | **shipped lazy (L3)** | solid |
+|---|---|---|---|
+| SSR post-hydration heap (n=3, forced GC) | 2718.6KB | **1807.6 / 1812.7KB (−33%)** | 2577.9 / 2586.7KB |
+| Hydration median (n=10) | 49.1 / 55.8ms | **31.5 / 30.1ms** | 28.9 / 28.4ms |
+| Hydration ratio vs solid | 1.28–1.34x | **1.06–1.09x** | 1.00x |
+| Client JS (raw / gzip) | 21.6 / 7.8KB | 21.4 / 7.8KB | 17.0 / 6.6KB |
+| Interactivity gate | PASS | PASS | PASS |
+
+Heap lands 30% BELOW solid, and the hydration gap against solid closed
+from ~1.3x to ~1.07x — a larger hydration win than §9.5 projected,
+because the prototype still paid the eager bundle's unused code paths
+while the shipped emission replaces them. No bundle-size regression
+(marginally smaller: the row plan costs less than the renderItem
+closure + consolidated effect it replaces).
+
+**Where the shipped result differs from the prototype's −42% heap.** The
+prototype claimed nothing at hydration; the shipped emission's
+`applyOuter` seed pass materializes each row's ref tuple (the attr
+element handle plus the row's `lazySlots` writer closure and its plan
+array) so it can read-compare-write the outer-involving class binding.
+That is ~230KB/1k rows of the gap and is a known, mechanically
+identified follow-up: a row whose outer-involving bindings are all
+ATTRS needs only the element handle at seed, never the content-slot
+writer. Splitting the ref tuple by what the seed pass actually reads
+recovers most of the difference without touching the model.
+
+**DOM-suite memory is unchanged (1768KB) by L3** — not a measurement
+failure but the eligibility gate working as designed: the krausest
+bench component uses `const isSelected = createSelector(selected)`, and
+an opaque local whose CALL is the reactive read cannot be primed by the
+emitter (see the limits below), so that loop keeps the eager emission.
+The prototype's −73% DOM figure therefore remains unrealized in
+shipped code until the gate widens.
+
+### 9.5c Shipped limits (L3) — both sound-or-loud refusals
+
+Neither is a silent divergence: each makes the loop ineligible, and the
+loop keeps today's eager emission with an explicit `reason`.
+
+1. **Outer-involving TEXT bindings refuse the loop.** `lazySlots` is a
+   write-only door, so §9.3(1)'s read-compare-write seeding has no DOM
+   read-back for content slots. Writing unconditionally at seed would
+   reintroduce exactly the per-row hydration write this design removes,
+   and skipping the write is the unsound trust-first-run §6 deleted.
+   Widening requires a runtime READ door on claimed slots (a contract
+   addition, hence its own slice). Outer-involving ATTR bindings are
+   supported today because `getAttribute` is the read-back.
+2. **Opaque outer reads refuse the loop.** A local like
+   `const isSelected = createSelector(selected)` is an ordinary const
+   whose call is the reactive read. The `applyOuter` effect must
+   subscribe on its FIRST run, and when the entry list is empty at that
+   moment the per-entry reads never execute — so the effect subscribes
+   to nothing and never re-runs, while rows added later (correct at
+   creation via `createRow`) go stale on the next outer change. The
+   emitter cannot synthesize a priming call for an opaque callee, so it
+   refuses. Two ways out, either of which widens the gate materially:
+   emit a priming read where the callee's signal dependencies ARE
+   statically known, or give the runtime a re-subscribe seam (re-run
+   `applyOuter` when the entry list transitions empty → non-empty),
+   which removes the priming obligation from the compiler entirely.
+
 ### 9.6 Migration — stacked semantic PRs
 
 - **L1 — spec** (this section).
@@ -593,5 +661,5 @@ Chromium; the gate scripts are committed with the spike.
   emission; snapshots/CSR goldens regenerated once; a CSR-conformance
   fixture exercising an eligible loop and an ineligible fallback loop
   lands in the same PR.
-- **L4 — measure + record**: re-run the DOM/SSR benches on the real
-  implementation, record results here (§5a discipline), changesets.
+- **L4 — measure + record** (this): re-ran the DOM/SSR benches on the
+  real implementation; results in §9.5b, shipped limits in §9.5c.
