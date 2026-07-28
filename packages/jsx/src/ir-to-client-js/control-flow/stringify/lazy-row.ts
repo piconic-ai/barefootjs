@@ -293,7 +293,20 @@ function seedDiffersExpr(target: string, a: LazyRowAttrBinding): string {
   if (html === 'class') return `${target}.getAttribute('class') !== (__x != null ? String(__x) : null)`
   if (html === 'value') return `${target}.value !== String(__x)`
   if (isBooleanAttr(html)) return `${target}.${html} !== !!(__x)`
-  if (a.meta.presenceOrUndefined) return `${target}.hasAttribute('${html}') !== !!(__x)`
+  if (a.meta.presenceOrUndefined) {
+    // Compare the VALUE the writer would produce, not just presence.
+    // `emitAttrUpdate` writes `'true'` for `aria-*` (WAI-ARIA requires an
+    // explicit value) and `''` for everything else, while SSR renders these
+    // as a BARE attribute name (`templateAttrExpr` in `html-template.ts`),
+    // which parses to the empty string. So for `aria-*` the SSR value and
+    // the client's value legitimately differ while presence agrees — a
+    // presence-only check would skip the seed write and leave
+    // `aria-pressed=""` where the eager path produces `aria-pressed="true"`.
+    // `getAttribute` returns null when absent, which is exactly the falsy
+    // expectation, so one comparison covers both directions.
+    const written = html.startsWith('aria-') ? 'true' : ''
+    return `${target}.getAttribute('${html}') !== (__x ? '${written}' : null)`
+  }
   return `${target}.getAttribute('${html}') !== (__x != null ? String(__x) : null)`
 }
 
