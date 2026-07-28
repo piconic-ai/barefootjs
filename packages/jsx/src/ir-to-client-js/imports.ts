@@ -17,7 +17,10 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
   // — the "one claim mechanism" that replaced `patchSlotRange` and
   // `updateClientMarker` (both deleted) as the content-slot update door.
-  'claimSlots', 'lazySlots',
+  // `lazyClaimSlots` is the read-capable twin of `lazySlots` over the same
+  // claim — emitted only by lazy loops that seed an outer-involving TEXT
+  // binding by read-compare-write (§9.3(1)).
+  'claimSlots', 'lazySlots', 'lazyClaimSlots',
   // Profile mode (#1690, SR3) — turn-boundary markers around event handlers.
   'beginTurn', 'endTurn',
   // Catalogued `Date` lowering (#2274/#2292) — the client counterpart to

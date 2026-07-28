@@ -46,12 +46,18 @@ export interface LazyRowAttrBinding {
   readsOuter: boolean
 }
 
-/** One reactive outer text of a lazy row. Item-driven only (see §9.4 gate). */
+/** One reactive text (content slot) of a lazy row. */
 export interface LazyRowTextBinding {
   slotId: string
   wrappedExpression: string
   ordinal: number
   readsItem: boolean
+  /**
+   * Reads at least one reactive outer name — emitted into `applyOuter` with
+   * §9.3(1) read-compare-write seeding, which needs the RW claim door
+   * (`LazyRowPlanData.textNeedsRead`).
+   */
+  readsOuter: boolean
 }
 
 export interface LazyRowPlanData {
@@ -59,8 +65,18 @@ export interface LazyRowPlanData {
   attrSlotIds: readonly string[]
   attrs: readonly LazyRowAttrBinding[]
   texts: readonly LazyRowTextBinding[]
-  /** Index into `entry.refs` holding the claimed-slot writer; -1 when no texts. */
+  /** Index into `entry.refs` holding the claimed-slot door; -1 when no texts. */
   writerIndex: number
+  /**
+   * PER-LOOP door selection (§9.3(1) content seeding): true when at least
+   * one text binding is outer-involving and therefore needs `read(id)` to
+   * seed by comparison. The emitter then claims through `lazyClaimSlots`
+   * (the `{ write, read }` door) and every text write becomes
+   * `__r[w].write(...)`; false keeps the single-closure `lazySlots` writer
+   * and the bare `__r[w](...)` call form. One decision for the whole loop —
+   * the door is a per-ROW allocation, so it must not be chosen per binding.
+   */
+  textNeedsRead: boolean
   /** Total `entry.last` slots. */
   lastCount: number
   /**
@@ -190,10 +206,12 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       slotId: text.slotId,
       wrappedExpression: wrap(text.expression),
       ordinal: ordinal++,
-      // Outer-involving texts are refused by the gate, so an item-only text
-      // that somehow classified as neither still gets applied on item change
-      // (harmless, dedup-guarded) rather than silently never being written.
-      readsItem: true,
+      // A text that classified as NEITHER item- nor outer-driven still gets
+      // applied on item change (harmless, dedup-guarded) rather than
+      // silently never being written. Anything the classifier did place in
+      // a list keeps exactly the classifier's answer.
+      readsItem: c.readsItem || !c.readsOuter,
+      readsOuter: c.readsOuter,
     }
   })
 
@@ -210,9 +228,10 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       attrs,
       texts,
       writerIndex: texts.length > 0 ? attrSlotIds.length : -1,
+      textNeedsRead: texts.some(t => t.readsOuter),
       lastCount: ordinal,
       outerPrimeGetters,
-      hasOuter: attrs.some(a => a.readsOuter),
+      hasOuter: attrs.some(a => a.readsOuter) || texts.some(t => t.readsOuter),
     },
     decision,
   }
