@@ -452,3 +452,45 @@ export function CondRows() {
     expect(js).toMatch(/\bmapArray\(/)
   })
 })
+
+/**
+ * Presence-or-undefined attributes are the one kind where SSR and the
+ * client writer legitimately disagree on the VALUE while agreeing on
+ * presence: SSR renders a bare attribute name (`templateAttrExpr`), which
+ * parses to `""`, while `emitAttrUpdate` writes `'true'` for `aria-*`. A
+ * presence-only seed comparison therefore skips a write it must perform.
+ */
+const ELIGIBLE_ARIA = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string }
+export function LazyAriaRows() {
+  const [rows, setRows] = createSignal<Row[]>([])
+  const [selected, setSelected] = createSignal(0)
+  return (
+    <tbody>
+      {rows().map(row => (
+        <tr key={row.id} aria-selected={(selected() === row.id) || undefined}>
+          <td>{row.label}</td>
+        </tr>
+      ))}
+    </tbody>
+  )
+}
+`
+
+describe('lazy row emission — presence-or-undefined seed comparison', () => {
+  const js = clientJs(ELIGIBLE_ARIA, 'LazyAriaRows.tsx')
+
+  test('the loop is eligible (guards the rest of this describe)', () => {
+    expect(js).toContain('mapArrayLazy(')
+  })
+
+  test('seeds an aria-* presence attr by VALUE, not by presence', () => {
+    // SSR renders `aria-selected` bare (value ""), the writer writes
+    // "true" — comparing `hasAttribute` would call those equal and leave
+    // the row at `aria-selected=""` forever.
+    expect(js).toContain(`getAttribute('aria-selected') !== (__x ? 'true' : null)`)
+    expect(js).not.toContain(`hasAttribute('aria-selected')`)
+  })
+})

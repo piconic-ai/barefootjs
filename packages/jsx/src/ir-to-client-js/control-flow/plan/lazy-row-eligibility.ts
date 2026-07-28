@@ -35,8 +35,12 @@
  *     Any other name that could change reactively — a prop accessor (props
  *     may be defined as getters over the parent's signals), or a name the
  *     compiler cannot classify at all — is `opaque` and makes the loop
- *     ineligible. Names proven inert (imports, local functions, local /
- *     module constants, pure globals) need no subscription and are ignored.
+ *     ineligible. Imports and component-local functions are opaque TOO
+ *     (`const isSelected = createSelector(selected)` is an ordinary local
+ *     whose CALL is the reactive read), so they refuse the loop as well —
+ *     the `inert` set names them only so the refusal can say which one.
+ *     Genuinely ignorable are the names that cannot carry a reactive read
+ *     at all: literal-derived local / module constants and pure globals.
  *  4. **No outer-involving TEXT binding.** §9.3(1) requires read-compare-
  *     write seeding on `applyOuter`'s first run: compute the value, READ the
  *     current DOM, write only on difference. For an attribute that read is
