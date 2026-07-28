@@ -7,9 +7,14 @@
  * `isSelected(row.id)` as reactive with no analyzer changes — the callee's
  * type carries the brand, not the call's return type. These tests pin:
  *   - the classic js-framework-benchmark row compiles with `isSelected(row.id)`
- *     wired to a single per-row `createEffect` (not the legacy
- *     `selected() === row.id` shape, which would still work but subscribes
- *     every row to the raw signal)
+ *     wired through the lazy row graph — ZERO emitted per-row effects, the
+ *     loop-level effect living in `mapArrayLazy` (spec §9). Until §9.5c(2)
+ *     was lifted this shape was gate-INELIGIBLE (an opaque local whose call
+ *     is the reactive read could not be primed) and compiled to one per-row
+ *     `createEffect`; the runtime re-subscribe seam replaced that, so the
+ *     loop is emitted like any other. Either way it is never
+ *     the legacy `selected() === row.id` shape, which subscribes every row
+ *     to the raw signal.
  *   - the loop-param accessor wrap applies only to the call ARGUMENT
  *     (`row.id` -> `row().id`), leaving the `isSelected` callee untouched
  *   - the hoisted skeleton fast path (#2223) still fires for a selector-driven
@@ -36,7 +41,7 @@ function compile(source: string, filename: string): { clientJs: string; template
 }
 
 describe('createSelector (perf, #2143 gap 5)', () => {
-  test('isSelected(row.id) in a loop body compiles to one per-row createEffect', () => {
+  test('isSelected(row.id) in a loop body compiles through the lazy row graph', () => {
     const source = `
       'use client'
       import { createSignal, createSelector } from '@barefootjs/client'
@@ -66,11 +71,20 @@ describe('createSelector (perf, #2143 gap 5)', () => {
     // The callee itself is never rewritten to an accessor call.
     expect(clientJs).not.toContain('isSelected()(')
 
-    // Exactly one createEffect wraps the selector-driven class attribute —
-    // not the O(rows) `selected() === row.id` shape.
+    // The selector-driven class attribute costs NO emitted effect at all:
+    // the loop is lazy-eligible, so its one loop-level effect lives inside
+    // `mapArrayLazy` rather than in the emitted row body. It is also never
+    // the O(rows) `selected() === row.id` shape.
     const effectCount = (clientJs.match(/createEffect\(/g) ?? []).length
-    expect(effectCount).toBe(1)
+    expect(effectCount).toBe(0)
+    expect(clientJs).toContain('mapArrayLazy(')
     expect(clientJs).not.toContain('selected() ===')
+
+    // `isSelected` is an opaque local (its CALL is the reactive read). Nothing
+    // in the emission marks that: the runtime's re-subscribe seam applies to
+    // every loop-level outer effect, so the compiler has no judgement to
+    // encode here (§9.5c(2)).
+    expect(clientJs).not.toContain('outerNeedsResubscribe')
 
     // The hoisted skeleton fast path (#2223) still fires: a single-line
     // renderItem clones from a once-per-loop template.

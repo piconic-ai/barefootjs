@@ -41,13 +41,13 @@ consolidated `createEffect` per plain loop row (slot unification row
 granularity, `spec/slot-unification.md` §5a), so a compiler change that
 splits or multiplies per-row effects shows up here first.
 
-**This app does NOT exercise the lazy row graph** (§9): its row reads
-`createSelector(selected)`, an opaque local whose call is the reactive
-read, which the §9.4 eligibility gate refuses (§9.5c(2)) — so its rows
-keep the eager per-row emission and its memory column is unaffected by
-that work. The SSR suite below DOES exercise it. Read a flat memory
-number here as "this component shape is still eager", not as "lazy rows
-did nothing".
+This app **does** exercise the lazy row graph (§9). It did not until
+§9.5c(2) was lifted: its row reads `createSelector(selected)`, an opaque
+local whose CALL is the reactive read, which the eligibility gate refused
+while the compiler still had to prove every outer read primable. With the
+runtime's re-subscribe seam carrying that obligation the loop became
+eligible, and this memory column moved 1768KB -> ~1052KB in the same
+change — the first time the DOM suite reflected that work at all.
 
 ### 2. SSR + hydration (`ssr/bench-ssr.ts`)
 
@@ -132,9 +132,17 @@ bun benchmarks/reactive.ts              # reactive primitives microbench
 Per-app Playwright smoke tests (correctness only):
 `bun benchmarks/apps/<react|solid|barefoot>/smoke.ts`.
 
-CI runs the quick DOM suite + SSR bench on PRs touching
-`packages/client/**` or `benchmarks/**` and posts the tables as a PR
-comment (`.github/workflows/benchmark.yml`).
+CI runs the quick DOM suite, the SSR bench, and the SSR post-hydration heap
+bench on PRs touching `packages/client/**` or `benchmarks/**`, and posts the
+tables as a PR comment (`.github/workflows/benchmark.yml`).
+
+Two different memory numbers appear there, and they are not comparable:
+the DOM suite's **memory** row is a heap DELTA around a client-side create
+of 1,000 rows, while **SSR post-hydration heap** (`ssr/bench-ssr-memory.ts`)
+is the ABSOLUTE heap after hydrating a server-rendered 1,000-row table. The
+second isolates per-row hydration bookkeeping — signals, effects, claim
+tables — for a DOM both sides already have, which is why it is the metric
+the lazy row graph moves most.
 
 ## Results
 

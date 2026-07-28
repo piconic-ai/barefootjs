@@ -72,25 +72,46 @@ function fmtBytes(n: number): string {
   return `${(n / 1024).toFixed(1)}KB`
 }
 
+/**
+ * `--md` emits the same numbers as a markdown table so CI can paste it into
+ * the benchmark PR comment alongside the DOM and SSR suites. This metric is
+ * the one the lazy row graph (`spec/slot-unification.md` §9) moves most, so
+ * it needs an automated guard rather than local runs only.
+ */
+const mdMode = process.argv.slice(2).includes('--md')
+
 async function main() {
   const server = startServer(0)
   const browser = await chromium.launch(chromiumLaunchOptions())
+  const rows: Array<{ framework: string; med: number; iterations: number[]; stddev: number }> = []
   try {
-    console.log(`Post-hydration JS heap (forced GC), n=${ITERS}, 1000 rows\n`)
+    if (!mdMode) console.log(`Post-hydration JS heap (forced GC), n=${ITERS}, 1000 rows\n`)
     for (const framework of FRAMEWORKS) {
       const appUrl = `http://localhost:${server.port}/${framework}/index.html`
       const iterations: number[] = []
       for (let i = 0; i < ITERS; i++) iterations.push(await measureHeapOnce(browser, appUrl))
       const stats = computeStats(iterations)
-      console.log(
-        `${framework.padEnd(16)} median ${fmtBytes(median(iterations)).padStart(10)}  (n=${ITERS}: ${iterations
-          .map(fmtBytes)
-          .join(', ')})  stdev ${fmtBytes(stats.stddev)}`,
-      )
+      rows.push({ framework, med: median(iterations), iterations, stddev: stats.stddev })
+      if (!mdMode) {
+        console.log(
+          `${framework.padEnd(16)} median ${fmtBytes(median(iterations)).padStart(10)}  (n=${ITERS}: ${iterations
+            .map(fmtBytes)
+            .join(', ')})  stdev ${fmtBytes(stats.stddev)}`,
+        )
+      }
     }
   } finally {
     await browser.close()
     server.stop()
+  }
+
+  if (mdMode) {
+    console.log(`| Metric | ${rows.map((r) => r.framework).join(' | ')} |`)
+    console.log(`|---|${rows.map(() => '---').join('|')}|`)
+    console.log(
+      `| Post-hydration heap (median, n=${ITERS}) | ${rows.map((r) => fmtBytes(r.med)).join(' | ')} |`,
+    )
+    console.log(`| stdev | ${rows.map((r) => fmtBytes(r.stddev)).join(' | ')} |`)
   }
 }
 

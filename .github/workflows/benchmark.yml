@@ -78,6 +78,25 @@ jobs:
           cat /tmp/bench-ssr.out
           exit $status
 
+      # Post-hydration JS heap is the metric the lazy row graph
+      # (spec/slot-unification.md §9) moves most — 2718KB -> ~1810KB over that
+      # series — and it was measured only by hand until now. Guard it here so
+      # a regression shows up on the PR that causes it, like every other
+      # column in this comment.
+      - name: Run SSR post-hydration heap benchmark
+        id: bench_ssr_memory
+        run: |
+          set +e
+          bun benchmarks/ssr/bench-ssr-memory.ts --md > /tmp/bench-ssr-memory.out 2>&1
+          status=$?
+          {
+            echo 'result<<BENCH_EOF'
+            cat /tmp/bench-ssr-memory.out
+            echo 'BENCH_EOF'
+          } >> "$GITHUB_OUTPUT"
+          cat /tmp/bench-ssr-memory.out
+          exit $status
+
       - name: Find existing benchmark comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
         id: find-comment
@@ -106,5 +125,14 @@ jobs:
             ### SSR + hydration
 
             ${{ steps.bench_ssr.outputs.result }}
+
+            ### SSR post-hydration JS heap
+
+            > Absolute heap after hydration with forced GC — not comparable to
+            > the DOM suite's `memory` row, which is a heap DELTA around a
+            > client-side create of 1,000 rows. This isolates each framework's
+            > per-row hydration bookkeeping for the same server-rendered DOM.
+
+            ${{ steps.bench_ssr_memory.outputs.result }}
 
             [Job log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · `${{ github.event.pull_request.head.sha }}`

@@ -127,6 +127,14 @@ const INERT_BINDING_GLOBALS: ReadonlySet<string> = new Set([
   'encodeURIComponent', 'decodeURIComponent', 'encodeURI', 'decodeURI',
 ])
 
+/**
+ * Sentinel `opaqueOuterNames` entry for "free-identifier analysis produced
+ * nothing". Distinct from a real opaque NAME: a name means the identifier
+ * set is known and only its primability is not, which the re-subscribe seam
+ * handles; this means the set itself is unknown, which nothing can handle.
+ */
+export const UNKNOWN_IDENTIFIERS = '<unknown>'
+
 /** One reactive binding of the row, already classified at build time. */
 export interface ClassifiedLazyBinding {
   kind: 'attr' | 'text'
@@ -238,11 +246,26 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
     if (b.referencesIndex) {
       return NO(`binding on slot ${b.slotId} references the loop index parameter`)
     }
-    if (b.opaqueOuterNames.length > 0) {
-      return NO(
-        `binding on slot ${b.slotId} depends on an outer name that cannot be primed: ${b.opaqueOuterNames.join(', ')}`,
-      )
+    // An identifier set we could not compute at all is different in kind
+    // from a name we CAN see but cannot prime. With `free === null` the
+    // classifier knows nothing — not the outer reads, and not whether the
+    // binding reads the loop INDEX (which it reports as `false` by
+    // assumption, since there is nothing to look at). The seam covers
+    // stranded subscriptions; it cannot conjure an index parameter that
+    // `applyItem`/`applyOuter` do not have. So this one still refuses.
+    if (b.opaqueOuterNames.includes(UNKNOWN_IDENTIFIERS)) {
+      return NO(`binding on slot ${b.slotId} has no analyzable identifier set`)
     }
+    // An outer name the emitter cannot prime used to refuse the loop: the
+    // loop-level effect must subscribe on its FIRST run, and with an empty
+    // entry list the per-entry reads never execute, so it would subscribe to
+    // nothing and go permanently dead. The runtime's re-subscribe seam
+    // in `mapArrayLazy` removes that obligation from the compiler (§9.5c(2)):
+    // every loop-level outer effect re-runs after a reconcile that created a
+    // row or changed an item, so its subscription set is rebuilt against the
+    // current entries no matter what the reads turn out to be. Nothing to
+    // check here any more — and nothing to signal either, since the seam is
+    // unconditional rather than something the compiler opts a loop into.
   }
 
   // (7) Hydration-consistency gate on the loop source (§9.3(2)).
@@ -343,7 +366,11 @@ export function classifyLazyBinding(args: {
       readsItem: true,
       readsOuter: true,
       reactiveOuterNames: [],
-      opaqueOuterNames: ['<unknown>'],
+      opaqueOuterNames: [UNKNOWN_IDENTIFIERS],
+      // An ASSUMPTION, not knowledge — which is precisely why
+      // `UNKNOWN_IDENTIFIERS` must keep refusing the loop: with no
+      // identifier set we cannot rule out an index read either, and
+      // `applyItem` / `applyOuter` have no index parameter to give it.
       referencesIndex: false,
     }
   }
