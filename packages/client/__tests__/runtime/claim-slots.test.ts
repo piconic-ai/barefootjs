@@ -54,15 +54,22 @@ describe('claimSlots — text kind', () => {
     expect(row.innerHTML).toBe('<!--bf:s0-->updated<!--/-->')
   })
 
-  test('creates a Text node when SSR emitted an empty value', () => {
+  test('claiming an SSR-empty slot creates NOTHING; the first write materializes the Text node', () => {
     const root = mount('<div><!--bf:s1--><!--/--></div>')
     const row = root.firstElementChild as HTMLElement
     const plan: SlotSpec[] = [{ id: 's1', kind: 'text', path: [0] }]
 
-    // Claiming (not just writing) creates the missing Text node immediately.
-    claimSlots(row, plan)
+    // The claim is non-mutating (§9.3(1)): a seed that only compares must
+    // not leave an empty Text node behind on every row it inspects.
+    const claimed = claimSlots(row, plan)
+    expect(row.childNodes.length).toBe(2)
+    expect(row.childNodes[1]?.nodeType).toBe(Node.COMMENT_NODE)
+    expect(claimed.read('s1')).toBe('')
+
+    // The write creates it, at the recorded position.
+    claimed.write('s1', 'now')
     expect(row.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE)
-    expect(row.innerHTML).toBe('<!--bf:s1--><!--/-->')
+    expect(row.innerHTML).toBe('<!--bf:s1-->now<!--/-->')
   })
 
   test('writes preserve Text node identity across repeated writes', () => {
@@ -295,19 +302,22 @@ describe('claimSlots — markerless text kind (slot unification Step B)', () => 
     expect(row.innerHTML).toBe('<span>a</span>updated<b>z</b>')
   })
 
-  test('creates a Text node at the path position when SSR emitted nothing there', () => {
+  test('claiming an empty path position creates nothing; the write inserts there', () => {
     const root = mount('<div><span>a</span><b>z</b></div>')
     const row = root.firstElementChild as HTMLElement
     // Position 1 is empty (the client-only slot rendered nothing at SSR) —
     // <b> currently sits at index 1.
     const plan: SlotSpec[] = [{ id: 's21', kind: 'text', path: [1], markerless: true }]
 
-    claimSlots(root.firstElementChild as HTMLElement, plan)
-    expect(row.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE)
+    // Non-mutating claim: nothing is inserted until a write needs it.
+    const probe = claimSlots(root.firstElementChild as HTMLElement, plan)
+    expect(row.childNodes[1]?.nodeType).toBe(Node.ELEMENT_NODE)
     expect(row.innerHTML).toBe('<span>a</span><b>z</b>')
+    expect(probe.read('s21')).toBe('')
 
     const claimed = claimSlots(row, plan)
     claimed.write('s21', 'hi')
+    expect(row.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE)
     expect(row.innerHTML).toBe('<span>a</span>hi<b>z</b>')
   })
 
@@ -566,5 +576,81 @@ describe('path-miss fallback', () => {
 
     expect(row.innerHTML).toBe('<!--bf:s11-->updated<!--/-->')
     expect(warnings.some(w => w.includes('s12'))).toBe(true)
+  })
+})
+
+/**
+ * The read half of the claimed-slot door (`spec/slot-unification.md`
+ * §9.3(1) read-compare-write seeding). Its defining properties: it goes
+ * through the SAME claim as writes (no second resolution path — §2's
+ * claim-once rule), and inspecting a slot never mutates the DOM.
+ */
+describe('claimed-slot read door', () => {
+  test('reads what SSR rendered', () => {
+    const row = mount('<div><!--bf:s0-->hello<!--/--></div>').firstElementChild as HTMLElement
+    const claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    expect(claimed.read('s0')).toBe('hello')
+  })
+
+  test('an SSR-empty slot reads as the empty string without touching the DOM', () => {
+    const row = mount('<div><!--bf:s0--><!--/--></div>').firstElementChild as HTMLElement
+    const before = row.innerHTML
+    const claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    expect(claimed.read('s0')).toBe('')
+    expect(row.innerHTML).toBe(before)
+    expect(row.childNodes.length).toBe(2)
+  })
+
+  test('reads the written value back through the held reference', () => {
+    const row = mount('<div><!--bf:s0-->old<!--/--></div>').firstElementChild as HTMLElement
+    const claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    claimed.write('s0', 'new')
+    expect(claimed.read('s0')).toBe('new')
+  })
+
+  test("a 'markup' slot reads null — the door answers only for text", () => {
+    const row = mount('<div><!--bf:s0--><b>x</b><!--/--></div>').firstElementChild as HTMLElement
+    const claimed = claimSlots(row, [{ id: 's0', kind: 'markup', path: [] }])
+    expect(claimed.read('s0')).toBeNull()
+  })
+
+  test('an unclaimable slot reads null (unknown) and stays silent', () => {
+    const row = mount('<div>no markers</div>').firstElementChild as HTMLElement
+    let claimed!: ReturnType<typeof claimSlots>
+    withWarnings(() => {
+      claimed = claimSlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    })
+    const readWarnings = withWarnings(() => {
+      expect(claimed.read('s0')).toBeNull()
+    })
+    expect(readWarnings).toEqual([])
+  })
+
+  test('lazySlots: a read claims the plan, and a later write needs no re-resolution', () => {
+    const row = mount('<div><!--bf:s0-->a<!--/--><!--bf:s1-->b<!--/--></div>')
+      .firstElementChild as HTMLElement
+    const door = lazySlots(row, [
+      { id: 's0', kind: 'text', path: [] },
+      { id: 's1', kind: 'text', path: [] },
+    ])
+    // First access is a READ — it batch-claims the whole plan (row-pristine),
+    // so the sibling is resolved too even though nothing was written yet.
+    expect(door.read('s0')).toBe('a')
+    expect(door.read('s1')).toBe('b')
+
+    // Detach the markers: if a write re-resolved, it would now fail. It must
+    // instead write through the reference the read already claimed.
+    const held = row.childNodes[1] as Text
+    row.innerHTML = ''
+    door('s0', 'patched')
+    expect(held.nodeValue).toBe('patched')
+  })
+
+  test('lazySlots: reading alone leaves an SSR-empty row untouched', () => {
+    const row = mount('<div><!--bf:s0--><!--/--></div>').firstElementChild as HTMLElement
+    const before = row.innerHTML
+    const door = lazySlots(row, [{ id: 's0', kind: 'text', path: [] }])
+    expect(door.read('s0')).toBe('')
+    expect(row.innerHTML).toBe(before)
   })
 })
