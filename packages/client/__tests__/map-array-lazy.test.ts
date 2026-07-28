@@ -18,7 +18,7 @@ beforeAll(() => {
   }
 })
 
-const { createSignal } = await import('../src/reactive')
+const { createSignal, createSelector } = await import('../src/reactive')
 const { mapArrayLazy } = await import('../src/runtime/map-array-lazy')
 type LazyRowEntry<T> = import('../src/runtime/map-array-lazy').LazyRowEntry<T>
 type LazyRowPlan<T> = import('../src/runtime/map-array-lazy').LazyRowPlan<T>
@@ -506,5 +506,117 @@ describe('mapArrayLazy — reconciler tracking isolation', () => {
     setSelected('3')
     expect(accessorRuns).toBe(2)
     expect(applyItemCalls.length).toBe(1)
+  })
+})
+
+/**
+ * Re-subscribe seam (`outerNeedsResubscribe`). `applyOuter` subscribes to
+ * whatever its body reads; when an outer read is NOT a primable signal
+ * getter — `createSelector`, whose returned selector subscribes the caller
+ * per KEY — that set depends on the entries it iterated, so a reconcile can
+ * strand it. Each test below is a sequence that was reproduced as broken
+ * before the seam existed.
+ */
+describe('mapArrayLazy — re-subscribe seam', () => {
+  type Row = { id: number; tag?: string }
+
+  function perKeyLoop(opts: { initial: Row[]; seam: boolean; key?: (r: Row) => string }) {
+    const host = document.createElement('div')
+    document.body.innerHTML = ''
+    document.body.appendChild(host)
+    host.innerHTML = '<!--bf-loop:l0--><!--bf-/loop:l0-->'
+    const [rows, setRows] = createSignal<Row[]>(opts.initial)
+    const [selected, setSelected] = createSignal(0)
+    const isSelected = createSelector(selected)
+    let outerRuns = 0
+
+    const paint = (entry: { item: Row; primaryEl: HTMLElement; last: unknown }): void => {
+      const next = isSelected(entry.item.id) ? 'ON' : 'off'
+      const last = (entry.last as string[] | null) ?? (entry.last = [] as string[])
+      if (last[0] !== next) {
+        entry.primaryEl.textContent = next
+        last[0] = next
+      }
+    }
+
+    mapArrayLazy(() => rows(), host, opts.key ?? ((r) => String(r.id)), {
+      createRow(entry) {
+        const el = document.createElement('span')
+        entry.primaryEl = el
+        paint(entry as never)
+        return el
+      },
+      applyItem(entry) {
+        paint(entry as never)
+      },
+      applyOuter(entries) {
+        outerRuns++
+        for (const e of entries) paint(e as never)
+      },
+      ...(opts.seam ? { outerNeedsResubscribe: true } : {}),
+    }, 'l0')
+
+    return {
+      setRows,
+      setSelected,
+      texts: () => Array.from(host.querySelectorAll('span')).map((s) => s.textContent),
+      runs: () => outerRuns,
+    }
+  }
+
+  test('empty at the first run: rows added later still react to the outer change', () => {
+    const t = perKeyLoop({ initial: [], seam: true })
+    t.setRows([{ id: 1 }, { id: 2 }])
+    t.setSelected(1)
+    expect(t.texts()).toEqual(['ON', 'off'])
+  })
+
+  test('a row created while nothing is selected, then selected, is not stranded', () => {
+    // The list is NEVER empty here — which is why an empty -> non-empty
+    // trigger would not have caught this.
+    const t = perKeyLoop({ initial: [{ id: 1 }, { id: 2 }], seam: true })
+    t.setRows([{ id: 1 }, { id: 2 }, { id: 3 }])
+    t.setSelected(3)
+    expect(t.texts()).toEqual(['off', 'off', 'ON'])
+  })
+
+  test('an item change that moves the keyed value re-subscribes', () => {
+    // Loop key is `tag`, but the binding keys on `id`: changing `id` under a
+    // stable key strands the old per-key subscription.
+    const t = perKeyLoop({
+      initial: [{ id: 1, tag: 'a' }],
+      seam: true,
+      key: (r) => r.tag!,
+    })
+    t.setRows([{ id: 9, tag: 'a' }])
+    t.setSelected(9)
+    expect(t.texts()).toEqual(['ON'])
+  })
+
+  test('a removal alone does not re-run applyOuter (removals strand nothing)', () => {
+    // The surviving row keeps its item OBJECT: the reconciler compares items
+    // with Object.is, so handing back a fresh `{ id: 1 }` would register as
+    // an item change and legitimately bump. Removal on its own must not.
+    const keep = { id: 1 }
+    const t = perKeyLoop({ initial: [keep, { id: 2 }], seam: true })
+    const before = t.runs()
+    t.setRows([keep])
+    expect(t.runs()).toBe(before)
+  })
+
+  test('an item change bumps even when identity is the only thing that moved', () => {
+    // The flip side of the test above, pinned so the Object.is-based
+    // stranding rule is explicit rather than incidental.
+    const t = perKeyLoop({ initial: [{ id: 1 }], seam: true })
+    const before = t.runs()
+    t.setRows([{ id: 1 }])
+    expect(t.runs()).toBe(before + 1)
+  })
+
+  test('without the flag, a reconcile never re-runs applyOuter (opt-in cost)', () => {
+    const t = perKeyLoop({ initial: [{ id: 1 }], seam: false })
+    const before = t.runs()
+    t.setRows([{ id: 1 }, { id: 2 }])
+    expect(t.runs()).toBe(before)
   })
 })

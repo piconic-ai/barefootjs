@@ -51,6 +51,19 @@
  *   effect can never observe a half-reconciled list, and read
  *   non-reactively so the effect re-runs ONLY on the outer signals
  *   `applyOuter` itself reads, never because the list was reconciled.
+ * - **Re-subscribe seam** (`plan.outerNeedsResubscribe`): the previous
+ *   bullet's "reconciles never re-run this effect" contract holds only when
+ *   every outer read subscribes independently of the entries — true for a
+ *   primed signal/memo getter, FALSE for a per-key subscription such as
+ *   `createSelector`, whose selector subscribes the caller to the specific
+ *   keys it was called with. For those, a reconcile can leave the effect
+ *   subscribed to keys that no longer matter and NOT subscribed to keys that
+ *   now do, so a loop that opts in re-runs `applyOuter` after any reconcile
+ *   that created a row or changed an item (removals strand nothing). The
+ *   opt-in is per loop: loops that do not set the flag keep the cheaper
+ *   contract and pay nothing. See the seam's own comment inside
+ *   `mapArrayLazy` for the three stranding sequences it exists to prevent,
+ *   each of which was reproduced before it was written.
  *
  * **Plan (compiler-emitted) obligations:**
  * - `createRow` MUST write ALL bindings — item-driven AND outer-involving —
@@ -101,7 +114,7 @@
  * effect carries no id.
  */
 
-import { createEffect, untrack } from '@barefootjs/client/reactive'
+import { createEffect, createSignal, untrack } from '@barefootjs/client/reactive'
 import { BF_KEY } from '@barefootjs/shared'
 import { findLoopMarkers, longestIncreasingSubsequenceIndices } from './map-array.ts'
 
@@ -142,6 +155,16 @@ export interface LazyRowPlan<T> {
    *  nodeValue) to initialize its dedup value and write only where the
    *  computed value differs (read-compare-write, spec §9.3(1)). */
   applyOuter?(entries: ReadonlyArray<LazyRowEntry<T>>, seed: boolean): void
+  /**
+   * Set when `applyOuter`'s subscriptions can be STRANDED by a reconcile, so
+   * the runtime must re-run it after one (see `mapArrayLazy`'s docstring,
+   * "Re-subscribe seam"). Required whenever an outer read is not a plain
+   * signal/memo getter the emitter primed — the per-key case
+   * (`createSelector`) being the motivating one. Omitted (falsy) keeps the
+   * cheaper contract: `applyOuter` re-runs ONLY on the outer signals it
+   * reads, and a reconcile never triggers it.
+   */
+  outerNeedsResubscribe?: boolean
 }
 
 /**
@@ -172,6 +195,43 @@ export function mapArrayLazy<T>(
    */
   let entryList: LazyRowEntry<T>[] = []
   let hydrated = false
+
+  /**
+   * Re-subscribe seam. `applyOuter` subscribes to whatever its body reads,
+   * and for a NON-primable outer read that set depends on the entries it
+   * iterated — so a reconcile can strand it. Three sequences, all
+   * reproduced against `createSelector` before this existed:
+   *
+   *  1. the entry list is EMPTY on the effect's first run, so the per-entry
+   *     reads never execute, nothing is subscribed, and the loop is dead
+   *     forever;
+   *  2. a row is CREATED (under `untrack`, so its key is never registered)
+   *     and then becomes the selected one — only that key flips, nobody
+   *     listens, and the row stays stale. Note the list is never empty here,
+   *     which is why an empty -> non-empty trigger is not enough;
+   *  3. an ITEM changes the value a binding keys on (loop key derived from a
+   *     different field), stranding the old key the same way.
+   *
+   * So the trigger is "the reconcile created a row or changed an item", not
+   * "the list became non-empty". Removals strand nothing — the surviving
+   * entries keep their subscriptions — so they do not bump.
+   *
+   * Only loops whose plan sets `outerNeedsResubscribe` pay for this: a
+   * primed signal/memo read subscribes regardless of entry count and is not
+   * per-key, so those loops keep the cheaper "outer signals only" contract.
+   */
+  const needsResubscribe = plan.outerNeedsResubscribe === true && plan.applyOuter !== undefined
+  const [generation, bumpGeneration] = needsResubscribe ? createSignal(0) : [null, null]
+  let stranded = false
+  const markStranded = (): void => {
+    if (needsResubscribe) stranded = true
+  }
+  const flushStranded = (): void => {
+    if (stranded && bumpGeneration) {
+      stranded = false
+      bumpGeneration((n) => n + 1)
+    }
+  }
 
   // Loop boundary markers are structural — never removed or re-inserted by
   // this module — so cache them across effect runs, same as `mapArray`.
@@ -207,6 +267,7 @@ export function mapArrayLazy<T>(
     }
     entry.primaryEl = untrack(() => plan.createRow(entry, index))
     if (!entry.primaryEl.dataset.key) entry.primaryEl.setAttribute(BF_KEY, key)
+    markStranded()
     return entry
   }
 
@@ -254,6 +315,7 @@ export function mapArrayLazy<T>(
         // SSR rendered more rows than the current array — drop the orphans.
         for (let i = items.length; i < doms.length; i++) doms[i].remove()
         entryList = list
+        flushStranded()
         return // Adoption complete — later accessor changes reconcile below.
       }
       // No SSR rows (CSR mount): fall through to the keyed path.
@@ -282,6 +344,8 @@ export function mapArrayLazy<T>(
         entries.clear()
         entryList = []
       }
+      // No flush: clearing strands nothing (there is nothing left to keep
+      // subscribed), and `markStranded` is never set by a removal.
       return
     }
 
@@ -315,6 +379,7 @@ export function mapArrayLazy<T>(
           const prevItem = existing.item
           existing.item = item
           untrack(() => plan.applyItem(existing, prevItem))
+          markStranded()
         }
         desiredOrder.push(existing)
       } else {
@@ -376,6 +441,9 @@ export function mapArrayLazy<T>(
     }
 
     entryList = desiredOrder
+    // ONE bump per reconcile, after `entryList` is current so the re-run
+    // iterates the new entries.
+    flushStranded()
   }, bfId)
 
   // --- ONE loop-level effect for outer-involving bindings ---
@@ -390,6 +458,13 @@ export function mapArrayLazy<T>(
     const applyOuter = plan.applyOuter.bind(plan)
     let seed = true
     createEffect(() => {
+      // Subscribe to the seam so a stranding reconcile re-runs this effect
+      // and its per-entry reads re-subscribe against the CURRENT entries.
+      // Read unconditionally (not inside the `needsResubscribe` branch) is
+      // impossible — `generation` only exists for loops that opted in — so
+      // loops that did not opt in keep a subscription set built purely from
+      // what `applyOuter` itself reads.
+      if (generation) generation()
       const isSeed = seed
       seed = false
       applyOuter(entryList, isSeed)
