@@ -26,9 +26,12 @@
  * "one slot concept with an identity contract" of §4):
  *   - 'text': held ref is the Text node immediately after the anchor
  *     comment. The CLAIM is non-mutating: it adopts that node when SSR
- *     rendered the slot non-empty and otherwise records the insertion site
- *     and holds `null`, deferring `document.createTextNode` to the first
- *     write that actually needs it (`materializeText`). That is what lets
+ *     rendered the slot non-empty and otherwise holds the ANCHOR COMMENT
+ *     itself as a stand-in for the not-yet-created node, deferring
+ *     `document.createTextNode` to the first write that actually needs it
+ *     (`materializeText` reads the insertion point off that comment). That
+ *     one-field representation is deliberate — see `ClaimedTextSlot`. What
+ *     lets
  *     `read` exist — a seed that only compares must be able to inspect a
  *     slot without leaving an empty Text node behind on every row
  *     (§9.3(1)). Writes are a `nodeValue` assignment, and once materialized
@@ -142,33 +145,32 @@ export interface SlotSpec {
 export type ClaimPlan = readonly SlotSpec[]
 
 /**
- * A claimed 'text' slot. The claim holds the slot's POSITION and adopts the
- * Text node only if one already exists; when SSR rendered the slot empty
- * there is no Text node yet and `node` stays `null` until the first write
- * needs one (`materializeText`). Claiming a text slot therefore never
- * mutates the DOM — the property the read door (`read`) depends on, since a
- * seed that only compares must not leave a trail of empty Text nodes across
- * every row (`spec/slot-unification.md` §9.3(1)).
+ * A claimed 'text' slot, represented by ONE field. `ref` is the live Text
+ * node once the slot is materialized, and until then — only possible for a
+ * MARKED slot SSR rendered empty — the slot's anchor Comment, which doubles
+ * as the record of where the Text node must be created. `nodeType`
+ * discriminates the two.
  *
- * Once materialized the node is held by identity forever, exactly as before:
- * effect closures and `mapArray`'s same-key path rely on that.
+ * Claiming a marked text slot therefore never mutates the DOM, which is
+ * what the read door depends on: a seed that only compares must not leave a
+ * trail of empty Text nodes across every row (`spec/slot-unification.md`
+ * §9.3(1)). Markerless slots keep the original eager creation and so always
+ * arrive here already materialized — see `claimMarkerlessText` for why
+ * deferring them would cost more than it saves.
  *
- * The creation site is stored inline (one object, same allocation as the
- * old shape): `after` for a marked slot (insert right behind the anchor
- * comment), `parent` + `index` for a markerless one. The insertion point is
- * re-read from the live DOM at creation time rather than captured at claim
+ * One field rather than a node-plus-site pair because this object is
+ * allocated once per slot per row: on a 1k-row list every extra field is
+ * paid a thousand times over (measured: +77KB/1k rows for a
+ * node+after+parent+index shape). `materializeText` re-reads the insertion
+ * point off the anchor at creation time rather than capturing it at claim
  * time, so a sibling slot's write in between cannot stale it.
+ *
+ * Once materialized the node is held by identity forever, exactly as
+ * before: effect closures and `mapArray`'s same-key path rely on that.
  */
 interface ClaimedTextSlot {
   readonly kind: 'text'
-  /**
-   * The live Text node once materialized — or, while the slot is still
-   * unmaterialized, the anchor Comment to create it after. One field, not a
-   * node/site pair: a claimed text slot is allocated once per slot per row,
-   * so every extra field is paid a thousand times over on a 1k-row list
-   * (measured: +77KB/1k rows for a node+site+parent+index shape).
-   * `nodeType` discriminates, and after the first write it is always a Text.
-   */
+  /** Text node once materialized; the anchor Comment until then. */
   ref: Text | Comment
 }
 
@@ -551,9 +553,10 @@ export function lazySlots(root: Element, plan: ClaimPlan): SlotWriter {
  * (measured: +84KB/1k rows). Loops that need read-compare-write seeding
  * (`spec/slot-unification.md` §9.3(1)) pay for the reader; every other loop
  * keeps the single-closure writer. There is still exactly ONE claim
- * mechanism underneath — both call `claimSlots`, and the first access of
- * either kind resolves the whole plan while the row is pristine (§2's
- * claim-once rule; reads never open a second resolution path).
+ * mechanism underneath — every entry point resolves through `claimRefs`,
+ * and the first access of either kind resolves the whole plan while the row
+ * is pristine (§2's claim-once rule; reads never open a second resolution
+ * path).
  */
 export function lazyClaimSlots(root: Element, plan: ClaimPlan): ClaimedSlotsRW {
   let refs: Map<string, ClaimedSlotRef> | null = null
