@@ -38,6 +38,8 @@ import {
   buildPreambleRegionPlans,
 } from '../shared.ts'
 import { buildLoopReactiveEffectsPlan } from './build-reactive-effects.ts'
+import { buildLazyRowPlan } from './build-lazy-row.ts'
+import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
 import { buildComponentLoopPlan } from './build-component-loop.ts'
 import { buildTopLevelCompositePlan } from './build-composite-loop.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
@@ -54,6 +56,13 @@ export interface BuildLoopPlanOptions {
   unsafeLocalNames: Set<string>
   /** Owning component name when compiling in profile mode (#1690) — else undefined. */
   profileComponentName?: string
+  /**
+   * Component-scope name facts for the lazy row graph gate
+   * (`spec/slot-unification.md` §9.4, `buildLazyRowScopeInfo`). Omitted →
+   * no loop is lazy-eligible, i.e. today's emission everywhere. Optional so
+   * hand-built plan fixtures keep type-checking.
+   */
+  lazyScope?: LazyRowScopeInfo
 }
 
 /**
@@ -68,7 +77,7 @@ export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): L
   // array's per-item conditional still toggles reactively instead of freezing
   // in the SSR-time `forEach` (which has no conditional handling at all).
   if (elem.bodyIsItemConditional) {
-    return buildPlainLoopPlan(elem, opts.profileComponentName)
+    return buildPlainLoopPlan(elem, opts.profileComponentName, opts.lazyScope)
   }
   if (elem.isStaticArray) {
     return buildStaticLoopPlan(elem, opts.unsafeLocalNames, opts.profileComponentName)
@@ -81,11 +90,15 @@ export function buildLoopPlan(elem: TopLevelLoop, opts: BuildLoopPlanOptions): L
   if (elem.childComponent) {
     return buildComponentLoopPlan(elem, opts.profileComponentName)
   }
-  return buildPlainLoopPlan(elem, opts.profileComponentName)
+  return buildPlainLoopPlan(elem, opts.profileComponentName, opts.lazyScope)
 }
 
 /** @internal — prefer `buildLoopPlan`. Exported for the branch-loop wrapper only. */
-export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: string): PlainLoopPlan {
+export function buildPlainLoopPlan(
+  elem: TopLevelLoop,
+  profileComponentName?: string,
+  lazyScope?: LazyRowScopeInfo,
+): PlainLoopPlan {
   const wrap = (expr: string) => wrapLoopParamAsAccessor(expr, elem.param, elem.paramBindings)
   const { head: paramHead, unwrap: paramUnwrap } = destructureLoopParam(elem.param, elem.paramBindings)
   const hasReactive = elem.bindings.reactiveAttrs.length > 0
@@ -126,32 +139,51 @@ export function buildPlainLoopPlan(elem: TopLevelLoop, profileComponentName?: st
     }
   }
 
+  const arrayExpr = buildChainedArrayExpr(elem)
+  const indexParam = elem.index || '__idx'
+  const mapPreambleWrapped = elem.preamble
+    ? renderPreamble(elem.preamble, {
+        transformJs: wrap,
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+      })
+    : ''
+  const preambleRegions = buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings)
+
   return {
     kind: 'plain',
     rowConstruction: 'string-template',
     containerVar: `_${varSlotId(elem.slotId)}`,
     markerId: elem.markerId,
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
-    arrayExpr: buildChainedArrayExpr(elem),
+    arrayExpr,
     keyFn: loopKeyFn(elem),
     paramHead,
     paramUnwrap,
-    indexParam: elem.index || '__idx',
+    indexParam,
+    // Lazy row graph (§9, L3). `null` for every ineligible loop, which then
+    // keeps the eager emission below byte-for-byte.
+    lazyRow: buildLazyRowPlan({
+      loop: elem,
+      arrayExpr,
+      indexParam,
+      paramUnwrap,
+      mapPreambleWrapped,
+      preambleRegionCount: preambleRegions.length,
+      callSite: 'plain',
+      flatMapLeafItem: false,
+      anchored: elem.bodyIsItemConditional ?? false,
+      scope: lazyScope,
+    }) ?? undefined,
     // Stage 3 / D4 — js segments get the loop-param accessor wrap; jsx leaves
     // render as HTML-string templates under this loop's param context so a
     // leaf that reads the item (`r`) becomes `r()`.
-    mapPreambleWrapped: elem.preamble
-      ? renderPreamble(elem.preamble, {
-          transformJs: wrap,
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
-        })
-      : '',
+    mapPreambleWrapped,
     template: elem.template,
     skeletonTemplate: elem.skeletonTemplate,
     skeletonPaths: elem.skeletonPaths,
     reactiveEffects: hasReactive ? buildLoopReactiveEffectsPlan(elem, profileComponentName) : null,
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings),
-    preambleRegions: buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings),
+    preambleRegions,
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,
     anchored: elem.bodyIsItemConditional ?? false,
     // Fall back to the iteration index when the loop has no key. A whole-item

@@ -14,6 +14,7 @@ import type {
 } from '../../types.ts'
 import { addCondAttrToTemplate } from '../../html-template.ts'
 import { buildBranchLoopPlan } from './build-branch-loop.ts'
+import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
 import type {
   InsertPlan,
   InsertArm,
@@ -26,6 +27,12 @@ export interface BuildInsertOptions {
   eventNameMode: 'dom' | 'raw'
   /** Owning component name in profile mode (#1690, SR3) — else undefined. */
   profileComponentName?: string
+  /**
+   * Component-scope name facts for the lazy row graph gate
+   * (`spec/slot-unification.md` §9.4). Threaded down to branch-scoped plain
+   * loops; omitted → those loops keep today's eager emission.
+   */
+  lazyScope?: LazyRowScopeInfo
 }
 
 export function buildInsertPlan(
@@ -88,13 +95,13 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
       expression: t.expression,
     })),
     // Branch-scoped loops, fully Plan-built (Item 2 final migration).
-    loops: branch.loops.map(l => buildBranchLoopPlan(l, pc)),
+    loops: branch.loops.map(l => buildBranchLoopPlan(l, pc, options.lazyScope)),
     // Nested conditionals are themselves InsertPlans — built recursively so
     // the same stringifier handles arbitrary depth. Their scope is always
     // `__branchScope` (the parent arm's bindEvents argument), regardless of
     // the outer scope; only the eventNameMode is inherited.
     conditionals: branch.conditionals.map(c =>
-      buildInsertPlan(c, { scope: { kind: 'branchScope' }, eventNameMode: options.eventNameMode, profileComponentName: pc }),
+      buildInsertPlan(c, { scope: { kind: 'branchScope' }, eventNameMode: options.eventNameMode, profileComponentName: pc, lazyScope: options.lazyScope }),
     ),
   }
 }

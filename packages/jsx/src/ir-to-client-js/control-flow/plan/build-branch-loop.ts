@@ -15,6 +15,8 @@ import { buildChainedArrayExpr, varSlotId, wrapLoopParamAsAccessor } from '../..
 import { buildBranchCompositePlan } from './build-composite-loop.ts'
 import { buildBranchLoopDelegationPlan } from './build-event-delegation.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
+import { buildLazyRowPlan } from './build-lazy-row.ts'
+import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
 import { destructureLoopParam, loopKeyFn, buildChildRefBindings, buildPreambleRegionPlans } from '../shared.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import type {
@@ -23,7 +25,11 @@ import type {
   BranchPlainLoopPlan,
 } from './branch-loop.ts'
 
-export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: string): BranchLoopPlan {
+export function buildBranchLoopPlan(
+  loop: BranchLoop,
+  profileComponentName?: string,
+  lazyScope?: LazyRowScopeInfo,
+): BranchLoopPlan {
   const containerSlotId = loop.containerSlotId
   const cv = varSlotId(containerSlotId)
   const containerVar = `__loop_${cv}`
@@ -45,6 +51,17 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
 
   // flatMap descriptor mode — see buildPlainLoopPlan (build-loop.ts).
   const fm = loop.flatMapClient
+  const arrayExpr = fm
+    ? `(${buildChainedArrayExpr(loop)}).flatMap(${fm.params} => ${fm.body})`
+    : buildChainedArrayExpr(loop)
+  const indexParam = loop.index || '__idx'
+  const mapPreambleWrapped = loop.preamble
+    ? renderPreamble(loop.preamble, {
+        transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+      })
+    : ''
+  const preambleRegions = buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings)
   const plan: BranchPlainLoopPlan = {
     kind: 'plain',
     rowConstruction: 'string-template',
@@ -52,23 +69,29 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
     containerVar,
     markerId: loop.markerId,
     flatMapLeafItem: fm ? true : undefined,
-    arrayExpr: fm
-      ? `(${buildChainedArrayExpr(loop)}).flatMap(${fm.params} => ${fm.body})`
-      : buildChainedArrayExpr(loop),
+    arrayExpr,
     keyFn: fm
       ? (fm.keyed ? '(__bfD, __bfI) => String(__bfD.k ?? __bfI)' : 'null')
       : loopKeyFn(loop),
     paramHead,
     paramUnwrap,
-    indexParam: loop.index || '__idx',
+    indexParam,
     // Wrap loop-param references to signal-accessor form so the preamble
     // matches the template literal's already-wrapped reads (#1065).
-    mapPreambleWrapped: loop.preamble
-      ? renderPreamble(loop.preamble, {
-          transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings),
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
-        })
-      : '',
+    mapPreambleWrapped,
+    // Lazy row graph (§9, L3) — undefined for every ineligible loop.
+    lazyRow: buildLazyRowPlan({
+      loop,
+      arrayExpr,
+      indexParam,
+      paramUnwrap,
+      mapPreambleWrapped,
+      preambleRegionCount: preambleRegions.length,
+      callSite: 'branch-plain',
+      flatMapLeafItem: Boolean(fm),
+      anchored: false,
+      scope: lazyScope,
+    }) ?? undefined,
     template: loop.template,
     reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
@@ -82,7 +105,7 @@ export function buildBranchLoopPlan(loop: BranchLoop, profileComponentName?: str
       : null,
     eventDelegation: buildBranchLoopDelegationPlan(loop, cv, profileComponentName),
     childRefs: buildChildRefBindings(loop.bindings.refs, loop.param, loop.paramBindings),
-    preambleRegions: buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings),
+    preambleRegions,
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${containerSlotId}` : undefined,
   }

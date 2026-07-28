@@ -2638,7 +2638,10 @@ describe('Client JS generation', () => {
       const js = result.files.find(f => f.type === 'clientJs')!.content
       // The branch arm's mapArray call must live inside a
       // createDisposableEffect that is pushed into __disposers.
-      expect(js).toMatch(/__disposers\.push\(createDisposableEffect\(\(\)\s*=>\s*\{[\s\S]*?mapArray\(/)
+      // `mapArray(` or `mapArrayLazy(` — a lazy-row-eligible branch loop
+      // (spec/slot-unification.md §9.4) uses the latter and has exactly the
+      // same disposal obligation.
+      expect(js).toMatch(/__disposers\.push\(createDisposableEffect\(\(\)\s*=>\s*\{[\s\S]*?mapArray(Lazy)?\(/)
     })
 
     test('nested conditional inside a conditional branch is wrapped in createDisposableEffect', () => {

@@ -1,0 +1,496 @@
+/**
+ * BarefootJS Compiler — lazy row graph eligibility + emission
+ * (`spec/slot-unification.md` §9, L3).
+ *
+ * Two layers:
+ *
+ *  1. `lazyRowEligibility` unit tests — the explicit decision function. One
+ *     test per ineligibility reason so a future gate change surfaces as a
+ *     single named failure instead of a generated-JS diff. The eligible case
+ *     is pinned too, so a gate that accidentally refuses EVERYTHING (the
+ *     silent way this feature dies) fails loudly.
+ *  2. Emitted-shape assertions — an eligible loop must emit `mapArrayLazy`
+ *     with the pinned plan shape, and an ineligible loop must keep the eager
+ *     `mapArray` + renderItem emission. Sound-or-loud: exactly two outcomes.
+ */
+
+import { describe, test, expect } from 'bun:test'
+import {
+  classifyLazyBinding,
+  lazyRowEligibility,
+  type LazyRowEligibilityArgs,
+  type LazyRowScopeInfo,
+  type LazyRowShapeFacts,
+} from '../ir-to-client-js/control-flow/plan/lazy-row-eligibility'
+import { compileJSX } from '../compiler'
+import { TestAdapter } from '../adapters/test-adapter'
+
+// --- fixtures ---------------------------------------------------------------
+
+function makeScope(overrides: Partial<LazyRowScopeInfo> = {}): LazyRowScopeInfo {
+  return {
+    // `rows` is a signal whose initializer is a literal (`[]`) — the
+    // canonical §9.3(2)-passing source.
+    signals: new Map([['rows', { initializerFreeIdentifiers: new Set<string>() }]]),
+    memos: new Set<string>(),
+    props: new Set<string>(['_p', 'items']),
+    constants: new Map<string, ReadonlySet<string> | null>(),
+    inert: new Set<string>(['clsx']),
+    profile: false,
+    ...overrides,
+  }
+}
+
+function makeShape(overrides: Partial<LazyRowShapeFacts> = {}): LazyRowShapeFacts {
+  return {
+    callSite: 'plain',
+    flatMapLeafItem: false,
+    anchored: false,
+    bodyIsMultiRoot: false,
+    hasExplicitKey: true,
+    conditionalCount: 0,
+    childRefCount: 0,
+    nestedComponentCount: 0,
+    innerLoopCount: 0,
+    hasChildComponent: false,
+    hasMapPreamble: false,
+    preambleRegionCount: 0,
+    hasParamUnwrap: false,
+    ...overrides,
+  }
+}
+
+function args(overrides: Partial<LazyRowEligibilityArgs> = {}): LazyRowEligibilityArgs {
+  return {
+    shape: makeShape(),
+    bindings: [],
+    arraySourceIdentifiers: new Set(['rows']),
+    scope: makeScope(),
+    ...overrides,
+  }
+}
+
+const itemBinding = (kind: 'attr' | 'text' = 'text') => ({
+  kind,
+  slotId: 's1',
+  readsItem: true,
+  readsOuter: false,
+  reactiveOuterNames: [] as string[],
+  opaqueOuterNames: [] as string[],
+  referencesIndex: false,
+})
+
+// --- eligibility ------------------------------------------------------------
+
+describe('lazyRowEligibility — eligible', () => {
+  test('a keyed, single-root, conditional-free plain row over a literal-seeded signal is eligible', () => {
+    expect(lazyRowEligibility(args())).toEqual({ eligible: true })
+  })
+
+  test('a mixed item+outer attr binding on a primable signal stays eligible', () => {
+    const decision = lazyRowEligibility(args({
+      bindings: [{
+        kind: 'attr',
+        slotId: 's3',
+        readsItem: true,
+        readsOuter: true,
+        reactiveOuterNames: ['selected'],
+        opaqueOuterNames: [],
+        referencesIndex: false,
+      }],
+      scope: makeScope({
+        signals: new Map([
+          ['rows', { initializerFreeIdentifiers: new Set<string>() }],
+          ['selected', { initializerFreeIdentifiers: new Set<string>() }],
+        ]),
+      }),
+    }))
+    expect(decision).toEqual({ eligible: true })
+  })
+
+  test('branch-scoped plain rows are in scope too', () => {
+    expect(lazyRowEligibility(args({ shape: makeShape({ callSite: 'branch-plain' }) })))
+      .toEqual({ eligible: true })
+  })
+})
+
+describe('lazyRowEligibility — shape refusals', () => {
+  const cases: Array<[string, Partial<LazyRowShapeFacts>, RegExp]> = [
+    ['flatMap descriptor loop', { flatMapLeafItem: true }, /flatMap/],
+    ['anchored whole-item conditional', { anchored: true }, /anchored/],
+    ['multi-root row', { bodyIsMultiRoot: true }, /multi-root/],
+    ['index-keyed loop', { hasExplicitKey: false }, /index-keyed/],
+    ['reactive conditional in the row', { conditionalCount: 1 }, /reactive conditional/],
+    ['imperative child ref', { childRefCount: 1 }, /child refs/],
+    ['child-component body', { hasChildComponent: true }, /child component/],
+    ['nested child components', { nestedComponentCount: 1 }, /nested child components/],
+    ['inner loop', { innerLoopCount: 1 }, /inner loop/],
+    ['map-callback preamble', { hasMapPreamble: true }, /preamble/],
+    ['preamble-patched regions', { preambleRegionCount: 1 }, /preamble-patched regions/],
+    ['destructured param without bindings', { hasParamUnwrap: true }, /destructured loop param/],
+  ]
+  for (const [name, shapeOverride, reason] of cases) {
+    test(name, () => {
+      const decision = lazyRowEligibility(args({ shape: makeShape(shapeOverride) }))
+      expect(decision.eligible).toBe(false)
+      expect((decision as { reason: string }).reason).toMatch(reason)
+    })
+  }
+})
+
+describe('lazyRowEligibility — profile mode', () => {
+  test('profile mode is never lazy, even for an otherwise perfect row', () => {
+    const decision = lazyRowEligibility(args({ scope: makeScope({ profile: true }) }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/profile mode/)
+  })
+})
+
+describe('lazyRowEligibility — binding refusals', () => {
+  test('a binding referencing the loop index parameter is refused', () => {
+    const decision = lazyRowEligibility(args({
+      bindings: [{ ...itemBinding(), referencesIndex: true }],
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/index parameter/)
+  })
+
+  test('an unprimable outer dependency (a prop accessor) is refused', () => {
+    const decision = lazyRowEligibility(args({
+      bindings: [{
+        kind: 'attr',
+        slotId: 's3',
+        readsItem: false,
+        readsOuter: true,
+        reactiveOuterNames: [],
+        opaqueOuterNames: ['_p'],
+        referencesIndex: false,
+      }],
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/cannot be primed: _p/)
+  })
+
+  test('an outer-involving TEXT binding is refused (no DOM read-back for content slots)', () => {
+    const decision = lazyRowEligibility(args({
+      bindings: [{
+        kind: 'text',
+        slotId: 's1',
+        readsItem: true,
+        readsOuter: true,
+        reactiveOuterNames: ['selected'],
+        opaqueOuterNames: [],
+        referencesIndex: false,
+      }],
+      scope: makeScope({
+        signals: new Map([
+          ['rows', { initializerFreeIdentifiers: new Set<string>() }],
+          ['selected', { initializerFreeIdentifiers: new Set<string>() }],
+        ]),
+      }),
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/outer-involving text binding/)
+  })
+})
+
+describe('lazyRowEligibility — §9.3(2) loop-source consistency gate', () => {
+  test('absent arrayFreeIdentifiers is refused, never assumed empty', () => {
+    const decision = lazyRowEligibility(args({ arraySourceIdentifiers: null }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/free identifiers unavailable/)
+  })
+
+  test('a prop-derived source passes', () => {
+    expect(lazyRowEligibility(args({ arraySourceIdentifiers: new Set(['items']) })))
+      .toEqual({ eligible: true })
+  })
+
+  test('a signal with NO structured initializer is unprovable → refused', () => {
+    const decision = lazyRowEligibility(args({
+      scope: makeScope({ signals: new Map([['rows', { initializerFreeIdentifiers: null }]]) }),
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/no structured initializer/)
+  })
+
+  test('a signal seeded from a props/literal chain passes transitively', () => {
+    const decision = lazyRowEligibility(args({
+      scope: makeScope({
+        signals: new Map([['rows', { initializerFreeIdentifiers: new Set(['seed']) }]]),
+        constants: new Map<string, ReadonlySet<string> | null>([['seed', new Set(['items'])]]),
+      }),
+    }))
+    expect(decision).toEqual({ eligible: true })
+  })
+
+  test('a signal seeded from an ENVIRONMENT read is refused', () => {
+    const decision = lazyRowEligibility(args({
+      scope: makeScope({
+        signals: new Map([['rows', { initializerFreeIdentifiers: new Set(['localStorage']) }]]),
+      }),
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/localStorage/)
+  })
+
+  test('an imported name in the source is refused', () => {
+    const decision = lazyRowEligibility(args({ arraySourceIdentifiers: new Set(['clsx']) }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/import or local function/)
+  })
+
+  test('a memo source is refused by the v1 gate', () => {
+    const decision = lazyRowEligibility(args({
+      arraySourceIdentifiers: new Set(['sorted']),
+      scope: makeScope({ memos: new Set(['sorted']) }),
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/memo 'sorted'/)
+  })
+
+  test('a constant with no analyzable value is refused', () => {
+    const decision = lazyRowEligibility(args({
+      arraySourceIdentifiers: new Set(['table']),
+      scope: makeScope({ constants: new Map([['table', null]]) }),
+    }))
+    expect(decision.eligible).toBe(false)
+    expect((decision as { reason: string }).reason).toMatch(/no analyzable value/)
+  })
+})
+
+describe('classifyLazyBinding — fail-safe', () => {
+  const scope = makeScope({
+    signals: new Map([
+      ['rows', { initializerFreeIdentifiers: new Set<string>() }],
+      ['selected', { initializerFreeIdentifiers: new Set<string>() }],
+    ]),
+  })
+  const base = { slotId: 's1', rowLocalNames: new Set(['row']), indexParam: '__idx', scope }
+
+  test('unavailable free identifiers force BOTH readsItem and readsOuter, and mark the binding opaque', () => {
+    const c = classifyLazyBinding({ kind: 'attr', free: null, ...base })
+    expect(c.readsItem).toBe(true)
+    expect(c.readsOuter).toBe(true)
+    expect(c.opaqueOuterNames).toEqual(['<unknown>'])
+    // …and the gate therefore refuses, rather than shipping an effect that
+    // could never subscribe.
+    const decision = lazyRowEligibility(args({ bindings: [c], scope }))
+    expect(decision.eligible).toBe(false)
+  })
+
+  test('a pure item read is item-only', () => {
+    const c = classifyLazyBinding({ kind: 'text', free: new Set(['row']), ...base })
+    expect(c).toMatchObject({ readsItem: true, readsOuter: false, reactiveOuterNames: [], opaqueOuterNames: [] })
+  })
+
+  test('a signal read is a primable reactive-outer dependency', () => {
+    const c = classifyLazyBinding({ kind: 'attr', free: new Set(['row', 'selected']), ...base })
+    expect(c).toMatchObject({ readsItem: true, readsOuter: true, reactiveOuterNames: ['selected'], opaqueOuterNames: [] })
+  })
+
+  test('pure globals and literal-derived consts need no subscription and are not outer', () => {
+    const litScope = makeScope({
+      signals: scope.signals,
+      constants: new Map<string, ReadonlySet<string> | null>([['SIZES', new Set<string>()]]),
+    })
+    const c = classifyLazyBinding({
+      kind: 'attr', free: new Set(['row', 'Math', 'SIZES']), ...base, scope: litScope,
+    })
+    expect(c).toMatchObject({ readsItem: true, readsOuter: false, opaqueOuterNames: [] })
+  })
+
+  test('an import, a local function, and a non-literal const are all OPAQUE, not inert', () => {
+    // A reactive accessor hides behind ordinary-looking names — the
+    // `createSelector` const is the canonical case. Guessing "inert" here
+    // would emit an applyOuter effect that never subscribes.
+    const selScope = makeScope({
+      signals: scope.signals,
+      constants: new Map<string, ReadonlySet<string> | null>([['isSelected', new Set(['createSelector', 'selected'])]]),
+      inert: new Set(['clsx']),
+    })
+    const c = classifyLazyBinding({
+      kind: 'attr', free: new Set(['row', 'isSelected', 'clsx']), ...base, scope: selScope,
+    })
+    expect(c.readsOuter).toBe(true)
+    expect(c.opaqueOuterNames.sort()).toEqual(['clsx', 'isSelected'])
+    expect(lazyRowEligibility(args({ bindings: [c], scope: selScope })).eligible).toBe(false)
+  })
+
+  test('the index parameter is flagged, not silently treated as outer', () => {
+    const c = classifyLazyBinding({ kind: 'text', free: new Set(['__idx']), ...base })
+    expect(c.referencesIndex).toBe(true)
+  })
+})
+
+// --- emitted shape ----------------------------------------------------------
+
+function clientJs(source: string, file: string): string {
+  const result = compileJSX(source, file, { adapter: new TestAdapter() })
+  const js = result.files.find(f => f.path.endsWith('.client.js'))
+  if (!js) throw new Error(`no client JS emitted for ${file}`)
+  return js.content
+}
+
+const ELIGIBLE = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string }
+export function LazyRows() {
+  const [rows, setRows] = createSignal<Row[]>([])
+  const [selected, setSelected] = createSignal(0)
+  return (
+    <tbody>
+      {rows().map(row => (
+        <tr key={row.id} className={selected() === row.id ? 'danger' : ''}>
+          <td>{row.id}</td>
+          <td>{row.label}</td>
+        </tr>
+      ))}
+    </tbody>
+  )
+}
+`
+
+describe('lazy row emission — eligible loop', () => {
+  const js = clientJs(ELIGIBLE, 'LazyRows.tsx')
+
+  test('emits mapArrayLazy, not mapArray', () => {
+    expect(js).toContain('mapArrayLazy(')
+    expect(js).not.toMatch(/\bmapArray\(/)
+  })
+
+  test('imports mapArrayLazy from the runtime', () => {
+    expect(js).toMatch(/import \{[^}]*\bmapArrayLazy\b[^}]*\} from '@barefootjs\/client\/runtime'/)
+  })
+
+  test('emits all three plan members with the pinned signatures', () => {
+    expect(js).toContain('createRow: (__e, __idx) => {')
+    expect(js).toContain('applyItem: (__e) => {')
+    expect(js).toContain('applyOuter: (__es, __seed) => {')
+  })
+
+  test('rows carry no per-row reactive resources', () => {
+    const planBody = js.slice(js.indexOf('mapArrayLazy('), js.indexOf("}, 'l0')"))
+    expect(planBody).not.toContain('createEffect')
+    expect(planBody).not.toContain('createRoot')
+    expect(planBody).not.toContain('createSignal')
+  })
+
+  test('createRow writes every binding — item-driven AND outer-involving — and seeds refs/last', () => {
+    const createRow = js.slice(js.indexOf('createRow:'), js.indexOf('applyItem:'))
+    expect(createRow).toContain('__e.refs = [')
+    expect(createRow).toContain('__e.last = []')
+    expect(createRow).toContain("setAttribute('class'")   // outer-involving
+    expect(createRow).toContain("('s0', String(__x))")     // item text
+    expect(createRow).toContain("('s1', String(__x))")     // item text
+  })
+
+  test('applyItem claims refs lazily and dedups against entry.last', () => {
+    const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
+    expect(applyItem).toContain('__e.refs ?? (__e.refs = __lzc_l0(__e))')
+    expect(applyItem).toContain('!Object.is(__l[1], __x)')
+  })
+
+  test('applyOuter primes its outer signal read before the row loop (§9 empty-list subscription)', () => {
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    const primeIdx = applyOuter.indexOf('\n      selected()\n')
+    const loopIdx = applyOuter.indexOf('for (const __e of __es)')
+    expect(primeIdx).toBeGreaterThan(-1)
+    expect(loopIdx).toBeGreaterThan(primeIdx)
+  })
+
+  test('applyOuter seeds by read-compare-write (§9.3(1)), never a blind first write', () => {
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    expect(applyOuter).toContain("__seed ? (__t.getAttribute('class') !== (__x != null ? String(__x) : null))")
+  })
+
+  test('the lazy claim helper scans inside ONE row and is shared by both apply paths', () => {
+    expect(js).toContain('const __lzc_l0 = (__e) => {')
+    expect(js).toContain('const __el = __e.primaryEl')
+  })
+})
+
+describe('lazy row emission — ineligible loops fall back', () => {
+  test('an index-keyed loop keeps the eager mapArray emission', () => {
+    const js = clientJs(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function UnkeyedRows() {
+  const [rows, setRows] = createSignal<string[]>([])
+  return <ul>{rows().map(row => <li>{row}</li>)}</ul>
+}
+`, 'UnkeyedRows.tsx')
+    expect(js).toContain('mapArray(')
+    expect(js).not.toContain('mapArrayLazy(')
+  })
+
+  test('a row with a reactive conditional keeps the eager mapArray emission', () => {
+    const js = clientJs(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; done: boolean }
+export function CondRows() {
+  const [rows, setRows] = createSignal<Row[]>([])
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>{row.done ? <b>{row.label}</b> : <i>{row.label}</i>}</li>
+      ))}
+    </ul>
+  )
+}
+`, 'CondRows.tsx')
+    expect(js).toMatch(/\bmapArray\(/)
+    expect(js).not.toContain('mapArrayLazy(')
+  })
+
+  test('profile mode keeps the eager, per-binding-attributed emission', () => {
+    const result = compileJSX(ELIGIBLE, 'LazyRowsProfiled.tsx', { adapter: new TestAdapter(), profile: true })
+    const js = result.files.find(f => f.path.endsWith('.client.js'))!.content
+    expect(js).not.toContain('mapArrayLazy(')
+    expect(js).toMatch(/\bmapArray\(/)
+  })
+})
+
+/**
+ * Presence-or-undefined attributes are the one kind where SSR and the
+ * client writer legitimately disagree on the VALUE while agreeing on
+ * presence: SSR renders a bare attribute name (`templateAttrExpr`), which
+ * parses to `""`, while `emitAttrUpdate` writes `'true'` for `aria-*`. A
+ * presence-only seed comparison therefore skips a write it must perform.
+ */
+const ELIGIBLE_ARIA = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string }
+export function LazyAriaRows() {
+  const [rows, setRows] = createSignal<Row[]>([])
+  const [selected, setSelected] = createSignal(0)
+  return (
+    <tbody>
+      {rows().map(row => (
+        <tr key={row.id} aria-selected={(selected() === row.id) || undefined}>
+          <td>{row.label}</td>
+        </tr>
+      ))}
+    </tbody>
+  )
+}
+`
+
+describe('lazy row emission — presence-or-undefined seed comparison', () => {
+  const js = clientJs(ELIGIBLE_ARIA, 'LazyAriaRows.tsx')
+
+  test('the loop is eligible (guards the rest of this describe)', () => {
+    expect(js).toContain('mapArrayLazy(')
+  })
+
+  test('seeds an aria-* presence attr by VALUE, not by presence', () => {
+    // SSR renders `aria-selected` bare (value ""), the writer writes
+    // "true" — comparing `hasAttribute` would call those equal and leave
+    // the row at `aria-selected=""` forever.
+    expect(js).toContain(`getAttribute('aria-selected') !== (__x ? 'true' : null)`)
+    expect(js).not.toContain(`hasAttribute('aria-selected')`)
+  })
+})

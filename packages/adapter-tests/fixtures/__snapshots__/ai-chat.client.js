@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, insert, lazySlots, mapArray, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, insert, lazySlots, mapArrayLazy, qsa } from '@barefootjs/client/runtime'
 
 
 export function initAIChatInteractive(__scope, _p = {}) {
@@ -83,19 +83,43 @@ export function initAIChatInteractive(__scope, _p = {}) {
   })
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = `<div data-key="" bf="s1"><div class="chat-bubble"><p><!--bf:s0--><!--/--></p></div></div>`
-  mapArray(() => messages(), _s5, (msg) => String(msg.id), (msg, __idx, __existing) => {
-    const __el = __existing ?? __tpl_l0.content.firstElementChild.cloneNode(true)
-    const __ra_s1 = qsa(__el, '[bf="s1"]')
-    const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])
-    createEffect(() => {
-      if (__ra_s1) {
-        {
-          { const __v = `chat-msg chat-${msg().role}`; if (__v != null) __ra_s1.setAttribute('class', String(__v)); else __ra_s1.removeAttribute('class') }
+  const __lzc_l0 = (__e) => {
+    const __el = __e.primaryEl
+    return [qsa(__el, '[bf="s1"]'), lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+  }
+  mapArrayLazy(() => messages(), _s5, (msg) => String(msg.id), {
+    createRow: (__e, __idx) => {
+      const msg = () => __e.item
+      const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
+      const __r = __e.refs = [qsa(__el, '[bf="s1"]'), lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+      const __l = __e.last = []
+      { const __t = __r[0]
+      if (__t) {
+        const __x = `chat-msg chat-${msg().role}`
+        { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
+        __l[0] = __x
+      } }
+      { const __x = msg().content
+      __r[1]('s0', String(__x))
+      __l[1] = __x }
+      return __el
+    },
+    applyItem: (__e) => {
+      const msg = () => __e.item
+      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __l = __e.last ?? (__e.last = [])
+      { const __t = __r[0]
+      if (__t) {
+        const __x = `chat-msg chat-${msg().role}`
+        if (!(0 in __l) || !Object.is(__l[0], __x)) {
+          { const __v = __x; if (__v != null) __t.setAttribute('class', String(__v)); else __t.removeAttribute('class') }
         }
-      }
-      __bfw_s0('s0', String(msg().content))
-    })
-    return __el
+        __l[0] = __x
+      } }
+      { const __x = msg().content
+      if (!(1 in __l) || !Object.is(__l[1], __x)) __r[1]('s0', String(__x))
+      __l[1] = __x }
+    },
   }, 'l0')
 
 }

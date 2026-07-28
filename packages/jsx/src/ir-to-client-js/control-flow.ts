@@ -25,6 +25,7 @@ import { internalInvariant } from '../errors.ts'
 import { buildInsertPlan } from './control-flow/plan/build-insert.ts'
 import { stringifyInsert } from './control-flow/stringify/insert.ts'
 import { buildLoopPlan } from './control-flow/plan/build-loop.ts'
+import { buildLazyRowScopeInfo } from './control-flow/plan/build-lazy-row.ts'
 import { stringifyLoop } from './control-flow/stringify/loop.ts'
 import {
   buildDynamicLoopDelegationPlan,
@@ -36,7 +37,7 @@ import { stringifyEventDelegation } from './control-flow/stringify/event-delegat
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
   const profileComponentName = ctx.profile ? ctx.componentName : undefined
   for (const elem of ctx.conditionalElements) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom', profileComponentName })
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom', profileComponentName, lazyScope: buildLazyRowScopeInfo(ctx) })
     stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
   }
@@ -46,7 +47,7 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
 export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext): void {
   const profileComponentName = ctx.profile ? ctx.componentName : undefined
   for (const elem of ctx.clientOnlyConditionals) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw', profileComponentName })
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw', profileComponentName, lazyScope: buildLazyRowScopeInfo(ctx) })
     lines.push(`  // @client conditional: ${elem.slotId}`)
     stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
@@ -66,10 +67,14 @@ export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext
  *     event surface, no delegation pass needed
  */
 export function emitLoopUpdates(lines: string[], ctx: ClientJsContext, unsafeLocalNames: Set<string>): void {
+  // Lazy row graph (§9.4) name facts — built once per component, consulted
+  // by every plain loop's eligibility gate.
+  const lazyScope = buildLazyRowScopeInfo(ctx)
   for (const elem of ctx.loopElements) {
     const plan = buildLoopPlan(elem, {
       unsafeLocalNames,
       profileComponentName: ctx.profile ? ctx.componentName : undefined,
+      lazyScope,
     })
     // Stage 3 root cure — a JSX-bearing preamble can only be spliced into a
     // string-templated row (renderPreamble). Every shape that reaches a

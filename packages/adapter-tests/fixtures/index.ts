@@ -143,6 +143,9 @@ import { fixture as sortSimple } from './sort-simple'
 import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
 import { fixture as mapDynamicClass } from './map-dynamic-class'
+// Lazy row graph (spec/slot-unification.md §9) — eligible + refused pair
+import { fixture as lazyRowOuterClass } from './lazy-row-outer-class'
+import { fixture as lazyRowIneligibleFallback } from './lazy-row-ineligible-fallback'
 import { fixture as siblingMaps } from './sibling-maps'
 import { fixture as fragmentLoopChildren } from './fragment-loop-children'
 // Priority 5: Elements and attributes
@@ -515,6 +518,8 @@ export const jsxFixtures: JSXFixture[] = [
   filterSortChain,
   mapNested,
   mapDynamicClass,
+  lazyRowOuterClass,
+  lazyRowIneligibleFallback,
   siblingMaps,
   fragmentLoopChildren,
   // Priority 5: Elements and attributes
