@@ -41,6 +41,14 @@ consolidated `createEffect` per plain loop row (slot unification row
 granularity, `spec/slot-unification.md` §5a), so a compiler change that
 splits or multiplies per-row effects shows up here first.
 
+**This app does NOT exercise the lazy row graph** (§9): its row reads
+`createSelector(selected)`, an opaque local whose call is the reactive
+read, which the §9.4 eligibility gate refuses (§9.5c(2)) — so its rows
+keep the eager per-row emission and its memory column is unaffected by
+that work. The SSR suite below DOES exercise it. Read a flat memory
+number here as "this component shape is still eager", not as "lazy rows
+did nothing".
+
 ### 2. SSR + hydration (`ssr/bench-ssr.ts`)
 
 The same 1,000-row table server-rendered, then hydrated:
