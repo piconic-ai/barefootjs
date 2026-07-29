@@ -37,7 +37,14 @@ export { F }
     const r = compileJSX(src, 'F.tsx', { adapter: new TestAdapter() })
     expect(r.errors).toHaveLength(0)
     const cj = r.files.find(f => f.type === 'clientJs')!.content
-    expect(cj).toMatch(/escapeText\(\(t\)\)/)
+    // Escaped ONCE, by the template emitter reading `contentKind` (absent =
+    // text). This used to read `escapeText((t))`: a pre-pass rewrote the IR
+    // expression to add the wrapper because the emitter left un-slotted
+    // expressions alone. With the emitter deciding from IR that pre-pass was
+    // redundant and is gone, so the inner parens went with it. Exactly one
+    // wrapper is the invariant — two would double-escape.
+    expect(cj).toMatch(/escapeText\(t\)/)
+    expect(cj).not.toContain('escapeText(escapeText(')
     expect(cj).not.toMatch(/__BF_JSX_/)
   })
 
