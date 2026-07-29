@@ -42,10 +42,15 @@ already in the document (see `runtime/hydrate.ts`, whose ordering contract
 exists for exactly this `provideContext` → `useContext` visibility reason).
 
 `mountAt` is an unconditional obligation, since callers previously ran
-`replaceWith` on every outcome: paths that don't consume it — missing or empty
-template, `ComponentDef` mode, and the root-deferred-placeholder shape that
-must stay detached so its self-replacement stays recoverable — still get the
-replacement performed on the way out.
+`replaceWith` on every outcome: paths that don't consume it — a missing or empty
+template, and the root-deferred-placeholder shape that must stay detached so its
+self-replacement stays recoverable — still get the replacement performed on the
+way out.
+
+Both construction modes honour it. `ComponentDef` mode initially did not: that
+branch returned early and ran `def.init` detached, so `createComponent(def, …,
+mountAt)` kept the very bug this fixes. `mountAt` is threaded through it too, so
+the lifecycle does not depend on whether a caller passes a name or a def.
 
 **Still open:** `mapArray` rows are unaffected and continue to init detached —
 `renderItem` returns the element to `mapArray`, so there is no placeholder to
