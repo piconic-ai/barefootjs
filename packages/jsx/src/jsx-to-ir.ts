@@ -1697,6 +1697,35 @@ function isTransparentFragment(
   return false
 }
 
+/**
+ * `IRExpression.contentKind` for one child expression — see that field for why
+ * the default is text (escape) and what may opt out of it.
+ *
+ * Returns `'markup'` only for a `children` passthrough: `{children}`,
+ * `{props.children}`, or `{<propsName>.children}`. That value is the rendered
+ * HTML of a child component, so escaping it would break composition — and it
+ * is the compiler's job to know that, not the user's to annotate.
+ *
+ * AST-shaped rather than a text compare (`expr.name.text`, not
+ * `'.children'`), so `{row.grandchildren}` and a string containing the word
+ * are not mistaken for it. `joinArrayChild` is the other markup source and is
+ * decided by its own later pass, so it is not handled here.
+ */
+function childExpressionContentKind(
+  expr: ts.Expression,
+  ctx: TransformContext,
+): 'markup' | undefined {
+  if (ts.isIdentifier(expr)) {
+    return expr.text === 'children' ? 'markup' : undefined
+  }
+  if (ts.isPropertyAccessExpression(expr) && expr.name.text === 'children') {
+    const objText = expr.expression.getText(ctx.sourceFile)
+    const propsName = ctx.analyzer.propsObjectName
+    if (objText === 'props' || (propsName && objText === propsName)) return 'markup'
+  }
+  return undefined
+}
+
 // #1335: a fragment-wrapped jsx-children prop value lands as
 // `IRFragment{ needsScopeComment: true, children: [IRElement{ needsScope: false }] }`
 // because `transformFragment` runs while `ctx.isRoot` is still true at the
@@ -2017,6 +2046,7 @@ function transformExpressionInner(
   const templateExpr = rewriteBarePropRefs(exprText, expr, ctx)
   return {
     type: 'expression',
+    contentKind: childExpressionContentKind(expr, ctx),
     expr: exprText,
     templateExpr,
     typeInfo: inferExpressionType(expr, ctx),
@@ -2431,6 +2461,7 @@ function transformNullishCoalescing(
   const templateLeftText = rewriteBarePropRefs(leftText, node.left, ctx)
   const whenTrue: IRExpression = {
     type: 'expression',
+    contentKind: childExpressionContentKind(node.left, ctx),
     expr: leftText,
     templateExpr: templateLeftText,
     typeInfo: inferExpressionType(node.left, ctx),
@@ -2711,6 +2742,7 @@ function transformConditionalBranch(
   const slotId = needsSlot ? generateSlotId(ctx) : null
   return {
     type: 'expression',
+    contentKind: childExpressionContentKind(node, ctx),
     expr: exprText,
     templateExpr: rewriteBarePropRefs(exprText, node, ctx),
     typeInfo: inferExpressionType(node, ctx),

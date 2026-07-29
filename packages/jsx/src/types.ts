@@ -381,6 +381,36 @@ export interface IRExpression {
    */
   joinArrayChild?: boolean
   /**
+   * Whether this expression's VALUE is text or markup, decided in Phase 1 so
+   * emitters can branch on IR instead of re-deriving it. Text must be
+   * HTML-escaped when interpolated into a template; markup must not be.
+   *
+   * ABSENT MEANS TEXT — escape. That default is deliberate and is the whole
+   * point of carrying the field: an unclassified node then fails toward a
+   * visibly wrong render (`&lt;b&gt;` on screen) rather than toward HTML
+   * injection. Every SSR backend this project targets already works this way
+   * (Jinja/MiniJinja `autoescape`, Twig `autoescape`, Blade `{{ }}`, Go
+   * `html/template`, Xslate `autoescape`, Mojolicious auto-escape) with an
+   * explicit opt-out for raw output (`| safe`, `| raw`, `{!! !!}`,
+   * `template.HTML(...)`, `| mark_raw`, `Mojo::ByteStream`, Hono's `raw()`),
+   * so this aligns the client emission with the backends rather than
+   * inventing a convention.
+   *
+   * `'markup'` is set only where Phase 1 KNOWS the value is HTML:
+   *   - a `children` passthrough (`{children}` / `{props.children}`) — the
+   *     rendered HTML of a child component. Escaping it breaks composition,
+   *     and it must be classified by the compiler rather than by asking users
+   *     to annotate it.
+   *   - `joinArrayChild` — an array of element strings built by a `.map()`
+   *     preamble (see that field).
+   *
+   * Position is a separate question: `slotId` says WHERE the value goes, this
+   * says WHAT KIND it is. Conflating the two is what let a conditional
+   * branch's text — which owns no `slotId`, because the conditional does —
+   * reach the template unescaped.
+   */
+  contentKind?: 'text' | 'markup'
+  /**
    * True when this expression was classified as a loop's preamble-patched
    * region (#2389 — see `IRLoop.preambleRegions`): its free identifiers
    * intersect the enclosing loop's `preamble.declaredNames`. Excludes the

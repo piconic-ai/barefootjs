@@ -817,6 +817,12 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       const valueExpr = node.joinArrayChild
         ? `Array.isArray(${inner}) ? ${inner}.join('') : (${inner} ?? '')`
         : inner
+      // Escaping is decided by WHAT the value is (`contentKind`, Phase 1), not
+      // by WHERE it goes (`slotId`). Conflating the two is what let a
+      // conditional branch's text reach the template raw: the branch owns no
+      // slot id, so it fell to an un-escaped path. `markup` covers the
+      // children passthrough and preamble-built element arrays.
+      const isMarkup = node.contentKind === 'markup' || node.joinArrayChild === true
       if (node.slotId) {
         // In branch-slot context `wrapInterpolation` routes the value
         // through `__bfSlot`, which returns raw `<!--bf-slot:N-->` markers
@@ -824,10 +830,10 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
         // would corrupt those markers and drop slotted content (#1694
         // regression). `__bfSlot` owns coercion of its own value, so the
         // text-escape applies only to the non-slot (plain text) form.
-        const slotted = branchSlotsVar || node.joinArrayChild ? valueExpr : escapeTextSlotExpr(valueExpr)
+        const slotted = branchSlotsVar || isMarkup ? valueExpr : escapeTextSlotExpr(valueExpr)
         return `<!--bf:${node.slotId}-->\${${slotted}}<!--/-->`
       }
-      return `\${${valueExpr}}`
+      return `\${${isMarkup ? valueExpr : escapeTextSlotExpr(valueExpr)}}`
     }
 
     case 'conditional': {
@@ -1344,10 +1350,16 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       const value = node.joinArrayChild
         ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
         : wrapped
+      // Escaping is decided by WHAT the value is (`contentKind`, Phase 1), not
+      // by WHERE it goes (`slotId`). Conflating the two is what let a
+      // conditional branch's text reach the template raw: the branch owns no
+      // slot id, so it fell to an un-escaped path. `markup` covers the
+      // children passthrough and preamble-built element arrays.
+      const isMarkup = node.contentKind === 'markup' || node.joinArrayChild === true
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
+        return `<!--bf:${node.slotId}-->\${${isMarkup ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      return `\${${value}}`
+      return `\${${isMarkup ? value : escapeTextSlotExpr(wrapped)}}`
     }
 
     case 'conditional': {
@@ -1766,10 +1778,16 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       const value = node.joinArrayChild
         ? `Array.isArray(${wrapped}) ? ${wrapped}.join('') : (${wrapped} ?? '')`
         : wrapped
+      // Escaping is decided by WHAT the value is (`contentKind`, Phase 1), not
+      // by WHERE it goes (`slotId`). Conflating the two is what let a
+      // conditional branch's text reach the template raw: the branch owns no
+      // slot id, so it fell to an un-escaped path. `markup` covers the
+      // children passthrough and preamble-built element arrays.
+      const isMarkup = node.contentKind === 'markup' || node.joinArrayChild === true
       if (node.slotId) {
-        return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
+        return `<!--bf:${node.slotId}-->\${${isMarkup ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      return `\${${value}}`
+      return `\${${isMarkup ? value : escapeTextSlotExpr(wrapped)}}`
     }
 
     case 'conditional': {
@@ -2354,10 +2372,16 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         const value = node.joinArrayChild
           ? `Array.isArray(${expr}) ? ${expr}.join('') : (${expr} ?? '')`
           : expr
+        // Escaping is decided by WHAT the value is (`contentKind`, Phase 1), not
+        // by WHERE it goes (`slotId`). Conflating the two is what let a
+        // conditional branch's text reach the template raw: the branch owns no
+        // slot id, so it fell to an un-escaped path. `markup` covers the
+        // children passthrough and preamble-built element arrays.
+        const isMarkup = node.contentKind === 'markup' || node.joinArrayChild === true
         if (node.slotId) {
-          return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr)}}<!--/-->`
+          return `<!--bf:${node.slotId}-->\${${isMarkup ? value : escapeTextSlotExpr(expr)}}<!--/-->`
         }
-        return `\${${value}}`
+        return `\${${isMarkup ? value : escapeTextSlotExpr(expr)}}`
       }
 
     case 'conditional': {
