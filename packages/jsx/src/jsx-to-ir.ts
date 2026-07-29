@@ -1715,15 +1715,52 @@ function childExpressionContentKind(
   expr: ts.Expression,
   ctx: TransformContext,
 ): 'markup' | undefined {
-  if (ts.isIdentifier(expr)) {
-    return expr.text === 'children' ? 'markup' : undefined
+  return referencesChildrenInValuePosition(expr, ctx) ? 'markup' : undefined
+}
+
+/**
+ * Does a `children` reference reach a VALUE position of this expression?
+ *
+ * `{props.children}` is not the only idiom — `{props.children ?? ''}` is the
+ * common defensive form, and `{show ? props.children : null}` is the common
+ * conditional one. In each, the expression MAY evaluate to the child's rendered
+ * HTML, so the whole expression has to be treated as markup. (The non-children
+ * operand then also goes unescaped: `''` and `null` render as nothing, so there
+ * is nothing to escape.)
+ *
+ * The set of traversed shapes is deliberately CLOSED — parentheses, `??`, `||`,
+ * and a ternary's branches. Anything else falls through to text, which is the
+ * safe direction (a visibly wrong render, never injection). Widen it only with
+ * a shape that provably passes `children` through untransformed: `String(...)`
+ * or a `+` concatenation would stringify the markup, so those are correctly
+ * NOT here.
+ */
+function referencesChildrenInValuePosition(
+  expr: ts.Expression,
+  ctx: TransformContext,
+): boolean {
+  if (ts.isParenthesizedExpression(expr)) {
+    return referencesChildrenInValuePosition(expr.expression, ctx)
   }
+  if (ts.isConditionalExpression(expr)) {
+    return referencesChildrenInValuePosition(expr.whenTrue, ctx)
+      || referencesChildrenInValuePosition(expr.whenFalse, ctx)
+  }
+  if (ts.isBinaryExpression(expr)) {
+    const op = expr.operatorToken.kind
+    if (op === ts.SyntaxKind.QuestionQuestionToken || op === ts.SyntaxKind.BarBarToken) {
+      return referencesChildrenInValuePosition(expr.left, ctx)
+        || referencesChildrenInValuePosition(expr.right, ctx)
+    }
+    return false
+  }
+  if (ts.isIdentifier(expr)) return expr.text === 'children'
   if (ts.isPropertyAccessExpression(expr) && expr.name.text === 'children') {
     const objText = expr.expression.getText(ctx.sourceFile)
     const propsName = ctx.analyzer.propsObjectName
-    if (objText === 'props' || (propsName && objText === propsName)) return 'markup'
+    return objText === 'props' || (propsName != null && objText === propsName)
   }
-  return undefined
+  return false
 }
 
 // #1335: a fragment-wrapped jsx-children prop value lands as
