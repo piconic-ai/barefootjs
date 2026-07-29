@@ -199,6 +199,18 @@ work.
   anchor Comment as the record of where the node must go, deferring creation
   to the first write. Without this, `lazyClaimSlots.read` would leave an
   empty Text node on every row it merely inspected.
+- **A `'text'` slot may still receive a Node.** A child-position
+  interpolation that calls something (`props.renderRow(item)` handed an
+  inline-JSX arrow) can evaluate to a live element, and a Text node cannot
+  host one — `String(node)` destroys it silently. Syntax cannot tell the two
+  apart (`renderChild(...)` and `props.renderRow(...)` are both
+  `CallExpression`), so the decision is made on the VALUE: `textOrNode` passes
+  a Node through, and the claim **promotes** that slot to `'markup'` on the
+  first Node write, reusing the anchor it already resolved (claim-once still
+  holds) plus its matching `<!--/-->`. Strings keep the Text-node fast path.
+  A slot that cannot host a Node — markerless, or missing its end marker —
+  warns and skips rather than stringifying an element.
+
 - **Shape drift**: path claiming makes SSR/CSR shape agreement a harder
   invariant. It is already enforced (conformance byte parity); (d)
   strengthens the enforcement rather than adding an assumption.

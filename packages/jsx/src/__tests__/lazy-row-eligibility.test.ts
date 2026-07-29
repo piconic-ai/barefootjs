@@ -416,8 +416,8 @@ describe('lazy row emission — eligible loop', () => {
     expect(createRow).toContain('__e.refs = [')
     expect(createRow).toContain('__e.last = []')
     expect(createRow).toContain("setAttribute('class'")   // outer-involving
-    expect(createRow).toContain("('s0', String(__x))")     // item text
-    expect(createRow).toContain("('s1', String(__x))")     // item text
+    expect(createRow).toContain("('s0', textOrNode(__x))")     // item text
+    expect(createRow).toContain("('s1', textOrNode(__x))")     // item text
   })
 
   test('applyItem claims refs lazily and dedups against entry.last', () => {
@@ -453,7 +453,7 @@ describe('lazy row emission — eligible loop', () => {
   test('an attr-only-outer loop keeps the write-only lazySlots door and the bare call form', () => {
     expect(js).toContain('lazySlots(')
     expect(js).not.toContain('lazyClaimSlots(')
-    expect(js).toContain("__r[1]('s0', String(__x))")
+    expect(js).toContain("__r[1]('s0', textOrNode(__x))")
     expect(js).not.toContain('.write(')
     expect(js).not.toContain('.read(')
   })
@@ -500,8 +500,8 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
   })
 
   test('every text write goes through the door\'s .write() method', () => {
-    expect(js).toContain(".write('s0', String(__x))")
-    expect(js).toContain(".write('s1', String(__x))")
+    expect(js).toContain(".write('s0', textOrNode(__x))")
+    expect(js).toContain(".write('s1', textOrNode(__x))")
     // The bare call form belongs to the write-only door and must not survive
     // alongside the RW one.
     expect(js).not.toContain("__r[0]('s0'")
@@ -514,9 +514,9 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
     // ONCE and reuses it for the compare and the write, so a value with a
     // side-effecting `toString` is not stringified twice.
     expect(applyOuter).toContain('if (__seed) {')
-    expect(applyOuter).toContain('const __s = String(__x)')
+    expect(applyOuter).toContain('const __s = textOrNode(__x)')
     expect(applyOuter).toContain("if (__r[0].read('s1') !== __s) __r[0].write('s1', __s)")
-    expect(applyOuter).not.toContain("read('s1') !== String(__x)")
+    expect(applyOuter).not.toContain("read('s1') !== textOrNode(__x)")
     // …and falls back to the ordinary entry.last dedup on every later run,
     // where the string is built only when the write actually happens.
     expect(applyOuter).toContain('} else if (!(1 in __l) || !Object.is(__l[1], __x))')
@@ -525,7 +525,7 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
 
   test('the outer text ALSO applies on item change, because it reads the item too', () => {
     const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
-    expect(applyItem).toContain("__r[0].write('s1', String(__x))")
+    expect(applyItem).toContain("__r[0].write('s1', textOrNode(__x))")
   })
 
   test('the item-only text is NOT emitted into applyOuter', () => {

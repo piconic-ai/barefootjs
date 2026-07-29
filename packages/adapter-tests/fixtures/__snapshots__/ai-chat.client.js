@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, insert, lazySlots, mapArrayLazy, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, insert, lazySlots, mapArrayLazy, qsa, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initAIChatInteractive(__scope, _p = {}) {
@@ -100,7 +100,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
         __l[0] = __x
       } }
       { const __x = msg().content
-      __r[1]('s0', String(__x))
+      __r[1]('s0', textOrNode(__x))
       __l[1] = __x }
       return __el
     },
@@ -117,7 +117,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
         __l[0] = __x
       } }
       { const __x = msg().content
-      if (!(1 in __l) || !Object.is(__l[1], __x)) __r[1]('s0', String(__x))
+      if (!(1 in __l) || !Object.is(__l[1], __x)) __r[1]('s0', textOrNode(__x))
       __l[1] = __x }
     },
   }, 'l0')

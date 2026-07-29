@@ -4380,7 +4380,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L190 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4443,7 +4443,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
       const __l = __e.last = []
       { const __x = item()
-      __r[0]('s0', String(__x))
+      __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
       return __el
     },
@@ -4452,7 +4452,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
       const __l = __e.last ?? (__e.last = [])
       { const __x = item()
-      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', String(__x))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
     },
   }, 'l0')
@@ -4513,7 +4513,7 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L168 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4576,7 +4576,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
       const __l = __e.last = []
       { const __x = item()
-      __r[0]('s0', String(__x))
+      __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
       return __el
     },
@@ -4585,7 +4585,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
       const __l = __e.last ?? (__e.last = [])
       { const __x = item()
-      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', String(__x))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
     },
   }, 'l0')
@@ -4597,7 +4597,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/adapters/go-template-adapter.md doc-examples L180 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -4660,7 +4660,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
       const __l = __e.last = []
       { const __x = item().name
-      __r[0]('s0', String(__x))
+      __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
       return __el
     },
@@ -4669,7 +4669,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
       const __l = __e.last ?? (__e.last = [])
       { const __x = item().name
-      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', String(__x))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
     },
   }, 'l0')
@@ -5089,7 +5089,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/compiler-internals.md doc-examples L126 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5152,7 +5152,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
       const __l = __e.last = []
       { const __x = t().name
-      __r[0]('s0', String(__x))
+      __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
       return __el
     },
@@ -5161,7 +5161,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
       const __l = __e.last ?? (__e.last = [])
       { const __x = t().name
-      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', String(__x))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
     },
   }, 'l0')
@@ -5235,7 +5235,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L67 — ✅ Stable key — DOM nodes reused when list changes 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5298,7 +5298,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
       const __l = __e.last = []
       { const __x = item().name
-      __r[0]('s0', String(__x))
+      __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
       return __el
     },
@@ -5307,7 +5307,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
       const __l = __e.last ?? (__e.last = [])
       { const __x = item().name
-      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', String(__x))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
     },
   }, 'l0')
@@ -5319,7 +5319,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/advanced/performance.md doc-examples L70 — ❌ Index key — DOM nodes recreated on reorder 1`] = `
-"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrNode, hydrate, lazySlots, mapArrayLazy, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTodoItem(__scope, _p = {}) {
   if (!__scope) return
@@ -5382,7 +5382,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
       const __l = __e.last = []
       { const __x = item().name
-      __r[0]('s0', String(__x))
+      __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
       return __el
     },
@@ -5391,7 +5391,7 @@ export function initExample(__scope, _p = {}) {
       const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
       const __l = __e.last ?? (__e.last = [])
       { const __x = item().name
-      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', String(__x))
+      if (!(0 in __l) || !Object.is(__l[0], __x)) __r[0]('s0', textOrNode(__x))
       __l[0] = __x }
     },
   }, 'l0')
