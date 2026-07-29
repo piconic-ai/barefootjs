@@ -1701,64 +1701,100 @@ function isTransparentFragment(
  * `IRExpression.contentKind` for one child expression — see that field for why
  * the default is text (escape) and what may opt out of it.
  *
- * Returns `'markup'` only for a `children` passthrough: `{children}`,
- * `{props.children}`, or `{<propsName>.children}`. That value is the rendered
- * HTML of a child component, so escaping it would break composition — and it
- * is the compiler's job to know that, not the user's to annotate.
- *
- * AST-shaped rather than a text compare (`expr.name.text`, not
- * `'.children'`), so `{row.grandchildren}` and a string containing the word
- * are not mistaken for it. `joinArrayChild` is the other markup source and is
+ * Returns `'markup'` when the value flows out of the `children` prop, which is
+ * the rendered HTML of whatever a parent nested inside this component. Escaping
+ * it breaks composition, and it is the compiler's job to know that rather than
+ * the user's to annotate. `joinArrayChild` is the other markup source and is
  * decided by its own later pass, so it is not handled here.
  */
 function childExpressionContentKind(
   expr: ts.Expression,
   ctx: TransformContext,
 ): 'markup' | undefined {
-  return referencesChildrenInValuePosition(expr, ctx) ? 'markup' : undefined
+  return derivedFromChildren(expr, ctx) ? 'markup' : undefined
 }
 
+/** Bound on how many branch-local `const` hops the walk below will follow. */
+const MAX_CHILDREN_CONST_HOPS = 8
+
 /**
- * Does a `children` reference reach a VALUE position of this expression?
+ * Does this expression's value FLOW OUT OF the `children` prop?
  *
- * `{props.children}` is not the only idiom — `{props.children ?? ''}` is the
- * common defensive form, and `{show ? props.children : null}` is the common
- * conditional one. In each, the expression MAY evaluate to the child's rendered
- * HTML, so the whole expression has to be treated as markup. (The non-children
- * operand then also goes unescaped: `''` and `null` render as nothing, so there
- * is nothing to escape.)
+ * Asking "is this expression `children`" is not enough, and the `Slot` /
+ * asChild component is the counterexample that proves it — it forwards a
+ * grandchild through two branch-local consts:
  *
- * The set of traversed shapes is deliberately CLOSED — parentheses, `??`, `||`,
- * and a ternary's branches. Anything else falls through to text, which is the
- * safe direction (a visibly wrong render, never injection). Widen it only with
- * a shape that provably passes `children` through untransformed: `String(...)`
- * or a `+` concatenation would stringify the markup, so those are correctly
- * NOT here.
+ *     const childProps = children.props
+ *     const childChildren = childProps.children
+ *     return <Tag {...childProps}>{childChildren}</Tag>
+ *
+ * so the classifier is handed `childProps.children` (one AST hop is already
+ * substituted for it by `transformExpressionInner`'s Identifier case via
+ * `_branchScopeVars`) and the object is a local name, not `props`. Matching
+ * only the direct forms escaped that markup into `&lt;div&gt;` on screen.
+ *
+ * The walk therefore follows VALUE FLOW:
+ *
+ *   - `children`                → yes (the destructured prop itself)
+ *   - `children.props`          → yes (keep walking the object)
+ *   - `childProps`              → yes (branch-local const → `children.props`)
+ *   - `childProps.children`     → yes — the shape that was broken
+ *   - `props.children`          → yes (the direct form)
+ *   - `props.className`         → NO: `props` is not derived from children
+ *   - `row.label`               → NO
+ *
+ * Const resolution reads `ctx._branchScopeVars`, the branch-local name →
+ * initializer-NODE map `buildIfStatementChain` installs while transforming one
+ * conditional-return branch. Component-body top-level consts live in a
+ * different table (`analyzer.localConstants`) that stores TEXT rather than
+ * nodes; a chain through those is not followed, which keeps this to the safe
+ * side (text, escaped) instead of guessing from a string.
+ *
+ * Deliberately unhandled, and safe because of the default: `String(children)`
+ * and `'x' + children` stringify the markup, so their result really is text.
+ * Known over-reach: `{children.length}` is called markup by the object walk.
+ * It is a number, so not escaping it renders identically — accepted rather
+ * than special-cased, since narrowing it would mean type analysis here.
  */
-function referencesChildrenInValuePosition(
+function derivedFromChildren(
   expr: ts.Expression,
   ctx: TransformContext,
+  hops = 0,
 ): boolean {
   if (ts.isParenthesizedExpression(expr)) {
-    return referencesChildrenInValuePosition(expr.expression, ctx)
+    return derivedFromChildren(expr.expression, ctx, hops)
   }
   if (ts.isConditionalExpression(expr)) {
-    return referencesChildrenInValuePosition(expr.whenTrue, ctx)
-      || referencesChildrenInValuePosition(expr.whenFalse, ctx)
+    return derivedFromChildren(expr.whenTrue, ctx, hops)
+      || derivedFromChildren(expr.whenFalse, ctx, hops)
   }
   if (ts.isBinaryExpression(expr)) {
+    // Only the pass-through operators: `children ?? ''` and
+    // `children || fallback` may still evaluate to the markup. `+` cannot.
     const op = expr.operatorToken.kind
     if (op === ts.SyntaxKind.QuestionQuestionToken || op === ts.SyntaxKind.BarBarToken) {
-      return referencesChildrenInValuePosition(expr.left, ctx)
-        || referencesChildrenInValuePosition(expr.right, ctx)
+      return derivedFromChildren(expr.left, ctx, hops)
+        || derivedFromChildren(expr.right, ctx, hops)
     }
     return false
   }
-  if (ts.isIdentifier(expr)) return expr.text === 'children'
-  if (ts.isPropertyAccessExpression(expr) && expr.name.text === 'children') {
-    const objText = expr.expression.getText(ctx.sourceFile)
-    const propsName = ctx.analyzer.propsObjectName
-    return objText === 'props' || (propsName != null && objText === propsName)
+  if (ts.isIdentifier(expr)) {
+    if (expr.text === 'children') return true
+    if (hops >= MAX_CHILDREN_CONST_HOPS) return false
+    const init = ctx._branchScopeVars?.get(expr.text)
+    return init ? derivedFromChildren(init, ctx, hops + 1) : false
+  }
+  if (ts.isPropertyAccessExpression(expr)) {
+    if (expr.name.text === 'children') {
+      const objText = expr.expression.getText(ctx.sourceFile)
+      const propsName = ctx.analyzer.propsObjectName
+      if (objText === 'props' || (propsName != null && objText === propsName)) return true
+    }
+    return derivedFromChildren(expr.expression, ctx, hops)
+  }
+  if (ts.isElementAccessExpression(expr)) {
+    // `children[0]` is one of the forwarded nodes.
+    return derivedFromChildren(expr.expression, ctx, hops)
   }
   return false
 }

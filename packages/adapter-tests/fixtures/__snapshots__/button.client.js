@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, escapeAttr, escapeText, forwardProps, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, escapeAttr, forwardProps, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 
 var isValidElement = isValidElement ?? function(element) {
   return !!(element && typeof element === 'object' && 'tag' in element && 'props' in element)
@@ -26,7 +26,7 @@ export function initSlot(__scope, _p = {}) {
   initChild('Tag', _s0, forwardProps(_p, { get className() { return ([className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
 }
 
-hydrate('Slot', { init: initSlot, template: (_p) => `${_p.children && isValidElement(_p.children) ? `${renderChild('Tag', {className: ([_p.className, (((_p.children.props).className) || '')].filter(Boolean).join(' ')), children: `${escapeText((_p.children.props).children)}`}, undefined, 's0')}` : `${_p.children}`}` })
+hydrate('Slot', { init: initSlot, template: (_p) => `${_p.children && isValidElement(_p.children) ? `${renderChild('Tag', {className: ([_p.className, (((_p.children.props).className) || '')].filter(Boolean).join(' ')), children: `${(_p.children.props).children}`}, undefined, 's0')}` : `${_p.children}`}` })
 export function Slot(_p, __bfKey) { return createComponent('Slot', _p, __bfKey) }
 export function initButton(__scope, _p = {}) {
   if (!__scope) return
