@@ -827,12 +827,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
         const slotted = branchSlotsVar || node.joinArrayChild ? valueExpr : escapeTextSlotExpr(valueExpr)
         return `<!--bf:${node.slotId}-->\${${slotted}}<!--/-->`
       }
-      // A text child with NO slotId — a conditional BRANCH's inner text is
-      // the reachable case, since the conditional owns the slot id, not the
-      // expression. This template becomes markup (`innerHTML` / `parseHTML`),
-      // so it needs the SAME escaping decision as the slotted form above; a
-      // raw interpolation here turned `A&<b>` into a real element.
-      return `\${${branchSlotsVar || node.joinArrayChild ? valueExpr : escapeTextSlotExpr(valueExpr)}}`
+      return `\${${valueExpr}}`
     }
 
     case 'conditional': {
@@ -1352,12 +1347,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Set<stri
       if (node.slotId) {
         return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      // A text child with NO slotId — a conditional BRANCH's inner text is
-      // the reachable case, since the conditional owns the slot id, not the
-      // expression. This template becomes markup (`innerHTML` / `parseHTML`),
-      // so it needs the SAME escaping decision as the slotted form above; a
-      // raw interpolation here turned `A&<b>` into a real element.
-      return `\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}`
+      return `\${${value}}`
     }
 
     case 'conditional': {
@@ -1779,12 +1769,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       if (node.slotId) {
         return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}<!--/-->`
       }
-      // A text child with NO slotId — a conditional BRANCH's inner text is
-      // the reachable case, since the conditional owns the slot id, not the
-      // expression. This template becomes markup (`innerHTML` / `parseHTML`),
-      // so it needs the SAME escaping decision as the slotted form above; a
-      // raw interpolation here turned `A&<b>` into a real element.
-      return `\${${node.joinArrayChild ? value : escapeTextSlotExpr(wrapped)}}`
+      return `\${${value}}`
     }
 
     case 'conditional': {
@@ -2372,12 +2357,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         if (node.slotId) {
           return `<!--bf:${node.slotId}-->\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr)}}<!--/-->`
         }
-        // A text child with NO slotId — a conditional BRANCH's inner text is
-        // the reachable case, since the conditional owns the slot id, not the
-        // expression. This template becomes markup (`innerHTML` / `parseHTML`),
-        // so it needs the SAME escaping decision as the slotted form above; a
-        // raw interpolation here turned `A&<b>` into a real element.
-        return `\${${node.joinArrayChild ? value : escapeTextSlotExpr(expr)}}`
+        return `\${${value}}`
       }
 
     case 'conditional': {
