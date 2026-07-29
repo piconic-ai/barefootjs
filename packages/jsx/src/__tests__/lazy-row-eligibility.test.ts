@@ -155,7 +155,7 @@ describe('lazyRowEligibility — binding refusals', () => {
     expect((decision as { reason: string }).reason).toMatch(/index parameter/)
   })
 
-  // §9.5c(2), LIFTED: an outer name the emitter cannot prime no longer sinks
+  // §9.3a, LIFTED: an outer name the emitter cannot prime no longer sinks
   // the loop. The runtime's unconditional re-subscribe seam keeps
   // the loop-level effect subscribed across reconciles, which is the
   // obligation priming used to carry. Inverted from the refusal it replaces
@@ -175,7 +175,7 @@ describe('lazyRowEligibility — binding refusals', () => {
     expect(decision).toEqual({ eligible: true })
   })
 
-  // §9.5c(1), LIFTED: content slots now have a DOM read-back
+  // §9.5, LIFTED: content slots now have a DOM read-back
   // (`lazyClaimSlots(...).read(id)`), so an outer-involving text binding no
   // longer sinks the loop. This test is the inverse of the refusal it
   // replaces — if the gate ever starts refusing again, it fails here rather
@@ -202,8 +202,8 @@ describe('lazyRowEligibility — binding refusals', () => {
   })
 
   test('an OPAQUE outer name on a TEXT binding is eligible too (seam + read door)', () => {
-    // Both former limits at once: an opaque outer read (§9.5c(2), covered by
-    // the seam) on a content slot (§9.5c(1), covered by the read door).
+    // Both former limits at once: an opaque outer read (§9.3a, covered by
+    // the seam) on a content slot (§9.5, covered by the read door).
     const decision = lazyRowEligibility(args({
       bindings: [{
         kind: 'text',
@@ -298,7 +298,7 @@ describe('classifyLazyBinding — fail-safe', () => {
     expect(c.readsItem).toBe(true)
     expect(c.readsOuter).toBe(true)
     expect(c.opaqueOuterNames).toEqual(['<unknown>'])
-    // …and the gate STILL refuses, even though §9.5c(2) lifted the refusal
+    // …and the gate STILL refuses, even though §9.3a lifted the refusal
     // for opaque NAMES. A name means the identifier set is known and only
     // its primability is not — the seam handles that. This means the set
     // itself is unknown, so `referencesIndex: false` above is an assumption
@@ -344,7 +344,7 @@ describe('classifyLazyBinding — fail-safe', () => {
     })
     expect(c.readsOuter).toBe(true)
     expect(c.opaqueOuterNames.sort()).toEqual(['clsx', 'isSelected'])
-    // Opaque NAMES no longer refuse the loop (§9.5c(2) lifted) — the
+    // Opaque NAMES no longer refuse the loop (§9.3a lifted) — the
     // identifier set is known here, so only primability was missing and the
     // runtime seam supplies that unconditionally. They still land in
     // `opaqueOuterNames` so a refusal elsewhere can name them precisely.
@@ -460,7 +460,7 @@ describe('lazy row emission — eligible loop', () => {
 })
 
 /**
- * §9.5c(1) lifted: an outer-involving TEXT binding. The row renders an
+ * §9.5 lifted: an outer-involving TEXT binding. The row renders an
  * item-driven text alongside a text that depends on a component signal, so
  * the loop needs the READ-capable claim door to seed the second one by
  * read-compare-write instead of writing blindly at hydration.
@@ -485,7 +485,7 @@ export function LazyOuterTextRows() {
 }
 `
 
-describe('lazy row emission — outer-involving TEXT binding (§9.5c(1) lifted)', () => {
+describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', () => {
   const js = clientJs(ELIGIBLE_OUTER_TEXT, 'LazyOuterTextRows.tsx')
 
   test('the loop is eligible — it is no longer refused for having an outer text', () => {

@@ -2,7 +2,7 @@ import { createFixture } from '../src/types'
 
 /**
  * Lazy row graph (`spec/slot-unification.md` §9) — an eligible row whose
- * CONTENT slot is outer-involving (§9.5c(1), lifted).
+ * CONTENT slot is outer-involving (§9.5, lifted).
  *
  * The sibling `lazy-row-outer-class` covers the attribute half: an
  * outer-involving `className` seeds against `getAttribute`. This fixture
@@ -26,7 +26,7 @@ import { createFixture } from '../src/types'
  */
 export const fixture = createFixture({
   id: 'lazy-row-outer-text',
-  description: 'Keyed plain loop whose row text reads an outer signal (lazy row graph, §9.5c(1) lifted)',
+  description: 'Keyed plain loop whose row text reads an outer signal (lazy row graph, §9.5 lifted)',
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'

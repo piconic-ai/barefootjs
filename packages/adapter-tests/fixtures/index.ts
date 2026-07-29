@@ -144,7 +144,7 @@ import { fixture as filterSortChain } from './filter-sort-chain'
 import { fixture as mapNested } from './map-nested'
 import { fixture as mapDynamicClass } from './map-dynamic-class'
 // Lazy row graph (spec/slot-unification.md §9) — eligible attr, eligible
-// outer TEXT (§9.5c(1) lifted), and refused
+// outer TEXT (§9.5 lifted), and refused
 import { fixture as lazyRowOuterClass } from './lazy-row-outer-class'
 import { fixture as lazyRowOuterText } from './lazy-row-outer-text'
 import { fixture as lazyRowIneligibleFallback } from './lazy-row-ineligible-fallback'

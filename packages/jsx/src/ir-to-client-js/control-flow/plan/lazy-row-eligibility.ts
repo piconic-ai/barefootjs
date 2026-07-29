@@ -41,7 +41,7 @@
  *     the `inert` set names them only so the refusal can say which one.
  *     Genuinely ignorable are the names that cannot carry a reactive read
  *     at all: literal-derived local / module constants and pure globals.
- *  4. **Outer-involving TEXT bindings are ACCEPTED** (§9.5c(1), lifted).
+ *  4. **Outer-involving TEXT bindings are ACCEPTED** (§9.5, lifted).
  *     §9.3(1) requires read-compare-write seeding on `applyOuter`'s first
  *     run: compute the value, READ the current DOM, write only on
  *     difference. For an attribute that read is `getAttribute` / a DOM
@@ -260,7 +260,7 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
     // loop-level effect must subscribe on its FIRST run, and with an empty
     // entry list the per-entry reads never execute, so it would subscribe to
     // nothing and go permanently dead. The runtime's re-subscribe seam
-    // in `mapArrayLazy` removes that obligation from the compiler (§9.5c(2)):
+    // in `mapArrayLazy` removes that obligation from the compiler (§9.3a):
     // every loop-level outer effect re-runs after a reconcile that created a
     // row or changed an item, so its subscription set is rebuilt against the
     // current entries no matter what the reads turn out to be. Nothing to
