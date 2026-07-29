@@ -836,9 +836,20 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       }
     }
 
-    // Expression node: wrap in braces for valid JSX
+    // Expression node: wrap in braces for valid JSX. A bare-expression
+    // branch that reads the loop item (`refsLoopParam`) is allocated its
+    // OWN slotId (loop-branch-stale-text fix) so a per-item update effect
+    // can claim and rewrite it without the outer conditional re-evaluating
+    // (#1250 phase 3 marker conformance). That inner slot needs its own
+    // `bfText`/`bfTextEnd` marker pair nested INSIDE the outer cond-start/
+    // cond-end pair — matching erb (`bf.text_start`/`bf.text_end`), jinja,
+    // go-template (`bfTextStart`/`bfTextEnd`), and mojolicious byte-for-byte
+    // in marker structure. A branch with no slotId (e.g. a plain string
+    // literal — see conditional-wrapping-loop.ts) must gain no inner marker.
     if (node.type === 'expression') {
-      return `<>{bfComment("cond-start:${condId}")}{${content}}{bfComment("cond-end:${condId}")}</>`
+      const exprSlotId = (node as IRExpression).slotId
+      const inner = exprSlotId ? `{bfText("${exprSlotId}")}{${content}}{bfTextEnd()}` : `{${content}}`
+      return `<>{bfComment("cond-start:${condId}")}${inner}{bfComment("cond-end:${condId}")}</>`
     }
 
     // Text node or other: output as text
