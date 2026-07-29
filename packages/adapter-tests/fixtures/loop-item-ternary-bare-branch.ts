@@ -38,6 +38,9 @@ export function LoopItemTernaryBareBranch() {
 }
 `,
   expectedHtml: `
-    <ul bf-s="test" bf="s2"><li data-key="write"><!--bf-cond-start:s0--><!--bf:s1-->Write it<!--/--><!--bf-cond-end:s0--></li><li data-key="review"><!--bf-cond-start:s0-->pending<!--bf-cond-end:s0--></li></ul>
+    <ul bf-s="test" bf="s2">
+      <li data-key="write"><!--bf-cond-start:s0-->Write it<!--bf-cond-end:s0--></li>
+      <li data-key="review"><!--bf-cond-start:s0-->pending<!--bf-cond-end:s0--></li>
+    </ul>
   `,
 })
