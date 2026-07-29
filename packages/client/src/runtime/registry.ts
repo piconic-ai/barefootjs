@@ -158,9 +158,11 @@ export function upsertChild(
     : parent.querySelector(`[${BF_PLACEHOLDER}="${phId}"]`)) as HTMLElement | null
   if (ph) {
     const slot = slotId ? buildSlotInfo(parent, slotId, anchorScope) : undefined
-    const comp = createComponent(name, props, key, slot)
-    ph.replaceWith(comp)
-    return comp
+    // Hand the placeholder to `createComponent` so the new element is
+    // connected before its init runs — `useContext` resolves by DOM
+    // position, and a detached init silently fell back to the global
+    // context store.
+    return createComponent(name, props, key, slot, ph)
   }
   return null
 }
