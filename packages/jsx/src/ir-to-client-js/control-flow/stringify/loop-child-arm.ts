@@ -97,6 +97,11 @@ export function stringifyBranchEventBindings(
  * SSR side: element has `bf-s` → qsa() finds it, initChild wires events.
  * CSR side: element is a `data-bf-ph` placeholder → createComponent
  * replaces it, then initChild runs against the new element.
+ *
+ * The placeholder is passed to `createComponent` as its `mountAt`
+ * argument so the component's own init runs connected — context resolves
+ * by DOM position, and a detached init falls back to the global,
+ * last-writer-wins context store.
  */
 export function stringifyBranchChildComponentInits(
   lines: string[],
@@ -104,7 +109,7 @@ export function stringifyBranchChildComponentInits(
   indent: string,
 ): void {
   for (const init of plan) {
-    lines.push(`${indent}{ let __c = qsa(__branchScope, ${init.selector}); if (!__c) { const __ph = __branchScope.querySelector('[${DATA_BF_PH}="${init.placeholderId}"]'); if (__ph) { __c = createComponent('${nameForRegistryRef(init.name)}', ${init.propsExpr}); __ph.replaceWith(__c) } } if (__c) initChild('${nameForRegistryRef(init.name)}', __c, ${init.propsExpr}) }`)
+    lines.push(`${indent}{ let __c = qsa(__branchScope, ${init.selector}); if (!__c) { const __ph = __branchScope.querySelector('[${DATA_BF_PH}="${init.placeholderId}"]'); if (__ph) { __c = createComponent('${nameForRegistryRef(init.name)}', ${init.propsExpr}, undefined, undefined, __ph) } } if (__c) initChild('${nameForRegistryRef(init.name)}', __c, ${init.propsExpr}) }`)
   }
 }
 

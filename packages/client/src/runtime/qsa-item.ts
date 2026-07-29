@@ -120,9 +120,8 @@ export function upsertChildItem(
   const ph = qsaItem(primaryEl, `[data-bf-ph="${phId}"]`) as HTMLElement | null
   if (ph) {
     const slot = slotId ? buildSlotInfo(primaryEl, slotId, anchorScope) : undefined
-    const comp = createComponent(name, props, key, slot)
-    ph.replaceWith(comp)
-    return comp
+    // Connect before init — see the same call in `upsertChild`.
+    return createComponent(name, props, key, slot, ph)
   }
   return null
 }

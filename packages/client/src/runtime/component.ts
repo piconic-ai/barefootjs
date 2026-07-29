@@ -38,6 +38,10 @@ export function setParentScopeId(id: string | null): void {
  * @param name - Component name (e.g., 'TodoItem')
  * @param props - Props to pass to the component
  * @param key - Optional key for list reconciliation
+ * @param slot - Slot-relationship markers stamped as `bf-h` / `bf-m`
+ * @param mountAt - Placeholder this component replaces. When given, the
+ *   element is connected to the document *before* `init` runs — see
+ *   "Connect before init" below.
  * @returns Created DOM element
  *
  * @example
@@ -68,6 +72,37 @@ export function createComponent(
   props: Record<string, unknown> = {},
   key?: string | number,
   slot?: CreateComponentSlotInfo,
+  mountAt?: Element | null,
+): HTMLElement {
+  const element = materializeComponent(nameOrDef, props, key, slot, mountAt)
+  // `mountAt` is an unconditional obligation: callers used to run
+  // `ph.replaceWith(comp)` themselves on every outcome, so every path that
+  // did NOT consume the placeholder still owes the replacement — a missing or
+  // empty template (either mode), and the root-deferred-placeholder shape,
+  // which must stay detached so its self-replacement stays recoverable.
+  // `parentNode` (not `isConnected`) is the right "still unconsumed" probe: it
+  // survives a `mountAt` that was itself detached, which is the normal case
+  // during multi-root loop-body setup.
+  if (mountAt && mountAt.parentNode && element !== mountAt) {
+    mountAt.replaceWith(element)
+  }
+  return element
+}
+
+/**
+ * Build the element, connect it at `mountAt` when there is one, and run
+ * `init` — in that order, which is the whole point (see step 7b).
+ *
+ * Named "materialize" rather than anything with "unmounted" in it because it
+ * DOES mount: the connect has to happen inside, before `init`, and only the
+ * paths that cannot consume the placeholder leave that to `createComponent`.
+ */
+function materializeComponent(
+  nameOrDef: string | ComponentDef,
+  props: Record<string, unknown> = {},
+  key?: string | number,
+  slot?: CreateComponentSlotInfo,
+  mountAt?: Element | null,
 ): HTMLElement {
   // A bare callable shim invoked from user code (e.g. an object-literal
   // value `LOGOS[id]()` whose arrow the compiler hoisted into a component)
@@ -76,7 +111,7 @@ export function createComponent(
   if (props == null) props = {}
   // ComponentDef mode: use def directly instead of registry lookup
   if (typeof nameOrDef !== 'string') {
-    return createComponentFromDef(nameOrDef, props, key)
+    return createComponentFromDef(nameOrDef, props, key, mountAt)
   }
 
   const name = nameOrDef
@@ -173,6 +208,29 @@ export function createComponent(
     element.setAttribute(BF_KEY, String(key))
   }
 
+  // 7b. Connect before init.
+  //
+  // `initFn` resolves context by DOM position (`useContext` walks
+  // `parentElement` from the current scope) and may measure layout. Both
+  // need this element to be in the document, so when the caller told us
+  // which placeholder we replace, do the replacement NOW rather than
+  // after init. Running init detached made `useContext` fall through to
+  // the global, last-writer-wins context store, so a child materialised
+  // after a sibling provider had run picked up the wrong provider's
+  // value. This aligns the CSR path with the SSR one, where the
+  // doc-order walker only ever inits elements already in the document
+  // (`hydrate.ts`).
+  //
+  // A root-level deferred placeholder is excluded: its init replaces
+  // `element` itself, which the block below recovers via a throwaway
+  // wrapper. Connecting first would make that replacement happen in the
+  // live DOM with no handle on the result, so this shape keeps the
+  // detached behaviour.
+  const rootIsDeferredPlaceholder = element.hasAttribute(BF_PLACEHOLDER)
+  if (mountAt && !rootIsDeferredPlaceholder) {
+    mountAt.replaceWith(element)
+  }
+
   // 8. Set currentScope so provideContext/useContext are element-scoped.
   // This allows context providers in initFn to store context on this element.
   const prevScope = setCurrentScope(element)
@@ -184,7 +242,6 @@ export function createComponent(
   // `replaceWith` — but a detached root node can't replace itself in
   // place. Park it in a throwaway wrapper so the replacement lands
   // somewhere we can recover, then return the materialised child.
-  const rootIsDeferredPlaceholder = element.hasAttribute(BF_PLACEHOLDER)
   let placeholderWrapper: HTMLElement | null = null
   if (rootIsDeferredPlaceholder) {
     placeholderWrapper = parseHTML('<div></div>').firstChild as HTMLElement
@@ -532,7 +589,8 @@ function insertGetterChildren(element: HTMLElement, children: unknown): void {
 function createComponentFromDef(
   def: ComponentDef,
   props: Record<string, unknown>,
-  key?: string | number
+  key?: string | number,
+  mountAt?: Element | null,
 ): HTMLElement {
   if (!def.template) {
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
@@ -558,6 +616,14 @@ function createComponentFromDef(
   element.setAttribute(BF_SCOPE, scopeId)
   if (key !== undefined) {
     element.setAttribute(BF_KEY, String(key))
+  }
+
+  // Connect before init, for the same reason the registry path does (see
+  // `materializeComponent` step 7b): `def.init` may resolve context by DOM
+  // position or measure layout, and neither works detached. Keeps `mountAt`
+  // one contract across both modes instead of a registry-only guarantee.
+  if (mountAt) {
+    mountAt.replaceWith(element)
   }
 
   // Initialize
