@@ -49,7 +49,7 @@
  *    (`emit-reactive.ts`); any kind this module does not recognise falls back
  *    to `true` (always write on seed), which is conservative, never wrong.
  *    CONTENT slots seed the same way through the claim's `read(id)` door
- *    (§9.5c(1), lifted) — see `refParts` for the per-loop door choice.
+ *    (§9.5, lifted) — see `refParts` for the per-loop door choice.
  *
  * A loop with NO outer binding emits no `applyOuter` at all — its rows do
  * literally nothing at hydration.
