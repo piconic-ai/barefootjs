@@ -3806,11 +3806,11 @@ hydrate('DataTableSelectionDemo', { init: initDataTableSelectionDemo, template: 
   { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
   { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
   { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map(() => false)).filter(Boolean).length))}<!--/--> of ${([
+]).map(() => false)).filter(Boolean).length))}<!--/--> of ${escapeText(([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
   { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
   { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
   { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).length} row(s) selected. </div></div>` })
+]).length)} row(s) selected. </div></div>` })
 export function DataTableSelectionDemo(_p, __bfKey) { return createComponent('DataTableSelectionDemo', _p, __bfKey) }

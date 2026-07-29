@@ -29,7 +29,7 @@ export function initTagCloud(__scope, _p = {}) {
           if (item.tags.length === 0) return []
           const prefix = item.label + ' — '
           return item.tags.map(tag => (
-            ({ k: (`${item.id}:${tag}`), h: `<li ${(tag) != null ? 'data-tag="' + escapeAttr(tag) + '"' : ''}>${escapeText((prefix))}${escapeText((tag))}</li>` })
+            ({ k: (`${item.id}:${tag}`), h: `<li ${(tag) != null ? 'data-tag="' + escapeAttr(tag) + '"' : ''}>${escapeText(prefix)}${escapeText(tag)}</li>` })
           ))
         }), _s3, (__bfD, __bfI) => String(__bfD.k ?? __bfI), (__bfD, __idx, __existing) => {
     let __el = __existing
@@ -49,7 +49,7 @@ hydrate('TagCloud', { init: initTagCloud, template: (_p) => `<div class="tag-clo
           if (item.tags.length === 0) return []
           const prefix = item.label + ' — '
           return item.tags.map(tag => (
-            `<li ${(tag) != null ? 'data-tag="' + escapeAttr(tag) + '"' : ''}>${escapeText((prefix))}${escapeText((tag))}</li>`
+            `<li ${(tag) != null ? 'data-tag="' + escapeAttr(tag) + '"' : ''}>${escapeText(prefix)}${escapeText(tag)}</li>`
           ))
         }).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function TagCloud(_p, __bfKey) { return createComponent('TagCloud', _p, __bfKey) }
