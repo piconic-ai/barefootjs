@@ -20,7 +20,10 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   // `lazyClaimSlots` is the read-capable twin of `lazySlots` over the same
   // claim — emitted only by lazy loops that seed an outer-involving TEXT
   // binding by read-compare-write (§9.3(1)).
-  'claimSlots', 'lazySlots', 'lazyClaimSlots',
+  // `textOrNode` is the 'text' door's Node guard: a child-position value that
+  // turns out to be a live Node must reach the writer as a Node so the claim
+  // can promote to 'markup', never as `String(node)`.
+  'claimSlots', 'lazySlots', 'lazyClaimSlots', 'textOrNode',
   // Profile mode (#1690, SR3) — turn-boundary markers around event handlers.
   'beginTurn', 'endTurn',
   // Catalogued `Date` lowering (#2274/#2292) — the client counterpart to

@@ -294,13 +294,27 @@ function emitAttrBinding(
  * handling is needed or wanted here.
  *
  * The `'outer'` mode emits a real `if`/`else if` rather than one ternary
- * guard so the seed branch can bind `String(__x)` ONCE and use it for both
- * the comparison and the write. A ternary would stringify twice on the seed
- * path, which double-invokes a user value's `toString` — observable when it
- * has side effects, wasted work when it doesn't. Hoisting the string above
- * the branch instead would fix that but would also stringify on the
- * non-seed path even when dedup skips the write, i.e. on every later tick;
- * the branch keeps exactly one stringification per path taken.
+ * guard so the seed branch can bind `textOrNode(__x)` ONCE and use it for
+ * both the comparison and the write. A ternary would coerce twice on the
+ * seed path, which double-invokes a user value's `toString` — observable
+ * when it has side effects, wasted work when it doesn't. Hoisting it above
+ * the branch instead would fix that but would also coerce on the non-seed
+ * path even when dedup skips the write, i.e. on every later tick; the branch
+ * keeps exactly one coercion per path taken.
+ *
+ * `textOrNode` rather than a bare `String(...)` because a child-position
+ * interpolation can evaluate to a live Node (`props.renderRow(item)` handed
+ * an inline-JSX arrow), and `String(node)` destroys it. The helper passes a
+ * Node through so the claim door can promote the slot to 'markup' and splice
+ * it; see `claim-slots.ts`. Whether such a call yields a string or a Node is
+ * not decidable from the expression's syntax — both are `CallExpression` —
+ * so this stays a runtime decision on the value, not a compile-time
+ * classification.
+ *
+ * A Node also makes the seed comparison fail safe on its own: `read(id)`
+ * answers with a string or `null`, neither of which is ever `===` a Node, so
+ * the seed always writes. That is the correct direction — a Node is freshly
+ * built on this run and is never the SSR-rendered content by identity.
  */
 function emitTextBinding(
   lines: string[],
@@ -319,13 +333,13 @@ function emitTextBinding(
 
   if (mode === 'outer') {
     lines.push(`${ind}if (__seed) {`)
-    lines.push(`${ind}  const __s = String(__x)`)
+    lines.push(`${ind}  const __s = textOrNode(__x)`)
     lines.push(`${ind}  if (${doorExpr}.read('${t.slotId}') !== __s) ${writeOf('__s')}`)
-    lines.push(`${ind}} else if (${dedupGuard(t.ordinal)}) ${writeOf('String(__x)')}`)
+    lines.push(`${ind}} else if (${dedupGuard(t.ordinal)}) ${writeOf('textOrNode(__x)')}`)
   } else if (mode === 'item') {
-    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${writeOf('String(__x)')}`)
+    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${writeOf('textOrNode(__x)')}`)
   } else {
-    lines.push(`${ind}${writeOf('String(__x)')}`)
+    lines.push(`${ind}${writeOf('textOrNode(__x)')}`)
   }
   lines.push(`${ind}__l[${t.ordinal}] = __x }`)
 }

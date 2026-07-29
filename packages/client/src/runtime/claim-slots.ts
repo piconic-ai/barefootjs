@@ -434,6 +434,74 @@ function writeText(slot: ClaimedTextSlot, value: unknown): void {
   node.nodeValue = String(value ?? '')
 }
 
+/**
+ * Pass a live Node through untouched; coerce anything else with `String`.
+ *
+ * The 'text' door's counterpart to {@link escapeTextOrNode}. A 'text' slot
+ * writes through `nodeValue`, which needs no escaping — routing it through
+ * `escapeText` would double-escape — but it DOES need the Node case
+ * separated out, because a Text node cannot host an element and
+ * `String(node)` destroys it: `[object HTMLDivElement]` in a browser, the
+ * serialized markup rendered as visible text under some DOM shims. Wrong
+ * either way, and silently so, which is why the split lives here rather
+ * than at each call site.
+ *
+ * A Node reaches a content slot whenever a child-position interpolation
+ * calls something that builds one — `props.renderRow(item)` handed an
+ * inline-JSX arrow, which the compiler lifts into a component whose call
+ * returns a real element. Whether such a call returns a string or a Node is
+ * not decidable from the expression's syntax (both are `CallExpression`), so
+ * the decision belongs at runtime, on the value.
+ *
+ * `String(value)`, not `String(value ?? '')`: a non-Node value must coerce
+ * exactly as the previous inline `String(...)` emission did. The nullish
+ * collapse stays where it already was, in {@link writeText}.
+ */
+export function textOrNode(value: unknown): string | Node {
+  if (typeof Node !== 'undefined' && value instanceof Node) return value
+  return String(value)
+}
+
+/**
+ * A Node landed on a slot claimed as 'text'. Promote the claim to the
+ * 'markup' contract in place — the anchor comment becomes `start`, its
+ * matching `<!--/-->` becomes `end` — so this and every later write on the
+ * id goes through {@link writeMarkup}, which already splices Nodes by
+ * identity.
+ *
+ * This is a promotion, not a re-claim: the anchor is the SAME comment the
+ * original claim resolved (§2's claim-once rule holds — no second position
+ * resolution). The Text node the claim adopted or created, if any, sits
+ * inside the new range and `clearMarkupRange` removes it on the write.
+ *
+ * `null` when the slot cannot host a Node — a markerless slot (Step B
+ * elision: no anchor to promote from) or a marked slot whose end comment is
+ * missing. Both warn: refusing loudly beats stringifying an element into
+ * visible `[object HTMLDivElement]`.
+ */
+function promoteTextToMarkup(slot: ClaimedTextSlot, id: string): ClaimedMarkupSlot | null {
+  const anchor = slot.ref.nodeType === Node.COMMENT_NODE
+    ? (slot.ref as Comment)
+    // Materialized: `claimOne` adopts/creates the Text node immediately after
+    // the anchor, so the anchor is its previous sibling — unless the slot is
+    // markerless, where there is no anchor at all and `isSlotComment` says so.
+    : isSlotComment(slot.ref.previousSibling, id) ? slot.ref.previousSibling : null
+  if (!anchor) {
+    console.warn(
+      `[barefootjs] slot ${id} was claimed as text and received a Node, but has no anchor marker to promote from; write ignored`,
+    )
+    return null
+  }
+  const end = findMarkupEnd(anchor)
+  if (!end) {
+    console.warn(
+      `[barefootjs] slot ${id} was claimed as text and received a Node, but has no end marker; write ignored`,
+    )
+    return null
+  }
+  return { kind: 'markup', start: anchor, end, last: undefined }
+}
+
 /** Remove every node strictly between `start` and `end` (both survive). */
 function clearMarkupRange(start: Comment, end: Comment): void {
   const parent = end.parentNode
@@ -480,13 +548,24 @@ function writeMarkup(ref: ClaimedMarkupSlot, value: unknown): void {
   ref.last = text
 }
 
-function writeSlot(refs: ReadonlyMap<string, ClaimedSlotRef>, id: string, value: unknown): void {
+function writeSlot(refs: Map<string, ClaimedSlotRef>, id: string, value: unknown): void {
   const ref = refs.get(id)
   if (!ref) {
     console.warn(`[barefootjs] no claimed slot for id ${id}; write ignored`)
     return
   }
   if (ref.kind === 'text') {
+    // A 'text' slot cannot represent an element. Promote once, then fall
+    // through to the markup writer — which is also what makes the read door
+    // answer `null` for this id afterwards, i.e. "cannot answer, write it",
+    // the conservative direction.
+    if (typeof Node !== 'undefined' && value instanceof Node) {
+      const promoted = promoteTextToMarkup(ref, id)
+      if (!promoted) return
+      refs.set(id, promoted)
+      writeMarkup(promoted, value)
+      return
+    }
     writeText(ref, value)
   } else {
     writeMarkup(ref, value)
