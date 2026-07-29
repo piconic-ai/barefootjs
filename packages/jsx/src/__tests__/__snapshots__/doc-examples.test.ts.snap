@@ -455,7 +455,7 @@ export function initExample(__scope, _p = {}) {
 
   mapArray(() => (todos()).flatMap((todo) => {
   if (todo.hidden) return []
-  return todo.tags.map(tag => ({ k: (\`\${todo.id}:\${tag}\`), h: \`<li>\${escapeText(escapeText((tag)))}</li>\` }))
+  return todo.tags.map(tag => ({ k: (\`\${todo.id}:\${tag}\`), h: \`<li>\${escapeText((tag))}</li>\` }))
 }), _s0, (__bfD, __bfI) => String(__bfD.k ?? __bfI), (__bfD, __idx, __existing) => {
     let __el = __existing
     if (!__el) { const __tpl = document.createElement('template'); __tpl.innerHTML = __bfD().h; __el = __tpl.content.firstElementChild }
@@ -472,7 +472,7 @@ export function initExample(__scope, _p = {}) {
 
 hydrate('Example', { init: initExample, template: (_p) => \`<div bf="s0"><!--bf-loop:l0-->\${([]).flatMap((todo) => {
   if (todo.hidden) return []
-  return todo.tags.map(tag => \`<li>\${escapeText(escapeText((tag)))}</li>\`)
+  return todo.tags.map(tag => \`<li>\${escapeText((tag))}</li>\`)
 }).join('')}<!--bf-/loop:l0--></div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
@@ -1757,7 +1757,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${escapeText(_p.children)}\${escapeText(_p.children)}</div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${_p.children}\${_p.children}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -2664,7 +2664,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${escapeText(get)} value() \${escapeText()} return count() } } </div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${get} value() \${} return count() } } </div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -2716,7 +2716,7 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/components/component-authoring.mdx doc-examples L79 — (no label) 1`] = `
-"import { $, __bfSlot, createComponent, createSignal, escapeText, hydrate, insert } from '@barefootjs/client/runtime'
+"import { $, __bfSlot, createComponent, createSignal, hydrate, insert } from '@barefootjs/client/runtime'
 
 
 export function initToggle(__scope, _p = {}) {
@@ -2740,7 +2740,7 @@ export function initToggle(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => { setOn(prev => !prev) })
 }
 
-hydrate('Toggle', { init: initToggle, template: (_p) => \`<button bf="s1">\${(false) ? \`<!--bf-cond-start:s0-->\${escapeText('ON')}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${escapeText('OFF')}<!--bf-cond-end:s0-->\`}</button>\` })
+hydrate('Toggle', { init: initToggle, template: (_p) => \`<button bf="s1">\${(false) ? \`<!--bf-cond-start:s0-->\${'ON'}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${'OFF'}<!--bf-cond-end:s0-->\`}</button>\` })
 export function Toggle(_p, __bfKey) { return createComponent('Toggle', _p, __bfKey) }"
 `;
 
@@ -3380,7 +3380,7 @@ export function initExample(__scope, _p = {}) {
   provideContext(MyContext, someValue)
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${escapeText(_p.children)}</div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${_p.children}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -3403,7 +3403,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L73 — 2. Provider component 1`] = `
-"import { createComponent, escapeText, hydrate, provideContext } from '@barefootjs/client/runtime'
+"import { createComponent, hydrate, provideContext } from '@barefootjs/client/runtime'
 
 
 export function initThemeProvider(__scope, _p = {}) {
@@ -3415,12 +3415,12 @@ export function initThemeProvider(__scope, _p = {}) {
   provideContext(ThemeContext, _p.theme)
 }
 
-hydrate('ThemeProvider', { init: initThemeProvider, template: (_p) => \`<div style="display:contents">\${escapeText(_p.children)}</div>\` })
+hydrate('ThemeProvider', { init: initThemeProvider, template: (_p) => \`<div style="display:contents">\${_p.children}</div>\` })
 export function ThemeProvider(_p, __bfKey) { return createComponent('ThemeProvider', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L88 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createMemo, createSignal, escapeText, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 
 export function initStatementExample(__scope, _p = {}) {
@@ -3432,7 +3432,7 @@ export function initStatementExample(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<button bf="s0">\${escapeText(props.children)}</button>\` })
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<button bf="s0">\${props.children}</button>\` })
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
@@ -3517,7 +3517,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L127 — (no label) 1`] = `
-"import { createComponent, createEffect, createMemo, createSignal, escapeText, hydrate, onCleanup, onMount, provideContext, untrack } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, provideContext, untrack } from '@barefootjs/client/runtime'
 
 
 export function initStatementExample(__scope, _p = {}) {
@@ -3529,7 +3529,7 @@ export function initStatementExample(__scope, _p = {}) {
   provideContext(AccordionContext, { activeItem, toggle })
 }
 
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div data-slot="accordion">\${escapeText(props.children)}</div>\` })
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div data-slot="accordion">\${props.children}</div>\` })
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
@@ -3552,7 +3552,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L149 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createMemo, createSignal, escapeText, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 
 export function initStatementExample(__scope, _p = {}) {
@@ -3564,12 +3564,12 @@ export function initStatementExample(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<button bf="s0">\${escapeText(props.children)}</button>\` })
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<button bf="s0">\${props.children}</button>\` })
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
 exports[`docs/core/components/context-api.md doc-examples L163 — (no label) 1`] = `
-"import { $, createComponent, createEffect, createMemo, createSignal, escapeText, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 
 export function initStatementExample(__scope, _p = {}) {
@@ -3581,7 +3581,7 @@ export function initStatementExample(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div bf="s0">\${escapeText(props.children)}</div>\` })
+hydrate('StatementExample', { init: initStatementExample, template: (_p) => \`<div bf="s0">\${props.children}</div>\` })
 export function StatementExample(_p, __bfKey) { return createComponent('StatementExample', _p, __bfKey) }"
 `;
 
@@ -3798,7 +3798,7 @@ export function initTooltip(__scope, _p = {}) {
   if (_s2) (handleMount)(_s2)
 }
 
-hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\${escapeText(_p.children)}</span><div class="tooltip" bf="s2"><!--bf:s1-->\${escapeText(_p.text)}<!--/--></div></div>\` })
+hydrate('Tooltip', { init: initTooltip, template: (_p) => \`<div><span bf="s0">\${_p.children}</span><div class="tooltip" bf="s2"><!--bf:s1-->\${escapeText(_p.text)}<!--/--></div></div>\` })
 export function Tooltip(_p, __bfKey) { return createComponent('Tooltip', _p, __bfKey) }"
 `;
 
@@ -3913,11 +3913,11 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/props-type-safety.md doc-examples L54 — (no label) 1`] = `
-"import { createComponent, escapeAttr, escapeText, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, escapeAttr, hydrate } from '@barefootjs/client/runtime'
 
 function initButton() {}
 
-hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) != null ? 'class="' + escapeAttr((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) + '"' : ''} bf="s0">\${escapeText(_p.children)}</button>\` })
+hydrate('Button__b3c36eee', { init: initButton, template: (_p) => \`<button \${((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) != null ? 'class="' + escapeAttr((\`btn btn-\${(_p.variant ?? 'default')} btn-\${(_p.size ?? 'md')} \${_p.className ?? ''}\`)) + '"' : ''} bf="s0">\${_p.children}</button>\` })
 export function Button(_p, __bfKey) { return createComponent('Button__b3c36eee', _p, __bfKey) }"
 `;
 
@@ -4160,7 +4160,7 @@ export function Counter(_p, __bfKey) { return createComponent('Counter', _p, __b
 `;
 
 exports[`docs/core/adapters/hono-adapter.md doc-examples L129 — (no label) 1`] = `
-"import { $c, createComponent, escapeText, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+"import { $c, createComponent, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
 import '/* @bf-child:BfScripts */'
 
 
@@ -4177,7 +4177,7 @@ export function initLayout(__scope, _p = {}) {
   initChild('BfScripts', _s0, {})
 }
 
-hydrate('Layout', { init: initLayout, template: (_p) => \`<html><body>\${escapeText(_p.children)}\${renderChild('BfScripts', {}, undefined, 's0')}</body></html>\` })
+hydrate('Layout', { init: initLayout, template: (_p) => \`<html><body>\${_p.children}\${renderChild('BfScripts', {}, undefined, 's0')}</body></html>\` })
 export function Layout(_p, __bfKey) { return createComponent('Layout', _p, __bfKey) }"
 `;
 
@@ -4375,7 +4375,7 @@ export function initExample(__scope, _p = {}) {
 
 }
 
-hydrate('Example', { init: initExample, template: (_p) => \`<div>\${on() ? \`<!--bf-cond-start:s0-->\${escapeText('ON')}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${escapeText('OFF')}<!--bf-cond-end:s0-->\`}</div>\` })
+hydrate('Example', { init: initExample, template: (_p) => \`<div>\${on() ? \`<!--bf-cond-start:s0-->\${'ON'}<!--bf-cond-end:s0-->\` : \`<!--bf-cond-start:s0-->\${'OFF'}<!--bf-cond-end:s0-->\`}</div>\` })
 export function Example(_p, __bfKey) { return createComponent('Example', _p, __bfKey) }"
 `;
 
@@ -5475,7 +5475,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/reactivity/shared-state.md doc-examples L31 — (no label) 1`] = `
-"import { $, createComponent, createContext, createEffect, createSignal, escapeText, hydrate, provideContext, useContext } from '@barefootjs/client/runtime'
+"import { $, createComponent, createContext, createEffect, createSignal, hydrate, provideContext, useContext } from '@barefootjs/client/runtime'
 
 var PlaybackContext = PlaybackContext ?? createContext()
 
@@ -5493,7 +5493,7 @@ export function initPlaybackProvider(__scope, _p = {}) {
   provideContext(PlaybackContext, { elapsedMs, playing, seek, toggle })
 }
 
-hydrate('PlaybackProvider', { init: initPlaybackProvider, template: (_p) => \`<div style="display:contents">\${escapeText(_p.children)}</div>\` })
+hydrate('PlaybackProvider', { init: initPlaybackProvider, template: (_p) => \`<div style="display:contents">\${_p.children}</div>\` })
 export function PlaybackProvider(_p, __bfKey) { return createComponent('PlaybackProvider', _p, __bfKey) }
 var PlaybackContext = PlaybackContext ?? createContext()
 
@@ -5513,7 +5513,7 @@ export function initPlayer(__scope, _p = {}) {
   if (_s0) (handleMount)(_s0)
 }
 
-hydrate('Player', { init: initPlayer, template: (_p) => \`<div bf="s0">\${escapeText(_p.children)}</div>\` })
+hydrate('Player', { init: initPlayer, template: (_p) => \`<div bf="s0">\${_p.children}</div>\` })
 export function Player(_p, __bfKey) { return createComponent('Player', _p, __bfKey) }
 var PlaybackContext = PlaybackContext ?? createContext()
 
