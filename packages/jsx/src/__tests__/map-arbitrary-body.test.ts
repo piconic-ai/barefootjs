@@ -58,9 +58,17 @@ describe('.map() array-builder body — JS-runtime verbatim (Stage 3 / D4)', () 
     // lowering must escape the same position (renderPreamble's leaf door) or
     // special characters in data would parse as markup client-side only.
     // Byte-level parity is pinned by the map-array-builder-escaping fixture.
+    //
+    // Escaped ONCE, by the template emitter reading `contentKind` (absent =
+    // text). This used to read `escapeText((c))` because a pre-pass rewrote
+    // the IR expression to add the wrapper and the emitter left un-slotted
+    // expressions alone; with the emitter deciding from IR, that pre-pass was
+    // redundant and is gone. Exactly one wrapper is the invariant here — two
+    // would double-escape, which is what removing the pre-pass prevents.
     const r = compile(arrayBuilder, false)
     const cj = r.files.find(f => f.type === 'clientJs')!.content
-    expect(cj).toMatch(/out\.push\(`<td>\$\{escapeText\(\(c\)\)\}<\/td>`\)/)
+    expect(cj).toMatch(/out\.push\(`<td>\$\{escapeText\(c\)\}<\/td>`\)/)
+    expect(cj).not.toContain('escapeText(escapeText(')
   })
 
   test('the element-array child {out} is joined into the row', () => {

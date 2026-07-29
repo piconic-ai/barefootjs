@@ -139,8 +139,11 @@ describe('hydrate template: loop param shadowing an outer name (#2222 bug 2)', (
       }
     `))
 
-    // Outside the loop: const inlining still applies.
-    expect(tpl).toContain("${('x')}")
+    // Outside the loop: const inlining still applies. The inlined literal is
+    // wrapped by the unconditional text escape (`contentKind` defaults to
+    // text); `escapeText(('x'))` renders the same `x`, so what this pins is
+    // that the literal was inlined at all.
+    expect(tpl).toContain("escapeText(('x'))")
     // Inside the loop: the shadowing param must survive untouched.
     expect(tpl).toContain('escapeText(1 + label)')
     expect(tpl).not.toContain("1 + ('x')")

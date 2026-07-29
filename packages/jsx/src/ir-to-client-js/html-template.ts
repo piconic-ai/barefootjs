@@ -598,9 +598,9 @@ export function renderPreamble(
       const text = opts.textVariant === 'template' ? (seg.templateText ?? seg.text) : seg.text
       out += opts.transformJs ? opts.transformJs(text) : text
     } else if (opts.rawLeaf) {
-      out += opts.renderLeaf(escapeLeafTextExpressions(seg.ir))
+      out += opts.renderLeaf(seg.ir)
     } else {
-      out += '`' + opts.renderLeaf(escapeLeafTextExpressions(seg.ir)) + '`'
+      out += '`' + opts.renderLeaf(seg.ir) + '`'
     }
   }
   return out
@@ -691,42 +691,11 @@ export function renderFlatMapProjectionClientBody(
   const params = inner.index ? `(${inner.param}, ${inner.index})` : `(${inner.param})`
   const key = inner.key ? `(${inner.key})` : 'undefined'
   const html = inner.children
-    .map((c) => irToHtmlTemplate(escapeLeafTextExpressions(c), restSpreadNames, 1, undefined, undefined, true))
+    .map((c) => irToHtmlTemplate(c, restSpreadNames, 1, undefined, undefined, true))
     .join('')
   return `${chained}.map(${params} => ({ k: ${key}, h: \`${html}\` }))`
 }
 
-/**
- * SSR/CSR escaping parity for preamble leaves, decided once at the door: a
- * JSX-runtime SSR adapter renders the leaf's raw JSX and auto-escapes text
- * interpolations (`{c}`), so the client's HTML-string lowering must escape the
- * same positions — wrap every text-position expression in `escapeText(...)`.
- * Pure (returns a transformed copy); the neutral IR is never mutated with a
- * client-only concern. Attribute values already flow through the template
- * emitters' own attr escaping.
- */
-function escapeLeafTextExpressions(ir: IRNode): IRNode {
-  switch (ir.type) {
-    case 'element':
-      return { ...ir, children: ir.children.map(escapeLeafTextExpressions) }
-    case 'fragment':
-      return { ...ir, children: ir.children.map(escapeLeafTextExpressions) }
-    case 'expression': {
-      if (ir.expr === 'null' || ir.expr === 'undefined') return ir
-      // Already-wrapped or slotted expressions keep their existing handling.
-      if (ir.slotId || ir.expr.trimStart().startsWith('escapeText(')) return ir
-      return { ...ir, expr: `escapeText((${ir.expr}))`, templateExpr: ir.templateExpr ? `escapeText((${ir.templateExpr}))` : ir.templateExpr }
-    }
-    case 'conditional':
-      return {
-        ...ir,
-        whenTrue: escapeLeafTextExpressions(ir.whenTrue),
-        whenFalse: ir.whenFalse ? escapeLeafTextExpressions(ir.whenFalse) : ir.whenFalse,
-      }
-    default:
-      return ir
-  }
-}
 
 export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, insideLoop = false, inHoistedChildren = false): string {
   const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, insideLoop, inHoistedChildren)
@@ -833,7 +802,10 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
         const slotted = branchSlotsVar || isMarkup ? valueExpr : escapeTextSlotExpr(valueExpr)
         return `<!--bf:${node.slotId}-->\${${slotted}}<!--/-->`
       }
-      return `\${${isMarkup ? valueExpr : escapeTextSlotExpr(valueExpr)}}`
+      // `branchSlotsVar` gates BOTH arms: inside a branch template the value is
+      // routed through `__bfSlot`, which returns raw `<!--bf-slot:N-->` markers for
+      // live `Node` values. Escaping those drops the slotted content (#1694).
+      return `\${${branchSlotsVar || isMarkup ? valueExpr : escapeTextSlotExpr(valueExpr)}}`
     }
 
     case 'conditional': {

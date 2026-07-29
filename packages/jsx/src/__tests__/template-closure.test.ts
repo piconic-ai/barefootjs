@@ -225,7 +225,10 @@ describe('#1128 — template body never reaches init-scope identifiers', () => {
     expect(tpl).not.toMatch(/\blabel\b/)
     // Without the per-context guard, this would emit `${undefined}` and
     // render the literal text "undefined" before init's createEffect ran.
-    expect(tpl).toMatch(/\$\{''\}/)
+    // The placeholder is now wrapped by the unconditional text escape
+    // (`contentKind` defaults to text) — `escapeText('')` is still `''`, so
+    // what this pins is the empty placeholder, not the spelling.
+    expect(tpl).toMatch(/\$\{(?:escapeText\()?''\)?\}/)
     expect(tpl).not.toMatch(/\$\{undefined\}/)
   })
 
