@@ -222,8 +222,20 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
   //     `mapArrayLazy` deliberately does not carry.
   if (shape.bodyIsMultiRoot) return NO('multi-root (Fragment) row')
 
-  // (3) Keyed via an explicit `key` — adoption pairs SSR rows to items by
-  //     the SSR-rendered `data-key`, which index-keyed loops do not render.
+  // (3) Keyed via an explicit `key`.
+  //
+  //     This is a FAIL-SAFE, not a widening opportunity — do not plan work
+  //     around it. A `.map()` whose row element has no valid `key` is already
+  //     a compile ERROR upstream (BF023 / BF024, `checkLoopKey` in
+  //     `jsx-to-ir.ts`), so no program that compiles cleanly can reach this
+  //     branch through the plain / branch-plain call sites. It stays because
+  //     the gate must not depend on another pass having rejected the input,
+  //     and because a `null` keyFn would silently switch `mapArrayLazy` to
+  //     positional keying — correct in itself, but a decision this function
+  //     should make explicitly rather than inherit.
+  //
+  //     `lazy-row-eligibility.test.ts` pins the BF023 half so that if unkeyed
+  //     loops ever become legal, the test naming this fails and points here.
   if (!shape.hasExplicitKey) return NO('index-keyed loop (no explicit key)')
 
   // (4) No conditionals in the row.

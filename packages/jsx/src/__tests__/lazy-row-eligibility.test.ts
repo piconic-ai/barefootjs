@@ -534,19 +534,45 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
   })
 })
 
-describe('lazy row emission — ineligible loops fall back', () => {
-  test('an index-keyed loop keeps the eager mapArray emission', () => {
-    const js = clientJs(`
+/**
+ * The gate's `index-keyed loop (no explicit key)` refusal is a FAIL-SAFE that
+ * no compiling program can reach: an unkeyed `.map()` row is BF023 upstream.
+ * Pinned here so the refusal is never mistaken for a widening opportunity —
+ * if unkeyed loops ever become legal, this test fails and says where to look.
+ */
+describe('unkeyed loops never reach the gate', () => {
+  const UNKEYED = `
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function UnkeyedRows() {
   const [rows, setRows] = createSignal<string[]>([])
   return <ul>{rows().map(row => <li>{row}</li>)}</ul>
 }
-`, 'UnkeyedRows.tsx')
-    expect(js).toContain('mapArray(')
-    expect(js).not.toContain('mapArrayLazy(')
+`
+
+  test('an unkeyed .map() row is a BF023 compile error', () => {
+    const result = compileJSX(UNKEYED, 'UnkeyedRows.tsx', { adapter: new TestAdapter() })
+    const errors = result.errors.filter(e => e.severity === 'error')
+    expect(errors.map(e => e.code)).toContain('BF023')
   })
+
+  test('a key whose VALUE is the index is an ordinary keyed loop and stays eligible', () => {
+    // `key={i}` is what the BF023 suggestion tells users to write for static
+    // lists. It is a real key expression, so `loop.key != null` and the gate's
+    // keying branch is not involved at all.
+    const js = clientJs(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function IndexValueKeyed() {
+  const [rows, setRows] = createSignal<string[]>([])
+  return <ul>{rows().map((row, i) => <li key={i}>{row}</li>)}</ul>
+}
+`, 'IndexValueKeyed.tsx')
+    expect(js).toContain('mapArrayLazy(')
+  })
+})
+
+describe('lazy row emission — ineligible loops fall back', () => {
 
   test('a row with a reactive conditional keeps the eager mapArray emission', () => {
     const js = clientJs(`

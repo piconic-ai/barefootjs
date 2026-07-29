@@ -344,7 +344,17 @@ Two refusals are **deliberate policy, not backlog**:
 - **Profile mode** keeps the granular eager emission so `#binding:<slotId>`
   attribution and turn-boundary accounting stay truthful.
 
-A third is a **soundness fail-safe**: a binding whose identifier set is
+A third is **unreachable, and must not be planned around**: `index-keyed loop
+(no explicit key)`. A `.map()` whose row element carries no valid `key` is a
+compile ERROR upstream (BF023 / BF024, `checkLoopKey`), so no program that
+compiles cleanly reaches that branch. It stays as a fail-safe because the gate
+must not depend on another pass having rejected its input. Note that `key={i}`
+— what BF023's own suggestion tells users to write for static lists — is an
+ordinary keyed loop and has always been eligible; "index-keyed" here means
+*no key at all*, not *a key whose value is the index*. Both halves are pinned
+in `lazy-row-eligibility.test.ts`.
+
+A fourth is a **soundness fail-safe**: a binding whose identifier set is
 `UNKNOWN_IDENTIFIERS` refuses, because with nothing to look at the
 classifier reports `referencesIndex: false` as an ASSUMPTION — and emitting
 `applyItem`/`applyOuter` that reference a non-existent index variable is a
@@ -359,7 +369,6 @@ value first:
 | Refusal | Why it refuses / what lifting it needs |
 |---|---|
 | `row contains a reactive conditional` | Includes a BARE ternary in child position (`{cond ? a : b}`), which lowers to `insert()` and is refused as a conditional, not as a text binding. Read "outer-involving row text is lazy" with that caveat attached. Directly on the 1k-row hot path. |
-| `index-keyed loop (no explicit key)` | Adoption pairs SSR rows to items by `data-key`, which index-keyed loops do not render. Common in real apps. |
 | `row has a map-callback preamble` | The rule is "any preamble at all", not "a preamble declaring row-local reactivity" — over-broad by construction. |
 | `multi-root (Fragment) row` | Needs the `startMarker`/`extras` bookkeeping the spike deliberately dropped. Not a design wall. |
 | `row has imperative child refs`, `row body is a child component`, `row contains nested child components`, `row contains an inner loop` | Shapes where the row owns lifecycle. Genuinely-needs-per-row-reactivity and doesn't-need-it are mixed together here and need separating. |
