@@ -74,21 +74,30 @@ export function createComponent(
   slot?: CreateComponentSlotInfo,
   mountAt?: Element | null,
 ): HTMLElement {
-  const element = createComponentUnmounted(nameOrDef, props, key, slot, mountAt)
+  const element = materializeComponent(nameOrDef, props, key, slot, mountAt)
   // `mountAt` is an unconditional obligation: callers used to run
   // `ph.replaceWith(comp)` themselves on every outcome, so every path that
-  // did NOT consume the placeholder still owes the replacement — empty /
-  // missing template, `ComponentDef` mode, and the root-deferred-placeholder
-  // shape. `parentNode` (not `isConnected`) is the right "still unconsumed"
-  // probe: it survives a `mountAt` that was itself detached, which is the
-  // normal case during multi-root loop-body setup.
+  // did NOT consume the placeholder still owes the replacement — a missing or
+  // empty template (either mode), and the root-deferred-placeholder shape,
+  // which must stay detached so its self-replacement stays recoverable.
+  // `parentNode` (not `isConnected`) is the right "still unconsumed" probe: it
+  // survives a `mountAt` that was itself detached, which is the normal case
+  // during multi-root loop-body setup.
   if (mountAt && mountAt.parentNode && element !== mountAt) {
     mountAt.replaceWith(element)
   }
   return element
 }
 
-function createComponentUnmounted(
+/**
+ * Build the element, connect it at `mountAt` when there is one, and run
+ * `init` — in that order, which is the whole point (see step 7b).
+ *
+ * Named "materialize" rather than anything with "unmounted" in it because it
+ * DOES mount: the connect has to happen inside, before `init`, and only the
+ * paths that cannot consume the placeholder leave that to `createComponent`.
+ */
+function materializeComponent(
   nameOrDef: string | ComponentDef,
   props: Record<string, unknown> = {},
   key?: string | number,
@@ -102,7 +111,7 @@ function createComponentUnmounted(
   if (props == null) props = {}
   // ComponentDef mode: use def directly instead of registry lookup
   if (typeof nameOrDef !== 'string') {
-    return createComponentFromDef(nameOrDef, props, key)
+    return createComponentFromDef(nameOrDef, props, key, mountAt)
   }
 
   const name = nameOrDef
@@ -580,7 +589,8 @@ function insertGetterChildren(element: HTMLElement, children: unknown): void {
 function createComponentFromDef(
   def: ComponentDef,
   props: Record<string, unknown>,
-  key?: string | number
+  key?: string | number,
+  mountAt?: Element | null,
 ): HTMLElement {
   if (!def.template) {
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
@@ -606,6 +616,14 @@ function createComponentFromDef(
   element.setAttribute(BF_SCOPE, scopeId)
   if (key !== undefined) {
     element.setAttribute(BF_KEY, String(key))
+  }
+
+  // Connect before init, for the same reason the registry path does (see
+  // `materializeComponent` step 7b): `def.init` may resolve context by DOM
+  // position or measure layout, and neither works detached. Keeps `mountAt`
+  // one contract across both modes instead of a registry-only guarantee.
+  if (mountAt) {
+    mountAt.replaceWith(element)
   }
 
   // Initialize

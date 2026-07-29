@@ -125,4 +125,37 @@ describe('CSR child init runs connected (context resolves by position)', () => {
     // `parseHTML(...).firstChild`, before `ph.replaceWith(comp)`.
     expect(connectedAtInit).toEqual([true])
   })
+
+  test('the ComponentDef path honours mountAt too, not just the registry path', async () => {
+    const { createComponent } = await import('../../src/runtime')
+
+    // `createComponent` accepts a `ComponentDef` directly (CSR mode, no
+    // registry lookup). That branch returns early, so it needs its own
+    // connect-before-init — otherwise `mountAt` would be a registry-only
+    // guarantee and `def.init` would still run detached. Pinned here so the
+    // two modes cannot drift apart silently.
+    const connectedAtInit: boolean[] = []
+
+    const host = document.createElement('div')
+    const placeholder = document.createElement('span')
+    host.appendChild(placeholder)
+    document.body.appendChild(host)
+
+    const el = createComponent(
+      {
+        name: 'DefKid',
+        init: (node: Element) => { connectedAtInit.push(node.isConnected) },
+        template: () => `<b>def-kid</b>`,
+      } as any,
+      {},
+      undefined,
+      undefined,
+      placeholder,
+    )
+
+    expect(connectedAtInit).toEqual([true])
+    // And the placeholder really was consumed, exactly once.
+    expect(placeholder.parentNode).toBeNull()
+    expect(host.innerHTML).toBe('<b bf-s="DefKid_' + el.getAttribute('bf-s')!.split('_')[1] + '">def-kid</b>')
+  })
 })
