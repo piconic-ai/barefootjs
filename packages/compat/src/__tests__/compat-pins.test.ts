@@ -41,15 +41,6 @@ describe('conformancePins consistency', () => {
         })
       } else {
         for (const fixtureId of pinnedFixtureIds) {
-          // TEMPORARY, tracked by #2426 — same standing cost as `determinism`
-          // in `compat-engine.test.ts`. Each of these compiles a real fixture
-          // through `compileForCompat` (~1s at rest, observed at 2.8s under
-          // load), so bun's 5s default leaves no room. Because every pinned
-          // fixture pays it, the timeout lands on whichever one happened to be
-          // running: observed as `[map-array-builder-escaping]` at 17.6s AND
-          // `[tag-cloud]` at 12.3s in the same run, neither individually slow.
-          // That is what makes the flake read as a different broken test each
-          // time instead of as one budget being too small.
           test(`[${fixtureId}] pinned diagnostics are reproduced and the cell reflects them`, () => {
             const fixture = jsxFixtures.find(f => f.id === fixtureId)
             if (!fixture) {
@@ -80,7 +71,7 @@ describe('conformancePins consistency', () => {
               const cell = buildCompatCell(errors, adapter.pins)
               expect(cell.ok).toBe(false)
             }
-          }, 30_000)
+          })
         }
       }
     })

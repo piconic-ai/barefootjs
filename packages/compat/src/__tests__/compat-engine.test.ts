@@ -201,17 +201,6 @@ describe('formatCompatMarkdown', () => {
 })
 
 describe('determinism', () => {
-  // TEMPORARY, tracked by #2426 — remove once a compile is cheap again.
-  //
-  // bun's 5s default does not fit what this test does. `compileForCompat`
-  // costs ~1s per call at rest (median 980ms over 7 interleaved samples,
-  // identical on main, so it is the standing cost rather than a regression),
-  // and this test makes two — it starts from ~2s with nothing spare. One
-  // environment stall, observed at 2.8s for a single compile, blows the
-  // default on its own. Sized against that worst case, not the median.
-  //
-  // The budget is the wrong number here, not the test; the ~1s figure is the
-  // actual defect and belongs to #2426.
   test('two engine runs over the same inputs produce deep-equal and byte-equal reports', () => {
     const runOnce = () => {
       const adapter = new GoTemplateAdapter()
@@ -224,5 +213,5 @@ describe('determinism', () => {
     const second = runOnce()
     expect(first).toEqual(second)
     expect(formatCompatJson(first)).toBe(formatCompatJson(second))
-  }, 30_000)
+  })
 })
