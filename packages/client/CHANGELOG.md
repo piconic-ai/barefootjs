@@ -1,5 +1,259 @@
 # @barefootjs/client
 
+## 0.28.0
+
+### Minor Changes
+
+- fe474a0: Connect a CSR-materialised child component before running its `init`, so
+  context resolves by DOM position.
+
+  **This changes when `init` runs relative to DOM insertion.** `createComponent`
+  built the element with `parseHTML(...).firstChild` and called `initFn` on it
+  while it was still detached; every caller then attached it afterwards
+  (`ph.replaceWith(comp)`). So a component's own `init` observed an element with
+  no parent chain.
+
+  `useContext` resolves providers by walking `parentElement` from the current
+  scope. From a detached element that walk finds nothing and falls through to
+  the module-global fallback store in `runtime/context.ts` — and that store is
+  **last-writer-wins across every provider of the same context on the page**.
+  With one provider the fallback happens to return the right value, which is why
+  this stayed hidden.
+
+  The divergence shows up when a child is materialised _after_ a sibling provider
+  has run. During a plain hydration pass the doc-order walker inits each provider
+  immediately before creating its own children, so the global still holds that
+  provider's value. But a child created later — by an interaction — reads whatever
+  provider hydrated last:
+
+  ```
+  <Host value="ONE">   ← child added here, later
+  <Host value="TWO">   ← this one wrote the global last
+  ```
+
+  the new child under `ONE` received `"TWO"`.
+
+  `createComponent` now takes a `mountAt` argument — the placeholder it replaces —
+  and performs that replacement _before_ `init`, so `useContext` resolves by
+  position and layout reads (`offsetWidth`, `getBoundingClientRect`) see a
+  laid-out element. `upsertChild`, `upsertChildItem`, and the branch
+  child-component emission pass their placeholder through. This aligns the CSR
+  path with the SSR one, where the doc-order walker only ever inits elements
+  already in the document (see `runtime/hydrate.ts`, whose ordering contract
+  exists for exactly this `provideContext` → `useContext` visibility reason).
+
+  `mountAt` is an unconditional obligation, since callers previously ran
+  `replaceWith` on every outcome: paths that don't consume it — a missing or empty
+  template, and the root-deferred-placeholder shape that must stay detached so its
+  self-replacement stays recoverable — still get the replacement performed on the
+  way out.
+
+  Both construction modes honour it. `ComponentDef` mode initially did not: that
+  branch returned early and ran `def.init` detached, so `createComponent(def, …,
+mountAt)` kept the very bug this fixes. `mountAt` is threaded through it too, so
+  the lifecycle does not depend on whether a caller passes a name or a def.
+
+  **Still open:** `mapArray` rows are unaffected and continue to init detached —
+  `renderItem` returns the element to `mapArray`, so there is no placeholder to
+  hand over, and the batched `insertBefore` happens later. This is the xyflow
+  shape (`<Flow>` provides `FlowContext`; nodes render through `mapArray` and read
+  `useFlow()` in their init), and the reason
+  `packages/xyflow/src/flow-subsystems.ts` carries a `__bfFlowStore` +
+  `closest('.bf-flow')` workaround. Reproduced by the skipped tests in
+  `packages/client/__tests__/runtime/csr-loop-row-init-connected.test.ts`; closing
+  it reorders the emitted `renderItem` tail or pre-inserts the row, both on the
+  runtime's hottest path, so it is deliberately not bundled here.
+
+### Patch Changes
+
+- 483496b: Connect a `createComponent` loop row before its `init` runs, so `useContext`
+  resolves the row's own provider instead of the last one that hydrated on the
+  page.
+
+  The child-slot path already had this guarantee: `upsertChild` hands its
+  placeholder to `createComponent` as `mountAt`, and `materializeComponent`
+  replaces the placeholder _before_ calling `initFn` (step 7b) precisely because
+  `useContext` resolves by DOM position. A loop row had no placeholder to hand
+  over, so it kept initialising detached and fell through to the global,
+  last-writer-wins context store. With two providers of the same context on one
+  page — two `<Flow>` blocks, each rendering nodes through `mapArray` — a node
+  created after the sibling flow had hydrated resolved the **wrong** flow's
+  store.
+
+  `mapArray` now hands the row's container and trailing anchor down through a
+  `setRowMountPoint` ambient, taken-and-cleared by the outermost
+  `createComponent` inside `renderItem`, which connects there before running
+  `init`. The ambient is the same shape as the `_parentScopeId` one that already
+  lives in `component.ts`, and take-and-clear is what keeps a nested
+  `createComponent` from the row's own init from re-using the row's mount point.
+
+  **The reorder is deliberately left alone.** A mounted row now appears in the
+  LIS walk like any other attached scope, and the LIS argument — keep the longest
+  already-correctly-ordered run stationary, insert every other run before the
+  next stationary scope — never depended on new rows being absent from that walk;
+  it only needs `domOrderIndices` to reflect the live DOM, which it still does.
+  Pinned by a reorder test that inserts a fresh row at the front and then
+  reverses a three-row list.
+
+  The ambient carrying the mount point is a single slot, so `mapArray` saves and
+  restores whatever it found rather than clearing to `null`, and only touches the
+  slot when it is the one setting it. A row whose own `init` drives a nested
+  `mapArray` would otherwise have the inner list strand the outer row's
+  not-yet-claimed mount point and silently revert it to init-detached.
+
+  One cost is inherent rather than incidental: a bulk append of component rows no
+  longer collapses into a single `DocumentFragment` insert, because each row must
+  be in the live document before its own `init` runs, and a fragment is not the
+  live document. The insertions move earlier (one per row, inside
+  `createComponent`) instead of disappearing — the reorder step then finds the
+  parked order already correct and performs zero mutations. Template-clone rows
+  keep the batched path untouched.
+
+  Two shapes stay on the old path, both intentionally:
+
+  - **Multi-root rows.** A Fragment loop body's extras and per-item marker only
+    exist once `renderItem` has returned, so `createItemScope` un-parks a row
+    that turns out to carry extras rather than leaving it in the DOM without
+    them. This also preserves `qsa-item.ts`'s step-3 contract, which needs the
+    primary detached during setup. Expected to be dead code — a multi-root body
+    never takes the `createComponent` row path.
+  - **Composite / plain rows.** Their root is a template clone, never a
+    `createComponent`, so there is no call to hand a mount point to and their
+    nested `upsertChild` children still init against a detached row. Closing
+    that needs the emitted renderItem body to hand its element over before the
+    tail runs — a compiler change, pinned as a skipped test in
+    `csr-loop-row-init-connected.test.ts`.
+
+  Deferring the row's `init` instead — the other obvious fix — is the wrong
+  seam and is documented as such in that test file. `createComponent` is atomic:
+  getter `children` are evaluated _after_ `initFn` so the row's own providers are
+  in place first, and the renderItem tail's `insert(__csrEl, '^sN', …)` calls
+  resolve conditional-slot markers that live inside exactly that getter-children
+  HTML. Deferring init defers those markers into existence, leaving per-row
+  branch slots unwired.
+
+  Measured: the two previously-skipped tests in
+  `packages/client/__tests__/runtime/csr-loop-row-init-connected.test.ts` now
+  pass (client suite 608 pass + 2 skip → 610 pass); adapter and CSR conformance
+  1456 pass / 0 fail; the full `site/ui` Playwright suite green on CI across all
+  four shards.
+
+- c3c435a: Add a re-subscribe seam to `mapArrayLazy`'s loop-level outer effect.
+
+  `applyOuter` runs in one loop-level effect that subscribes to whatever its
+  body reads. For a primed signal/memo getter that set is independent of the
+  entries, so a reconcile can never strand it — the existing contract. For a
+  per-key subscription such as `createSelector`, whose selector subscribes the
+  caller only to the keys it was called with, the set DOES depend on the
+  entries iterated, and three sequences strand it: an empty entry list on the
+  first run (loop permanently dead), a row created and then selected while no
+  already-subscribed key flips, and an item change that moves the value a
+  binding keys on. All three were reproduced before this was written; each is
+  now a regression test.
+
+  Every loop with an `applyOuter` now re-runs it after any reconcile that
+  created a row or changed an item (removals strand nothing). This is
+  deliberately unconditional rather than gated on a compiler judgement about
+  which outer reads are per-key: that gate would turn a MISCLASSIFICATION into
+  a silent staleness bug, while unconditional makes the same mistake merely
+  wasteful. Forcing it on for a loop that does not need it measured below this
+  repo's benchmark floor (post-hydration heap 1815.5KB -> 1809.1KB, i.e. it
+  came out lower — noise, not signal).
+
+  This inverts the earlier contract that a reconcile never re-runs the outer
+  effect; the test that pinned it is updated with the reason.
+
+- 27b0648: Keep a live DOM node intact when it lands on a lazy loop row's content slot
+
+  A child-position interpolation can evaluate to a real element rather than a
+  string:
+
+  ```tsx
+  {
+    _p.renderCell(row.id);
+  }
+  ```
+
+  when the caller passes an inline-JSX arrow — the compiler lifts that into a
+  component whose call returns a live Node. In a lazy loop row the value was
+  stringified before it ever reached the claim door (`String(__x)` in
+  `stringify/lazy-row.ts`), and the row's content slot is claimed as
+  `kind: 'text'`, whose writer sets `nodeValue`. A Text node cannot host an
+  element, so the element was destroyed: the user saw its serialized markup as
+  visible characters, or `[object HTMLDivElement]`, depending on the DOM
+  implementation's `toString`.
+
+  Two properties made it silent. Nothing overwrote the row afterwards — the
+  other Node-bearing shapes are self-healing by accident, since a conditional's
+  `insert()` re-renders through `__bfSlot` and a non-loop reactive text
+  re-applies through `escapeTextOrNode`, so the wrong value is transient there
+  and only the lazy row keeps it. And the eligibility gate ACCEPTS the shape: a
+  prop accessor is an opaque outer read, which the re-subscribe seam
+  (`spec/slot-unification.md` §9.3a) made eligible, so the row takes the lazy
+  path and the destructive write is what ships.
+
+  The fix keeps the cheap door and decides on the VALUE, in two halves:
+
+  - `textOrNode` (new export, `runtime/claim-slots.ts`) passes a Node through and
+    coerces anything else with `String`, exactly as the previous inline emission
+    did. It is the 'text' door's counterpart to `escapeTextOrNode` — a 'text'
+    write goes through `nodeValue` and must NOT be escaped, but it does need the
+    Node case separated out. `stringify/lazy-row.ts` emits it in place of
+    `String(__x)`.
+  - The claim **promotes** a slot from 'text' to 'markup' on its first Node
+    write, reusing the anchor comment the original claim already resolved (so
+    §2's claim-once rule still holds — no second position resolution) and its
+    matching `<!--/-->` as the end boundary. `writeMarkup` already splices Nodes
+    by identity, so every later write on that id — Node or string — is correct.
+    A slot that cannot host a Node (markerless, or missing its end marker) warns
+    and skips the write instead of stringifying an element.
+
+  Whether such a call yields a string or a Node is not decidable from the
+  expression's syntax — `renderChild(...)` and `_p.renderCell(...)` are both
+  `CallExpression` — so this has to be a runtime decision on the value, not a
+  compile-time classification. Strings keep the Text-node fast path; the added
+  cost is one `instanceof Node` per content write.
+
+  The seed comparison fails safe on its own: `read(id)` answers with a string or
+  `null`, neither of which is ever `===` a Node, so an outer-involving Node
+  binding always writes on its first run. That is the right direction — a Node
+  is freshly built on this run and is never the SSR-rendered content by
+  identity.
+
+- 86f5f68: Add `mapArrayLazy` (plus its `LazyRowPlan`/`LazyRowEntry` contract types) to
+  `@barefootjs/client/runtime` — the lazy row graph runtime for keyed loops
+  (spec/slot-unification.md §9, L2 of the stacked series). Rows carry NO
+  per-row reactive resources: hydration adopts SSR rows with zero DOM
+  mutations (key read from `data-key`, never written on adopted rows),
+  item-driven updates are direct reconciler calls into the plan's `applyItem`
+  with lazy per-row ref claiming, and outer-involving bindings run through ONE
+  loop-level effect (`applyOuter`) with read-compare-write seeding on its
+  first run. Keyed diff, duplicate-key warning, clear-all fast path, and LIS
+  minimal-move reorder mirror `mapArray`'s; `createRow`/`applyItem` run
+  untracked so the reconciler subscribes only to the loop accessor. No
+  compiler change yet — the L3 compiler switch targets this entry point for
+  eligible plain loops.
+- 4274898: Make claiming a `'text'` slot non-mutating, and add `lazyClaimSlots` — the
+  read-capable twin of `lazySlots`.
+
+  A text claim used to call `textNodeAfterComment`, which CREATES and inserts
+  an empty Text node when SSR rendered the slot empty, so merely claiming a
+  row mutated the DOM. A marked text slot now holds ONE field — the live Text
+  node once materialized, or the anchor Comment to create it after — and the
+  node is created by the first write that needs it. Post-write DOM is
+  identical to before; inspecting a slot now leaves nothing behind.
+
+  That unlocks the read half of read-compare-write seeding
+  (`spec/slot-unification.md` §9.3(1)), which content slots previously had no
+  door for. It ships as a separate `lazyClaimSlots` / `ClaimedSlotsRW` pair
+  rather than a `read` on every claim: doors are allocated per row, so giving
+  every row a reader costs closures on rows that never read (measured
+  +84KB/1k rows for a reader on every writer, +40KB for a reader on every
+  claim). Both shapes sit on the same claim — a second accessor bundle, never
+  a second way to resolve a position.
+
+  - @barefootjs/shared@0.28.0
+
 ## 0.27.0
 
 ### Minor Changes
