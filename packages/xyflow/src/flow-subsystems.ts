@@ -88,14 +88,18 @@ export function attachFlowSubsystems<
   el.style.overflow = 'hidden'
 
   store.setDomNode(el)
-  // Expose the store on the host `<div class="bf-flow">` element so
-  // descendants that miss `FlowContext` — e.g. children passed through
-  // `<Flow renderNode={Fn}>` whose returned JSX is hydrated as a
-  // top-level scope outside of Flow's `FlowContext.Provider` — can
-  // still locate the store via `el.closest('.bf-flow').__bfFlowStore`.
-  // Always-set, even on hot remount, so callers can rely on a single
-  // canonical reference.
-  ;(el as HTMLElement & { __bfFlowStore?: typeof store }).__bfFlowStore = store
+  // No `__bfFlowStore` escape hatch here. This used to stamp the store on
+  // the host element for "descendants that miss `FlowContext`", on the
+  // premise that `<Flow renderNode={Fn}>` hydrates its children as a
+  // top-level scope outside the `FlowContext.Provider`. That premise does
+  // not hold in the rendered DOM: the provider's context map lives on this
+  // very `<div class="bf-flow">`, which is an ancestor of every
+  // `.bf-flow__node`, and `useContext` walks `parentElement` — so any
+  // CONNECTED descendant resolves the store no matter which scope it was
+  // hydrated as, verified in a browser. The one shape that did fail was a
+  // child initialising while its row was still detached, and that is fixed
+  // at the root in the runtime (#2431), not by a second lookup path.
+  // Nothing read the property, so it was a write-only global.
   store.setWidth(el.offsetWidth)
   store.setHeight(el.offsetHeight)
 
