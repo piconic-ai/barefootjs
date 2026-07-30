@@ -181,24 +181,80 @@ test.describe('xyflow Reference Page', () => {
   })
 
   // ------------------------------------------------------------
-  // Pan / zoom / drag / connection-drag interactivity is gated on the
-  // pointer-paced subsystem attach implemented in cutover step C4.
-  // These describe blocks exist as placeholders so the gap between the
-  // packages/xyflow imperative-era e2e suite and the new JSX-native
-  // suite is visible. They MUST be re-enabled (and assertions filled
-  // in) in C4 — leaving `.skip` past C4 violates the project's
-  // "never leave skip when component work is done" rule.
+  // Pointer-paced interactivity. Cutover step C4 has shipped —
+  // `attachFlowSubsystems` (`packages/xyflow/src/flow-subsystems.ts`)
+  // wires XYPanZoom and a delegated single-node drag through `<Flow>`'s
+  // `ref`, so the drag / pan-zoom placeholders below are now real tests.
   // ------------------------------------------------------------
 
-  test.describe.skip('Node Dragging (re-enable in cutover step C4)', () => {
-    test('drag updates node transform', async () => {
-      // Filled in once the drag handler ships from @barefootjs/xyflow.
+  /** Pull the `scale(N)` factor out of a viewport transform string. */
+  function scaleOf(transform: string | null): number {
+    const m = /scale\(([\d.]+)\)/.exec(transform ?? '')
+    return m ? Number(m[1]) : Number.NaN
+  }
+
+  /** Pull `translate(Xpx, Ypx)` out of a node transform string. */
+  function translateOf(transform: string | null): { x: number; y: number } {
+    const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(transform ?? '')
+    return m ? { x: Number(m[1]), y: Number(m[2]) } : { x: Number.NaN, y: Number.NaN }
+  }
+
+  test.describe('Node Dragging', () => {
+    test('drag moves the node by the pointer delta', async ({ page }) => {
+      const container = firstScope(page, '[bf-s^="XyflowPreviewDemo_"][bf-r]:not([data-slot])')
+      const node = container.locator('.bf-flow__node').first()
+      await expect(node).toBeAttached()
+
+      const before = translateOf(await node.getAttribute('style'))
+      expect(Number.isNaN(before.x)).toBe(false)
+
+      // Scroll first, then measure. `page.mouse` works in viewport
+      // coordinates and does not scroll on its own, so a box taken while the
+      // node sits below the fold names a point no element occupies — the same
+      // trap the wheel test hits, and the reason that one calls `hover()`.
+      await node.scrollIntoViewIfNeeded()
+      const box = await node.boundingBox()
+      if (!box) throw new Error('node has no bounding box')
+      // Grab the node's centre and drag. `steps` matters: the delegated
+      // handler is pointer-paced, so a single jump emits no intermediate
+      // `pointermove` and the drag would never accumulate.
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 40, { steps: 8 })
+      await page.mouse.up()
+
+      await expect
+        .poll(async () => translateOf(await node.getAttribute('style')).x, { timeout: 2000 })
+        .not.toBe(before.x)
+
+      const after = translateOf(await node.getAttribute('style'))
+      // Zoom is 1 on first paint, so the store delta is the pointer delta.
+      // Two pixels of slack for sub-pixel pointer positions.
+      expect(Math.abs(after.x - before.x - 60)).toBeLessThanOrEqual(2)
+      expect(Math.abs(after.y - before.y - 40)).toBeLessThanOrEqual(2)
     })
   })
 
-  test.describe.skip('Pan / Zoom (re-enable in cutover step C4)', () => {
-    test('wheel zoom updates viewport scale', async () => {
-      // Filled in once XYPanZoom wiring ships via the Flow ref callback.
+  test.describe('Pan / Zoom', () => {
+    test('wheel zoom updates the viewport scale', async ({ page }) => {
+      const container = firstScope(page, '[bf-s^="XyflowPreviewDemo_"][bf-r]:not([data-slot])')
+      const pane = container.locator('.bf-flow').first()
+      const viewport = container.locator('.bf-flow__viewport').first()
+      await expect(viewport).toBeAttached()
+
+      const before = scaleOf(await viewport.getAttribute('style'))
+      expect(before).toBeCloseTo(1, 5)
+
+      // `hover()` scrolls the pane into view first. Without it the pane's
+      // centre can sit below the visible viewport, and a wheel aimed there
+      // lands on no element at all (`elementFromPoint` → null) instead of
+      // reaching the d3-zoom listener on the pane.
+      await pane.hover()
+      await page.mouse.wheel(0, -400)
+
+      await expect
+        .poll(async () => scaleOf(await viewport.getAttribute('style')), { timeout: 2000 })
+        .toBeGreaterThan(before)
     })
   })
 
@@ -281,10 +337,16 @@ test.describe('xyflow Reference Page', () => {
     })
   })
 
-  test.describe.skip('Edge Reconnection (re-enable in cutover step C4)', () => {
+  // Still skipped, but NOT on cutover step C4 — that shipped. The real
+  // gap: `attachReconnectionHandler` (`packages/xyflow/src/connection.ts`)
+  // is exported from `@barefootjs/xyflow` and has no caller. The JSX
+  // components render no reconnection grips for it to attach to, so
+  // there is no endpoint to drag. Un-skip once `<SimpleEdge>` renders
+  // the grips and calls the handler.
+  test.describe.skip('Edge Reconnection (no reconnection grips in the JSX renderer yet)', () => {
     test('reconnect handles update edge endpoints', async () => {
-      // Filled in once the reconnect overlay wiring ships from
-      // @barefootjs/xyflow.
+      // Fill in once `<SimpleEdge>` renders grips and wires
+      // `attachReconnectionHandler`.
     })
   })
 })
