@@ -201,20 +201,17 @@ describe('formatCompatMarkdown', () => {
 })
 
 describe('determinism', () => {
-  // Explicit budget, because bun's 5s default does not fit what this test
-  // actually does. `compileForCompat` costs ~1s per call at rest (measured:
-  // median 980ms over 7 interleaved samples, stable across refs), and this
-  // test makes two, so it starts from ~2s with nothing to spare. Under load
-  // a single compile has been observed at 2.8s, which alone blows the
-  // default — and the failure lands on whichever fixture-compiling test was
-  // running at the time, so it reads as a different flake each run rather
-  // than as one slow test. Sized against that observed worst case, not
-  // against the median.
+  // TEMPORARY, tracked by #2426 — remove once a compile is cheap again.
   //
-  // The ~1s-per-compile figure is itself worth attacking (the engine
-  // re-creates an adapter and re-runs the whole pipeline per call), but that
-  // is a pre-existing cost, not something a caller can pay its way out of
-  // here.
+  // bun's 5s default does not fit what this test does. `compileForCompat`
+  // costs ~1s per call at rest (median 980ms over 7 interleaved samples,
+  // identical on main, so it is the standing cost rather than a regression),
+  // and this test makes two — it starts from ~2s with nothing spare. One
+  // environment stall, observed at 2.8s for a single compile, blows the
+  // default on its own. Sized against that worst case, not the median.
+  //
+  // The budget is the wrong number here, not the test; the ~1s figure is the
+  // actual defect and belongs to #2426.
   test('two engine runs over the same inputs produce deep-equal and byte-equal reports', () => {
     const runOnce = () => {
       const adapter = new GoTemplateAdapter()
