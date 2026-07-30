@@ -38,7 +38,10 @@ describe('attachFlowSubsystems keeps no second store-lookup path', () => {
     // biome-ignore lint/suspicious/noExplicitAny: minimal props for unit test
     attachFlowSubsystems(el, store as any, {} as any)
 
-    expect((el as HTMLElement & { __bfFlowStore?: unknown }).__bfFlowStore).toBeUndefined()
+    // Presence, not value: a `toBeUndefined()` read would also pass if the
+    // attach stamped the property and assigned `undefined` to it, which is
+    // still an expando on a public DOM element.
+    expect(Object.hasOwn(el, '__bfFlowStore')).toBe(false)
     // The attach itself still has to have happened — otherwise this test
     // would pass against a no-op `attachFlowSubsystems`.
     expect(store.domNode()).toBe(el)

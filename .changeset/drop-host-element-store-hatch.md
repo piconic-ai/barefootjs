@@ -35,9 +35,17 @@ connected before `init` runs — rather than by giving the store a second lookup
 path. A second path would also have been the wrong shape: it hides the
 ordering bug instead of surfacing it, and only for consumers who know to look.
 
-No behaviour change: removing a write with no readers cannot alter what any
-consumer observes. The unit test is repurposed to pin the removal, so a
-write-only global cannot come back without a reader to justify it. Beyond the
-dead code, the comment claimed a live product defect that did not exist, and
-that misreading fed a wrong priority call — which is the more expensive half of
-what is being removed here.
+`__bfFlowStore` was an undocumented internal expando, never part of
+`@barefootjs/xyflow`'s exported surface and not mentioned in the docs, so
+nothing in this repository changes behaviour. It was on a public DOM element
+though, so code outside this repository could have reached it — if you read
+`el.closest('.bf-flow').__bfFlowStore`, switch to `useFlow()` (or the derived
+`useViewport()` / `useNodes()` / `useEdges()`), which resolves through context
+from any connected descendant of the flow.
+
+The unit test is repurposed to pin the removal, asserting the property is not
+even *present* — a value check would also pass against an attach that stamped
+the key and assigned `undefined`, which is still an expando. Beyond the dead
+code, the comment claimed a live product defect that did not exist, and that
+misreading fed a wrong priority call — which is the more expensive half of what
+is being removed here.
