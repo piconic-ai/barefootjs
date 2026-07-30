@@ -320,6 +320,10 @@ export {
 // Errors
 export { ErrorCodes, createError, formatError, generateCodeFrame } from './errors.ts'
 
+// Value-reference classifier (#2432) — shared "is this a real value use"
+// door for import-emission sites and the CLI's stripped-reference scan.
+export { isValueReferenceIdentifier, collectValueReferencedNames } from './value-references.ts'
+
 // Expression Parser
 export { parseExpression, tsNodeToParsedExpr, asCallbackMethodCall, CALLBACK_METHODS, sortComparatorFromArrow, serializeParsedExpr, freeVarsInBody, freeIdentifiers, materializeGetterCalls, isSupported, exprToString, stringifyParsedExpr, identifierPath, parseBlockBody, parseBlockBodyTolerant, foldBlockToExpr, predicateTernaryToLogical, containsHigherOrder, extractArrowBodyExpression, parseStyleObjectEntries, hasUnsafeStyleValue, parseProviderObjectLiteral, type ProviderObjectMember, type FoldBlockOptions } from './expression-parser.ts'
 export type { StyleObjectEntry } from './expression-parser.ts'

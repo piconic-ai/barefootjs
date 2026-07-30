@@ -818,4 +818,109 @@ console.log(HELP_MESSAGE)
     expect(result).not.toMatch(/^import[^\n]*from '\.\/nonexistent'/m)
     expect(result).toContain('console.log(HELP_MESSAGE)')
   })
+
+  // #2432: the compiler no longer emits per-specifier type-only names as
+  // value imports (see packages/jsx's `collectExternalImports` fix), but
+  // this is the defensive net for anything that still asks an inlined
+  // module for a name it doesn't export — e.g. a stale/hand-edited bundle,
+  // or a name that was simply a typo. Without this check the IIFE `return`
+  // silently references an undeclared name and throws `ReferenceError` at
+  // load.
+  test('BF055 fires when the parent client JS imports a name the inlined module does not export (#2432)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'theme.ts'), `
+export function paperColor(opts: { paper: string }): string {
+  return opts.paper
+}
+export type Theme = 'light' | 'dark'
+`)
+    const clientJs = `import { paperColor, Theme } from './theme'
+import { createSignal } from '@barefootjs/client'
+console.log(paperColor({ paper: '#fff' }))
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'ThemedBadge-abc.js'), clientJs)
+    const manifest = {
+      ThemedBadge: { clientJs: 'components/ThemedBadge-abc.js', markedTemplate: 'components/ThemedBadge.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF055')
+    expect(errors[0].message).toContain('Theme')
+    expect(errors[0].message).toContain('theme.ts')
+  })
+
+  test('no BF055 when the inlined module has a non-exhaustive surface (export * from) (#2432)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'theme2.ts'), `
+export * from './other'
+export function paperColor(opts: { paper: string }): string {
+  return opts.paper
+}
+`)
+    const clientJs = `import { paperColor, NotLocallyDeclared } from './theme2'
+import { createSignal } from '@barefootjs/client'
+console.log(paperColor({ paper: '#fff' }))
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'StarReexport-abc.js'), clientJs)
+    const manifest = {
+      StarReexport: { clientJs: 'components/StarReexport-abc.js', markedTemplate: 'components/StarReexport.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    // `export * from` makes the surface non-enumerable — the check is
+    // skipped entirely rather than risk a false positive.
+    expect(errors.filter(e => e.code === 'BF055')).toHaveLength(0)
+  })
+
+  test('no BF055 for a name the module only re-exports (#2432)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'theme3.ts'), `
+export { helper } from './other'
+export function paperColor(opts: { paper: string }): string {
+  return opts.paper
+}
+`)
+    const clientJs = `import { paperColor, helper } from './theme3'
+import { createSignal } from '@barefootjs/client'
+console.log(paperColor({ paper: '#fff' }))
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'ReexportName-abc.js'), clientJs)
+    const manifest = {
+      ReexportName: { clientJs: 'components/ReexportName-abc.js', markedTemplate: 'components/ReexportName.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    // `helper` is named by the module's own `export { helper } from './other'`
+    // clause — `collectExportSurface` is deliberately wider than
+    // `collectExportedNames` so this legal re-export never produces a false
+    // build failure.
+    expect(errors.filter(e => e.code === 'BF055')).toHaveLength(0)
+  })
+
+  test('no BF055 for an exported enum member (#2432)', async () => {
+    writeFileSync(resolve(COMPONENTS_DIR, 'themeEnum.ts'), `
+export enum Color {
+  Light = 'light',
+  Dark = 'dark',
+}
+export function paperColor(opts: { paper: string }): string {
+  return opts.paper
+}
+`)
+    const clientJs = `import { paperColor, Color } from './themeEnum'
+import { createSignal } from '@barefootjs/client'
+console.log(paperColor({ paper: '#fff' }), Color.Light)
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'EnumExport-abc.js'), clientJs)
+    const manifest = {
+      EnumExport: { clientJs: 'components/EnumExport-abc.js', markedTemplate: 'components/EnumExport.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    // `export enum Color` is a genuine value export the earlier declaration-
+    // shape checks missed — asking for it must not produce a spurious BF055.
+    expect(errors.filter(e => e.code === 'BF055')).toHaveLength(0)
+  })
 })
