@@ -228,11 +228,16 @@ work.
 
 ## 8. Follow-ups
 
-Identified but not shipped, tracked so it isn't re-discovered from scratch.
+Identified here rather than re-discovered from scratch later. Entries stay
+after they ship when the *estimate* is the reusable part — a number that was
+wrong, and why, is worth as much as the change itself.
 
 - **General-case marker elision** (§5a). The one open item on axis (b), and
   the only route to closing the HTML-size gap against solid.
-- **Claim-mechanism allocation shape.** Two mechanically identified pieces.
+- **Claim-mechanism allocation shape — both pieces SHIPPED.** Kept here
+  because the corrected estimates are the reusable part: the original numbers
+  for both pieces were wrong in opposite directions, and each was measured on
+  the wrong bench at first.
 
   **(1) Per-row `SlotSpec` re-allocation — SHIPPED.** Every row rebuilt the
   loop's whole `ClaimPlan` (the array, one `{ id, kind, path }` per text
@@ -257,16 +262,47 @@ Identified but not shipped, tracked so it isn't re-discovered from scratch.
   +0.1KB gzip on the benchmark app — which is the trade: two extra const
   lines per loop buy 2 fewer allocations per row.
 
-  **(2) `applyOuter`'s seed pass materializes each row's whole ref tuple**
+  **(2) `applyOuter`'s seed pass materialized each row's whole ref tuple**
   (element handle plus the `lazySlots` writer closure) even when the row's
-  outer-involving bindings are all ATTRS and the seed only ever reads the
-  element — splitting the tuple by what the seed actually reads recovers
-  most of ~230KB/1k rows without touching the model. **Still open**, and
-  piece (1) does not overlap it: (1) removed the plan objects the closure
-  captures, (2) is about not creating the closure at all on rows whose seed
-  never needs it. Needs per-slot lazy `entry.refs`, which interacts with
-  §2's claim-once rule, so it is a separate change measured on top of this
-  one.
+  outer-involving bindings were all ATTRS and the seed only ever read the
+  element. **Done** — the adopted-row claim (`__lzc_<mid>`) now leaves the
+  door slot `null` and the first content write fills it (`doorAccess` in
+  `stringify/lazy-row.ts`). `createRow` still builds its door eagerly: it
+  writes every text on the tick it clones the row, so there is nothing to
+  defer on the CSR path. A knock-on: with the door gone from the claim, the
+  element refs are the only parts that read the row root, so a row with no
+  reactive ATTRIBUTE claims to a bare `[null]` and stops binding
+  `__e.primaryEl` at all.
+
+  The claim-once interaction turned out not to bind. §2's rule is about a
+  single door resolving the whole plan on first access, and each door already
+  enforces that internally (`lazySlots`/`lazyClaimSlots` call `claimRefs`
+  once and cache); deferring the door's CONSTRUCTION changes when that one
+  resolution happens, not how many there are. A loop with an outer-involving
+  TEXT still claims every row at seed, because read-compare-write cannot
+  compare what it has not resolved — the deferral is a no-op there by design,
+  and the win is confined to attr-only-outer loops.
+
+  Two corrections to this entry's original estimate. The **~230KB/1k rows**
+  figure was too high: it was written before piece (1) removed the per-row
+  plan objects, and `lazySlots` never scanned eagerly anyway
+  (`claim-slots.ts:617` defers to the first write), so what remained was one
+  closure per row, not a resolved slot map. And the right benchmark is not
+  the DOM suite: that column creates its 1,000 rows client-side, which is the
+  `createRow` path this change deliberately leaves alone. Measured instead on
+  **SSR post-hydration heap** (`benchmarks/ssr/bench-ssr-memory.ts`, the
+  1,000-row table with item texts plus an outer-signal class):
+  **1630.6KB -> 1573.2KB / 1572.9KB** across two after-runs, i.e.
+  **-57.4KB (-3.5%)**, against a per-run stdev of 0.1-0.6KB and with the
+  react/solid columns unmoved as controls.
+
+  Behavioural coverage is
+  `packages/client/__tests__/runtime/lazy-row-adopted-door.test.ts`: real Hono
+  SSR markup, hydrated, then an item changed. That sequence is the only one
+  that executes the deferred branch — the emission tests read text, the
+  `createComponent` tests take the eager path, and the conformance suites
+  never run a post-hydration update. Verified to fail when the door is built
+  against the wrong root.
 - **Widening the lazy-row gate** — see §9.5's refusal table.
 
 ## 9. Lazy row graph — §3(c) completion

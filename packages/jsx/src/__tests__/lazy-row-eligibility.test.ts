@@ -457,6 +457,36 @@ describe('lazy row emission — eligible loop', () => {
     expect(js).not.toContain('.write(')
     expect(js).not.toContain('.read(')
   })
+
+  /**
+   * The adopted-row claim resolves ELEMENT refs only; the content door's slot
+   * is left empty for the first content write to fill. `applyOuter` here
+   * drives one CLASS and no text, so it claims all 1,000 rows of a 1,000-row
+   * list at seed WITHOUT ever building a door — the allocation this pins away
+   * (measured on the SSR bench: post-hydration heap 1630.6KB -> 1573.2KB).
+   *
+   * `createRow` is deliberately excluded: it writes every text on the tick it
+   * builds the row, so its door is used immediately and stays eager.
+   */
+  test('the adopted-row claim leaves the content door slot empty', () => {
+    const claim = js.slice(js.indexOf('const __lzc_l0 ='), js.indexOf('mapArrayLazy('))
+    expect(claim).toContain('return [qsa(__el, \'[bf="s2"]\'), null]')
+    expect(claim).not.toContain('lazySlots(')
+  })
+
+  test('an attr-only applyOuter never materializes the door; applyItem does', () => {
+    const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    expect(applyItem).toContain('const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0))')
+    expect(applyOuter).not.toContain('lazySlots(')
+    expect(applyOuter).not.toContain('__r[1]')
+  })
+
+  test('createRow still builds its door eagerly — it writes on the same tick', () => {
+    const createRow = js.slice(js.indexOf('createRow:'), js.indexOf('applyItem:'))
+    expect(createRow).toContain('lazySlots(__el, ')
+    expect(createRow).not.toContain('?? (__r[1] =')
+  })
 })
 
 /**
@@ -515,7 +545,11 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
     // side-effecting `toString` is not stringified twice.
     expect(applyOuter).toContain('if (__seed) {')
     expect(applyOuter).toContain('const __s = textOrNode(__x)')
-    expect(applyOuter).toContain("if (__r[0].read('s1') !== __s) __r[0].write('s1', __s)")
+    // Through `__d`, the door materialized once for this body — a loop with an
+    // outer TEXT cannot avoid claiming at seed (you cannot read-compare-write
+    // what you have not resolved), so here the deferral is a no-op by design.
+    expect(applyOuter).toContain("const __d = __r[0] ?? (__r[0] = lazyClaimSlots(__e.primaryEl, __lzs_l0))")
+    expect(applyOuter).toContain("if (__d.read('s1') !== __s) __d.write('s1', __s)")
     expect(applyOuter).not.toContain("read('s1') !== textOrNode(__x)")
     // …and falls back to the ordinary entry.last dedup on every later run,
     // where the string is built only when the write actually happens.
@@ -525,12 +559,25 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
 
   test('the outer text ALSO applies on item change, because it reads the item too', () => {
     const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
-    expect(applyItem).toContain("__r[0].write('s1', textOrNode(__x))")
+    expect(applyItem).toContain("__d.write('s1', textOrNode(__x))")
   })
 
   test('the item-only text is NOT emitted into applyOuter', () => {
     const applyOuter = js.slice(js.indexOf('applyOuter:'))
     expect(applyOuter).not.toContain("'s0'")
+  })
+
+  /**
+   * This row has no reactive ATTRIBUTE, so with the door deferred the element
+   * refs are gone and the adopted claim is a bare `[null]` — at which point
+   * binding the row root is dead code. Pinned because the binding is emitted
+   * unconditionally the moment anyone forgets that `refParts` decides whether
+   * anything reads it.
+   */
+  test('a text-only adopted claim binds no row root', () => {
+    const claim = js.slice(js.indexOf('const __lzc_l0 ='), js.indexOf('mapArrayLazy('))
+    expect(claim).toContain('return [null]')
+    expect(claim).not.toContain('__el')
   })
 })
 
