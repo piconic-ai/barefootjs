@@ -208,6 +208,11 @@ test.describe('xyflow Reference Page', () => {
       const before = translateOf(await node.getAttribute('style'))
       expect(Number.isNaN(before.x)).toBe(false)
 
+      // Scroll first, then measure. `page.mouse` works in viewport
+      // coordinates and does not scroll on its own, so a box taken while the
+      // node sits below the fold names a point no element occupies — the same
+      // trap the wheel test hits, and the reason that one calls `hover()`.
+      await node.scrollIntoViewIfNeeded()
       const box = await node.boundingBox()
       if (!box) throw new Error('node has no bounding box')
       // Grab the node's centre and drag. `steps` matters: the delegated
@@ -224,7 +229,7 @@ test.describe('xyflow Reference Page', () => {
 
       const after = translateOf(await node.getAttribute('style'))
       // Zoom is 1 on first paint, so the store delta is the pointer delta.
-      // Allow a pixel of slack for sub-pixel pointer positions.
+      // Two pixels of slack for sub-pixel pointer positions.
       expect(Math.abs(after.x - before.x - 60)).toBeLessThanOrEqual(2)
       expect(Math.abs(after.y - before.y - 40)).toBeLessThanOrEqual(2)
     })
