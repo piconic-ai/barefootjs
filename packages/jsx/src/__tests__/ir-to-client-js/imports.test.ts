@@ -287,6 +287,29 @@ describe('collectExternalImports', () => {
     const result = collectExternalImports(ir, code)
     expect(result).toEqual(["import { helper } from 'some-lib'"])
   })
+
+  // These two pin the fallback branch specifically (generated text that does
+  // NOT parse cleanly, so `makeValueUsageTest` falls back to a substring
+  // scan rather than the AST-based value-reference set). #2432: the
+  // fallback used to be a `new RegExp(`\\b${localName}\\b`)` scan, which
+  // silently DROPPED the import for either shape below — `\b` isn't defined
+  // for `$` or non-ASCII characters, and `$` is also a regex metacharacter
+  // (end-of-input anchor) when spliced unescaped into `new RegExp(...)`, so
+  // `\b$fetch\b` could never match `$fetch` at all. Dropping the import is
+  // the one failure direction this helper must never take.
+  test('fallback matches a $-prefixed specifier (#2432)', () => {
+    const ir = makeIR([makeImport('ofetch', ['$fetch'])])
+    const code = 'MyComponent $fetch()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { $fetch } from 'ofetch'"])
+  })
+
+  test('fallback matches a non-ASCII specifier (#2432)', () => {
+    const ir = makeIR([makeImport('some-lib', ['日本語'])])
+    const code = 'MyComponent 日本語()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { 日本語 } from 'some-lib'"])
+  })
 })
 
 describe('collectUserDomImports', () => {

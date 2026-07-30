@@ -103,9 +103,22 @@ export function collectUserDomImports(ir: ComponentIR): string[] {
  * bundle. Prefers a real value-reference set over the historical
  * `\bname\b` text scan (#2432: an object key or string literal that
  * merely spells an imported name used to emit a phantom import). Falls
- * back to the text scan when the generated text cannot be parsed
+ * back to a substring scan when the generated text cannot be parsed
  * cleanly — a partial parse would under-report references and DROP a
  * needed import. The reference set is computed at most once per call.
+ *
+ * The fallback is a plain `includes()`, not a `\bname\b` regex: `\b` is
+ * defined over `[A-Za-z0-9_]`, so a `$`-prefixed name (`$fetch`, as
+ * exported by `ofetch`) or a non-ASCII local both sit outside a word
+ * boundary and would never match — silently dropping the import, the one
+ * failure direction this helper must never take. Worse, splicing
+ * `localName` straight into `new RegExp(...)` treated `$` as the
+ * end-of-input anchor, so `\b$fetch\b` couldn't match `$fetch` at all.
+ * `includes()` is deliberately COARSER than a word-boundary scan (it
+ * matches `helper` inside `helperFoo` too) — that's fine here: the
+ * fallback's only job is "never under-report", and over-keeping an
+ * import whose binding already exists is harmless, while dropping one is
+ * fatal.
  */
 export function makeValueUsageTest(generatedCode: string): (localName: string) => boolean {
   let referenced: Set<string> | null | undefined
@@ -116,7 +129,7 @@ export function makeValueUsageTest(generatedCode: string): (localName: string) =
     if (referenced !== null) {
       return referenced.has(localName)
     }
-    return new RegExp(`\\b${localName}\\b`).test(generatedCode)
+    return generatedCode.includes(localName)
   }
 }
 
