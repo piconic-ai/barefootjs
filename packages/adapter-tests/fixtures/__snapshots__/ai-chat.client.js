@@ -86,7 +86,7 @@ export function initAIChatInteractive(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [qsa(__el, '[bf="s1"]'), lazySlots(__el, __lzs_l0)]
+    return [qsa(__el, '[bf="s1"]'), null]
   }
   mapArrayLazy(() => messages(), _s5, (msg) => String(msg.id), {
     createRow: (__e, __idx) => {
@@ -117,8 +117,9 @@ export function initAIChatInteractive(__scope, _p = {}) {
         }
         __l[0] = __x
       } }
+      const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = msg().content
-      if (!(1 in __l) || !Object.is(__l[1], __x)) __r[1]('s0', textOrNode(__x))
+      if (!(1 in __l) || !Object.is(__l[1], __x)) __d('s0', textOrNode(__x))
       __l[1] = __x }
     },
   }, 'l0')

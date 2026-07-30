@@ -14,7 +14,7 @@
  *     const __lzp_<mid> = [...]                                   // hoisted fresh-clone text paths, when usable
  *     const __lzs_<mid> = [{ id, kind: 'text', path: [] }, …]      // hoisted claim plan, ADOPTED-row form
  *     const __lzsc_<mid> = [{ id, kind: 'text', path: __lzp_<mid>[i] }, …]  // FRESH-CLONE form, only when it differs
- *     const __lzc_<mid> = (__e) => { … }                          // lazy ref claim for ADOPTED rows
+ *     const __lzc_<mid> = (__e) => { … }                          // lazy ref claim for ADOPTED rows (door slot empty)
  *     mapArrayLazy(() => <arr>, <container>, <keyFn>, {
  *       createRow: (__e, <idx>) => { … writes every binding, seeds refs+last … },
  *       applyItem: (__e) => { … item-driven bindings, dedup against __e.last … },
@@ -31,9 +31,10 @@
  * loop-level outer effect's dedup is correct from the row's first tick.
  *
  * **`applyItem`** — called by the reconciler after `entry.item` changed.
- * Claims refs lazily through `__lzc_<mid>` (a `qsa`/`lazySlots` scan inside
- * that ONE row) when `entry.refs` is null, then writes each item-driven
- * binding behind a per-binding dedup on `entry.last`.
+ * Claims refs lazily through `__lzc_<mid>` (a `qsa` scan inside that ONE row)
+ * when `entry.refs` is null, materializes the content door on demand
+ * (`doorAccess`), then writes each item-driven binding behind a per-binding
+ * dedup on `entry.last`.
  *
  * **`applyOuter`** — the ONE loop-level effect body, emitted only when some
  * binding is outer-involving. Two details matter:
@@ -166,10 +167,20 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
 
   // Lazy ref claim for ADOPTED (SSR) rows: one scan inside that row, cached
   // on `entry.refs`. Shared by applyItem and applyOuter so a row claims once.
+  //
+  // The text door slot is left EMPTY here and filled by the first content
+  // write (`doorAccess`). An adopted row is claimed by whichever of
+  // applyItem/applyOuter touches it first, and an `applyOuter` that only
+  // drives ATTRIBUTES never reads or writes a content slot — so building the
+  // door in this function spends one closure per row of the list on something
+  // that stays unused until (and unless) that row's item changes. Deferring
+  // is confined to the adopted path on purpose: `createRow` writes every text
+  // immediately, so its door is used on the same tick it is built and there
+  // is nothing to defer (see the `deferDoor` note on `refParts`).
   if (hasRefs) {
     lines.push(`${indent}const ${claimVar} = (__e) => {`)
     lines.push(`${indent}  const __el = __e.primaryEl`)
-    lines.push(`${indent}  return [${refParts(lazyRow, '__el', null, adoptedPlanVar).join(', ')}]`)
+    lines.push(`${indent}  return [${refParts(lazyRow, '__el', null, adoptedPlanVar, true).join(', ')}]`)
     lines.push(`${indent}}`)
   }
 
@@ -194,7 +205,8 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   if (hasBindings) {
     lines.push(`${b2}const __l = __e.last = []`)
     for (const a of lazyRow.attrs) emitAttrBinding(lines, b2, a, 'create')
-    for (const t of lazyRow.texts) emitTextBinding(lines, b2, t, lazyRow.writerIndex, 'create', rwDoor)
+    const createDoor = `__r[${lazyRow.writerIndex}]`
+    for (const t of lazyRow.texts) emitTextBinding(lines, b2, t, createDoor, 'create', rwDoor)
   }
   lines.push(`${b2}return __el`)
   lines.push(`${b1}},`)
@@ -210,7 +222,10 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${b2}const __r = __e.refs ?? (__e.refs = ${claimVar}(__e))`)
     lines.push(`${b2}const __l = __e.last ?? (__e.last = [])`)
     for (const a of itemAttrs) emitAttrBinding(lines, b2, a, 'item')
-    for (const t of itemTexts) emitTextBinding(lines, b2, t, lazyRow.writerIndex, 'item', rwDoor)
+    if (itemTexts.length > 0) {
+      lines.push(`${b2}const __d = ${doorAccess(lazyRow, lazyRow.writerIndex, adoptedPlanVar)}`)
+      for (const t of itemTexts) emitTextBinding(lines, b2, t, '__d', 'item', rwDoor)
+    }
     lines.push(`${b1}},`)
   }
 
@@ -228,7 +243,10 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${b3}const __r = __e.refs ?? (__e.refs = ${claimVar}(__e))`)
     lines.push(`${b3}const __l = __e.last ?? (__e.last = [])`)
     for (const a of outerAttrs) emitAttrBinding(lines, b3, a, 'outer')
-    for (const t of outerTexts) emitTextBinding(lines, b3, t, lazyRow.writerIndex, 'outer', rwDoor)
+    if (outerTexts.length > 0) {
+      lines.push(`${b3}const __d = ${doorAccess(lazyRow, lazyRow.writerIndex, adoptedPlanVar)}`)
+      for (const t of outerTexts) emitTextBinding(lines, b3, t, '__d', 'outer', rwDoor)
+    }
     lines.push(`${b2}}`)
     lines.push(`${b1}},`)
   }
@@ -249,14 +267,27 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
  * read-compare-write (`plan.textNeedsRead`, decided once in
  * `build-lazy-row.ts`); every other loop keeps today's writer byte-for-byte.
  *
+ * **`deferDoor`** (adopted-row claim only). Even the cheap write-only door is
+ * a closure per row, and an `applyOuter` that drives ATTRIBUTES only claims
+ * every row at seed without ever touching a content slot — so the door was
+ * being built 1,000 times for a list of 1,000 rows and used zero times until
+ * some row's item changed. With `deferDoor` the slot holds `null` and the
+ * first content write fills it (`doorAccess`). Measured on the SSR bench's
+ * 1,000-row table (item texts + one outer-signal class, the shape this
+ * describes): post-hydration heap 1630.6KB -> 1573.2KB, -57.4KB, reproduced
+ * twice, against a per-run stdev of 0.1-0.6KB and with react/solid unmoved.
+ *
+ * `createRow` does NOT defer: it writes every text on the tick it builds the
+ * row, so its door is used immediately and a `??=` would only add a branch.
+ *
  * **Honest cost note.** Reading a text slot CLAIMS that row's whole plan
  * (§2's claim-once rule — `read` and `write` share `claimRefs`), so a loop
- * with an outer-involving text pays one claim per row at hydration instead
- * of the row-pristine zero. That is inherent to read-compare-write for
- * content: you cannot compare what you have not resolved. It is still far
- * cheaper than the eager path this replaces, which pays a root + a signal +
- * an effect per row. Attr-only loops are entirely unaffected — they keep the
- * write-only door and never claim at seed.
+ * with an outer-involving TEXT still pays one claim per row at hydration
+ * instead of the row-pristine zero. That is inherent to read-compare-write
+ * for content: you cannot compare what you have not resolved. It is still
+ * far cheaper than the eager path this replaces, which pays a root + a
+ * signal + an effect per row. A loop whose outer bindings are all attributes
+ * now pays neither the claim nor the door.
  *
  * `skeletonPaths` non-null = fresh-clone context (`createRow`): resolve via
  * compile-time child-index chains, no scan. Null = adopted-row context
@@ -276,6 +307,7 @@ function refParts(
   elVar: string,
   skeletonPaths: SkeletonSlotPaths | null,
   planVar: string | null,
+  deferDoor = false,
 ): string[] {
   const parts: string[] = []
   for (const slotId of lazyRow.attrSlotIds) {
@@ -283,10 +315,38 @@ function refParts(
     parts.push(path ? pathExpr(elVar, path) : `qsa(${elVar}, '[bf="${slotId}"]')`)
   }
   if (lazyRow.texts.length > 0) {
-    const door = lazyRow.textNeedsRead ? 'lazyClaimSlots' : 'lazySlots'
-    parts.push(`${door}(${elVar}, ${planVar})`)
+    parts.push(deferDoor ? 'null' : `${doorCtor(lazyRow)}(${elVar}, ${planVar})`)
   }
   return parts
+}
+
+/** The door constructor for this loop — see `refParts`'s "which door" note. */
+function doorCtor(lazyRow: LazyRowPlanData): string {
+  return lazyRow.textNeedsRead ? 'lazyClaimSlots' : 'lazySlots'
+}
+
+/**
+ * How a content write reaches this row's door.
+ *
+ * `createRow` seeds the door itself (fresh-clone plan, used on the same
+ * tick), so there it is a plain slot read. An ADOPTED row's slot is `null`
+ * until the first content write, so applyItem/applyOuter materialize it
+ * on demand against the ADOPTED plan — the only plan an adopted row can
+ * use, and reachable here because a row whose refs `createRow` seeded
+ * always finds a door already in the slot and never evaluates the `??`
+ * right-hand side.
+ *
+ * Emitted ONCE per apply body rather than per binding, and only when that
+ * body actually has content bindings: an `applyOuter` driving attributes
+ * only never mentions the door, which is the whole point of deferring it.
+ */
+function doorAccess(
+  lazyRow: LazyRowPlanData,
+  writerIndex: number,
+  adoptedPlanVar: string | null,
+): string {
+  const slot = `__r[${writerIndex}]`
+  return `${slot} ?? (${slot} = ${doorCtor(lazyRow)}(__e.primaryEl, ${adoptedPlanVar}))`
 }
 
 /** `entry.last`-backed dedup test. `in` (not a truthiness check) so a
@@ -355,12 +415,11 @@ function emitTextBinding(
   lines: string[],
   ind: string,
   t: LazyRowTextBinding,
-  writerIndex: number,
+  doorExpr: string,
   mode: 'create' | 'item' | 'outer',
   rwDoor: boolean,
 ): void {
   lines.push(`${ind}{ const __x = ${t.wrappedExpression}`)
-  const doorExpr = `__r[${writerIndex}]`
   const writeOf = (valueExpr: string): string =>
     rwDoor
       ? `${doorExpr}.write('${t.slotId}', ${valueExpr})`
