@@ -1,54 +1,61 @@
 /**
- * KNOWN LIMITATION — `mapArray` rows still init detached.
+ * Loop rows init CONNECTED — the `createComponent` row shape (fixed), and the
+ * template-clone row shape (still open).
  *
- * `createItemScope` calls `renderItem(...)` (which calls
- * `createComponent`) while building the run; the actual
- * `container.insertBefore(...)` happens later, once per run. So a row
- * component's init observes a detached element, and `useContext` falls
- * back to the global, last-writer-wins context store.
+ * A loop row has no placeholder to replace, so it could not use the
+ * `mountAt` "connect before init" contract that the child-slot path
+ * (`upsertChild` / `upsertChildItem`) uses. Its `init` therefore observed a
+ * detached element, and `useContext` fell back to the global,
+ * last-writer-wins context store: with more than one provider of the same
+ * context on the page, a row created after a sibling provider had hydrated
+ * resolved the WRONG provider's value.
  *
- * This is the xyflow shape: `<Flow>` provides `FlowContext`, nodes render
- * through `mapArray`, and their init reads `useFlow()`. With more than one
- * `<Flow>` on the page, a node created after a sibling flow has hydrated
- * resolves the WRONG flow's store. The `__bfFlowStore` +
- * `closest('.bf-flow')` workaround in `packages/xyflow/src/
- * flow-subsystems.ts` exists because of this.
+ * FIXED for rows whose root comes from `createComponent` (a component loop,
+ * `items.map(i => <Row item={i}/>)` — the xyflow node shape). `mapArray`
+ * hands the row's container + anchor down via `setRowMountPoint`, and the
+ * outermost `createComponent` inside `renderItem` connects there before
+ * running `init` — the same guarantee `mountAt` gives, applied to a shape
+ * that has no placeholder. The reorder needs no change: a mounted row
+ * participates in the LIS walk like any other attached scope, and the LIS
+ * argument never depended on new rows being absent from it.
  *
- * The child-slot path (`upsertChild` / `upsertChildItem`) is fixed — it
- * hands its placeholder to `createComponent` as `mountAt` so the element
- * is connected before init. The loop path can't use that: `renderItem`
- * RETURNS the element to `mapArray`, so there is no placeholder to replace.
+ * STILL OPEN for rows whose root is a TEMPLATE CLONE (composite / plain
+ * loops — an inline-markup or Fragment loop body). There is no
+ * `createComponent` for the row root to hand a mount point to; the clone is
+ * only handed to `mapArray` as `renderItem`'s return value, by which time
+ * the row's nested `upsertChild` children have already initialised against a
+ * detached row. Closing that requires the emitted body to hand the element
+ * over BEFORE its tail runs — a compiler-side change. Pinned by the skipped
+ * test at the bottom.
  *
- * BOTH obvious fixes were implemented and MEASURED against the site/ui e2e
- * suite. Both regress it, for different reasons. Numbers are from the same
- * three spec files; the baseline (child-slot fix only) fails 3 —
- * `form-builder` ×2 and `studio` ×1, all pre-existing and unrelated:
+ * WHY THE TWO EARLIER ATTEMPTS FAILED (both measured against site/ui e2e,
+ * whose baseline is 3 pre-existing failures — `form-builder` ×2, `studio` ×1):
  *
  *   1. Defer row init until after the batched insert  →  6 failed
  *      (+3 `file-upload`: per-row start / progress / remove).
- *      The compiler emits nested `initChild` calls and row effects AFTER
- *      `createComponent` in the renderItem body, and they depend on the
- *      row's own init having already run. Deferring leaves handlers unbound.
+ *      `createComponent` is atomic and must stay so: getter `children` are
+ *      deliberately evaluated AFTER `initFn` (`component.ts` step 10) so the
+ *      row's own context providers are in place first. The renderItem tail's
+ *      `insert(__csrEl, '^sN', ...)` calls resolve conditional-slot markers
+ *      that live inside exactly that getter-children HTML, so deferring init
+ *      also defers the markers into existence and the branch slots never
+ *      wire up. Splitting `createComponent` is the wrong seam.
  *
- *   2. Park the row in its container before init, let the reorder move it
- *      (excluding fresh rows from the LIS walk)  →  7 failed
- *      (+4 `file-upload`, i.e. worse).
- *      `qsa-item.ts`'s documented contract is the obstacle: during
- *      renderItem-body setup "the primary and extras are still detached
- *      nodes — `__el.nextSibling` is `null` and step 2 yields nothing"
- *      (qsa-item.ts:22-27). Attaching the row early makes that sibling walk
- *      run past the row's own roots into OTHER rows' elements, so
- *      `qsaItem` / `upsertChildItem` resolve to the wrong item.
+ *   2. Park the row in its container before init, but EXCLUDE fresh rows from
+ *      the LIS walk  →  7 failed (+4 `file-upload`, i.e. worse).
+ *      The exclusion is what broke it: a row that is in the DOM but absent
+ *      from `domOrderIndices` makes the walk disagree with the live DOM, and
+ *      the reorder then computes its runs against a stale picture. Parking is
+ *      right; excluding is not.
  *
- * So the loop path actively DEPENDS on rows being detached during setup, in
- * two independent places. Closing this gap means unwinding that dependency
- * — giving `qsaItem` an item-bounded lookup that doesn't rely on
- * detachment, and moving the emitted renderItem tail's ordering assumption
- * — not just changing when init fires. That is a larger change than the
- * child-slot fix and is tracked separately.
- *
- * Un-skip these two tests when that lands — they assert the correct
- * behaviour and currently fail as `[false, false]` and `'ONE:2' → 'TWO'`.
+ * `qsa-item.ts`'s documented reliance on detachment (its step 3, the
+ * `__bfExtras` stash) is real but was NOT what broke attempt 2 — none of the
+ * three components in that e2e baseline (`file-upload-demo`,
+ * `form-builder-demo`, `studio-canvas`) emits `qsaItem`, `upsertChildItem`,
+ * or `__bfExtras` at all, because the multi-root path only applies to
+ * Fragment loop bodies. Multi-root rows never take the `createComponent` row
+ * path either, so `createItemScope` un-parks a row that turns out to carry
+ * extras rather than leaving it half-inserted.
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
@@ -60,7 +67,7 @@ beforeAll(() => {
   }
 })
 
-describe.skip('mapArray row init runs connected (known limitation)', () => {
+describe('mapArray row init runs connected', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
@@ -153,5 +160,91 @@ describe.skip('mapArray row init runs connected (known limitation)', () => {
     pushers[0]!()
 
     expect(seen).toEqual([['ONE:2', 'ONE']])
+  })
+
+  test('mounting the row before init does not change the reconciled order', async () => {
+    const { hydrate, createComponent, mapArray, initChild, createSignal } =
+      await import('../../src/runtime')
+
+    hydrate('OrderKid', {
+      init: () => {},
+      template: (p: any) => `<li>${p.label}</li>`,
+    })
+
+    const container = document.createElement('ul')
+    document.body.appendChild(container)
+
+    const [items, setItems] = createSignal([{ id: 2, label: 'b' }])
+
+    mapArray(
+      () => items(),
+      container,
+      (it: any) => String(it.id),
+      (item: () => any, _i: number, existing?: HTMLElement) => {
+        if (existing) {
+          initChild('OrderKid', existing, { label: item().label })
+          return existing
+        }
+        return createComponent('OrderKid', { label: item().label }, item().id)
+      },
+      'loop-order',
+    )
+
+    // A fresh row that belongs BEFORE the existing one is mounted at the end
+    // of the range first, so the reorder has to move something. Both orders
+    // below must come out exactly as the array says.
+    setItems([{ id: 1, label: 'a' }, { id: 2, label: 'b' }])
+    expect([...container.querySelectorAll('li')].map(el => el.textContent)).toEqual(['a', 'b'])
+
+    setItems([{ id: 3, label: 'c' }, { id: 2, label: 'b' }, { id: 1, label: 'a' }])
+    expect([...container.querySelectorAll('li')].map(el => el.textContent)).toEqual(['c', 'b', 'a'])
+  })
+})
+
+/**
+ * KNOWN LIMITATION — a composite / plain loop row (template clone) still
+ * initialises its nested children detached. See the header: the row root is
+ * never handed to `mapArray` until `renderItem` returns, so there is no
+ * mount point to give it, and `upsertChild` connects the child relative to a
+ * still-detached row.
+ *
+ * Un-skip when the emitted renderItem body hands its element over before the
+ * tail runs. Currently fails as `[false, false]`.
+ */
+describe.skip('composite loop row nested child init runs connected (known limitation)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  test('a nested child of a template-cloned row is connected at init', async () => {
+    const { hydrate, mapArray, createSignal, upsertChild } = await import('../../src/runtime')
+
+    const connectedAtInit: boolean[] = []
+
+    hydrate('Inner', {
+      init: (el: Element) => { connectedAtInit.push(el.isConnected) },
+      template: () => `<span>inner</span>`,
+    })
+
+    const container = document.createElement('ul')
+    document.body.appendChild(container)
+    const [items] = createSignal([{ id: 1 }, { id: 2 }])
+
+    mapArray(
+      () => items(),
+      container,
+      (it: any) => String(it.id),
+      (_item: () => any, _i: number, existing?: HTMLElement) => {
+        if (existing) return existing
+        const tpl = document.createElement('template')
+        tpl.innerHTML = `<li><span data-bf-ph="Inner"></span></li>`
+        const el = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement
+        upsertChild(el, 'Inner', null, {})
+        return el
+      },
+      'loop0',
+    )
+
+    expect(connectedAtInit).toEqual([true, true])
   })
 })

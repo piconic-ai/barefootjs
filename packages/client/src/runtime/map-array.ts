@@ -20,6 +20,7 @@
 
 import { createSignal, createEffect, createRoot } from '@barefootjs/client/reactive'
 import { hydratedScopes } from './hydration-state.ts'
+import { setRowMountPoint } from './component.ts'
 import {
   BF_KEY,
   BF_LOOP_START,
@@ -233,6 +234,7 @@ function createItemScope<T>(
   existingPrimary?: HTMLElement,
   existingExtras?: HTMLElement[],
   existingStart?: Comment | null,
+  rowMount?: { container: Node; anchor: Node | null } | null,
 ): ItemScope<T> {
   let primaryEl!: HTMLElement
   let dispose!: () => void
@@ -244,7 +246,16 @@ function createItemScope<T>(
     dispose = d
     const [itemAccessor, itemSetter] = createSignal(item)
     setItem = itemSetter
-    primaryEl = renderItem(itemAccessor, index, existingPrimary)
+    // Fresh row: hand the mount point to the row's own `createComponent` so
+    // its `init` observes a connected element (task #31). Cleared
+    // unconditionally — a renderItem body that clones a template instead of
+    // calling `createComponent` (composite / plain loops) leaves it unused.
+    if (!existingPrimary && rowMount) setRowMountPoint(rowMount)
+    try {
+      primaryEl = renderItem(itemAccessor, index, existingPrimary)
+    } finally {
+      setRowMountPoint(null)
+    }
     if (existingPrimary) {
       extras = existingExtras ?? []
       startMarker = existingStart ?? null
@@ -258,6 +269,15 @@ function createItemScope<T>(
     }
     return undefined
   })
+
+  // A multi-root row's extras and per-item marker only exist once `renderItem`
+  // has returned, so a parked primary would be left in the DOM without them
+  // (and the LIS reorder may then keep it stationary and never insert them).
+  // Multi-root bodies never take the `createComponent` row path, so this is
+  // expected to be dead — un-park rather than emit a half-inserted row.
+  if (rowMount && !existingPrimary && extras.length > 0 && primaryEl.parentNode) {
+    primaryEl.remove()
+  }
 
   return { startMarker, primaryEl, extras, dispose, setItem }
 }
@@ -349,7 +369,9 @@ export function mapArray<T>(
         for (let i = existingRanges.length; i < items.length; i++) {
           const item = items[i]
           const key = getKey ? getKey(item, i) : String(i)
-          const scope = createItemScope(item, i, renderItem)
+          // Final position is known here (append before the loop's trailing
+          // anchor), so the row can be mounted at it before its init runs.
+          const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, { container, anchor })
           if (!scope.primaryEl.dataset.key) scope.primaryEl.setAttribute(BF_KEY, key)
           scopes.set(key, scope)
           insertScope(scope, container, anchor)
@@ -460,8 +482,11 @@ export function mapArray<T>(
         existing.setItem(item)
         desiredOrder.push(existing)
       } else {
-        // New item: create in isolated scope
-        const scope = createItemScope(item, i, renderItem)
+        // New item: create in isolated scope. The row is mounted at the end of
+        // the loop range before its init runs; the LIS reorder below moves it
+        // to its final position (it participates in the walk like any other
+        // attached scope, so the resulting order is unchanged).
+        const scope = createItemScope(item, i, renderItem, undefined, undefined, undefined, { container, anchor })
         if (!scope.primaryEl.dataset.key) scope.primaryEl.setAttribute(BF_KEY, key)
         scopes.set(key, scope)
         desiredOrder.push(scope)

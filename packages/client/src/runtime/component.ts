@@ -25,6 +25,29 @@ export function setParentScopeId(id: string | null): void {
   _parentScopeId = id
 }
 
+// PROTOTYPE (task #31 investigation) — ambient mount point for a loop row.
+//
+// A loop row created by `renderItem` has no placeholder to replace, so it
+// cannot use `mountAt` and its `init` runs detached (see the known-limitation
+// docstring in `__tests__/runtime/csr-loop-row-init-connected.test.ts`).
+// `mapArray` sets this around the `renderItem` call so the OUTERMOST
+// `createComponent` inside it connects the row at `container`/`anchor` before
+// running `init` — same guarantee `mountAt` gives the child-slot path.
+//
+// Consumed once (take-and-clear) so nested `createComponent` calls made from
+// the row's own init don't re-use the row's mount point.
+let _rowMountPoint: { container: Node; anchor: Node | null } | null = null
+
+export function setRowMountPoint(p: { container: Node; anchor: Node | null } | null): void {
+  _rowMountPoint = p
+}
+
+function takeRowMountPoint(): { container: Node; anchor: Node | null } | null {
+  const p = _rowMountPoint
+  _rowMountPoint = null
+  return p
+}
+
 /**
  * Create a component instance with DOM element and initialized state.
  *
@@ -109,9 +132,12 @@ function materializeComponent(
   // reaches us with no props (#1663). Normalize to an empty object so the
   // descriptor probes below don't throw on `undefined`.
   if (props == null) props = {}
+  // Take the row mount point BEFORE any template eval / init can run, so the
+  // outermost call for the row is the only one that can consume it.
+  const rowMount = mountAt ? null : takeRowMountPoint()
   // ComponentDef mode: use def directly instead of registry lookup
   if (typeof nameOrDef !== 'string') {
-    return createComponentFromDef(nameOrDef, props, key, mountAt)
+    return createComponentFromDef(nameOrDef, props, key, mountAt, rowMount)
   }
 
   const name = nameOrDef
@@ -229,6 +255,12 @@ function materializeComponent(
   const rootIsDeferredPlaceholder = element.hasAttribute(BF_PLACEHOLDER)
   if (mountAt && !rootIsDeferredPlaceholder) {
     mountAt.replaceWith(element)
+  } else if (rowMount && !rootIsDeferredPlaceholder) {
+    // Loop row: no placeholder exists, so connect at the position `mapArray`
+    // handed down. The reorder step may move the row afterwards; any position
+    // inside the container yields the same ancestor chain, which is all
+    // `useContext`'s parentElement walk needs.
+    rowMount.container.insertBefore(element, rowMount.anchor)
   }
 
   // 8. Set currentScope so provideContext/useContext are element-scoped.
@@ -591,6 +623,7 @@ function createComponentFromDef(
   props: Record<string, unknown>,
   key?: string | number,
   mountAt?: Element | null,
+  rowMount?: { container: Node; anchor: Node | null } | null,
 ): HTMLElement {
   if (!def.template) {
     throw new Error('[BarefootJS] createComponent with ComponentDef requires a template function')
@@ -624,6 +657,8 @@ function createComponentFromDef(
   // one contract across both modes instead of a registry-only guarantee.
   if (mountAt) {
     mountAt.replaceWith(element)
+  } else if (rowMount) {
+    rowMount.container.insertBefore(element, rowMount.anchor)
   }
 
   // Initialize
