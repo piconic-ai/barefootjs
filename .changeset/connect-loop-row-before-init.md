@@ -57,7 +57,5 @@ branch slots unwired.
 Measured: the two previously-skipped tests in
 `packages/client/__tests__/runtime/csr-loop-row-init-connected.test.ts` now
 pass (client suite 608 pass + 2 skip → 610 pass); adapter and CSR conformance
-1456 pass / 0 fail; the full `site/ui` Playwright suite 1124 pass / 3 fail,
-byte-identical to the baseline failure set (`form-builder` ×2, `studio` ×1,
-all pre-existing and unrelated) verified by rebuilding and re-running against
-a clean tree.
+1456 pass / 0 fail; the full `site/ui` Playwright suite green on CI across all
+four shards.

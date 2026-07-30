@@ -28,8 +28,10 @@
  * over BEFORE its tail runs — a compiler-side change. Pinned by the skipped
  * test at the bottom.
  *
- * WHY THE TWO EARLIER ATTEMPTS FAILED (both measured against site/ui e2e,
- * whose baseline is 3 pre-existing failures — `form-builder` ×2, `studio` ×1):
+ * WHY THE TWO EARLIER ATTEMPTS FAILED (both measured by running site/ui e2e
+ * locally; the counts below are deltas against whatever that same local run
+ * reported for the unmodified branch, which is the only comparison they
+ * support — CI is the authority on absolute pass/fail):
  *
  *   1. Defer row init until after the batched insert  →  6 failed
  *      (+3 `file-upload`: per-row start / progress / remove).
