@@ -247,14 +247,20 @@ function createItemScope<T>(
     const [itemAccessor, itemSetter] = createSignal(item)
     setItem = itemSetter
     // Fresh row: hand the mount point to the row's own `createComponent` so
-    // its `init` observes a connected element (task #31). Cleared
-    // unconditionally — a renderItem body that clones a template instead of
-    // calling `createComponent` (composite / plain loops) leaves it unused.
-    if (!existingPrimary && rowMount) setRowMountPoint(rowMount)
+    // its `init` observes a connected element. A renderItem body that clones a
+    // template instead of calling `createComponent` (composite / plain loops)
+    // leaves it unconsumed, hence the restore below rather than a plain clear.
+    //
+    // Only touch the ambient when we are the one setting it, and put back what
+    // was there rather than `null`: this row's `init` can drive a nested
+    // `mapArray`, and blanking the slot on the way out of the inner list would
+    // strand an outer mount point that no `createComponent` had claimed yet.
+    const ownsRowMount = !existingPrimary && !!rowMount
+    const prevRowMount = ownsRowMount ? setRowMountPoint(rowMount) : null
     try {
       primaryEl = renderItem(itemAccessor, index, existingPrimary)
     } finally {
-      setRowMountPoint(null)
+      if (ownsRowMount) setRowMountPoint(prevRowMount)
     }
     if (existingPrimary) {
       extras = existingExtras ?? []
@@ -512,8 +518,10 @@ export function mapArray<T>(
     // in the DOM at all) is grouped into contiguous runs and inserted with
     // ONE insertBefore per run (a DocumentFragment when a run has more than
     // one scope). A swap of two rows becomes exactly two single-scope
-    // moves; a bulk append becomes one fragment insert that never touches
-    // the existing rows; an unchanged order performs zero DOM mutations.
+    // moves; a bulk append of unattached rows becomes one fragment insert
+    // that never touches the existing rows; an unchanged order performs zero
+    // DOM mutations. (Component rows arrive here already attached — see the
+    // note on `domOrderIndices` below.)
     //
     // Moving elements via insertBefore causes detach/reattach which makes
     // focused inputs lose focus (controlled input flicker) — scopes kept
@@ -525,9 +533,27 @@ export function mapArray<T>(
     }
 
     // Old DOM order of currently-attached scopes, expressed as desired-order
-    // indices. Brand-new scopes aren't attached yet, so they simply never
-    // appear here — which is exactly what marks them for insertion below.
-    // Single O(n) walk, no Array.from allocation.
+    // indices. Single O(n) walk, no Array.from allocation.
+    //
+    // A brand-new scope appears here only if it is already attached, which is
+    // exactly the case for a row whose root is a `createComponent` — those are
+    // parked at `anchor` before their `init` runs (see `createItemScope`). Both
+    // cases are correct, and neither needs special-casing: the walk reports the
+    // live DOM, which is the only thing the LIS argument rests on. An unattached
+    // new scope is absent, so it is non-stationary and gets inserted below; an
+    // attached one is present at its parked position and the LIS decides
+    // whether it already sits where it belongs.
+    //
+    // Consequence worth knowing: for a bulk append of component rows the parked
+    // order already equals the desired order, so the LIS keeps every row
+    // stationary and this step performs ZERO mutations — the insertions have
+    // simply moved earlier, one `insertBefore` per row inside
+    // `createComponent`, instead of one batched fragment insert here. That is
+    // inherent to connecting before `init`, not an oversight: a row's `init`
+    // runs during its own `renderItem`, so the row must already be in the live
+    // document by then, and a shared fragment is not the live document.
+    // Deferring init to regain the batch is the approach that failed — see
+    // attempt 1 in the `csr-loop-row-init-connected.test.ts` docstring.
     const domOrderIndices: number[] = []
     for (
       let node: Node | null = startMarker ? startMarker.nextSibling : container.firstChild;

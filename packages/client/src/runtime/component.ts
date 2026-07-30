@@ -25,7 +25,10 @@ export function setParentScopeId(id: string | null): void {
   _parentScopeId = id
 }
 
-// PROTOTYPE (task #31 investigation) — ambient mount point for a loop row.
+/** Where `mapArray` wants a fresh loop row connected before its `init` runs. */
+export type RowMountPoint = { container: Node; anchor: Node | null }
+
+// Ambient mount point for a loop row.
 //
 // A loop row created by `renderItem` has no placeholder to replace, so it
 // cannot use `mountAt` and its `init` runs detached (see the known-limitation
@@ -36,13 +39,22 @@ export function setParentScopeId(id: string | null): void {
 //
 // Consumed once (take-and-clear) so nested `createComponent` calls made from
 // the row's own init don't re-use the row's mount point.
-let _rowMountPoint: { container: Node; anchor: Node | null } | null = null
+//
+// `setRowMountPoint` returns the previous value so a caller can restore it
+// instead of clearing to `null`. That matters because the ambient is a single
+// slot: a row whose own `init` drives a nested `mapArray` would otherwise have
+// the inner list's teardown blank out an outer mount point that had not been
+// consumed yet. Save-and-restore makes the slot behave like a stack without
+// paying for one.
+let _rowMountPoint: RowMountPoint | null = null
 
-export function setRowMountPoint(p: { container: Node; anchor: Node | null } | null): void {
+export function setRowMountPoint(p: RowMountPoint | null): RowMountPoint | null {
+  const prev = _rowMountPoint
   _rowMountPoint = p
+  return prev
 }
 
-function takeRowMountPoint(): { container: Node; anchor: Node | null } | null {
+function takeRowMountPoint(): RowMountPoint | null {
   const p = _rowMountPoint
   _rowMountPoint = null
   return p

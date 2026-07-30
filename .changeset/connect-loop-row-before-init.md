@@ -31,6 +31,20 @@ it only needs `domOrderIndices` to reflect the live DOM, which it still does.
 Pinned by a reorder test that inserts a fresh row at the front and then
 reverses a three-row list.
 
+The ambient carrying the mount point is a single slot, so `mapArray` saves and
+restores whatever it found rather than clearing to `null`, and only touches the
+slot when it is the one setting it. A row whose own `init` drives a nested
+`mapArray` would otherwise have the inner list strand the outer row's
+not-yet-claimed mount point and silently revert it to init-detached.
+
+One cost is inherent rather than incidental: a bulk append of component rows no
+longer collapses into a single `DocumentFragment` insert, because each row must
+be in the live document before its own `init` runs, and a fragment is not the
+live document. The insertions move earlier (one per row, inside
+`createComponent`) instead of disappearing — the reorder step then finds the
+parked order already correct and performs zero mutations. Template-clone rows
+keep the batched path untouched.
+
 Two shapes stay on the old path, both intentionally:
 
 - **Multi-root rows.** A Fragment loop body's extras and per-item marker only

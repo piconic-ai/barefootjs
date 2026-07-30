@@ -201,6 +201,58 @@ describe('mapArray row init runs connected', () => {
     setItems([{ id: 3, label: 'c' }, { id: 2, label: 'b' }, { id: 1, label: 'a' }])
     expect([...container.querySelectorAll('li')].map(el => el.textContent)).toEqual(['c', 'b', 'a'])
   })
+
+  test('an inner mapArray does not strand the outer row mount point', async () => {
+    // The ambient row mount point is a single slot, so a nested `mapArray` that
+    // runs BEFORE the outer row's `createComponent` has claimed the point must
+    // put back what it found instead of clearing to null. Otherwise the outer
+    // row silently reverts to init-detached — the exact bug this file pins.
+    const { hydrate, createComponent, mapArray, initChild, createSignal } =
+      await import('../../src/runtime')
+
+    const outerConnectedAtInit: boolean[] = []
+
+    hydrate('InnerRow', {
+      init: () => {},
+      template: () => `<li>inner</li>`,
+    })
+    hydrate('OuterRow', {
+      init: (el: Element) => { outerConnectedAtInit.push(el.isConnected) },
+      template: () => `<li>outer</li>`,
+    })
+
+    const container = document.createElement('ul')
+    document.body.appendChild(container)
+    const [items] = createSignal([{ id: 1 }])
+
+    mapArray(
+      () => items(),
+      container,
+      (it: any) => String(it.id),
+      (_item: () => any, _i: number, existing?: HTMLElement) => {
+        if (existing) {
+          initChild('OuterRow', existing, {})
+          return existing
+        }
+        // Drain a whole inner list first — this is what used to clobber the
+        // pending outer mount point on its way out.
+        const innerContainer = document.createElement('ul')
+        const [innerItems] = createSignal([{ id: 10 }, { id: 11 }])
+        mapArray(
+          () => innerItems(),
+          innerContainer,
+          (it: any) => String(it.id),
+          (_i2: () => any, _j: number, ex?: HTMLElement) =>
+            ex ?? createComponent('InnerRow', {}, 'inner'),
+          'loopInner',
+        )
+        return createComponent('OuterRow', {}, 'outer')
+      },
+      'loop0',
+    )
+
+    expect(outerConnectedAtInit).toEqual([true])
+  })
 })
 
 /**
