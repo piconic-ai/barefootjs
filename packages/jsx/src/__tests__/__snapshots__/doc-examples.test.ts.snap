@@ -4432,15 +4432,17 @@ export function initExample(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => items(), _s1, (item) => String(item), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
       const __l = __e.last = []
       { const __x = item()
       __r[0]('s0', textOrNode(__x))
@@ -4565,15 +4567,17 @@ export function initExample(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => items(), _s1, (item) => String(item), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
       const __l = __e.last = []
       { const __x = item()
       __r[0]('s0', textOrNode(__x))
@@ -4649,15 +4653,17 @@ export function initExample(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => items().filter(item => item.active), _s1, (item) => String(item.id), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
       const __l = __e.last = []
       { const __x = item().name
       __r[0]('s0', textOrNode(__x))
@@ -5141,15 +5147,17 @@ export function initExample(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => todos().filter(t => !t.done).toSorted((a, b) => a.date - b.date), _s1, (t) => String(t.id), {
     createRow: (__e, __idx) => {
       const t = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
       const __l = __e.last = []
       { const __x = t().name
       __r[0]('s0', textOrNode(__x))
@@ -5287,15 +5295,17 @@ export function initExample(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => items(), _s1, (item) => String(item.id), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
       const __l = __e.last = []
       { const __x = item().name
       __r[0]('s0', textOrNode(__x))
@@ -5371,15 +5381,17 @@ export function initExample(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = \`<li data-key=""><!--bf:s0--><!--/--></li>\`
   const __lzp_l0 = [[0]]
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
+  const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => items(), _s1, (item, i) => String(i), {
     createRow: (__e, i) => {
       const item = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [lazySlots(__el, [{ id: 's0', kind: 'text', path: __lzp_l0[0] }])]
+      const __r = __e.refs = [lazySlots(__el, __lzsc_l0)]
       const __l = __e.last = []
       { const __x = item().name
       __r[0]('s0', textOrNode(__x))
