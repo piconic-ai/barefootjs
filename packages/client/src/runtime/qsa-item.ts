@@ -25,6 +25,13 @@
  *      is `null` and step 2 yields nothing. Reading `__bfExtras` lets
  *      lookups reach the still-pending extras before `mapArray` inserts
  *      them into the DOM.
+ *
+ * Step 3's reliance on the primary being detached during setup is why
+ * `createItemScope` un-parks a row that turns out to carry extras: the
+ * connect-before-init mount point applies to `createComponent` row roots,
+ * which are single-root by construction and so never reach this module. An
+ * attached primary would make step 2's sibling walk run past the item's own
+ * roots into a neighbouring item's elements before step 3 is ever consulted.
  */
 
 import { BF_LOOP_ITEM, BF_LOOP_START, BF_LOOP_END } from '@barefootjs/shared'
