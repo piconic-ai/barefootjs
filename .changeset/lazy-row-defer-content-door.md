@@ -28,6 +28,10 @@ clones the row, so its door is used immediately and deferring it would only
 add a branch. The deferral is therefore confined to server-rendered rows,
 which is where the allocation was wasted.
 
+With the door gone from the claim, the element refs are the only parts left
+that read the row root — so a row with no reactive ATTRIBUTE now claims to a
+bare `[null]` and no longer binds `__e.primaryEl` at all.
+
 **§2's claim-once rule is preserved.** That rule is about one door resolving
 the whole plan on first access, and each door already enforces it internally —
 `lazySlots`/`lazyClaimSlots` call `claimRefs` once and cache the result.

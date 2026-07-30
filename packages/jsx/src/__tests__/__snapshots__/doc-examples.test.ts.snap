@@ -4435,7 +4435,6 @@ export function initExample(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
     return [null]
   }
   mapArrayLazy(() => items(), _s1, (item) => String(item), {
@@ -4571,7 +4570,6 @@ export function initExample(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
     return [null]
   }
   mapArrayLazy(() => items(), _s1, (item) => String(item), {
@@ -4658,7 +4656,6 @@ export function initExample(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
     return [null]
   }
   mapArrayLazy(() => items().filter(item => item.active), _s1, (item) => String(item.id), {
@@ -5153,7 +5150,6 @@ export function initExample(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
     return [null]
   }
   mapArrayLazy(() => todos().filter(t => !t.done).toSorted((a, b) => a.date - b.date), _s1, (t) => String(t.id), {
@@ -5302,7 +5298,6 @@ export function initExample(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
     return [null]
   }
   mapArrayLazy(() => items(), _s1, (item) => String(item.id), {
@@ -5389,7 +5384,6 @@ export function initExample(__scope, _p = {}) {
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
   const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
     return [null]
   }
   mapArrayLazy(() => items(), _s1, (item, i) => String(i), {

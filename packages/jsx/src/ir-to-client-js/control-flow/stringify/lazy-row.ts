@@ -178,9 +178,14 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   // immediately, so its door is used on the same tick it is built and there
   // is nothing to defer (see the `deferDoor` note on `refParts`).
   if (hasRefs) {
+    // With the door deferred, the ELEMENT refs are the only parts that read the
+    // row root — so a text-only row (no reactive-attr slot) claims to a bare
+    // `[null]` and the `__el` binding would be dead. `parts` decides, rather
+    // than a second predicate that could drift from `refParts`.
+    const parts = refParts(lazyRow, '__el', null, adoptedPlanVar, true)
     lines.push(`${indent}const ${claimVar} = (__e) => {`)
-    lines.push(`${indent}  const __el = __e.primaryEl`)
-    lines.push(`${indent}  return [${refParts(lazyRow, '__el', null, adoptedPlanVar, true).join(', ')}]`)
+    if (parts.some(p => p.includes('__el'))) lines.push(`${indent}  const __el = __e.primaryEl`)
+    lines.push(`${indent}  return [${parts.join(', ')}]`)
     lines.push(`${indent}}`)
   }
 

@@ -566,6 +566,19 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
     const applyOuter = js.slice(js.indexOf('applyOuter:'))
     expect(applyOuter).not.toContain("'s0'")
   })
+
+  /**
+   * This row has no reactive ATTRIBUTE, so with the door deferred the element
+   * refs are gone and the adopted claim is a bare `[null]` — at which point
+   * binding the row root is dead code. Pinned because the binding is emitted
+   * unconditionally the moment anyone forgets that `refParts` decides whether
+   * anything reads it.
+   */
+  test('a text-only adopted claim binds no row root', () => {
+    const claim = js.slice(js.indexOf('const __lzc_l0 ='), js.indexOf('mapArrayLazy('))
+    expect(claim).toContain('return [null]')
+    expect(claim).not.toContain('__el')
+  })
 })
 
 /**

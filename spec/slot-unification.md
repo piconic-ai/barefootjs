@@ -269,7 +269,10 @@ wrong, and why, is worth as much as the change itself.
   door slot `null` and the first content write fills it (`doorAccess` in
   `stringify/lazy-row.ts`). `createRow` still builds its door eagerly: it
   writes every text on the tick it clones the row, so there is nothing to
-  defer on the CSR path.
+  defer on the CSR path. A knock-on: with the door gone from the claim, the
+  element refs are the only parts that read the row root, so a row with no
+  reactive ATTRIBUTE claims to a bare `[null]` and stops binding
+  `__e.primaryEl` at all.
 
   The claim-once interaction turned out not to bind. §2's rule is about a
   single door resolving the whole plan on first access, and each door already

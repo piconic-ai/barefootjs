@@ -30,7 +30,7 @@ import { compileJSX } from '../../../jsx/src/compiler'
 import { TestAdapter } from '../../../jsx/src/adapters/test-adapter'
 import { renderHonoComponent } from '../../../adapter-hono/src/test-render'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/hono-adapter'
-import { writeFileSync, mkdtempSync } from 'fs'
+import { writeFileSync, mkdtempSync, rmSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -97,7 +97,13 @@ async function setup(name: string): Promise<{ js: string; hydrate: () => void }>
   const dir = mkdtempSync(join(tmpdir(), 'bf-adopted-door-'))
   const file = join(dir, `${name}.mjs`)
   writeFileSync(file, js)
-  await import(file)
+  try {
+    // The import registers the component with the runtime; once it resolves the
+    // module is loaded and the file on disk is no longer needed.
+    await import(file)
+  } finally {
+    try { rmSync(dir, { recursive: true, force: true }) } catch {}
+  }
 
   document.body.innerHTML = await renderHonoComponent({
     adapter: new HonoAdapter(),
