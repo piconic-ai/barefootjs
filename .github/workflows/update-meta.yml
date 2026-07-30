@@ -21,7 +21,7 @@ on:
       - '.github/workflows/update-meta.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: update-meta-${{ github.event.pull_request.number }}
@@ -68,11 +68,21 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit and push
+      # TEMPORARILY verify-only — tracked by #2427.
+      #
+      # This job used to regenerate ui/meta and llms.txt and push the result. It
+      # cannot: the drift guard in meta-extract-drift.test.ts compares against it,
+      # so auto-committing makes this job the detector for its own subject.
+      # A wrong output is written in as the new expectation and the suite
+      # goes green on top of it. PR #2425 has a worked example — a fixture
+      # added to pin a marker was rewritten to assert the marker's absence.
+      #
+      # Same shape as the `lockfile` job in ci-compat.yml. Restore the
+      # commit step once a check exists that would catch a wrong
+      # regeneration WITHOUT reading the regenerated file — see #2427.
+      - name: Fail if the generated output drifted
         if: steps.diff.outputs.changed == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ui/meta/ docs/core/llms.txt
-          git commit -m "Update ui/meta and llms.txt (auto-generated)"
-          git push
+          git --no-pager diff -- ui/meta/ docs/core/llms.txt
+          echo "::error::ui/meta and llms.txt is out of date. Run 'bun run meta:extract' locally and commit the result."
+          exit 1
