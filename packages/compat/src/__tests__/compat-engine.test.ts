@@ -201,6 +201,20 @@ describe('formatCompatMarkdown', () => {
 })
 
 describe('determinism', () => {
+  // Explicit budget, because bun's 5s default does not fit what this test
+  // actually does. `compileForCompat` costs ~1s per call at rest (measured:
+  // median 980ms over 7 interleaved samples, stable across refs), and this
+  // test makes two, so it starts from ~2s with nothing to spare. Under load
+  // a single compile has been observed at 2.8s, which alone blows the
+  // default — and the failure lands on whichever fixture-compiling test was
+  // running at the time, so it reads as a different flake each run rather
+  // than as one slow test. Sized against that observed worst case, not
+  // against the median.
+  //
+  // The ~1s-per-compile figure is itself worth attacking (the engine
+  // re-creates an adapter and re-runs the whole pipeline per call), but that
+  // is a pre-existing cost, not something a caller can pay its way out of
+  // here.
   test('two engine runs over the same inputs produce deep-equal and byte-equal reports', () => {
     const runOnce = () => {
       const adapter = new GoTemplateAdapter()
@@ -213,5 +227,5 @@ describe('determinism', () => {
     const second = runOnce()
     expect(first).toEqual(second)
     expect(formatCompatJson(first)).toBe(formatCompatJson(second))
-  })
+  }, 30_000)
 })
