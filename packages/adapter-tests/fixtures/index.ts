@@ -372,6 +372,7 @@ import { fixture as logicalAndChain } from './logical-and-chain'
 import { fixture as emptyListBranch } from './empty-list-branch'
 import { fixture as adjacentConditionals } from './adjacent-conditionals'
 import { fixture as conditionalWrappingLoop } from './conditional-wrapping-loop'
+import { fixture as loopItemTernaryBareBranch } from './loop-item-ternary-bare-branch'
 import { fixture as elseIfChain } from './else-if-chain'
 import { fixture as inlineArrayMap } from './inline-array-map'
 import { fixture as objectEntriesMap } from './object-entries-map'
@@ -701,6 +702,7 @@ export const jsxFixtures: JSXFixture[] = [
   emptyListBranch,
   adjacentConditionals,
   conditionalWrappingLoop,
+  loopItemTernaryBareBranch,
   elseIfChain,
   inlineArrayMap,
   objectEntriesMap,

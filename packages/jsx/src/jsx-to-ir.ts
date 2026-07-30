@@ -2707,7 +2707,24 @@ function transformConditionalBranch(
   const callsReactive = exprCallsReactiveGetters(node, ctx)
   const hasCalls = exprHasFunctionCalls(node)
   const reactive = isReactiveExpression(exprText, ctx, node) || isReactiveOrigin(branchOrigin)
-  const needsSlot = reactive || callsReactive
+  // A branch whose entire value is a bare loop-item read (`row.label`) sets
+  // neither `reactive` nor `callsReactive`: `render-item` is deliberately
+  // excluded from `REACTIVE_BINDING_KINDS` (types.ts) because per-item
+  // reactivity flows through the loop's own per-item signal accessor, not
+  // this origin-based classification, and there is no call to trip
+  // `callsReactive`/`hasCalls` either. Without a slotId here, a keyed loop
+  // row that changes value without its condition flipping has nothing for
+  // `collectLoopChildReactiveTexts` (ir-to-client-js/reactivity.ts) to
+  // attach an update effect to, and the branch is frozen at its
+  // mount-time value forever (the loop-branch-stale-text defect). Read the
+  // freeRefs this function already computed above — no new parse, and no
+  // regex re-scan of `exprText` (contrast the legacy `referencesLoopParam`
+  // used by the sibling `transformConditional`/`transformLogicalAnd`
+  // condition-side decisions, which token-matches the loop param name
+  // against expression TEXT and can false-match inside an unrelated string
+  // literal branch like `"this row is empty"`).
+  const refsLoopParam = branchOrigin.freeRefs?.some(r => r.kind === 'render-item') ?? false
+  const needsSlot = reactive || callsReactive || refsLoopParam
   const slotId = needsSlot ? generateSlotId(ctx) : null
   return {
     type: 'expression',
