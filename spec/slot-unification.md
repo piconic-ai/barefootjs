@@ -232,15 +232,41 @@ Identified but not shipped, tracked so it isn't re-discovered from scratch.
 
 - **General-case marker elision** (§5a). The one open item on axis (b), and
   the only route to closing the HTML-size gap against solid.
-- **Claim-mechanism allocation shape.** Two mechanically identified pieces:
-  (1) every row re-allocates full `SlotSpec` objects even when it never
-  updates — hoisting each slot's static `id`/`kind` once per loop and
-  threading only a per-row `path` recovers ~10KB/1k rows; (2) `applyOuter`'s
-  seed pass materializes each row's whole ref tuple (element handle plus the
-  `lazySlots` writer closure and its plan array) even when the row's
+- **Claim-mechanism allocation shape.** Two mechanically identified pieces.
+
+  **(1) Per-row `SlotSpec` re-allocation — SHIPPED.** Every row rebuilt the
+  loop's whole `ClaimPlan` (the array, one `{ id, kind, path }` per text
+  slot, and — in the adopted-row form — a fresh inner `path: []`), even
+  though nothing in it varies across rows. The stringifier now hoists it per
+  loop: `__lzs_<mid>` for the adopted-row context and `__lzsc_<mid>` for the
+  fresh-clone one, the latter emitted only when the two forms differ. Sound
+  because `ClaimPlan` is `readonly SlotSpec[]`, `claimRefs` only reads it,
+  and each call builds its own `Map`.
+
+  Two corrections to this entry's original estimate, both worth keeping:
+  the plan could be hoisted **whole** rather than "static `id`/`kind` hoisted
+  with a per-row `path` threaded through", because the path is itself a loop
+  constant (`[]` for adopted rows, an index into the already-hoisted
+  `__lzp_<mid>` for clones); and the recovery was **~8x the ~10KB/1k rows
+  guessed here**. Measured on `benchmarks/apps/barefoot` (which emits a lazy
+  loop) with `bench-dom.ts --quick --framework=barefoot`: post-create heap
+  for 1k rows **1053.8KB -> 971.9KB / 970.5KB** across two after-runs, i.e.
+  **~-82KB (-7.8%)**. `create1k` time did not move outside run-to-run
+  overlap (75.4ms [74.9-87.9] before; 80.4ms [79.4-82.2] and 77.6ms
+  [76.9-79.2] after). Emitted JS grows slightly — +29 bytes per lazy loop,
+  +0.1KB gzip on the benchmark app — which is the trade: two extra const
+  lines per loop buy 2 fewer allocations per row.
+
+  **(2) `applyOuter`'s seed pass materializes each row's whole ref tuple**
+  (element handle plus the `lazySlots` writer closure) even when the row's
   outer-involving bindings are all ATTRS and the seed only ever reads the
   element — splitting the tuple by what the seed actually reads recovers
-  most of ~230KB/1k rows without touching the model.
+  most of ~230KB/1k rows without touching the model. **Still open**, and
+  piece (1) does not overlap it: (1) removed the plan objects the closure
+  captures, (2) is about not creating the closure at all on rows whose seed
+  never needs it. Needs per-slot lazy `entry.refs`, which interacts with
+  §2's claim-once rule, so it is a separate change measured on top of this
+  one.
 - **Widening the lazy-row gate** — see §9.5's refusal table.
 
 ## 9. Lazy row graph — §3(c) completion

@@ -83,15 +83,16 @@ export function initAIChatInteractive(__scope, _p = {}) {
   })
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = `<div data-key="" bf="s1"><div class="chat-bubble"><p><!--bf:s0--><!--/--></p></div></div>`
+  const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzc_l0 = (__e) => {
     const __el = __e.primaryEl
-    return [qsa(__el, '[bf="s1"]'), lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+    return [qsa(__el, '[bf="s1"]'), lazySlots(__el, __lzs_l0)]
   }
   mapArrayLazy(() => messages(), _s5, (msg) => String(msg.id), {
     createRow: (__e, __idx) => {
       const msg = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
-      const __r = __e.refs = [qsa(__el, '[bf="s1"]'), lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }])]
+      const __r = __e.refs = [qsa(__el, '[bf="s1"]'), lazySlots(__el, __lzs_l0)]
       const __l = __e.last = []
       { const __t = __r[0]
       if (__t) {

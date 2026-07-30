@@ -11,6 +11,9 @@
  *
  *     const __tpl_<mid> = document.createElement('template')      // hoisted skeleton, when usable
  *     __tpl_<mid>.innerHTML = `…`
+ *     const __lzp_<mid> = [...]                                   // hoisted fresh-clone text paths, when usable
+ *     const __lzs_<mid> = [{ id, kind: 'text', path: [] }, …]      // hoisted claim plan, ADOPTED-row form
+ *     const __lzsc_<mid> = [{ id, kind: 'text', path: __lzp_<mid>[i] }, …]  // FRESH-CLONE form, only when it differs
  *     const __lzc_<mid> = (__e) => { … }                          // lazy ref claim for ADOPTED rows
  *     mapArrayLazy(() => <arr>, <container>, <keyFn>, {
  *       createRow: (__e, <idx>) => { … writes every binding, seeds refs+last … },
@@ -130,12 +133,43 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${indent}const ${textPathVar} = [${arrays.join(', ')}]`)
   }
 
+  // Hoisted claim-plan literal(s) for this loop's text slots (perf): a
+  // `ClaimPlan` is `readonly SlotSpec[]` (`claim-slots.ts:145`) and
+  // `claimRefs` (line 601) only ever READS it — there is no `spec.<field> = `
+  // assignment anywhere in that module, and `claimSlots`/`claimRefs` build a
+  // fresh `Map` per call — so one shared plan object is safe across every
+  // row of the loop instead of a fresh `{ id, kind, path }` object (plus,
+  // when `textPathVar` is null, a fresh inner `path: []` array) per row.
+  // `__lzs_<mid>` is the ADOPTED-row form (`path: []`, resolved by A2's
+  // marker scan); `__lzsc_<mid>` is the FRESH-CLONE form (each slot's path
+  // is a `__lzp_<mid>` lookup) and is only emitted when it differs from the
+  // adopted form — i.e. when `textPathVar` is non-null.
+  let adoptedPlanVar: string | null = null
+  let freshPlanVar: string | null = null
+  if (lazyRow.texts.length > 0) {
+    adoptedPlanVar = `__lzs_${mid}`
+    const adoptedSlots: ClaimSlotSpec[] = lazyRow.texts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    lines.push(`${indent}const ${adoptedPlanVar} = ${claimPlanLiteral(adoptedSlots)}`)
+    if (textPathVar) {
+      freshPlanVar = `__lzsc_${mid}`
+      const freshSlots: ClaimSlotSpec[] = lazyRow.texts.map((t, i) => ({
+        id: t.slotId,
+        kind: 'text',
+        path: [],
+        pathExpr: `${textPathVar}[${i}]`,
+      }))
+      lines.push(`${indent}const ${freshPlanVar} = ${claimPlanLiteral(freshSlots)}`)
+    } else {
+      freshPlanVar = adoptedPlanVar
+    }
+  }
+
   // Lazy ref claim for ADOPTED (SSR) rows: one scan inside that row, cached
   // on `entry.refs`. Shared by applyItem and applyOuter so a row claims once.
   if (hasRefs) {
     lines.push(`${indent}const ${claimVar} = (__e) => {`)
     lines.push(`${indent}  const __el = __e.primaryEl`)
-    lines.push(`${indent}  return [${refParts(lazyRow, '__el', null, null).join(', ')}]`)
+    lines.push(`${indent}  return [${refParts(lazyRow, '__el', null, adoptedPlanVar).join(', ')}]`)
     lines.push(`${indent}}`)
   }
 
@@ -155,7 +189,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     : `(() => { ${emitTemplateCloneInline(o.template)} })()`
   lines.push(`${b2}const __el = ${cloneExpr}`)
   if (hasRefs) {
-    lines.push(`${b2}const __r = __e.refs = [${refParts(lazyRow, '__el', useHoisted ? (paths ?? null) : null, textPathVar).join(', ')}]`)
+    lines.push(`${b2}const __r = __e.refs = [${refParts(lazyRow, '__el', useHoisted ? (paths ?? null) : null, freshPlanVar).join(', ')}]`)
   }
   if (hasBindings) {
     lines.push(`${b2}const __l = __e.last = []`)
@@ -229,12 +263,19 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
  * (`__lzc_<mid>`): `qsa` + an empty claim path, which A2's marker scan
  * resolves — the sanctioned "cannot be statically pathed" case for a
  * server-rendered tree the skeleton does not describe (§5-A3).
+ *
+ * `planVar` is the hoisted claim-plan variable for THIS context (`__lzs_<mid>`
+ * for the adopted-row call site, `__lzsc_<mid>` — or the same `__lzs_<mid>`
+ * when the two forms coincide — for the fresh-clone one), built once by
+ * `stringifyLazyRowLoop` and referenced here rather than rebuilt per row.
+ * `null` iff `lazyRow.texts` is empty, the only case that skips the text part
+ * below.
  */
 function refParts(
   lazyRow: LazyRowPlanData,
   elVar: string,
   skeletonPaths: SkeletonSlotPaths | null,
-  textPathVar: string | null,
+  planVar: string | null,
 ): string[] {
   const parts: string[] = []
   for (const slotId of lazyRow.attrSlotIds) {
@@ -242,14 +283,8 @@ function refParts(
     parts.push(path ? pathExpr(elVar, path) : `qsa(${elVar}, '[bf="${slotId}"]')`)
   }
   if (lazyRow.texts.length > 0) {
-    const slots: ClaimSlotSpec[] = lazyRow.texts.map((t, i) => ({
-      id: t.slotId,
-      kind: 'text',
-      path: [],
-      pathExpr: textPathVar ? `${textPathVar}[${i}]` : undefined,
-    }))
     const door = lazyRow.textNeedsRead ? 'lazyClaimSlots' : 'lazySlots'
-    parts.push(`${door}(${elVar}, ${claimPlanLiteral(slots)})`)
+    parts.push(`${door}(${elVar}, ${planVar})`)
   }
   return parts
 }
