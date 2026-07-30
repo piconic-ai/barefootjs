@@ -1,5 +1,354 @@
 # @barefootjs/jsx
 
+## 0.28.0
+
+### Minor Changes
+
+- fe474a0: Connect a CSR-materialised child component before running its `init`, so
+  context resolves by DOM position.
+
+  **This changes when `init` runs relative to DOM insertion.** `createComponent`
+  built the element with `parseHTML(...).firstChild` and called `initFn` on it
+  while it was still detached; every caller then attached it afterwards
+  (`ph.replaceWith(comp)`). So a component's own `init` observed an element with
+  no parent chain.
+
+  `useContext` resolves providers by walking `parentElement` from the current
+  scope. From a detached element that walk finds nothing and falls through to
+  the module-global fallback store in `runtime/context.ts` — and that store is
+  **last-writer-wins across every provider of the same context on the page**.
+  With one provider the fallback happens to return the right value, which is why
+  this stayed hidden.
+
+  The divergence shows up when a child is materialised _after_ a sibling provider
+  has run. During a plain hydration pass the doc-order walker inits each provider
+  immediately before creating its own children, so the global still holds that
+  provider's value. But a child created later — by an interaction — reads whatever
+  provider hydrated last:
+
+  ```
+  <Host value="ONE">   ← child added here, later
+  <Host value="TWO">   ← this one wrote the global last
+  ```
+
+  the new child under `ONE` received `"TWO"`.
+
+  `createComponent` now takes a `mountAt` argument — the placeholder it replaces —
+  and performs that replacement _before_ `init`, so `useContext` resolves by
+  position and layout reads (`offsetWidth`, `getBoundingClientRect`) see a
+  laid-out element. `upsertChild`, `upsertChildItem`, and the branch
+  child-component emission pass their placeholder through. This aligns the CSR
+  path with the SSR one, where the doc-order walker only ever inits elements
+  already in the document (see `runtime/hydrate.ts`, whose ordering contract
+  exists for exactly this `provideContext` → `useContext` visibility reason).
+
+  `mountAt` is an unconditional obligation, since callers previously ran
+  `replaceWith` on every outcome: paths that don't consume it — a missing or empty
+  template, and the root-deferred-placeholder shape that must stay detached so its
+  self-replacement stays recoverable — still get the replacement performed on the
+  way out.
+
+  Both construction modes honour it. `ComponentDef` mode initially did not: that
+  branch returned early and ran `def.init` detached, so `createComponent(def, …,
+mountAt)` kept the very bug this fixes. `mountAt` is threaded through it too, so
+  the lifecycle does not depend on whether a caller passes a name or a def.
+
+  **Still open:** `mapArray` rows are unaffected and continue to init detached —
+  `renderItem` returns the element to `mapArray`, so there is no placeholder to
+  hand over, and the batched `insertBefore` happens later. This is the xyflow
+  shape (`<Flow>` provides `FlowContext`; nodes render through `mapArray` and read
+  `useFlow()` in their init), and the reason
+  `packages/xyflow/src/flow-subsystems.ts` carries a `__bfFlowStore` +
+  `closest('.bf-flow')` workaround. Reproduced by the skipped tests in
+  `packages/client/__tests__/runtime/csr-loop-row-init-connected.test.ts`; closing
+  it reorders the emitted `renderItem` tail or pre-inserts the row, both on the
+  runtime's hottest path, so it is deliberately not bundled here.
+
+### Patch Changes
+
+- 799fe59: Accept opaque outer reads in lazy loop rows (spec §9.5c(2)).
+
+  An outer name the emitter cannot prime — a local whose CALL is the reactive
+  read (`const isSelected = createSelector(selected)`), a prop accessor, or an
+  unclassifiable name — used to refuse the loop, because the loop-level effect
+  had to subscribe on its first run and an empty entry list left it subscribed
+  to nothing. The runtime's unconditional re-subscribe seam takes that
+  obligation over, so such loops are simply eligible — there is no flag or
+  second emission shape, and loops whose outer reads are all primed getters are
+  unchanged.
+
+  One case still refuses, and it is a different kind: when free-identifier
+  analysis produces NOTHING (`free === null`), the classifier knows neither the
+  outer reads nor whether the binding reads the loop index — which it reports
+  as `false` by assumption. The seam can keep a subscription alive; it cannot
+  conjure an index parameter `applyItem`/`applyOuter` do not have. That case
+  keeps its refusal under a distinct reason.
+
+  Effect: the krausest benchmark row (`className={isSelected(row.id) ? …}`) is
+  lazy for the first time — DOM-suite memory for 1,000 rows drops from 1768.8KB
+  to ~1052KB, 29% below solid, with update10th unchanged.
+
+- e4dd98b: Build a lazy loop row's content door on first use instead of at claim time,
+  so an `applyOuter` that only drives attributes stops allocating one closure
+  per row of the list.
+
+  A lazy-eligible loop's adopted-row claim (`__lzc_<mid>`) resolved the element
+  refs _and_ constructed the content door — `lazySlots(__el, __lzs_<mid>)` — in
+  one tuple. That tuple is built for every entry the first time either apply
+  path touches the row, and `applyOuter`'s seed pass touches **all** of them.
+  So a loop whose only outer-involving binding is an attribute (the common
+  `className={selected() === row.id ? … : …}` shape) built a door per row at
+  hydration and used none of them: nothing writes content until that row's item
+  actually changes.
+
+  The claim now leaves the door's slot `null` and `applyItem`/`applyOuter`
+  materialize it on demand, once per apply body and only when that body has
+  content bindings to write:
+
+  ```js
+  const __d = __r[1] ?? (__r[1] = lazySlots(__e.primaryEl, __lzs_l0));
+  ```
+
+  `createRow` is deliberately unchanged: it writes every text on the tick it
+  clones the row, so its door is used immediately and deferring it would only
+  add a branch. The deferral is therefore confined to server-rendered rows,
+  which is where the allocation was wasted.
+
+  With the door gone from the claim, the element refs are the only parts left
+  that read the row root — so a row with no reactive ATTRIBUTE now claims to a
+  bare `[null]` and no longer binds `__e.primaryEl` at all.
+
+  **§2's claim-once rule is preserved.** That rule is about one door resolving
+  the whole plan on first access, and each door already enforces it internally —
+  `lazySlots`/`lazyClaimSlots` call `claimRefs` once and cache the result.
+  Deferring _construction_ moves when that single resolution happens; it does not
+  add a second resolution path. A loop with an outer-involving TEXT still claims
+  every row at seed, because read-compare-write cannot compare what it has not
+  resolved, so the deferral is a no-op there by design.
+
+  Measured on the SSR post-hydration heap bench
+  (`benchmarks/ssr/bench-ssr-memory.ts` — 1,000 rows, item texts plus an
+  outer-signal class): **1630.6KB → 1573.2KB / 1572.9KB** over two after-runs,
+  **-57.4KB (-3.5%)**, against a per-run stdev of 0.1-0.6KB with the react and
+  solid columns unmoved as controls. Two things about that number are worth
+  recording, because the follow-up entry in `spec/slot-unification.md` §8 had
+  both wrong. The estimate there (~230KB/1k rows) was too high: it predated the
+  per-row claim-plan hoist, and `lazySlots` never scanned eagerly to begin with,
+  so what remained was a closure per row rather than a resolved slot map. And the
+  DOM suite's memory column — where the previous hoist was measured — cannot
+  show this at all, since it creates its rows client-side through `createRow`,
+  the path left eager here.
+
+  Behavioural coverage is
+  `packages/client/__tests__/runtime/lazy-row-adopted-door.test.ts`: real Hono
+  SSR markup, hydrated, then an item changed. That sequence is the only one that
+  executes the deferred branch — emission tests read the generated text, the
+  `createComponent` tests take the eager path, and the conformance suites never
+  run a post-hydration update — and it was verified to fail when the door is
+  built against the wrong root.
+
+- a1db218: Hoist the lazy row graph's per-loop claim-plan literal (slot unification §9)
+
+  `mapArrayLazy`'s emitted `createRow`/`__lzc_<mid>` claim built a fresh
+  `ClaimPlan` array (one `{ id, kind, path }` object per text slot, plus a
+  fresh inner `path: []` array in the adopted-row form) on EVERY row, even
+  though the plan's contents never vary across rows of the same loop. A
+  `ClaimPlan` is `readonly SlotSpec[]` and `claimRefs` only ever reads it —
+  `claimSlots`/`claimRefs` build a fresh `Map` per call — so one shared plan
+  object is safe for every row.
+
+  The stringifier now hoists this as a loop-level const: `__lzs_<mid>` for
+  the adopted (SSR) row context, and `__lzsc_<mid>` for the fresh-CSR-clone
+  context (only emitted when it differs, i.e. when the loop has a hoisted
+  skeleton with compile-time text paths). For a loop with N rows and one
+  text slot this removes ~2N object/array allocations; SSR output and
+  everything else about the emission (door choice, ref ordering,
+  `applyItem`/`applyOuter`/`createRow` bodies) is unchanged.
+
+  Measured on `benchmarks/apps/barefoot` with
+  `bench-dom.ts --quick --framework=barefoot`: heap for 1k rows
+  1053.8KB -> 971.9KB / 970.5KB over two after-runs, ~-82KB (-7.8%).
+  `create1k` time stayed inside run-to-run overlap. Emitted JS grows
+  +29 bytes per lazy loop (+0.1KB gzip on that app) — two const lines per
+  loop in exchange for two fewer allocations per row.
+
+- 27b0648: Keep a live DOM node intact when it lands on a lazy loop row's content slot
+
+  A child-position interpolation can evaluate to a real element rather than a
+  string:
+
+  ```tsx
+  {
+    _p.renderCell(row.id);
+  }
+  ```
+
+  when the caller passes an inline-JSX arrow — the compiler lifts that into a
+  component whose call returns a live Node. In a lazy loop row the value was
+  stringified before it ever reached the claim door (`String(__x)` in
+  `stringify/lazy-row.ts`), and the row's content slot is claimed as
+  `kind: 'text'`, whose writer sets `nodeValue`. A Text node cannot host an
+  element, so the element was destroyed: the user saw its serialized markup as
+  visible characters, or `[object HTMLDivElement]`, depending on the DOM
+  implementation's `toString`.
+
+  Two properties made it silent. Nothing overwrote the row afterwards — the
+  other Node-bearing shapes are self-healing by accident, since a conditional's
+  `insert()` re-renders through `__bfSlot` and a non-loop reactive text
+  re-applies through `escapeTextOrNode`, so the wrong value is transient there
+  and only the lazy row keeps it. And the eligibility gate ACCEPTS the shape: a
+  prop accessor is an opaque outer read, which the re-subscribe seam
+  (`spec/slot-unification.md` §9.3a) made eligible, so the row takes the lazy
+  path and the destructive write is what ships.
+
+  The fix keeps the cheap door and decides on the VALUE, in two halves:
+
+  - `textOrNode` (new export, `runtime/claim-slots.ts`) passes a Node through and
+    coerces anything else with `String`, exactly as the previous inline emission
+    did. It is the 'text' door's counterpart to `escapeTextOrNode` — a 'text'
+    write goes through `nodeValue` and must NOT be escaped, but it does need the
+    Node case separated out. `stringify/lazy-row.ts` emits it in place of
+    `String(__x)`.
+  - The claim **promotes** a slot from 'text' to 'markup' on its first Node
+    write, reusing the anchor comment the original claim already resolved (so
+    §2's claim-once rule still holds — no second position resolution) and its
+    matching `<!--/-->` as the end boundary. `writeMarkup` already splices Nodes
+    by identity, so every later write on that id — Node or string — is correct.
+    A slot that cannot host a Node (markerless, or missing its end marker) warns
+    and skips the write instead of stringifying an element.
+
+  Whether such a call yields a string or a Node is not decidable from the
+  expression's syntax — `renderChild(...)` and `_p.renderCell(...)` are both
+  `CallExpression` — so this has to be a runtime decision on the value, not a
+  compile-time classification. Strings keep the Text-node fast path; the added
+  cost is one `instanceof Node` per content write.
+
+  The seed comparison fails safe on its own: `read(id)` answers with a string or
+  `null`, neither of which is ever `===` a Node, so an outer-involving Node
+  binding always writes on its first run. That is the right direction — a Node
+  is freshly built on this run and is never the SSR-rendered content by
+  identity.
+
+- 194b42c: Accept outer-involving TEXT bindings in lazy rows (slot unification §9.5c(1))
+
+  The §9.4 eligibility gate refused any lazy-row loop with a text binding that
+  read component-scope state: `lazySlots`' writer is write-only, so §9.3(1)'s
+  read-compare-write seeding had no DOM read-back for a content slot. The
+  runtime now ships `lazyClaimSlots`, the read-capable twin over the SAME claim,
+  so that refusal is gone — a loop whose row renders e.g. `{row.label}` next to
+  a cell derived from an outer signal is now lazy instead of falling back to the
+  eager per-row root + signal + effect emission.
+
+  The door is chosen ONCE PER LOOP, never per binding: a loop with at least one
+  outer-involving text claims through `lazyClaimSlots(...)` and every text write
+  becomes `__r[w].write('sN', v)`; every other loop keeps the single-closure
+  `lazySlots(...)` writer and the bare `__r[w]('sN', v)` call form, byte for
+  byte. That matters because the door is allocated per ROW — a reader on every
+  row of a 1k-row list is measurable, so only loops that need reads pay for one.
+
+  The seed guard mirrors the attribute one:
+  `__seed ? (__r[w].read('sN') !== String(__x)) : (<entry.last dedup>)`. `read`
+  returns `null` when it cannot answer and `null !== String(__x)` is always
+  true, so the comparison already fails safe into "write it".
+
+  Honest cost: reading a content slot claims that row's plan, so a loop with an
+  outer-involving text pays one claim per row at hydration rather than the
+  row-pristine zero — inherent to read-compare-write for content, and still far
+  cheaper than the eager path it replaces. Attribute-only loops are unaffected.
+
+- 462b3b0: Emit lazy row plans for eligible plain loops (slot unification §9, L3)
+
+  A plain loop row whose shape passes the §9.4 eligibility gate now compiles to
+  `mapArrayLazy(...)` with a compiler-built row plan instead of `mapArray(...)`
+  plus a renderItem: no `createRoot`, no per-item signal, no per-row effect, and
+  no hydration-time query/claim/DOM write per row. Item-driven bindings are
+  applied by the reconciler through `applyItem` (refs claimed lazily on a row's
+  first update, per-binding dedup on `entry.last`); outer-involving bindings are
+  applied by ONE loop-level effect (`applyOuter`) with read-compare-write seeding
+  on its first run, so there is no trust-first-run regression.
+
+  Eligibility is an explicit, unit-tested decision function
+  (`lazyRowEligibility`): keyed single-root conditional-free plain rows, no refs
+  / nested components / inner loops / map-callback preamble, every reactive outer
+  dependency a primable signal or memo getter, a loop source provably derived
+  from props and literals, and never in profile mode. Every other loop keeps
+  today's eager emission byte-for-byte — sound-or-loud, no silent third path.
+
+  SSR templates are unchanged; this is a client-JS-only change.
+
+- 4e02436: Fix a keyed `.map()` row whose reactive conditional branch is a bare
+  expression (e.g. `row.done ? row.label : 'pending'`) never updating the
+  branch text when the item's value changes without its condition flipping.
+
+  Two gates used to conspire to freeze the value forever: `insert()`
+  (`@barefootjs/client` runtime, unchanged by this fix) correctly no-ops when
+  its condition is unchanged — branch-internal updates are the effect
+  system's job, not DOM replacement's — but `summarizeLoopChildBranch`
+  (`packages/jsx/src/ir-to-client-js/collect-elements.ts`) collected NO
+  `reactiveTexts` for ANY bare-expression branch, so the effect `insert()`
+  was relying on was never emitted. The value was baked into the branch's
+  initial template string once, at row-creation time, and never touched
+  again.
+
+  The skip existed to protect a different, still-real shape: a branch that is
+  a `CallExpression` which may return a live DOM Node (a hoisted
+  `renderNode={(n) => <Pill/>}` callback lowered to a component call,
+  #1211/#1213). Re-invoking such a call inside an _additional_ nested effect
+  calls it again on every unrelated tick, discarding the previous element's
+  listeners/state. That risk is real, but the skip's own rationale comment
+  attributed the failure mode to "the loop-child arm's `$t()`-based anchor
+  lookup" — `$t()` no longer exists; it was one of four content mechanisms
+  removed by the slot-unification work. The current claim door
+  (`stringifyLoopChildArm` → `lazySlots(..., kind: 'markup')` → `writeMarkup`,
+  `packages/client/src/runtime/claim-slots.ts`) clears the claimed range and
+  splices a Node in by identity, so "a second instance lands beside the
+  first" cannot happen through it — only the call's non-idempotence still
+  applies, which is why the skip is narrowed rather than removed.
+
+  The fix narrows the skip to `node.hasFunctionCalls` — an AST-computed flag
+  (`exprHasFunctionCalls`, `packages/jsx/src/jsx-to-ir.ts`) that recursively
+  walks the whole expression, catching a call nested inside a template
+  literal or a sub-ternary, not just a top-level one. A property access, an
+  identifier, a literal, a template literal, string concatenation, or a
+  nested ternary of those cannot themselves construct a DOM node — only a
+  JSX literal or a call can, and a JSX-literal branch is never `type:
+'expression'` in the first place — so those shapes are now collected.
+
+  A companion fix in `transformConditionalBranch` gives a bare
+  loop-item-reading branch (`row.label`) a `slotId` at all: its `needsSlot`
+  decision previously considered only `reactive`/`callsReactive`, and a
+  loop-item read is neither (`render-item` is deliberately excluded from
+  `REACTIVE_BINDING_KINDS` — per-item reactivity flows through the loop's own
+  per-item signal accessor). Without a `slotId` there is nothing for the new
+  effect, or the `<!--bf:sN-->` marker `irToHtmlTemplate` emits for it, to
+  attach to. The check reads the branch's already-computed `freeRefs` for a
+  `render-item`-kind reference — no new parse, and no regex re-scan of the
+  expression text (unlike the sibling `transformConditional`/
+  `transformLogicalAnd` condition-side `referencesLoopParam` helper, which
+  token-matches against expression TEXT and can false-match inside an
+  unrelated string-literal branch).
+
+  Because `irToHtmlTemplate` renders both the marked-template SSR output
+  (Go/ERB/Blade/Jinja/Mojolicious/Rust-minijinja/Twig) and the CSR/hydration
+  template from the same node, the new marker appears identically in both —
+  verified by a new adapter conformance fixture
+  (`loop-item-ternary-bare-branch`) and by running the ERB/Jinja/Mojolicious/
+  Rust adapters' conformance suites locally. The Hono (JSX-runtime) adapter
+  renders conditional branches via a separate code path
+  (`renderNodeRawCtx`/`wrapWithCondMarker` in `hono-adapter.ts`) that does not
+  emit a per-branch slotId marker at all — this is a pre-existing
+  characteristic (already true before this fix for a call-bearing branch
+  like `_p.renderCell(id)`), not something this change introduces or
+  worsens, and Hono is intentionally excluded from the marker-based
+  `runAdapterConformanceTests` suite. A Hono-server-rendered (not
+  client-created) row hitting this exact shape stays stale until its first
+  condition flip, at which point `insert()`'s branch swap replaces the DOM
+  with the correctly-marked template fragment and self-heals. Fixing Hono's
+  conditional-branch marker emission to match is tracked as a separate,
+  adapter-scoped follow-up.
+
+  - @barefootjs/shared@0.28.0
+
 ## 0.27.0
 
 ### Minor Changes

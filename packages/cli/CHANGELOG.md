@@ -1,5 +1,18 @@
 # @barefootjs/cli
 
+## 0.28.0
+
+### Patch Changes
+
+- Updated dependencies [fe474a0]
+- Updated dependencies [483496b]
+- Updated dependencies [c3c435a]
+- Updated dependencies [27b0648]
+- Updated dependencies [86f5f68]
+- Updated dependencies [4274898]
+  - @barefootjs/client@0.28.0
+  - @barefootjs/shared@0.28.0
+
 ## 0.27.0
 
 ### Patch Changes
