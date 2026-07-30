@@ -2,7 +2,7 @@
 
 import { dirname, resolve } from 'node:path'
 import ts from 'typescript'
-import { createError, ErrorCodes, type CompilerError } from '@barefootjs/jsx'
+import { createError, ErrorCodes, isValueReferenceIdentifier, type CompilerError } from '@barefootjs/jsx'
 import { fileExists, readText, transpile, writeText } from './runtime'
 
 /**
@@ -62,26 +62,61 @@ function shapeFromDecl(decl: ts.ImportDeclaration): ImportShape | null {
 }
 
 /**
- * Collect the set of top-level value-exported names from an inlined
- * module's original TS source. Used to populate the IIFE return for
- * namespace imports (`import * as ns from './x'`), where the parent may
- * reference any exported name via `ns.foo`.
+ * Shared AST walk over a module's top-level `export` clauses, split into
+ * four buckets so different callers can combine them differently:
  *
- * Walks the AST so we naturally handle:
- *   - `export const|let|var name` (including object/array destructuring)
- *   - `export function name`, `export async function name`
- *   - `export class name`
- *   - `export { a, b as c }` (uses the exported alias, i.e. `c`)
- *   - multi-line `export { … }` blocks, trailing commas, comments
+ *   - `localValueExports`  — names this module itself declares and exports
+ *     (`export const|function|class name`, `export { a, b as c }` with no
+ *     `from`). These have a real binding inside the module body. This is
+ *     the ONLY bucket that feeds the namespace-import IIFE return (`import
+ *     * as ns from './x'` surfaces every name via `ns.foo`) — whether the
+ *     transpiled body leaves a reachable binding for an enum/namespace or a
+ *     re-export at that position is unverified, so widening the return with
+ *     the other buckets below could introduce a NEW ReferenceError for
+ *     namespace consumers. Keeping it exactly `localValueExports` is
+ *     pre-existing behaviour and stays untouched.
+ *   - `otherValueExports`  — `export enum X` / `export namespace|module X`
+ *     (skipping ambient `declare` forms where cheap to detect). These ARE
+ *     genuine value exports — an enum/namespace member is a real runtime
+ *     binding — but were originally missed by `localValueExports`'s
+ *     declaration-shape checks, which caused a spurious BF055 on legal code
+ *     (a client bundle legitimately importing an exported enum). Kept
+ *     separate from `localValueExports` because whether the *transpiled*
+ *     body actually preserves a reachable binding at the IIFE's `return`
+ *     position for these shapes hasn't been verified — this bucket is
+ *     surface-only (BF055 validation), never fed into the namespace return.
+ *   - `reExportedNames`    — names named by `export { a, b as c } from './y'`
+ *     or `export * as ns from './y'`. The module body has NO binding for
+ *     these (the re-export line is stripped by `stripImportsAndExports`) —
+ *     they're only ever reachable through the ORIGINAL module `./y`, not
+ *     through this one's IIFE. Surface-only, same reasoning as above.
+ *   - `hasStarReExport`    — true when `export * from './y'` is present.
+ *     A bare star re-export doesn't name anything, so the module's full
+ *     export surface can't be enumerated statically here at all.
  *
- * Skipped intentionally:
- *   - `export type` / `export interface` / `export type { … }` — type-only,
- *     erased at runtime, must not be in the IIFE return
- *   - `export default` — out of scope per #1141
- *   - re-exports (`export { x } from './y'`) — not emitted by transpile here
+ * Type-only exports (`export type`, `export interface`, `export type {…}`,
+ * per-specifier `export { type X }`) are skipped throughout — they're
+ * erased at runtime and can't be value bindings.
+ *
+ * Two callers combine these buckets differently:
+ *   - The namespace-import IIFE return uses `localValueExports` alone (see
+ *     above).
+ *   - BF055 surface validation (`buildTopLevelIIFE`) uses the union of all
+ *     four *named* buckets (`localValueExports ∪ otherValueExports ∪
+ *     reExportedNames`), and skips the check entirely when
+ *     `hasStarReExport` — an un-nameable re-export must never produce a
+ *     false positive.
  */
-function collectExportedNames(source: string): string[] {
-  const names = new Set<string>()
+function collectExportInfo(source: string): {
+  localValueExports: Set<string>
+  otherValueExports: Set<string>
+  reExportedNames: Set<string>
+  hasStarReExport: boolean
+} {
+  const localValueExports = new Set<string>()
+  const otherValueExports = new Set<string>()
+  const reExportedNames = new Set<string>()
+  let hasStarReExport = false
   const sourceFile = ts.createSourceFile(
     'mod.ts',
     source,
@@ -96,9 +131,15 @@ function collectExportedNames(source: string): string[] {
     return mods?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
   }
 
+  function isAmbient(node: ts.Node): boolean {
+    if (!ts.canHaveModifiers(node)) return false
+    const mods = ts.getModifiers(node)
+    return mods?.some(m => m.kind === ts.SyntaxKind.DeclareKeyword) ?? false
+  }
+
   function collectFromBindingName(name: ts.BindingName): void {
     if (ts.isIdentifier(name)) {
-      names.add(name.text)
+      localValueExports.add(name.text)
       return
     }
     // ObjectBindingPattern / ArrayBindingPattern — recurse into elements.
@@ -113,23 +154,48 @@ function collectExportedNames(source: string): string[] {
         collectFromBindingName(d.name)
       }
     } else if (ts.isFunctionDeclaration(stmt) && hasExport(stmt) && stmt.name) {
-      names.add(stmt.name.text)
+      localValueExports.add(stmt.name.text)
     } else if (ts.isClassDeclaration(stmt) && hasExport(stmt) && stmt.name) {
-      names.add(stmt.name.text)
-    } else if (ts.isExportDeclaration(stmt) && !stmt.moduleSpecifier && stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
-      // `export { a, b as c }` — type-only specifiers (and the whole
-      // `export type { … }` form) are erased; skip them.
+      localValueExports.add(stmt.name.text)
+    } else if (ts.isEnumDeclaration(stmt) && hasExport(stmt) && stmt.name) {
+      // `export enum X { … }` — a genuine value export (surface-only, see
+      // docstring above; not fed into the namespace IIFE return).
+      otherValueExports.add(stmt.name.text)
+    } else if (ts.isModuleDeclaration(stmt) && hasExport(stmt) && ts.isIdentifier(stmt.name)) {
+      // `export namespace X { … }` / `export module X { … }`. Ambient
+      // `declare namespace/module` forms have no runtime binding — skip
+      // them when the `declare` modifier is present.
+      if (!isAmbient(stmt)) otherValueExports.add(stmt.name.text)
+    } else if (ts.isExportDeclaration(stmt)) {
       if (stmt.isTypeOnly) continue
-      for (const el of stmt.exportClause.elements) {
-        if (el.isTypeOnly) continue
-        names.add(el.name.text)
+      if (!stmt.moduleSpecifier) {
+        // `export { a, b as c }` — local re-export of names already bound
+        // in this module.
+        if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+          for (const el of stmt.exportClause.elements) {
+            if (el.isTypeOnly) continue
+            localValueExports.add(el.name.text)
+          }
+        }
+      } else if (!stmt.exportClause) {
+        // `export * from './y'` — names an unbounded set; can't enumerate.
+        hasStarReExport = true
+      } else if (ts.isNamespaceExport(stmt.exportClause)) {
+        // `export * as ns from './y'`
+        reExportedNames.add(stmt.exportClause.name.text)
+      } else if (ts.isNamedExports(stmt.exportClause)) {
+        // `export { a, b as c } from './y'`
+        for (const el of stmt.exportClause.elements) {
+          if (el.isTypeOnly) continue
+          reExportedNames.add(el.name.text)
+        }
       }
     }
     // TypeAliasDeclaration / InterfaceDeclaration: type-only, ignored.
     // ExportAssignment (`export default`): out of scope per #1141.
   }
 
-  return [...names]
+  return { localValueExports, otherValueExports, reExportedNames, hasStarReExport }
 }
 
 /**
@@ -349,6 +415,30 @@ function buildConsumerBinding(shape: ImportShape | null, topLevelId: string): st
 }
 
 /**
+ * Build the per-request-name BF055 diagnostic: a consumer's named import
+ * asked for a name the module's export surface doesn't contain. The
+ * message + suggestion cover the two real causes — the compiler no longer
+ * emits type-only specifiers as of #2432, so a name that used to slip
+ * through as a phantom import is now either a genuine type import or a
+ * typo/removed export.
+ */
+function buildMissingExportMessage(
+  name: string,
+  modulePath: string,
+): { message: string; suggestion: string } {
+  return {
+    message:
+      `Import \`${name}\` from '${modulePath}' has no matching export in that module. ` +
+      `The client bundle would throw \`ReferenceError: ${name} is not defined\` at load.`,
+    suggestion:
+      `Either \`${name}\` is a TYPE — import it with \`import type { ${name} }\` or ` +
+      `\`import { type ${name} }\` (the compiler no longer emits type-only specifiers ` +
+      `into the client bundle as of #2432) — or it's a typo / removed export: check ` +
+      `'${modulePath}' actually exports \`${name}\`.`,
+  }
+}
+
+/**
  * Build the top-level IIFE wrap for an inlined module. The IIFE returns
  * the union of every name any consumer (parent or transitive) needs from
  * the module: explicit named imports plus, if any consumer used `* as ns`,
@@ -363,26 +453,70 @@ function buildConsumerBinding(shape: ImportShape | null, topLevelId: string): st
  *   })()
  *
  * `originalSource` is the pre-transpile TS source, used by
- * `collectExportedNames` to enumerate all value exports for the namespace
- * case (so type-only exports stay excluded).
+ * `collectExportInfo` to enumerate all value exports for the namespace
+ * case (so type-only exports stay excluded) and to validate named-import
+ * requests for BF055 below. Parsed at most once, and only when needed —
+ * see the call site.
+ *
+ * `modulePath` is the resolved absolute source path, used only for the
+ * BF055 diagnostic location/message below — it does NOT change what gets
+ * emitted. This is a pure diagnostic addition: a name a consumer requested
+ * still ends up in the `return { … }` verbatim even when it's not in the
+ * module's export surface (a failing build is the deliverable here; the
+ * resulting `ReferenceError` stays the loud runtime signal for anyone who
+ * ignores a failed build, e.g. via a stale dist directory).
  */
 function buildTopLevelIIFE(
   topLevelId: string,
   body: string,
   shapesNeeded: ImportShape[],
   originalSource: string,
-): { wrapped: string; hoistedImports: string[] } {
+  modulePath: string,
+): { wrapped: string; hoistedImports: string[]; errors: CompilerError[] } {
   const { body: stripped, hoistedImports } = stripImportsAndExports(body)
 
   // Union of names any consumer needs from this module. If any consumer
   // wants the namespace shape, we have to surface every value export.
   const wantsNamespace = shapesNeeded.some(s => !!s.namespace)
   const namesNeeded = new Set<string>()
-  if (wantsNamespace) {
-    for (const n of collectExportedNames(originalSource)) namesNeeded.add(n)
-  }
+  // Names requested via consumer NAMED shapes specifically — validated
+  // against the export surface below. Namespace-derived names (added below)
+  // come from the module's own exports by construction and need no
+  // validation.
+  const namedRequests = new Set<string>()
   for (const shape of shapesNeeded) {
-    for (const { imported } of shape.named) namesNeeded.add(imported)
+    for (const { imported } of shape.named) {
+      namesNeeded.add(imported)
+      namedRequests.add(imported)
+    }
+  }
+
+  const errors: CompilerError[] = []
+
+  // `originalSource` is parsed AT MOST ONCE per call, and only when
+  // something actually needs it — `inlineRelativeImports` runs inside
+  // `bf build`'s hot path, and CLAUDE.md's rule against extra parses there
+  // applies (#2432 review). Both the namespace-return names and the BF055
+  // surface check come out of this single `collectExportInfo` call.
+  if (wantsNamespace || namedRequests.size > 0) {
+    const info = collectExportInfo(originalSource)
+    if (wantsNamespace) {
+      for (const n of info.localValueExports) namesNeeded.add(n)
+    }
+    if (namedRequests.size > 0 && !info.hasStarReExport) {
+      const surfaceNames = new Set([...info.localValueExports, ...info.otherValueExports, ...info.reExportedNames])
+      const loc = { file: modulePath, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
+      for (const name of namedRequests) {
+        if (surfaceNames.has(name)) continue
+        const { message, suggestion } = buildMissingExportMessage(name, modulePath)
+        errors.push(
+          createError(ErrorCodes.INLINED_IMPORT_MISSING_EXPORT, loc, {
+            message,
+            suggestion: { message: suggestion },
+          }),
+        )
+      }
+    }
   }
 
   if (namesNeeded.size === 0) {
@@ -392,6 +526,7 @@ function buildTopLevelIIFE(
     return {
       wrapped: `const ${topLevelId} = (() => {\n${stripped}\nreturn {};\n})();`,
       hoistedImports,
+      errors,
     }
   }
 
@@ -399,6 +534,7 @@ function buildTopLevelIIFE(
   return {
     wrapped: `const ${topLevelId} = (() => {\n${stripped}\nreturn ${ret};\n})();`,
     hoistedImports,
+    errors,
   }
 }
 
@@ -583,54 +719,6 @@ function buildDanglingReferenceMessage(
 }
 
 /**
- * Identifier-position classifier: returns `true` when `id` is being USED
- * as a value (and could therefore be the dangling reference to a stripped
- * import), `false` when it's a declaration name, property key, member-
- * access name, or other non-reference slot.
- *
- * Caveat: this is a syntactic test, not a scope analysis. If a local
- * function parameter happens to share a name with a stripped import,
- * references inside that function's body will count as references to
- * the stripped import (false positive). Acceptable per #1227: a loud
- * build error is a strict improvement over a silent runtime
- * ReferenceError, and shadowing genuine import binding names is rare in
- * practice.
- */
-function isValueReference(id: ts.Identifier): boolean {
-  const parent = id.parent
-  if (!parent) return false
-  if (ts.isPropertyAccessExpression(parent) && parent.name === id) return false
-  if (ts.isPropertyAssignment(parent) && parent.name === id) return false
-  if (
-    (ts.isMethodDeclaration(parent) ||
-      ts.isGetAccessorDeclaration(parent) ||
-      ts.isSetAccessorDeclaration(parent)) &&
-    parent.name === id
-  ) {
-    return false
-  }
-  if (ts.isVariableDeclaration(parent) && parent.name === id) return false
-  if (ts.isFunctionDeclaration(parent) && parent.name === id) return false
-  if (ts.isFunctionExpression(parent) && parent.name === id) return false
-  if (ts.isClassDeclaration(parent) && parent.name === id) return false
-  if (ts.isClassExpression(parent) && parent.name === id) return false
-  if (ts.isParameter(parent) && parent.name === id) return false
-  if (ts.isBindingElement(parent) && (parent.name === id || parent.propertyName === id)) return false
-  if (ts.isLabeledStatement(parent) && parent.label === id) return false
-  if (ts.isBreakOrContinueStatement(parent) && parent.label === id) return false
-  // ImportSpecifier (`{ X }` or `{ X as Y }`) and ExportSpecifier have
-  // only `name`/`propertyName` as Identifier children — written as an
-  // explicit slot check for stylistic consistency with the other
-  // branches above.
-  if (ts.isImportSpecifier(parent) && (parent.name === id || parent.propertyName === id)) return false
-  if (ts.isExportSpecifier(parent) && (parent.name === id || parent.propertyName === id)) return false
-  if (ts.isImportClause(parent) && parent.name === id) return false
-  if (ts.isNamespaceImport(parent) && parent.name === id) return false
-  if (ts.isQualifiedName(parent) && parent.right === id) return false
-  return true
-}
-
-/**
  * Scan the assembled bundle source for value references to any binding
  * name we removed during the walk. Returns one CompilerError per
  * (stripped import × dangling binding) pair. Uses the TypeScript parser
@@ -669,7 +757,7 @@ function detectStrippedReferences(
   // top-down gives source-order positions naturally.
   const firstReference = new Map<string, ts.Identifier>()
   function visit(node: ts.Node): void {
-    if (ts.isIdentifier(node) && isValueReference(node)) {
+    if (ts.isIdentifier(node) && isValueReferenceIdentifier(node)) {
       if (!firstReference.has(node.text)) firstReference.set(node.text, node)
     }
     ts.forEachChild(node, visit)
@@ -1113,14 +1201,16 @@ async function inlineRelativeImports(
   const ordered = topoSort(modules)
   const iifes: string[] = []
   for (const mod of ordered) {
-    const { wrapped, hoistedImports } = buildTopLevelIIFE(
+    const { wrapped, hoistedImports, errors } = buildTopLevelIIFE(
       mod.topLevelId,
       mod.transpiledBody,
       mod.consumerShapes,
       mod.originalSource,
+      mod.path,
     )
     iifes.push(wrapped)
     for (const h of hoistedImports) hoistedAcc.push(h)
+    for (const err of errors) errorAcc.push(err)
   }
 
   const finalContent = iifes.join('\n') + '\n' + parentContent
@@ -1140,10 +1230,13 @@ async function inlineRelativeImports(
  * - `.tsx` imports: strip (separately-compiled `'use client'` component)
  * - Not found / circular: strip
  *
- * Returns the set of diagnostics emitted during resolution. The only
- * error currently produced here is `BF053` — a stripped import whose
- * binding is still referenced in the assembled bundle. See
- * `detectStrippedReferences` and piconic-ai/barefootjs#1227.
+ * Returns the set of diagnostics emitted during resolution:
+ *   - `BF053` — a stripped import whose binding is still referenced in
+ *     the assembled bundle. See `detectStrippedReferences` and
+ *     piconic-ai/barefootjs#1227.
+ *   - `BF055` — an inlined `.ts` module's IIFE `return` was asked for a
+ *     name the module doesn't export. See `buildTopLevelIIFE` and
+ *     piconic-ai/barefootjs#2432.
  */
 export async function resolveRelativeImports(
   options: ResolveRelativeImportsOptions,

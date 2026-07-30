@@ -3974,6 +3974,9 @@ function importsBrowserOnlyClientApi(ctx: AnalyzerContext): boolean {
     if (imp.source !== '@barefootjs/client') continue
     if (imp.isTypeOnly) continue
     for (const spec of imp.specifiers) {
+      // A per-specifier type-only import (`import { type onMount }`) is not
+      // a browser-only API use — it has no runtime binding (#2432).
+      if (spec.isTypeOnly) continue
       const importedName = spec.name
       if (BROWSER_ONLY_CLIENT_APIS.has(importedName)) return true
     }

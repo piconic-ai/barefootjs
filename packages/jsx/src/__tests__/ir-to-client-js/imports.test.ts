@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { collectExternalImports } from '../../ir-to-client-js/imports'
+import { collectExternalImports, collectUserDomImports } from '../../ir-to-client-js/imports'
 import type { ComponentIR, ImportInfo, SourceLocation } from '../../types'
 
 const dummyLoc: SourceLocation = { file: 'test.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
@@ -228,5 +228,102 @@ describe('collectExternalImports', () => {
       "import '@barefootjs/chart'",
       "import { z } from 'zod'",
     ])
+  })
+
+  // #2432: `collectExternalImports` used a `\bname\b` text scan to decide
+  // which specifiers survive into the client bundle. That scan never
+  // consulted the per-specifier `isTypeOnly` flag, so a per-specifier
+  // `import { paperColor, type Theme } from '../lib/theme'` re-emitted
+  // `Theme` as a VALUE import whenever the word "Theme" merely appeared in
+  // the generated code (e.g. as an object key) — the CLI's relative-import
+  // inliner then put `Theme` in the IIFE's `return { … }` with no binding,
+  // producing `ReferenceError: Theme is not defined` at load.
+  test('per-specifier type-only specifier is not emitted, while its value sibling is (#2432)', () => {
+    const ir: ReturnType<typeof makeIR> = makeIR([{
+      source: '../lib/theme',
+      specifiers: [
+        { name: 'paperColor', alias: null, isDefault: false, isNamespace: false },
+        { name: 'Theme', alias: null, isDefault: false, isNamespace: false, isTypeOnly: true },
+      ],
+      isTypeOnly: false,
+      loc: dummyLoc,
+    }])
+    const code = "const labels = { Theme: 'テーマ' };\nconst c = paperColor({ paper: '#fff' });"
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { paperColor } from '../lib/theme'"])
+  })
+
+  test('a value specifier that appears ONLY as an object key is not emitted (#2432)', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = 'const o = { helper: 1 };'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  test('a value specifier that appears ONLY inside a string literal is not emitted (#2432)', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = "const s = 'helper is a function';"
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  test('a value specifier that appears ONLY as a property-access name is not emitted (#2432)', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = 'obj.helper();'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  test('a value specifier used via shorthand property IS emitted (#2432)', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = 'const o = { helper };'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { helper } from './utils'"])
+  })
+
+  test('unparseable generated text falls back to the text scan (#2432)', () => {
+    const ir = makeIR([makeImport('some-lib', ['helper'])])
+    const code = 'MyComponent helper()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { helper } from 'some-lib'"])
+  })
+
+  // These two pin the fallback branch specifically (generated text that does
+  // NOT parse cleanly, so `makeValueUsageTest` falls back to a substring
+  // scan rather than the AST-based value-reference set). #2432: the
+  // fallback used to be a `new RegExp(`\\b${localName}\\b`)` scan, which
+  // silently DROPPED the import for either shape below — `\b` isn't defined
+  // for `$` or non-ASCII characters, and `$` is also a regex metacharacter
+  // (end-of-input anchor) when spliced unescaped into `new RegExp(...)`, so
+  // `\b$fetch\b` could never match `$fetch` at all. Dropping the import is
+  // the one failure direction this helper must never take.
+  test('fallback matches a $-prefixed specifier (#2432)', () => {
+    const ir = makeIR([makeImport('ofetch', ['$fetch'])])
+    const code = 'MyComponent $fetch()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { $fetch } from 'ofetch'"])
+  })
+
+  test('fallback matches a non-ASCII specifier (#2432)', () => {
+    const ir = makeIR([makeImport('some-lib', ['日本語'])])
+    const code = 'MyComponent 日本語()'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { 日本語 } from 'some-lib'"])
+  })
+})
+
+describe('collectUserDomImports', () => {
+  test('per-specifier type-only specifier is not emitted from the runtime subpath (#2432)', () => {
+    const ir = makeIR([{
+      source: '@barefootjs/client',
+      specifiers: [
+        { name: 'createSignal', alias: null, isDefault: false, isNamespace: false },
+        { name: 'Signal', alias: null, isDefault: false, isNamespace: false, isTypeOnly: true },
+      ],
+      isTypeOnly: false,
+      loc: dummyLoc,
+    }])
+    const result = collectUserDomImports(ir)
+    expect(result).toEqual(['createSignal'])
   })
 })

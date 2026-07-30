@@ -18,7 +18,7 @@ import { stripClientBuiltinImports } from './builtins.ts'
 import { generateClientJs, generateClientJsWithSourceMap, analyzeClientNeeds } from './ir-to-client-js/index.ts'
 import { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
 import { emitModuleLevelDeclarations } from './ir-to-client-js/emit-module-level.ts'
-import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode } from './ir-to-client-js/imports.ts'
+import { RUNTIME_MODULE, detectUsedImports as detectUsedImportsFromCode, makeValueUsageTest } from './ir-to-client-js/imports.ts'
 import { setActiveComponentScope, computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { generateModuleExports, collectInlineExportedNames } from './module-exports.ts'
 import { applyCssLayerPrefix } from './css-layer-prefixer.ts'
@@ -583,6 +583,7 @@ export function compileJSX(
       // in the generated body (e.g. an initializer that calls an imported
       // helper: `createSignal(defaultValue())`).
       const externalImportLines: string[] = []
+      const isUsedAsValue = makeValueUsageTest(body)
       for (const imp of ctx.imports) {
         if (imp.isTypeOnly) continue
         if (imp.source === '@barefootjs/client' || imp.source === RUNTIME_MODULE) continue
@@ -591,7 +592,7 @@ export function compileJSX(
           continue
         }
         const used = imp.specifiers
-          .filter(s => !s.isDefault && !s.isNamespace && new RegExp(`\\b${s.alias || s.name}\\b`).test(body))
+          .filter(s => !s.isDefault && !s.isNamespace && !s.isTypeOnly && isUsedAsValue(s.alias || s.name))
           .map(s => s.alias ? `${s.name} as ${s.alias}` : s.name)
         if (used.length > 0) {
           externalImportLines.push(`import { ${used.join(', ')} } from '${imp.source}'`)
@@ -638,6 +639,9 @@ export function compileJSX(
       if (imp.isTypeOnly) continue
       if (!imp.source.startsWith('./') && !imp.source.startsWith('../')) continue
       for (const spec of imp.specifiers) {
+        // A type-only specifier must not force a `.client.js` source
+        // rewrite — it has no runtime binding (#2432).
+        if (spec.isTypeOnly) continue
         if (ctx.importedClientSignalNames.has(spec.alias ?? spec.name)) {
           sources.add(imp.source)
           break

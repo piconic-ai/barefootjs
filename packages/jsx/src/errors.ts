@@ -53,6 +53,14 @@ export const ErrorCodes = {
   // or an undeclared component — fail loud with the import to add.
   BUILTIN_REQUIRES_IMPORT: 'BF054',
 
+  // A relative `.ts` module inlined into a client bundle (`resolveRelativeImports`'s
+  // top-level IIFE wrap) was asked for a name it does not export. The IIFE's
+  // `return { … }` has no binding for that name, so the reference throws
+  // `ReferenceError: <name> is not defined` at load — killing the page's
+  // client JS before hydrate. Fail the build instead of shipping the
+  // dangling reference (#2432).
+  INLINED_IMPORT_MISSING_EXPORT: 'BF055',
+
   // Init statement errors (BF052)
   UNDECLARED_INIT_STATEMENT_REFERENCE: 'BF052',
 
@@ -154,6 +162,9 @@ const errorMessages: Record<ErrorCode, string> = {
 
   [ErrorCodes.STRIPPED_CLIENT_IMPORT_REFERENCED]:
     "Import was stripped from the client bundle but its binding is still referenced. Client components ('use client' .tsx) are not callable as plain functions from imperative .ts modules — render them as JSX from a 'use client' parent instead. If the flagged name is a local shadow rather than the stripped import, please file an issue.",
+
+  [ErrorCodes.INLINED_IMPORT_MISSING_EXPORT]:
+    'An inlined relative import requests a name the target module does not export. The client bundle would throw ReferenceError at load.',
 
   [ErrorCodes.STAGE_REACTIVE_IN_TEMPLATE]:
     'Reactive binding (signal getter or memo) referenced from template scope. The template lambda runs at module scope without the reactive context, so the value cannot be evaluated at SSR. Wrap the JSX expression in /* @client */ to defer it to hydrate, or restructure so the template uses a prop or static value.',
