@@ -443,10 +443,24 @@ value first:
 | Refusal | Why it refuses / what lifting it needs |
 |---|---|
 | `row contains a reactive conditional` | Includes a BARE ternary in child position (`{cond ? a : b}`), which lowers to `insert()` and is refused as a conditional, not as a text binding. Read "outer-involving row text is lazy" with that caveat attached. Directly on the 1k-row hot path. |
-| `row has a map-callback preamble` | The rule is "any preamble at all", not "a preamble declaring row-local reactivity" — over-broad by construction. |
 | `multi-root (Fragment) row` | Needs the `startMarker`/`extras` bookkeeping the spike deliberately dropped. Not a design wall. |
 | `row has imperative child refs`, `row body is a child component`, `row contains nested child components`, `row contains an inner loop` | Shapes where the row owns lifecycle. Genuinely-needs-per-row-reactivity and doesn't-need-it are mixed together here and need separating. |
 | `flatMap descriptor loop`, `anchored whole-item-conditional loop`, `row has preamble-patched regions`, `destructured loop param without param bindings` | Outside the plain shape A3b drew; each wants its own bookkeeping. |
+
+A **value-only map-callback preamble** was also refused once and is now lazy.
+The old rule was "any preamble at all"; `analyzeLazyPreamble`
+(`plan/lazy-preamble.ts`) replaced it with a structural proof that
+re-executing the statements is observationally free — a sequence of `const`
+declarations whose initializers contain no call except a **zero-argument
+signal/memo read** (`const cls = selected() === row.id ? …`, the krausest
+shape). That read is sound in all three bodies because `mapArrayLazy` wraps
+`createRow`/`applyItem` in `untrack()` and `applyOuter` IS the loop-level
+effect. The preamble is emitted into `createRow` ONLY, before the clone whose
+template literal interpolates the local. A binding that READS a declared local
+still refuses: a child-position read is a `preambleRegions` entry (already
+refused) and an attribute-position read is not classified as reactive, so the
+case is currently unreachable — the refusal is the fail-safe that keeps the
+widening sound if either fact changes.
 
 Outer-involving TEXT bindings were also refused once and are now lazy
 (#2411/#2412). The obstacle was not the design but the mutating text claim

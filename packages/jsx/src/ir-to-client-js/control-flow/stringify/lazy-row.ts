@@ -200,6 +200,11 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   // interpolates the per-row template, which reads the param for at least
   // the `data-key` attribute.
   lines.push(`${b2}const ${paramHead} = () => __e.item`)
+  // The row's `.map()` callback preamble, before the clone: a non-hoisted
+  // per-row template interpolates values the preamble declares. Only
+  // `createRow` needs it — a BINDING that reads a preamble local refuses the
+  // loop (`lazyRowEligibility`), so the apply bodies never reference one.
+  if (lazyRow.preambleStatements) lines.push(`${b2}${lazyRow.preambleStatements}`)
   const cloneExpr = useHoisted
     ? hoistedCloneExpr(tplVar, o.skeletonTemplate!)
     : `(() => { ${emitTemplateCloneInline(o.template)} })()`

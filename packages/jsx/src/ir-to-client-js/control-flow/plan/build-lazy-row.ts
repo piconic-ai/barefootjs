@@ -22,6 +22,7 @@ import { pickAttrMeta, type AttrMeta } from '../../../types.ts'
 import { extractFreeIdentifiersFromText } from '../../csr-substitute.ts'
 import { wrapLoopParamAsAccessor, PROPS_PARAM } from '../../utils.ts'
 import type { BranchLoop, ClientJsContext, TopLevelLoop } from '../../types.ts'
+import { analyzeLazyPreamble } from './lazy-preamble.ts'
 import {
   classifyLazyBinding,
   lazyRowEligibility,
@@ -88,6 +89,19 @@ export interface LazyRowPlanData {
   outerPrimeGetters: readonly string[]
   /** True when at least one binding is outer-involving. */
   hasOuter: boolean
+  /**
+   * The row's `.map()` callback preamble as already-wrapped JS statements
+   * (`mapPreambleWrapped`), or `''` when the row has none — proven safe to run
+   * by `analyzeLazyPreamble` (§9.5 widening).
+   *
+   * Emitted in `createRow` ONLY, and specifically before the clone: the
+   * non-hoisted per-row template interpolates values the preamble declares
+   * (an attribute reading a preamble local is not classified as reactive, so
+   * it lands in the template rather than in `attrs`). `applyItem` /
+   * `applyOuter` never need it, because a binding that reads a declared local
+   * refuses the loop outright — see `lazyRowEligibility`'s per-binding gate.
+   */
+  preambleStatements: string
 }
 
 export interface BuildLazyRowArgs {
@@ -126,6 +140,13 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
   const rowLocalNames = new Set<string>([loop.param])
   for (const b of loop.paramBindings ?? []) rowLocalNames.add(b.name)
 
+  // §9.5 preamble widening: prove the preamble is safe to re-run in the apply
+  // bodies BEFORE classifying, because a binding that reads a declared local
+  // inherits the preamble's dependencies rather than its own literal names.
+  const primableNames = new Set<string>([...scope.signals.keys(), ...scope.memos])
+  const preambleAnalysis = analyzeLazyPreamble(loop.preamble, args.indexParam, primableNames)
+  const preambleFacts = preambleAnalysis.lazySafe ? preambleAnalysis.facts : undefined
+
   // --- classify every binding -------------------------------------------
   const classified: ClassifiedLazyBinding[] = []
   const attrClass = new Map<number, ClassifiedLazyBinding>()
@@ -137,6 +158,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       rowLocalNames,
       indexParam: args.indexParam,
       scope,
+      preamble: preambleFacts,
     })
     attrClass.set(i, c)
     classified.push(c)
@@ -150,6 +172,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       rowLocalNames,
       indexParam: args.indexParam,
       scope,
+      preamble: preambleFacts,
     })
     textClass.set(i, c)
     classified.push(c)
@@ -167,7 +190,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
     nestedComponentCount: loop.nestedComponents?.length ?? 0,
     innerLoopCount: loop.innerLoops?.length ?? 0,
     hasChildComponent: 'childComponent' in loop && loop.childComponent != null,
-    hasMapPreamble: args.mapPreambleWrapped.length > 0,
+    mapPreambleRefusal: preambleAnalysis.lazySafe ? null : preambleAnalysis.reason,
     preambleRegionCount: args.preambleRegionCount,
     hasParamUnwrap: args.paramUnwrap.length > 0,
   }
@@ -232,6 +255,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       lastCount: ordinal,
       outerPrimeGetters,
       hasOuter: attrs.some(a => a.readsOuter) || texts.some(t => t.readsOuter),
+      preambleStatements: args.mapPreambleWrapped,
     },
     decision,
   }

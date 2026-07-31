@@ -109,23 +109,19 @@ describe('plain `.map()` inside a conditional branch (#1065)', () => {
     expect(renderItemSection).not.toMatch(/const\s+cls\s*=\s*flag\b/)
   })
 
-  test('regression #1065: single-line renderItem shape (no reactive effects) wraps preamble', () => {
-    // The plain branch-loop emitter has two emission shapes — a multi-line
-    // body when `loop.childReactive*` is non-empty, and a single-line body
-    // (everything packed into one `mapArray(...)` line) when there are no
-    // reactive effects on item children. The previous two tests had a
-    // `{cell.value}` reactive text inside the `<li>` body, which forced
-    // the multi-line branch; the single-line branch's preamble wrap was
-    // therefore untested and could have silently regressed.
+  test('regression #1065: a reactive-effect-free branch loop wraps its preamble', () => {
+    // The #1065 obligation is that the preamble goes through
+    // `wrapLoopParamAsAccessor`, so a bare item read (`cell.flag`) becomes
+    // `cell().flag` and stays consistent with the already-wrapped template
+    // literal. `mapPreambleWrapped` is computed once in
+    // `plan/build-branch-loop.ts` and feeds every emission shape, so that is
+    // what this asserts.
     //
-    // This source has no reactive expressions inside the loop item, so the
-    // emitter takes the single-line path:
-    //
-    //   mapArray(...,(cell, idx, __existing) => {
-    //     if (__existing) return __existing;
-    //     const cls = cell().flag ? 'on' : 'off';   ← must be wrapped
-    //     ...
-    //   })
+    // The SHAPE this source takes moved with the §9.5 preamble widening: a
+    // call-free `const` preamble no longer refuses the lazy row graph, so
+    // this loop now emits `mapArrayLazy` with the preamble in `createRow`
+    // rather than the eager single-line `mapArray(...)` body. The wrap is
+    // asserted where the preamble actually lands.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -155,28 +151,21 @@ describe('plain `.map()` inside a conditional branch (#1065)', () => {
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
     const js = result.files.find(f => f.type === 'clientJs')!.content
 
-    const renderItemSection = js.slice(
-      js.indexOf('__disposers.push(createDisposableEffect'),
-      js.indexOf('return () => __disposers'),
-    )
-    expect(renderItemSection.length).toBeGreaterThan(0)
-    // Confirm we're in the single-line branch by asserting all of
-    // `mapArray(...)` lives on one source line — multi-line would split
-    // across newlines.
-    const mapArrayLine = renderItemSection
-      .split('\n')
-      .find(l => l.includes('mapArray('))
-    expect(mapArrayLine).toBeDefined()
-    expect(mapArrayLine!).toContain(' return __existing;')
-    expect(mapArrayLine!).toContain('cell().flag')
-    expect(mapArrayLine!).not.toContain(' cell.flag')
+    const createRow = js.slice(js.indexOf('createRow:'), js.indexOf('applyItem:'))
+    expect(createRow.length).toBeGreaterThan(0)
+    expect(createRow).toContain('cell().flag')
+    expect(createRow).not.toContain(' cell.flag')
+    // The preamble must precede the clone: the row template interpolates
+    // `cls`.
+    expect(createRow.indexOf('const cls =')).toBeLessThan(createRow.indexOf('const __el ='))
   })
 
-  test('regression #1065: destructured + single-line shape rewrites bindings to __bfItem()', () => {
+  test('regression #1065: a destructured param rewrites preamble bindings to __bfItem()', () => {
     // Cross-product of the two sub-features: destructured callback param
-    // (#951) AND single-line emission shape (no reactive effects). Both
-    // wrap pathways must compose so the preamble stays consistent with
-    // the template literal's already-wrapped reads.
+    // (#951) AND a reactive-effect-free loop item. Both wrap pathways must
+    // compose so the preamble stays consistent with the template literal's
+    // already-wrapped reads. Same shape note as the test above — this loop
+    // is lazy-eligible since the §9.5 preamble widening.
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -206,17 +195,11 @@ describe('plain `.map()` inside a conditional branch (#1065)', () => {
     expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
     const js = result.files.find(f => f.type === 'clientJs')!.content
 
-    const renderItemSection = js.slice(
-      js.indexOf('__disposers.push(createDisposableEffect'),
-      js.indexOf('return () => __disposers'),
-    )
-    const mapArrayLine = renderItemSection
-      .split('\n')
-      .find(l => l.includes('mapArray('))
-    expect(mapArrayLine).toBeDefined()
-    expect(mapArrayLine!).toContain('__bfItem().flag')
+    const createRow = js.slice(js.indexOf('createRow:'), js.indexOf('applyItem:'))
+    expect(createRow.length).toBeGreaterThan(0)
+    expect(createRow).toContain('__bfItem().flag')
     // Bare `flag` reference (without `__bfItem().` prefix) would mean the
     // wrap pass missed the destructured binding.
-    expect(mapArrayLine!).not.toMatch(/\bcls\s*=\s*flag\b/)
+    expect(createRow).not.toMatch(/\bcls\s*=\s*flag\b/)
   })
 })

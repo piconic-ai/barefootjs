@@ -53,7 +53,7 @@ function makeShape(overrides: Partial<LazyRowShapeFacts> = {}): LazyRowShapeFact
     nestedComponentCount: 0,
     innerLoopCount: 0,
     hasChildComponent: false,
-    hasMapPreamble: false,
+    mapPreambleRefusal: null,
     preambleRegionCount: 0,
     hasParamUnwrap: false,
     ...overrides,
@@ -78,6 +78,7 @@ const itemBinding = (kind: 'attr' | 'text' = 'text') => ({
   reactiveOuterNames: [] as string[],
   opaqueOuterNames: [] as string[],
   referencesIndex: false,
+  readsPreamble: false,
 })
 
 // --- eligibility ------------------------------------------------------------
@@ -125,7 +126,7 @@ describe('lazyRowEligibility — shape refusals', () => {
     ['child-component body', { hasChildComponent: true }, /child component/],
     ['nested child components', { nestedComponentCount: 1 }, /nested child components/],
     ['inner loop', { innerLoopCount: 1 }, /inner loop/],
-    ['map-callback preamble', { hasMapPreamble: true }, /preamble/],
+    ['unsafe map-callback preamble', { mapPreambleRefusal: 'map-callback preamble declares a mutable binding (let/var)' }, /mutable binding/],
     ['preamble-patched regions', { preambleRegionCount: 1 }, /preamble-patched regions/],
     ['destructured param without bindings', { hasParamUnwrap: true }, /destructured loop param/],
   ]

@@ -18,13 +18,16 @@
  *  1. **Shape** (§9.4 "plain loop-row shape"): non-anchored, non-flatMap,
  *     single-root, keyed, conditional-free, ref-free, no nested components
  *     or inner loops.
- *  2. **No preamble.** A `.map()` callback preamble declares row-local
- *     bindings (and can declare row-local signals/memos, which need per-row
- *     reactivity by definition). Proving "declares no signal/memo" is not
- *     cheap here, and every preamble-declared local would land in a
- *     binding's free-identifier set as an unresolvable name anyway — so the
- *     rule is the cheap conservative one: **any** `mapPreambleWrapped` or
- *     any `preambleRegions` entry makes the loop ineligible.
+ *  2. **A preamble must be provably re-runnable.** The lazy emission has no
+ *     single per-row body, so a preamble-declared local only exists if the
+ *     preamble's statements are re-executed at the top of each apply body
+ *     that reads one. `analyzeLazyPreamble` (`lazy-preamble.ts`) proves that
+ *     structurally — `const` declarations whose initializers do nothing but
+ *     read the item and zero-arg signal getters — and hands back the declared
+ *     names. The gate consumes its verdict as a pre-computed
+ *     `mapPreambleRefusal` string so this function stays pure data-in/data-out.
+ *     A binding that READS a declared local still refuses (see the per-binding
+ *     gate), and so does any `preambleRegions` entry (§9.5, a separate row).
  *  3. **Every reactive outer dependency must be primable.** `mapArrayLazy`
  *     creates ONE loop-level effect for `applyOuter`; that effect subscribes
  *     only to what its body reads, and its body must read the outer signals
@@ -62,6 +65,8 @@
  *     loop-level effect would make every binding on every row share one
  *     `#binding:<slotId>` id.
  */
+
+import type { LazyPreambleFacts } from './lazy-preamble.ts'
 
 /** Facts about one component signal needed by the §9.3(2) source gate. */
 export interface LazyRowSignalFacts {
@@ -158,6 +163,13 @@ export interface ClassifiedLazyBinding {
   opaqueOuterNames: readonly string[]
   /** References the loop's index parameter — `applyItem`/`applyOuter` have no index. */
   referencesIndex: boolean
+  /**
+   * Names a preamble-declared local, so every apply body this binding is
+   * emitted into must re-run the preamble first. Tracked per binding rather
+   * than per loop so `applyOuter` does not pay for a preamble only
+   * `applyItem`'s bindings read (`stringify/lazy-row.ts`).
+   */
+  readsPreamble: boolean
 }
 
 /** §9.4 shape facts, read off the loop plan / IR by the caller. */
@@ -174,7 +186,13 @@ export interface LazyRowShapeFacts {
   nestedComponentCount: number
   innerLoopCount: number
   hasChildComponent: boolean
-  hasMapPreamble: boolean
+  /**
+   * `analyzeLazyPreamble`'s refusal reason, or `null` when the row has no
+   * preamble or has one that is provably safe to re-run in the apply bodies
+   * (`lazy-preamble.ts`). A string here is emitted verbatim as the gate's
+   * reason — the analysis, not this function, knows what was wrong.
+   */
+  mapPreambleRefusal: string | null
   preambleRegionCount: number
   /** A destructured loop param with no `paramBindings` (snapshot unwrap). */
   hasParamUnwrap: boolean
@@ -247,9 +265,9 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
   if (shape.nestedComponentCount > 0) return NO('row contains nested child components')
   if (shape.innerLoopCount > 0) return NO('row contains an inner loop')
 
-  // (6) No row-local declarations — see the module docstring for why the
-  //     rule is "any preamble at all", not "a preamble declaring signals".
-  if (shape.hasMapPreamble) return NO('row has a map-callback preamble (may declare row-local reactivity)')
+  // (6) Row-local declarations: a preamble is allowed when it is provably
+  //     re-runnable, refused with the analysis's own reason otherwise.
+  if (shape.mapPreambleRefusal) return NO(shape.mapPreambleRefusal)
   if (shape.preambleRegionCount > 0) return NO('row has preamble-patched regions')
   if (shape.hasParamUnwrap) return NO('destructured loop param without param bindings')
 
@@ -267,6 +285,15 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
     // `applyItem`/`applyOuter` do not have. So this one still refuses.
     if (b.opaqueOuterNames.includes(UNKNOWN_IDENTIFIERS)) {
       return NO(`binding on slot ${b.slotId} has no analyzable identifier set`)
+    }
+    // A preamble-declared local hides the preamble's own dependencies, and
+    // the apply bodies would have to re-run the preamble to have the value at
+    // all. Currently unreachable — a child-position read is a
+    // `preambleRegions` entry and an attribute-position one is not classified
+    // as reactive — so this is the fail-safe that keeps the widening sound if
+    // either of those facts changes. See `lazy-preamble.ts`.
+    if (b.readsPreamble) {
+      return NO(`binding on slot ${b.slotId} reads a map-callback preamble local`)
     }
     // An outer name the emitter cannot prime used to refuse the loop: the
     // loop-level effect must subscribe on its FIRST run, and with an empty
@@ -359,6 +386,13 @@ function checkSourceConsistency(
  * subscribe (see module docstring, restriction 3). So the fail-safe direction
  * is preserved (maximally conservative classification) while the emission
  * refuses loudly instead of shipping a dead effect.
+ *
+ * **Preamble locals are flagged, not resolved.** A name the preamble declares
+ * hides whatever the preamble read, so classifying it against the component
+ * scope would name the wrong dependency (and would silently treat a shadowed
+ * signal as the outer one). `readsPreamble` records the fact and
+ * `lazyRowEligibility` refuses the loop — see `lazy-preamble.ts` for why that
+ * case is currently unreachable and why the refusal is still the right shape.
  */
 export function classifyLazyBinding(args: {
   kind: 'attr' | 'text'
@@ -368,8 +402,11 @@ export function classifyLazyBinding(args: {
   rowLocalNames: ReadonlySet<string>
   indexParam: string
   scope: LazyRowScopeInfo
+  /** Proven-safe preamble facts, or the empty set pair when there is none. */
+  preamble?: LazyPreambleFacts
 }): ClassifiedLazyBinding {
   const { kind, slotId, free, rowLocalNames, indexParam, scope } = args
+  const preamble = args.preamble
 
   if (free === null) {
     return {
@@ -384,15 +421,24 @@ export function classifyLazyBinding(args: {
       // identifier set we cannot rule out an index read either, and
       // `applyItem` / `applyOuter` have no index parameter to give it.
       referencesIndex: false,
+      // An assumption like `referencesIndex` above, and the conservative
+      // one: with no identifier set we cannot rule out a preamble read
+      // either. The loop is refused for `UNKNOWN_IDENTIFIERS` regardless.
+      readsPreamble: preamble != null && preamble.declaredNames.size > 0,
     }
   }
 
   let readsItem = false
   let referencesIndex = false
+  let readsPreamble = false
   const reactiveOuterNames: string[] = []
   const opaqueOuterNames: string[] = []
 
   for (const name of free) {
+    if (preamble?.declaredNames.has(name)) {
+      readsPreamble = true
+      continue
+    }
     if (rowLocalNames.has(name)) {
       readsItem = true
       continue
@@ -436,5 +482,6 @@ export function classifyLazyBinding(args: {
     reactiveOuterNames,
     opaqueOuterNames,
     referencesIndex,
+    readsPreamble,
   }
 }
