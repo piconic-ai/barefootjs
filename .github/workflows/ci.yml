@@ -11,6 +11,7 @@ on:
       - 'packages/chart/**'
       - 'packages/xyflow/**'
       - 'packages/adapter-tests/**'
+      - 'packages/router/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
       - 'packages/adapter-hono/**'
@@ -33,6 +34,7 @@ on:
       - 'packages/chart/**'
       - 'packages/xyflow/**'
       - 'packages/adapter-tests/**'
+      - 'packages/router/**'
       # site/ui is the Hono adapter's end-to-end target, so Hono changes must
       # re-run this workflow's e2e-site-ui job (ci-hono.yml no longer duplicates it).
       - 'packages/adapter-hono/**'
@@ -72,7 +74,7 @@ jobs:
           - group: jsx-2
             run: bun test $(bun scripts/ci/shard-test-files.ts packages/jsx 2 2)
           - group: rest
-            run: bun test packages/client packages/test packages/adapter-tests
+            run: bun test packages/client packages/test packages/adapter-tests packages/router
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
