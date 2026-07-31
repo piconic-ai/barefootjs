@@ -1,8 +1,8 @@
 /**
- * Regression test for #1320: `createComponent` must thread its
- * `slot.parent` scope through `_parentScopeId` so any hoisted-children
- * placeholder (`bf-s="__BF_PARENT_SCOPE__"`) the template body emits
- * resolves to the calling site's scope.
+ * Regression test for #1320: `createComponent` must thread a scope through
+ * `_parentScopeId` so any hoisted-children placeholder
+ * (`bf-s="__BF_PARENT_SCOPE__"`) the template body emits resolves to the
+ * calling site's scope.
  *
  * Pre-fix, `createComponent` called `templateFn(unwrappedProps)`
  * without touching `_parentScopeId`, so a component rendered via the
@@ -10,9 +10,15 @@
  * `createComponent` calls) lost its hoisted child's `bf-s` — the
  * substitution-or-strip logic in `renderChild` stripped the
  * placeholder on the null-parent branch, and the inner span landed
- * in the DOM with no scope marker. This test pins the contract that
- * `slot.parent`'s scope reaches `_parentScopeId` for the duration of
- * the inner template eval.
+ * in the DOM with no scope marker.
+ *
+ * Since #2444, WHICH scope reaches `_parentScopeId` changed for a slotted
+ * (non-comment) component: it is the component's OWN derived scope
+ * (`${slot.parent}_${slot.mount}`), not the raw `slot.parent` — the hoisted
+ * child belongs to the JSX that literally contains it, which is this
+ * component, not its ancestor. A `comment: true` synthesized wrapper
+ * (`scopeId === null`) is unaffected and still falls through to
+ * `slot.parent` directly.
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
@@ -115,31 +121,38 @@ describe('createComponent + hoisted-children scope (#1320)', () => {
         `${renderChild('InnerLeaf_test1320', { children: '<span data-pos="x" bf-s="__BF_PARENT_SCOPE__">x</span>' }, undefined, 's0')}`,
     })
 
-    // First mount: creates a fresh element with slot.parent set so the
-    // placeholder substitutes to `parentScopeId`. This call sets
-    // `_parentScopeId` for the duration of the inner template eval —
-    // the assertion below catches the substitution working.
-    const parentScopeId = 'OuterTwo_xyz789'
+    // First mount: creates a fresh element with slot.parent set. Since
+    // #2444, a slotted (non-comment) component derives its OWN scope id
+    // from `${slot.parent}_${slot.mount}` — that derived id, not the raw
+    // `slot.parent`, is what `_parentScopeId` carries for the duration of
+    // the inner template eval, so the hoisted span (part of OuterTwo's own
+    // JSX) correctly carries OuterTwo's OWN scope rather than its
+    // ancestor's. (Pre-#2444 this wrongly attributed the hoisted child to
+    // the ancestor's scope instead of the component that actually renders
+    // it — the same imprecision that made a third composition level
+    // collapse onto the second, `grandchild-composition`.)
+    const hostScopeId = 'OuterTwo_xyz789'
     const elWithParent = createComponent(
       'OuterTwo_test1320',
       {},
       undefined,
-      { parent: parentScopeId, mount: 's0' },
+      { parent: hostScopeId, mount: 's0' },
     )
     const innerWithParent = elWithParent.querySelector('span')
-    expect(innerWithParent!.getAttribute('bf-s')).toBe(parentScopeId)
+    expect(elWithParent.getAttribute('bf-s')).toBe(`${hostScopeId}_s0`)
+    expect(innerWithParent!.getAttribute('bf-s')).toBe(elWithParent.getAttribute('bf-s'))
 
     // Immediately after, mount a second instance WITHOUT slot.parent.
     // Since #1627, createComponent threads its OWN scope id into
     // `_parentScopeId` for the template eval, so the hoisted child is
     // scoped to this fresh instance — NOT a leak of the prior call's
-    // `parentScopeId`. The re-entrant-safety contract is that the prior
+    // derived scope. The re-entrant-safety contract is that the prior
     // value does not bleed through: the span must carry this element's
-    // own scope, never `OuterTwo_xyz789`.
+    // own scope, never `OuterTwo_xyz789_s0`.
     const elWithoutParent = createComponent('OuterTwo_test1320', {})
     const innerWithoutParent = elWithoutParent.querySelector('span')
     expect(innerWithoutParent!.getAttribute('bf-s')).toBe(elWithoutParent.getAttribute('bf-s'))
-    expect(innerWithoutParent!.getAttribute('bf-s')).not.toBe(parentScopeId)
+    expect(innerWithoutParent!.getAttribute('bf-s')).not.toBe(elWithParent.getAttribute('bf-s'))
   })
 
   test('restores _parentScopeId even when the template throws', async () => {

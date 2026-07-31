@@ -1817,37 +1817,9 @@
     "totalFixtures": 285,
     "fixtures": {
       "composite-row-child-component": {
-        "blade": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
-        },
         "go-template": {
           "kind": "render",
           "reason": "a child component nested inside a dynamic loop row receives one hoisted props value built outside `{{range}}`, so every row renders the child with zero-value props (https://github.com/piconic-ai/barefootjs/issues/2445)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
         }
       },
       "date-method-uncatalogued": {

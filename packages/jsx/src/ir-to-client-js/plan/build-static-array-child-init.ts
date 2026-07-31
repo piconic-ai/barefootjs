@@ -30,7 +30,7 @@ import { irChildrenToJsExpr, renderPreamble, irToHtmlTemplate } from '../html-te
 function staticPreludeStatements(preamble: MapCallbackPreamble | undefined): string[] {
   return preamble
     ? [renderPreamble(preamble, {
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined),
       })]
     : []
 }

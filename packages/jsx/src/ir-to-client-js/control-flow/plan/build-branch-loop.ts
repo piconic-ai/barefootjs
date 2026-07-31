@@ -58,7 +58,7 @@ export function buildBranchLoopPlan(
   const mapPreambleWrapped = loop.preamble
     ? renderPreamble(loop.preamble, {
         transformJs: (t) => wrapLoopParamAsAccessor(t, loop.param, loop.paramBindings),
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined),
       })
     : ''
   const preambleRegions = buildPreambleRegionPlans(loop.preambleRegions, loop.param, loop.paramBindings)

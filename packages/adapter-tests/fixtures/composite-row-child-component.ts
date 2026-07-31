@@ -14,11 +14,10 @@ import { createFixture } from '../src/types'
  * had `nestedComponents === 0`, and no client-JS snapshot contained both
  * `mapArray` and `upsertChild`.
  *
- * Hono is the only adapter that matches today. The rest are declared as
- * render divergences and skipped:
- *   - #2444 — every DSL adapter (and the CSR template lambda) mints a
- *     random `Badge_<id>` scope id via `render_child` instead of deriving
- *     `<parent>_s0`. Content is correct; only `bf-s` diverges.
+ * Hono, every DSL adapter, and CSR all match (#2444 — the scope id of a
+ * component nested below the loop row root now derives from
+ * `<parent>_<slot>`, same as any other slotted child). Go still diverges
+ * and is declared as a render divergence:
  *   - #2445 — Go hoists ONE `BadgeSlot0` props value outside `{{range}}`
  *     with no per-row data, so every row renders an empty badge.
  */

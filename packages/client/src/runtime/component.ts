@@ -235,9 +235,18 @@ function materializeComponent(
   // already the inner component's root with its own bf-s. Don't overwrite
   // it (scopeId stays null), or `$c(__scope, 's0')` from the wrapper's
   // init resolves to null.
+  //
+  // `slot` is only supplied by `upsertChild` / `upsertChildItem` mounting a
+  // component nested below a loop row root — the SSR reference (Hono)
+  // derives that child's `bf-s` from `${hostScope}_${mountSlot}` rather
+  // than randomizing it (#2444), so CSR must match or the primary
+  // `(bf-h, bf-m)` SSR-scope lookup never finds the CSR-created element.
+  // A row root itself is never passed a `slot`, so it keeps its own
+  // random id, matching the reference behaviour.
   const def = getRegisteredDef(name)
   const isCommentWrapper = def?.comment === true
-  const scopeId = isCommentWrapper ? null : `${name}_${generateId()}`
+  const derivedScopeId = slot?.parent && slot.mount ? `${slot.parent}_${slot.mount}` : null
+  const scopeId = isCommentWrapper ? null : (derivedScopeId ?? `${name}_${generateId()}`)
 
   // 5. Generate HTML from props.
   //
@@ -246,13 +255,18 @@ function materializeComponent(
   // bf-m on child components — matching the SSR convention so a later
   // `$c(scope, 'sN')` lookup resolves them. Without this, CSR-created
   // children carry a random prefix and their event handlers never wire
-  // up (#1627). `slot.parent` takes precedence so hoisted-children
-  // placeholders (#1320) still resolve to the calling site's scope.
+  // up (#1627). `scopeId` takes precedence over `slot.parent` — once a
+  // slotted component derives its OWN scope id (above), that derived id
+  // is what ITS children must nest under, not the grandparent's `slot.parent`
+  // (that used to collapse a third composition level back onto the second,
+  // #2444's `grandchild-composition` case). A comment wrapper keeps
+  // `scopeId === null` and falls through to `slot?.parent`, preserving the
+  // hoisted-children placeholder resolution (#1320).
   const prevParentScopeId = _parentScopeId
-  if (slot?.parent) {
-    _parentScopeId = slot.parent
-  } else if (scopeId) {
+  if (scopeId) {
     _parentScopeId = scopeId
+  } else if (slot?.parent) {
+    _parentScopeId = slot.parent
   }
   let html: string
   try {
@@ -416,13 +430,29 @@ export function renderChild(
     return `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
   }
 
+  // Push this child's own derived scope id as `_parentScopeId` while its
+  // template evaluates, so a GRANDCHILD rendered by a nested `renderChild()`
+  // call derives from THIS scope (`${scopePrefix}${suffix}`) rather than
+  // reusing the caller's scope — otherwise a third composition level
+  // collapses back onto the second instead of deriving `..._s0_s0` (#2444
+  // `grandchild-composition`). Restored before the placeholder substitution
+  // below, which anchors to the CALLER's scope, not this child's.
+  const prevParentScopeId = _parentScopeId
+  _parentScopeId = `${scopePrefix}${suffix}`
+  let raw: string
+  try {
+    raw = templateFn(props)
+  } finally {
+    _parentScopeId = prevParentScopeId
+  }
+
   // The placeholder substitution is anchored to the exact `bf-s="…"`
   // shape so user content that contains the sentinel as text survives
   // unchanged. When `_parentScopeId` is null (top-level render) the
   // attribute strips rather than emitting `bf-s=""`. (#1320)
-  let html = templateFn(props).trim().replace(
+  let html = raw.trim().replace(
     PLACEHOLDER_ATTR_PATTERN,
-    _parentScopeId ? ` bf-s="${_parentScopeId}"` : '',
+    prevParentScopeId ? ` bf-s="${prevParentScopeId}"` : '',
   )
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
   // so we find the first element tag rather than assuming index 0.

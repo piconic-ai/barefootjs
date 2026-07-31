@@ -170,7 +170,7 @@ export function emitRegistrationAndHydration(
     // transformation runs at this layer (#1277).
     const csrInlinableConstants = csrInlinableConstantsFromCtx(ctx)
     const templateHtml = generateCsrTemplate(
-      _ir.root, csrInlinableConstants, ctx, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames, ctx.deferredChildSlots
+      _ir.root, csrInlinableConstants, ctx, restSpreadNames, ctx.propsObjectName, unsafeLocalNames, ctx.deferredChildSlots
     )
     if (templateHtml) {
       defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
