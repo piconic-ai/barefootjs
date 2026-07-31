@@ -5013,20 +5013,36 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * fixture's emitted template byte-identical (no fixture in the corpus
    * reaches this method with a loop-dependent prop today).
    *
+   * KNOWN LIMITATION (#2448, tracked separately from #2445, which this
+   * method fixes): `bf_with_props` overrides fields on the ALREADY-CONSTRUCTED
+   * shared instance — it does not re-run `New<Child>Props`. A field the
+   * child derives FROM the overridden prop at construction time (a memo,
+   * or a prop-shadowing signal's initial value) keeps whatever the
+   * one-shot constructor computed and does not update per row. Only the
+   * directly-overridden field itself is correct per row.
+   *
    * Returns the space-joined `"Field" value "Field2" value2 …` argument list
    * for `bf_with_props`, or null when nothing needs overriding (caller keeps
    * the bare `$.<Name>SlotN` reference).
    */
   private loopRowChildPropOverrides(comp: IRComponent): string | null {
+    const childShape = this.childComponentShapes.get(comp.name)
     const args: string[] = []
     for (const prop of comp.props) {
       // Client-only props never reach SSR output; `key`/`children` aren't
-      // Props-struct fields; event handlers have no Go field; a hyphenated
-      // name can't be a Go field (same guard as `emitChildField`).
+      // Props-struct fields; event handlers have no Go field (same
+      // `isEventHandler` predicate `jsx-to-ir.ts` uses for component props);
+      // a hyphenated name can't be a Go field (same guard as `emitChildField`).
       if (prop.clientOnly) continue
       if (prop.name === 'key' || prop.name === 'children') continue
-      if (/^on[A-Z]/.test(prop.name)) continue
+      if (prop.name.startsWith('on') && prop.name.length > 2) continue
       if (prop.name.includes('-')) continue
+      // A prop that routes into the child's rest bag (`emitChildField`'s
+      // same routing rule) has no named Go field to override — `bf_with_props`
+      // would silently no-op the pair via its unknown-field passthrough.
+      // Leave it on the constructor-only path (unchanged from before this
+      // fix) rather than emit a pipeline argument that can never land.
+      if (childShape?.restBagField && !childShape.paramNames.has(prop.name)) continue
       // `literal` / `boolean-shorthand` / `boolean-attr` carry no runtime
       // expression to re-evaluate per row; `spread` / `jsx-children` are
       // handled elsewhere (`emitSpreadBagInits`, `queueLoopBodyChildrenDefine`).
@@ -5034,16 +5050,50 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const free = prop.freeIdentifiers
       if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
       const exprOut: { parsed?: ParsedExpr } = {}
-      const go = this.convertExpressionToGo(prop.value.expr, exprOut, prop.value.parsed)
-      if (this.isTemplateFragment(go, exprOut.parsed?.kind)) {
-        // A `{{if}}`/template-literal fragment can't be a bare pipeline
-        // argument — refuse loudly rather than silently dropping the prop
-        // (the #2445 bug was exactly a silent drop one level up).
+      const errorCountBefore = this.state.errors.length
+      let go = this.convertExpressionToGo(prop.value.expr, exprOut, prop.value.parsed)
+      if (this.state.errors.length > errorCountBefore) {
+        // `convertExpressionToGo` already pushed its own BF101 for an
+        // unsupported expression and returned the `""` sentinel — using it
+        // here would silently clobber the field with an empty string (or,
+        // for a non-string field, fail at template EXECUTE time instead of
+        // this compile time). Leave the prop on the constructor path; the
+        // reported error already surfaces the real problem.
+        continue
+      }
+      // A ternary / single-interpolation template literal with STRING-typed
+      // branches (`row.on ? "yes" : "no"`, `${row.x}` alone) parses to a
+      // ParsedExpr `template-literal` whose sole part is non-string —
+      // `templateLiteral()` wraps that one dynamic part's already-bare
+      // pipeline value (e.g. `(bf_ternary ...)`, #2335) in a bare `{{...}}`
+      // shell meant for TEXT-position embedding. A multi-part template
+      // literal (mixed literal text and interpolation) has no such reduction
+      // and stays refused below. Unwrap the single-part case back to the
+      // bare pipeline value this call site (a function ARGUMENT position,
+      // not a text position) needs.
+      const singlePartTemplateLiteral =
+        exprOut.parsed?.kind === 'template-literal' &&
+        exprOut.parsed.parts.length === 1 &&
+        exprOut.parsed.parts[0].type !== 'string' &&
+        go.startsWith('{{') &&
+        go.endsWith('}}')
+      if (singlePartTemplateLiteral) {
+        go = go.slice(2, -2)
+      }
+      // Skip the fragment re-check for the just-unwrapped single-part case —
+      // `kind` is still (accurately) `template-literal`, which would
+      // otherwise re-trip `isTemplateFragment`'s `kind === 'template-literal'`
+      // branch on the ALREADY-unwrapped bare value.
+      if (!singlePartTemplateLiteral && this.isTemplateFragment(go, exprOut.parsed?.kind)) {
+        // A genuine multi-part `{{if}}...{{end}}`-shaped fragment can't be a
+        // bare pipeline argument — refuse loudly rather than silently
+        // dropping the prop (the #2445 bug was exactly a silent drop one
+        // level up).
         this.state.errors.push({
           code: 'BF101',
           severity: 'error',
           message: `Prop '${prop.name}' on <${comp.name}> nested inside a dynamic loop row reads the row but can't be lowered to a Go template pipeline argument`,
-          loc: this.makeLoc(),
+          loc: prop.loc,
         })
         continue
       }

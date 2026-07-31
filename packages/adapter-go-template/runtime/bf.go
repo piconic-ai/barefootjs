@@ -2746,6 +2746,13 @@ func WithChildren(props interface{}, children template.HTML) (interface{}, error
 // that pair — the prop routes elsewhere (e.g. a rest bag) and the base
 // instance's constructor-built value stands, mirroring WithChildren's
 // "props type without a Children field" passthrough.
+//
+// KNOWN LIMITATION (#2448): this overrides fields on the ALREADY-CONSTRUCTED
+// instance — it does not re-run New<Child>Props. A field the child derives
+// FROM the overridden prop at construction time (a memo, or a prop-shadowing
+// signal's initial value) keeps whatever the one-shot constructor computed
+// and does not update per row; only the directly-overridden field is
+// correct per row. Tracked as a follow-up, not fixed by #2445.
 func WithProps(props interface{}, kv ...interface{}) (interface{}, error) {
 	if len(kv)%2 != 0 {
 		return nil, fmt.Errorf("bf_with_props: odd number of key/value arguments (%d)", len(kv))

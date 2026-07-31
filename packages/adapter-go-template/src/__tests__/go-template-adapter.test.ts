@@ -4318,6 +4318,167 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
     expect(html).toContain('>two<')
     expect(html).toContain('class="badge"')
   })
+
+  // A per-row prop shaped as a ternary (`row.on ? "yes" : "no"`) parses to a
+  // ParsedExpr `template-literal` whose sole part is the ternary — the
+  // shared `templateLiteral()` emitter wraps that single dynamic part's
+  // already-bare `(bf_ternary ...)` pipeline value in a `{{...}}` shell for
+  // TEXT-position embedding (#2335). `loopRowChildPropOverrides` needs the
+  // BARE value (a function-argument position, not text), so it must unwrap
+  // this specific single-part shape rather than refuse it as a fragment.
+  test('a ternary per-row prop unwraps to a bare bf_ternary pipeline argument', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; on: boolean }
+function Badge(props: { text: string }) {
+  return <span class="badge">{props.text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.on ? "yes" : "no"} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain(
+      '{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" (bf_ternary (bf_truthy .On) "yes" "no"))}}',
+    )
+  })
+
+  // A multi-part template literal (mixed literal text and interpolation,
+  // `` `#${row.id} ${row.label}` ``) has no single-pipeline-value reduction
+  // the way a single-part ternary does — refuse it loudly (BF101) instead
+  // of silently emitting the stale constructor-only value (the #2445 bug
+  // this whole fix exists to close).
+  test('a multi-part template-literal per-row prop is refused with BF101, not silently stale', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge(props: { text: string }) {
+  return <span class="badge">{props.text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={\`#\${row.id} \${row.label}\`} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).some(e => e.code === 'BF101')).toBe(true)
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).not.toContain('bf_with_props')
+  })
+
+  // A prop whose expression `convertExpressionToGo` itself refuses (an
+  // inline object literal isn't a supported value shape) must not ALSO
+  // clobber the child with a bad `bf_with_props` pipeline argument built
+  // from the `""` error sentinel — that would either silently blank a
+  // string field or fail at template EXECUTE time for a non-string one.
+  // The existing BF101 from the unsupported expression is enough; the prop
+  // simply stays on the (already-existing, unchanged) constructor path.
+  test('an unsupported per-row prop expression does not also emit a bad pipeline argument', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge(props: { opts: any }) {
+  return <span class="badge">{JSON.stringify(props.opts)}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge opts={{ align: row.label }} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(1)
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('{{template "Badge" $.BadgeSlot0}}')
+    expect(template).not.toContain('bf_with_props')
+  })
+
+  // A prop that routes into the child's rest bag (not a declared param) has
+  // no named Go field for `bf_with_props` to override — it must stay on the
+  // constructor path rather than emit a pipeline argument that can only
+  // ever no-op at the runtime helper's unknown-field passthrough. Requires
+  // `registerChildComponentShape` (normally the CLI's cross-file pre-pass,
+  // #2131) so the adapter actually knows `Badge`'s rest-bag shape.
+  test('a rest-bag-routed per-row prop stays on the constructor path', () => {
+    // Mirrors the `registerChildComponentShape` pattern the `#2087` test
+    // above uses: a bare `compileJSX` never calls that hook (only the CLI's
+    // cross-file pre-pass, #2131, does), so this builds each component's IR
+    // directly and registers `Badge`'s rest-bag shape before generating the
+    // parent — the real order `renderGoTemplateComponent` / `bf build` use.
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge({ text, ...rest }: { text: string; [key: string]: unknown }) {
+  return <span class="badge" {...rest}>{text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text="static" tone={row.label} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart()
+
+    const badgeCtx = analyzeComponent(source, 'test.tsx', 'Badge')
+    const badgeIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(badgeCtx),
+      root: jsxToIR(badgeCtx)!,
+      errors: [],
+    }
+    const rootCtx = analyzeComponent(source, 'test.tsx', 'CompositeRowChildComponent')
+    const rootIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(rootCtx),
+      root: jsxToIR(rootCtx)!,
+      errors: [],
+    }
+
+    const adapter = new GoTemplateAdapter()
+    adapter.registerChildComponentShape(badgeIR)
+    adapter.generateTypes(badgeIR)
+    adapter.generateTypes(rootIR)
+    const template = adapter.generate(rootIR, { skipScriptRegistration: true }).template
+
+    // `tone` isn't a declared `Badge` param, so it routes into the rest bag
+    // (`emitChildField`'s rule) — no named Go field for `bf_with_props` to
+    // override, so the call stays the bare shared-instance reference.
+    expect(template).toContain('{{template "Badge" $.BadgeSlot0}}')
+    expect(template).not.toContain('bf_with_props')
+  })
 })
 
 // #2228: a `.filter(t => …).map(todo => <Child todo={todo} .../>)` loop whose
