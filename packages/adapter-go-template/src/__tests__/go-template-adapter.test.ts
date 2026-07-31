@@ -4166,6 +4166,160 @@ export function TodoList(props: { todos?: Todo[] }) {
   })
 })
 
+// #2445: a child component nested inside a composite loop row (row root is a
+// plain element, #2130's shape) gets ONE hoisted `.{Name}SlotN` props value
+// built outside `{{range}}` (see the describe block above) — correct for a
+// prop that doesn't depend on the row, but stale for one that does
+// (`text={row.label}` read the same value on every row, always the zero
+// value, since the constructor has no per-row data to give it). Fixed by
+// reapplying the row-dependent prop per row, at template-execution time,
+// via `bf_with_props` — the props-argument sibling of `bf_with_children`.
+describe('GoTemplateAdapter - #2445 composite loop row: per-row child prop', () => {
+  // These compile through `compileJSX` directly (not the `compileToIR` +
+  // `adapter.generate(ir)` two-step other tests in this file use) because
+  // the fixture's child (`Badge`) is a SAME-FILE sibling of the parent
+  // (a sibling-MODULE child inside a loop is refused by BF103) — the debug
+  // `ir.json` `compileToIR` reads back only carries one component's IR, and
+  // `IRProp.freeIdentifiers` (a `Set`) doesn't survive that JSON round trip
+  // anyway. `compileJSX`'s own `types`/`markedTemplate` outputs already
+  // combine both components' generated code in one pass, matching how the
+  // real pipeline (and the `composite-row-child-component` fixture) compiles
+  // this shape.
+  test('a prop reading the row is reapplied per row via bf_with_props', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge(props: { text: string }) {
+  return <span class="badge">{props.text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const types = result.files.find(f => f.type === 'types')!.content
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+
+    // Range still iterates the real collection — this is the #2130 shape,
+    // not the wrapper-slice one — and the shared base instance is still
+    // built once, carrying the (correct) constructor-derived scope id.
+    expect(template).toContain(':= .Rows}}')
+    expect(types).toContain('BadgeSlot0 BadgeProps')
+    expect(types).toContain('BadgeSlot0: NewBadgeProps(BadgeInput{')
+
+    // The row-dependent prop is reapplied per row, inside `{{range}}`.
+    expect(template).toContain('{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" .Label)}}')
+  })
+
+  // Negative pin — the whole point of the loop-dependence gate: a prop that
+  // does NOT read the row is left on the constructor-only path, so this
+  // fix doesn't touch (and can't regress) the corpus of composite-loop
+  // fixtures whose nested-child props are static/prop-derived.
+  test('a prop NOT reading the row stays on the constructor-only path', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge(props: { text: string }) {
+  return <span class="badge">{props.text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[]; title: string }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={props.title} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('{{template "Badge" $.BadgeSlot0}}')
+    expect(template).not.toContain('bf_with_props')
+  })
+
+  // Composition pin: a nested child with both a per-row prop AND JSX
+  // children nests `bf_with_props` inside `bf_with_children` — the shared
+  // base instance is overridden with the row's prop value first, then that
+  // result has its per-row children injected.
+  test('a per-row prop composes with per-row JSX children', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string; hint: string }
+function Badge(props: { title: string; children?: any }) {
+  return <span class="badge" title={props.title}>{props.children}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge title={row.hint}>{row.label}</Badge>
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain(
+      '(bf_with_children (bf_with_props $.BadgeSlot1 "Title" .Hint) (bf_tmpl "',
+    )
+  })
+
+  // End-to-end on real Go: each row's Badge must render that row's OWN
+  // label, not the same (previously always-empty) value for every row.
+  test('each row renders its own label on real Go', async () => {
+    let html: string
+    try {
+      html = await renderGoTemplateComponent({
+        source: `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge(props: { text: string }) {
+  return <span class="badge">{props.text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(),
+        adapter: new GoTemplateAdapter(),
+        props: { items: [{ id: 1, label: 'one' }, { id: 2, label: 'two' }] },
+      })
+    } catch (err) {
+      if (err instanceof GoNotAvailableError) return
+      throw err
+    }
+    expect(html).toContain('>one<')
+    expect(html).toContain('>two<')
+    expect(html).toContain('class="badge"')
+  })
+})
+
 // #2228: a `.filter(t => …).map(todo => <Child todo={todo} .../>)` loop whose
 // body is a single child component ranges the WRAPPER slice (`.TodoItems`,
 // `.{ChildName}s` — see #2130 above), so `{{if}}`'s dot context for the
