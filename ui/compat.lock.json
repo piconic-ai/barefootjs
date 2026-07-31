@@ -1814,8 +1814,42 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 284,
+    "totalFixtures": 285,
     "fixtures": {
+      "composite-row-child-component": {
+        "blade": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row receives one hoisted props value built outside `{{range}}`, so every row renders the child with zero-value props (https://github.com/piconic-ai/barefootjs/issues/2445)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -2829,6 +2863,10 @@
       }
     },
     "docs": {
+      "composite-row-child-component": {
+        "description": "Dynamic loop row root is an element containing a child component",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/composite-row-child-component.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"

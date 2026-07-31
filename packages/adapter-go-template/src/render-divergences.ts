@@ -29,4 +29,14 @@ export const renderDivergences: RenderDivergences = {
   // production). `buildDynamicChildLoopSeeding` (this package's
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
+
+  // #2445: a child component nested inside a dynamic loop row whose root
+  // is a plain element gets ONE hoisted `BadgeSlot0 BadgeProps` field on
+  // the parent, built outside the loop with no per-row data, and the
+  // template passes `$.BadgeSlot0` for every row — so every row renders
+  // the child with zero-value props. The sibling shape (row root IS the
+  // child component) already emits a per-row slice; see the `todo-app-ssr`
+  // note above on `.TodoItems []TodoItemProps`.
+  'composite-row-child-component':
+    'a child component nested inside a dynamic loop row receives one hoisted props value built outside `{{range}}`, so every row renders the child with zero-value props (https://github.com/piconic-ai/barefootjs/issues/2445)',
 }
