@@ -1,5 +1,5 @@
 package BarefootJS;
-our $VERSION = "0.28.0";
+our $VERSION = "0.28.1";
 use strict;
 use warnings;
 use utf8;
