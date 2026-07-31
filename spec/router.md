@@ -160,6 +160,23 @@ at `@barefootjs/client/runtime` (`disposeScope`/`rehydrateScope`). Neither may s
   cross-adapter `region-boundary` fixture (stable id), `router-regions.test.ts` (nested /
   sibling / divergence), and the `integrations/router-blog` example (hand-authored sibling
   + compiled nested regions, verified in a real browser).
+- **v2.5 — head metadata reconciliation.** ✅ Shipped ([#2438](https://github.com/piconic-ai/barefootjs/issues/2438)).
+  A swap reconciles a **closed allowlist** of page metadata against the incoming document
+  (`reconcileHead`, `packages/router/src/head.ts`): `description`/`keywords`/`robots`/`author`/
+  `theme-color`, the `og:` and `twitter:` namespaces, and `rel=canonical|alternate|prev|next`.
+  Present in both → replaced (skipped when already equal); only incoming → added; only current
+  → **removed**, so nothing leaks forward. `data-bf-head="false"` opts a node out.
+
+  **Default-on with no option, deliberately.** Metadata is page-scoped by definition, costs no
+  load, has no layout effect or ordering hazard, and is idempotent — while a stale
+  `<meta name="description">` is *invisible* wrongness (unlike the tab title, you cannot see it
+  in development). That is exactly the class "correct by default" above exists for. The
+  allowlist being **closed** is the deliberate divergence from Turbo's `provisionalElements`,
+  which removes every untracked head element and so can sweep away runtime-injected analytics
+  or CSP nodes. And because the incoming document is already parsed for the region diff, this
+  is a bounded node diff over data in hand — no manifest, no payload, no fetch. (Next's App
+  Router routes the same job through the RSC payload and has carried soft-navigation metadata
+  bugs across many releases; the document-diff position is the easier one.)
 
 ## Limitations & non-goals
 
@@ -171,17 +188,20 @@ at `@barefootjs/client/runtime` (`disposeScope`/`rehydrateScope`). Neither may s
   the owned-content diff is HTML-structural, so a region split across one of these is not
   yet guaranteed.
 - No scroll restoration; modulepreload links/dedupe set are session-lived (cap later).
-- **`<head>` is not reconciled** ([#2438](https://github.com/piconic-ai/barefootjs/issues/2438)).
-  A region is a *body* subtree; `document.title` is written in step 6 only because the route
-  announcement reads it (`announceNavigation`), not as the start of head management. So
-  route-scoped `<link rel="stylesheet">` belongs **inside** the region — `rel="stylesheet"` is
-  body-ok per HTML, and the sheet then enters and leaves with the swap, needing no head
-  handling and no per-link opt-out. This is the sanctioned placement, not a workaround; it is
-  documented in the router README and pinned by the "head is not managed" tests
-  (`packages/router/__tests__/router.test.ts`). A head-reconciliation opt-in
-  (`startRouter({ head: … })`, or honouring a `bf-head` marker) is deferred, not planned: it
-  earns its keep only for sheets an app genuinely cannot move (emitted by a framework layout),
-  and it must add incoming sheets **before** the swap and remove outgoing ones **after**, or
-  the page paints unstyled in one direction and loses its styles for a frame in the other.
+- **Head *resources* are not reconciled** ([#2438](https://github.com/piconic-ai/barefootjs/issues/2438);
+  head *metadata* is — see v2.5 above). `<link rel="stylesheet">`, `<script>` and `<style>` in
+  `<head>` are left untouched in both directions, because a resource's lifetime is not
+  derivable from the incoming document: the shell, a `[data-bf-permanent]` node, a portal, or
+  an island outliving the region may still need a sheet the next page's head omits. So
+  route-scoped CSS belongs **inside** the region — `rel="stylesheet"` is body-ok per HTML, and
+  the sheet then enters and leaves with the swap, getting both orderings right by construction
+  with no load awaited in the nav path. A head-stylesheet opt-in is deferred, and the shape is
+  constrained: it must add incoming sheets **before** the swap and remove outgoing ones
+  **after**, or the page paints unstyled in one direction and loses its styles for a frame in
+  the other. Both precedents converge on the removal half needing an author signal — Turbo
+  never removes a sheet unless it carries `data-turbo-track="dynamic"`; Remix removes them
+  automatically and has open issues where the outgoing route goes unstyled mid-transition. So
+  if it ever ships it is a **per-element `data-bf-head` marker**, never a global
+  `startRouter({ head: … })` option: scope is a property of the element, not of the app.
 - **Non-goals:** client route manifest / loader protocol / fragment endpoint; RSC-style
   boundary or non-HTML payload; client-owned Suspense protocol; navigation/content-negotiation header.

@@ -57,33 +57,60 @@ setup step.
   existing state (scroll-restoration libs, framework state).
 - **A11y**: focus moves into the swapped region (its first heading) and the new
   title is announced via a polite live region.
+- **Head metadata**: title, description, `og:`/`twitter:`, canonical and friends
+  are reconciled against the incoming page; head *resources* are not (see below).
 - **Persistence** (`data-bf-permanent`): an element marked
   `<div data-bf-permanent="player">` keeps its *live* node across a swap — its
   state, media playback, scroll, and hydrated scope survive — matched between
   documents by the attribute value (or `id`). A no-op when no element is marked;
   pass `morph: false` for a plain swap.
 
-## `<head>` is not managed
+## `<head>`: metadata is reconciled, resources are not
 
-A swap replaces the region and nothing else — **`<head>` is never
-reconciled**. `document.title` is the one exception, and only because the route
-announcement reads it. Across a soft navigation:
+A region is a **body** subtree, so `<head>` is not swapped wholesale. It splits
+in two, and the split is the whole contract.
 
-| head node | after navigating |
+### Page metadata — reconciled on every swap, no opt-in
+
+Page metadata is page-scoped by definition, so the router brings a closed
+allowlist of it in line with the incoming document. There is no option to turn
+on: a stale `<meta name="description">` is wrongness you *cannot see* in
+development (unlike the tab title), and this package doesn't leave that class
+opt-in.
+
+| head node | key |
 | --- | --- |
-| `<title>` | updated (for the announcement) |
-| `<link rel="stylesheet">` | the previous route's |
-| `<link rel="canonical">` | the previous route's |
-| `<meta name="description">` | the previous route's |
+| `<title>` | — |
+| `<meta name="description \| keywords \| robots \| author \| theme-color">` | `name` |
+| `<meta property="og:*">` / `<meta name="twitter:*">` | `name` or `property` |
+| `<link rel="canonical \| alternate \| prev \| next">` | `rel` + `hreflang`/`type`/`media` |
 
-The `<meta>` / canonical rows are harmless in practice (crawlers don't soft-
-navigate). A **route-scoped stylesheet** in `<head>` is not: navigating *into*
-the route renders it unstyled (a reload "fixes" it, which points the
-investigation at caching or the build instead of at navigation), and navigating
-*out* leaves the sheet linked, so its rules then apply to every route after it.
+A key in both documents is replaced (skipped when the nodes are already equal,
+so metadata shared across routes causes no DOM churn); a key only in the
+incoming page is added; a key only in the live page is **removed**, so it can't
+leak forward into every later route.
 
-Put a route-scoped stylesheet **inside** the region, where it enters and leaves
-with the swap:
+Anything whose key isn't in that table is never read, replaced, or removed —
+runtime-injected analytics tags, CSP `<meta http-equiv>`, `<link rel=preconnect>`
+and friends are safe by construction. (This is the deliberate difference from
+Turbo, which removes every untracked head element.) Opt a node out with
+`data-bf-head="false"` when the page itself owns it.
+
+### Head resources — untouched
+
+`<link rel="stylesheet">`, `<script>`, and `<style>` in `<head>` are left alone
+in both directions. Not an oversight: a resource's lifetime isn't derivable from
+the incoming document. The shell, a `[data-bf-permanent]` node, a portal, or an
+island that outlives the region may still depend on a sheet the next page's head
+doesn't list, so "absent downstream" is no evidence of "no longer needed".
+
+That makes a **route-scoped stylesheet in `<head>`** the one real trap:
+navigating *into* the route renders it unstyled (a reload "fixes" it, which
+points the investigation at caching or the build instead of at navigation), and
+navigating *out* leaves the sheet linked, so its rules then apply to every route
+after it.
+
+Put it **inside** the region, where it enters and leaves with the swap:
 
 ```tsx
 <Region>
@@ -93,9 +120,11 @@ with the swap:
 ```
 
 `rel="stylesheet"` is body-ok per HTML, so this is valid — and it is the right
-placement under a region-swap contract, not a workaround: no head handling, no
-per-link opt-out, and the route keeps soft navigation. Sheets that are genuinely
-global stay in `<head>`, where never touching them is exactly what you want.
+placement under a region-swap contract, not a workaround. It gets both orderings
+right *by construction* (the sheet is inserted with the content it styles and
+removed with it), with no load awaited in the navigation path. Sheets that are
+genuinely global stay in `<head>`, where never touching them is exactly what you
+want.
 
 ## Scope
 
