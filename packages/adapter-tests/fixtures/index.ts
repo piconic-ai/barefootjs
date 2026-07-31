@@ -386,6 +386,7 @@ import { fixture as siblingLoopsKeyIsolation } from './sibling-loops-key-isolati
 import { fixture as conditionalReturnNull } from './conditional-return-null'
 import { fixture as jsxElementProp } from './jsx-element-prop'
 import { fixture as grandchildComposition } from './grandchild-composition'
+import { fixture as compositeRowChildComponent } from './composite-row-child-component'
 import { fixture as childPrimitiveProps } from './child-primitive-props'
 import { fixture as preWhitespace } from './pre-whitespace'
 import { fixture as tableDynamicRows } from './table-dynamic-rows'
@@ -716,6 +717,7 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalReturnNull,
   jsxElementProp,
   grandchildComposition,
+  compositeRowChildComponent,
   childPrimitiveProps,
   preWhitespace,
   tableDynamicRows,

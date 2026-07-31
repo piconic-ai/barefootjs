@@ -1418,11 +1418,11 @@
       }
     },
     "call": {
-      "total": 179,
+      "total": 180,
       "cells": {
         "hono": {
-          "pass": 178,
-          "total": 179,
+          "pass": 179,
+          "total": 180,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1434,8 +1434,12 @@
         },
         "blade": {
           "pass": 164,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1510,8 +1514,12 @@
         },
         "erb": {
           "pass": 165,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1580,8 +1588,12 @@
         },
         "go-template": {
           "pass": 164,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1656,8 +1668,12 @@
         },
         "jinja": {
           "pass": 164,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1732,8 +1748,12 @@
         },
         "minijinja": {
           "pass": 164,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1808,8 +1828,12 @@
         },
         "mojolicious": {
           "pass": 165,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1878,8 +1902,12 @@
         },
         "twig": {
           "pass": 164,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1954,8 +1982,12 @@
         },
         "xslate": {
           "pass": 164,
-          "total": 179,
+          "total": 180,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2174,11 +2206,11 @@
       }
     },
     "identifier": {
-      "total": 265,
+      "total": 266,
       "cells": {
         "hono": {
-          "pass": 264,
-          "total": 265,
+          "pass": 265,
+          "total": 266,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2190,8 +2222,12 @@
         },
         "blade": {
           "pass": 247,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2278,8 +2314,12 @@
         },
         "erb": {
           "pass": 248,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2360,8 +2400,12 @@
         },
         "go-template": {
           "pass": 247,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2448,8 +2492,12 @@
         },
         "jinja": {
           "pass": 247,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2536,8 +2584,12 @@
         },
         "minijinja": {
           "pass": 247,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2624,8 +2676,12 @@
         },
         "mojolicious": {
           "pass": 248,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2706,8 +2762,12 @@
         },
         "twig": {
           "pass": 247,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2794,8 +2854,12 @@
         },
         "xslate": {
           "pass": 247,
-          "total": 265,
+          "total": 266,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3530,11 +3594,11 @@
       }
     },
     "member": {
-      "total": 144,
+      "total": 145,
       "cells": {
         "hono": {
-          "pass": 143,
-          "total": 144,
+          "pass": 144,
+          "total": 145,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -3546,8 +3610,12 @@
         },
         "blade": {
           "pass": 126,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3634,8 +3702,12 @@
         },
         "erb": {
           "pass": 127,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3716,8 +3788,12 @@
         },
         "go-template": {
           "pass": 126,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3804,8 +3880,12 @@
         },
         "jinja": {
           "pass": 126,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3892,8 +3972,12 @@
         },
         "minijinja": {
           "pass": 126,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3980,8 +4064,12 @@
         },
         "mojolicious": {
           "pass": 127,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4062,8 +4150,12 @@
         },
         "twig": {
           "pass": 126,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4150,8 +4242,12 @@
         },
         "xslate": {
           "pass": 126,
-          "total": 144,
+          "total": 145,
           "gaps": [
+            {
+              "fixture": "composite-row-child-component",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [

@@ -1188,6 +1188,19 @@
         "text"
       ]
     },
+    "composite-row-child-component": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "condition-position-ternary": {
       "kinds": [
         "call",
@@ -4595,13 +4608,13 @@
     "array-method": 65,
     "arrow": 63,
     "binary": 77,
-    "call": 179,
+    "call": 180,
     "conditional": 22,
-    "identifier": 265,
+    "identifier": 266,
     "index-access": 12,
     "literal": 219,
     "logical": 43,
-    "member": 144,
+    "member": 145,
     "object-literal": 51,
     "template-literal": 29,
     "unary": 22,

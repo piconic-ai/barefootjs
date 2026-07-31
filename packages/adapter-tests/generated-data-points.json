@@ -360,6 +360,14 @@
       }
     }
   ],
+  "composite-row-child-component": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "conditional-return-button": [
     {
       "name": "gen:variant:empty",
