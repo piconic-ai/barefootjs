@@ -119,6 +119,10 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
     bodyIsMultiRoot,
     indent: bodyIndent,
     singleRootLayout: 'multiline',
+    // Composite is exactly the variant that initialises something inside the
+    // row — nested components, inner loops, or both — so it is exactly the
+    // variant whose tail needs the row already connected.
+    mountRow: true,
   })
   emitComponentAndEventSetup(lines, bodyIndent, '__el', compsArr, eventsArr, loopParam, loopParamBindings, bodyIsMultiRoot)
   if (innerLoops.length > 0) {

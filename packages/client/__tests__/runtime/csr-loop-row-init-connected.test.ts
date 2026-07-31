@@ -1,6 +1,5 @@
 /**
- * Loop rows init CONNECTED — the `createComponent` row shape (fixed), and the
- * template-clone row shape (still open).
+ * Loop rows init CONNECTED — both row shapes.
  *
  * A loop row has no placeholder to replace, so it could not use the
  * `mountAt` "connect before init" contract that the child-slot path
@@ -19,14 +18,14 @@
  * participates in the LIS walk like any other attached scope, and the LIS
  * argument never depended on new rows being absent from it.
  *
- * STILL OPEN for rows whose root is a TEMPLATE CLONE (composite / plain
- * loops — an inline-markup or Fragment loop body). There is no
- * `createComponent` for the row root to hand a mount point to; the clone is
- * only handed to `mapArray` as `renderItem`'s return value, by which time
- * the row's nested `upsertChild` children have already initialised against a
- * detached row. Closing that requires the emitted body to hand the element
- * over BEFORE its tail runs — a compiler-side change. Pinned by the skipped
- * test at the bottom.
+ * ALSO FIXED for rows whose root is a TEMPLATE CLONE. There is no
+ * `createComponent` to hand a mount point to, and `mapArray` first sees the
+ * clone as `renderItem`'s return value — too late, the row's nested children
+ * have already initialised. So the compiler emits `mountRowRoot(clone)`, which
+ * consumes the same ambient point, for the one variant that initialises
+ * something inside the row (composite: nested components and/or inner loops).
+ * A plain row has no nested init and is left alone, which keeps the
+ * high-volume `mapArrayLazy` emission untouched.
  *
  * WHY THE TWO EARLIER ATTEMPTS FAILED (both measured by running site/ui e2e
  * locally; the counts below are deltas against whatever that same local run
@@ -55,9 +54,16 @@
  * three components in that e2e baseline (`file-upload-demo`,
  * `form-builder-demo`, `studio-canvas`) emits `qsaItem`, `upsertChildItem`,
  * or `__bfExtras` at all, because the multi-root path only applies to
- * Fragment loop bodies. Multi-root rows never take the `createComponent` row
- * path either, so `createItemScope` un-parks a row that turns out to carry
- * extras rather than leaving it half-inserted.
+ * Fragment loop bodies.
+ *
+ * That reliance DID have to be dealt with for the clone shape, since a
+ * Fragment row is a clone. Its sibling walk ended with `return`, which skipped
+ * the stash the moment the primary was attached; it is a `break` now, so the
+ * stash stays reachable either way (`item-roots-attached-primary.test.ts`).
+ * `createItemScope` still un-parks a row that turns out to carry extras — the
+ * mount has already done its job by then (the tail ran connected), and
+ * un-parking keeps the reorder from marking a row stationary before its extras
+ * and per-item marker exist.
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
@@ -256,22 +262,21 @@ describe('mapArray row init runs connected', () => {
 })
 
 /**
- * KNOWN LIMITATION — a composite / plain loop row (template clone) still
- * initialises its nested children detached. See the header: the row root is
- * never handed to `mapArray` until `renderItem` returns, so there is no
- * mount point to give it, and `upsertChild` connects the child relative to a
- * still-detached row.
+ * A composite loop row — root is a template clone, not a `createComponent` —
+ * hands its element over with `mountRowRoot` before the body's tail runs, so
+ * the row's nested children also initialise connected.
  *
- * Un-skip when the emitted renderItem body hands its element over before the
- * tail runs. Currently fails as `[false, false]`.
+ * The body below mirrors what the compiler emits for this shape: clone, mount,
+ * then `upsertChild`. Drop the `mountRowRoot` call and this fails as
+ * `[false, false]`, which is what it did before the emitter added it.
  */
-describe.skip('composite loop row nested child init runs connected (known limitation)', () => {
+describe('composite loop row nested child init runs connected', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
 
   test('a nested child of a template-cloned row is connected at init', async () => {
-    const { hydrate, mapArray, createSignal, upsertChild } = await import('../../src/runtime')
+    const { hydrate, mapArray, createSignal, upsertChild, mountRowRoot } = await import('../../src/runtime')
 
     const connectedAtInit: boolean[] = []
 
@@ -292,7 +297,9 @@ describe.skip('composite loop row nested child init runs connected (known limita
         if (existing) return existing
         const tpl = document.createElement('template')
         tpl.innerHTML = `<li><span data-bf-ph="Inner"></span></li>`
-        const el = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement
+        const el = mountRowRoot(
+          tpl.content.firstElementChild!.cloneNode(true) as HTMLElement,
+        ) as HTMLElement
         upsertChild(el, 'Inner', null, {})
         return el
       },

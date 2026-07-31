@@ -99,6 +99,7 @@ export { registerTemplate, getTemplate, hasTemplate, type TemplateFn } from './t
 // Component creation
 export {
   createComponent,
+  mountRowRoot,
   renderChild,
   parseHTML,
   escapeAttr,

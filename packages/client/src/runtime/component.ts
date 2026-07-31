@@ -25,8 +25,14 @@ export function setParentScopeId(id: string | null): void {
   _parentScopeId = id
 }
 
-/** Where `mapArray` wants a fresh loop row connected before its `init` runs. */
-export type RowMountPoint = { container: Node; anchor: Node | null }
+/**
+ * Where `mapArray` wants a fresh loop row connected before its `init` runs.
+ *
+ * `mounted` is written back by `mountRowRoot` so the caller can undo the
+ * connection if the rest of the row's body then throws — see `createItemScope`.
+ * Without it a half-built row stays visible, which detached rows never did.
+ */
+export type RowMountPoint = { container: Node; anchor: Node | null; mounted?: Element | null }
 
 // Ambient mount point for a loop row.
 //
@@ -58,6 +64,35 @@ function takeRowMountPoint(): RowMountPoint | null {
   const p = _rowMountPoint
   _rowMountPoint = null
   return p
+}
+
+/**
+ * Connect a loop row whose root is a template clone, before the emitted
+ * renderItem body's tail runs.
+ *
+ * The tail is where the row's nested children initialise (`upsertChild` and
+ * friends), and `useContext` resolves by walking `parentElement` — so a child
+ * that inits inside a detached row finds no ancestors and falls through to the
+ * global last-writer-wins context store, reading whichever provider on the page
+ * wrote last. `createComponent` row roots already avoid this by consuming the
+ * same ambient (step 7b); a clone root has no runtime function in the middle,
+ * so the compiler emits this call for it instead.
+ *
+ * Take-and-clear, like the `createComponent` path: a nested `createComponent`
+ * driven by this row's own children must not re-use the row's mount point.
+ *
+ * No-op when there is no ambient point — the hydration branch never calls this
+ * (its row came from SSR markup and is already in the document), and a loop
+ * runtime that does not hand one down leaves the row exactly as it was.
+ */
+export function mountRowRoot(el: Element): Element {
+  const p = takeRowMountPoint()
+  if (p) {
+    p.container.insertBefore(el, p.anchor)
+    // Record it so the row can be un-mounted if the body throws after this.
+    p.mounted = el
+  }
+  return el
 }
 
 /**

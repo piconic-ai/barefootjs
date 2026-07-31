@@ -11,6 +11,11 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createSignal', 'createMemo', 'createEffect', 'onCleanup', 'onMount',
   'hydrate', 'insert', 'getLoopChildren', 'getLoopNodes', 'mapArray', 'mapArrayAnchored', 'mapArrayLazy', 'patchLeaf', 'createDisposableEffect',
   'createComponent', 'renderChild', 'registerComponent', 'registerTemplate', 'initChild', 'upsertChild',
+  // Connects a template-clone loop row before the body's tail runs, so a child
+  // that inits inside it resolves context against real ancestors rather than
+  // falling through to the global store. The clone-root counterpart of the
+  // mount point `createComponent` consumes for component-root rows.
+  'mountRowRoot',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
