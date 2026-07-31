@@ -1825,10 +1825,6 @@
           "kind": "render",
           "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"
         },
-        "go-template": {
-          "kind": "render",
-          "reason": "a child component nested inside a dynamic loop row receives one hoisted props value built outside `{{range}}`, so every row renders the child with zero-value props (https://github.com/piconic-ai/barefootjs/issues/2445)"
-        },
         "jinja": {
           "kind": "render",
           "reason": "a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)"

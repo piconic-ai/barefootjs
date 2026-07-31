@@ -1587,13 +1587,9 @@
           ]
         },
         "go-template": {
-          "pass": 164,
+          "pass": 165,
           "total": 180,
           "gaps": [
-            {
-              "fixture": "composite-row-child-component",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2399,13 +2395,9 @@
           ]
         },
         "go-template": {
-          "pass": 247,
+          "pass": 248,
           "total": 266,
           "gaps": [
-            {
-              "fixture": "composite-row-child-component",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3787,13 +3779,9 @@
           ]
         },
         "go-template": {
-          "pass": 126,
+          "pass": 127,
           "total": 145,
           "gaps": [
-            {
-              "fixture": "composite-row-child-component",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
