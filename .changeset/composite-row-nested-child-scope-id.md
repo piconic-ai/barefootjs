@@ -29,11 +29,13 @@ selector is refactored onto the same IR flag, so the policy is expressed once
 rather than approximated per adapter.
 
 On the client runtime, `createComponent`/`materializeComponent` now derives a
-slotted component's own scope id from its mount slot, and `renderChild`
-pushes that derived scope while its template evaluates — fixing a second,
-related bug where a THIRD composition level (a grandchild rendered by a
-nested `renderChild()` call) collapsed back onto the second level's scope
-instead of deriving its own (`grandchild-composition`).
+slotted component's own scope id from its mount slot. (A companion fix in
+`renderChild` — pushing that derived scope while its template evaluates, so a
+THIRD composition level derives its own scope instead of collapsing onto the
+second — was tried but reverted: it collided with `comment: true` wrapper
+transparency, e.g. a `renderNode`-style callback prop, whenever the wrapped
+component's own first slot id coincides with the wrapper's slot number.
+`grandchild-composition` stays a known limitation.)
 
 Since a slotted child was previously unreachable by the primary
 `(bf-h, bf-m)` SSR-scope lookup on every non-Hono adapter, this also fixes a
@@ -42,7 +44,6 @@ client.
 
 Graduates the `composite-row-child-component` conformance fixture (still
 skipped on Go — that adapter's divergence is a different failure, tracked in
-#2445) and the `composite-row-child-component` / `grandchild-composition`
-CSR conformance skips.
+#2445) and the `composite-row-child-component` CSR conformance skip.
 
 Fixes https://github.com/piconic-ai/barefootjs/issues/2444.

@@ -430,21 +430,25 @@ export function renderChild(
     return `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
   }
 
-  // Push this child's own derived scope id as `_parentScopeId` while its
-  // template evaluates, so a GRANDCHILD rendered by a nested `renderChild()`
-  // call derives from THIS scope (`${scopePrefix}${suffix}`) rather than
-  // reusing the caller's scope — otherwise a third composition level
-  // collapses back onto the second instead of deriving `..._s0_s0` (#2444
-  // `grandchild-composition`). Restored before the placeholder substitution
-  // below, which anchors to the CALLER's scope, not this child's.
-  const prevParentScopeId = _parentScopeId
-  _parentScopeId = `${scopePrefix}${suffix}`
-  let raw: string
-  try {
-    raw = templateFn(props)
-  } finally {
-    _parentScopeId = prevParentScopeId
-  }
+  // NOTE: does NOT push `_parentScopeId` to this child's own derived scope
+  // while `templateFn` evaluates. That was tried (deriving a GRANDCHILD's
+  // scope from this scope rather than the caller's, to fix a third
+  // composition level collapsing onto the second — `grandchild-composition`)
+  // but it collides with `comment: true` wrapper transparency (#1211
+  // synthesized inline-JSX-callback wrappers, e.g. a `renderNode` callback
+  // prop): such a wrapper's OWN scope element IS its single child's element,
+  // and its init resolves itself via `$c(scope, 's0')`'s short-suffix
+  // self-match fallback (`query.ts`'s `$cSingle`). Pushing this scope makes
+  // a nested descendant of that SAME child derive `..._s0_s0` whenever the
+  // descendant's own first slot id also happens to be `s0` — the PRECISE
+  // suffix match then finds that unrelated descendant instead of falling
+  // through to the self-match, silently misrouting `initChild` (confirmed
+  // via `site/ui`'s xyflow Highlight-Depth demo, where this broke the
+  // `--node-glow` style effect). `grandchild-composition` stays a known
+  // limitation (CSR conformance skip) until the self-match lookup can be
+  // made unambiguous against a nested descendant sharing the same slot
+  // suffix.
+  const raw = templateFn(props)
 
   // The placeholder substitution is anchored to the exact `bf-s="…"`
   // shape so user content that contains the sentinel as text survives
@@ -452,7 +456,7 @@ export function renderChild(
   // attribute strips rather than emitting `bf-s=""`. (#1320)
   let html = raw.trim().replace(
     PLACEHOLDER_ATTR_PATTERN,
-    prevParentScopeId ? ` bf-s="${prevParentScopeId}"` : '',
+    _parentScopeId ? ` bf-s="${_parentScopeId}"` : '',
   )
   // Templates may start with comment markers (e.g. <!--bf-cond-start:...-->)
   // so we find the first element tag rather than assuming index 0.
