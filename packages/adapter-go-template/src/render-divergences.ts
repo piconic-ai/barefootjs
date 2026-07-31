@@ -39,4 +39,11 @@ export const renderDivergences: RenderDivergences = {
   // note above on `.TodoItems []TodoItemProps`.
   'composite-row-child-component':
     'a child component nested inside a dynamic loop row receives one hoisted props value built outside `{{range}}`, so every row renders the child with zero-value props (https://github.com/piconic-ai/barefootjs/issues/2445)',
+
+  // #2447: same missing preamble lowering as the DSL adapters, with Go's
+  // usual twist (cf. #2445): the value is emitted as `{{$.Cls}}` — a
+  // PARENT-scope struct field, not a per-row one — and nothing populates it,
+  // so every row's attribute renders empty.
+  'loop-preamble-attr-value':
+    "a `.map()` callback preamble's value declaration is hoisted to a parent-scope field instead of being built per row, so the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)",
 }

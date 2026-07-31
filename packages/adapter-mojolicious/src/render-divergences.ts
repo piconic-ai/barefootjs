@@ -29,4 +29,12 @@ export const renderDivergences: RenderDivergences = {
   // composition` CSR skip.
   'composite-row-child-component':
     'a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)',
+
+  // #2447: the `.map()` callback preamble's value declarations
+  // (`const cls = row.done ? 'done' : 'open'`) are not lowered into the
+  // template at all, so the emitted row references a variable nothing ever
+  // assigns and the attribute renders empty. Pre-existing — confirmed by
+  // running the fixture with the §9.5 lazy-preamble compiler change reverted.
+  'loop-preamble-attr-value':
+    "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)",
 }
