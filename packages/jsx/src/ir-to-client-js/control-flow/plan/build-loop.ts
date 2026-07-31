@@ -144,7 +144,7 @@ export function buildPlainLoopPlan(
   const mapPreambleWrapped = elem.preamble
     ? renderPreamble(elem.preamble, {
         transformJs: wrap,
-        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+        renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
       })
     : ''
   const preambleRegions = buildPreambleRegionPlans(elem.preambleRegions, elem.param, elem.paramBindings)
@@ -269,7 +269,7 @@ function buildStaticLoopMaterialize(
     itemTemplate: elem.staticItemTemplate,
     mapPreamble: elem.preamble
       ? renderPreamble(elem.preamble, {
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
         })
       : '',
     bodyIsMultiRoot: elem.bodyIsMultiRoot ?? false,

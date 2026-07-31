@@ -243,7 +243,7 @@ function buildReactiveEmit(
       : [{ param: inner.param, bindings: inner.paramBindings }]
     preludeStatements.push(renderPreamble(inner.preamble, {
       transformJs: (t) => wrapInner(wrapOuter(t)),
-      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, leafLoopParams, undefined, true),
+      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, leafLoopParams, undefined),
     }))
   }
 
@@ -286,7 +286,7 @@ function buildStaticEmit(inner: NestedLoop, level: DepthLevel, uidSuffix: string
   // of the js segments above).
   if (inner.preamble) {
     preludeStatements.push(renderPreamble(inner.preamble, {
-      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+      renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined),
     }))
   }
   return {

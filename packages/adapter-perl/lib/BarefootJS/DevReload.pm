@@ -1,5 +1,5 @@
 package BarefootJS::DevReload;
-our $VERSION = "0.28.1";
+our $VERSION = "0.29.0";
 use strict;
 use warnings;
 use feature 'signatures';

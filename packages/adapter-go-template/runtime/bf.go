@@ -176,6 +176,13 @@ func FuncMap() template.FuncMap {
 		// injects the result into the child's Children field.
 		"bf_with_children": WithChildren,
 
+		// Per-row props for a child component nested inside a composite
+		// loop row (#2445): the parent's once-per-slot instance is shared
+		// across rows, so a prop that depends on the row is reapplied as a
+		// copy inside {{range}}, the props-argument sibling of
+		// bf_with_children.
+		"bf_with_props": WithProps,
+
 		// Scope comment for fragment roots
 		"bfScopeComment":    ScopeComment,
 		"bfScopeCommentEnd": ScopeCommentEnd,
@@ -2724,6 +2731,87 @@ func WithChildren(props interface{}, children template.HTML) (interface{}, error
 		return props, fmt.Errorf("bf_with_children: unsupported Children field type %s", target.Type())
 	}
 	return copyPtr.Elem().Interface(), nil
+}
+
+// WithProps returns a shallow copy of a component Props struct with the
+// given fields overridden (#2445): a child component nested inside a
+// COMPOSITE loop row (row root is a plain element, not the child itself) is
+// constructed ONCE outside `{{range}}` — every row shares that instance for
+// scope/parent/mount identity — so a prop that depends on the row
+// (`text={row.label}`) has to be applied per row, at template-execution
+// time, the same way WithChildren applies per-row JSX children to that
+// shared instance. `kv` is a flat name/value list ("Text", .Label, "Count",
+// .N, ...). The props value stays by-value semantics: the caller's original
+// is untouched. A name with no matching settable field is left alone for
+// that pair — the prop routes elsewhere (e.g. a rest bag) and the base
+// instance's constructor-built value stands, mirroring WithChildren's
+// "props type without a Children field" passthrough.
+//
+// KNOWN LIMITATION (#2448): this overrides fields on the ALREADY-CONSTRUCTED
+// instance — it does not re-run New<Child>Props. A field the child derives
+// FROM the overridden prop at construction time (a memo, or a prop-shadowing
+// signal's initial value) keeps whatever the one-shot constructor computed
+// and does not update per row; only the directly-overridden field is
+// correct per row. Tracked as a follow-up, not fixed by #2445.
+func WithProps(props interface{}, kv ...interface{}) (interface{}, error) {
+	if len(kv)%2 != 0 {
+		return nil, fmt.Errorf("bf_with_props: odd number of key/value arguments (%d)", len(kv))
+	}
+	v := reflect.ValueOf(props)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return props, nil
+	}
+	copyPtr := reflect.New(v.Type())
+	copyPtr.Elem().Set(v)
+	for i := 0; i < len(kv); i += 2 {
+		name, ok := kv[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("bf_with_props: field name at position %d must be a string, got %T", i, kv[i])
+		}
+		target := copyPtr.Elem().FieldByName(name)
+		if !target.IsValid() || !target.CanSet() {
+			continue
+		}
+		if err := setStructFieldValue(target, kv[i+1]); err != nil {
+			return nil, fmt.Errorf("bf_with_props: field %s: %w", name, err)
+		}
+	}
+	return copyPtr.Elem().Interface(), nil
+}
+
+// setStructFieldValue assigns val into target, a settable struct field
+// obtained via reflect.Value.FieldByName. Mirrors WithChildren's
+// Interface/String branches (a String-kind target covers both `string` and
+// `template.HTML` fields, via String() rather than reflect.Convert — Go's
+// int-to-string conversion produces a rune, not a decimal string) and adds
+// the general assignable/convertible fallback for other field kinds
+// (numeric widening, etc.).
+func setStructFieldValue(target reflect.Value, val interface{}) error {
+	if val == nil {
+		target.Set(reflect.Zero(target.Type()))
+		return nil
+	}
+	switch {
+	case target.Kind() == reflect.Interface:
+		target.Set(reflect.ValueOf(val))
+		return nil
+	case target.Kind() == reflect.String:
+		target.SetString(String(val))
+		return nil
+	}
+	rv := reflect.ValueOf(val)
+	switch {
+	case rv.Type().AssignableTo(target.Type()):
+		target.Set(rv)
+	case rv.Type().ConvertibleTo(target.Type()):
+		target.Set(rv.Convert(target.Type()))
+	default:
+		return fmt.Errorf("cannot assign %T to %s", val, target.Type())
+	}
+	return nil
 }
 
 // PortalHTML parses and executes a template string with the provided data.

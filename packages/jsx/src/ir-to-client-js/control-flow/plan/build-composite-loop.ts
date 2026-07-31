@@ -48,7 +48,7 @@ export function buildTopLevelCompositePlan(elem: TopLevelLoop, profileComponentN
     mapPreambleWrapped: elem.preamble
       ? renderPreamble(elem.preamble, {
           transformJs: wrap,
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined, true),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: elem.param, bindings: elem.paramBindings }], undefined),
         })
       : '',
     template: elem.template,
@@ -108,7 +108,7 @@ export function buildBranchCompositePlan(loop: BranchLoop, cv: string, profileCo
     mapPreambleWrapped: loop.preamble
       ? renderPreamble(loop.preamble, {
           transformJs: wrap,
-          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined, true),
+          renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, [{ param: loop.param, bindings: loop.paramBindings }], undefined),
         })
       : '',
     template: loop.template,

@@ -312,9 +312,10 @@ function refParts(
  * The previous shape claimed the whole row in one closure (`__lzc_<mid>`),
  * which meant an `applyOuter` driving ONE attribute still ran a `qsa` scan for
  * every OTHER reactive-attr slot in the row — on every row, at hydration. The
- * `in` test (not `??`) is what makes the cache honest: a slot whose scan found
- * nothing records `undefined` and is not re-scanned on the next tick, which a
- * `??`-guarded cache would do forever.
+ * `in` test (not `??`) is what makes the cache honest: `qsa` answers `null` for
+ * a slot it cannot find, and `null` is a real cached answer — the `in` test
+ * treats it as one and never scans again, where a `??`-guarded cache would
+ * re-scan that slot on every tick forever.
  *
  * This is the element-ref twin of `doorAccess`, which already deferred the
  * content door for exactly the same reason.

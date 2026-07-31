@@ -1,5 +1,110 @@
 # @barefootjs/jsx
 
+## 0.29.0
+
+### Patch Changes
+
+- d87c070: Connect a composite loop row before its children initialise
+
+  A loop row whose root is user markup (`items.map(it => <li><Chip/></li>)`) is a
+  template clone written inline in the emitted body, so no runtime function sits
+  between "make a row" and "the element exists" and there was nothing to hand a
+  destination to. `mapArray` first saw the element as `renderItem`'s return
+  value — after `upsertChild` had already run the row's children's `init`
+  against a detached element.
+
+  `useContext` resolves by walking `parentElement`. A detached element has no
+  ancestors to walk, so the lookup fell through to the global, last-writer-wins
+  context store and returned whichever provider on the page wrote last. No error,
+  no warning — a plausible wrong value. With one provider of a context on the
+  page it is invisible, because the global holds the same value; put two on one
+  page and rows in the first list start reading the second's.
+
+  Measured, with providers `A` and `B` and a row in `A`'s list: the child read
+  `B`. With the row connected first it reads `A`.
+
+  The compiler now emits `mountRowRoot(clone)`, which consumes the same ambient
+  mount point `createComponent` row roots already use (#2431), for the one loop
+  variant that initialises anything inside the row — composite, i.e. nested
+  components and/or inner loops. A plain row has no nested `init`, so it has
+  nothing that could resolve wrongly and is left alone; the high-volume
+  `mapArrayLazy` emission is untouched.
+
+  Four things attaching a row earlier could have broken, all checked:
+
+  - **The reorder.** A fresh row is mounted at the end of the loop range and the
+    LIS walk moves it to its final position. Front-insert, reorder, append and
+    removal all reconcile to the right order.
+  - **Multi-root rows.** A Fragment row is a clone, so it takes this path, and
+    `qsa-item.ts`'s lookup used to give up on an attached primary before reading
+    the extras stash. That is fixed separately; here the primary mounts, the
+    children init connected, and each primary still travels with its own extras
+    through a reorder.
+  - **Cross-row lookups.** Rows are attached while later rows are still being
+    built, so a lookup that escaped its own row would now land in a real
+    neighbour. Each row gets exactly its own child.
+  - **A body that throws after mounting.** This one did regress, and is fixed: a
+    detached row could never be left on screen, but a mounted one can, so the
+    mount is recorded on the mount point and undone before the error propagates.
+
+  Left alone deliberately: `createItemScope` still un-parks a row that turns out
+  to carry extras. By then the mount has already done its job — the tail ran
+  connected — and un-parking keeps the reorder from marking a row stationary
+  before its extras and per-item marker exist.
+
+  No SSR output change: the hydration branch adopts a row that came from server
+  markup and is in the document by construction, so it never mounts. This is also
+  why the change has no CSR-conformance fixture — that layer evaluates the
+  `template:` lambda and compares HTML, and neither the template nor the HTML
+  moves here. The behaviour lives in the renderItem body, so the coverage does
+  too, in `packages/client/__tests__/runtime/`.
+
+- df39298: Stop treating a class field name as a value reference
+
+  `isValueReferenceIdentifier` excluded object-literal keys, method names and
+  accessor names, but not `ts.PropertyDeclaration` — a class field. So in
+
+  ```js
+  class Widget {
+    helper = 1;
+  }
+  ```
+
+  the field name `helper` was classified as a read of a binding called `helper`.
+  It isn't; it's a member key, exactly like the `{ helper: 1 }` case one branch
+  above it.
+
+  The two callers of this classifier are hurt very differently by an over-report,
+  which is what makes this worth a patch rather than a tidy-up:
+
+  - **`detectStrippedReferences` (cli) — a false build error.** BF053 fires when a
+    relative import was stripped from a client bundle but its binding is still
+    referenced. With the gap, a stripped binding whose name merely _coincided_
+    with a class field name anywhere in the assembled bundle failed the build,
+    pointing the developer at a reference that does not exist. Legal code, red
+    build. Inlined `.ts` helper modules are arbitrary user code, so a class with a
+    field named after some unrelated stripped import is not a contrived shape.
+  - **`makeValueUsageTest` (jsx) — a redundant import.** The client bundle kept an
+    import it didn't need. Harmless, since the binding does exist, but it defeats
+    the point of the reference-based check that replaced the old text scan.
+
+  A **computed** field name stays a reference: in `class C { [helper] = 1 }` the
+  brackets make `helper` a genuine read, and the exclusion is guarded on
+  `parent.name === id`, which the computed form doesn't satisfy (its `name` is a
+  `ComputedPropertyName` node, not the identifier). Both directions are pinned by
+  tests. `new.target` is excluded for the same reason as the field name — `target`
+  sits in keyword position and is not a binding either.
+
+  The classifier also now states its contract, since #2432 exported it as public
+  API: it classifies positions in **JavaScript** source, which is what both
+  callers parse (`ts.ScriptKind.JS`). Identifiers in TypeScript type positions —
+  `const x: Foo`, `interface` / `type` / `enum` declaration names — are still
+  reported as value references, so it must not be pointed at TypeScript source.
+  Every exclusion branch is really a BF053 misfire that can't happen anymore,
+  which is the lens to read that list through.
+
+  - @barefootjs/shared@0.29.0
+
 ## 0.28.1
 
 ### Patch Changes

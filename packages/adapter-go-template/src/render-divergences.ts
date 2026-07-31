@@ -30,16 +30,6 @@ export const renderDivergences: RenderDivergences = {
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
 
-  // #2445: a child component nested inside a dynamic loop row whose root
-  // is a plain element gets ONE hoisted `BadgeSlot0 BadgeProps` field on
-  // the parent, built outside the loop with no per-row data, and the
-  // template passes `$.BadgeSlot0` for every row — so every row renders
-  // the child with zero-value props. The sibling shape (row root IS the
-  // child component) already emits a per-row slice; see the `todo-app-ssr`
-  // note above on `.TodoItems []TodoItemProps`.
-  'composite-row-child-component':
-    'a child component nested inside a dynamic loop row receives one hoisted props value built outside `{{range}}`, so every row renders the child with zero-value props (https://github.com/piconic-ai/barefootjs/issues/2445)',
-
   // #2447: same missing preamble lowering as the DSL adapters, with Go's
   // usual twist (cf. #2445): the value is emitted as `{{$.Cls}}` — a
   // PARENT-scope struct field, not a per-row one — and nothing populates it,

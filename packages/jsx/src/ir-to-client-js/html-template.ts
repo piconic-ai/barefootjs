@@ -12,6 +12,7 @@ import { buildSignalMemoEnv, csrSubstitute, applyPropsRewrite, type CsrEnv } fro
 import type { ClientJsContext } from './types.ts'
 import { BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, escapeHtml } from '@barefootjs/shared'
 import { buildLoopChainExpr } from '../loop-chain.ts'
+import { derivesScopeFromSlot } from '../adapters/child-scope.ts'
 
 /**
  * Protect string literals from regex-based replacements.
@@ -547,12 +548,11 @@ function buildSpreadAttrsMergeCall(args: {
  *    are wrapped with `__bfSlot(EXPR, <branchSlotsVar>)` so the runtime can
  *    splice live `Node` returns into the parsed fragment instead of
  *    stringifying them via the template literal (#1213).
- *  @param insideLoop - When true, component nodes omit their `slotId` from the
- *    `renderChild` call. Each loop iteration produces its own scope (identified
- *    by `data-key`), so the parent-slot suffix would create scopes that don't
- *    match the SSR shape — see #1268 and the matching `insideLoop` guard in
- *    `generateCsrTemplate` (case `'component'`). Set to `true` when generating
- *    the per-iteration `staticItemTemplate` for static loops.
+ *  Component nodes omit their `slotId` from the `renderChild` call exactly
+ *  when `derivesScopeFromSlot()` says so — a loop-item-root component (its
+ *  own scope, identified by `data-key`) never derives from the parent slot;
+ *  a component nested below the row root does (#2444). See
+ *  `IRComponent.loopItemRoot` / `./adapters/child-scope.ts`.
  */
 /**
  * Build the per-item `<!--bf-loop-i:KEY-->` anchor comment for a whole-item
@@ -660,7 +660,7 @@ export function renderFlatMapClientBody(
     rawLeaf: true,
     renderLeaf: (ir) => {
       const key = flatMapLeafKeyExpr(ir)
-      const html = irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, 1, undefined, undefined, true)
+      const html = irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, 1, undefined, undefined)
       return `({ k: ${key ?? 'undefined'}, h: \`${html}\` })`
     },
   })
@@ -691,7 +691,7 @@ export function renderFlatMapProjectionClientBody(
   const params = inner.index ? `(${inner.param}, ${inner.index})` : `(${inner.param})`
   const key = inner.key ? `(${inner.key})` : 'undefined'
   const html = inner.children
-    .map((c) => irToHtmlTemplate(escapeLeafTextExpressions(c), restSpreadNames, 1, undefined, undefined, true))
+    .map((c) => irToHtmlTemplate(escapeLeafTextExpressions(c), restSpreadNames, 1, undefined, undefined))
     .join('')
   return `${chained}.map(${params} => ({ k: ${key}, h: \`${html}\` }))`
 }
@@ -728,8 +728,8 @@ function escapeLeafTextExpressions(ir: IRNode): IRNode {
   }
 }
 
-export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, insideLoop = false, inHoistedChildren = false): string {
-  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, insideLoop, inHoistedChildren)
+export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>, branchSlotsVar?: string, inHoistedChildren = false): string {
+  const recurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, inHoistedChildren)
   const wrapExpr = (expr: string) => wrapExprWithLoopParams(expr, loopParams)
   const wrapInterpolation = (expr: string): string => branchSlotsVar
     ? `__bfSlot(${expr}, ${branchSlotsVar})`
@@ -781,7 +781,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       }
 
       const attrs = attrParts.join(' ')
-      const childrenRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, insideLoop, false)
+      const childrenRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, false)
       const children = dangerouslyHtmlChildren(node.attrs, v => wrapExpr(v.expr)) ?? node.children.map(childrenRecurse).join('')
 
       // Non-void elements must use open+close tags (HTML parsers ignore self-closing on div, span, etc.)
@@ -859,7 +859,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
           if (p.clientOnly) return null
           switch (p.value.kind) {
             case 'jsx-children': {
-              const hoistedRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, insideLoop, true)
+              const hoistedRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, true)
               const childHtml = p.value.children.map(c => hoistedRecurse(c)).join('')
               return `${quotePropName(p.name)}: \`${childHtml}\``
             }
@@ -884,11 +884,12 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${attrValueToString(keyProp.value) ?? 'undefined'}` : ''
       // Pass slotId as suffix so $c() can find the child component by slot
-      // after branch swap. Inside a loop body each iteration owns a
-      // separate scope (identified by `data-key`), so the parent-slot
-      // suffix is dropped to avoid anchoring a deeply-nested child to a
-      // wrong component-wrapper scope (#1268).
-      const slotArg = (!insideLoop && node.slotId) ? `, '${node.slotId}'` : ''
+      // after branch swap. A loop-item-root component owns a separate scope
+      // per iteration (identified by `data-key`), so the parent-slot suffix
+      // is dropped to avoid anchoring it to a wrong component-wrapper scope
+      // (#1268) — a component nested BELOW the row root still derives from
+      // its slot, matching the Hono reference (#2444).
+      const slotArg = derivesScopeFromSlot(node) ? `, '${node.slotId}'` : ''
       return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
     }
 
@@ -897,13 +898,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // Increment loopDepth so inner key attrs become data-key-N
       // Forward loopParams so expressions referencing outer/inner loop params
       // get wrapped as signal accessors (e.g., task.title → task().title).
-      // `insideLoop` is preserved (not forced to `true`): downstream branch /
-      // inner-loop templates depend on the legacy slot-suffix-keeping shape
-      // to find scopes via `findSsrScopeBySlotIn`. The opt-in at the entry
-      // call site is the only place that wants the suffix dropped (#1268
-      // Case 1 — childComponent body materialize); propagating it through
-      // every nested loop regressed form-builder's inner-loop Select wiring.
-      const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop)
+      const innerRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar)
       let childTemplate = node.children.map(innerRecurse).join('')
       // Whole-item conditional loops (#1665): prepend an always-present
       // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
@@ -938,13 +933,13 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
         // identity is stamped by mapArray via setAttribute — emitting it
         // here was the CSR/SSR data-key asymmetry (unescaped, client-only).
         const body = renderPreamble(node.flatMapCallback, {
-          renderLeaf: (ir) => irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop),
+          renderLeaf: (ir) => irToHtmlTemplate(stripLeafKeyAttr(ir), restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar),
         })
         mapExpr = `\${${wrappedArray}.flatMap(${node.flatMapCallback.params} => ${body}).join('')}`
       } else if (node.preamble) {
         // Stage 3 / D4 — render JSX leaves in an arbitrary array-builder
         // preamble (the hydrate-template context uses the bare loop param).
-        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar, insideLoop) })
+        const preamble = renderPreamble(node.preamble, { textVariant: 'client', renderLeaf: (ir) => irToHtmlTemplate(ir, restSpreadNames, loopDepth + 1, loopParams, branchSlotsVar) })
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => { ${preamble} return \`${childTemplate}\` }).join('')}`
       } else {
         mapExpr = `\${${wrappedArray}.${iterMethod}(${callbackParam} => \`${childTemplate}\`).join('')}`
@@ -1563,7 +1558,6 @@ export interface TemplateOptions {
    * `compute-inlinability` (#1277).
    */
   csrEnv?: CsrEnv
-  insideLoop?: boolean
   loopDepth?: number
   /**
    * Names bound by the ENCLOSING loops' callback params (item / index /
@@ -1990,7 +1984,6 @@ export function generateCsrTemplate(
   node: IRNode,
   inlinableConstants: Map<string, string> | undefined,
   ctx: ClientJsContext,
-  insideLoop?: boolean,
   restSpreadNames?: Set<string>,
   propsObjectName?: string | null,
   unsafeLocalNames?: Set<string>,
@@ -2010,7 +2003,7 @@ export function generateCsrTemplate(
     }
   }
   const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1 })
+  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1 })
 }
 
 /**
@@ -2204,7 +2197,7 @@ export function computeDeferredChildSlots(
 }
 
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { restSpreadNames, propsObjectName, csrEnv, insideLoop, unsafeLocalNames, loopDepth = 0 } = opts
+  const { restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames, loopDepth = 0 } = opts
   const env: CsrEnv = csrEnv ?? { substitutions: new Map(), propsObjectName: propsObjectName ?? null }
   const transformExpr = (expr: string, templateExpr?: string): string => {
     // Single AST substitution pass: replaces signal getter calls
@@ -2241,12 +2234,10 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
   }
 
   // `recurse` preserves `inHoistedChildren` for structural pass-through
-  // (fragment / conditional); `childrenRecurse` and `recurseInLoop`
-  // clear it — a new element root or loop iteration starts a fresh
-  // scope. (#1320)
+  // (fragment / conditional); `childrenRecurse` clears it — a new element
+  // root starts a fresh scope. (#1320)
   const recurse = (n: IRNode): string => generateCsrTemplateWithOpts(n, opts)
   const childrenRecurse = (n: IRNode): string => generateCsrTemplateWithOpts(n, { ...opts, inHoistedChildren: false })
-  const recurseInLoop = (n: IRNode): string => generateCsrTemplateWithOpts(n, { ...opts, insideLoop: true, loopDepth: loopDepth + 1, inHoistedChildren: false })
 
   switch (node.type) {
     case 'element': {
@@ -2441,7 +2432,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const propsExpr = propsEntries.length > 0 ? `{${propsEntries.join(', ')}}` : '{}'
       const keyProp = node.props.find(p => p.name === 'key')
       const keyArg = keyProp ? `, ${transformKeyValue(keyProp.value, transformExpr)}` : ''
-      const slotArg = (!insideLoop && node.slotId) ? `, '${node.slotId}'` : ''
+      const slotArg = derivesScopeFromSlot(node) ? `, '${node.slotId}'` : ''
       return `\${renderChild('${nameForRegistryRef(node.name)}', ${propsExpr}${keyArg || (slotArg ? ', undefined' : '')}${slotArg})}`
     }
 
@@ -2469,7 +2460,6 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       }
       const recurseInLoopBody = (n: IRNode): string => generateCsrTemplateWithOpts(n, {
         ...opts,
-        insideLoop: true,
         loopDepth: loopDepth + 1,
         inHoistedChildren: false,
         loopBoundNames: boundHere,

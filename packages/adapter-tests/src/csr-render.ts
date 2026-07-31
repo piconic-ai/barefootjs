@@ -195,35 +195,46 @@ function __runInit(name, props) {
   }
 }
 
+// Tracks the scope id a nested renderChild() call should derive from —
+// mirrors production's \`_parentScopeId\` (@barefootjs/client/runtime,
+// component.ts). Starts at \`__rootScope\` (the fixture root) and is
+// pushed/restored around each template() eval so a GRANDCHILD rendered by
+// a nested renderChild() call derives from its immediate parent's scope,
+// not the top-level root (#2444 grandchild-composition).
+let __parentScope = __rootScope
+
 function renderChild(name, props, key, suffix) {
   const template = __templates.get(name)
   // Static children (with suffix): use deterministic scope ID matching SSR pattern
   // Loop children (no suffix): use component name + random hash
   const scopeId = suffix
-    ? __rootScope + '_' + suffix
+    ? __parentScope + '_' + suffix
     : '~' + name + '_' + Math.random().toString(36).slice(2, 8)
   const keyAttr = key !== undefined ? ' data-key="' + key + '"' : ''
   // Slot-relationship markers (bf-h/bf-m) — mirrors the production
   // runtime renderChild in @barefootjs/client/runtime so CSR conformance
   // output asserts the same shape SSR emits.
-  //
-  // Mock-only constraint: \`bf-h\` is set to the single outer
-  // \`__rootScope\` because this stub doesn't carry through the real
-  // \`_parentScopeId\` chain. The outer fixture root is always given
-  // bf-s="\${__rootScope}", so children always get the matching bf-h.
-  // Both \`normalizeHTML\` (cross-adapter) and the CSR conformance test
-  // strip these attributes before comparison, so the value is invisible
-  // to assertions today. If a future CSR test wants to assert on the
-  // bf-h value itself, this mock needs to be rewritten to track the
-  // actual parent scope at call time.
-  const slotAttrs = suffix ? ' bf-h="' + __rootScope + '" bf-m="' + suffix + '"' : ''
+  const slotAttrs = suffix ? ' bf-h="' + __parentScope + '" bf-m="' + suffix + '"' : ''
   if (!template) return '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
-  // #1320: substitute the hoisted-children placeholder with the harness's
-  // hardcoded outer scope (\`test\`). Mirrors the production renderChild
-  // in @barefootjs/client/runtime. Anchored to the exact attribute
-  // shape so user text containing the sentinel is left alone.
-  const html = template(props).trim()
-    .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __rootScope + '"')
+  // Push this child's own scope while its template evaluates, so a nested
+  // renderChild() call (a grandchild) derives from THIS scope rather than
+  // reusing the caller's — mirrors production's push/restore around
+  // \`templateFn(props)\`.
+  const __prevParentScope = __parentScope
+  __parentScope = scopeId
+  let __rawHtml
+  try {
+    __rawHtml = template(props)
+  } finally {
+    __parentScope = __prevParentScope
+  }
+  // #1320: substitute the hoisted-children placeholder with the CALLER's
+  // scope (not this child's own scope pushed above). Mirrors the
+  // production renderChild in @barefootjs/client/runtime. Anchored to the
+  // exact attribute shape so user text containing the sentinel is left
+  // alone.
+  const html = __rawHtml.trim()
+    .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __prevParentScope + '"')
   const bfsAttr = ' bf-s="' + scopeId + '"'
   const extraAttrs = slotAttrs + keyAttr
   // Dedupe bf-s only when the child template already carries one

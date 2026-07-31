@@ -708,10 +708,12 @@ export function collectElements(
         // Loop-param refs use the raw destructured binding (no loopParams
         // passed), matching the plain-element path's `staticItemTemplate`.
         if (l.isStaticArray && l.children[0]) {
-          // `insideLoop=true` so the component-emit drops the parent's slot
-          // suffix — each iteration owns a distinct scope identified by
-          // `data-key`, mirroring the SSR template's renderChild emit.
-          staticItemTemplate = irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, undefined, undefined, /* insideLoop */ true)
+          // `l.children[0]` is the loop's row-root component — already
+          // tagged `loopItemRoot` in the IR, so `derivesScopeFromSlot`
+          // drops the parent's slot suffix automatically. Each iteration
+          // owns a distinct scope identified by `data-key`, mirroring the
+          // SSR template's renderChild emit.
+          staticItemTemplate = irToHtmlTemplate(l.children[0], buildRestSpreadNames(ctx), 0, undefined, undefined)
         }
       } else if (l.children[0] && !projectionInner) {
         // Pass loopParams so expressions are wrapped at generation time,
@@ -728,8 +730,8 @@ export function collectElements(
         // accessor wrap so the CSR materialize fallback (#1247) can clone
         // items inside the forEach body without rewriting the template.
         if (l.isStaticArray) {
-          // Plain-element body: leave `insideLoop=false` so any nested
-          // component nodes keep their parent-slot context in the
+          // Plain-element body: nested component nodes are never tagged
+          // `loopItemRoot`, so they keep their parent-slot context in the
           // per-iteration renderChild call. Per #1249, the
           // `outer-nested` static-array-child-init plan addresses
           // children by the (bf-h, bf-m) pair against the enclosing

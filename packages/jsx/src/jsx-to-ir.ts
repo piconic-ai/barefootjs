@@ -3794,6 +3794,27 @@ function branchHasNoElement(node: IRNode): boolean {
  * element ternaries (which always render exactly one element and stay on the
  * legacy `mapArray` path).
  */
+/**
+ * Tag every component that is a loop item root — a DIRECT member of the
+ * loop body, unwrapping through nested conditionals (`cond ? <A/> : <B/>`,
+ * `cond && <A/>`) but NOT through elements or fragments. Mirrors the Hono
+ * reference adapter's `renderConditional` ctx-forwarding exactly:
+ * `isLoopItemRoot` threads through nested conditional branches (a bare
+ * ternary/logical loop body, arbitrarily nested), but `renderElement` /
+ * `renderFragment` never forward it to their children — a component nested
+ * inside a plain element or fragment is never a loop item root, even if
+ * that element/fragment is itself the loop's row. See #2444.
+ */
+function tagLoopItemRootComponents(nodes: readonly IRNode[]): void {
+  for (const node of nodes) {
+    if (node.type === 'component') {
+      node.loopItemRoot = true
+    } else if (node.type === 'conditional') {
+      tagLoopItemRootComponents([node.whenTrue, node.whenFalse])
+    }
+  }
+}
+
 function loopBodyItemConditional(children: IRNode[]): IRConditional | null {
   const real = children.filter(
     (c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim())
@@ -4604,6 +4625,15 @@ function transformMapCall(
     // already refused loudly.
     preamble = undefined
   }
+
+  // A component that is a DIRECT member of the loop body (the row root, or
+  // one of several flatMap-sibling roots) owns its own per-row identity and
+  // gets a freshly randomized `bf-s` rather than deriving one from parent
+  // scope + slot. Tag it here — the single place that knows which nodes are
+  // direct loop-body members — so every backend can consult
+  // `derivesScopeFromSlot()` instead of re-deriving this fact from a mutable
+  // "am I inside a loop" flag.
+  tagLoopItemRootComponents(children)
 
   // Extract childComponent info if the loop body is a single component
   // This enables createComponent-based rendering with proper prop passing
