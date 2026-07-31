@@ -93,8 +93,20 @@ On an interceptable same-origin click (or `navigate(href)`):
 6. Commit history + `<title>`, **preserving existing `history.state`**.
 7. Move focus to the swapped region and announce the route change.
 
+Steps 1-7 run with `data-bf-navigating` set on `<html>`, cleared in the swap's
+`finally`. It exists because step 5 splits into two observable moments: the
+markup is committed, and only THEN is it re-hydrated — through a dynamic
+`import()` of the runtime in the fallback seam. Between them the swapped-in
+islands are server markup with no handlers, so a click is silently lost. The
+attribute is the only thing that distinguishes "present" from "interactive";
+without it, "wait for the element, then click it" looks correct and fails
+intermittently under load. Only the CURRENT navigation clears it — a superseded
+one reaches its `finally` while its successor is still mid-swap.
+
 Query-only navigations short-circuit before step 2, abort any in-flight swap
-(last-wins), update `searchParams()` + the URL, and do not swap.
+(last-wins), update `searchParams()` + the URL, and do not swap — so they never
+set the attribute: nothing is re-rendered, so there is no interactivity gap to
+describe.
 
 ## The wedge: environment signals (`searchParams` first)
 
@@ -139,6 +151,10 @@ at `@barefootjs/client/runtime` (`disposeScope`/`rehydrateScope`). Neither may s
 - `navigate(href)` — programmatic; environment-guarded (SSR no-op, not throw).
 - `searchParams` is a `@barefootjs/client` export, **not** a router export; the router
   only drives it via `__pushSearch`. No `@barefootjs/router/signals` entry.
+- `data-bf-navigating` on `<html>` — set for the duration of a region swap (see
+  Lifecycle). Style off it for a loading indicator, or wait for its absence
+  before driving anything the swap brought in. `NAVIGATING_ATTR` is exported for
+  callers that would otherwise hard-code the string.
 
 ## Phased plan
 
