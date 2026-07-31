@@ -20,18 +20,22 @@
  *      cannot escape into a neighbouring item or into nodes outside the
  *      loop.
  *   3. The CSR-only `__bfExtras` stash. During renderItem-body setup
- *      (between the template clone and the function's return), the
- *      primary and extras are still detached nodes — `__el.nextSibling`
- *      is `null` and step 2 yields nothing. Reading `__bfExtras` lets
- *      lookups reach the still-pending extras before `mapArray` inserts
- *      them into the DOM.
+ *      (between the template clone and the function's return), the extras
+ *      are not siblings yet. Reading `__bfExtras` lets lookups reach them
+ *      before `mapArray` inserts them into the DOM.
  *
- * Step 3's reliance on the primary being detached during setup is why
- * `createItemScope` un-parks a row that turns out to carry extras: the
- * connect-before-init mount point applies to `createComponent` row roots,
- * which are single-root by construction and so never reach this module. An
- * attached primary would make step 2's sibling walk run past the item's own
- * roots into a neighbouring item's elements before step 3 is ever consulted.
+ * Step 3 must stay reachable whether or not the primary is attached, which
+ * is why step 2 ends its walk with `break` rather than `return`. Only the
+ * sibling walk is bounded; ending the generator there would skip the stash.
+ *
+ * This used to be a `return`, and the difference was invisible: with a
+ * detached primary `nextSibling` is `null`, so the walk never runs and
+ * control reaches the stash regardless. Attaching the primary made the very
+ * first sibling a boundary comment, which ended the generator before the
+ * stash was consulted and left the item's child placeholders unreplaced.
+ * Measured, not deduced — and note this is NOT the failure the earlier
+ * comment here described: the walk never ran past the item into a
+ * neighbouring one, it stopped correctly and then gave up too early.
  */
 
 import { BF_LOOP_ITEM, BF_LOOP_START, BF_LOOP_END } from '@barefootjs/shared'
@@ -51,10 +55,16 @@ function* itemRootElements(primaryEl: Element): Iterable<Element> {
       // Hard stops: another item starts, or the loop range ends. The
       // BF_LOOP_START check defends against a sibling loop block whose
       // start marker happens to follow ours.
+      // `break`, not `return`: stop the SIBLING walk, but still fall through
+      // to the `__bfExtras` stash below. A `return` ends the generator, and
+      // the stash is the only way to reach extras that are not siblings yet.
+      // That difference is invisible while the primary is detached — then
+      // `nextSibling` is `null`, this loop never runs, and control reaches the
+      // stash anyway — and decides the outcome the moment it is attached.
       if (v === BF_LOOP_ITEM
           || v === BF_LOOP_START || v.startsWith(startPrefix)
           || v === BF_LOOP_END || v.startsWith(endPrefix)) {
-        return
+        break
       }
     } else if (n.nodeType === Node.ELEMENT_NODE) {
       yield n as Element
