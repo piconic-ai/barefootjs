@@ -265,14 +265,27 @@ wrong, and why, is worth as much as the change itself.
   **(2) `applyOuter`'s seed pass materialized each row's whole ref tuple**
   (element handle plus the `lazySlots` writer closure) even when the row's
   outer-involving bindings were all ATTRS and the seed only ever read the
-  element. **Done** — the adopted-row claim (`__lzc_<mid>`) now leaves the
-  door slot `null` and the first content write fills it (`doorAccess` in
-  `stringify/lazy-row.ts`). `createRow` still builds its door eagerly: it
-  writes every text on the tick it clones the row, so there is nothing to
-  defer on the CSR path. A knock-on: with the door gone from the claim, the
-  element refs are the only parts that read the row root, so a row with no
-  reactive ATTRIBUTE claims to a bare `[null]` and stops binding
-  `__e.primaryEl` at all.
+  element. **Done**, in two steps.
+
+  First the door: the adopted-row claim left its slot `null` and the first
+  content write filled it (`doorAccess` in `stringify/lazy-row.ts`), measured
+  at **1630.6KB -> 1573.2KB** post-hydration heap.
+
+  Then the element refs. The whole-row claim closure (`__lzc_<mid>`) was still
+  resolving EVERY reactive-attr slot in the row, so an `applyOuter` driving one
+  attribute scanned for every other slot too — three scans per row to write one
+  attribute on a three-slot row. Each binding now claims its own slot on first
+  use (`elementAccess`), and the closure is gone. The cache test is `N in __r`
+  rather than `??`, so a slot whose scan finds nothing is not re-scanned every
+  tick. `createRow` is untouched on both counts: it resolves refs from known
+  clone paths and writes every binding on the tick it clones the row.
+
+  That second step is **counted, not timed** (`lazy-row-eligibility.test.ts`
+  pins 3 scans in `applyItem`, 1 in `applyOuter`, 0 in `createRow`). The SSR
+  heap bench does not move — 1573.1KB, unchanged — and cannot: its row has a
+  single reactive-attr slot, so its `applyOuter` already claimed exactly what it
+  wrote. No current bench app has a row whose outer bindings cover only some of
+  several attr slots.
 
   The claim-once interaction turned out not to bind. §2's rule is about a
   single door resolving the whole plan on first access, and each door already
