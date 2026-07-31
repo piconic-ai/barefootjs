@@ -79,6 +79,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   collectLoopBoundNames,
+  derivesScopeFromSlot,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import ts from 'typescript'
@@ -1066,10 +1067,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
       if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const prevInLoop = this.inLoop
-        this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
-        this.inLoop = prevInLoop
         // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
         // A JSX prop name can contain characters (`data-slot`) that aren't a
         // valid Kolon macro identifier, and `comp.slotId` alone would
@@ -1111,11 +1109,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       if (lowered) currentEntries().push(lowered)
     }
     // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skip for loop children — they use ComponentName_random.
-    // Appended to whatever the trailing entries segment is so a spread's
-    // own `_bf_slot`/`children` keys (if any) never win over these
-    // compiler-controlled entries.
-    if (comp.slotId && !this.inLoop) {
+    // hydration. Skipped for a loop item root — it uses ComponentName_random
+    // instead (#2444). Appended to whatever the trailing entries segment is
+    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
+    // these compiler-controlled entries.
+    if (derivesScopeFromSlot(comp)) {
       currentEntries().push(`_bf_slot => '${comp.slotId}'`)
     }
     const tplName = this.toTemplateName(comp.name)
@@ -1133,10 +1131,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // children HTML; the macro call result is passed as the `children` entry
       // of the render_child hashref. `render_child` materializes a CODE-ref
       // children value through the backend before handing it to the child.
-      const prevInLoop = this.inLoop
-      this.inLoop = false
       const childrenBody = this.renderChildren(effectiveChildren)
-      this.inLoop = prevInLoop
       const macroName = `bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       currentEntries().push(`children => ${macroName}()`)
       const dict = this.combineComponentPropSegments(segments)

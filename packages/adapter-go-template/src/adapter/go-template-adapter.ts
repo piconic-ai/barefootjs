@@ -4994,6 +4994,121 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * #2445: per-row Go pipeline arguments for a child component nested inside
+   * a COMPOSITE loop row (row root is a plain element — `<li><Badge
+   * text={row.label}/></li>` — as opposed to the wrapper-slice case where the
+   * loop body IS the component). `collectStaticChildInstancesRecursive`
+   * registers such a child as an ordinary once-per-slot instance
+   * (`$.<Name>SlotN`), built ONCE outside `{{range}}` by
+   * `emitStaticChildInstances` — correct for props that don't depend on the
+   * row, but stale for one that does (`text={row.label}` reads the same
+   * value on every row). A loop-dependent prop is therefore re-applied per
+   * row, at template-execution time, via the `bf_with_props` runtime helper
+   * (the props-argument sibling of `bf_with_children`, which already does
+   * this for per-row JSX children on the same shared instance).
+   *
+   * A prop with no loop-bound free identifier (`IRProp.freeIdentifiers`, IR-
+   * build-time computed, #1267) is left on the constructor path — it's
+   * already correct there, and skipping it keeps every currently-passing
+   * fixture's emitted template byte-identical (no fixture in the corpus
+   * reaches this method with a loop-dependent prop today).
+   *
+   * KNOWN LIMITATION (#2448, tracked separately from #2445, which this
+   * method fixes): `bf_with_props` overrides fields on the ALREADY-CONSTRUCTED
+   * shared instance — it does not re-run `New<Child>Props`. A field the
+   * child derives FROM the overridden prop at construction time (a memo,
+   * or a prop-shadowing signal's initial value) keeps whatever the
+   * one-shot constructor computed and does not update per row. Only the
+   * directly-overridden field itself is correct per row.
+   *
+   * Returns the space-joined `"Field" value "Field2" value2 …` argument list
+   * for `bf_with_props`, or null when nothing needs overriding (caller keeps
+   * the bare `$.<Name>SlotN` reference).
+   */
+  private loopRowChildPropOverrides(comp: IRComponent): string | null {
+    const childShape = this.childComponentShapes.get(comp.name)
+    const args: string[] = []
+    for (const prop of comp.props) {
+      // Client-only props never reach SSR output; `key`/`children` aren't
+      // Props-struct fields; event handlers have no Go field (same
+      // `isEventHandler` predicate `jsx-to-ir.ts` uses for component props);
+      // a hyphenated name can't be a Go field (same guard as `emitChildField`).
+      if (prop.clientOnly) continue
+      if (prop.name === 'key' || prop.name === 'children') continue
+      if (prop.name.startsWith('on') && prop.name.length > 2) continue
+      if (prop.name.includes('-')) continue
+      // A prop that routes into the child's rest bag (`emitChildField`'s
+      // same routing rule) has no named Go field to override — `bf_with_props`
+      // would silently no-op the pair via its unknown-field passthrough.
+      // Leave it on the constructor-only path (unchanged from before this
+      // fix) rather than emit a pipeline argument that can never land.
+      if (childShape?.restBagField && !childShape.paramNames.has(prop.name)) continue
+      // `literal` / `boolean-shorthand` / `boolean-attr` carry no runtime
+      // expression to re-evaluate per row; `spread` / `jsx-children` are
+      // handled elsewhere (`emitSpreadBagInits`, `queueLoopBodyChildrenDefine`).
+      if (prop.value.kind !== 'expression') continue
+      const free = prop.freeIdentifiers
+      if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
+      const exprOut: { parsed?: ParsedExpr } = {}
+      const errorCountBefore = this.state.errors.length
+      let go = this.convertExpressionToGo(prop.value.expr, exprOut, prop.value.parsed)
+      if (this.state.errors.length > errorCountBefore) {
+        // `convertExpressionToGo` already pushed its own BF101 for an
+        // unsupported expression and returned the `""` sentinel — using it
+        // here would silently clobber the field with an empty string (or,
+        // for a non-string field, fail at template EXECUTE time instead of
+        // this compile time). Leave the prop on the constructor path; the
+        // reported error already surfaces the real problem. `loc` defaults
+        // to `convertExpressionToGo`'s own `this.makeLoc()` placeholder —
+        // repoint the newly-pushed error(s) at the prop's real source
+        // location, same as the fragment-refusal error below.
+        for (let i = errorCountBefore; i < this.state.errors.length; i++) {
+          this.state.errors[i].loc = prop.loc
+        }
+        continue
+      }
+      // A ternary / single-interpolation template literal with STRING-typed
+      // branches (`row.on ? "yes" : "no"`, `${row.x}` alone) parses to a
+      // ParsedExpr `template-literal` whose sole part is non-string —
+      // `templateLiteral()` wraps that one dynamic part's already-bare
+      // pipeline value (e.g. `(bf_ternary ...)`, #2335) in a bare `{{...}}`
+      // shell meant for TEXT-position embedding. A multi-part template
+      // literal (mixed literal text and interpolation) has no such reduction
+      // and stays refused below. Unwrap the single-part case back to the
+      // bare pipeline value this call site (a function ARGUMENT position,
+      // not a text position) needs.
+      const singlePartTemplateLiteral =
+        exprOut.parsed?.kind === 'template-literal' &&
+        exprOut.parsed.parts.length === 1 &&
+        exprOut.parsed.parts[0].type !== 'string' &&
+        go.startsWith('{{') &&
+        go.endsWith('}}')
+      if (singlePartTemplateLiteral) {
+        go = go.slice(2, -2)
+      }
+      // Skip the fragment re-check for the just-unwrapped single-part case —
+      // `kind` is still (accurately) `template-literal`, which would
+      // otherwise re-trip `isTemplateFragment`'s `kind === 'template-literal'`
+      // branch on the ALREADY-unwrapped bare value.
+      if (!singlePartTemplateLiteral && this.isTemplateFragment(go, exprOut.parsed?.kind)) {
+        // A genuine multi-part `{{if}}...{{end}}`-shaped fragment can't be a
+        // bare pipeline argument — refuse loudly rather than silently
+        // dropping the prop (the #2445 bug was exactly a silent drop one
+        // level up).
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Prop '${prop.name}' on <${comp.name}> nested inside a dynamic loop row reads the row but can't be lowered to a Go template pipeline argument`,
+          loc: prop.loc,
+        })
+        continue
+      }
+      args.push(`${JSON.stringify(capitalizeFieldName(prop.name))} ${wrapIfMultiToken(go)}`)
+    }
+    return args.length > 0 ? args.join(' ') : null
+  }
+
+  /**
    * Resolve `IDENT['key']` / `IDENT["key"]` where `IDENT` is a module-scope
    * object-literal const and the key is a string literal — a compile-time-static
    * lookup (the icon registry's `strokePaths['chevron-down']`). Returns the
@@ -6013,17 +6128,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     } else if (this.inLoop && comp.slotId) {
       // Non-wrapper loop (component nested inside an element item, #2130):
       // the range iterates the REAL collection, so `.` is the raw datum and
-      // carries none of the child's props. Call through the parent's
-      // once-per-slot instance via the root context (`$` — the define's own
-      // data, i.e. the parent's Props), injecting per-item content through a
-      // loop-body children define executed with the datum (`.`). The shared
-      // instance means identical child scope IDs across rows — the same
+      // carries none of the child's props by default. Call through the
+      // parent's once-per-slot instance via the root context (`$` — the
+      // define's own data, i.e. the parent's Props). Two kinds of per-row
+      // content have to reach that shared instance at template-execution
+      // time: JSX children, injected via a loop-body children define
+      // executed with the datum (`bf_with_children`), and any PROP that
+      // reads the row (`text={row.label}`, #2445) — the instance is built
+      // ONCE outside `{{range}}`, so a loop-dependent prop is stale there
+      // and is reapplied per row via `bf_with_props`
+      // (`loopRowChildPropOverrides`). The shared BASE instance (built once)
+      // still carries identical child scope IDs across rows — the same
       // contract the wrapper machinery's `bodyChildInstances` already uses.
       const suffix = slotIdToFieldSuffix(comp.slotId)
+      const overrides = this.loopRowChildPropOverrides(comp)
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
+      const base = overrides
+        ? `(bf_with_props $.${comp.name}${suffix} ${overrides})`
+        : `$.${comp.name}${suffix}`
       templateCall = loopBodyDefine
-        ? `{{template "${comp.name}" (bf_with_children $.${comp.name}${suffix} (bf_tmpl "${loopBodyDefine}" .))}}`
-        : `{{template "${comp.name}" $.${comp.name}${suffix}}}`
+        ? `{{template "${comp.name}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`
+        : `{{template "${comp.name}" ${base}}}`
     } else if (this.inLoop) {
       // Loop-nested component without a slotId: no parent field to route
       // through — legacy passthrough of the current dot.

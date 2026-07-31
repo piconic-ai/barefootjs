@@ -108,8 +108,6 @@ export interface LazyRowPlanData {
    * nothing per row).
    */
   outerPrimeGetters: readonly string[]
-  /** True when at least one binding is outer-involving. */
-  hasOuter: boolean
   /**
    * The row's `.map()` callback preamble as already-wrapped JS statements
    * (`mapPreambleWrapped`), or `''` when the row has none — proven safe to run
@@ -336,7 +334,6 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       textNeedsRead: texts.some(t => t.readsOuter),
       lastCount: ordinal,
       outerPrimeGetters,
-      hasOuter: attrs.some(a => a.readsOuter) || texts.some(t => t.readsOuter),
       preambleStatements: args.mapPreambleWrapped,
       conditionals,
     },

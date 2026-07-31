@@ -295,6 +295,7 @@ import {
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   collectLoopBoundNames,
+  derivesScopeFromSlot,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -1248,10 +1249,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
       if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const prevInLoop = this.inLoop
-        this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
-        this.inLoop = prevInLoop
         // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
         // A JSX prop name can contain characters (`data-slot`) `bladeIdent`
         // doesn't sanitize (it only guards reserved words), producing an
@@ -1310,11 +1308,11 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       if (lowered) currentEntries().push(lowered)
     }
     // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skip for loop children — they use ComponentName_random.
-    // Appended to whatever the trailing entries segment is so a spread's
-    // own `_bf_slot`/`children` keys (if any) never win over these
-    // compiler-controlled entries.
-    if (comp.slotId && !this.inLoop) {
+    // hydration. Skipped for a loop item root — it uses ComponentName_random
+    // instead (#2444). Appended to whatever the trailing entries segment is
+    // so a spread's own `_bf_slot`/`children` keys (if any) never win over
+    // these compiler-controlled entries.
+    if (derivesScopeFromSlot(comp)) {
       currentEntries().push(`${bladeHashKey('_bf_slot')} => '${comp.slotId}'`)
     }
     const tplName = this.toTemplateName(comp.name)
@@ -1333,10 +1331,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
       // HTML as a captured `HtmlString`; the captured var is passed as the
       // `children` entry of the render_child array. `render_child`
       // materializes it through the backend before handing it to the child.
-      const prevInLoop = this.inLoop
-      this.inLoop = false
       const childrenBody = this.renderChildren(effectiveChildren)
-      this.inLoop = prevInLoop
       const captureVar = bladeVar(`bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`)
       currentEntries().push(`${bladeHashKey('children')} => ${captureVar}`)
       const dict = this.combineComponentPropSegments(segments)

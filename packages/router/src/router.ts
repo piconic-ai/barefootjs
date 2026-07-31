@@ -387,10 +387,10 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
  *
  * Those are two different moments and the gap between them is real: the swap
  * is committed, and only then does step 5 re-hydrate each region — which
- * `defaultRehydrate` may reach through `await import('@barefootjs/client/
- * runtime')` (`seams.ts`). Until that resolves the swapped-in islands are
- * server markup with no handlers attached, so a click lands on nothing and is
- * silently lost. Nothing observable distinguished the two states before this,
+ * `defaultRehydrate` may reach through a dynamic import of
+ * `@barefootjs/client/runtime` (`seams.ts`). Until that resolves the
+ * swapped-in islands are server markup with no handlers attached, so a click
+ * lands on nothing and is silently lost. Nothing observable distinguished the two states before this,
  * which made "wait for the element, then click it" look correct and fail only
  * under load.
  *

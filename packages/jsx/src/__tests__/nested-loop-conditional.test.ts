@@ -342,14 +342,35 @@ describe('nested loops/conditionals inside mapArray (#830, #839)', () => {
     // Locate the nested mapArray callback body — the inner one is the
     // `node.children.map(child => ...)` that uses `child.id` as its key.
     // Note: pre-O-1 the inner mapArray was emitted twice (once per
-    // SSR/CSR side of the outer renderItem) so this regex used to find
-    // 2+ matches. After the O-1 dedup we only need at least 1.
-    const mapCalls = content.match(/mapArray\([\s\S]*?\}\)\s*\}/g)
-    expect(mapCalls).not.toBeNull()
-    expect(mapCalls!.length).toBeGreaterThanOrEqual(1)
+    // SSR/CSR side of the outer renderItem) so this used to find 2+
+    // matches. After the O-1 dedup we only need at least 1.
+    //
+    // Extracted via a balanced-PAREN scan from each `mapArray(` call site
+    // (a call is itself a single balanced-paren expression) — NOT a lazy
+    // `[\s\S]*?...\}\)\s*\}` regex, which coincidentally matched the old
+    // output only because the FIRST `}) }` byte sequence anywhere in the
+    // file happened to fall right after the inner mapArray call. Any
+    // unrelated text elsewhere containing that same 3-character sequence
+    // (e.g. the SSR template's `renderChild(..., 's1')` slot argument,
+    // #2444) silently shifted or erased the match with no relation to
+    // mapArray's actual extent — a real balanced scan can't have that failure mode.
+    const mapCalls: string[] = []
+    const mapArrayCallRe = /mapArray\(/g
+    let callMatch: RegExpExecArray | null
+    while ((callMatch = mapArrayCallRe.exec(content)) !== null) {
+      let depth = 1
+      let i = callMatch.index + callMatch[0].length
+      while (i < content.length && depth > 0) {
+        if (content[i] === '(') depth++
+        else if (content[i] === ')') depth--
+        i++
+      }
+      mapCalls.push(content.slice(callMatch.index, i))
+    }
+    expect(mapCalls.length).toBeGreaterThanOrEqual(1)
 
     // Pick the inner mapArray. It references `child.id` as the key function.
-    const innerMapArray = mapCalls!.find(m => /\(child\)\s*=>\s*String\(child\.id\)/.test(m))
+    const innerMapArray = mapCalls.find(m => /\(child\)\s*=>\s*String\(child\.id\)/.test(m))
     expect(innerMapArray).toBeDefined()
 
     // Count initChild('Checkbox', ...) occurrences inside the inner callback,

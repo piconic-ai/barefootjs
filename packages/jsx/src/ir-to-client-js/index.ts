@@ -267,7 +267,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   if (!templateHtml) {
     const csrInlinableConstants = csrInlinableConstantsFromCtx(ctx)
     templateHtml = generateCsrTemplate(
-      ir.root, csrInlinableConstants, ctx, undefined, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
+      ir.root, csrInlinableConstants, ctx, restSpreadNames, ctx.propsObjectName, unsafeLocalNames
     )
   }
 

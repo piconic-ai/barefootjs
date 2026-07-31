@@ -44,7 +44,6 @@ import {
  */
 type HonoRenderCtx = {
   isRootOfClientComponent?: boolean
-  isInsideLoop?: boolean
   isLoopItemRoot?: boolean
 }
 import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, escapeHtml } from '@barefootjs/shared'
@@ -874,7 +873,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const indexParam = loop.index ? `, ${loop.index}${indexAnnotation}` : ''
     // Push loop key info for data-key attribute generation on loop items
     this.loopKeyStack.push({ key: loop.key, param: loop.param })
-    // Render children with isInsideLoop flag so components generate their own scope IDs
+    // Render children with isLoopItemRoot so a DIRECT component member gets
+    // its own randomized scope id (matching `IRComponent.loopItemRoot`,
+    // #2444) rather than deriving from parent scope + slot like an
+    // ordinarily-slotted child.
     const children = this.renderChildrenInLoop(loop.children)
     this.loopKeyStack.pop()
 
@@ -969,7 +971,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   }
 
   private renderChildrenInLoop(children: IRNode[]): string {
-    return children.map((child) => this.renderNode(child, { isInsideLoop: true, isLoopItemRoot: true })).join('')
+    return children.map((child) => this.renderNode(child, { isLoopItemRoot: true })).join('')
   }
 
   /**
@@ -1040,7 +1042,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     )
   }
 
-  renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isInsideLoop?: boolean; isLoopItemRoot?: boolean }): string {
+  renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean; isLoopItemRoot?: boolean }): string {
     const props = this.renderComponentProps(comp)
     const children = this.renderChildren(comp.children)
 
@@ -1066,10 +1068,11 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // Also pass bf-s for asChild/Slot patterns where the component
       // forwards props to a DOM element via {...props}.
       scopeAttr += ` ${BF_SCOPE}={__scopeId}`
-    } else if (ctx?.isInsideLoop) {
-      // Components inside loops should generate their own unique scope IDs
-      // Pass __bfScope so they use it as fallback but generate unique IDs
-      // This ensures each loop iteration has a distinct component instance
+    } else if (comp.loopItemRoot) {
+      // A component that is the DIRECT root of a loop row owns its own
+      // per-row identity — generate a unique scope id rather than deriving
+      // from parent scope + slot (#2444). Pass __bfScope so it uses it as
+      // fallback but still generates a unique id per iteration.
       if (comp.slotId) {
         scopeAttr = ` __bfScope={\`\${__scopeId}_${comp.slotId}\`}${bfChildAttr}${bfMountAttr}`
       } else {
