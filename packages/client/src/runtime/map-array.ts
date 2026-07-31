@@ -20,7 +20,7 @@
 
 import { createSignal, createEffect, createRoot } from '@barefootjs/client/reactive'
 import { hydratedScopes } from './hydration-state.ts'
-import { setRowMountPoint } from './component.ts'
+import { setRowMountPoint, type RowMountPoint } from './component.ts'
 import {
   BF_KEY,
   BF_LOOP_START,
@@ -234,7 +234,7 @@ function createItemScope<T>(
   existingPrimary?: HTMLElement,
   existingExtras?: HTMLElement[],
   existingStart?: Comment | null,
-  rowMount?: { container: Node; anchor: Node | null } | null,
+  rowMount?: RowMountPoint | null,
 ): ItemScope<T> {
   let primaryEl!: HTMLElement
   let dispose!: () => void
@@ -246,10 +246,11 @@ function createItemScope<T>(
     dispose = d
     const [itemAccessor, itemSetter] = createSignal(item)
     setItem = itemSetter
-    // Fresh row: hand the mount point to the row's own `createComponent` so
-    // its `init` observes a connected element. A renderItem body that clones a
-    // template instead of calling `createComponent` (composite / plain loops)
-    // leaves it unconsumed, hence the restore below rather than a plain clear.
+    // Fresh row: hand the mount point down so the row's own root — whether a
+    // `createComponent` call or a `mountRowRoot(clone)` — observes a connected
+    // element when the body's tail initialises its children. A body that does
+    // neither (a plain loop's clone) leaves the point unconsumed, hence the
+    // restore below rather than a plain clear.
     //
     // Only touch the ambient when we are the one setting it, and put back what
     // was there rather than `null`: this row's `init` can drive a nested
@@ -259,8 +260,16 @@ function createItemScope<T>(
     const prevRowMount = ownsRowMount ? setRowMountPoint(rowMount) : null
     try {
       primaryEl = renderItem(itemAccessor, index, existingPrimary)
+    } catch (err) {
+      // A row that connected itself and then failed to finish would stay
+      // visible as a half-built row. Detached rows never could, so undo the
+      // connection before rethrowing and keep the failure mode as it was.
+      const parked = rowMount?.mounted
+      if (parked?.parentNode) parked.remove()
+      throw err
     } finally {
       if (ownsRowMount) setRowMountPoint(prevRowMount)
+      if (rowMount) rowMount.mounted = null
     }
     if (existingPrimary) {
       extras = existingExtras ?? []

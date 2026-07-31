@@ -251,9 +251,23 @@ export function emitLoopItemElementSetup(
     indent: string
     /** Single-root layout: 'inline' (plain / branch-plain) or 'multiline' (composite). */
     singleRootLayout: 'inline' | 'multiline'
+    /**
+     * Emit `mountRowRoot(__el)` on the FRESH branch, connecting the row at the
+     * mount point `mapArray` handed down before the body's tail runs.
+     *
+     * Only bodies that initialise something inside the row need it — the tail
+     * is where `useContext` would otherwise resolve against a detached element
+     * and fall through to the global last-writer-wins store. A row with no
+     * nested init has nothing to resolve, so plain loops leave this off and
+     * their emission (and the `mapArrayLazy` measurements) are untouched.
+     *
+     * Never on the hydration branch: that row came from SSR markup and is in
+     * the document already.
+     */
+    mountRow?: boolean
   },
 ): void {
-  const { template, bodyIsMultiRoot, indent, singleRootLayout } = opts
+  const { template, bodyIsMultiRoot, indent, singleRootLayout, mountRow } = opts
   const innerIndent = indent + '  '
   if (bodyIsMultiRoot) {
     lines.push(`${indent}let __el, __extras`)
@@ -264,17 +278,22 @@ export function emitLoopItemElementSetup(
       lines.push(ln)
     }
     lines.push(`${innerIndent}__el.__bfExtras = __extras`)
+    // After the stash: `mountRowRoot` attaches the primary, and an attached
+    // primary makes `itemRootElements`' sibling walk the first thing a lookup
+    // sees — it must find the stash already in place behind it.
+    if (mountRow) lines.push(`${innerIndent}mountRowRoot(__el)`)
     lines.push(`${indent}}`)
     return
   }
   if (singleRootLayout === 'inline') {
     const cloneExpr = emitTemplateCloneInline(template)
-    lines.push(`${indent}const __el = __existing ?? (() => { ${cloneExpr} })()`)
+    const clone = `__existing ?? (() => { ${cloneExpr} })()`
+    lines.push(`${indent}const __el = ${mountRow ? `__existing ?? mountRowRoot((() => { ${cloneExpr} })())` : clone}`)
     return
   }
-  lines.push(`${indent}const __el = __existing ?? (() => {`)
+  lines.push(`${indent}const __el = __existing ?? ${mountRow ? 'mountRowRoot(' : ''}(() => {`)
   for (const ln of emitTemplateCloneLines(template, innerIndent)) lines.push(ln)
-  lines.push(`${indent}})()`)
+  lines.push(`${indent}})()${mountRow ? ')' : ''}`)
 }
 
 /**
