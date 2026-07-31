@@ -70,6 +70,17 @@ describe('collectValueReferencedNames', () => {
     expect(result?.has('target')).toBe(false)
   })
 
+  // Both halves of the MetaProperty exclusion are pinned: `new.target`
+  // above, and `import.meta` here — the one Copilot flagged as uncovered
+  // on #2439. `import.meta.url` also incidentally covers the
+  // property-access half (`url` is excluded too).
+  test('import.meta: "meta" is NOT a reference', () => {
+    const result = collectValueReferencedNames('const u = import.meta.url;')
+    expect(result).not.toBeNull()
+    expect(result?.has('meta')).toBe(false)
+    expect(result?.has('url')).toBe(false)
+  })
+
   test('unparseable text returns null ("cannot answer")', () => {
     const result = collectValueReferencedNames('const x = ;;; {{{ ]]]')
     expect(result).toBeNull()
