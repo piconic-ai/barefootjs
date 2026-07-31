@@ -421,3 +421,67 @@ describe('@barefootjs/router v0', () => {
     ;(window.location as unknown as { assign: typeof origAssign }).assign = origAssign
   })
 })
+
+// --- `<head>` is not managed (#2438) ---------------------------------------
+//
+// The router swaps `[bf-region]` and nothing else; `<head>` is out of scope
+// (`document.title` is written only because the route announcement reads it —
+// see `announceNavigation`). These pin the contract the README documents, and
+// the placement that follows from it: a route-scoped stylesheet belongs
+// *inside* the region, where it enters and leaves with the swap.
+describe('@barefootjs/router — head is not managed', () => {
+  function pageWithHead(head: string, body: string, title = 'Page'): string {
+    return `<!doctype html><html><head><title>${title}</title>${head}</head>
+      <body><header id="hdr">shell</header><main bf-region>${body}</main></body></html>`
+  }
+
+  afterEach(() => {
+    for (const el of Array.from(document.head.querySelectorAll('link, meta'))) el.remove()
+  })
+
+  test('a `<link>` in the incoming `<head>` is neither added nor removed; only the title is written', async () => {
+    // The live page carries a route-scoped sheet in `<head>` — the mistake the
+    // issue reports. The incoming page's head lists a different one.
+    document.head.insertAdjacentHTML('beforeend', '<link id="old-css" rel="stylesheet" href="/page-1.css"><meta name="description" content="page 1">')
+    mockFetch((url) =>
+      url.includes('/blog/2')
+        ? pageWithHead('<link id="new-css" rel="stylesheet" href="/page-2.css"><meta name="description" content="page 2">', '<p>page 2 body</p>', 'page 2')
+        : null,
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    expect(region().textContent).toContain('page 2 body')
+    // Head untouched in both directions: the outgoing sheet still applies and
+    // the incoming one never arrives.
+    expect(document.getElementById('old-css')).not.toBeNull()
+    expect(document.getElementById('new-css')).toBeNull()
+    expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('page 1')
+    // The one head node the router does write, for the announcement.
+    expect(document.title).toBe('page 2')
+  })
+
+  test('a route-scoped `<link>` inside the region enters and leaves with the swap', async () => {
+    mockFetch((url) => {
+      if (url.includes('/editor')) return pageWithHead('', '<link rel="stylesheet" href="/editor.css"><div class="head">editor</div>', 'editor')
+      if (url.includes('/blog/2')) return pageWithHead('', '<p>page 2 body</p>', 'page 2')
+      return null
+    })
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+
+    // Navigating *in*: the sheet arrives with the region content.
+    await navigate('/editor')
+    await flush()
+    expect(region().querySelector('link[href="/editor.css"]')).not.toBeNull()
+    // …and stays out of the head, so nothing accumulates there.
+    expect(document.head.querySelector('link[href="/editor.css"]')).toBeNull()
+
+    // Navigating *out*: the sheet is torn down with the region, so its rules
+    // stop applying to every subsequent route.
+    await navigate('/blog/2')
+    await flush()
+    expect(region().querySelector('link[href="/editor.css"]')).toBeNull()
+    expect(document.querySelector('link[href="/editor.css"]')).toBeNull()
+  })
+})

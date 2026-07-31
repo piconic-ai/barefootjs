@@ -297,6 +297,11 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       current.replaceChildren(fragment)
       swapped.push({ region: current, outgoing })
     }
+    // The only `<head>` node a swap writes, and only because the route
+    // announcement below reads it (`announceNavigation`). `<head>` is otherwise
+    // not reconciled — that is the contract, not an oversight (#2438): a region
+    // is a body subtree, so route-scoped `<link rel="stylesheet">` belongs
+    // inside the region, where it enters and leaves with the swap.
     if (title !== null) document.title = title
 
     // Refresh the per-region baselines to the server render now displayed: from

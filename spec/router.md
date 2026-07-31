@@ -171,5 +171,17 @@ at `@barefootjs/client/runtime` (`disposeScope`/`rehydrateScope`). Neither may s
   the owned-content diff is HTML-structural, so a region split across one of these is not
   yet guaranteed.
 - No scroll restoration; modulepreload links/dedupe set are session-lived (cap later).
+- **`<head>` is not reconciled** ([#2438](https://github.com/piconic-ai/barefootjs/issues/2438)).
+  A region is a *body* subtree; `document.title` is written in step 6 only because the route
+  announcement reads it (`announceNavigation`), not as the start of head management. So
+  route-scoped `<link rel="stylesheet">` belongs **inside** the region — `rel="stylesheet"` is
+  body-ok per HTML, and the sheet then enters and leaves with the swap, needing no head
+  handling and no per-link opt-out. This is the sanctioned placement, not a workaround; it is
+  documented in the router README and pinned by the "head is not managed" tests
+  (`packages/router/__tests__/router.test.ts`). A head-reconciliation opt-in
+  (`startRouter({ head: … })`, or honouring a `bf-head` marker) is deferred, not planned: it
+  earns its keep only for sheets an app genuinely cannot move (emitted by a framework layout),
+  and it must add incoming sheets **before** the swap and remove outgoing ones **after**, or
+  the page paints unstyled in one direction and loses its styles for a frame in the other.
 - **Non-goals:** client route manifest / loader protocol / fragment endpoint; RSC-style
   boundary or non-HTML payload; client-owned Suspense protocol; navigation/content-negotiation header.

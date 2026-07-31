@@ -63,6 +63,40 @@ setup step.
   documents by the attribute value (or `id`). A no-op when no element is marked;
   pass `morph: false` for a plain swap.
 
+## `<head>` is not managed
+
+A swap replaces the region and nothing else — **`<head>` is never
+reconciled**. `document.title` is the one exception, and only because the route
+announcement reads it. Across a soft navigation:
+
+| head node | after navigating |
+| --- | --- |
+| `<title>` | updated (for the announcement) |
+| `<link rel="stylesheet">` | the previous route's |
+| `<link rel="canonical">` | the previous route's |
+| `<meta name="description">` | the previous route's |
+
+The `<meta>` / canonical rows are harmless in practice (crawlers don't soft-
+navigate). A **route-scoped stylesheet** in `<head>` is not: navigating *into*
+the route renders it unstyled (a reload "fixes" it, which points the
+investigation at caching or the build instead of at navigation), and navigating
+*out* leaves the sheet linked, so its rules then apply to every route after it.
+
+Put a route-scoped stylesheet **inside** the region, where it enters and leaves
+with the swap:
+
+```tsx
+<Region>
+  {isEditor ? <link rel="stylesheet" href="/editor.css" /> : null}
+  {children}
+</Region>
+```
+
+`rel="stylesheet"` is body-ok per HTML, so this is valid — and it is the right
+placement under a region-swap contract, not a workaround: no head handling, no
+per-link opt-out, and the route keeps soft navigation. Sheets that are genuinely
+global stay in `<head>`, where never touching them is exactly what you want.
+
 ## Scope
 
 A **single authored region** (the broadest `[bf-region]` match), correct by
