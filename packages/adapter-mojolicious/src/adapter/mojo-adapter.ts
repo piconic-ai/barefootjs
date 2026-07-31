@@ -64,6 +64,7 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
+  derivesScopeFromSlot,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher } from '@barefootjs/jsx'
@@ -170,7 +171,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<MojoAdapterOptions>
   private errors: CompilerError[] = []
-  private inLoop: boolean = false
   /**
    * `IRLoop.depth` of the loop currently being rendered (save/restore
    * around `renderChildren(loop.children)`, mirroring `inLoop` above).
@@ -939,13 +939,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
-    const prevInLoop = this.inLoop
-    this.inLoop = true
     const prevLoopKeyDepth = this.currentLoopKeyDepth
     this.currentLoopKeyDepth = loop.depth
     const renderedChildren = this.renderChildren(loop.children)
     this.currentLoopKeyDepth = prevLoopKeyDepth
-    this.inLoop = prevInLoop
 
     // Whole-item conditional (#1665): prepend an always-present
     // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
@@ -1168,10 +1165,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
       if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const prevInLoop = this.inLoop
-        this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
-        this.inLoop = prevInLoop
         // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
         // A JSX prop name can contain characters (`data-slot`) that aren't a
         // valid Perl variable token, and `comp.slotId` alone would collide
@@ -1186,9 +1180,10 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       const lowered = emitAttrValue(p.value, this.componentPropEmitter, p.name)
       if (lowered) propParts.push(lowered)
     }
-    // Pass slot ID so the child renderer can set correct scope ID for hydration
-    // Skip for loop children — they use ComponentName_random pattern instead
-    if (comp.slotId && !this.inLoop) {
+    // Pass slot ID so the child renderer can set correct scope ID for
+    // hydration. Skipped for a loop item root — it uses ComponentName_random
+    // instead (#2444).
+    if (derivesScopeFromSlot(comp)) {
       propParts.push(`_bf_slot => '${comp.slotId}'`)
     }
     const propsStr = propParts.length > 0 ? ', ' + propParts.join(', ') : ''
@@ -1215,10 +1210,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
       // `render_child` would let the inner `%>` close the outer tag.
       // `render_child` materializes the resulting CODE ref into the
       // captured Mojo::ByteStream.
-      const prevInLoop = this.inLoop
-      this.inLoop = false
       const childrenBody = this.renderChildren(effectiveChildren)
-      this.inLoop = prevInLoop
       const varName = `$bf_children_${comp.slotId ?? 'c' + this.childrenCaptureCounter++}`
       return `${namedSlotCaptures.join('')}<% my ${varName} = begin %>${childrenBody}<% end %><%== bf->render_child('${tplName}'${propsStr}, children => ${varName}) %>`
     }

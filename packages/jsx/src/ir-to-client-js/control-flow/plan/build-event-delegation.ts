@@ -44,7 +44,7 @@ export function buildDynamicLoopDelegationPlan(
       // which throws since `t` is a plain object in this scope.
       mapPreamble: elem.preamble
         ? renderPreamble(elem.preamble, {
-            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined),
           })
         : null,
       mapPreambleDeclaredNames: elem.preamble?.declaredNames ?? [],
@@ -76,7 +76,7 @@ export function buildBranchLoopDelegationPlan(
       // loopParams spec — leaf refs must stay in plain-object form here.
       mapPreamble: loop.preamble
         ? renderPreamble(loop.preamble, {
-            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined),
           })
         : null,
       mapPreambleDeclaredNames: loop.preamble?.declaredNames ?? [],
@@ -109,7 +109,7 @@ export function buildStaticArrayDelegationPlan(
       // loopParams spec — leaf refs must stay in plain-object form here.
       mapPreamble: elem.preamble
         ? renderPreamble(elem.preamble, {
-            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined, true),
+            renderLeaf: (ir) => irToHtmlTemplate(ir, undefined, 1, undefined, undefined),
           })
         : null,
       mapPreambleDeclaredNames: elem.preamble?.declaredNames ?? [],

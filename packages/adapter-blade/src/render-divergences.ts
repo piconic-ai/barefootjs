@@ -19,14 +19,4 @@ export const renderDivergences: RenderDivergences = {
   // `evaluateSignalInit` (`@barefootjs/jsx`, sandboxed real-JS evaluation
   // instead of a fixed regex-shape catalogue) now correctly seeds `todos`
   // from `(props.initialTodos ?? []).map(t => ({ ...t, editing: false }))`.
-
-  // #2444: a child component nested inside a dynamic loop row whose root
-  // is a plain element (`composite` loop plan + `nestedComponents`) is
-  // rendered through the runtime's `render_child`, which mints its own
-  // `Badge_<random>` scope id instead of deriving the parent-scope +
-  // mount-slot id (`test_s0`) the Hono reference emits. Content is
-  // correct; only `bf-s` diverges. Same class as the `grandchild-
-  // composition` CSR skip.
-  'composite-row-child-component':
-    'a child component nested inside a dynamic loop row gets a random `Name_<id>` scope id from `render_child` instead of the parent-derived `<parent>_s0` the reference emits (https://github.com/piconic-ai/barefootjs/issues/2444)',
 }

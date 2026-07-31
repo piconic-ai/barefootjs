@@ -235,9 +235,18 @@ function materializeComponent(
   // already the inner component's root with its own bf-s. Don't overwrite
   // it (scopeId stays null), or `$c(__scope, 's0')` from the wrapper's
   // init resolves to null.
+  //
+  // `slot` is only supplied by `upsertChild` / `upsertChildItem` mounting a
+  // component nested below a loop row root — the SSR reference (Hono)
+  // derives that child's `bf-s` from `${hostScope}_${mountSlot}` rather
+  // than randomizing it (#2444), so CSR must match or the primary
+  // `(bf-h, bf-m)` SSR-scope lookup never finds the CSR-created element.
+  // A row root itself is never passed a `slot`, so it keeps its own
+  // random id, matching the reference behaviour.
   const def = getRegisteredDef(name)
   const isCommentWrapper = def?.comment === true
-  const scopeId = isCommentWrapper ? null : `${name}_${generateId()}`
+  const derivedScopeId = slot?.parent && slot.mount ? `${slot.parent}_${slot.mount}` : null
+  const scopeId = isCommentWrapper ? null : (derivedScopeId ?? `${name}_${generateId()}`)
 
   // 5. Generate HTML from props.
   //
@@ -246,13 +255,18 @@ function materializeComponent(
   // bf-m on child components — matching the SSR convention so a later
   // `$c(scope, 'sN')` lookup resolves them. Without this, CSR-created
   // children carry a random prefix and their event handlers never wire
-  // up (#1627). `slot.parent` takes precedence so hoisted-children
-  // placeholders (#1320) still resolve to the calling site's scope.
+  // up (#1627). `scopeId` takes precedence over `slot.parent` — once a
+  // slotted component derives its OWN scope id (above), that derived id
+  // is what ITS children must nest under, not the grandparent's `slot.parent`
+  // (that used to collapse a third composition level back onto the second,
+  // #2444's `grandchild-composition` case). A comment wrapper keeps
+  // `scopeId === null` and falls through to `slot?.parent`, preserving the
+  // hoisted-children placeholder resolution (#1320).
   const prevParentScopeId = _parentScopeId
-  if (slot?.parent) {
-    _parentScopeId = slot.parent
-  } else if (scopeId) {
+  if (scopeId) {
     _parentScopeId = scopeId
+  } else if (slot?.parent) {
+    _parentScopeId = slot.parent
   }
   let html: string
   try {
@@ -416,11 +430,31 @@ export function renderChild(
     return `<div ${bfsAttr}${slotAttrs}${keyAttr}></div>`
   }
 
+  // NOTE: does NOT push `_parentScopeId` to this child's own derived scope
+  // while `templateFn` evaluates. That was tried (deriving a GRANDCHILD's
+  // scope from this scope rather than the caller's, to fix a third
+  // composition level collapsing onto the second — `grandchild-composition`)
+  // but it collides with `comment: true` wrapper transparency (#1211
+  // synthesized inline-JSX-callback wrappers, e.g. a `renderNode` callback
+  // prop): such a wrapper's OWN scope element IS its single child's element,
+  // and its init resolves itself via `$c(scope, 's0')`'s short-suffix
+  // self-match fallback (`query.ts`'s `$cSingle`). Pushing this scope makes
+  // a nested descendant of that SAME child derive `..._s0_s0` whenever the
+  // descendant's own first slot id also happens to be `s0` — the PRECISE
+  // suffix match then finds that unrelated descendant instead of falling
+  // through to the self-match, silently misrouting `initChild` (confirmed
+  // via `site/ui`'s xyflow Highlight-Depth demo, where this broke the
+  // `--node-glow` style effect). `grandchild-composition` stays a known
+  // limitation (CSR conformance skip) until the self-match lookup can be
+  // made unambiguous against a nested descendant sharing the same slot
+  // suffix.
+  const raw = templateFn(props)
+
   // The placeholder substitution is anchored to the exact `bf-s="…"`
   // shape so user content that contains the sentinel as text survives
   // unchanged. When `_parentScopeId` is null (top-level render) the
   // attribute strips rather than emitting `bf-s=""`. (#1320)
-  let html = templateFn(props).trim().replace(
+  let html = raw.trim().replace(
     PLACEHOLDER_ATTR_PATTERN,
     _parentScopeId ? ` bf-s="${_parentScopeId}"` : '',
   )

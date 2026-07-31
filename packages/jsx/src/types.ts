@@ -1002,6 +1002,20 @@ export interface IRComponent {
    * Omitted (undefined) for ordinary components to keep IR diffs minimal.
    */
   dynamicTag?: boolean
+  /**
+   * True when this component is a DIRECT member of an `IRLoop.children`
+   * array (the loop's row-root component, e.g. `{rows().map(r => <Row/>)}`).
+   * Such a component owns its own per-row identity and gets a freshly
+   * randomized `bf-s` — it does NOT derive its scope id from the parent
+   * scope + mount slot the way an ordinarily-slotted child does.
+   *
+   * A component nested *below* the row root (e.g. `<li><Badge/></li>` where
+   * `<li>` is the loop row root) is NOT marked — it derives its scope id
+   * from parent scope + slot like any other slotted child. See
+   * `derivesScopeFromSlot` in `./adapters/child-scope.ts`, which is the one
+   * predicate every backend must consult instead of re-deriving this fact.
+   */
+  loopItemRoot?: boolean
   loc: SourceLocation
 }
 

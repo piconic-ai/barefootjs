@@ -235,20 +235,21 @@ describe('CSR Conformance Tests', () => {
     //     `__BF_PARENT_SCOPE__` placeholder still embedded) instead of
     //     real markup.
     'jsx-element-prop',
-    //   - `grandchild-composition`: the third composition level reuses the
-    //     parent's scope id (`test_s0`) in CSR instead of deriving
-    //     `test_s0_s0` as SSR does.
-    'grandchild-composition',
-    //   - `composite-row-child-component`: a child component nested inside
-    //     a dynamic loop row (row root is a plain element) gets a fresh
-    //     random `Badge_<id>` scope id in CSR instead of the parent-derived
-    //     `test_s0` SSR emits. Same class as `grandchild-composition`
-    //     above; tracked with the SSR-side half in #2444.
-    'composite-row-child-component',
     //   - `nested-fragments`: a multi-root fragment attaches `bf-s` to its
     //     first element in CSR, while SSR carries the scope on a
     //     `<!--bf-scope:...-->` comment the normalizer strips.
     'nested-fragments',
+    //   - `grandchild-composition`: the third composition level reuses the
+    //     parent's scope id (`test_s0`) in CSR instead of deriving
+    //     `test_s0_s0` as SSR does. #2444 fixed the sibling
+    //     `composite-row-child-component` case but this one stays a known
+    //     limitation — deriving it via `renderChild`'s `_parentScopeId`
+    //     push collided with `comment: true` wrapper self-lookup
+    //     (`$cSingle`'s short-suffix fallback in `query.ts`), breaking
+    //     hydration for a `renderNode`-style callback prop whose inner
+    //     component's own first slot id coincides with the wrapper's slot
+    //     number (see `site/ui`'s xyflow Highlight-Depth demo regression).
+    'grandchild-composition',
   ])
 
   for (const fixture of jsxFixtures) {

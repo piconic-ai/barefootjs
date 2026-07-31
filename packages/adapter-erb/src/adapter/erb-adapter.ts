@@ -93,6 +93,7 @@ import {
   dangerousInnerHtmlMetacharViolation,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
+  derivesScopeFromSlot,
 } from '@barefootjs/jsx'
 import { isAriaBooleanAttr, isBooleanResultExpr, isExplicitStringCall } from './boolean-result.ts'
 import type { ParsedExpr, LoweringMatcher, LoopBindingPathSegment } from '@barefootjs/jsx'
@@ -182,7 +183,6 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   private rootScopeNodes: Set<IRNode> = new Set()
   private options: Required<ErbAdapterOptions>
   private errors: CompilerError[] = []
-  private inLoop: boolean = false
   /**
    * `IRLoop.depth` of the loop currently being rendered (save/restore
    * around `renderChildren(loop.children)`, mirroring `inLoop` above).
@@ -984,13 +984,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
-    const prevInLoop = this.inLoop
-    this.inLoop = true
     const prevLoopKeyDepth = this.currentLoopKeyDepth
     this.currentLoopKeyDepth = loop.depth
     const renderedChildren = this.renderChildren(loop.children)
     this.currentLoopKeyDepth = prevLoopKeyDepth
-    this.inLoop = prevInLoop
 
     // Whole-item conditional: prepend an always-present
     // `<!--bf-loop-i:KEY-->` anchor before each item's (possibly empty)
@@ -1231,10 +1228,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // SSR (Hono renders neither; the client JS wires them at hydration).
       if ((p.name.match(/^on[A-Z]/) || p.name === 'ref') && p.value.kind === 'expression') continue
       if (p.value.kind === 'jsx-children' && p.name !== 'children') {
-        const prevInLoop = this.inLoop
-        this.inLoop = false
         const slotBody = this.renderChildren(p.value.children)
-        this.inLoop = prevInLoop
         // Purely counter-based — NOT derived from `p.name` or `comp.slotId`.
         // A JSX prop name can contain characters (`data-slot`) that aren't
         // valid in a Ruby local variable name, and `comp.slotId` alone
@@ -1255,9 +1249,9 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       if (lowered) propParts.push(lowered)
     }
     // Pass slot ID so the child renderer can set correct scope ID for
-    // hydration. Skip for loop children — they use ComponentName_random
-    // pattern instead.
-    if (comp.slotId && !this.inLoop) {
+    // hydration. Skipped for a loop item root — it uses the
+    // ComponentName_random pattern instead (#2444).
+    if (derivesScopeFromSlot(comp)) {
       propParts.push(`${rubySymbolKey('_bf_slot')} '${comp.slotId}'`)
     }
     const tplName = this.toTemplateName(comp.name)
@@ -1282,10 +1276,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // tags and the children — the slice captures byte-for-byte whatever
       // `_erbout` gained in between, so any interposed template text would
       // leak into (or out of) the capture.
-      const prevInLoop = this.inLoop
-      this.inLoop = false
       const childrenBody = this.renderChildren(effectiveChildren)
-      this.inLoop = prevInLoop
       const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
       const lenVar = `__bf_len_${suffix}`
       const capVar = `__bf_children_${suffix}`

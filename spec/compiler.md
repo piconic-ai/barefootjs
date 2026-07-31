@@ -705,7 +705,7 @@ This subsection pins the evaluator's contract so the backends stay byte-isomorph
 Child components produce `IRComponent` nodes. The adapter emits a call to the runtime's child-render mechanism (e.g., `render_child('name', prop => val)`). Key rules:
 
 - **Skip `onXxx` callback props** — Event handler props (names matching `/^on[A-Z]/`) are client-only and should be omitted from SSR output.
-- **Pass `_bf_slot` for static children** — Non-loop children have unique `slotId`s. Pass this to the child renderer so it can set the correct scope ID (`{parentScope}_{slotId}`). Loop children use `{ChildName}_{random}` pattern instead.
+- **Pass `_bf_slot` for slotted children** — A component derives its scope id from `{parentScope}_{slotId}` (`_bf_slot`) UNLESS it is a loop item root — the DIRECT root of a `.map()` row (`IRComponent.loopItemRoot`, set once in `jsx-to-ir.ts`'s loop builder). A loop item root owns its own per-row identity and gets the `{ChildName}_{random}` pattern instead; a component nested BELOW the row root (e.g. `<li><Badge/></li>`) still derives from its slot like any other slotted child (#2444). Every backend — each DSL adapter, Hono, and the CSR template emitters — consults the single shared predicate `derivesScopeFromSlot()` (`packages/jsx/src/adapters/child-scope.ts`) for this decision instead of an "am I inside a loop" flag, which can't distinguish a row root from a nested descendant.
 - **`scriptBaseName` for in-file children** — Non-default-export components in the same file should register the default export's `.client.js` file, not their own.
 
 #### `bf-p` Props Serialization
