@@ -4413,7 +4413,13 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
   )
 }
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
-    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(1)
+    const bf101s = (result.errors ?? []).filter(e => e.code === 'BF101')
+    expect(bf101s).toHaveLength(1)
+    // Copilot review (PR #2451): the error must point at the prop's own
+    // source location, not `convertExpressionToGo`'s internal `makeLoc()`
+    // placeholder (always line 1, column 0) — the loop-dependence gate
+    // repoints it before continuing.
+    expect(bf101s[0]!.loc.start.line).toBeGreaterThan(1)
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
     expect(template).toContain('{{template "Badge" $.BadgeSlot0}}')
     expect(template).not.toContain('bf_with_props')

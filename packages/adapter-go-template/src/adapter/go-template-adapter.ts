@@ -5058,7 +5058,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // here would silently clobber the field with an empty string (or,
         // for a non-string field, fail at template EXECUTE time instead of
         // this compile time). Leave the prop on the constructor path; the
-        // reported error already surfaces the real problem.
+        // reported error already surfaces the real problem. `loc` defaults
+        // to `convertExpressionToGo`'s own `this.makeLoc()` placeholder —
+        // repoint the newly-pushed error(s) at the prop's real source
+        // location, same as the fragment-refusal error below.
+        for (let i = errorCountBefore; i < this.state.errors.length; i++) {
+          this.state.errors[i].loc = prop.loc
+        }
         continue
       }
       // A ternary / single-interpolation template literal with STRING-typed
