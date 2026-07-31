@@ -14,12 +14,19 @@ import { createFixture } from '../src/types'
  * had `nestedComponents === 0`, and no client-JS snapshot contained both
  * `mapArray` and `upsertChild`.
  *
- * Hono, every DSL adapter, and CSR all match (#2444 — the scope id of a
- * component nested below the loop row root now derives from
- * `<parent>_<slot>`, same as any other slotted child). Go still diverges
- * and is declared as a render divergence:
- *   - #2445 — Go hoists ONE `BadgeSlot0` props value outside `{{range}}`
- *     with no per-row data, so every row renders an empty badge.
+ * Every adapter now matches:
+ *   - #2444 — Hono, every DSL adapter, and CSR: the scope id of a
+ *     component nested below the loop row root now derives from
+ *     `<parent>_<slot>`, same as any other slotted child (previously a
+ *     freshly randomized `Badge_<id>` via `render_child` — content was
+ *     always correct, only `bf-s` diverged).
+ *   - #2445 — Go template: the shared `BadgeSlot0` props instance built
+ *     outside `{{range}}` is now overridden per row, at
+ *     template-execution time, via the `bf_with_props` runtime helper —
+ *     see `packages/adapter-go-template/runtime/bf.go`. A NARROWER residual
+ *     gap (a child field DERIVED from the overridden prop, e.g. a memo,
+ *     doesn't update per row — this fixture's `Badge` has no such field) is
+ *     tracked separately as #2448, not by a divergence entry here.
  */
 export const fixture = createFixture({
   id: 'composite-row-child-component',

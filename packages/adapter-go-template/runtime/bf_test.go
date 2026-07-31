@@ -2230,3 +2230,118 @@ func TestFormatDateUnresolvableTZ(t *testing.T) {
 		t.Errorf("FormatDate(Asia/Tokyo) = (%q, %v), want (\"2024-01-02\", nil)", s, err)
 	}
 }
+
+// #2445: bf_with_props is the props-argument sibling of bf_with_children —
+// a child component nested inside a composite loop row shares ONE
+// constructor-built Props instance across rows, so a prop that depends on
+// the row is reapplied per row via this helper inside {{range}}.
+func TestWithProps(t *testing.T) {
+	type BadgeProps struct {
+		ScopeID string
+		Text    string
+		Count   int
+		Note    interface{}
+	}
+
+	t.Run("overrides a string field and leaves the original untouched", func(t *testing.T) {
+		original := BadgeProps{ScopeID: "test_s0", Text: "one"}
+		got, err := WithProps(original, "Text", "two")
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		copy, ok := got.(BadgeProps)
+		if !ok {
+			t.Fatalf("WithProps returned %T, want BadgeProps", got)
+		}
+		if copy.Text != "two" {
+			t.Errorf("copy.Text = %q, want %q", copy.Text, "two")
+		}
+		if copy.ScopeID != "test_s0" {
+			t.Errorf("copy.ScopeID = %q, want unchanged %q", copy.ScopeID, "test_s0")
+		}
+		if original.Text != "one" {
+			t.Errorf("original.Text = %q, want unchanged %q (by-value semantics)", original.Text, "one")
+		}
+	})
+
+	t.Run("overrides multiple fields, including a numeric one", func(t *testing.T) {
+		got, err := WithProps(BadgeProps{}, "Text", "hi", "Count", 5)
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		copy := got.(BadgeProps)
+		if copy.Text != "hi" || copy.Count != 5 {
+			t.Errorf("WithProps(Text, Count) = %+v, want Text=hi Count=5", copy)
+		}
+	})
+
+	t.Run("sets an interface-typed field", func(t *testing.T) {
+		got, err := WithProps(BadgeProps{}, "Note", 42)
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		copy := got.(BadgeProps)
+		if copy.Note != 42 {
+			t.Errorf("copy.Note = %v, want 42", copy.Note)
+		}
+	})
+
+	t.Run("nil value zeroes the field", func(t *testing.T) {
+		got, err := WithProps(BadgeProps{Note: "was set"}, "Note", nil)
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		copy := got.(BadgeProps)
+		if copy.Note != nil {
+			t.Errorf("copy.Note = %v, want nil", copy.Note)
+		}
+	})
+
+	t.Run("unknown field name passes through unchanged for that pair", func(t *testing.T) {
+		original := BadgeProps{Text: "kept"}
+		got, err := WithProps(original, "NoSuchField", "ignored")
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		copy := got.(BadgeProps)
+		if copy.Text != "kept" {
+			t.Errorf("copy.Text = %q, want unchanged %q", copy.Text, "kept")
+		}
+	})
+
+	t.Run("odd key/value arity errors", func(t *testing.T) {
+		if _, err := WithProps(BadgeProps{}, "Text"); err == nil {
+			t.Error("WithProps with odd kv count: want error, got nil")
+		}
+	})
+
+	t.Run("non-string field name errors", func(t *testing.T) {
+		if _, err := WithProps(BadgeProps{}, 1, "x"); err == nil {
+			t.Error("WithProps with non-string field name: want error, got nil")
+		}
+	})
+
+	t.Run("non-struct props pass through unchanged", func(t *testing.T) {
+		got, err := WithProps("not a struct", "Text", "x")
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		if got != "not a struct" {
+			t.Errorf("WithProps(non-struct) = %v, want passthrough", got)
+		}
+	})
+
+	t.Run("string-kind target covers template.HTML too", func(t *testing.T) {
+		type HTMLProps struct {
+			Body template.HTML
+		}
+		got, err := WithProps(HTMLProps{}, "Body", "<b>hi</b>")
+		if err != nil {
+			t.Fatalf("WithProps returned error: %v", err)
+		}
+		copy := got.(HTMLProps)
+		if copy.Body != template.HTML("<b>hi</b>") {
+			t.Errorf("copy.Body = %q, want %q", copy.Body, "<b>hi</b>")
+		}
+	})
+}
