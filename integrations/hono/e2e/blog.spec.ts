@@ -83,3 +83,39 @@ test('v2 nested: the outer toolbar region persists while the inner content swaps
   expect(await page.locator('.reader-toolbar .v').innerText()).toBe('3') // outer region kept
   expect(await marker(page, '.reader-toolbar')).toBe('KEEP') // same node
 })
+
+test('v2.5: head metadata is reconciled across a soft navigation', async ({ page }) => {
+  const meta = (sel: string) => page.getAttribute(sel, 'content')
+  const canonical = () => page.getAttribute('link[rel="canonical"]', 'href')
+
+  await page.goto(BLOG, { waitUntil: 'networkidle' })
+  expect(await meta('meta[name="description"]')).toContain('latest')
+  expect(await canonical()).toBe(BLOG)
+  // Mark the shell so the assertions below can't be satisfied by a full reload.
+  await mark(page, 'header.shell')
+
+  await page.click('.sortable-list li:first-child .item-link')
+  await page.waitForSelector('.island.like', { timeout: 3000 })
+
+  expect(await marker(page, 'header.shell')).toBe('KEEP') // soft navigation, not a reload
+  const title = await page.title()
+  expect(title).toContain('Barefoot Blog')
+  // The article's metadata replaced the index's, in place.
+  const description = await meta('meta[name="description"]')
+  expect(description).toContain('post 1 of')
+  expect(await meta('meta[property="og:title"]')).toBe(title)
+  expect(await canonical()).toContain('/posts/')
+  expect(await page.locator('meta[name="description"]').count()).toBe(1)
+  expect(await page.locator('link[rel="canonical"]').count()).toBe(1)
+
+  // …and back again, so the reconciliation is not one-directional.
+  await page.click('.post .back')
+  await page.waitForSelector('.sortable-list li', { timeout: 3000 })
+  expect(await marker(page, 'header.shell')).toBe('KEEP')
+  expect(await meta('meta[name="description"]')).toContain('latest')
+  expect(await canonical()).toBe(BLOG)
+
+  // Outside the allowlist: untouched throughout.
+  expect(await meta('meta[name="viewport"]')).toContain('width=device-width')
+  expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0)
+})

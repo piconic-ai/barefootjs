@@ -70,13 +70,13 @@ setup step.
 A region is a **body** subtree, so `<head>` is not swapped wholesale. It splits
 in two, and the split is the whole contract.
 
-### Page metadata — reconciled on every swap, no opt-in
+### Page metadata — reconciled on every swap, always
 
 Page metadata is page-scoped by definition, so the router brings a closed
-allowlist of it in line with the incoming document. There is no option to turn
-on: a stale `<meta name="description">` is wrongness you *cannot see* in
-development (unlike the tab title), and this package doesn't leave that class
-opt-in.
+allowlist of it in line with the incoming document. This always runs and there
+is no flag to disable it: a stale `<meta name="description">` is wrongness you
+*cannot see* in development (unlike the tab title), and this package doesn't
+leave that class opt-in.
 
 | head node | key |
 | --- | --- |

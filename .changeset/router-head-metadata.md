@@ -11,7 +11,8 @@ route's `<meta name="description">`, `og:`/`twitter:` cards, and
 unlike the tab title.
 
 A swap now brings a **closed allowlist** of page metadata in line with the
-incoming document, with no option to turn on. Present in both → replaced
+incoming document. It always runs — there is no flag to disable it. Present in
+both → replaced
 (skipped when the nodes are already equal, so metadata shared across routes
 causes no DOM churn); only incoming → added; only current → removed, so nothing
 leaks forward into later routes.

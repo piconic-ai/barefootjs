@@ -514,6 +514,45 @@ describe('@barefootjs/router — head metadata reconciliation', () => {
     expect(document.head.querySelector('meta[name="description"]:not([data-bf-head])')?.getAttribute('content')).toBe('page 2')
   })
 
+  test('key attributes are case- and whitespace-insensitive, so a slot is replaced in place', async () => {
+    // The same logical slot, spelled differently on each side (`hreflang` is a
+    // BCP 47 tag and `type` a MIME type — both case-insensitive). Keyed
+    // verbatim the two miss each other, and the slot is rebuilt (old removed,
+    // new appended at the end of `<head>`) instead of replaced where it stands.
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<link rel="Alternate" hreflang=" en-US " type="TEXT/HTML" href="/en/blog/1">' +
+        '<meta name="keywords" content="barefoot">',
+    )
+    mockFetch((url) =>
+      url.includes('/blog/2')
+        ? pageWithHead(
+            '<link rel="alternate" hreflang="en-us" type="text/html" href="/en/blog/2">' +
+              '<meta name="keywords" content="barefoot">',
+            '<p>page 2 body</p>',
+            'page 2',
+          )
+        : null,
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    // One slot, carrying the incoming value — true either way, since a missed
+    // key still removes the stale node rather than leaving a duplicate.
+    const alternates = Array.from(document.head.querySelectorAll('link')).filter(
+      (el) => (el.getAttribute('rel') ?? '').trim().toLowerCase() === 'alternate',
+    )
+    expect(alternates.length).toBe(1)
+    expect(alternates[0].getAttribute('href')).toBe('/en/blog/2')
+    // The part that needs the normalization: it kept its position. A missed key
+    // appends, which would put it after the `keywords` meta it preceded.
+    const order = Array.from(document.head.children)
+    expect(order.indexOf(alternates[0])).toBeLessThan(
+      order.indexOf(document.head.querySelector('meta[name="keywords"]') as Element),
+    )
+  })
+
   test('metadata identical across routes is left alone (no DOM churn)', async () => {
     document.head.insertAdjacentHTML('beforeend', '<meta property="og:site_name" content="Example">')
     // Mark the live node so survival is checked by identity, not by value.

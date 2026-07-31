@@ -36,13 +36,23 @@ const importMap = JSON.stringify({
   },
 })
 
-const blogRenderer = jsxRenderer(({ children, title }) => {
+const blogRenderer = jsxRenderer(({ children, title, description, canonical }) => {
   return (
     <html lang="en" data-theme="dark">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title ?? 'Barefoot Blog'}</title>
+        {/*
+          Per-route metadata, so a soft navigation has something to reconcile
+          besides the title (#2438). The router replaces these against the
+          incoming document and removes any that the next route omits — an
+          ordinary server render, no client-side metadata API. `charset` and
+          `viewport` sit outside the allowlist and are never touched.
+        */}
+        <meta name="description" content={description ?? 'A BarefootJS router showcase.'} />
+        <meta property="og:title" content={title ?? 'Barefoot Blog'} />
+        <link rel="canonical" href={canonical ?? BASE} />
         <script type="importmap" dangerouslySetInnerHTML={{ __html: importMap }} />
         <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/blog.css`} />
       </head>
@@ -88,6 +98,9 @@ blog.get('/', (c) => {
   const tag = c.req.query('tag')
   const items = listItems
   const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
+  const description = tag
+    ? `Every Barefoot Blog post tagged #${tag}.`
+    : `The latest ${items.length} posts from the Barefoot Blog.`
   return c.render(
     <>
       <PostList items={items} tags={allTags} base={BASE} />
@@ -96,7 +109,7 @@ blog.get('/', (c) => {
           list and a post — it keeps playing instead of resetting on "← All posts". */}
       <NowPlaying />
     </>,
-    { title },
+    { title, description, canonical: BASE },
   )
 })
 
@@ -123,6 +136,10 @@ blog.get('/posts/:slug', (c) => {
       nextSlug={next?.slug}
       nextTitle={next?.title}
     />,
-    { title: `${p.title} — Barefoot Blog` },
+    {
+      title: `${p.title} — Barefoot Blog`,
+      description: `${p.title} — post ${position} of ${total}, tagged ${p.tags.map((t) => `#${t}`).join(' ')}.`,
+      canonical: `${BASE}/posts/${p.slug}`,
+    },
   )
 })
