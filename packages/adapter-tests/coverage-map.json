@@ -2561,6 +2561,19 @@
         "text"
       ]
     },
+    "loop-row-static-conditional": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop"
+      ]
+    },
     "map-array-builder-body": {
       "kinds": [
         "identifier",
@@ -4621,13 +4634,13 @@
     "array-method": 65,
     "arrow": 63,
     "binary": 77,
-    "call": 181,
+    "call": 182,
     "conditional": 22,
-    "identifier": 267,
+    "identifier": 268,
     "index-access": 12,
     "literal": 219,
     "logical": 43,
-    "member": 146,
+    "member": 147,
     "object-literal": 51,
     "template-literal": 29,
     "unary": 22,

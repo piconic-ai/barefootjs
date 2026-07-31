@@ -20,8 +20,10 @@
 import { freeIdentifiers, parseExpression } from '../../../expression-parser.ts'
 import { pickAttrMeta, type AttrMeta } from '../../../types.ts'
 import { extractFreeIdentifiersFromText } from '../../csr-substitute.ts'
+import { addCondAttrToTemplate } from '../../html-template.ts'
 import { wrapLoopParamAsAccessor, PROPS_PARAM } from '../../utils.ts'
 import type { BranchLoop, ClientJsContext, TopLevelLoop } from '../../types.ts'
+import { analyzeLazyConditional, type LazyConditionalFacts } from './lazy-conditional.ts'
 import { analyzeLazyPreamble } from './lazy-preamble.ts'
 import {
   classifyLazyBinding,
@@ -58,6 +60,25 @@ export interface LazyRowTextBinding {
    * §9.3(1) read-compare-write seeding, which needs the RW claim door
    * (`LazyRowPlanData.textNeedsRead`).
    */
+  readsOuter: boolean
+}
+
+/** One row conditional driven from the loop-level apply bodies (§9.5). */
+export interface LazyRowConditionalBinding {
+  slotId: string
+  /** Already wrapped via `wrapLoopParamAsAccessor` — reads `<param>()`. */
+  wrappedCondition: string
+  whenTrueHtml: string
+  whenFalseHtml: string
+  /**
+   * Index into `entry.refs` holding the `[bf-c]` element. Always claimed ON
+   * DEMAND — `createRow` never seeds it, because the row it just cloned already
+   * rendered the correct arm and has no swap to perform.
+   */
+  refIndex: number
+  /** Index into `entry.last` holding this conditional's dedup boolean. */
+  ordinal: number
+  readsItem: boolean
   readsOuter: boolean
 }
 
@@ -102,6 +123,12 @@ export interface LazyRowPlanData {
    * refuses the loop outright — see `lazyRowEligibility`'s per-binding gate.
    */
   preambleStatements: string
+  /**
+   * Row conditionals driven from the apply bodies (§9.5, `lazy-conditional.ts`).
+   * Empty for most loops. Each arm is a static element, so the emitter hoists
+   * both parsed once per loop and clones on a flip.
+   */
+  conditionals: readonly LazyRowConditionalBinding[]
 }
 
 export interface BuildLazyRowArgs {
@@ -145,6 +172,21 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
   // inherits the preamble's dependencies rather than its own literal names.
   const primableNames = new Set<string>([...scope.signals.keys(), ...scope.memos])
   const preambleAnalysis = analyzeLazyPreamble(loop.preamble, args.indexParam, primableNames)
+
+  // §9.5 conditional widening: a row conditional whose arms are wiring-free
+  // static elements is driven from the apply bodies instead of a per-row
+  // `insert()` effect. The FIRST refusal wins, so the gate names one shape.
+  const rawConditionals = loop.bindings.conditionals ?? []
+  const condFacts: LazyConditionalFacts[] = []
+  let conditionalRefusal: string | null = null
+  for (const cond of rawConditionals) {
+    const verdict = analyzeLazyConditional(cond, args.indexParam, {
+      whenTrueHtml: addCondAttrToTemplate(wrap(cond.whenTrueHtml), cond.slotId),
+      whenFalseHtml: addCondAttrToTemplate(wrap(cond.whenFalseHtml), cond.slotId),
+    })
+    if (!verdict.lazySafe) { conditionalRefusal = verdict.reason; break }
+    condFacts.push(verdict.facts)
+  }
   const preambleFacts = preambleAnalysis.lazySafe ? preambleAnalysis.facts : undefined
 
   // --- classify every binding -------------------------------------------
@@ -178,6 +220,24 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
     classified.push(c)
   })
 
+  const condClass = new Map<number, ClassifiedLazyBinding>()
+  condFacts.forEach((c, i) => {
+    // Classified like any other binding: a condition reading an outer signal
+    // must land in `applyOuter` AND get that signal onto the prime list, or the
+    // loop-level effect would never subscribe to it.
+    const k = classifyLazyBinding({
+      kind: 'attr',
+      slotId: c.slotId,
+      free: rawConditionals[i].conditionFreeIdentifiers ?? null,
+      rowLocalNames,
+      indexParam: args.indexParam,
+      scope,
+      preamble: preambleFacts,
+    })
+    condClass.set(i, k)
+    classified.push(k)
+  })
+
   // --- §9.4 gate ---------------------------------------------------------
   const shape: LazyRowShapeFacts = {
     callSite: args.callSite,
@@ -185,7 +245,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
     anchored: args.anchored,
     bodyIsMultiRoot: loop.bodyIsMultiRoot ?? false,
     hasExplicitKey: loop.key != null,
-    conditionalCount: loop.bindings.conditionals?.length ?? 0,
+    conditionalRefusal,
     childRefCount: loop.bindings.refs?.length ?? 0,
     nestedComponentCount: loop.nestedComponents?.length ?? 0,
     innerLoopCount: loop.innerLoops?.length ?? 0,
@@ -245,6 +305,28 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
     }
   }
 
+  // Conditional refs live PAST the door, and are claimed on demand — the row
+  // `createRow` just cloned already rendered the correct arm, so there is
+  // nothing for it to seed or swap (see `LazyRowConditionalBinding.refIndex`).
+  const condRefBase = attrSlotIds.length + (texts.length > 0 ? 1 : 0)
+  const conditionals: LazyRowConditionalBinding[] = condFacts.map((c, i) => {
+    const klass = condClass.get(i)!
+    return {
+      slotId: c.slotId,
+      wrappedCondition: wrap(c.condition),
+      whenTrueHtml: c.whenTrueHtml,
+      whenFalseHtml: c.whenFalseHtml,
+      refIndex: condRefBase + i,
+      ordinal: ordinal++,
+      // A condition reading neither the item nor a reactive outer name still
+      // has to be applied somewhere; `applyItem` is the harmless choice (the
+      // dedup makes a repeat a no-op), matching how a text that classified as
+      // neither is handled above.
+      readsItem: klass.readsItem || !klass.readsOuter,
+      readsOuter: klass.readsOuter,
+    }
+  })
+
   return {
     plan: {
       attrSlotIds,
@@ -256,6 +338,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       outerPrimeGetters,
       hasOuter: attrs.some(a => a.readsOuter) || texts.some(t => t.readsOuter),
       preambleStatements: args.mapPreambleWrapped,
+      conditionals,
     },
     decision,
   }

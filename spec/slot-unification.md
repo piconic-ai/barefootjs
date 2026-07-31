@@ -455,10 +455,42 @@ value first:
 
 | Refusal | Why it refuses / what lifting it needs |
 |---|---|
-| `row contains a reactive conditional` | Includes a BARE ternary in child position (`{cond ? a : b}`), which lowers to `insert()` and is refused as a conditional, not as a text binding. Read "outer-involving row text is lazy" with that caveat attached. Directly on the 1k-row hot path. |
 | `multi-root (Fragment) row` | Needs the `startMarker`/`extras` bookkeeping the spike deliberately dropped. Not a design wall. |
 | `row has imperative child refs`, `row body is a child component`, `row contains nested child components`, `row contains an inner loop` | Shapes where the row owns lifecycle. Genuinely-needs-per-row-reactivity and doesn't-need-it are mixed together here and need separating. |
 | `flatMap descriptor loop`, `anchored whole-item-conditional loop`, `row has preamble-patched regions`, `destructured loop param without param bindings` | Outside the plain shape A3b drew; each wants its own bookkeeping. |
+
+A **wiring-free row conditional** was also refused once and is now lazy.
+`analyzeLazyConditional` (`plan/lazy-conditional.ts`) accepts a conditional whose
+BOTH arms are static elements owning nothing — no events, no child components,
+no inner loop, no nested conditional, no reactive attr or text. For that case
+everything `insert()` does per row collapses to replacing the `[bf-c]` element,
+so the loop-level apply bodies drive it and the row keeps zero reactive
+resources.
+
+It needs **no runtime addition**. Both arms are compile-time constants, so each
+is parsed once per LOOP into a hoisted `<template>` and cloned on a flip; what is
+left per row is a boolean, a dedup slot and a `replaceWith`. Element-vs-fragment
+is decided by reading `addCondAttrToTemplate`'s output (the same door the eager
+path uses) rather than re-deciding, and a fragment arm refuses — it spans a
+sibling range with no single node to replace. `createRow` writes no DOM at all:
+the row it just cloned already rendered the correct arm, so only the dedup
+boolean is recorded. `applyOuter` seeds by comparing
+`content.firstElementChild.outerHTML` against the live element's, i.e. the
+browser's own serialization on both sides, so a server-rendered arm that already
+agrees costs no write.
+
+Still refused, and each with its own reason: an arm that owns wiring, an arm
+that interpolates the item (it could not be hoisted), a fragment conditional
+(`{cond ? 'a' : 'b'}` and `{cond && …}` both land here), and a condition reading
+the loop index.
+
+**Not measured, and currently unexercised by the corpus.** No committed fixture
+or snapshot changed when this landed — the conditionals in the corpus all own
+wiring — and the benchmark row has no conditional at all. What exists is a
+dedicated conformance fixture plus DOM tests on both row shapes, including the
+adopted-row seed. Treat the spec's earlier "directly on the 1k-row hot path"
+claim as aspirational rather than observed: it will be true of an app whose rows
+carry a static badge, and is not true of anything measured here today.
 
 A **value-only map-callback preamble** was also refused once and is now lazy.
 The old rule was "any preamble at all"; `analyzeLazyPreamble`
