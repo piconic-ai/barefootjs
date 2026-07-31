@@ -10,6 +10,7 @@
 
 import { BF_REGION } from '@barefootjs/shared'
 import { loadPage } from './cache.ts'
+import { reconcileHead } from './head.ts'
 import {
   captureRegionBaselines,
   collectModuleScripts,
@@ -297,7 +298,16 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       current.replaceChildren(fragment)
       swapped.push({ region: current, outgoing })
     }
+    // Commit the page's identity: the title (also handed to the route
+    // announcement below) and the allowlisted `<head>` metadata — description,
+    // canonical, og:/twitter: (`reconcileHead`, #2438). Head *resources*
+    // (`<link rel="stylesheet">`, scripts) stay unmanaged by contract, not by
+    // oversight: their lifetime isn't derivable from the incoming document, so
+    // a route-scoped stylesheet belongs inside the region, where it enters and
+    // leaves with the swap. Both are ordering-free, so they sit with the
+    // synchronous swaps rather than in the awaited tail.
     if (title !== null) document.title = title
+    reconcileHead(incomingDoc)
 
     // Refresh the per-region baselines to the server render now displayed: from
     // the incoming keys (matched regions), else recaptured from the live DOM

@@ -421,3 +421,204 @@ describe('@barefootjs/router v0', () => {
     ;(window.location as unknown as { assign: typeof origAssign }).assign = origAssign
   })
 })
+
+// --- `<head>`: metadata reconciled, resources not (#2438) ------------------
+//
+// Two tiers, and the split is the point. Page metadata is page-scoped by
+// definition, so it is reconciled on every swap with no opt-in — a stale
+// `<meta name="description">` is wrongness you cannot see in development.
+// Head *resources* have no derivable lifetime, so they stay untouched, and a
+// route-scoped stylesheet belongs inside the region instead.
+describe('@barefootjs/router — head metadata reconciliation', () => {
+  function pageWithHead(head: string, body: string, title = 'Page'): string {
+    return `<!doctype html><html><head><title>${title}</title>${head}</head>
+      <body><header id="hdr">shell</header><main bf-region>${body}</main></body></html>`
+  }
+
+  afterEach(() => {
+    for (const el of Array.from(document.head.querySelectorAll('link, meta'))) el.remove()
+  })
+
+  test('allowlisted metadata is replaced, added, and removed', async () => {
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<meta name="description" content="page 1">' +
+        '<meta property="og:title" content="Page 1">' +
+        '<meta name="robots" content="noindex">' + // absent downstream → removed
+        '<link rel="canonical" href="https://example.test/blog/1">',
+    )
+    mockFetch((url) =>
+      url.includes('/blog/2')
+        ? pageWithHead(
+            '<meta name="description" content="page 2">' +
+              '<meta property="og:title" content="Page 2">' +
+              '<meta name="twitter:card" content="summary">' + // new → added
+              '<link rel="canonical" href="https://example.test/blog/2">',
+            '<p>page 2 body</p>',
+            'page 2',
+          )
+        : null,
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    const meta = (sel: string) => document.head.querySelector(sel)?.getAttribute('content') ?? null
+    expect(meta('meta[name="description"]')).toBe('page 2')
+    expect(meta('meta[property="og:title"]')).toBe('Page 2')
+    expect(meta('meta[name="twitter:card"]')).toBe('summary')
+    // Present before, absent in the incoming page → gone, so it can't leak
+    // forward into every later route.
+    expect(document.head.querySelector('meta[name="robots"]')).toBeNull()
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://example.test/blog/2')
+    // Exactly one of each — replaced in place, not appended alongside.
+    expect(document.head.querySelectorAll('meta[name="description"]').length).toBe(1)
+    expect(document.head.querySelectorAll('link[rel="canonical"]').length).toBe(1)
+    expect(document.title).toBe('page 2')
+  })
+
+  test('nodes outside the allowlist are never read, replaced, or removed', async () => {
+    // A runtime-injected analytics tag and a CSP meta: absent from every
+    // server render, and swept away by a "remove everything untracked" merge.
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<meta id="rum" name="x-analytics-session" content="abc123">' +
+        '<meta id="csp" http-equiv="content-security-policy" content="default-src \'self\'">' +
+        '<link id="preconnect" rel="preconnect" href="https://cdn.example.test">' +
+        '<link id="alt-sheet" rel="alternate stylesheet" href="/high-contrast.css">',
+    )
+    mockFetch((url) => (url.includes('/blog/2') ? pageWithHead('<meta name="description" content="page 2">', '<p>page 2 body</p>', 'page 2') : null))
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    expect(document.getElementById('rum')?.getAttribute('content')).toBe('abc123')
+    expect(document.getElementById('csp')).not.toBeNull()
+    expect(document.getElementById('preconnect')).not.toBeNull()
+    // Multi-token `rel` is a resource, so it falls outside the allowlist even
+    // though the `alternate` token appears in it.
+    expect(document.getElementById('alt-sheet')).not.toBeNull()
+  })
+
+  test('`data-bf-head="false"` opts a node out in both directions', async () => {
+    document.head.insertAdjacentHTML('beforeend', '<meta id="mine" name="description" content="owned by the page" data-bf-head="false">')
+    mockFetch((url) => (url.includes('/blog/2') ? pageWithHead('<meta name="description" content="page 2">', '<p>page 2 body</p>', 'page 2') : null))
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    // The opted-out node keeps its value…
+    expect(document.getElementById('mine')?.getAttribute('content')).toBe('owned by the page')
+    // …and is not treated as the slot the incoming description replaces, so
+    // the incoming one is appended rather than dropped.
+    expect(document.head.querySelector('meta[name="description"]:not([data-bf-head])')?.getAttribute('content')).toBe('page 2')
+  })
+
+  test('key attributes are case- and whitespace-insensitive, so a slot is replaced in place', async () => {
+    // The same logical slot, spelled differently on each side (`hreflang` is a
+    // BCP 47 tag and `type` a MIME type — both case-insensitive). Keyed
+    // verbatim the two miss each other, and the slot is rebuilt (old removed,
+    // new appended at the end of `<head>`) instead of replaced where it stands.
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<link rel="Alternate" hreflang=" en-US " type="TEXT/HTML" href="/en/blog/1">' +
+        '<meta name="keywords" content="barefoot">',
+    )
+    mockFetch((url) =>
+      url.includes('/blog/2')
+        ? pageWithHead(
+            '<link rel="alternate" hreflang="en-us" type="text/html" href="/en/blog/2">' +
+              '<meta name="keywords" content="barefoot">',
+            '<p>page 2 body</p>',
+            'page 2',
+          )
+        : null,
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    // One slot, carrying the incoming value — true either way, since a missed
+    // key still removes the stale node rather than leaving a duplicate.
+    const alternates = Array.from(document.head.querySelectorAll('link')).filter(
+      (el) => (el.getAttribute('rel') ?? '').trim().toLowerCase() === 'alternate',
+    )
+    expect(alternates.length).toBe(1)
+    expect(alternates[0].getAttribute('href')).toBe('/en/blog/2')
+    // The part that needs the normalization: it kept its position. A missed key
+    // appends, which would put it after the `keywords` meta it preceded.
+    const order = Array.from(document.head.children)
+    expect(order.indexOf(alternates[0])).toBeLessThan(
+      order.indexOf(document.head.querySelector('meta[name="keywords"]') as Element),
+    )
+  })
+
+  test('metadata identical across routes is left alone (no DOM churn)', async () => {
+    document.head.insertAdjacentHTML('beforeend', '<meta property="og:site_name" content="Example">')
+    // Mark the live node so survival is checked by identity, not by value.
+    const before = document.head.querySelector('meta[property="og:site_name"]') as unknown as { __kept: boolean }
+    before.__kept = true
+    mockFetch((url) =>
+      url.includes('/blog/2') ? pageWithHead('<meta property="og:site_name" content="Example">', '<p>page 2 body</p>', 'page 2') : null,
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    // Same live node, not a replacement carrying the same value.
+    const after = document.head.querySelector('meta[property="og:site_name"]') as unknown as { __kept?: boolean }
+    expect(after.__kept).toBe(true)
+  })
+})
+
+describe('@barefootjs/router — head resources are not managed', () => {
+  function pageWithHead(head: string, body: string, title = 'Page'): string {
+    return `<!doctype html><html><head><title>${title}</title>${head}</head>
+      <body><header id="hdr">shell</header><main bf-region>${body}</main></body></html>`
+  }
+
+  afterEach(() => {
+    for (const el of Array.from(document.head.querySelectorAll('link, meta'))) el.remove()
+  })
+
+  test('a `<link rel="stylesheet">` in `<head>` is neither added nor removed', async () => {
+    // The live page carries a route-scoped sheet in `<head>` — the mistake the
+    // issue reports. The incoming page's head lists a different one.
+    document.head.insertAdjacentHTML('beforeend', '<link id="old-css" rel="stylesheet" href="/page-1.css">')
+    mockFetch((url) =>
+      url.includes('/blog/2') ? pageWithHead('<link id="new-css" rel="stylesheet" href="/page-2.css">', '<p>page 2 body</p>', 'page 2') : null,
+    )
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+    clickLink('next')
+    await flush()
+
+    expect(region().textContent).toContain('page 2 body')
+    // Untouched in both directions: the outgoing sheet still applies and the
+    // incoming one never arrives. Hence the in-region placement below.
+    expect(document.getElementById('old-css')).not.toBeNull()
+    expect(document.getElementById('new-css')).toBeNull()
+  })
+
+  test('a route-scoped `<link>` inside the region enters and leaves with the swap', async () => {
+    mockFetch((url) => {
+      if (url.includes('/editor')) return pageWithHead('', '<link rel="stylesheet" href="/editor.css"><div class="head">editor</div>', 'editor')
+      if (url.includes('/blog/2')) return pageWithHead('', '<p>page 2 body</p>', 'page 2')
+      return null
+    })
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+
+    // Navigating *in*: the sheet arrives with the region content.
+    await navigate('/editor')
+    await flush()
+    expect(region().querySelector('link[href="/editor.css"]')).not.toBeNull()
+    // …and stays out of the head, so nothing accumulates there.
+    expect(document.head.querySelector('link[href="/editor.css"]')).toBeNull()
+
+    // Navigating *out*: the sheet is torn down with the region, so its rules
+    // stop applying to every subsequent route.
+    await navigate('/blog/2')
+    await flush()
+    expect(region().querySelector('link[href="/editor.css"]')).toBeNull()
+    expect(document.querySelector('link[href="/editor.css"]')).toBeNull()
+  })
+})
