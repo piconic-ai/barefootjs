@@ -19,8 +19,13 @@ import { createFixture } from '../src/types'
  *   - #2444 — every DSL adapter (and the CSR template lambda) mints a
  *     random `Badge_<id>` scope id via `render_child` instead of deriving
  *     `<parent>_s0`. Content is correct; only `bf-s` diverges.
- *   - #2445 — Go hoists ONE `BadgeSlot0` props value outside `{{range}}`
- *     with no per-row data, so every row renders an empty badge.
+ *   - Go template graduated (#2445): the shared `BadgeSlot0` props instance
+ *     built outside `{{range}}` is now overridden per row, at
+ *     template-execution time, via the `bf_with_props` runtime helper —
+ *     see `packages/adapter-go-template/runtime/bf.go`. A NARROWER residual
+ *     gap (a child field DERIVED from the overridden prop, e.g. a memo,
+ *     doesn't update per row — this fixture's `Badge` has no such field) is
+ *     tracked separately as #2448, not by a divergence entry here.
  */
 export const fixture = createFixture({
   id: 'composite-row-child-component',
