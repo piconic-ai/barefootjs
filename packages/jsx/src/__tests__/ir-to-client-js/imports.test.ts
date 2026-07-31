@@ -310,6 +310,24 @@ describe('collectExternalImports', () => {
     const result = collectExternalImports(ir, code)
     expect(result).toEqual(["import { 日本語 } from 'some-lib'"])
   })
+
+  // #2432 follow-up: a class field name is a member key, not a read — the
+  // same treatment as an object-literal key above.
+  test('a specifier that appears ONLY as a class field name is not emitted (#2432 follow-up)', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = 'class Widget { helper = 1 }'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual([])
+  })
+
+  // #2432 follow-up: a COMPUTED class field name (`[helper]`) IS a read of
+  // the binding — pins that the class-field exclusion didn't over-exclude.
+  test('a specifier that appears as a COMPUTED class field name IS emitted (#2432 follow-up)', () => {
+    const ir = makeIR([makeImport('./utils', ['helper'])])
+    const code = 'class Widget { [helper] = 1 }'
+    const result = collectExternalImports(ir, code)
+    expect(result).toEqual(["import { helper } from './utils'"])
+  })
 })
 
 describe('collectUserDomImports', () => {

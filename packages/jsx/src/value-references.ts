@@ -26,13 +26,26 @@ import ts from 'typescript'
  * A ShorthandPropertyAssignment (`{ Theme }`) intentionally counts as a
  * reference — it reads the binding, it doesn't just spell its name.
  *
+ * CONTRACT: this classifies identifier positions in **JavaScript** source.
+ * Both current callers parse with `ts.ScriptKind.JS` —
+ * `collectValueReferencedNames` below, and `detectStrippedReferences` in
+ * `packages/cli/src/lib/resolve-imports.ts`, which parses the assembled
+ * bundle. TypeScript-only positions are deliberately NOT handled: an
+ * identifier in a type position (`const x: Foo = …`, a
+ * `TypeReferenceNode`) is still reported as a value reference, and so are
+ * `interface` / `type` / `enum` declaration names. Do not point this at
+ * TypeScript source — it would over-report there.
+ *
  * Caveat: this is a syntactic test, not a scope analysis. If a local
  * function parameter happens to share a name with an imported binding,
  * references inside that function's body will count as references to
- * the import (false positive). Acceptable: over-counting a reference
- * just means we keep an import we didn't strictly need, which is a
- * strict improvement over the alternative failure direction (dropping a
- * needed import and producing a `ReferenceError`).
+ * the import (false positive). For the import-emission caller
+ * (`makeValueUsageTest` in `ir-to-client-js/imports.ts`), over-counting is
+ * the safe direction — an extra import whose binding exists is harmless.
+ * It is NOT safe for the BF053 caller (`detectStrippedReferences`): there,
+ * an over-reported reference to a stripped binding is a false build
+ * error on legal code. That asymmetry is why every exclusion branch below
+ * matters — each one is a case that would otherwise misfire BF053.
  */
 export function isValueReferenceIdentifier(id: ts.Identifier): boolean {
   const parent = id.parent
@@ -47,6 +60,15 @@ export function isValueReferenceIdentifier(id: ts.Identifier): boolean {
   ) {
     return false
   }
+  // Class field name (`class C { helper = 1 }`, including `static helper
+  // = 1`): the name is a member key, not a read. The `parent.name === id`
+  // guard is what preserves the computed case — in `class C { [helper] =
+  // 1 }` the name is a ComputedPropertyName, not `id` itself, so `helper`
+  // (inside the brackets) still falls through and counts as a reference.
+  if (ts.isPropertyDeclaration(parent) && parent.name === id) return false
+  // `new.target` / `import.meta`: `target`/`meta` sits in keyword
+  // position, not a binding.
+  if (ts.isMetaProperty(parent) && parent.name === id) return false
   if (ts.isVariableDeclaration(parent) && parent.name === id) return false
   if (ts.isFunctionDeclaration(parent) && parent.name === id) return false
   if (ts.isFunctionExpression(parent) && parent.name === id) return false
