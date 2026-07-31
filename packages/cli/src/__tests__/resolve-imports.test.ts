@@ -562,6 +562,46 @@ stillUsed()
     expect(errors[0].message).not.toContain('use client')
   })
 
+  // #2432 follow-up: a stripped binding whose name merely coincides with a
+  // class field name must NOT fire BF053 — the field name is a member
+  // key, not a read of the stripped import.
+  test('does not error when stripped binding name only appears as a class field name (#2432 follow-up)', async () => {
+    const clientJs = `import { helper } from './nonexistent'
+class Widget { helper = 1 }
+console.log(new Widget())
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'ClassField-aaa.js'), clientJs)
+    const manifest = {
+      ClassField: { clientJs: 'components/ClassField-aaa.js', markedTemplate: 'components/ClassField.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const result = await Bun.file(resolve(COMPONENTS_DIR, 'ClassField-aaa.js')).text()
+    expect(result).not.toContain('nonexistent')
+    expect(errors.filter(e => e.code === 'BF053')).toHaveLength(0)
+  })
+
+  // #2432 follow-up: sibling positive case — same shape, but the stripped
+  // binding IS genuinely called, so BF053 must still fire. Proves the
+  // class-field exclusion narrowed the check without disabling it.
+  test('still errors when stripped binding is genuinely called alongside a same-named class field (#2432 follow-up)', async () => {
+    const clientJs = `import { helper } from './nonexistent'
+class Widget { helper = 1 }
+helper()
+`
+    writeFileSync(resolve(COMPONENTS_DIR, 'ClassFieldCalled-aaa.js'), clientJs)
+    const manifest = {
+      ClassFieldCalled: { clientJs: 'components/ClassFieldCalled-aaa.js', markedTemplate: 'components/ClassFieldCalled.tsx' },
+    }
+
+    const { errors } = await resolveRelativeImports({ distDir: DIST_DIR, manifest })
+
+    const bf053 = errors.filter(e => e.code === 'BF053')
+    expect(bf053).toHaveLength(1)
+    expect(bf053[0].message).toContain('helper')
+  })
+
   test('recursively inlines transitive .ts imports', async () => {
     // Leaf module — depended on by the middle layer
     writeFileSync(resolve(COMPONENTS_DIR, 'leaf.ts'), `
