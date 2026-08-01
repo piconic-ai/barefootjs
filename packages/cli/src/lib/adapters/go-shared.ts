@@ -44,6 +44,7 @@ import {
   bfdevGoSource,
   bfGoSource,
   evalGoSource,
+  repropsGoSource,
   streamingGoSource,
 } from './runtimes.generated'
 import type { AdapterTemplate, AdapterScriptValue } from '../templates'
@@ -272,6 +273,7 @@ export function goCommonFiles(): Record<string, string> {
     'env.go': GO_ENV_GO,
     'bf-runtime/bf.go': bfGoSource,
     'bf-runtime/eval.go': evalGoSource,
+    'bf-runtime/reprops.go': repropsGoSource,
     'bf-runtime/streaming.go': streamingGoSource,
     'bf-runtime/bfdev/bfdev.go': bfdevGoSource,
     'bf-runtime/go.mod': GO_BF_RUNTIME_GO_MOD,

@@ -646,6 +646,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childDerivedFieldDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
 
   /**
+   * Components this run emitted a `bf.RegisterReprops` rebuilder for
+   * (`generateRepropsRegistration`, #2448). A parent overriding a prop that
+   * feeds one of the child's derived fields emits `bf_reprops` when the child
+   * is in here, and falls back to the BF101 refusal when it is not — the
+   * rebuilder is declined for shapes whose Input can't be reconstructed from
+   * Props, and emitting the call anyway would fail at template execute time
+   * with "no props rebuilder registered".
+   *
+   * Populated from the same two doors as `childDerivedFieldDeps`: a same-file
+   * child is generated before its parent, and the CLI's cross-file pre-pass
+   * generates types for every component up front.
+   */
+  private childRepropsReady: Set<string> = new Set()
+
+  /**
    * Record which of `ir`'s constructor-computed fields derive from one of its
    * own input props (#2448). See `childDerivedFieldDeps`.
    *
@@ -856,7 +871,122 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.generateNewPropsFunction(lines, ir, componentName, nestedComponents, spreadSlots, propTypeOverrides)
 
+    this.generateRepropsRegistration(lines, ir, componentName, nestedComponents, spreadSlots)
+
     return this.composeFileHeader(lines)
+  }
+
+  /**
+   * #2448: emit a props REBUILDER for a component whose constructor derives a
+   * field from one of its own input props, and register it from `init()`.
+   *
+   * `bf_with_props` patches fields on the child's already-constructed shared
+   * instance; it cannot re-run `New<Child>Props`, where a `createMemo` body and
+   * a `createSignal` initial value are both baked. This closure reconstructs
+   * the Input from the base Props, folds the row's overrides in, and re-runs
+   * the real constructor — so every derived field recomputes per row. The
+   * parent's call site then emits `bf_reprops` instead of `bf_with_props`
+   * (`loopRowChildPropOverrides`).
+   *
+   * Two invariants the emitted code depends on:
+   *
+   * - **Input is recoverable from Props.** `emitPropsDataFields` and
+   *   `generateInputStruct` emit each props param with the SAME field name and
+   *   the SAME `resolvePropGoType`, so `in.<F> = b.<F>` is exact. A prop read
+   *   only by a memo still gets its passthrough field, so nothing is lost.
+   *   Shapes that add Input fields with no Props counterpart (a rest bag, a
+   *   spread slot, context consumers, nested child Inputs) are declined —
+   *   `eligible` below — and the parent falls back to today's BF101.
+   * - **Identity is carried, never re-derived.** `New<Child>Props` mints a
+   *   random ScopeID when handed an empty one, so re-running it naively would
+   *   give every row its own scope and break hydration. ScopeID/BfParent/
+   *   BfMount come from the base, and the Props-only fields (Scripts,
+   *   BfIsRoot/BfIsChild/BfDataKey) are reapplied after the constructor.
+   *
+   * The override switch is keyed by the name the PARENT writes — the JSX
+   * attribute, `ParamInfo.sourceName ?? name` — while the assignment targets
+   * the child's own Input field (`ParamInfo.name`). For an aliased destructure
+   * (`{ n: count }`) those differ (`"N"` vs `in.Count`), and this generated
+   * switch is where the two sides are reconciled.
+   */
+  private generateRepropsRegistration(
+    lines: string[],
+    ir: ComponentIR,
+    componentName: string,
+    nestedComponents: NestedComponentInfo[],
+    spreadSlots: SpreadSlotInfo[],
+  ): void {
+    if (!this.childDerivedFieldDeps.has(componentName)) return
+
+    const nestedArrayFields = new Set(nestedComponents.map(n => `${n.name}s`))
+    const params = (ir.metadata.propsParams ?? []).filter(
+      p => !nestedArrayFields.has(capitalizeFieldName(p.name)),
+    )
+    const takenInput = new Set((ir.metadata.propsParams ?? []).map(p => capitalizeFieldName(p.name)))
+    const eligible =
+      nestedComponents.every(n => n.isDynamic && !n.isPropDerived) &&
+      spreadSlots.length === 0 &&
+      !ir.metadata.restPropsName &&
+      this.nonCollidingContextConsumers(takenInput).length === 0
+    if (!eligible) return
+
+    const inputTypeName = `${componentName}Input`
+    const q = JSON.stringify(componentName)
+
+    lines.push(`// ${componentName} computes at least one field from an input prop when its`)
+    lines.push('// props are constructed, so a per-row override inside a composite loop row')
+    lines.push('// cannot be applied by patching fields — the derived field would keep the')
+    lines.push('// shared instance\'s one-shot value on every row (#2448). This rebuilder')
+    lines.push(`// re-runs New${componentName}Props with the row's overrides folded into the`)
+    lines.push('// Input; the parent calls it through bf_reprops.')
+    lines.push('func init() {')
+    lines.push(`\tbf.RegisterReprops(${q}, func(base interface{}, kv ...interface{}) (interface{}, error) {`)
+    lines.push(`\t\tb, ok := base.(${componentName}Props)`)
+    lines.push('\t\tif !ok {')
+    lines.push(`\t\t\treturn nil, bf.RepropsTypeError(${q}, base)`)
+    lines.push('\t\t}')
+    lines.push(`\t\tin := ${inputTypeName}{`)
+    // Identity comes from the base instance — re-deriving it would re-mint the
+    // ScopeID and break hydration.
+    lines.push('\t\t\tScopeID: b.ScopeID,')
+    lines.push('\t\t\tBfParent: b.BfParent,')
+    lines.push('\t\t\tBfMount: b.BfMount,')
+    if (this.usesSearchParams(ir)) lines.push('\t\t\tSearchParams: b.SearchParams,')
+    for (const p of params) {
+      const field = capitalizeFieldName(p.name)
+      lines.push(`\t\t\t${field}: b.${field},`)
+    }
+    lines.push('\t\t}')
+    lines.push('\t\tfor i := 0; i < len(kv); i += 2 {')
+    lines.push('\t\t\tname, _ := kv[i].(string)')
+    lines.push('\t\t\tvar err error')
+    lines.push('\t\t\tswitch name {')
+    for (const p of params) {
+      // Case label: the name the PARENT computed from the JSX attribute.
+      // Target: this component's own Input field. They differ under an
+      // aliased destructure.
+      const wire = capitalizeFieldName(p.sourceName ?? p.name)
+      const field = capitalizeFieldName(p.name)
+      lines.push(`\t\t\tcase ${JSON.stringify(wire)}:`)
+      lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(wire)}, &in.${field}, kv[i+1])`)
+    }
+    lines.push('\t\t\t}')
+    lines.push('\t\t\tif err != nil {')
+    lines.push('\t\t\t\treturn nil, err')
+    lines.push('\t\t\t}')
+    lines.push('\t\t}')
+    lines.push(`\t\tp := New${componentName}Props(in)`)
+    lines.push('\t\t// Props-only state, absent from Input and therefore not rebuilt.')
+    lines.push('\t\tp.Scripts = b.Scripts')
+    lines.push('\t\tp.BfIsRoot = b.BfIsRoot')
+    lines.push('\t\tp.BfIsChild = b.BfIsChild')
+    lines.push('\t\tp.BfDataKey = b.BfDataKey')
+    lines.push('\t\treturn p, nil')
+    lines.push('\t})')
+    lines.push('}')
+    lines.push('')
+
+    this.childRepropsReady.add(componentName)
   }
 
   /** Convert a TS type definition to Go: object types → structs, string-literal unions → a `string` alias. */
@@ -5108,24 +5238,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * fixture's emitted template byte-identical (no fixture in the corpus
    * reaches this method with a loop-dependent prop today).
    *
-   * REFUSED, not silently mis-rendered (#2448, tracked separately from
-   * #2445, which this method fixes): `bf_with_props` overrides fields on the
-   * ALREADY-CONSTRUCTED shared instance — it does not re-run
-   * `New<Child>Props`. A field the child derives FROM the overridden prop at
-   * construction time (a memo body or a signal's initial value) would keep
-   * whatever the one-shot constructor computed and never update per row —
-   * silently wrong output. Rather than emit that, this method checks the prop
-   * against `this.childDerivedFieldDeps` (built by `recordDerivedFieldDeps`,
-   * this file) and pushes a BF101 + `continue`s when a derived field would go
-   * stale, exactly like the unsupported-expression refusal a few lines below.
+   * #2448 — `bf_with_props` overrides fields on the ALREADY-CONSTRUCTED
+   * shared instance; it does not re-run `New<Child>Props`. A field the child
+   * derives FROM the overridden prop at construction time (a memo body or a
+   * signal's initial value) would keep whatever the one-shot constructor
+   * computed and never update per row. Two outcomes, decided per child:
    *
-   * Returns the space-joined `"Field" value "Field2" value2 …` argument list
-   * for `bf_with_props`, or null when nothing needs overriding (caller keeps
-   * the bare `$.<Name>SlotN` reference).
+   * - The child has a generated props rebuilder (`childRepropsReady`): the
+   *   caller emits `bf_reprops` instead, which re-runs the real constructor
+   *   per row so every derived field recomputes. Nothing is refused.
+   * - It does not (its Input can't be reconstructed from Props — see
+   *   `generateRepropsRegistration`'s eligibility gate): BF101 + `continue`,
+   *   exactly like the unsupported-expression refusal a few lines below.
+   *   Refusing beats emitting silently-stale output.
+   *
+   * Returns the space-joined `"Field" value …` argument list plus the helper
+   * the caller must wrap it in, or null when nothing needs overriding (caller
+   * keeps the bare `$.<Name>SlotN` reference).
    */
-  private loopRowChildPropOverrides(comp: IRComponent): string | null {
+  private loopRowChildPropOverrides(
+    comp: IRComponent,
+  ): { args: string; helper: 'bf_with_props' | 'bf_reprops' } | null {
     const childShape = this.childComponentShapes.get(comp.name)
     const args: string[] = []
+    // Set by the derived-field check below when at least one overridden prop
+    // feeds a constructor-derived field AND the child can rebuild itself.
+    let needsRebuild = false
     for (const prop of comp.props) {
       // Client-only props never reach SSR output; `key`/`children` aren't
       // Props-struct fields; event handlers have no Go field (same
@@ -5147,22 +5285,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (prop.value.kind !== 'expression') continue
       const free = prop.freeIdentifiers
       if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
-      // #2448: this prop is about to be overridden per row via
-      // `bf_with_props` — but that helper only sets the NAMED fields on the
-      // already-constructed shared instance; it can't re-run
-      // `New<Child>Props`. If a memo body or a signal's initial value derives
-      // from this prop at construction time, the override would leave that
-      // field holding the shared instance's one-shot value on every row —
-      // silently wrong.
-      // Refuse loudly instead (same push-error-then-`continue` shape as the
-      // unsupported-expression refusal below).
+      // #2448: does this prop feed a field the child's CONSTRUCTOR derives?
+      // If so, patching fields on the shared instance leaves that field at the
+      // one-shot value on every row. Re-run the constructor per row when the
+      // child has a rebuilder; refuse when it doesn't.
       {
         const derived = this.childDerivedFieldDeps.get(comp.name)
         const overriddenField = capitalizeFieldName(prop.name)
         const staleField = derived
           ? [...derived].find(([, deps]) => deps.has(overriddenField))?.[0]
           : undefined
-        if (staleField) {
+        if (staleField && !this.childRepropsReady.has(comp.name)) {
           this.state.errors.push({
             code: 'BF101',
             severity: 'error',
@@ -5174,6 +5307,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           })
           continue
         }
+        if (staleField) needsRebuild = true
       }
       const exprOut: { parsed?: ParsedExpr } = {}
       const errorCountBefore = this.state.errors.length
@@ -5231,7 +5365,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
       args.push(`${JSON.stringify(capitalizeFieldName(prop.name))} ${wrapIfMultiToken(go)}`)
     }
-    return args.length > 0 ? args.join(' ') : null
+    if (args.length === 0) return null
+    return { args: args.join(' '), helper: needsRebuild ? 'bf_reprops' : 'bf_with_props' }
   }
 
   /**
@@ -6289,8 +6424,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const suffix = slotIdToFieldSuffix(comp.slotId)
       const overrides = this.loopRowChildPropOverrides(comp)
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp)
+      // `bf_reprops` re-runs the child's constructor and so takes the
+      // component name; `bf_with_props` patches fields and doesn't (#2448).
+      // Either way the props helper stays INNER — `bf_with_children` applies
+      // the row's children last, on the rebuilt value.
       const base = overrides
-        ? `(bf_with_props $.${comp.name}${suffix} ${overrides})`
+        ? overrides.helper === 'bf_reprops'
+          ? `(bf_reprops ${JSON.stringify(comp.name)} $.${comp.name}${suffix} ${overrides.args})`
+          : `(bf_with_props $.${comp.name}${suffix} ${overrides.args})`
         : `$.${comp.name}${suffix}`
       templateCall = loopBodyDefine
         ? `{{template "${comp.name}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`

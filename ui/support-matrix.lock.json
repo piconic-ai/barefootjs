@@ -1123,15 +1123,9 @@
           ]
         },
         "go-template": {
-          "pass": 69,
+          "pass": 70,
           "total": 79,
           "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1585,15 +1579,9 @@
           ]
         },
         "go-template": {
-          "pass": 168,
+          "pass": 169,
           "total": 184,
           "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2363,15 +2351,9 @@
           ]
         },
         "go-template": {
-          "pass": 252,
+          "pass": 253,
           "total": 270,
           "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3043,15 +3025,9 @@
           ]
         },
         "go-template": {
-          "pass": 210,
+          "pass": 211,
           "total": 222,
           "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3699,15 +3675,9 @@
           ]
         },
         "go-template": {
-          "pass": 131,
+          "pass": 132,
           "total": 149,
           "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -6557,16 +6527,8 @@
           "total": 10
         },
         "go-template": {
-          "pass": 9,
-          "total": 10,
-          "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            }
-          ]
+          "pass": 10,
+          "total": 10
         },
         "jinja": {
           "pass": 10,
@@ -7532,15 +7494,9 @@
           ]
         },
         "go-template": {
-          "pass": 89,
+          "pass": 90,
           "total": 95,
           "gaps": [
-            {
-              "fixture": "composite-row-child-derived-prop",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2448"
-              ]
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
