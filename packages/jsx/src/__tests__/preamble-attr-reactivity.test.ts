@@ -158,6 +158,49 @@ describe('client JS — the attribute is wired, and the preamble precedes it', (
   })
 })
 
+describe('a STATIC-ARRAY loop must NOT be wired', () => {
+  // Regression: the first cut of this change classified the attribute here
+  // too, and the emitted `static-array-child-init` `forEach` — which has no
+  // per-row body and so no preamble in scope — wrote
+  // `setAttribute('data-active', active ? …)` against a FREE VARIABLE. The
+  // ReferenceError killed the whole component's init, taking any nested child
+  // component's hydration with it. Caught by the gallery-nav e2e (the shells
+  // are exactly this shape and the badges mounted inside them vanished), and
+  // pinned here so the compiler catches it next time.
+  const NAV = `
+'use client'
+const NAV_ITEMS = [
+  { key: 'a', href: '/a', label: 'A' },
+  { key: 'b', href: '/b', label: 'B' },
+]
+export function Nav(props: { current: string }) {
+  return (
+    <nav>
+      {NAV_ITEMS.map(item => {
+        const active = item.key === props.current
+        return <a key={item.key} href={item.href} data-active={active ? 'true' : 'false'}>{item.label}</a>
+      })}
+    </nav>
+  )
+}
+`
+  const js = clientJs(NAV, 'Nav.tsx')
+
+  test('no attribute effect reads the preamble local', () => {
+    // The `data-active` write must not be emitted into the init body at all:
+    // there is no scope there that declares `active`. The sibling `href`
+    // effect IS emitted, which is what makes this a targeted decline rather
+    // than the whole loop going unwired.
+    const init = js.slice(0, js.indexOf(`hydrate('Nav'`))
+    expect(init).not.toContain(`setAttribute('data-active'`)
+    expect(init).toContain(`setAttribute('href'`)
+  })
+
+  test('the value stays baked into the SSR template', () => {
+    expect(js).toContain('data-active=')
+  })
+})
+
 describe('unaffected shapes keep their emission', () => {
   test('a loop with no preamble emits no preamble statements', () => {
     const js = clientJs(`

@@ -328,10 +328,12 @@ export function collectInnerLoops(
         //     `NestedLoop` because event delegation handles them through
         //     the parent's bindings instead.
         const bindings: LoopChildBindings = emptyLoopChildBindings()
+        // Hoisted: one Set per loop, not one per child (Copilot review).
+        const innerPreambleNames = preambleNamesOf(n)
         if (ctx) {
           for (const child of n.children) {
             bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
-            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, false, preambleNamesOf(n)))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, false, innerPreambleNames))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
         }
@@ -1300,12 +1302,31 @@ function collectBranchConditionals(
  */
 /**
  * The names a loop's `.map()` callback preamble declares, or `undefined` when
- * it has none — the input to the attribute classifier's preamble-local check
- * (#2447 follow-up). `undefined` rather than an empty set so the classifier's
- * fast path stays a single `!== undefined` for the overwhelmingly common
- * preamble-free loop.
+ * there are none to consider — the input to the attribute classifier's
+ * preamble-local check (#2447 follow-up). `undefined` rather than an empty set
+ * so the classifier's fast path stays a single `!== undefined` for the
+ * overwhelmingly common preamble-free loop.
+ *
+ * A STATIC-ARRAY loop returns `undefined` even when it has a preamble, and
+ * this is load-bearing rather than an optimisation. Its items are emitted
+ * through `static-array-child-init` — a `forEach` over the SSR-rendered
+ * children, with no per-row body and therefore no preamble in scope. Wiring an
+ * attribute there would emit `setAttribute('class', active ? … : …)` against a
+ * free variable: a ReferenceError at init that takes the whole component's
+ * hydration with it, including any nested child. (Caught exactly that way —
+ * the gallery nav shells are static arrays whose rows read
+ * `const active = item.key === currentRoute`, and the badge components mounted
+ * inside them stopped appearing.)
+ *
+ * Nothing is lost by declining: a static array's items are rendered once at
+ * SSR and never recreated from a signal, so there is no same-key update for a
+ * patch to be missing from. The same reasoning gates `markPreambleAttrSlots`
+ * and `preambleRegions` in Phase 1, and the two gates must agree — a slot
+ * granted without wiring, or wiring without a slot, is a silent hole either
+ * way.
  */
 function preambleNamesOf(loop: IRLoop): ReadonlySet<string> | undefined {
+  if (loop.isStaticArray) return undefined
   const declared = loop.preamble?.declaredNames
   return declared && declared.length > 0 ? new Set(declared) : undefined
 }

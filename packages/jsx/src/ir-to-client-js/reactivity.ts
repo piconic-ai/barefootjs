@@ -622,6 +622,13 @@ export function collectLoopChildReactiveTexts(
  * same semantics. Pass true only when the caller also separately collects
  * nested reactive conditionals and gives each its own `insert()`.
  */
+/** Does any name in `names` appear in `set`? Iterates rather than
+ *  spreading — this runs per attribute (Copilot review). */
+function anyNameIn(names: Iterable<string>, set: ReadonlySet<string>): boolean {
+  for (const n of names) if (set.has(n)) return true
+  return false
+}
+
 export function collectLoopChildReactiveAttrs(
   node: IRNode,
   ctx: ClientJsContext,
@@ -679,7 +686,7 @@ export function collectLoopChildReactiveAttrs(
         const readsPreamble =
           preambleNames !== undefined &&
           preambleNames.size > 0 &&
-          [...(expanded.freeIds ?? extractFreeIdentifiersFromText(expanded.expr))].some(n => preambleNames.has(n))
+          anyNameIn(expanded.freeIds ?? extractFreeIdentifiersFromText(expanded.expr), preambleNames)
         const reactive =
           classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind !== 'none'
           || readsPreamble
