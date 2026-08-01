@@ -70,7 +70,12 @@ import {
   emitTemplateCloneInline,
   hoistedCloneExpr,
 } from './template-parse.ts'
-import type { LazyRowAttrBinding, LazyRowPlanData, LazyRowTextBinding } from '../plan/build-lazy-row.ts'
+import type {
+  LazyRowAttrBinding,
+  LazyRowConditionalBinding,
+  LazyRowPlanData,
+  LazyRowTextBinding,
+} from '../plan/build-lazy-row.ts'
 
 export interface StringifyLazyRowOptions {
   /** Indent of the `mapArrayLazy(` line itself. */
@@ -95,7 +100,10 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   const mid = o.markerId.replace(/[^A-Za-z0-9_$]/g, '_')
   const tplVar = `__tpl_${mid}`
   const hasRefs = lazyRow.attrSlotIds.length > 0 || lazyRow.texts.length > 0
-  const hasBindings = lazyRow.attrs.length > 0 || lazyRow.texts.length > 0
+  // Conditionals count: `createRow` seeds their dedup boolean into `__l`, so a
+  // row whose ONLY reactive thing is a conditional still needs `__l` declared.
+  const hasBindings =
+    lazyRow.attrs.length > 0 || lazyRow.texts.length > 0 || lazyRow.conditionals.length > 0
   // ONE per-loop door decision (see `refParts`): the read-capable claim, or
   // today's write-only writer. Never decided per binding — the door is
   // allocated once per ROW.
@@ -164,6 +172,19 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     }
   }
 
+  // Hoisted arm templates, one pair per conditional. Both arms are static by
+  // construction (`analyzeLazyConditional`), so each is parsed ONCE per loop and
+  // cloned on a flip — a per-row `innerHTML` parse would undo the point of
+  // driving the swap from the loop level. The comparison the seed run makes is
+  // against `content.firstElementChild.outerHTML`, i.e. the browser's OWN
+  // serialization of the same markup, so it cannot false-mismatch on attribute
+  // order or quoting the way comparing against the authored string would.
+  for (const c of lazyRow.conditionals) {
+    const v = condVars(mid, c.slotId)
+    emitHoistedTemplateDecl(lines, indent, v.trueTpl, c.whenTrueHtml)
+    emitHoistedTemplateDecl(lines, indent, v.falseTpl, c.whenFalseHtml)
+  }
+
   const call = `mapArrayLazy(() => ${o.arrayExpr}, ${o.containerVar}, ${o.keyFn}, {`
   lines.push(`${indent}${o.guardContainer ? `if (${o.containerVar}) ` : ''}${call}`)
 
@@ -193,13 +214,15 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     const createDoor = `__r[${lazyRow.writerIndex}]`
     for (const t of lazyRow.texts) emitTextBinding(lines, b2, t, createDoor, 'create', rwDoor)
   }
+  for (const c of lazyRow.conditionals) emitConditional(lines, b2, mid, c, 'create')
   lines.push(`${b2}return __el`)
   lines.push(`${b1}},`)
 
   // --- applyItem ---------------------------------------------------------
   const itemAttrs = lazyRow.attrs.filter(a => a.readsItem)
   const itemTexts = lazyRow.texts.filter(t => t.readsItem)
-  if (itemAttrs.length === 0 && itemTexts.length === 0) {
+  const itemConds = lazyRow.conditionals.filter(c => c.readsItem)
+  if (itemAttrs.length === 0 && itemTexts.length === 0 && itemConds.length === 0) {
     lines.push(`${b1}applyItem: () => {},`)
   } else {
     lines.push(`${b1}applyItem: (__e) => {`)
@@ -211,13 +234,15 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
       lines.push(`${b2}const __d = ${doorAccess(lazyRow, lazyRow.writerIndex, adoptedPlanVar)}`)
       for (const t of itemTexts) emitTextBinding(lines, b2, t, '__d', 'item', rwDoor)
     }
+    for (const c of itemConds) emitConditional(lines, b2, mid, c, 'item')
     lines.push(`${b1}},`)
   }
 
   // --- applyOuter (only when some binding is outer-involving) -------------
   const outerAttrs = lazyRow.attrs.filter(a => a.readsOuter)
   const outerTexts = lazyRow.texts.filter(t => t.readsOuter)
-  if (outerAttrs.length > 0 || outerTexts.length > 0) {
+  const outerConds = lazyRow.conditionals.filter(c => c.readsOuter)
+  if (outerAttrs.length > 0 || outerTexts.length > 0 || outerConds.length > 0) {
     const b3 = `${indent}      `
     lines.push(`${b1}applyOuter: (__es, __seed) => {`)
     // Prime the outer reads so this ONE loop-level effect subscribes even
@@ -232,6 +257,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
       lines.push(`${b3}const __d = ${doorAccess(lazyRow, lazyRow.writerIndex, adoptedPlanVar)}`)
       for (const t of outerTexts) emitTextBinding(lines, b3, t, '__d', 'outer', rwDoor)
     }
+    for (const c of outerConds) emitConditional(lines, b3, mid, c, 'outer')
     lines.push(`${b2}}`)
     lines.push(`${b1}},`)
   }
@@ -352,6 +378,63 @@ function doorAccess(
 ): string {
   const slot = `__r[${writerIndex}]`
   return `${slot} ?? (${slot} = ${doorCtor(lazyRow)}(__e.primaryEl, ${adoptedPlanVar}))`
+}
+
+/** Hoisted arm-template variable names for one conditional of one loop. */
+function condVars(mid: string, slotId: string): { trueTpl: string; falseTpl: string } {
+  const key = `${mid}_${slotId.replace(/[^A-Za-z0-9_$]/g, '_')}`
+  return { trueTpl: `__cbt_${key}`, falseTpl: `__cbf_${key}` }
+}
+
+/**
+ * A row conditional, in the same three modes as {@link emitAttrBinding}.
+ *
+ * The whole swap is `replaceWith` on the `[bf-c]` element, because
+ * `analyzeLazyConditional` has already established that the arms own nothing —
+ * no events, no children to init, no live nodes to splice. What `insert()` does
+ * per row with an effect of its own, this does with a boolean and a dedup slot.
+ *
+ * **`'create'` writes no DOM.** The row `createRow` just cloned came from the
+ * per-row template, which interpolated `cond ? trueHtml : falseHtml` itself — so
+ * the correct arm is already in place and the only thing missing is the dedup
+ * record. Swapping here would replace an element with an identical one.
+ *
+ * **`'outer'` seeds by read-compare-write (§9.3(1))** against
+ * `content.firstElementChild.outerHTML` — the browser's serialization of the arm
+ * we would install, compared with the serialization of what is there. Both sides
+ * go through the DOM, so a match means the server already rendered this arm and
+ * no write happens.
+ *
+ * The ref is REASSIGNED after a swap (`__r[i] = __n`). Without that, the next
+ * apply would hold the detached node and write into nothing.
+ */
+function emitConditional(
+  lines: string[],
+  ind: string,
+  mid: string,
+  c: LazyRowConditionalBinding,
+  mode: 'create' | 'item' | 'outer',
+): void {
+  const v = condVars(mid, c.slotId)
+  if (mode === 'create') {
+    lines.push(`${ind}__l[${c.ordinal}] = !!(${c.wrappedCondition})`)
+    return
+  }
+  const slot = `__r[${c.refIndex}]`
+  lines.push(`${ind}{ const __c = ${c.refIndex} in __r ? ${slot} : (${slot} = qsa(__e.primaryEl, '[bf-c="${c.slotId}"]'))`)
+  lines.push(`${ind}if (__c) {`)
+  lines.push(`${ind}  const __x = !!(${c.wrappedCondition})`)
+  lines.push(`${ind}  const __w = (__x ? ${v.trueTpl} : ${v.falseTpl}).content.firstElementChild`)
+  const guard = mode === 'item'
+    ? dedupGuard(c.ordinal)
+    : `__seed ? (__c.outerHTML !== __w.outerHTML) : (${dedupGuard(c.ordinal)})`
+  lines.push(`${ind}  if (${guard}) {`)
+  lines.push(`${ind}    const __n = __w.cloneNode(true)`)
+  lines.push(`${ind}    __c.replaceWith(__n)`)
+  lines.push(`${ind}    ${slot} = __n`)
+  lines.push(`${ind}  }`)
+  lines.push(`${ind}  __l[${c.ordinal}] = __x`)
+  lines.push(`${ind}} }`)
 }
 
 /** `entry.last`-backed dedup test. `in` (not a truthiness check) so a

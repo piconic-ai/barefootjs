@@ -16,8 +16,11 @@
  * "widen later" decision, never a correctness compromise:
  *
  *  1. **Shape** (§9.4 "plain loop-row shape"): non-anchored, non-flatMap,
- *     single-root, keyed, conditional-free, ref-free, no nested components
- *     or inner loops.
+ *     single-root, keyed, ref-free, no nested components or inner loops. A
+ *     reactive CONDITIONAL is allowed when `analyzeLazyConditional`
+ *     (`lazy-conditional.ts`) proves both arms are wiring-free static elements,
+ *     which reduces the per-row `insert()` effect to a `replaceWith` the apply
+ *     bodies can carry; anything else refuses with that analysis's reason.
  *  2. **A preamble must be provably re-runnable.** The lazy emission has no
  *     single per-row body, so a preamble-declared local only exists if the
  *     preamble's statements are re-executed at the top of each apply body
@@ -181,7 +184,13 @@ export interface LazyRowShapeFacts {
   bodyIsMultiRoot: boolean
   /** `LoopCore.key != null` — index-keyed loops are ineligible in v1 (§9.4). */
   hasExplicitKey: boolean
-  conditionalCount: number
+  /**
+   * `analyzeLazyConditional`'s refusal reason for the FIRST row conditional it
+   * rejects, or `null` when the row has none or all of them can be driven from
+   * the apply bodies (`lazy-conditional.ts`). A string here is emitted verbatim
+   * as the gate's reason.
+   */
+  conditionalRefusal: string | null
   childRefCount: number
   nestedComponentCount: number
   innerLoopCount: number
@@ -256,8 +265,10 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
   //     loops ever become legal, the test naming this fails and points here.
   if (!shape.hasExplicitKey) return NO('index-keyed loop (no explicit key)')
 
-  // (4) No conditionals in the row.
-  if (shape.conditionalCount > 0) return NO('row contains a reactive conditional')
+  // (4) Row conditionals: allowed when every one of them is a wiring-free
+  //     static element conditional, refused with the analysis's own reason
+  //     otherwise.
+  if (shape.conditionalRefusal) return NO(shape.conditionalRefusal)
 
   // (5) No refs / child components / inner loops.
   if (shape.childRefCount > 0) return NO('row has imperative child refs')
