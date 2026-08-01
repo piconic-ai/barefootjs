@@ -7,6 +7,8 @@ no warnings 'experimental::signatures';
 
 use File::Spec;
 
+=encoding utf8
+
 =head1 NAME
 
 BarefootJS::DevReload - Framework-agnostic dev-only browser auto-reload for BarefootJS apps

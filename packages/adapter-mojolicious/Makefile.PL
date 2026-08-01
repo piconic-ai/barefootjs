@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use ExtUtils::MakeMaker;
 use Module::CPANfile;
+use Module::Metadata;
 
 my $file    = Module::CPANfile->load;
 my $runtime = $file->prereqs->requirements_for('runtime', 'requires')->as_string_hash;
@@ -20,6 +21,7 @@ WriteMakefile(
     TEST_REQUIRES     => $test,
     META_MERGE       => {
         'meta-spec' => { version => 2 },
+        provides    => Module::Metadata->provides(version => 2, dir => 'lib'),
         resources   => {
             homepage   => 'https://barefootjs.dev',
             repository => {
