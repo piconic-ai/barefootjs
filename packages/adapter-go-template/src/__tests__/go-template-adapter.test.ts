@@ -4600,12 +4600,13 @@ export function SignalRowChildDerivedProp(props: { rows: Row[] }) {
     expect(template).toContain('(bf_reprops "Badge" $.BadgeSlot0 "Text" .Label "N" .N)')
   })
 
-  // An ALIASED destructure (`{ n: count }`) is where the two naming sides
-  // diverge: the memo reads `count` and the child's Go field is `Count`, but
-  // the parent only knows the JSX attribute `n` → `"N"`. `bf_with_props` would
-  // silently no-op that pair (its unknown-field passthrough). The rebuilder's
-  // generated switch is where the two sides are reconciled, so the case label
-  // is the PARENT's name and the assignment target is the CHILD's field.
+  // An ALIASED destructure (`{ n: count }`) is where the JSX attribute name
+  // (`n` → `"N"`) and the child's own Go field (`Count`) diverge. #2457: the
+  // reconciliation now happens ONCE, at the PARENT's emission site
+  // (`loopRowChildPropOverrides`, via `childPropFieldNames`) — the parent
+  // emits the child's own field name directly, so the rebuilder's switch
+  // (`recordRepropsSpec` / `emitRepropsRegistration`) needs no separate
+  // "wire" name and is keyed uniformly by that one field on both sides.
   test('an aliased destructured prop maps the parent name onto the child field', () => {
     const result = compileJSX(`
 'use client'
@@ -4630,13 +4631,89 @@ export function AliasedRowChildDerivedProp(props: { rows: Row[] }) {
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
-    expect(template).toContain('(bf_reprops "Badge" $.BadgeSlot0 "Text" .Label "N" .N)')
+    // The parent now writes the child's OWN field name ("Count"), not the
+    // JSX attribute ("N").
+    expect(template).toContain('(bf_reprops "Badge" $.BadgeSlot0 "Text" .Label "Count" .N)')
     const types = result.files.find(f => f.type === 'types')!.content
-    expect(types).toContain('case "N":')
+    expect(types).toContain('case "Count":')
     expect(types).toContain('&in.Count,')
-    // The child's own field is `Count`; `"Count"` is never a case label,
-    // because the parent never writes that name.
-    expect(types).not.toContain('case "Count":')
+    // "N" — the JSX attribute name — is never a case label: the switch is
+    // keyed by the child's field on both sides, and the parent already
+    // resolved the name before emitting the call.
+    expect(types).not.toContain('case "N":')
+  })
+
+  // #2457: the SAME aliased destructure, but with NO derived field — the
+  // shape `bf_with_props` mishandled even before #2448's rebuilder existed.
+  // `bf.WithProps` documents an unknown-field pair as a silent passthrough,
+  // so emitting the JSX attribute name ("N") against a child whose field is
+  // "Count" used to drop the override with no diagnostic on every row. No
+  // rebuilder is needed here — resolving the field name at the parent's
+  // emission site is enough on its own.
+  test('an aliased destructured prop with no derived field still lands on the child field', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge({ text, n: count }: { text: string; n: number }) {
+  return <span class="badge">{text}:{count}</span>
+}
+export function AliasedRowChildNoDerivedProp(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    // Still bf_with_props (no derived field, so no rebuilder needed) — but
+    // the pair now names a field the child actually has.
+    expect(template).toContain('(bf_with_props $.BadgeSlot0 "Text" .Label "Count" .N)')
+    expect(template).not.toContain('bf_reprops')
+    const types = result.files.find(f => f.type === 'types')!.content
+    expect(types).not.toContain('RegisterReprops')
+  })
+
+  // Copilot review on #2462: `ChildComponentShape.paramNames` is looked up by
+  // the PARENT against the name it wrote at the JSX call site, so it has to be
+  // keyed the same way `childPropFieldNames` is. Keyed by the local binding,
+  // an aliased prop on a child that ALSO has a rest bag looked undeclared —
+  // `loopRowChildPropOverrides`' rest-bag guard skipped it outright, so the
+  // override never reached the template at all. Same wrong-name-at-a-
+  // parent-side-lookup bug as #2457, one guard earlier.
+  test('an aliased prop on a rest-bag child is not mistaken for a rest-bag prop', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge({ text, n: count, ...rest }: { text: string; n: number; [k: string]: unknown }) {
+  return <span class="badge" {...rest}>{text}:{count}</span>
+}
+export function AliasedRestBagRowChild(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    // `n` is a DECLARED prop, so it rides the override under the child's own
+    // field name — not silently routed into the rest bag and not dropped.
+    expect(template).toContain('(bf_with_props $.BadgeSlot0 "Text" .Label "Count" .N)')
   })
 
   // Sound-or-loud fallback: a shape whose Input can NOT be reconstructed from
