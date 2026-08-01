@@ -803,14 +803,23 @@ function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string
 }
 
 /**
- * #2448: every INPUT prop name a memo's `parsed` BODY reads, either via a
- * `<propsObjectName>.<name>` member access (object-props signature, e.g.
- * `props.n`) or a bare identifier bound to a destructured prop (no
- * `propsObjectName`). Feeds `ChildComponentShape.derivedFieldDeps`
- * (`registerChildComponentShape`, `go-template-adapter.ts`) so a parent
- * overriding one of THESE props per row (`bf_with_props`, #2445) can be
- * refused loudly instead of silently leaving the derived field stale — see
- * that map's docstring.
+ * #2448: every INPUT prop name a constructor-evaluated `parsed` expression
+ * reads, either via a `<propsObjectName>.<name>` member access (object-props
+ * signature, e.g. `props.n`) or a bare identifier bound to a destructured
+ * prop (no `propsObjectName`).
+ *
+ * Two kinds of expression reach here, because `New<Comp>Props` bakes BOTH
+ * into the struct at construction time: a `createMemo` body and a
+ * `createSignal` INITIAL VALUE (`const [dbl] = createSignal(props.n)` emits
+ * `Dbl: in.N`, exactly as `createMemo(() => props.n * 2)` emits
+ * `Dbl: in.N * 2`). Either one goes stale under a per-row override, so both
+ * feed the dependency map.
+ *
+ * Feeds `GoTemplateAdapter.childDerivedFieldDeps` (built by
+ * `recordDerivedFieldDeps`, `go-template-adapter.ts`) so a parent overriding
+ * one of THESE props per row (`bf_with_props`, #2445) can be refused loudly
+ * instead of silently leaving the derived field stale — see that map's
+ * docstring.
  *
  * Structural counterpart of {@link freeVarsInBody}: that walk reports a
  * member's OBJECT identifier only (`props`), treating the property name as
@@ -828,7 +837,7 @@ function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string
  * isn't available yet at registration time (the cross-file shape pre-pass,
  * #2131, runs before any component's codegen).
  */
-export function collectPropsReadByMemoBody(
+export function collectPropsReadByCtorInit(
   body: ParsedExpr,
   propsObjectName: string | null,
   propNames: ReadonlySet<string>,

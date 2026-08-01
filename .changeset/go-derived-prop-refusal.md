@@ -7,7 +7,7 @@ Refuse loudly when a per-row prop override would leave a derived child field sta
 Follow-up to #2445. That fix re-applies a loop-dependent prop per row via the
 `bf_with_props` runtime helper, which overrides fields on the child's
 already-constructed shared instance. It cannot re-run `New<Child>Props`, which
-is where memos are computed:
+is where a memo body AND a signal's initial value are both computed:
 
 ```go
 func NewBadgeProps(in BadgeInput) BadgeProps {
@@ -30,11 +30,15 @@ register per-component constructors into the template FuncMap, a breaking
 setup change for every Go user. Both are worse than a loud refusal, and the
 behaviour being replaced is silently wrong output.
 
-Detection is a structural walk over the child's own memo `parsed` bodies,
+Detection is a structural walk over the child's own constructor-evaluated
+`parsed` initializers — both `createMemo` bodies and `createSignal` initial
+values, since `New<Child>Props` bakes each of them once and `bf_with_props`
+re-runs neither (`const [dbl] = createSignal(props.n)` emits `Dbl: in.N` and
+goes stale under a per-row `n` override exactly as the memo form does) —
 collecting which input props each reads. It is best-effort by construction — a
-memo with no resolvable parsed body is skipped — so its failure mode is a
-missed refusal (today's behaviour), never a wrong one. The walk carries an
-exhaustiveness pin so a new `ParsedExpr` kind cannot silently drop a
+declaration with no resolvable parsed initializer is skipped — so its failure
+mode is a missed refusal (today's behaviour), never a wrong one. The walk
+carries an exhaustiveness pin so a new `ParsedExpr` kind cannot silently drop a
 dependency.
 
 New fixture `composite-row-child-derived-prop` pins the shape: `BF101` on Go,

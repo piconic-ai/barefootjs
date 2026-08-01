@@ -2749,14 +2749,16 @@ func WithChildren(props interface{}, children template.HTML) (interface{}, error
 //
 // This overrides fields on the ALREADY-CONSTRUCTED instance — it does not
 // re-run New<Child>Props. A field the child derives FROM the overridden prop
-// at construction time (a memo) would keep whatever the one-shot constructor
+// at construction time (a memo body, or a signal's initial value — the
+// constructor bakes both) would keep whatever the one-shot constructor
 // computed and never update per row; only the directly-overridden field is
 // correct per row. That combination is REFUSED at compile time (BF101, #2448):
-// the TypeScript compiler tracks which memo fields derive from which input
-// props (`ChildComponentShape.derivedFieldDeps`,
-// packages/adapter-go-template/src/adapter/lib/types.ts) and never emits a
-// `bf_with_props` call whose overridden field would go stale, so a call this
-// helper actually receives at runtime never hits that combination.
+// the TypeScript compiler tracks which constructor-computed fields derive from
+// which input props (GoTemplateAdapter.childDerivedFieldDeps, built by
+// recordDerivedFieldDeps in
+// packages/adapter-go-template/src/adapter/go-template-adapter.ts) and never
+// emits a bf_with_props call whose overridden field would go stale, so a call
+// this helper actually receives at runtime never hits that combination.
 // See https://github.com/piconic-ai/barefootjs/issues/2448.
 func WithProps(props interface{}, kv ...interface{}) (interface{}, error) {
 	if len(kv)%2 != 0 {

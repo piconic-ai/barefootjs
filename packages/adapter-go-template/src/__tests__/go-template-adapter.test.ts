@@ -4490,14 +4490,17 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
 // #2448: `bf_with_props` (#2445, above) overrides fields on the ALREADY-
 // CONSTRUCTED shared instance — it does not re-run `New<Child>Props`. When
 // the overridden prop feeds a child field the constructor DERIVES at
-// construction time (a `createMemo`), the override would leave that field
-// holding the shared instance's one-shot value on every row — silently
-// wrong output. Refused loudly with BF101 instead.
+// construction time (a `createMemo` body or a `createSignal` initial value —
+// `New<Child>Props` bakes both), the override would leave that field holding
+// the shared instance's one-shot value on every row — silently wrong output.
+// Refused loudly with BF101 instead.
 describe('GoTemplateAdapter - #2448 per-row override of a prop feeding a derived child field', () => {
-  // Two-phase build (mirrors the rest-bag test's pattern above): a bare
-  // `compileJSX` never calls `registerChildComponentShape` (only the CLI's
-  // cross-file pre-pass, #2131, does), so `Badge`'s `derivedFieldDeps`
-  // wouldn't exist for the parent's generate pass otherwise.
+  // Two-phase build (mirrors the rest-bag test's pattern above): the adapter
+  // instance here never compiles `Badge` itself, so without the explicit
+  // `registerChildComponentShape` its `childDerivedFieldDeps` entry wouldn't
+  // exist for the parent's generate pass. (Under `compileJSX` — the second
+  // test below — the same-file child IS generated first, and `generate()`
+  // self-registers, so both doors are exercised.)
   test('a per-row-overridden prop feeding a memo field is refused with BF101', () => {
     const source = `
 'use client'
@@ -4563,10 +4566,50 @@ export function CompositeRowChildDerivedProp(props: { rows: Row[] }) {
     expect(template).not.toContain('"N"')
   })
 
+  // A `createSignal` INITIAL VALUE is baked into `New<Child>Props` exactly
+  // like a memo body is (`const [dbl] = createSignal(props.n)` emits
+  // `Dbl: in.N`), and `bf_with_props` re-runs neither — so the signal form
+  // goes stale under a per-row override for the same reason and must refuse
+  // the same way. Compiled through `compileJSX` (not the two-phase build
+  // above) so this also pins `generate()`'s self-registration door.
+  test("a per-row-overridden prop feeding a signal's initial value is refused with BF101", () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge(props: { text: string; n: number }) {
+  const [dbl] = createSignal(props.n)
+  return <span class="badge">{props.text}:{dbl()}</span>
+}
+export function SignalRowChildDerivedProp(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const bf101s = (result.errors ?? []).filter(e => e.code === 'BF101')
+    expect(bf101s).toHaveLength(1)
+    expect(bf101s[0]!.message).toContain('Badge')
+    expect(bf101s[0]!.message).toContain("'n'")
+    expect(bf101s[0]!.message).toContain('dbl')
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    // Same scoping as the memo case: only `n` is refused, `text` is still
+    // reapplied per row, and no `"N"` pair reaches the template.
+    expect(template).toContain('"Text" .Label')
+    expect(template).not.toContain('"N"')
+  })
+
   // Regression pin for #2445: a nested child with NO derived field (no
-  // `createMemo` reading the overridden prop) must still compile clean and
-  // still emit `bf_with_props` — this refusal must not fire on the shape
-  // #2445 already fixed.
+  // `createMemo`/`createSignal` reading the overridden prop) must still
+  // compile clean and still emit `bf_with_props` — this refusal must not fire
+  // on the shape #2445 already fixed.
   test('a per-row-overridden prop with no derived field still emits bf_with_props', () => {
     const result = compileJSX(`
 'use client'
