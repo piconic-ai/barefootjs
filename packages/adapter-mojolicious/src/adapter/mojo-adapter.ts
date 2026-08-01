@@ -936,6 +936,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         : supportableDestructure
           ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
           : [param, loop.index ?? '_i']
+    // A `.map()` callback preamble lowers to one per-row `my` local per
+    // declaration (#2447). Loop-binding the names keeps a same-named module
+    // const from inlining over the local the loop just declared — the same
+    // hazard class `resolveModuleStringConst` already consults this map for.
+    const preambleDecls = loop.preamble?.declarations ?? []
+    for (const d of preambleDecls) loopBound.push(d.name)
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
@@ -1053,6 +1059,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     }
     }
 
+    // Per-row preamble locals (#2447), in source order so a later
+    // initializer sees an earlier local — same as the source block. Emitted
+    // INSIDE the filter guard below, matching JS evaluation order: a
+    // `.filter(p).map(cb)` chain never runs `cb`'s body for a filtered-out
+    // item.
+    const preambleLines = preambleDecls.map(
+      d => `% my $${d.name} = ${this.convertExpressionToPerl(d.raw, d.valueParsed)};`,
+    )
+
     // Handle filter().map() pattern by wrapping children in if-condition
     if (loop.filterPredicate) {
       let filterCond: string
@@ -1072,9 +1087,11 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
         )
       }
       lines.push(`% if (${filterCond}) {`)
+      lines.push(...preambleLines)
       lines.push(children)
       lines.push(`% }`)
     } else {
+      lines.push(...preambleLines)
       lines.push(children)
     }
 

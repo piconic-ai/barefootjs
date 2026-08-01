@@ -29,6 +29,7 @@ import {
   type MapCallbackPreamble,
   type PreambleSegment,
   type PreambleRegionSource,
+  type PreambleValueDeclaration,
   tsxSourceText,
   type SourceLocation,
   type TypeInfo,
@@ -4250,20 +4251,29 @@ function transformMapCall(
           // verbatim.
           preamble = preambleFromValueStatements(pre, ctx)
 
-          // A DSL adapter can't carry a loop-local `const` into a conditional
-          // branch template, so it would render the branches with the local
-          // undefined (silent divergence). Refuse instead — adapter-gated like
-          // the filter/sort sites: a JS-runtime target folds and runs it, a DSL
-          // target errors with the /* @client */ escape (which renders the map
-          // client-only, where the browser runs the preamble). Stage 2 of
-          // spec/callback-fidelity.md.
-          if (!isClientOnly && !(ctx.analyzer.acceptsCallbackBody?.('map') ?? false)) {
+          // Stage 2 of spec/callback-fidelity.md, narrowed by #2447. This used
+          // to refuse EVERY branch preamble on a DSL target, on the premise
+          // that a loop-local can't be carried into a conditional branch
+          // template. That premise stopped holding once `declarations` lower
+          // to a per-row local: the fold emits the conditional INSIDE the loop
+          // body, so a local declared ahead of it is in scope in both arms —
+          // `{{$label := bf_upper .Kind}}{{if .On}}…{{$label}}…{{else}}…`. What
+          // remains true is the original hazard for a preamble that CANNOT be
+          // declared: nothing lowers, both branches read an unassigned name.
+          // So the refusal now keys off the same condition as the single-return
+          // gate below, not off the presence of branches.
+          if (
+            !preamble.declarations &&
+            !isClientOnly &&
+            !(ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
+          ) {
             ctx.analyzer.errors.push(
               createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, loc, {
                 message:
-                  'A .map() callback body with a `const`/`let` preamble before its ' +
-                  'branches cannot be lowered to a template: the loop-local binding ' +
-                  'cannot be carried into a conditional branch on this backend.',
+                  'A .map() callback body with a preamble before its branches cannot be ' +
+                  'lowered to a template: the preamble is not a sequence of value ' +
+                  'declarations, so this backend has no per-row local to carry into the ' +
+                  'branches.',
                 suggestion: {
                   message: 'Add /* @client */ to evaluate this expression on the client only',
                 },
@@ -4402,6 +4412,37 @@ function transformMapCall(
           }
           if (valueStmts.length > 0) {
             preamble = preambleFromValueStatements(valueStmts, ctx)
+
+            // #2447. A DSL adapter cannot execute `preamble.segments` (JS
+            // text), so it lowers `declarations` — one per-row local each —
+            // and the row markup reads them as locals. When the preamble
+            // isn't fully declarable there is nothing to lower, and the
+            // adapter used to emit the row anyway, reading names it never
+            // assigned: the class rendered empty, on every DSL backend, with
+            // no diagnostic. Refuse loudly instead, with the same
+            // `/* @client */` escape as the branch-preamble, array-builder
+            // and flatMap gates above.
+            if (
+              !preamble.declarations &&
+              !isClientOnly &&
+              !(ctx.analyzer.acceptsCallbackBody?.('map') ?? false)
+            ) {
+              ctx.analyzer.errors.push(
+                createError(
+                  ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+                  getSourceLocation(body, ctx.sourceFile, ctx.filePath),
+                  {
+                    message:
+                      'A .map() callback preamble that is not a sequence of value ' +
+                      'declarations cannot be lowered to a template: this backend can ' +
+                      'declare a per-row local, but cannot run arbitrary statements per row.',
+                    suggestion: {
+                      message: 'Add /* @client */ to evaluate this expression on the client only',
+                    },
+                  },
+                )
+              )
+            }
           }
         }
       }
@@ -5148,7 +5189,48 @@ function preambleFromValueStatements(
     declaredNames: [...declared],
     // Value-only preambles accumulate no JSX, so no child needs the array join.
     builderNames: [],
+    declarations: neutralPreambleDeclarations(statements, ctx) ?? undefined,
   }
+}
+
+/**
+ * The DSL SSR half of a value preamble (#2447): every statement as a neutral
+ * {@link PreambleValueDeclaration}, or `null` if any statement is not one.
+ *
+ * All-or-nothing — see `MapCallbackPreamble.declarations`. `null` is what the
+ * Phase-1 gate turns into a loud refusal, so every rejection here must be a
+ * shape a template language genuinely cannot express per row, not a shape this
+ * function merely hasn't got round to.
+ */
+function neutralPreambleDeclarations(
+  statements: readonly ts.Statement[],
+  ctx: TransformContext,
+): PreambleValueDeclaration[] | null {
+  const out: PreambleValueDeclaration[] = []
+  for (const stmt of statements) {
+    // A non-declaration statement (assignment, `for`, a call for its side
+    // effects) has no per-row template form at all.
+    if (!ts.isVariableStatement(stmt)) return null
+    for (const decl of stmt.declarationList.declarations) {
+      // A destructuring binding declares several names from one initializer;
+      // no adapter has a single per-row local form for that.
+      if (!ts.isIdentifier(decl.name)) return null
+      if (!decl.initializer) return null
+      const valueParsed = tsNodeToParsedExpr(decl.initializer)
+      // The same subset gate every other DSL-lowered expression passes
+      // through. An adapter that additionally cannot emit a supported shape
+      // (Go has no array-literal form, say) still records its own BF101 from
+      // its own emitter — this only decides whether the shape is expressible
+      // in principle.
+      if (!isSupported(valueParsed).supported) return null
+      out.push({
+        name: decl.name.text,
+        valueParsed,
+        raw: decl.initializer.getText(ctx.sourceFile),
+      })
+    }
+  }
+  return out.length > 0 ? out : null
 }
 
 /** Drop the trailing separator space from the final js segment. */

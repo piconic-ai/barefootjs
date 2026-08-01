@@ -981,6 +981,14 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         : supportableDestructure
           ? ['__bf_item', ...(loop.paramBindings ?? []).map(b => b.name), loop.index ?? '_i']
           : [param, loop.index ?? '_i']
+    // A `.map()` callback preamble lowers to one per-row Ruby local per
+    // declaration (#2447). The names must be loop-bound for the whole body,
+    // or `ErbTopLevelEmitter.identifier` renders each read as `v[:cls]` —
+    // a vars-Hash key nothing ever seeds, i.e. the empty attribute this
+    // fixes. Phase 1 guarantees `declarations` is present or the loop was
+    // already refused, so there is no partial-lowering case here.
+    const preambleDecls = loop.preamble?.declarations ?? []
+    for (const d of preambleDecls) loopBound.push(d.name)
     for (const n of loopBound) {
       this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
     }
@@ -1101,6 +1109,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     }
     }
 
+    // Per-row preamble locals (#2447), in source order so a later
+    // initializer sees an earlier local — same as the source block. Emitted
+    // INSIDE the filter guard below, matching JS evaluation order: a
+    // `.filter(p).map(cb)` chain never runs `cb`'s body for a filtered-out
+    // item.
+    const preambleLines = preambleDecls.map(
+      d => `<%- ${rubyLocal(d.name)} = ${this.convertExpressionToRuby(d.raw, d.valueParsed)} -%>`,
+    )
+
     // Handle filter().map() pattern by wrapping children in if-condition
     if (loop.filterPredicate) {
       let filterCond: string
@@ -1134,9 +1151,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         filterCond = 'true'
       }
       lines.push(`<%- if bf.truthy?(${filterCond}) -%>`)
+      lines.push(...preambleLines)
       lines.push(children)
       lines.push(`<%- end -%>`)
     } else {
+      lines.push(...preambleLines)
       lines.push(children)
     }
 

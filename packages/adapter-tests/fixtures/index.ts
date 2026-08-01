@@ -388,6 +388,7 @@ import { fixture as jsxElementProp } from './jsx-element-prop'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
+import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
 import { fixture as childPrimitiveProps } from './child-primitive-props'
 import { fixture as preWhitespace } from './pre-whitespace'
@@ -721,6 +722,7 @@ export const jsxFixtures: JSXFixture[] = [
   grandchildComposition,
   compositeRowChildComponent,
   loopPreambleAttrValue,
+  loopPreambleChainedFilter,
   loopRowStaticConditional,
   childPrimitiveProps,
   preWhitespace,

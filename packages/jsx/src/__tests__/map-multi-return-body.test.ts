@@ -133,11 +133,21 @@ describe('.map() multi-return body fold (Stage 2)', () => {
     })
   })
 
-  describe('leading-const preamble is adapter-gated (JS folds, DSL refuses)', () => {
+  describe('leading-const preamble — folded on JS, lowered on DSL, gated on shape', () => {
     const preambleBody = `{
       const label = it.kind.toUpperCase()
       if (it.on) return <b key={it.id}>{label}</b>
       return <span key={it.id}>{label}</span>
+    }`
+
+    // The same fold, but with a preamble no template language can declare: a
+    // destructuring binding takes several names off one initializer, and no
+    // adapter has a single per-row local form for that. Nothing lowers, so
+    // both branches would read an unassigned name.
+    const undeclarableBody = `{
+      const { kind } = it
+      if (it.on) return <b key={it.id}>{kind}</b>
+      return <span key={it.id}>{kind}</span>
     }`
 
     function compileWith(source: string, dsl: boolean) {
@@ -156,15 +166,32 @@ describe('.map() multi-return body fold (Stage 2)', () => {
       expect(cj.content).not.toMatch(/return <(b|span)/)
     })
 
-    test('a DSL adapter refuses with BF021 + the /* @client */ escape', () => {
+    test('a DSL adapter accepts it too — the preamble lowers to a per-row local (#2447)', () => {
+      // This used to be a BF021 refusal, on the premise that a loop-local
+      // can't reach a conditional branch template. The fold puts the
+      // conditional INSIDE the loop body, so once the preamble lowers to a
+      // per-row declaration the local is in scope in both arms — see the
+      // `map-preamble-branch-body` fixture, which now renders on all nine
+      // adapters.
       const r = compileWith(wrap(preambleBody), true)
+      expect(r.errors.filter(e => e.severity !== 'warning')).toHaveLength(0)
+    })
+
+    test('a preamble that is NOT declarable still refuses with BF021 + /* @client */', () => {
+      const r = compileWith(wrap(undeclarableBody), true)
       const bf021 = r.errors.filter(e => e.code === 'BF021')
       expect(bf021).toHaveLength(1)
+      expect(bf021[0].message).toMatch(/preamble is not a sequence of value declarations/)
       expect(bf021[0].suggestion?.message).toContain('@client')
     })
 
+    test('a JS runtime runs the undeclarable preamble verbatim — no refusal', () => {
+      const r = compileWith(wrap(undeclarableBody), false)
+      expect(r.errors.filter(e => e.severity !== 'warning')).toHaveLength(0)
+    })
+
     test('/* @client */ suppresses the DSL refusal', () => {
-      const clientSource = wrap(preambleBody).replace('items.map', '/* @client */ items.map')
+      const clientSource = wrap(undeclarableBody).replace('items.map', '/* @client */ items.map')
       const r = compileWith(clientSource, true)
       expect(r.errors.filter(e => e.code === 'BF021')).toHaveLength(0)
     })

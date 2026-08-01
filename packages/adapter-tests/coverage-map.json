@@ -2551,10 +2551,34 @@
     "loop-preamble-attr-value": {
       "kinds": [
         "call",
+        "conditional",
         "identifier",
+        "literal",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-preamble-chained-filter": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "unary:!"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -2695,10 +2719,13 @@
     },
     "map-preamble-branch-body": {
       "kinds": [
+        "array-method",
         "identifier",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "array-method:toUpperCase"
+      ],
       "contexts": [
         "attribute",
         "condition",
@@ -4631,19 +4658,19 @@
   },
   "kindCounts": {
     "array-literal": 69,
-    "array-method": 65,
+    "array-method": 66,
     "arrow": 63,
-    "binary": 77,
-    "call": 182,
-    "conditional": 22,
-    "identifier": 268,
+    "binary": 78,
+    "call": 183,
+    "conditional": 23,
+    "identifier": 269,
     "index-access": 12,
-    "literal": 219,
+    "literal": 221,
     "logical": 43,
-    "member": 147,
+    "member": 148,
     "object-literal": 51,
     "template-literal": 29,
-    "unary": 22,
+    "unary": 23,
     "unsupported": 31
   },
   "axisCounts": {
@@ -4667,14 +4694,14 @@
     "array-method:toFixed": 2,
     "array-method:toLowerCase": 4,
     "array-method:toReversed": 1,
-    "array-method:toUpperCase": 1,
+    "array-method:toUpperCase": 2,
     "array-method:trim": 1,
     "array-method:trimEnd": 1,
     "array-method:trimStart": 1,
     "binary:!=": 2,
     "binary:!==": 9,
     "binary:*": 9,
-    "binary:+": 17,
+    "binary:+": 18,
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
@@ -4684,13 +4711,13 @@
     "literal:boolean": 41,
     "literal:null": 22,
     "literal:number": 94,
-    "literal:string": 159,
+    "literal:string": 161,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,
     "member:computed": 8,
     "member:optional": 1,
-    "unary:!": 14,
+    "unary:!": 15,
     "unary:-": 11
   },
   "uncoveredKinds": [
