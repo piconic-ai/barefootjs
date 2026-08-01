@@ -47,6 +47,13 @@ export interface LazyRowAttrBinding {
   ordinal: number
   readsItem: boolean
   readsOuter: boolean
+  /**
+   * Reads a `.map()` preamble local, so every apply body this binding is
+   * emitted into must re-run the preamble first (#2447 follow-up). Per
+   * binding, not per loop, so `applyOuter` does not pay for a preamble only
+   * `applyItem`'s bindings read.
+   */
+  readsPreamble: boolean
 }
 
 /** One reactive text (content slot) of a lazy row. */
@@ -61,6 +68,11 @@ export interface LazyRowTextBinding {
    * (`LazyRowPlanData.textNeedsRead`).
    */
   readsOuter: boolean
+  /**
+   * Reads a `.map()` preamble local, so every apply body this binding is
+   * emitted into must re-run the preamble first (#2447 follow-up).
+   */
+  readsPreamble: boolean
 }
 
 /** One row conditional driven from the loop-level apply bodies (§9.5). */
@@ -80,6 +92,13 @@ export interface LazyRowConditionalBinding {
   ordinal: number
   readsItem: boolean
   readsOuter: boolean
+  /**
+   * Reads a `.map()` preamble local, so every apply body this binding is
+   * emitted into must re-run the preamble first (#2447 follow-up). Per
+   * binding, not per loop, so `applyOuter` does not pay for a preamble only
+   * `applyItem`'s bindings read.
+   */
+  readsPreamble: boolean
 }
 
 export interface LazyRowPlanData {
@@ -113,14 +132,24 @@ export interface LazyRowPlanData {
    * (`mapPreambleWrapped`), or `''` when the row has none — proven safe to run
    * by `analyzeLazyPreamble` (§9.5 widening).
    *
-   * Emitted in `createRow` ONLY, and specifically before the clone: the
-   * non-hoisted per-row template interpolates values the preamble declares
-   * (an attribute reading a preamble local is not classified as reactive, so
-   * it lands in the template rather than in `attrs`). `applyItem` /
-   * `applyOuter` never need it, because a binding that reads a declared local
-   * refuses the loop outright — see `lazyRowEligibility`'s per-binding gate.
+   * `createRow` always runs it, and specifically before the clone: the
+   * non-hoisted per-row template can interpolate values the preamble declares.
+   *
+   * `applyItem` / `applyOuter` run it only when a binding they own reads a
+   * declared local (`itemNeedsPreamble` / `outerNeedsPreamble`) — which is
+   * possible as of the #2447 follow-up, where an attribute reading one became
+   * a reactive binding instead of frozen template text. Re-running is sound
+   * because `analyzeLazyPreamble` proved the statements are `const`
+   * declarations whose initializers only read the item and zero-arg signal
+   * getters, and the binding's DEPENDENCIES are the preamble's own free
+   * identifiers (substituted in `classifyLazyBinding`), so `applyOuter`
+   * primes what the preamble reads rather than the opaque local name.
    */
   preambleStatements: string
+  /** `applyItem` has a binding that reads a preamble local (#2447 follow-up). */
+  itemNeedsPreamble: boolean
+  /** `applyOuter` has one. Separate from the above so neither body pays for the other's. */
+  outerNeedsPreamble: boolean
   /**
    * Row conditionals driven from the apply bodies (§9.5, `lazy-conditional.ts`).
    * Empty for most loops. Each arm is a static element, so the emitter hoists
@@ -279,6 +308,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       ordinal: ordinal++,
       readsItem: c.readsItem,
       readsOuter: c.readsOuter,
+      readsPreamble: c.readsPreamble,
     }
   })
   const texts: LazyRowTextBinding[] = loop.bindings.reactiveTexts.map((text, i) => {
@@ -293,6 +323,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       // a list keeps exactly the classifier's answer.
       readsItem: c.readsItem || !c.readsOuter,
       readsOuter: c.readsOuter,
+      readsPreamble: c.readsPreamble,
     }
   })
 
@@ -322,6 +353,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       // neither is handled above.
       readsItem: klass.readsItem || !klass.readsOuter,
       readsOuter: klass.readsOuter,
+      readsPreamble: klass.readsPreamble,
     }
   })
 
@@ -335,6 +367,12 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       lastCount: ordinal,
       outerPrimeGetters,
       preambleStatements: args.mapPreambleWrapped,
+      // Which apply bodies must re-run the preamble — computed from the FINAL
+      // binding lists, not the raw classification, so a text/conditional that
+      // classified as neither item- nor outer-driven (and was therefore forced
+      // into `applyItem` above) is counted in the body it actually lands in.
+      itemNeedsPreamble: [...attrs, ...texts, ...conditionals].some(b => b.readsItem && b.readsPreamble),
+      outerNeedsPreamble: [...attrs, ...texts, ...conditionals].some(b => b.readsOuter && b.readsPreamble),
       conditionals,
     },
     decision,

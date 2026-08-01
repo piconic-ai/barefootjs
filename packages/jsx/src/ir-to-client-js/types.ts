@@ -494,6 +494,18 @@ export interface LoopChildReactiveAttr extends AttrMeta {
   childSlotId: string // bf slot ID of the element with reactive attr
   attrName: string // 'className', 'disabled', etc.
   expression: string // Expression that reads signals
+  /**
+   * The expression reads a `.map()` callback preamble local (#2447
+   * follow-up), so it is reactive by way of whatever the preamble read — the
+   * classifier cannot see through the declaration, and the local is not in
+   * scope in the update body until the preamble is re-run there.
+   *
+   * Two consequences, both handled by the emitter rather than here: the row
+   * effect runs `mapPreambleWrapped` BEFORE the attr writes, and the lazy row
+   * graph refuses the loop (`lazyRowEligibility`'s `readsPreamble` gate), so
+   * such a row keeps the eager per-row effect.
+   */
+  readsPreamble?: boolean
 }
 
 export interface LoopChildReactiveText {

@@ -16,6 +16,7 @@ import type {
 } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, tokenContainsIdent } from './utils.ts'
 import { expandConstantForReactivity } from './prop-handling.ts'
+import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
 
 /**
@@ -627,6 +628,7 @@ export function collectLoopChildReactiveAttrs(
   loopParam?: string,
   loopParamBindings?: readonly LoopParamBinding[],
   stopAtReactiveConditionals = false,
+  preambleNames?: ReadonlySet<string>,
 ): LoopChildReactiveAttr[] {
   const attrs: LoopChildReactiveAttr[] = []
   traverseElements(node, (el) => {
@@ -664,8 +666,23 @@ export function collectLoopChildReactiveAttrs(
         // / `hasFunctionCalls` fallback so the loop-child path matches the
         // top-level one — a harmless over-wrap at worst (an effect that
         // subscribes to nothing runs once).
+        // A `.map()` callback preamble local (#2447 follow-up). The
+        // classifier cannot see it: `const cls = row.done ? …` makes `cls`
+        // neither a signal read nor a loop-param read, so `class={cls}`
+        // scored 'none' and the value froze at its row-construction value —
+        // a same-key item update rewrote the sibling `{row.label}` text and
+        // left the class stale. Its reactivity is the PREAMBLE's: whatever
+        // the initializer read. Flag it and let the emitter re-run the
+        // preamble ahead of the write (`stringifyReactiveEffects`), which is
+        // the child-position `preambleRegions` treatment (#2389) applied to
+        // the attribute position.
+        const readsPreamble =
+          preambleNames !== undefined &&
+          preambleNames.size > 0 &&
+          [...(expanded.freeIds ?? extractFreeIdentifiersFromText(expanded.expr))].some(n => preambleNames.has(n))
         const reactive =
           classifyReactivity(expanded.expr, ctx, loopParam, loopParamBindings, expanded.freeIds).kind !== 'none'
+          || readsPreamble
           || attr.callsReactiveGetters
           || attr.hasFunctionCalls
         if (!attr.clientOnly && !reactive) continue
@@ -675,6 +692,7 @@ export function collectLoopChildReactiveAttrs(
           expression: expanded.expr,
           ...pickAttrMetaFromIR(attr),
           ...(expanded.freeIds !== undefined && { freeIdentifiers: expanded.freeIds }),
+          ...(readsPreamble && { readsPreamble: true }),
         })
       }
     }

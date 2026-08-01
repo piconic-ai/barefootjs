@@ -97,6 +97,21 @@ export interface LazyPreambleFacts {
    * component scope.
    */
   declaredNames: ReadonlySet<string>
+  /**
+   * What the preamble itself reads — its free identifiers, minus the names it
+   * declares. This is the SUBSTITUTION set: a binding that names a preamble
+   * local inherits these as its own dependencies, because that is literally
+   * what the value depends on.
+   *
+   * Returned as raw names, unclassified, on purpose. Deciding which are row
+   * locals, which are primable getters, and which are opaque needs the loop's
+   * `rowLocalNames` / `indexParam` / `LazyRowScopeInfo`, none of which this
+   * module has — and re-deriving that judgement here would be a second copy
+   * of `classifyLazyBinding`'s rules, free to drift from the one the emitter
+   * actually primes against. So the names go back unjudged and run through
+   * the SAME loop a binding's own identifiers do.
+   */
+  freeNames: ReadonlySet<string>
 }
 
 export type LazyPreambleAnalysis =
@@ -106,7 +121,7 @@ export type LazyPreambleAnalysis =
 /** No preamble at all — nothing to prove, nothing to substitute. */
 export const NO_PREAMBLE: LazyPreambleAnalysis = {
   lazySafe: true,
-  facts: { declaredNames: new Set() },
+  facts: { declaredNames: new Set(), freeNames: new Set() },
 }
 
 const NO = (reason: string): LazyPreambleAnalysis => ({ lazySafe: false, reason })
@@ -189,7 +204,10 @@ export function analyzeLazyPreamble(
     return NO(`map-callback preamble reads the loop index parameter '${indexParam}'`)
   }
 
-  return { lazySafe: true, facts: { declaredNames } }
+  const freeNames = new Set(readNames)
+  for (const declared of declaredNames) freeNames.delete(declared)
+
+  return { lazySafe: true, facts: { declaredNames, freeNames } }
 }
 
 /** Every name a `const` binding form introduces (identifier or pattern). */

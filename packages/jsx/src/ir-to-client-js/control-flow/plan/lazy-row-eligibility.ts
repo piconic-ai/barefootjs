@@ -297,15 +297,6 @@ export function lazyRowEligibility(args: LazyRowEligibilityArgs): LazyRowEligibi
     if (b.opaqueOuterNames.includes(UNKNOWN_IDENTIFIERS)) {
       return NO(`binding on slot ${b.slotId} has no analyzable identifier set`)
     }
-    // A preamble-declared local hides the preamble's own dependencies, and
-    // the apply bodies would have to re-run the preamble to have the value at
-    // all. Currently unreachable — a child-position read is a
-    // `preambleRegions` entry and an attribute-position one is not classified
-    // as reactive — so this is the fail-safe that keeps the widening sound if
-    // either of those facts changes. See `lazy-preamble.ts`.
-    if (b.readsPreamble) {
-      return NO(`binding on slot ${b.slotId} reads a map-callback preamble local`)
-    }
     // An outer name the emitter cannot prime used to refuse the loop: the
     // loop-level effect must subscribe on its FIRST run, and with an empty
     // entry list the per-entry reads never execute, so it would subscribe to
@@ -445,23 +436,22 @@ export function classifyLazyBinding(args: {
   const reactiveOuterNames: string[] = []
   const opaqueOuterNames: string[] = []
 
-  for (const name of free) {
-    if (preamble?.declaredNames.has(name)) {
-      readsPreamble = true
-      continue
-    }
+  // Classify ONE free identifier. Applied to the binding's own names and — for
+  // a binding that reads a preamble local — to the preamble's free names too,
+  // so both go through exactly the same rules (see `LazyPreambleFacts.freeNames`).
+  const classifyName = (name: string): void => {
     if (rowLocalNames.has(name)) {
       readsItem = true
-      continue
+      return
     }
     if (name === indexParam) {
       referencesIndex = true
-      continue
+      return
     }
-    if (INERT_BINDING_GLOBALS.has(name)) continue
+    if (INERT_BINDING_GLOBALS.has(name)) return
     if (scope.signals.has(name) || scope.memos.has(name)) {
       if (!reactiveOuterNames.includes(name)) reactiveOuterNames.push(name)
-      continue
+      return
     }
     // A LITERAL-DERIVED constant (empty free-identifier set) is the only
     // non-signal local name provably incapable of reactivity: with nothing
@@ -481,8 +471,23 @@ export function classifyLazyBinding(args: {
     // fallback) is the sound answer; guessing "inert" would be a silent
     // never-updates bug.
     const constFree = scope.constants.get(name)
-    if (constFree !== undefined && constFree !== null && constFree.size === 0) continue
+    if (constFree !== undefined && constFree !== null && constFree.size === 0) return
     opaqueOuterNames.push(name)
+  }
+
+  for (const name of free) {
+    // A preamble-declared name is a ROW-LOCAL alias for whatever the preamble
+    // read. Substituting its dependencies is the whole point: `class={cls}`
+    // where `const cls = selected() === row().id ? …` depends on `selected`
+    // AND the item, so the binding has to land in BOTH apply bodies and
+    // `selected` has to reach the prime list. Classifying `cls` on its own
+    // name would name neither, and an unprimed `applyOuter` never subscribes.
+    if (preamble?.declaredNames.has(name)) {
+      readsPreamble = true
+      for (const dep of preamble.freeNames) classifyName(dep)
+      continue
+    }
+    classifyName(name)
   }
 
   return {

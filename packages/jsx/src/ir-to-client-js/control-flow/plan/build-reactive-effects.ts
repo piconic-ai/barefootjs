@@ -82,6 +82,7 @@ export function buildReactiveEffectsPlan(
         attrName: attr.attrName,
         wrappedExpression: wrap(attr.expression),
         meta: pickAttrMeta(attr),
+        ...(attr.readsPreamble && { readsPreamble: true }),
       })),
     })
   }

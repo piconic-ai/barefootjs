@@ -198,11 +198,53 @@ describe('lazy row emission — value-only preamble', () => {
     expect(createRow.indexOf('const cls =')).toBeLessThan(createRow.indexOf('const __el ='))
   })
 
-  test('applyItem does NOT re-run the preamble — no binding may read a local', () => {
+  test('applyOuter re-runs the preamble AND primes what it reads', () => {
+    // `className={cls}` is a binding as of the #2447 follow-up, and `cls`
+    // reads `selected()` — an OUTER signal the local names nowhere. The
+    // classifier substitutes the preamble's free identifiers, so `selected`
+    // reaches the prime list; without that the loop-level effect would
+    // subscribe to nothing and the class would never update.
     // Bounded at the plan's closing `}, 'l0')` — past that sits the
     // `hydrate` template, which legitimately contains the preamble.
-    const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf("}, 'l0')"))
-    expect(applyItem).not.toContain('const cls =')
+    const plan = js.slice(js.indexOf('mapArrayLazy('), js.indexOf("}, 'l0')"))
+    const applyOuter = plan.slice(plan.indexOf('applyOuter:'))
+    expect(applyOuter).toContain('const cls = selected() === row().id')
+    // The prime statement sits ABOVE the per-entry loop, so the effect
+    // subscribes even while the entry list is empty.
+    expect(applyOuter.indexOf('selected()')).toBeLessThan(applyOuter.indexOf('for (const __e of __es)'))
+  })
+
+  test('applyItem re-runs it too — this binding reads the item as well', () => {
+    // `selected() === row().id ? … : (row().done ? …)` reads BOTH, so the
+    // binding lands in both bodies and both need the local. Asserted
+    // explicitly rather than left implicit: "which bodies" is the whole
+    // per-binding accounting.
+    const plan = js.slice(js.indexOf('mapArrayLazy('), js.indexOf("}, 'l0')"))
+    const applyItem = plan.slice(plan.indexOf('applyItem:'), plan.indexOf('applyOuter:'))
+    expect(applyItem).toContain('const cls = selected() === row().id')
+  })
+
+  test('a preamble NO binding reads is emitted in createRow only', () => {
+    // The counterpart: on-demand means a body with no reader pays nothing.
+    const js2 = clientJs(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string }
+export function UnreadPreamble() {
+  const [rows, setRows] = createSignal<Row[]>([])
+  return (
+    <tbody>
+      {rows().map(row => {
+        const unused = row.label
+        return <tr key={row.id}><td>{row.label}</td></tr>
+      })}
+    </tbody>
+  )
+}
+`, 'UnreadPreamble.tsx')
+    const plan = js2.slice(js2.indexOf('mapArrayLazy('), js2.indexOf("}, 'l0')"))
+    expect(plan.slice(plan.indexOf('createRow:'), plan.indexOf('applyItem:'))).toContain('const unused =')
+    expect(plan.slice(plan.indexOf('applyItem:'))).not.toContain('const unused =')
   })
 })
 

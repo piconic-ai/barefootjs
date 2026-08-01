@@ -331,7 +331,7 @@ export function collectInnerLoops(
         if (ctx) {
           for (const child of n.children) {
             bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, n.param, n.paramBindings))
-            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings))
+            bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, n.param, n.paramBindings, false, preambleNamesOf(n)))
             bindings.refs.push(...collectLoopChildRefs(child))
           }
         }
@@ -669,7 +669,7 @@ export function collectElements(
       const childHandlers: string[] = []
       const bindings = projectionInner
         ? emptyLoopChildBindings()
-        : collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings)
+        : collectLoopChildBindings(l.children, ctx, siblingOffsets, l.param, l.paramBindings, preambleNamesOf(l))
       if (!projectionInner) {
         for (const child of l.children) {
           childHandlers.push(...collectEventHandlersFromIR(child))
@@ -1141,7 +1141,7 @@ function collectBranchLoops(
       // which caused reactive reads inside simple loop bodies to silently
       // no-op for existing items.
       const branchBindings = ctx && !projectionInner
-        ? collectLoopChildBindings(n.children, ctx, siblingOffsets, n.param, n.paramBindings)
+        ? collectLoopChildBindings(n.children, ctx, siblingOffsets, n.param, n.paramBindings, preambleNamesOf(n))
         : emptyLoopChildBindings()
 
       loops.push({
@@ -1298,12 +1298,30 @@ function collectBranchConditionals(
  * resolve child slot ids inside nested loops; the rest of the per-item
  * collectors don't read them but pass them through for symmetry.
  */
+/**
+ * The names a loop's `.map()` callback preamble declares, or `undefined` when
+ * it has none — the input to the attribute classifier's preamble-local check
+ * (#2447 follow-up). `undefined` rather than an empty set so the classifier's
+ * fast path stays a single `!== undefined` for the overwhelmingly common
+ * preamble-free loop.
+ */
+function preambleNamesOf(loop: IRLoop): ReadonlySet<string> | undefined {
+  const declared = loop.preamble?.declaredNames
+  return declared && declared.length > 0 ? new Set(declared) : undefined
+}
+
 export function collectLoopChildBindings(
   children: readonly IRNode[],
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
   loopParam: string,
   loopParamBindings: readonly import('../types.ts').LoopParamBinding[] | undefined,
+  /**
+   * Names the loop's `.map()` callback preamble declares, so an attribute
+   * reading one is classified reactive (#2447 follow-up) — see
+   * `collectLoopChildReactiveAttrs`. Omitted for a loop with no preamble.
+   */
+  preambleNames?: ReadonlySet<string>,
 ): LoopChildBindings {
   const bindings = emptyLoopChildBindings()
   for (const child of children) {
@@ -1313,7 +1331,7 @@ export function collectLoopChildBindings(
     // `collectLoopChildConditionals`, which gives each its own insert() +
     // arm-scoped attrs/texts (`LoopChildBranchSummary.reactiveAttrs` /
     // `.reactiveTexts`) — descending into them here too would double-bind.
-    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings, true))
+    bindings.reactiveAttrs.push(...collectLoopChildReactiveAttrs(child, ctx, loopParam, loopParamBindings, true, preambleNames))
     bindings.reactiveTexts.push(...collectLoopChildReactiveTexts(child, ctx, loopParam, loopParamBindings, true))
     bindings.refs.push(...collectLoopChildRefs(child))
     bindings.conditionals.push(...collectLoopChildConditionals(child, ctx, siblingOffsets, loopParam, loopParamBindings))
