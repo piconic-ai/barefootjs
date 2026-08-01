@@ -4,6 +4,8 @@ lib/BarefootJS/Backend/Mojo.pm
 lib/Mojolicious/Plugin/BarefootJS.pm
 lib/Mojolicious/Plugin/BarefootJS/DevReload.pm
 LICENSE
+CONTRIBUTING.md
+SECURITY.md
 MANIFEST
 Makefile.PL
 t/dev_reload.t

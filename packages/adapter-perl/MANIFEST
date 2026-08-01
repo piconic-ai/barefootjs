@@ -5,6 +5,8 @@ lib/BarefootJS/DevReload.pm
 lib/BarefootJS/Evaluator.pm
 lib/BarefootJS/SearchParams.pm
 LICENSE
+CONTRIBUTING.md
+SECURITY.md
 MANIFEST
 Makefile.PL
 README.md
