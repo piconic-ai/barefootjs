@@ -124,7 +124,7 @@ export function stringifyReactiveEffects(
   if (pc) {
     // Profile mode: preserve the granular per-slot/per-attr effect shape so
     // every binding keeps its own bfId (see module docstring).
-    emitAttrSlotsGranular(lines, indent, elVar, lookup, attrSlots, elementIndexBySlot, bindingBfId)
+    emitAttrSlotsGranular(lines, indent, elVar, lookup, attrSlots, elementIndexBySlot, bindingBfId, mapPreambleWrapped)
     emitOuterTexts(lines, indent, elVar, outerTexts, bindingBfId, textClaimPathExprs)
     emitPreambleRegionsEffect(lines, indent, elVar, preambleRegions, mapPreambleWrapped)
   } else {
@@ -154,6 +154,7 @@ function emitAttrSlotsGranular(
   attrSlots: readonly ReactiveAttrSlot[],
   elementIndexBySlot: ReadonlyMap<string, number> | undefined,
   bindingBfId: (slotId: string) => string,
+  mapPreambleWrapped: string | undefined,
 ): void {
   for (const slot of attrSlots) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
@@ -162,6 +163,14 @@ function emitAttrSlotsGranular(
     lines.push(`${indent}if (${varName}) {`)
     for (const attr of slot.attrs) {
       lines.push(`${indent}  createEffect(() => {`)
+      // Profile mode keeps one effect per attr, so an attr reading a preamble
+      // local needs the declarations inside ITS OWN effect — there is no
+      // shared row-effect scope to hoist them into here (#2447 follow-up).
+      // Re-running per attr is the price of the per-binding bfId this mode
+      // exists to produce; `bf debug profile` is off the build hot path.
+      if (attr.readsPreamble && mapPreambleWrapped) {
+        lines.push(`${indent}    ${mapPreambleWrapped}`)
+      }
       for (const stmt of emitAttrUpdate(varName, attr.attrName, attr.wrappedExpression, attr.meta)) {
         lines.push(`${indent}    ${stmt}`)
       }
@@ -191,6 +200,11 @@ function emitPreambleRegionsEffect(
     lines.push(`${indent}  ${writer}('${region.slotId}', ${region.valueExpr})`)
   }
   lines.push(`${indent}})`)
+}
+
+/** Does any attr in these slots read a `.map()` preamble local (#2447)? */
+function attrsReadPreamble(attrSlots: readonly ReactiveAttrSlot[]): boolean {
+  return attrSlots.some(slot => slot.attrs.some(a => a.readsPreamble))
 }
 
 function attrLookupExpr(
@@ -270,6 +284,15 @@ function emitConsolidatedRowEffect(
     return
   }
   lines.push(`${indent}createEffect(() => {`)
+  // The preamble re-run leads the body, not trails it (#2447 follow-up).
+  // It used to sit between the attr writes and the region writes, because
+  // regions were its only readers. An attribute can read a preamble local
+  // now (`class={cls}`), and it reads it from THIS scope — so the
+  // declarations have to exist before the first write, whichever kind that
+  // is. Regions are unaffected by the move: they were already downstream.
+  if (mapPreambleWrapped && (preambleRegions.length > 0 || attrsReadPreamble(attrSlots))) {
+    lines.push(`${indent}  ${mapPreambleWrapped}`)
+  }
   for (const slot of attrSlots) {
     const varName = `__ra_${varSlotId(slot.slotId)}`
     lines.push(`${indent}  if (${varName}) {`)
@@ -281,9 +304,6 @@ function emitConsolidatedRowEffect(
       lines.push(`${indent}    }`)
     }
     lines.push(`${indent}  }`)
-  }
-  if (preambleRegions.length > 0 && mapPreambleWrapped) {
-    lines.push(`${indent}  ${mapPreambleWrapped}`)
   }
   for (const text of outerTexts) {
     lines.push(`${indent}  ${writer}('${text.slotId}', String(${text.wrappedExpression}))`)

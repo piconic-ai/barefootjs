@@ -1,31 +1,22 @@
 /**
- * A lazy row whose `.map()` callback has a value-only PREAMBLE — the §9.5
- * widening (`jsx/src/ir-to-client-js/control-flow/plan/lazy-preamble.ts`).
+ * A row whose `.map()` callback has a value-only PREAMBLE, run end to end:
+ * compile the component, import the emitted module, mount it, read the DOM.
  *
  * The compiler side is pinned by unit tests (`jsx/src/__tests__/
- * lazy-preamble.test.ts`): which preambles are accepted, and that the accepted
- * one is emitted into `createRow` only. What those cannot show is that the
- * emitted plan actually RUNS — the preamble declares a local that the row
- * template interpolates, so a wrong order or a missing splice produces a row
- * with an empty attribute rather than a compile error.
+ * lazy-preamble.test.ts`, `preamble-attr-reactivity.test.ts`). What those
+ * cannot show is that the emitted plan actually RUNS — the preamble declares
+ * a local the row reads, so a wrong order or a missing splice produces a row
+ * with an empty or stale attribute rather than a compile error.
  *
- * So this runs it: compile the component, import the emitted module, mount it,
- * and read the DOM. Two things are checked, and they are the two the widening
- * could plausibly break:
+ * ## What is checked
  *
- *  1. A CSR-created row gets the preamble-derived attribute value. This is the
- *     `createRow` splice, and it must land BEFORE the clone whose template
- *     literal reads the local.
- *  2. A same-key item update still writes the row's item-driven text. `applyItem`
- *     deliberately does NOT re-run the preamble (no binding may read a local —
- *     `lazyRowEligibility` refuses that), so this pins that leaving it out did
- *     not strand the bindings that body does own.
- *
- * The attribute is creation-time by construction: an attribute reading a
- * preamble local is not classified as reactive, so it is interpolated into the
- * template rather than wired. That is true of the eager path too and is not a
- * behaviour this widening changes — see the `class` assertion after the update,
- * which pins the CURRENT contract rather than an aspiration.
+ *  1. A CSR-created row gets the preamble-derived attribute value.
+ *  2. A same-key item update REWRITES it. This is the behaviour the follow-up
+ *     added: before it, `applyItem` reused the row node and re-ran only the
+ *     wired slots, of which the class was not one, so row 1 kept `open` after
+ *     its item turned `done: true` while the sibling text updated normally.
+ *     Now `class={cls}` is a binding, `applyItem` re-runs the preamble ahead
+ *     of it, and the write lands.
  */
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
@@ -86,14 +77,16 @@ export function PreambleRows() {
 }
 `
 
-describe('lazy row with a value-only map-callback preamble', () => {
+describe('a row with a value-only map-callback preamble', () => {
   beforeEach(() => { document.body.innerHTML = '' })
 
   test('CSR-created rows get the preamble-derived attribute and the item text', async () => {
     const js = await compileAndRegister(ROWS, 'PreambleRows.tsx')
-    // Precondition: this shape really is on the lazy path. Without it the
-    // assertions below would pass for the wrong reason — the eager path also
-    // renders the row correctly, it just pays a root + effect per row.
+    // Precondition: this shape is on the LAZY path, and stays there even
+    // though `class={cls}` is now a real binding (#2447 follow-up) — the
+    // apply bodies re-run the preamble instead of the gate refusing. Without
+    // this the assertions below could pass on the eager path for the wrong
+    // reason: it also renders correctly, it just pays a root + effect per row.
     expect(js).toContain('mapArrayLazy(')
     expect(js).not.toMatch(/\bmapArray\(/)
 
@@ -120,13 +113,13 @@ describe('lazy row with a value-only map-callback preamble', () => {
 
     const items = el.querySelectorAll('#list li')
     expect(items.length).toBe(2)
-    // `applyItem` owns this and does not re-run the preamble.
     expect(items[0].textContent).toBe('shipped it')
-    // The preamble-derived attribute is creation-time on BOTH emission paths
-    // (an attribute reading a preamble local is never classified as reactive),
-    // so row 1 keeps `open` even though its item is now `done: true`. Pinned
-    // so a future change to that classification shows up here as a decision,
-    // not as a surprise.
-    expect(items[0].getAttribute('class')).toBe('open')
+    // The point of the follow-up: row 1's item is now `done: true`, so the
+    // preamble recomputes `cls` and the row effect writes it. This assertion
+    // read `'open'` before the fix — the same DOM node, the same key, the
+    // sibling text updated, and the class left behind.
+    expect(items[0].getAttribute('class')).toBe('done')
+    // Row 2 was `done` all along and must not have been disturbed.
+    expect(items[1].getAttribute('class')).toBe('done')
   })
 })

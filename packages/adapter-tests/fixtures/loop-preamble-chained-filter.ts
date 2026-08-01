@@ -50,9 +50,9 @@ export function LoopPreambleChainedFilter(props: { rows: Row[] }) {
     ],
   },
   expectedHtml: `
-    <ul bf-s="test" bf="s1">
-      <li class="write it-open" data-key="1"><!--bf:s0-->write it<!--/--></li>
-      <li class="sign it-open" data-key="3"><!--bf:s0-->sign it<!--/--></li>
+    <ul bf-s="test" bf="s2">
+      <li bf="s1" class="write it-open" data-key="1"><!--bf:s0-->write it<!--/--></li>
+      <li bf="s1" class="sign it-open" data-key="3"><!--bf:s0-->sign it<!--/--></li>
     </ul>
   `,
   dataPoints: [

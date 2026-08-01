@@ -46,9 +46,9 @@ export function LoopPreambleAttrValue(props: { rows: Row[] }) {
     ],
   },
   expectedHtml: `
-    <ul bf-s="test" bf="s1">
-      <li class="open" data-key="1"><!--bf:s0-->write it<!--/--></li>
-      <li class="done" data-key="2"><!--bf:s0-->ship it<!--/--></li>
+    <ul bf-s="test" bf="s2">
+      <li bf="s1" class="open" data-key="1"><!--bf:s0-->write it<!--/--></li>
+      <li bf="s1" class="done" data-key="2"><!--bf:s0-->ship it<!--/--></li>
     </ul>
   `,
   dataPoints: [{ name: 'empty', props: { rows: [] } }],

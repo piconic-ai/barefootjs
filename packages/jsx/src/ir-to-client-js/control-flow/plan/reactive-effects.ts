@@ -19,6 +19,13 @@ export interface ReactiveAttrEffect {
   wrappedExpression: string
   /** Pre-copied attr metadata used by emitAttrUpdate. */
   meta: AttrMeta
+  /**
+   * `wrappedExpression` reads a `.map()` callback preamble local (#2447
+   * follow-up), so the emitter must run the preamble ahead of this write —
+   * the local is not otherwise in scope in the update body, and its value
+   * is what makes the attribute reactive at all.
+   */
+  readsPreamble?: boolean
 }
 
 /** Reactive attrs grouped by child slot (one qsa lookup per slot). */

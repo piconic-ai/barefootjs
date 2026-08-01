@@ -4746,6 +4746,19 @@ function transformMapCall(
     ? collectPreambleRegions(children, new Set(preamble.declaredNames), ctx)
     : undefined
 
+  // #2447 follow-up — the ATTRIBUTE twin of the regions above. `class={cls}`
+  // where the preamble declares `cls` froze at its row-construction value for
+  // the same reason `{cells}` did, and for one extra reason on top: an
+  // attribute only gets wired at all if its element carries a slot id, and
+  // `hasReactiveAttributes` (which decides that at element-build time, before
+  // any loop preamble is known) scores a bare local as non-reactive. So the
+  // slot has to be granted HERE, in the same after-the-fact pass the regions
+  // use — after which `collectLoopChildReactiveAttrs` classifies the attr and
+  // the row effect re-runs the preamble ahead of the write.
+  if (preamble && !isStaticArray) {
+    markPreambleAttrSlots(children, new Set(preamble.declaredNames), ctx)
+  }
+
   // Collect nested components for both static and dynamic arrays.
   // Static arrays: needed for initChild hydration.
   // Dynamic arrays with native root + component descendants: enables
@@ -5130,6 +5143,72 @@ function collectPreambleRegions(
   }
   visit(nodes)
   return regions
+}
+
+/**
+ * Grant a slot id to every loop-body element carrying an attribute that reads
+ * a `.map()` preamble local (#2447 follow-up).
+ *
+ * Only the slot id is decided here; whether the attribute is *wired* is the
+ * client-JS classifier's call (`collectLoopChildReactiveAttrs`, which takes
+ * the same `declaredNames` set). Splitting it that way keeps this pass free of
+ * reactivity policy — it removes the one obstacle the classifier cannot remove
+ * for itself, since `hasReactiveAttributes` already ran when the element was
+ * built and a slot id cannot be granted from the client-JS pass (the SSR
+ * template is rendered from this same IR and would not carry the `bf` marker).
+ *
+ * Mirrors `collectPreambleRegions`' traversal exactly, conditional arms
+ * included — an arm element gets its slot id here too, which costs nothing
+ * when the arm's own wiring declines to use it.
+ */
+function markPreambleAttrSlots(
+  nodes: IRNode[],
+  declared: ReadonlySet<string>,
+  ctx: TransformContext,
+): void {
+  const readsDeclared = (attr: IRAttribute): boolean => {
+    if (attr.name === 'key') return false
+    const value = attr.value
+    if (value.kind !== 'expression' && value.kind !== 'template') return false
+    const refs = attr.freeIdentifiers ?? extractFreeIdentifiersFromText(attrValueText(value))
+    for (const r of refs) if (declared.has(r)) return true
+    return false
+  }
+  const visit = (list: IRNode[]): void => {
+    for (const node of list) {
+      switch (node.type) {
+        case 'element':
+          if (!node.slotId && node.attrs.some(readsDeclared)) node.slotId = generateSlotId(ctx)
+          visit(node.children)
+          break
+        case 'fragment':
+          visit(node.children)
+          break
+        case 'conditional':
+          visit([node.whenTrue, ...(node.whenFalse ? [node.whenFalse] : [])])
+          break
+      }
+    }
+  }
+  visit(nodes)
+}
+
+/**
+ * Expression-bearing source text of an attribute value, for the
+ * free-identifier scan. Only used as a FALLBACK — an attribute normally
+ * carries `freeIdentifiers` from its own AST walk, and this reconstruction
+ * exists for the few IR producers that don't populate it. Static string parts
+ * are dropped so a literal word can never be mistaken for an identifier.
+ */
+function attrValueText(value: AttrValue): string {
+  if (value.kind === 'expression') return value.expr
+  if (value.kind !== 'template') return ''
+  const out: string[] = []
+  for (const p of value.parts) {
+    if (p.type === 'ternary') out.push(p.condition, p.whenTrue, p.whenFalse)
+    else if (p.type === 'lookup') out.push(p.key)
+  }
+  return out.join(' ')
 }
 
 /**

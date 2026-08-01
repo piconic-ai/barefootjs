@@ -197,9 +197,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   // the `data-key` attribute.
   lines.push(`${b2}const ${paramHead} = () => __e.item`)
   // The row's `.map()` callback preamble, before the clone: a non-hoisted
-  // per-row template interpolates values the preamble declares. Only
-  // `createRow` needs it — a BINDING that reads a preamble local refuses the
-  // loop (`lazyRowEligibility`), so the apply bodies never reference one.
+  // per-row template interpolates values the preamble declares.
   if (lazyRow.preambleStatements) lines.push(`${b2}${lazyRow.preambleStatements}`)
   const cloneExpr = useHoisted
     ? hoistedCloneExpr(tplVar, o.skeletonTemplate!)
@@ -229,6 +227,13 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${b2}const ${paramHead} = () => __e.item`)
     lines.push(`${b2}const __r = __e.refs ?? (__e.refs = [])`)
     lines.push(`${b2}const __l = __e.last ?? (__e.last = [])`)
+    // Re-run the preamble only when a binding in THIS body reads a local it
+    // declares (#2447 follow-up). `mapArrayLazy` wraps `applyItem` in
+    // `untrack()`, so a signal read inside the preamble subscribes nothing
+    // here — the subscription is `applyOuter`'s job.
+    if (lazyRow.itemNeedsPreamble && lazyRow.preambleStatements) {
+      lines.push(`${b2}${lazyRow.preambleStatements}`)
+    }
     for (const a of itemAttrs) emitAttrBinding(lines, b2, a, 'item')
     if (itemTexts.length > 0) {
       lines.push(`${b2}const __d = ${doorAccess(lazyRow, lazyRow.writerIndex, adoptedPlanVar)}`)
@@ -252,6 +257,12 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     lines.push(`${b3}const ${paramHead} = () => __e.item`)
     lines.push(`${b3}const __r = __e.refs ?? (__e.refs = [])`)
     lines.push(`${b3}const __l = __e.last ?? (__e.last = [])`)
+    // Per ENTRY, not once for the batch: the preamble reads the item, so its
+    // locals differ per row. The outer signals it reads are already primed
+    // above, so this effect subscribes even when `__es` is empty.
+    if (lazyRow.outerNeedsPreamble && lazyRow.preambleStatements) {
+      lines.push(`${b3}${lazyRow.preambleStatements}`)
+    }
     for (const a of outerAttrs) emitAttrBinding(lines, b3, a, 'outer')
     if (outerTexts.length > 0) {
       lines.push(`${b3}const __d = ${doorAccess(lazyRow, lazyRow.writerIndex, adoptedPlanVar)}`)

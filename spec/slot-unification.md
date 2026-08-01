@@ -500,12 +500,24 @@ declarations whose initializers contain no call except a **zero-argument
 signal/memo read** (`const cls = selected() === row.id ? …`, the krausest
 shape). That read is sound in all three bodies because `mapArrayLazy` wraps
 `createRow`/`applyItem` in `untrack()` and `applyOuter` IS the loop-level
-effect. The preamble is emitted into `createRow` ONLY, before the clone whose
-template literal interpolates the local. A binding that READS a declared local
-still refuses: a child-position read is a `preambleRegions` entry (already
-refused) and an attribute-position read is not classified as reactive, so the
-case is currently unreachable — the refusal is the fail-safe that keeps the
-widening sound if either fact changes.
+effect. `createRow` always runs the preamble, before the clone whose template
+literal may interpolate the local.
+
+A binding that READS a declared local was refused at first, on the grounds
+that a preamble local hides whatever the preamble read — so `applyOuter` would
+prime the wrong thing, or nothing, and an unprimed loop-level effect never
+subscribes. That refusal was written while the case was unreachable, and the
+#2447 follow-up made it reachable by classifying an attribute reading such a
+local as reactive (it used to freeze into the row template). Rather than let
+that push the krausest shape back to the eager path, the substitution the
+refusal stood in for is now real: `analyzeLazyPreamble` returns the preamble's
+own free identifiers, `classifyLazyBinding` runs them through the same rules
+as a binding's own names — so `selected` reaches the prime list and the
+binding lands in whichever bodies its real dependencies imply — and
+`applyItem` / `applyOuter` re-run the preamble only when a binding they own
+reads one. A preamble no binding reads stays in `createRow` alone. A
+child-position read is still a `preambleRegions` entry, which refuses on its
+own separate grounds.
 
 Outer-involving TEXT bindings were also refused once and are now lazy
 (#2411/#2412). The obstacle was not the design but the mutating text claim
