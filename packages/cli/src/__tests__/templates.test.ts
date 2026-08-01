@@ -33,6 +33,10 @@ describe('adapter registry', () => {
       // auto-reload handler lives in and eval.go (ParsedExpr evaluator).
       expect(adapter.files['bf-runtime/bf.go']).toContain('package bf')
       expect(adapter.files['bf-runtime/eval.go']).toContain('package bf')
+      // reprops.go carries RegisterReprops, which every generated
+      // components file with a constructor-derived field calls from init()
+      // — a scaffold missing it fails to compile (#2448).
+      expect(adapter.files['bf-runtime/reprops.go']).toContain('func RegisterReprops(')
       expect(adapter.files['bf-runtime/bfdev/bfdev.go']).toContain('package bfdev')
       expect(adapter.files['go.mod']).toContain(
         'replace github.com/barefootjs/runtime/bf => ./bf-runtime',
@@ -301,6 +305,7 @@ describe('adapter registry', () => {
     expect(echo.files['bf-runtime/bf.go']).toMatch(/package bf/)
     expect(echo.files['bf-runtime/eval.go']).toMatch(/package bf/)
     expect(echo.files['bf-runtime/streaming.go']).toBeTruthy()
+    expect(echo.files['bf-runtime/reprops.go']).toContain('func RegisterReprops(')
     expect(echo.files['bf-runtime/go.mod']).toMatch(/^module github\.com\/barefootjs\/runtime\/bf/m)
     expect(echo.files['go.mod']).toMatch(/replace github\.com\/barefootjs\/runtime\/bf => \.\/bf-runtime/)
     expect(echo.files['bf_render.go']).toContain('bf.TemplateFuncMap(root)')

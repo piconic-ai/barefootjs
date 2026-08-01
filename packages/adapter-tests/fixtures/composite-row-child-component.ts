@@ -23,10 +23,12 @@ import { createFixture } from '../src/types'
  *   - #2445 — Go template: the shared `BadgeSlot0` props instance built
  *     outside `{{range}}` is now overridden per row, at
  *     template-execution time, via the `bf_with_props` runtime helper —
- *     see `packages/adapter-go-template/runtime/bf.go`. A NARROWER residual
- *     gap (a child field DERIVED from the overridden prop, e.g. a memo,
- *     doesn't update per row — this fixture's `Badge` has no such field) is
- *     tracked separately as #2448, not by a divergence entry here.
+ *     see `packages/adapter-go-template/runtime/bf.go`. A child field
+ *     DERIVED from the overridden prop (a memo, a signal initial value) needs
+ *     more than a field patch and takes the `bf_reprops` rebuild path instead
+ *     (#2448); this fixture's `Badge` has no such field, so it stays on
+ *     `bf_with_props`. `composite-row-child-derived-prop` covers the other
+ *     side.
  */
 export const fixture = createFixture({
   id: 'composite-row-child-component',

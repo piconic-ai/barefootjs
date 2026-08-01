@@ -8,16 +8,18 @@ import { createFixture } from '../src/types'
  *
  * `Badge`'s `dbl` memo is computed once, at `NewBadgeProps` construction
  * time, from `in.N`. The Go template adapter builds the shared
- * `$.BadgeSlot0` instance ONCE outside `{{range}}` and re-applies only the
- * NAMED fields per row via `bf_with_props` (#2445) — it does not re-run
- * `NewBadgeProps`. So overriding `N` per row would leave `Dbl` holding
- * row 0's value (`0 * 2 = 0`) on every row: silently wrong output.
+ * `$.BadgeSlot0` instance ONCE outside `{{range}}`, and `bf_with_props`
+ * (#2445) re-applies only the NAMED fields on it — it cannot re-run
+ * `NewBadgeProps`. Overriding `N` that way would leave `Dbl` holding row 0's
+ * value (`0 * 2 = 0`) on every row: silently wrong output.
  *
- * The Go adapter refuses this loudly with BF101 instead — see
- * `conformance-pins.ts`'s entry for this fixture. Every other adapter (and
- * CSR) constructs the child fresh per row and is unaffected; this fixture's
- * `expectedHtml` is generated from the reference Hono adapter and must show
- * `Dbl` computed CORRECTLY per row (6 and 10, not 0 and 0) on those adapters.
+ * Go therefore takes the rebuild path for this shape: the compiler emits a
+ * props rebuilder for `Badge` and the row calls `bf_reprops`, which re-runs
+ * the real constructor per row so `Dbl` recomputes (#2448). Every other
+ * adapter (and CSR) constructs the child fresh per row and never had the
+ * problem. `expectedHtml` is generated from the reference Hono adapter and
+ * every adapter, Go included, must now show `Dbl` computed per row — 6 and
+ * 10, not 0 and 0.
  */
 export const fixture = createFixture({
   id: 'composite-row-child-derived-prop',

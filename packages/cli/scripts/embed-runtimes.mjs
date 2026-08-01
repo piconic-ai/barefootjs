@@ -30,6 +30,7 @@ const repoRoot = resolve(cliPkg, '../..')
 const sources = {
   bfGoSource: 'packages/adapter-go-template/runtime/bf.go',
   evalGoSource: 'packages/adapter-go-template/runtime/eval.go',
+  repropsGoSource: 'packages/adapter-go-template/runtime/reprops.go',
   streamingGoSource: 'packages/adapter-go-template/runtime/streaming.go',
   bfdevGoSource: 'packages/adapter-go-template/runtime/bfdev/bfdev.go',
 }

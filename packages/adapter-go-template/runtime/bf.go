@@ -183,6 +183,16 @@ func FuncMap() template.FuncMap {
 		// bf_with_children.
 		"bf_with_props": WithProps,
 
+		// Per-row props for a child whose CONSTRUCTOR derives a field from
+		// the overridden prop (#2448). bf_with_props patches fields on the
+		// shared instance and cannot re-run New<Child>Props, so a memo body
+		// or a signal initial value computed there would stay at the shared
+		// instance's one-shot value on every row. This entry looks up the
+		// component's generated rebuilder and re-runs the real constructor
+		// instead. See reprops.go for why the lookup is deferred to execute
+		// time rather than merged into this map.
+		"bf_reprops": Reprops,
+
 		// Scope comment for fragment roots
 		"bfScopeComment":    ScopeComment,
 		"bfScopeCommentEnd": ScopeCommentEnd,
@@ -2752,14 +2762,14 @@ func WithChildren(props interface{}, children template.HTML) (interface{}, error
 // at construction time (a memo body, or a signal's initial value — the
 // constructor bakes both) would keep whatever the one-shot constructor
 // computed and never update per row; only the directly-overridden field is
-// correct per row. That combination is REFUSED at compile time (BF101, #2448):
-// the TypeScript compiler tracks which constructor-computed fields derive from
-// which input props (GoTemplateAdapter.childDerivedFieldDeps, built by
-// recordDerivedFieldDeps in
-// packages/adapter-go-template/src/adapter/go-template-adapter.ts) and never
-// emits a bf_with_props call whose overridden field would go stale, so a call
-// this helper actually receives at runtime never hits that combination.
-// See https://github.com/piconic-ai/barefootjs/issues/2448.
+// correct per row. The compiler therefore does not route that case here: a
+// child with any constructor-derived field gets a generated props rebuilder
+// and the call site emits bf_reprops instead, which re-runs the real
+// constructor per row (#2448, see reprops.go). What reaches this helper is
+// the plain-passthrough case, where patching the field IS the whole update.
+//
+// Still exported and still registered: templates generated before #2448 call
+// it, and it remains the cheaper path when nothing is derived.
 func WithProps(props interface{}, kv ...interface{}) (interface{}, error) {
 	if len(kv)%2 != 0 {
 		return nil, fmt.Errorf("bf_with_props: odd number of key/value arguments (%d)", len(kv))
