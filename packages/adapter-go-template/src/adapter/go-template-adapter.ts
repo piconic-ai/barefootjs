@@ -970,6 +970,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\t\tcase ${JSON.stringify(wire)}:`)
       lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(wire)}, &in.${field}, kv[i+1])`)
     }
+    // No silent drop. `bf_with_props` passes an unknown field through because
+    // a rest-bag prop legitimately has no named field — but a rebuilder is
+    // only emitted for components with no rest bag, and there is a case for
+    // every prop the parent can override, so an unknown name here means the
+    // override would go unapplied.
+    lines.push('\t\t\tdefault:')
+    lines.push(`\t\t\t\terr = bf.RepropsUnknownFieldError(${q}, name)`)
     lines.push('\t\t\t}')
     lines.push('\t\t\tif err != nil {')
     lines.push('\t\t\t\treturn nil, err')

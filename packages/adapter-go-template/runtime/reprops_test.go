@@ -58,6 +58,8 @@ func registerBadge() {
 				err = RepropsAssign("Badge", "Text", &in.Text, kv[i+1])
 			case "N":
 				err = RepropsAssign("Badge", "N", &in.N, kv[i+1])
+			default:
+				err = RepropsUnknownFieldError("Badge", name)
 			}
 			if err != nil {
 				return nil, err
@@ -138,6 +140,21 @@ func TestRepropsErrors(t *testing.T) {
 	}
 	if _, err := Reprops("Badge", "not a props struct"); err == nil {
 		t.Error("wrong base type should error")
+	}
+	// A non-string field name would degrade to "" in the generated
+	// `name, _ := kv[i].(string)`, match no case, and silently drop the
+	// override. Rejected up front, matching bf_with_props.
+	if _, err := Reprops("Badge", baseBadge(), 42, "x"); err == nil {
+		t.Error("non-string field name should error")
+	}
+	if _, err := WithProps(baseBadge(), 42, "x"); err == nil {
+		t.Error("bf_with_props rejects it too — the two must agree")
+	}
+	// An unknown field name means the override would go unapplied. A
+	// rebuilder is only emitted for components with no rest bag, so unlike
+	// bf_with_props there is no legitimate passthrough here.
+	if _, err := Reprops("Badge", baseBadge(), "Nope", 1); err == nil {
+		t.Error("unknown field name should error")
 	}
 }
 

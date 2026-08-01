@@ -83,6 +83,17 @@ func Reprops(name string, base interface{}, kv ...interface{}) (interface{}, err
 	if len(kv)%2 != 0 {
 		return nil, fmt.Errorf("bf_reprops: odd number of key/value arguments (%d) for %q", len(kv), name)
 	}
+	// Field names are validated HERE, not in each generated rebuilder, so the
+	// generated `name, _ := kv[i].(string)` is safe by construction. Rejecting
+	// them matches `bf_with_props`: a non-string name would otherwise degrade
+	// to `""`, match no case, and silently drop the override — the same class
+	// of silent misrender this whole path exists to remove.
+	for i := 0; i < len(kv); i += 2 {
+		if _, ok := kv[i].(string); !ok {
+			return nil, fmt.Errorf(
+				"bf_reprops: %s field name at position %d must be a string, got %T", name, i, kv[i])
+		}
+	}
 	repropsMu.RLock()
 	fn, ok := repropsRegistry[name]
 	repropsMu.RUnlock()
@@ -100,6 +111,19 @@ func Reprops(name string, base interface{}, kv ...interface{}) (interface{}, err
 // stays a fixed shape instead of formatting its own message.
 func RepropsTypeError(name string, base interface{}) error {
 	return fmt.Errorf("bf_reprops: the %s rebuilder got %T, not its own props struct", name, base)
+}
+
+// RepropsUnknownFieldError is what a generated rebuilder returns for a field
+// name it has no case for.
+//
+// Unlike `bf_with_props`, whose unknown-field passthrough is load-bearing (a
+// prop routed into a rest bag has no named field to set), a rebuilder is only
+// emitted for components with NO rest bag and no spread slot, and the compiler
+// emits a case for every prop the parent can override. So an unknown name here
+// is a compiler gap, and dropping it silently would leave the override
+// unapplied — the failure mode this path replaced.
+func RepropsUnknownFieldError(component, field string) error {
+	return fmt.Errorf("bf_reprops: %s has no overridable field %q", component, field)
 }
 
 // RepropsAssign writes `val` into `*target`, which a generated rebuilder passes
