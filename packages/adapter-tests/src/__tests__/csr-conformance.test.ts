@@ -250,6 +250,26 @@ describe('CSR Conformance Tests', () => {
     //     component's own first slot id coincides with the wrapper's slot
     //     number (see `site/ui`'s xyflow Highlight-Depth demo regression).
     'grandchild-composition',
+    // #2460: the CSR template drops the destructure rename the same way
+    // the SSR side does — the aliased `count` reads a property named
+    // `count` off a props object shaped `{ text, n }`, so the `s1` slot
+    // renders empty instead of the fixture's corrected expectedHtml.
+    // https://github.com/piconic-ai/barefootjs/issues/2460
+    'aliased-destructured-prop',
+    // #2464 / #2465: the CSR template emits the same invalid
+    // `value="..."` attribute as SSR, diverging from the fixtures'
+    // corrected expectedHtml (`selected` on the matching option /
+    // element content).
+    // https://github.com/piconic-ai/barefootjs/issues/2464
+    // https://github.com/piconic-ai/barefootjs/issues/2465
+    'select-value-ssr',
+    'textarea-value-ssr',
+    // #2463: the CSR template lambda references `loading()` out of
+    // scope (declared inside init) — evaluating it throws
+    // `ReferenceError: loading is not defined`. Same root cause as the
+    // missing branch-switch effect the issue tracks.
+    // https://github.com/piconic-ai/barefootjs/issues/2463
+    'signal-early-return',
   ])
 
   for (const fixture of jsxFixtures) {

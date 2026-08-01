@@ -47,7 +47,17 @@ function resolveFixturePath(id: string): string | null {
 // fixture exists specifically to pin that gap). Auto-update would
 // overwrite the intentional value with the bug's output, so we skip
 // regeneration here.
-const SKIP_AUTO_UPDATE = new Set<string>([])
+const SKIP_AUTO_UPDATE = new Set<string>([
+  // Onboarding TSX-fidelity pins (PR #2461): expectedHtml is hand-authored
+  // to the CORRECT output because the Hono reference itself emits the
+  // broken form. Regenerate + remove from this set when the issue is fixed.
+  // https://github.com/piconic-ai/barefootjs/issues/2460
+  'aliased-destructured-prop',
+  // https://github.com/piconic-ai/barefootjs/issues/2464
+  'select-value-ssr',
+  // https://github.com/piconic-ai/barefootjs/issues/2465
+  'textarea-value-ssr',
+])
 
 async function main() {
   let updated = 0

@@ -1418,11 +1418,11 @@
       }
     },
     "call": {
-      "total": 184,
+      "total": 187,
       "cells": {
         "hono": {
-          "pass": 183,
-          "total": 184,
+          "pass": 186,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1433,8 +1433,8 @@
           ]
         },
         "blade": {
-          "pass": 169,
-          "total": 184,
+          "pass": 170,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1487,6 +1487,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1504,13 +1508,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 170,
-          "total": 184,
+          "pass": 171,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1557,6 +1565,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1574,13 +1586,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 169,
-          "total": 184,
+          "pass": 170,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1633,6 +1649,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1650,13 +1670,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 169,
-          "total": 184,
+          "pass": 170,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1709,6 +1733,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1726,13 +1754,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 169,
-          "total": 184,
+          "pass": 170,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1785,6 +1817,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1802,13 +1838,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 170,
-          "total": 184,
+          "pass": 171,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1855,6 +1895,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1872,13 +1916,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 169,
-          "total": 184,
+          "pass": 170,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1931,6 +1979,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1948,13 +2000,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 169,
-          "total": 184,
+          "pass": 170,
+          "total": 187,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2007,6 +2063,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2024,6 +2084,10 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -2174,11 +2238,11 @@
       }
     },
     "identifier": {
-      "total": 270,
+      "total": 275,
       "cells": {
         "hono": {
-          "pass": 269,
-          "total": 270,
+          "pass": 274,
+          "total": 275,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2189,9 +2253,13 @@
           ]
         },
         "blade": {
-          "pass": 253,
-          "total": 270,
+          "pass": 255,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2251,6 +2319,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2268,14 +2340,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 254,
-          "total": 270,
+          "pass": 256,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2329,6 +2409,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2346,14 +2430,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 253,
-          "total": 270,
+          "pass": 255,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2413,6 +2505,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2430,14 +2526,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 253,
-          "total": 270,
+          "pass": 255,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2497,6 +2601,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2514,14 +2622,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 253,
-          "total": 270,
+          "pass": 255,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2581,6 +2697,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2598,14 +2718,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 254,
-          "total": 270,
+          "pass": 256,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2659,6 +2787,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2676,14 +2808,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 253,
-          "total": 270,
+          "pass": 255,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2743,6 +2883,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2760,14 +2904,22 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 253,
-          "total": 270,
+          "pass": 255,
+          "total": 275,
           "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2827,6 +2979,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2844,6 +3000,10 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -2855,10 +3015,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L164"
       },
       "example": {
-        "fixture": "array-entries",
-        "description": ".entries().map(([i, v]) => ...) iterates with index and value",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/methods/array-entries.ts",
-        "code": "i"
+        "fixture": "aliased-destructured-prop",
+        "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2460)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-destructured-prop.ts",
+        "code": "text"
       }
     },
     "index-access": {
@@ -2914,15 +3074,15 @@
       }
     },
     "literal": {
-      "total": 222,
+      "total": 226,
       "cells": {
         "hono": {
-          "pass": 222,
-          "total": 222
+          "pass": 226,
+          "total": 226
         },
         "blade": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -2957,6 +3117,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2968,13 +3132,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3009,6 +3177,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3020,13 +3192,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3061,6 +3237,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3072,13 +3252,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3113,6 +3297,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3124,13 +3312,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3165,6 +3357,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3176,13 +3372,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3217,6 +3417,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3228,13 +3432,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3269,6 +3477,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3280,13 +3492,17 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 211,
-          "total": 222,
+          "pass": 213,
+          "total": 226,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3321,6 +3537,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3332,6 +3552,10 @@
             },
             {
               "fixture": "tag-cloud",
+              "issues": []
+            },
+            {
+              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -7284,15 +7508,15 @@
       }
     },
     "literal:boolean": {
-      "total": 41,
+      "total": 42,
       "cells": {
         "hono": {
-          "pass": 41,
-          "total": 41
+          "pass": 42,
+          "total": 42
         },
         "blade": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7301,8 +7525,8 @@
           ]
         },
         "erb": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7311,8 +7535,8 @@
           ]
         },
         "go-template": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7321,8 +7545,8 @@
           ]
         },
         "jinja": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7331,8 +7555,8 @@
           ]
         },
         "minijinja": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7341,8 +7565,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7351,8 +7575,8 @@
           ]
         },
         "twig": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7361,8 +7585,8 @@
           ]
         },
         "xslate": {
-          "pass": 40,
-          "total": 41,
+          "pass": 41,
+          "total": 42,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7384,43 +7608,43 @@
       }
     },
     "literal:null": {
-      "total": 22,
+      "total": 23,
       "cells": {
         "hono": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "blade": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "erb": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "go-template": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "jinja": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "minijinja": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "mojolicious": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "twig": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         },
         "xslate": {
-          "pass": 22,
-          "total": 22
+          "pass": 23,
+          "total": 23
         }
       },
       "source": {
@@ -7429,9 +7653,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L95"
       },
       "example": {
-        "fixture": "adjacent-conditionals",
-        "description": "Two sibling && conditionals with independent signals",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/adjacent-conditionals.ts"
+        "fixture": "logical-and-zero",
+        "description": "Falsy-zero `{n && jsx}` renders nothing (documented React divergence)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-and-zero.ts"
       }
     },
     "literal:number": {
@@ -7663,15 +7887,15 @@
       }
     },
     "literal:string": {
-      "total": 161,
+      "total": 163,
       "cells": {
         "hono": {
-          "pass": 161,
-          "total": 161
+          "pass": 163,
+          "total": 163
         },
         "blade": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7698,6 +7922,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7706,12 +7934,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "erb": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7738,6 +7970,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7746,12 +7982,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "go-template": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7778,6 +8018,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7786,12 +8030,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "jinja": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7818,6 +8066,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7826,12 +8078,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "minijinja": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7858,6 +8114,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7866,12 +8126,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "mojolicious": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7898,6 +8162,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7906,12 +8174,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "twig": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7938,6 +8210,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7946,12 +8222,16 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         },
         "xslate": {
           "pass": 153,
-          "total": 161,
+          "total": 163,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7978,6 +8258,10 @@
               "issues": []
             },
             {
+              "fixture": "select-value-ssr",
+              "issues": []
+            },
+            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -7986,6 +8270,10 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
+            },
+            {
+              "fixture": "textarea-value-ssr",
+              "issues": []
             }
           ]
         }

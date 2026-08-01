@@ -439,6 +439,13 @@ import { fixture as dateToLocaleNamedTz } from './date-tolocale-named-tz'
 // the landed Date catalogue work above.
 import { fixture as unionCatalogued } from './union-catalogued'
 import { fixture as objectCatalogued } from './object-catalogued'
+// Onboarding TSX-fidelity gaps (PR #2461): correct-output pins for
+// #2460/#2463/#2464/#2465 plus one documented React divergence.
+import { fixture as aliasedDestructuredProp } from './aliased-destructured-prop'
+import { fixture as selectValueSsr } from './select-value-ssr'
+import { fixture as textareaValueSsr } from './textarea-value-ssr'
+import { fixture as signalEarlyReturn } from './signal-early-return'
+import { fixture as logicalAndZero } from './logical-and-zero'
 
 import type { JSXFixture } from '../src/types'
 
@@ -756,4 +763,9 @@ export const jsxFixtures: JSXFixture[] = [
   dateToLocaleNamedTz,
   unionCatalogued,
   objectCatalogued,
+  aliasedDestructuredProp,
+  selectValueSsr,
+  textareaValueSsr,
+  signalEarlyReturn,
+  logicalAndZero,
 ]
