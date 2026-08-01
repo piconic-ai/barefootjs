@@ -84,10 +84,6 @@ export function initAIChatInteractive(__scope, _p = {}) {
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = `<div data-key="" bf="s1"><div class="chat-bubble"><p><!--bf:s0--><!--/--></p></div></div>`
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
-  const __lzc_l0 = (__e) => {
-    const __el = __e.primaryEl
-    return [qsa(__el, '[bf="s1"]'), null]
-  }
   mapArrayLazy(() => messages(), _s5, (msg) => String(msg.id), {
     createRow: (__e, __idx) => {
       const msg = () => __e.item
@@ -107,9 +103,9 @@ export function initAIChatInteractive(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const msg = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
-      { const __t = __r[0]
+      { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s1"]'))
       if (__t) {
         const __x = `chat-msg chat-${msg().role}`
         if (!(0 in __l) || !Object.is(__l[0], __x)) {

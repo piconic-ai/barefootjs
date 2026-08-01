@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 285,
+    "totalFixtures": 286,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2277,6 +2277,40 @@
           "codes": [
             "BF101"
           ]
+        }
+      },
+      "loop-preamble-attr-value": {
+        "blade": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "go-template": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declaration is hoisted to a parent-scope field instead of being built per row, so the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
         }
       },
       "map-array-builder-body": {
@@ -2860,6 +2894,10 @@
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
+      },
+      "loop-preamble-attr-value": {
+        "description": "Loop row preamble computes an attribute value; row text reads the item",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-attr-value.ts"
       },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",

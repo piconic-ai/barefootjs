@@ -120,6 +120,82 @@ describe('@barefootjs/router v0', () => {
     expect(fetchCalls.length).toBe(1)
   })
 
+  // --- data-bf-navigating -------------------------------------------------
+  //
+  // The swap commits the new markup BEFORE re-hydrating it, and
+  // `defaultRehydrate` may reach the runtime through a dynamic import. So
+  // "the element exists" and "the element is interactive" are two different
+  // moments, and nothing observable separated them: a caller that waited for
+  // the element and then clicked it lost the click, intermittently, under
+  // load. `data-bf-navigating` on <html> spans the whole sequence.
+
+  test('a swap marks data-bf-navigating while it runs and clears it after', async () => {
+    const seen: boolean[] = []
+    router = startRouter({
+      // Sampled from INSIDE the swap sequence — step 5 of the lifecycle, after
+      // the markup is committed. This is exactly the window a caller could
+      // otherwise mistake for "done".
+      rehydrate: () => { seen.push(document.documentElement.hasAttribute('data-bf-navigating')) },
+      dispose: () => {},
+    })
+
+    expect(document.documentElement.hasAttribute('data-bf-navigating')).toBe(false)
+    clickLink('next')
+    await flush()
+
+    expect(seen).toEqual([true])
+    expect(document.documentElement.hasAttribute('data-bf-navigating')).toBe(false)
+  })
+
+  test('a superseded navigation does not clear the flag while its successor is mid-swap', async () => {
+    mockFetch((url) => {
+      if (url.includes('/fast')) return fullPage('<p>FAST</p>', { title: 'fast' })
+      if (url.includes('/slow')) return fullPage('<p>SLOW</p>', { title: 'slow' })
+      return null
+    })
+    const baseFetch = globalThis.fetch
+    ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/slow')) await flush(30)
+      return baseFetch(input, init)
+    }) as typeof fetch
+
+    const duringRehydrate: boolean[] = []
+    router = startRouter({
+      rehydrate: () => { duringRehydrate.push(document.documentElement.hasAttribute('data-bf-navigating')) },
+      dispose: () => {},
+    })
+    void navigate('/slow')
+    void navigate('/fast')
+    await flush(60)
+
+    // `/fast` wins and re-hydrates; the flag must still be set when it does,
+    // even though `/slow`'s abandoned run passed through its own `finally`.
+    expect(duringRehydrate).toEqual([true])
+    expect(document.documentElement.hasAttribute('data-bf-navigating')).toBe(false)
+  })
+
+  test('a query-only navigation never sets the flag — it swaps nothing', async () => {
+    const w = window as unknown as Record<string, unknown>
+    let pushedSearch: string | null = null
+    w.__bf_pushSearch = (search: string) => { pushedSearch = search; return true }
+    router = startRouter({ rehydrate: () => {}, dispose: () => {} })
+
+    const flagged: boolean[] = []
+    const observer = new MutationObserver(() => {
+      flagged.push(document.documentElement.hasAttribute('data-bf-navigating'))
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bf-navigating'] })
+
+    await navigate('/blog/1?sort=title')
+    await flush()
+    observer.disconnect()
+
+    expect(pushedSearch).toBe('?sort=title')
+    expect(flagged).toEqual([])
+    expect(document.documentElement.hasAttribute('data-bf-navigating')).toBe(false)
+  })
+
   test('rapid navigation: the latest target wins even if an earlier response resolves last', async () => {
     mockFetch((url) => {
       if (url.includes('/fast')) return fullPage('<p>FAST</p>', { title: 'fast' })

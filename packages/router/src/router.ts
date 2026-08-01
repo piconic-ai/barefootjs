@@ -40,6 +40,13 @@ import type {
 
 let active: RouterState | null = null
 
+/**
+ * Document-root attribute marking a region swap as in flight — see
+ * {@link setNavigating}. Public: a page may style off it (a loading bar), and a
+ * test may wait for its absence to know the swapped-in islands are live.
+ */
+export const NAVIGATING_ATTR = 'data-bf-navigating'
+
 export function startRouter(options: RouterOptions = {}): Router {
   // SSR / non-DOM: a no-op handle, never throws.
   if (typeof document === 'undefined' || typeof window === 'undefined') {
@@ -238,6 +245,7 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
   state.inflight?.abort()
   const controller = new AbortController()
   state.inflight = controller
+  setNavigating(true)
 
   try {
     const snap = await loadPage(state, target.href)
@@ -362,8 +370,40 @@ export async function navigate(url: string, options: NavigateOptions = {}): Prom
       announceNavigation(title)
     }
   } finally {
-    if (state.inflight === controller) state.inflight = null
+    // Only the CURRENT navigation may clear the flag. A superseded one reaches
+    // this block while its successor is still mid-swap, and clearing there
+    // would announce "interactive" over content that is still being rebuilt.
+    if (state.inflight === controller) {
+      state.inflight = null
+      setNavigating(false)
+    }
   }
+}
+
+/**
+ * Mark a region swap as in flight on the document root
+ * (`data-bf-navigating`), so a caller can tell "the new markup is in the DOM"
+ * from "the new markup is INTERACTIVE".
+ *
+ * Those are two different moments and the gap between them is real: the swap
+ * is committed, and only then does step 5 re-hydrate each region — which
+ * `defaultRehydrate` may reach through a dynamic import of
+ * `@barefootjs/client/runtime` (`seams.ts`). Until that resolves the
+ * swapped-in islands are server markup with no handlers attached, so a click
+ * lands on nothing and is silently lost. Nothing observable distinguished the two states before this,
+ * which made "wait for the element, then click it" look correct and fail only
+ * under load.
+ *
+ * Set where the swap sequence begins and cleared in its `finally`, so it spans
+ * dispose → module load → history → re-hydrate → focus. Query-only
+ * navigations return before that sequence and never set it: they re-render
+ * nothing and swap nothing, so there is no interactivity gap to describe.
+ */
+function setNavigating(on: boolean): void {
+  const root = typeof document !== 'undefined' ? document.documentElement : null
+  if (!root) return
+  if (on) root.setAttribute(NAVIGATING_ATTR, '')
+  else root.removeAttribute(NAVIGATING_ATTR)
 }
 
 // --- Prefetch -------------------------------------------------------------

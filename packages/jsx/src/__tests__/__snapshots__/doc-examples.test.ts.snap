@@ -4434,9 +4434,6 @@ export function initExample(__scope, _p = {}) {
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
-  const __lzc_l0 = (__e) => {
-    return [null]
-  }
   mapArrayLazy(() => items(), _s1, (item) => String(item), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
@@ -4450,7 +4447,7 @@ export function initExample(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const item = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
       const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = item()
@@ -4569,9 +4566,6 @@ export function initExample(__scope, _p = {}) {
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
-  const __lzc_l0 = (__e) => {
-    return [null]
-  }
   mapArrayLazy(() => items(), _s1, (item) => String(item), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
@@ -4585,7 +4579,7 @@ export function initExample(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const item = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
       const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = item()
@@ -4655,9 +4649,6 @@ export function initExample(__scope, _p = {}) {
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
-  const __lzc_l0 = (__e) => {
-    return [null]
-  }
   mapArrayLazy(() => items().filter(item => item.active), _s1, (item) => String(item.id), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
@@ -4671,7 +4662,7 @@ export function initExample(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const item = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
       const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = item().name
@@ -5149,9 +5140,6 @@ export function initExample(__scope, _p = {}) {
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
-  const __lzc_l0 = (__e) => {
-    return [null]
-  }
   mapArrayLazy(() => todos().filter(t => !t.done).toSorted((a, b) => a.date - b.date), _s1, (t) => String(t.id), {
     createRow: (__e, __idx) => {
       const t = () => __e.item
@@ -5165,7 +5153,7 @@ export function initExample(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const t = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
       const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = t().name
@@ -5297,9 +5285,6 @@ export function initExample(__scope, _p = {}) {
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
-  const __lzc_l0 = (__e) => {
-    return [null]
-  }
   mapArrayLazy(() => items(), _s1, (item) => String(item.id), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
@@ -5313,7 +5298,7 @@ export function initExample(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const item = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
       const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = item().name
@@ -5383,9 +5368,6 @@ export function initExample(__scope, _p = {}) {
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's0', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's0', kind: 'text', path: __lzp_l0[0] }]
-  const __lzc_l0 = (__e) => {
-    return [null]
-  }
   mapArrayLazy(() => items(), _s1, (item, i) => String(i), {
     createRow: (__e, i) => {
       const item = () => __e.item
@@ -5399,7 +5381,7 @@ export function initExample(__scope, _p = {}) {
     },
     applyItem: (__e) => {
       const item = () => __e.item
-      const __r = __e.refs ?? (__e.refs = __lzc_l0(__e))
+      const __r = __e.refs ?? (__e.refs = [])
       const __l = __e.last ?? (__e.last = [])
       const __d = __r[0] ?? (__r[0] = lazySlots(__e.primaryEl, __lzs_l0))
       { const __x = item().name

@@ -53,7 +53,7 @@ function makeShape(overrides: Partial<LazyRowShapeFacts> = {}): LazyRowShapeFact
     nestedComponentCount: 0,
     innerLoopCount: 0,
     hasChildComponent: false,
-    hasMapPreamble: false,
+    mapPreambleRefusal: null,
     preambleRegionCount: 0,
     hasParamUnwrap: false,
     ...overrides,
@@ -78,6 +78,7 @@ const itemBinding = (kind: 'attr' | 'text' = 'text') => ({
   reactiveOuterNames: [] as string[],
   opaqueOuterNames: [] as string[],
   referencesIndex: false,
+  readsPreamble: false,
 })
 
 // --- eligibility ------------------------------------------------------------
@@ -125,7 +126,7 @@ describe('lazyRowEligibility — shape refusals', () => {
     ['child-component body', { hasChildComponent: true }, /child component/],
     ['nested child components', { nestedComponentCount: 1 }, /nested child components/],
     ['inner loop', { innerLoopCount: 1 }, /inner loop/],
-    ['map-callback preamble', { hasMapPreamble: true }, /preamble/],
+    ['unsafe map-callback preamble', { mapPreambleRefusal: 'map-callback preamble declares a mutable binding (let/var)' }, /mutable binding/],
     ['preamble-patched regions', { preambleRegionCount: 1 }, /preamble-patched regions/],
     ['destructured param without bindings', { hasParamUnwrap: true }, /destructured loop param/],
   ]
@@ -422,7 +423,7 @@ describe('lazy row emission — eligible loop', () => {
 
   test('applyItem claims refs lazily and dedups against entry.last', () => {
     const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
-    expect(applyItem).toContain('__e.refs ?? (__e.refs = __lzc_l0(__e))')
+    expect(applyItem).toContain('__e.refs ?? (__e.refs = [])')
     expect(applyItem).toContain('!Object.is(__l[1], __x)')
   })
 
@@ -439,9 +440,20 @@ describe('lazy row emission — eligible loop', () => {
     expect(applyOuter).toContain("__seed ? (__t.getAttribute('class') !== (__x != null ? String(__x) : null))")
   })
 
-  test('the lazy claim helper scans inside ONE row and is shared by both apply paths', () => {
-    expect(js).toContain('const __lzc_l0 = (__e) => {')
-    expect(js).toContain('const __el = __e.primaryEl')
+  /**
+   * An adopted row claims PER SLOT, on first use, scanning inside that one
+   * row. There is no whole-row claim closure: the previous shape made an
+   * `applyOuter` driving one attribute run a `qsa` for every OTHER
+   * reactive-attr slot in the row, on every row, at hydration.
+   *
+   * The `in` test rather than `??` is load-bearing — a slot whose scan found
+   * nothing must record that and not re-scan on the next tick.
+   */
+  test('an adopted row claims each element ref on first use, not the whole row', () => {
+    expect(js).not.toContain('__lzc_l0')
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    // refIndex 0 (the row's only reactive-attr slot), slot id `s2`.
+    expect(applyOuter).toContain(`0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s2"]'))`)
   })
 
   /**
@@ -459,19 +471,20 @@ describe('lazy row emission — eligible loop', () => {
   })
 
   /**
-   * The adopted-row claim resolves ELEMENT refs only; the content door's slot
-   * is left empty for the first content write to fill. `applyOuter` here
-   * drives one CLASS and no text, so it claims all 1,000 rows of a 1,000-row
-   * list at seed WITHOUT ever building a door — the allocation this pins away
-   * (measured on the SSR bench: post-hydration heap 1630.6KB -> 1573.2KB).
+   * An adopted row builds NOTHING up front — not the element refs and not the
+   * content door. `applyOuter` here drives one CLASS and no text, so across a
+   * 1,000-row list it claims one element per row and never builds a door
+   * (the allocation the deferred door first pinned away: post-hydration heap
+   * 1630.6KB -> 1573.2KB), and never scans for a slot it does not write.
    *
-   * `createRow` is deliberately excluded: it writes every text on the tick it
-   * builds the row, so its door is used immediately and stays eager.
+   * `createRow` is deliberately excluded: it writes every binding on the tick
+   * it builds the row, so its refs come from known clone paths and its door is
+   * used immediately.
    */
-  test('the adopted-row claim leaves the content door slot empty', () => {
-    const claim = js.slice(js.indexOf('const __lzc_l0 ='), js.indexOf('mapArrayLazy('))
-    expect(claim).toContain('return [qsa(__el, \'[bf="s2"]\'), null]')
-    expect(claim).not.toContain('lazySlots(')
+  test('an adopted row allocates nothing up front', () => {
+    const applyOuter = js.slice(js.indexOf('applyOuter:'))
+    expect(applyOuter).toContain('__e.refs ?? (__e.refs = [])')
+    expect(applyOuter).not.toContain('lazySlots(')
   })
 
   test('an attr-only applyOuter never materializes the door; applyItem does', () => {
@@ -568,16 +581,68 @@ describe('lazy row emission — outer-involving TEXT binding (§9.5 lifted)', ()
   })
 
   /**
-   * This row has no reactive ATTRIBUTE, so with the door deferred the element
-   * refs are gone and the adopted claim is a bare `[null]` — at which point
-   * binding the row root is dead code. Pinned because the binding is emitted
-   * unconditionally the moment anyone forgets that `refParts` decides whether
-   * anything reads it.
+   * This row has no reactive ATTRIBUTE, so an adopted row's only claim is the
+   * content door — and that is materialized by the first content write, not up
+   * front. Pinned because the whole-row claim closure this replaced emitted a
+   * dead `const __el = __e.primaryEl` for exactly this shape.
    */
-  test('a text-only adopted claim binds no row root', () => {
-    const claim = js.slice(js.indexOf('const __lzc_l0 ='), js.indexOf('mapArrayLazy('))
-    expect(claim).toContain('return [null]')
-    expect(claim).not.toContain('__el')
+  test('a text-only adopted row claims only the door, on first write', () => {
+    expect(js).not.toContain('__lzc_l0')
+    const applyItem = js.slice(js.indexOf('applyItem:'), js.indexOf('applyOuter:'))
+    expect(applyItem).toContain('__r[0] ?? (__r[0] = lazyClaimSlots(__e.primaryEl, __lzs_l0))')
+  })
+})
+
+/**
+ * Per-slot claiming, counted (§9 W2).
+ *
+ * A row with THREE reactive-attr slots where `applyOuter` drives exactly one:
+ * the whole-row claim closure this replaced resolved all three on every row at
+ * hydration, so a 1,000-row list ran 3,000 `qsa` scans to write 1,000
+ * attributes. With each binding claiming its own slot, `applyOuter` contains
+ * ONE scan and the count is 1,000.
+ *
+ * Counted rather than timed on purpose: the existing SSR bench's row has a
+ * single reactive-attr slot, so it cannot show this — its `applyOuter` already
+ * claimed exactly what it wrote. The scan count is the thing that changed, and
+ * it is deterministic.
+ */
+const MULTI_SLOT = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string }
+export function MultiSlotRows(props: { rows: Row[] }) {
+  const [rows, setRows] = createSignal<Row[]>(props.rows)
+  const [selected, setSelected] = createSignal(0)
+  return (
+    <tbody>
+      {rows().map(row => (
+        <tr key={row.id} className={selected() === row.id ? 'danger' : ''}>
+          <td title={row.label}>{row.id}</td>
+          <td data-x={row.id}>{row.label}</td>
+        </tr>
+      ))}
+    </tbody>
+  )
+}
+`
+
+describe('lazy row claiming — one scan per slot actually written', () => {
+  const js = clientJs(MULTI_SLOT, 'MultiSlotRows.tsx')
+  const section = (from: string, to?: string) =>
+    js.slice(js.indexOf(from), to ? js.indexOf(to) : js.indexOf("}, 'l0')"))
+  const scans = (text: string) => text.split('qsa(').length - 1
+
+  test('the row really has three reactive-attr slots', () => {
+    expect(scans(section('applyItem:', 'applyOuter:'))).toBe(3)
+  })
+
+  test('applyOuter scans only the slot it writes', () => {
+    expect(scans(section('applyOuter:'))).toBe(1)
+  })
+
+  test('createRow resolves refs from clone paths, never by scanning', () => {
+    expect(scans(section('createRow:', 'applyItem:'))).toBe(0)
   })
 })
 

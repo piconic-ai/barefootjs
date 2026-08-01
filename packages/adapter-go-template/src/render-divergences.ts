@@ -30,12 +30,10 @@ export const renderDivergences: RenderDivergences = {
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
 
-  // #2445 graduated: a child component nested inside a dynamic loop row
-  // whose root is a plain element still gets ONE hoisted `<Name>SlotN`
-  // props value built outside the loop (see the `todo-app-ssr` note above
-  // for why that's fine when nothing in it depends on the row), but a
-  // loop-dependent prop is now reapplied per row, at template-execution
-  // time, via the `bf_with_props` runtime helper — the props-argument
-  // sibling of `bf_with_children`, which already does this for per-row
-  // JSX children on the same shared instance.
+  // #2447: same missing preamble lowering as the DSL adapters, with Go's
+  // usual twist (cf. #2445): the value is emitted as `{{$.Cls}}` — a
+  // PARENT-scope struct field, not a per-row one — and nothing populates it,
+  // so every row's attribute renders empty.
+  'loop-preamble-attr-value':
+    "a `.map()` callback preamble's value declaration is hoisted to a parent-scope field instead of being built per row, so the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)",
 }

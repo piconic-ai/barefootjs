@@ -12,6 +12,13 @@ const mark = (page: Page, sel: string) =>
 const marker = (page: Page, sel: string) =>
   page.$eval(sel, (el) => (el as unknown as { __mark?: string }).__mark).catch(() => null)
 
+// A router region swap commits the new markup BEFORE re-hydrating it, so
+// "the element exists" and "the element is interactive" are two moments. The
+// router marks the whole sequence with `data-bf-navigating` on <html>; wait
+// for it to clear before interacting with anything the swap brought in.
+const settled = (page: Page) =>
+  page.waitForSelector('html:not([data-bf-navigating])', { timeout: 5000 })
+
 test('v0.5: sort/tag is a query-only update with no region swap', async ({ page }) => {
   await page.goto(BLOG, { waitUntil: 'networkidle' })
   await expect(page.locator('.sortable-list li')).toHaveCount(10)
@@ -32,8 +39,13 @@ test('v0: clicking a post swaps the content region; shell + theme persist', asyn
   await page.waitForSelector('.island.like', { timeout: 3000 })
   expect(await page.locator('.island.like').count()).toBe(1)
   expect(await page.getAttribute('html', 'data-theme')).toBe(theme) // shell never reloaded
+  // `waitForSelector` above only proves the swapped-in markup is in the DOM.
+  // Re-hydration runs after the swap and may await a dynamic import of the
+  // runtime, so until `data-bf-navigating` clears the island is server markup
+  // with no handler attached and a click is silently lost.
+  await settled(page)
   await page.click('.island.like')
-  expect(await page.locator('.island.like .v').innerText()).toBe('1')
+  await expect(page.locator('.island.like .v')).toHaveText('1')
 })
 
 test('v1: data-bf-permanent keeps the player live across a post→post swap', async ({ page }) => {

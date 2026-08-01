@@ -2548,6 +2548,19 @@
         "text"
       ]
     },
+    "loop-preamble-attr-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "map-array-builder-body": {
       "kinds": [
         "identifier",
@@ -4608,13 +4621,13 @@
     "array-method": 65,
     "arrow": 63,
     "binary": 77,
-    "call": 180,
+    "call": 181,
     "conditional": 22,
-    "identifier": 266,
+    "identifier": 267,
     "index-access": 12,
     "literal": 219,
     "logical": 43,
-    "member": 145,
+    "member": 146,
     "object-literal": 51,
     "template-literal": 29,
     "unary": 22,

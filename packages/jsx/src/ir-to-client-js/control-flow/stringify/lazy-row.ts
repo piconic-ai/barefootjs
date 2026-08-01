@@ -94,7 +94,6 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   const { indent, lazyRow, paramHead } = o
   const mid = o.markerId.replace(/[^A-Za-z0-9_$]/g, '_')
   const tplVar = `__tpl_${mid}`
-  const claimVar = `__lzc_${mid}`
   const hasRefs = lazyRow.attrSlotIds.length > 0 || lazyRow.texts.length > 0
   const hasBindings = lazyRow.attrs.length > 0 || lazyRow.texts.length > 0
   // ONE per-loop door decision (see `refParts`): the read-capable claim, or
@@ -165,30 +164,6 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     }
   }
 
-  // Lazy ref claim for ADOPTED (SSR) rows: one scan inside that row, cached
-  // on `entry.refs`. Shared by applyItem and applyOuter so a row claims once.
-  //
-  // The text door slot is left EMPTY here and filled by the first content
-  // write (`doorAccess`). An adopted row is claimed by whichever of
-  // applyItem/applyOuter touches it first, and an `applyOuter` that only
-  // drives ATTRIBUTES never reads or writes a content slot — so building the
-  // door in this function spends one closure per row of the list on something
-  // that stays unused until (and unless) that row's item changes. Deferring
-  // is confined to the adopted path on purpose: `createRow` writes every text
-  // immediately, so its door is used on the same tick it is built and there
-  // is nothing to defer (see the `deferDoor` note on `refParts`).
-  if (hasRefs) {
-    // With the door deferred, the ELEMENT refs are the only parts that read the
-    // row root — so a text-only row (no reactive-attr slot) claims to a bare
-    // `[null]` and the `__el` binding would be dead. `parts` decides, rather
-    // than a second predicate that could drift from `refParts`.
-    const parts = refParts(lazyRow, '__el', null, adoptedPlanVar, true)
-    lines.push(`${indent}const ${claimVar} = (__e) => {`)
-    if (parts.some(p => p.includes('__el'))) lines.push(`${indent}  const __el = __e.primaryEl`)
-    lines.push(`${indent}  return [${parts.join(', ')}]`)
-    lines.push(`${indent}}`)
-  }
-
   const call = `mapArrayLazy(() => ${o.arrayExpr}, ${o.containerVar}, ${o.keyFn}, {`
   lines.push(`${indent}${o.guardContainer ? `if (${o.containerVar}) ` : ''}${call}`)
 
@@ -200,6 +175,11 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   // interpolates the per-row template, which reads the param for at least
   // the `data-key` attribute.
   lines.push(`${b2}const ${paramHead} = () => __e.item`)
+  // The row's `.map()` callback preamble, before the clone: a non-hoisted
+  // per-row template interpolates values the preamble declares. Only
+  // `createRow` needs it — a BINDING that reads a preamble local refuses the
+  // loop (`lazyRowEligibility`), so the apply bodies never reference one.
+  if (lazyRow.preambleStatements) lines.push(`${b2}${lazyRow.preambleStatements}`)
   const cloneExpr = useHoisted
     ? hoistedCloneExpr(tplVar, o.skeletonTemplate!)
     : `(() => { ${emitTemplateCloneInline(o.template)} })()`
@@ -224,7 +204,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   } else {
     lines.push(`${b1}applyItem: (__e) => {`)
     lines.push(`${b2}const ${paramHead} = () => __e.item`)
-    lines.push(`${b2}const __r = __e.refs ?? (__e.refs = ${claimVar}(__e))`)
+    lines.push(`${b2}const __r = __e.refs ?? (__e.refs = [])`)
     lines.push(`${b2}const __l = __e.last ?? (__e.last = [])`)
     for (const a of itemAttrs) emitAttrBinding(lines, b2, a, 'item')
     if (itemTexts.length > 0) {
@@ -245,7 +225,7 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
     for (const g of lazyRow.outerPrimeGetters) lines.push(`${b2}${g}()`)
     lines.push(`${b2}for (const __e of __es) {`)
     lines.push(`${b3}const ${paramHead} = () => __e.item`)
-    lines.push(`${b3}const __r = __e.refs ?? (__e.refs = ${claimVar}(__e))`)
+    lines.push(`${b3}const __r = __e.refs ?? (__e.refs = [])`)
     lines.push(`${b3}const __l = __e.last ?? (__e.last = [])`)
     for (const a of outerAttrs) emitAttrBinding(lines, b3, a, 'outer')
     if (outerTexts.length > 0) {
@@ -260,9 +240,10 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
 }
 
 /**
- * The `entry.refs` array contents: one element ref per reactive-attr slot
- * (in `attrSlotIds` order), then — when the row has text slots — the
- * claimed-slot door at `writerIndex`.
+ * The `entry.refs` array `createRow` seeds: one element ref per reactive-attr
+ * slot (in `attrSlotIds` order), then — when the row has text slots — the
+ * claimed-slot door at `writerIndex`. Fresh-clone context only; an ADOPTED row
+ * starts empty and fills each slot on demand (`elementAccess` / `doorAccess`).
  *
  * **Which door (per LOOP, never per binding).** `lazySlots` returns a bare
  * write function; `lazyClaimSlots` returns the `{ write, read }` pair over
@@ -312,7 +293,6 @@ function refParts(
   elVar: string,
   skeletonPaths: SkeletonSlotPaths | null,
   planVar: string | null,
-  deferDoor = false,
 ): string[] {
   const parts: string[] = []
   for (const slotId of lazyRow.attrSlotIds) {
@@ -320,9 +300,29 @@ function refParts(
     parts.push(path ? pathExpr(elVar, path) : `qsa(${elVar}, '[bf="${slotId}"]')`)
   }
   if (lazyRow.texts.length > 0) {
-    parts.push(deferDoor ? 'null' : `${doorCtor(lazyRow)}(${elVar}, ${planVar})`)
+    parts.push(`${doorCtor(lazyRow)}(${elVar}, ${planVar})`)
   }
   return parts
+}
+
+/**
+ * How an ADOPTED row's binding reaches its element ref: claim THIS slot, and
+ * only this slot, on first use.
+ *
+ * The previous shape claimed the whole row in one closure (`__lzc_<mid>`),
+ * which meant an `applyOuter` driving ONE attribute still ran a `qsa` scan for
+ * every OTHER reactive-attr slot in the row — on every row, at hydration. The
+ * `in` test (not `??`) is what makes the cache honest: `qsa` answers `null` for
+ * a slot it cannot find, and `null` is a real cached answer — the `in` test
+ * treats it as one and never scans again, where a `??`-guarded cache would
+ * re-scan that slot on every tick forever.
+ *
+ * This is the element-ref twin of `doorAccess`, which already deferred the
+ * content door for exactly the same reason.
+ */
+function elementAccess(a: LazyRowAttrBinding): string {
+  const slot = `__r[${a.refIndex}]`
+  return `${a.refIndex} in __r ? ${slot} : (${slot} = qsa(__e.primaryEl, '[bf="${a.slotId}"]'))`
 }
 
 /** The door constructor for this loop — see `refParts`'s "which door" note. */
@@ -366,7 +366,11 @@ function emitAttrBinding(
   a: LazyRowAttrBinding,
   mode: 'create' | 'item' | 'outer',
 ): void {
-  lines.push(`${ind}{ const __t = __r[${a.refIndex}]`)
+  // `createRow` seeded every ref from a known clone path, so there it is a
+  // plain read. An ADOPTED row starts with an EMPTY `refs` array and each
+  // binding claims its OWN slot on first use — see `elementAccess`.
+  const target = mode === 'create' ? `__r[${a.refIndex}]` : elementAccess(a)
+  lines.push(`${ind}{ const __t = ${target}`)
   lines.push(`${ind}if (__t) {`)
   lines.push(`${ind}  const __x = ${a.wrappedExpression}`)
   const guard = mode === 'create'

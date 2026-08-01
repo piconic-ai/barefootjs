@@ -64,6 +64,13 @@ setup step.
   state, media playback, scroll, and hydrated scope survive — matched between
   documents by the attribute value (or `id`). A no-op when no element is marked;
   pass `morph: false` for a plain swap.
+- **Swap in flight** (`data-bf-navigating`): set on `<html>` for the duration of
+  a region swap. A swap commits the new markup *before* re-hydrating it, so
+  "present in the DOM" and "interactive" are two moments — until this clears, a
+  swapped-in island may still be server markup with no handlers, and a click on
+  it is lost. Style off it for a loading indicator, or wait for its absence
+  before driving new content. `NAVIGATING_ATTR` is exported so callers need not
+  hard-code the string. Query-only navigations swap nothing and never set it.
 
 ## `<head>`: metadata is reconciled, resources are not
 

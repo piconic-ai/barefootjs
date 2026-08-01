@@ -137,7 +137,10 @@ describe('lazy row graph — deferred content door on ADOPTED rows', () => {
     // Preconditions: without these the assertions below could pass on the
     // eager path or on an eagerly-built door, i.e. for the wrong reason.
     expect(js).toContain('mapArrayLazy(')
-    expect(js).toMatch(/return \[qsa\(__el, '\[bf="s\d+"\]'\), null\]/)
+    // An adopted row starts with an EMPTY refs array — neither the element
+    // refs nor the door are built up front. Each is filled by the first
+    // binding that needs it (`elementAccess` / `doorAccess`).
+    expect(js).toContain('__e.refs ?? (__e.refs = [])')
     expect(js).toMatch(/const __d = __r\[\d\] \?\? \(__r\[\d\] = lazySlots\(__e\.primaryEl, __lzs_l0\)\)/)
 
     hydrate()
@@ -167,10 +170,10 @@ describe('lazy row graph — deferred content door on ADOPTED rows', () => {
     const { hydrate } = await setup('AdoptedRowsBoth')
     hydrate()
 
-    // Claim every row through applyOuter FIRST (door slot stays null), then
-    // force applyItem to fill that slot on an already-claimed row — the
-    // ordering that would break if the door's absence were mistaken for "this
-    // row has no refs yet".
+    // Claim every row through applyOuter FIRST (which fills only the element
+    // ref it writes), then force applyItem to fill the door slot on an
+    // already-claimed row — the ordering that would break if a partially
+    // filled `refs` array were mistaken for "this row has no refs yet".
     ;(document.querySelector('#select') as HTMLElement).click()
     ;(document.querySelector('#rename') as HTMLElement).click()
 
