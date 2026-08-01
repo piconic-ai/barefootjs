@@ -156,6 +156,19 @@ type HigherOrderShape = {
 }
 
 /**
+ * Everything needed to emit a component's #2448 props rebuilder, captured when
+ * its own types are generated so a PARENT can emit the registration into its
+ * own type block (`emitPendingReprops`). `wire` is the field name the parent
+ * computes from the JSX attribute; `field` is this component's own Input
+ * field. They differ under an aliased destructure (`{ n: count }` → `"N"` vs
+ * `Count`).
+ */
+type RepropsSpec = {
+  params: { field: string; wire: string }[]
+  usesSearchParams: boolean
+}
+
+/**
  * String-returning array/string methods. `.get(...)` stays a generic `call`;
  * the rest fold into `array-method`. Module-level so `isStringExpr` (which
  * recurses over expression trees) reuses one set instead of allocating per call.
@@ -646,19 +659,31 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childDerivedFieldDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
 
   /**
-   * Components this run emitted a `bf.RegisterReprops` rebuilder for
-   * (`generateRepropsRegistration`, #2448). A parent overriding a prop that
-   * feeds one of the child's derived fields emits `bf_reprops` when the child
-   * is in here, and falls back to the BF101 refusal when it is not — the
-   * rebuilder is declined for shapes whose Input can't be reconstructed from
-   * Props, and emitting the call anyway would fail at template execute time
-   * with "no props rebuilder registered".
+   * Components a `bf.RegisterReprops` rebuilder CAN be emitted for
+   * (`recordRepropsSpec`, #2448), with everything needed to emit it. A parent
+   * overriding a prop that feeds one of the child's derived fields emits
+   * `bf_reprops` when the child is in here, and falls back to the BF101
+   * refusal when it is not — the rebuilder is declined for shapes whose Input
+   * can't be reconstructed from Props, and emitting the call anyway would fail
+   * at template execute time with "no props rebuilder registered".
    *
-   * Populated from the same two doors as `childDerivedFieldDeps`: a same-file
-   * child is generated before its parent, and the CLI's cross-file pre-pass
-   * generates types for every component up front.
+   * Populated from `generateTypes`, so a same-file child (the only kind a loop
+   * row may contain) is recorded before its parent renders.
    */
-  private childRepropsReady: Set<string> = new Set()
+  private childRepropsReady: Map<string, RepropsSpec> = new Map()
+
+  /**
+   * child component name -> the component whose type block carries its
+   * rebuilder registration. First parent to need the child wins, so two
+   * parents overriding the same child don't both emit an `init()` for it.
+   *
+   * An assignment, not a queue: `generateTypes` is called more than once for
+   * the same component (the conformance harness re-generates the entry's types
+   * after `compileJSX` already did), and a queue drained by the first call
+   * would leave the second call's output — the one that actually gets used —
+   * missing the registration.
+   */
+  private repropsOwner: Map<string, string> = new Map()
 
   /**
    * Record which of `ir`'s constructor-computed fields derive from one of its
@@ -871,7 +896,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     this.generateNewPropsFunction(lines, ir, componentName, nestedComponents, spreadSlots, propTypeOverrides)
 
-    this.generateRepropsRegistration(lines, ir, componentName, nestedComponents, spreadSlots)
+    this.recordRepropsSpec(ir, componentName, nestedComponents, spreadSlots)
+    this.emitOwnedReprops(lines, componentName)
 
     return this.composeFileHeader(lines)
   }
@@ -909,8 +935,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * (`{ n: count }`) those differ (`"N"` vs `in.Count`), and this generated
    * switch is where the two sides are reconciled.
    */
-  private generateRepropsRegistration(
-    lines: string[],
+  private recordRepropsSpec(
     ir: ComponentIR,
     componentName: string,
     nestedComponents: NestedComponentInfo[],
@@ -930,6 +955,47 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.nonCollidingContextConsumers(takenInput).length === 0
     if (!eligible) return
 
+    this.childRepropsReady.set(componentName, {
+      params: params.map(p => ({
+        field: capitalizeFieldName(p.name),
+        wire: capitalizeFieldName(p.sourceName ?? p.name),
+      })),
+      usesSearchParams: this.usesSearchParams(ir),
+    })
+  }
+
+  /**
+   * Emit the rebuilders assigned to `owner` — the children its own render
+   * asked for (`loopRowChildPropOverrides` → `repropsOwner`).
+   *
+   * Emitted from the PARENT rather than the child on purpose. The prop-seeded
+   * signal (`createSignal(props.initial)`) is one of the most common shapes in
+   * the corpus, so emitting a rebuilder for every component that merely HAS a
+   * derived field added ~250 lines of never-called Go to each integration's
+   * generated file. Only a parent knows whether a child is actually overridden
+   * per row inside a composite loop row, and it knows before its own type block
+   * is built — `generate()` renders the template first. Every component's type
+   * block lands in the same package (`combineGoTypes`, `build.ts`), so the
+   * child's Input/Props types are in scope from here.
+   *
+   * Idempotent: driven by the recorded assignment, so re-generating the same
+   * component's types produces the same block.
+   */
+  private emitOwnedReprops(lines: string[], owner: string): void {
+    for (const [childName, ownerName] of this.repropsOwner) {
+      if (ownerName !== owner) continue
+      const spec = this.childRepropsReady.get(childName)
+      if (!spec) continue
+      this.emitRepropsRegistration(lines, childName, spec)
+    }
+  }
+
+  private emitRepropsRegistration(
+    lines: string[],
+    componentName: string,
+    spec: RepropsSpec,
+  ): void {
+    const { params, usesSearchParams } = spec
     const inputTypeName = `${componentName}Input`
     const q = JSON.stringify(componentName)
 
@@ -951,9 +1017,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t\t\tScopeID: b.ScopeID,')
     lines.push('\t\t\tBfParent: b.BfParent,')
     lines.push('\t\t\tBfMount: b.BfMount,')
-    if (this.usesSearchParams(ir)) lines.push('\t\t\tSearchParams: b.SearchParams,')
-    for (const p of params) {
-      const field = capitalizeFieldName(p.name)
+    if (usesSearchParams) lines.push('\t\t\tSearchParams: b.SearchParams,')
+    for (const { field } of params) {
       lines.push(`\t\t\t${field}: b.${field},`)
     }
     lines.push('\t\t}')
@@ -961,12 +1026,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t\t\tname, _ := kv[i].(string)')
     lines.push('\t\t\tvar err error')
     lines.push('\t\t\tswitch name {')
-    for (const p of params) {
+    for (const { field, wire } of params) {
       // Case label: the name the PARENT computed from the JSX attribute.
       // Target: this component's own Input field. They differ under an
       // aliased destructure.
-      const wire = capitalizeFieldName(p.sourceName ?? p.name)
-      const field = capitalizeFieldName(p.name)
       lines.push(`\t\t\tcase ${JSON.stringify(wire)}:`)
       lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(wire)}, &in.${field}, kv[i+1])`)
     }
@@ -992,8 +1055,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t})')
     lines.push('}')
     lines.push('')
-
-    this.childRepropsReady.add(componentName)
   }
 
   /** Convert a TS type definition to Go: object types → structs, string-literal unions → a `string` alias. */
@@ -5314,7 +5375,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           })
           continue
         }
-        if (staleField) needsRebuild = true
+        if (staleField) {
+          needsRebuild = true
+          // The rebuilder is emitted into THIS component's type block, not the
+          // child's — only here do we know it is actually needed. First parent
+          // to claim a child owns the registration, so two parents overriding
+          // the same child don't both emit an `init()` for it.
+          if (!this.repropsOwner.has(comp.name)) {
+            this.repropsOwner.set(comp.name, this.state.componentName)
+          }
+        }
       }
       const exprOut: { parsed?: ParsedExpr } = {}
       const errorCountBefore = this.state.errors.length

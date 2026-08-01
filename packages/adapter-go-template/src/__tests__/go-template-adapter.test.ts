@@ -4544,24 +4544,29 @@ describe('GoTemplateAdapter - #2448 per-row override of a prop feeding a derived
 
     const adapter = new GoTemplateAdapter()
     adapter.registerChildComponentShape(badgeIR)
+    // Generating `Badge`'s types RECORDS that a rebuilder is possible; it does
+    // not emit one. Only a parent knows whether the child is actually
+    // overridden per row, so the registration rides the PARENT's type block.
     const badgeTypes = adapter.generateTypes(badgeIR)
-    adapter.generateTypes(rootIR)
-    const template = adapter.generate(rootIR, { skipScriptRegistration: true }).template
+    expect(badgeTypes).not.toContain('RegisterReprops')
+
+    const { template, types } = adapter.generate(rootIR, { skipScriptRegistration: true })
 
     expect(rootIR.errors.filter(e => e.code === 'BF101')).toHaveLength(0)
     // BOTH per-row props ride the rebuild — `n` is no longer dropped.
     expect(template).toContain('{{template "Badge" (bf_reprops "Badge" $.BadgeSlot0 "Text" .Label "N" .N)}}')
 
     // The rebuilder reconstructs the Input from the base Props, applies the
-    // row's overrides, and re-runs the real constructor.
-    expect(badgeTypes).toContain('bf.RegisterReprops("Badge"')
-    expect(badgeTypes).toContain('p := NewBadgeProps(in)')
-    expect(badgeTypes).toContain('err = bf.RepropsAssign("Badge", "N", &in.N, kv[i+1])')
+    // row's overrides, and re-runs the real constructor. `Badge`'s own types
+    // are in the same Go package (`combineGoTypes`), so they're in scope here.
+    expect(types).toContain('bf.RegisterReprops("Badge"')
+    expect(types).toContain('p := NewBadgeProps(in)')
+    expect(types).toContain('err = bf.RepropsAssign("Badge", "N", &in.N, kv[i+1])')
     // Identity is carried over, never re-derived: NewBadgeProps mints a random
     // ScopeID when handed an empty one, so re-running it without this would
     // give every row its own scope and break hydration.
-    expect(badgeTypes).toContain('ScopeID: b.ScopeID,')
-    expect(badgeTypes).toContain('p.Scripts = b.Scripts')
+    expect(types).toContain('ScopeID: b.ScopeID,')
+    expect(types).toContain('p.Scripts = b.Scripts')
   })
 
   // A `createSignal` INITIAL VALUE is baked into `New<Child>Props` exactly
