@@ -4487,6 +4487,196 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
   })
 })
 
+// #2448: `bf_with_props` (#2445, above) overrides fields on the ALREADY-
+// CONSTRUCTED shared instance — it does not re-run `New<Child>Props`. When
+// the overridden prop feeds a child field the constructor DERIVES at
+// construction time (a `createMemo` body or a `createSignal` initial value —
+// `New<Child>Props` bakes both), the override would leave that field holding
+// the shared instance's one-shot value on every row — silently wrong output.
+// Refused loudly with BF101 instead.
+describe('GoTemplateAdapter - #2448 per-row override of a prop feeding a derived child field', () => {
+  // Two-phase build (mirrors the rest-bag test's pattern above): the adapter
+  // instance here never compiles `Badge` itself, so without the explicit
+  // `registerChildComponentShape` its `childDerivedFieldDeps` entry wouldn't
+  // exist for the parent's generate pass. (Under `compileJSX` — the second
+  // test below — the same-file child IS generated first, and `generate()`
+  // self-registers, so both doors are exercised.)
+  test('a per-row-overridden prop feeding a memo field is refused with BF101', () => {
+    const source = `
+'use client'
+import { createSignal, createMemo } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge(props: { text: string; n: number }) {
+  const dbl = createMemo(() => props.n * 2)
+  return <span class="badge">{props.text}:{dbl()}</span>
+}
+export function CompositeRowChildDerivedProp(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart()
+
+    const badgeCtx = analyzeComponent(source, 'test.tsx', 'Badge')
+    const badgeIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(badgeCtx),
+      root: jsxToIR(badgeCtx)!,
+      errors: [],
+    }
+    const rootCtx = analyzeComponent(source, 'test.tsx', 'CompositeRowChildDerivedProp')
+    const rootIR: ComponentIR = {
+      version: '0.1',
+      metadata: buildMetadata(rootCtx),
+      root: jsxToIR(rootCtx)!,
+      errors: [],
+    }
+
+    const adapter = new GoTemplateAdapter()
+    adapter.registerChildComponentShape(badgeIR)
+    adapter.generateTypes(badgeIR)
+    adapter.generateTypes(rootIR)
+    const template = adapter.generate(rootIR, { skipScriptRegistration: true }).template
+
+    const bf101s = rootIR.errors.filter(e => e.code === 'BF101')
+    expect(bf101s).toHaveLength(1)
+    // Names the child, the overridden prop, and the derived field that
+    // would go stale, so the message stands alone without cross-referencing
+    // internal task labels.
+    expect(bf101s[0]!.message).toContain('Badge')
+    expect(bf101s[0]!.message).toContain("'n'")
+    expect(bf101s[0]!.message).toContain('dbl')
+    // The other per-row prop (`text`, feeding no derived field) is NOT
+    // reported, and is still correctly reapplied per row via `bf_with_props`
+    // — the refusal is scoped to the ONE prop that actually feeds a
+    // derived field, not the whole child instance.
+    expect(bf101s[0]!.message).not.toContain("'text'")
+    expect(template).toContain('"Text" .Label')
+
+    // The refused override itself never reaches the template: `bf_with_props`
+    // is never called with an `"N"` pair (the #2445 bug this refusal exists
+    // to close would otherwise silently emit `"N" .N` and leave `Dbl` stale).
+    expect(template).not.toContain('"N"')
+  })
+
+  // A `createSignal` INITIAL VALUE is baked into `New<Child>Props` exactly
+  // like a memo body is (`const [dbl] = createSignal(props.n)` emits
+  // `Dbl: in.N`), and `bf_with_props` re-runs neither — so the signal form
+  // goes stale under a per-row override for the same reason and must refuse
+  // the same way. Compiled through `compileJSX` (not the two-phase build
+  // above) so this also pins `generate()`'s self-registration door.
+  test("a per-row-overridden prop feeding a signal's initial value is refused with BF101", () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge(props: { text: string; n: number }) {
+  const [dbl] = createSignal(props.n)
+  return <span class="badge">{props.text}:{dbl()}</span>
+}
+export function SignalRowChildDerivedProp(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const bf101s = (result.errors ?? []).filter(e => e.code === 'BF101')
+    expect(bf101s).toHaveLength(1)
+    expect(bf101s[0]!.message).toContain('Badge')
+    expect(bf101s[0]!.message).toContain("'n'")
+    expect(bf101s[0]!.message).toContain('dbl')
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    // Same scoping as the memo case: only `n` is refused, `text` is still
+    // reapplied per row, and no `"N"` pair reaches the template.
+    expect(template).toContain('"Text" .Label')
+    expect(template).not.toContain('"N"')
+  })
+
+  // An ALIASED destructure (`{ n: count }`) reads `count` in the memo body,
+  // but the only name the parent knows is the JSX attribute `n` — which is
+  // what `loopRowChildPropOverrides` capitalizes. `recordDerivedFieldDeps`
+  // keys dependencies by `ParamInfo.sourceName ?? name` for exactly this
+  // reason; keying on the local binding would file the dependency under
+  // `Count`, the lookup would miss, and the refusal would silently not fire.
+  test('an aliased destructured prop feeding a memo is still refused with BF101', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal, createMemo } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge({ text, n: count }: { text: string; n: number }) {
+  const dbl = createMemo(() => count * 2)
+  return <span class="badge">{text}:{dbl()}</span>
+}
+export function AliasedRowChildDerivedProp(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const bf101s = (result.errors ?? []).filter(e => e.code === 'BF101')
+    expect(bf101s).toHaveLength(1)
+    // The message names the prop as the PARENT wrote it (`n`), not the
+    // child's local binding (`count`) — that's the name the author has to act
+    // on at the call site.
+    expect(bf101s[0]!.message).toContain("'n'")
+    expect(bf101s[0]!.message).toContain('dbl')
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('"Text" .Label')
+    expect(template).not.toContain('"N"')
+  })
+
+  // Regression pin for #2445: a nested child with NO derived field (no
+  // `createMemo`/`createSignal` reading the overridden prop) must still
+  // compile clean and still emit `bf_with_props` — this refusal must not fire
+  // on the shape #2445 already fixed.
+  test('a per-row-overridden prop with no derived field still emits bf_with_props', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Item = { id: number; label: string }
+function Badge(props: { text: string }) {
+  return <span class="badge">{props.text}</span>
+}
+export function CompositeRowChildComponent(props: { items: Item[] }) {
+  const [rows] = createSignal<Item[]>(props.items)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" .Label)}}')
+  })
+})
+
 // #2228: a `.filter(t => …).map(todo => <Child todo={todo} .../>)` loop whose
 // body is a single child component ranges the WRAPPER slice (`.TodoItems`,
 // `.{ChildName}s` — see #2130 above), so `{{if}}`'s dot context for the

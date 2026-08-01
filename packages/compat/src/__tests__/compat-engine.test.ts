@@ -46,8 +46,9 @@ describe('compileForCompat', () => {
     // `issues` is the UNION of every issue URL any BF101 pin carries on
     // this adapter (buildCompatCell attributes by code, not by fixture —
     // see its docstring) — #2320 (this shape, nested filter callback,
-    // successor to #2038) and #2321 (static-array-from-props computed loop
-    // source) surface here even though this test only exercises the nested-
+    // successor to #2038), #2321 (static-array-from-props computed loop
+    // source) and #2448 (loop-row child prop override reading a derived
+    // field) surface here even though this test only exercises the nested-
     // filter-callback shape. #2319 (dangerous-inner-html-dynamic) is no
     // longer among them — it graduated to a faithful raw-output lowering on
     // every template adapter, so its BF101 pin was removed. #2208's
@@ -61,6 +62,7 @@ describe('compileForCompat', () => {
         issues: [
           'https://github.com/piconic-ai/barefootjs/issues/2320',
           'https://github.com/piconic-ai/barefootjs/issues/2321',
+          'https://github.com/piconic-ai/barefootjs/issues/2448',
         ],
       },
     ])

@@ -801,3 +801,128 @@ function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string
   if (!ctx.state.propsObjectName || node.object.name !== ctx.state.propsObjectName) return null
   return node.property
 }
+
+/**
+ * #2448: every INPUT prop name a constructor-evaluated `parsed` expression
+ * reads, either via a `<propsObjectName>.<name>` member access (object-props
+ * signature, e.g. `props.n`) or a bare identifier bound to a destructured
+ * prop (no `propsObjectName`).
+ *
+ * Two kinds of expression reach here, because `New<Comp>Props` bakes BOTH
+ * into the struct at construction time: a `createMemo` body and a
+ * `createSignal` INITIAL VALUE (`const [dbl] = createSignal(props.n)` emits
+ * `Dbl: in.N`, exactly as `createMemo(() => props.n * 2)` emits
+ * `Dbl: in.N * 2`). Either one goes stale under a per-row override, so both
+ * feed the dependency map.
+ *
+ * Feeds `GoTemplateAdapter.childDerivedFieldDeps` (built by
+ * `recordDerivedFieldDeps`, `go-template-adapter.ts`) so a parent overriding
+ * one of THESE props per row (`bf_with_props`, #2445) can be refused loudly
+ * instead of silently leaving the derived field stale — see that map's
+ * docstring.
+ *
+ * Structural counterpart of {@link freeVarsInBody}: that walk reports a
+ * member's OBJECT identifier only (`props`), treating the property name as
+ * non-referential (fine for its own free-var-substitution purpose). Here the
+ * PROPERTY name is exactly what's wanted, so a `member` node contributes it
+ * once its object resolves to the props binding — walking stops at that
+ * first `propsObjectName.<name>` hop, so a deeper chain (`props.a.b`) still
+ * contributes only its BASE prop `a` (mirrors `collectPropRefs` in
+ * `ssr-defaults.ts`, the same first-level-only rule, for the same reason: an
+ * adapter that later re-derives a nested field still needs the base field
+ * seeded).
+ *
+ * This is a best-effort STRUCTURAL walk over the child's OWN analysis-time
+ * `parsed` tree — not a re-derivation of the Go initializer text, which
+ * isn't available yet at registration time (the cross-file shape pre-pass,
+ * #2131, runs before any component's codegen).
+ */
+export function collectPropsReadByCtorInit(
+  body: ParsedExpr,
+  propsObjectName: string | null,
+  propNames: ReadonlySet<string>,
+): Set<string> {
+  const found = new Set<string>()
+  const visit = (e: ParsedExpr, bound: ReadonlySet<string>): void => {
+    switch (e.kind) {
+      case 'identifier':
+        // Destructured signature only: a bare identifier bound to a
+        // destructured prop param IS the reference (`(props) => props.n`
+        // has no bare `n` — that shape is the `member` branch below).
+        if (!propsObjectName && propNames.has(e.name) && !bound.has(e.name)) found.add(e.name)
+        return
+      case 'member':
+        if (
+          propsObjectName &&
+          !e.computed &&
+          e.object.kind === 'identifier' &&
+          e.object.name === propsObjectName
+        ) {
+          found.add(e.property)
+          return
+        }
+        visit(e.object, bound)
+        return
+      case 'index-access':
+        visit(e.object, bound)
+        visit(e.index, bound)
+        return
+      case 'binary':
+      case 'logical':
+        visit(e.left, bound)
+        visit(e.right, bound)
+        return
+      case 'unary':
+        visit(e.argument, bound)
+        return
+      case 'conditional':
+        visit(e.test, bound)
+        visit(e.consequent, bound)
+        visit(e.alternate, bound)
+        return
+      case 'call':
+        visit(e.callee, bound)
+        e.args.forEach(a => visit(a, bound))
+        return
+      case 'template-literal':
+        for (const p of e.parts) if (p.type === 'expression') visit(p.expr, bound)
+        return
+      case 'array-literal':
+        e.elements.forEach(el => visit(el, bound))
+        return
+      case 'object-literal':
+        for (const p of e.properties) visit(p.value, bound)
+        return
+      case 'array-method':
+        visit(e.object, bound)
+        e.args.forEach(a => visit(a, bound))
+        if (e.method === 'flat' && e.depthExpr) visit(e.depthExpr, bound)
+        return
+      case 'arrow': {
+        const inner = e.params.length === 0 ? bound : new Set([...bound, ...e.params])
+        visit(e.body, inner)
+        return
+      }
+      // Non-referential leaves — nothing to collect.
+      case 'literal':
+      case 'regex':
+      case 'unsupported':
+        return
+      default: {
+        // Exhaustiveness pin. A NEW `ParsedExpr` kind that lands without a
+        // case here would silently contribute no dependencies, and this
+        // walk's whole job is to answer "does this memo read that prop?" —
+        // a missed dependency is a MISSED REFUSAL, i.e. the silently-stale
+        // derived field #2448 exists to prevent. Fail the build instead:
+        // `never` makes the omission a compile error at the point the kind
+        // is added, the same drift defence `PARSED_EXPR_KINDS` gives the
+        // registry (`expression-parser.ts`).
+        const _exhaustive: never = e
+        void _exhaustive
+        return
+      }
+    }
+  }
+  visit(body, new Set())
+  return found
+}

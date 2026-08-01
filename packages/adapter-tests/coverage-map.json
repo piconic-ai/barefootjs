@@ -1201,6 +1201,24 @@
         "text"
       ]
     },
+    "composite-row-child-derived-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "condition-position-ternary": {
       "kinds": [
         "call",
@@ -4660,14 +4678,14 @@
     "array-literal": 69,
     "array-method": 66,
     "arrow": 63,
-    "binary": 78,
-    "call": 183,
+    "binary": 79,
+    "call": 184,
     "conditional": 23,
-    "identifier": 269,
+    "identifier": 270,
     "index-access": 12,
-    "literal": 221,
+    "literal": 222,
     "logical": 43,
-    "member": 148,
+    "member": 149,
     "object-literal": 51,
     "template-literal": 29,
     "unary": 23,
@@ -4700,7 +4718,7 @@
     "array-method:trimStart": 1,
     "binary:!=": 2,
     "binary:!==": 9,
-    "binary:*": 9,
+    "binary:*": 10,
     "binary:+": 18,
     "binary:-": 11,
     "binary:/": 1,
@@ -4710,7 +4728,7 @@
     "binary:>=": 1,
     "literal:boolean": 41,
     "literal:null": 22,
-    "literal:number": 94,
+    "literal:number": 95,
     "literal:string": 161,
     "logical:&&": 7,
     "logical:??": 38,

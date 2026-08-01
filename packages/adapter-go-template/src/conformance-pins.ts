@@ -186,4 +186,14 @@ export const conformancePins: ConformancePins = {
   // `adapter.generate()`), not an adapter-specific gap, so it is pinned
   // identically across every adapter package including Hono.
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2356' }],
+  // #2448: `Badge`'s `dbl` memo is computed once from `in.N` when the
+  // shared `$.BadgeSlot0` instance is constructed outside `{{range}}`;
+  // `bf_with_props` (#2445) only overrides the NAMED fields on that
+  // instance per row — it can't re-run `NewBadgeProps` — so overriding `N`
+  // per row would leave `Dbl` stale on every row after the first. Refused
+  // loudly with BF101 (`loopRowChildPropOverrides`) instead of silently
+  // rendering the first row's derived value everywhere. Every other
+  // adapter constructs the child fresh per row and is unaffected.
+  // See https://github.com/piconic-ai/barefootjs/issues/2448.
+  'composite-row-child-derived-prop': [{ code: 'BF101', severity: 'error', issue: 'https://github.com/piconic-ai/barefootjs/issues/2448' }],
 }

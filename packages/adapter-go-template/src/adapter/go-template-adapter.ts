@@ -133,7 +133,7 @@ import { typeInfoToGo } from "./type/type-codegen.ts"
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from "./memo/memo-type.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
-import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, collectPropsReadByCtorInit } from "./memo/memo-compute.ts"
 import { collectSpreadSlots, buildSpreadInitializer } from "./spread/spread-codegen.ts"
 import { buildPropTypeOverrides, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, NULLISH_SCALAR_GO_TYPES } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -441,6 +441,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.primeCompileState(ir)
     this.state.stringValueNames = collectStringValueNames(ir)
+    // #2448: self-register this component's derived-memo dependencies, so a
+    // SAME-FILE child (generated before its parent in the same run) is
+    // visible to `loopRowChildPropOverrides`. The cross-file pre-pass door is
+    // `registerChildComponentShape`; `compileJSX` only goes through here.
+    this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
 
     // Surface loop-body usages of sibling-imported components (see
     // `checkImportedLoopChildComponents`). The barefoot CLI compiles a
@@ -618,6 +623,95 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * (the CLI's cross-file shape pre-pass, #2131) can register from a bare
    * analyzer pass — a full `ComponentIR` still satisfies it structurally.
    */
+  /**
+   * #2448: component name -> (memo field -> the INPUT prop Go field names its
+   * initializer reads). Deliberately SEPARATE from `childComponentShapes`,
+   * which only the CLI's cross-file pre-pass
+   * (`registerChildComponentShape`) populates — `compileJSX` never calls that
+   * hook, so a SAME-FILE child (the only kind a loop row may contain: a
+   * sibling-module child is BF103-refused there) would never have an entry
+   * and the #2448 refusal would never fire. That is exactly how the first cut
+   * of this fix shipped a conformance pin for a diagnostic that was never
+   * emitted.
+   *
+   * Populated from BOTH doors: `registerChildComponentShape` for the
+   * cross-file pre-pass, and `generate()` for every component compiled in
+   * this run — a same-file child is generated before its parent, so its entry
+   * is present by the time `loopRowChildPropOverrides` looks. Kept out of
+   * `ChildComponentShape` on purpose: that struct's presence/absence already
+   * drives rest-bag routing and map-typed-param baking, and widening WHEN it
+   * exists would change emission for every same-file child in the corpus.
+   * This map has exactly one reader.
+   */
+  private childDerivedFieldDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
+
+  /**
+   * Record which of `ir`'s constructor-computed fields derive from one of its
+   * own input props (#2448). See `childDerivedFieldDeps`.
+   *
+   * BOTH constructor-evaluated declaration forms count, because
+   * `generateNewPropsFunction` bakes both into the struct once:
+   * a `createMemo` BODY (`createMemo(() => props.n * 2)` → `Dbl: in.N * 2`)
+   * and a `createSignal` INITIAL VALUE (`createSignal(props.n)` → `Dbl: in.N`).
+   * `bf_with_props` re-runs neither, so a per-row override of `n` leaves
+   * either one holding the shared instance's one-shot value.
+   *
+   * A declaration whose Go field name collides with a prop's own field name is
+   * a same-named "shadow" (`size = createMemo(() => props.size ?? 'icon')`) —
+   * `generateNewPropsFunction` folds it into the PROP's passthrough field
+   * rather than emitting a separate derived one, so a per-row override of
+   * that prop lands on the same field and nothing goes stale. A declaration
+   * with no structurally-resolvable `parsed` initializer is skipped too: this
+   * map is best-effort, and its absence costs a missed refusal (today's
+   * behaviour), never a wrong one.
+   *
+   * Dependencies are keyed by the prop's CANONICAL source name
+   * (`ParamInfo.sourceName ?? name`), not the child's local binding. An
+   * ALIASED destructure (`function Badge({ n: count }: { n: number })`) reads
+   * `count` in the memo body, but the only name the parent knows is the JSX
+   * attribute `n` — `loopRowChildPropOverrides` capitalizes THAT. Keying on
+   * the local name would file the dependency under `Count`, the lookup would
+   * miss, and the refusal would silently not fire on exactly the shape it
+   * exists for.
+   *
+   * Note this canonicalization covers the DERIVED case only. An aliased prop
+   * with no derived field still has the parent emitting `"N" .N` against a
+   * child whose field is `Count`, which `bf.WithProps` silently passes over —
+   * tracked separately as #2457, a residual of #2445 rather than of #2448.
+   */
+  private recordDerivedFieldDeps(
+    ir: Pick<ComponentIR, 'metadata'>,
+    paramNames: ReadonlySet<string>,
+  ): void {
+    const name = ir.metadata.componentName
+    if (!name) return
+    // Local binding → the prop name the PARENT writes at the call site.
+    // Identity for every un-aliased param (`sourceName` is set only on a
+    // renaming destructure).
+    const sourceOf = new Map(
+      (ir.metadata.propsParams ?? []).map(p => [p.name, p.sourceName ?? p.name]),
+    )
+    const canonical = (local: string): string => capitalizeFieldName(sourceOf.get(local) ?? local)
+    const propFieldNames = new Set([...paramNames].map(canonical))
+    const deps = new Map<string, ReadonlySet<string>>()
+    const ctorInits: { field: string; init: ParsedExpr | undefined }[] = [
+      ...(ir.metadata.memos ?? []).map(m => ({ field: m.name, init: m.parsed })),
+      ...(ir.metadata.signals ?? []).map(s => ({ field: s.getter, init: s.parsed })),
+    ]
+    for (const { field, init } of ctorInits) {
+      if (propFieldNames.has(capitalizeFieldName(field))) continue
+      if (!init) continue
+      const read = collectPropsReadByCtorInit(
+        init,
+        ir.metadata.propsObjectName ?? null,
+        paramNames,
+      )
+      if (read.size === 0) continue
+      deps.set(field, new Set([...read].map(canonical)))
+    }
+    if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
+  }
+
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata'>): void {
     const name = ir.metadata.componentName
     if (!name) return
@@ -638,6 +732,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .map(p => p.name),
     )
     this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames })
+    this.recordDerivedFieldDeps(ir, paramNames)
     // Contexts this child consumes, so a parent `<Ctx.Provider value>` wrapping
     // it can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
@@ -5013,13 +5108,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * fixture's emitted template byte-identical (no fixture in the corpus
    * reaches this method with a loop-dependent prop today).
    *
-   * KNOWN LIMITATION (#2448, tracked separately from #2445, which this
-   * method fixes): `bf_with_props` overrides fields on the ALREADY-CONSTRUCTED
-   * shared instance — it does not re-run `New<Child>Props`. A field the
-   * child derives FROM the overridden prop at construction time (a memo,
-   * or a prop-shadowing signal's initial value) keeps whatever the
-   * one-shot constructor computed and does not update per row. Only the
-   * directly-overridden field itself is correct per row.
+   * REFUSED, not silently mis-rendered (#2448, tracked separately from
+   * #2445, which this method fixes): `bf_with_props` overrides fields on the
+   * ALREADY-CONSTRUCTED shared instance — it does not re-run
+   * `New<Child>Props`. A field the child derives FROM the overridden prop at
+   * construction time (a memo body or a signal's initial value) would keep
+   * whatever the one-shot constructor computed and never update per row —
+   * silently wrong output. Rather than emit that, this method checks the prop
+   * against `this.childDerivedFieldDeps` (built by `recordDerivedFieldDeps`,
+   * this file) and pushes a BF101 + `continue`s when a derived field would go
+   * stale, exactly like the unsupported-expression refusal a few lines below.
    *
    * Returns the space-joined `"Field" value "Field2" value2 …` argument list
    * for `bf_with_props`, or null when nothing needs overriding (caller keeps
@@ -5049,6 +5147,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (prop.value.kind !== 'expression') continue
       const free = prop.freeIdentifiers
       if (!free || ![...free].some(name => this.isLoopShadowedName(name))) continue
+      // #2448: this prop is about to be overridden per row via
+      // `bf_with_props` — but that helper only sets the NAMED fields on the
+      // already-constructed shared instance; it can't re-run
+      // `New<Child>Props`. If a memo body or a signal's initial value derives
+      // from this prop at construction time, the override would leave that
+      // field holding the shared instance's one-shot value on every row —
+      // silently wrong.
+      // Refuse loudly instead (same push-error-then-`continue` shape as the
+      // unsupported-expression refusal below).
+      {
+        const derived = this.childDerivedFieldDeps.get(comp.name)
+        const overriddenField = capitalizeFieldName(prop.name)
+        const staleField = derived
+          ? [...derived].find(([, deps]) => deps.has(overriddenField))?.[0]
+          : undefined
+        if (staleField) {
+          this.state.errors.push({
+            code: 'BF101',
+            severity: 'error',
+            message: `Prop '${prop.name}' on <${comp.name}> nested inside a dynamic loop row is overridden per row, but <${comp.name}>'s '${staleField}' field is computed from '${prop.name}' when the shared instance is first constructed and won't recompute per row — it would keep the first row's value on every row.`,
+            loc: prop.loc,
+            suggestion: {
+              message: `Mark this loop position '@client' to render <${comp.name}> client-side, or compute '${staleField}' in the parent and pass it to <${comp.name}> as a plain prop instead of deriving it inside <${comp.name}>.`,
+            },
+          })
+          continue
+        }
+      }
       const exprOut: { parsed?: ParsedExpr } = {}
       const errorCountBefore = this.state.errors.length
       let go = this.convertExpressionToGo(prop.value.expr, exprOut, prop.value.parsed)
