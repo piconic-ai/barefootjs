@@ -368,6 +368,14 @@
       }
     }
   ],
+  "composite-row-child-derived-prop": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "conditional-return-button": [
     {
       "name": "gen:variant:empty",

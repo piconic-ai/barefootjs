@@ -387,6 +387,7 @@ import { fixture as conditionalReturnNull } from './conditional-return-null'
 import { fixture as jsxElementProp } from './jsx-element-prop'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
+import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
 import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
@@ -721,6 +722,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxElementProp,
   grandchildComposition,
   compositeRowChildComponent,
+  compositeRowChildDerivedProp,
   loopPreambleAttrValue,
   loopPreambleChainedFilter,
   loopRowStaticConditional,
