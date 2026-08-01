@@ -803,7 +803,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata'>): void {
     const name = ir.metadata.componentName
     if (!name) return
-    const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.name))
+    // Both sets on `ChildComponentShape` are looked up by a PARENT against the
+    // name it wrote at the JSX call site, so they are keyed by
+    // `sourceName ?? name` — identity for an un-aliased param, the original
+    // property name for an aliased destructure (`{ n: count }` → `n`). Keying
+    // them by the local binding meant an aliased prop looked undeclared to
+    // `emitChildField` (misrouted into the rest bag) and to
+    // `loopRowChildPropOverrides` (skipped as rest-bag-only) — the same
+    // wrong-name-at-a-parent-side-lookup bug as #2457, one function over.
+    const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name))
     const restPropsName = ir.metadata.restPropsName ?? null
     const restBagField = restPropsName ? capitalizeFieldName(restPropsName) : null
     // Optional object/named-interface params lower to `map[string]interface{}`
@@ -817,10 +825,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
             (p.type.kind === 'object' ||
               (p.type.kind === 'interface' && !!p.type.raw)),
         )
-        .map(p => p.name),
+        .map(p => p.sourceName ?? p.name),
     )
     this.childComponentShapes.set(name, { paramNames, restBagField, mapTypedParamNames })
-    this.recordDerivedFieldDeps(ir, paramNames)
+    // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
+    // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
+    // IDENTIFIERS in the memo/signal body — those are the LOCAL bindings
+    // (`count`), not the call-site names. Handing it the canonical set would
+    // make an aliased child's derived field look dependency-free and silently
+    // un-refuse / un-rebuild it.
+    this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
     // Contexts this child consumes, so a parent `<Ctx.Provider value>` wrapping
     // it can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
@@ -1852,7 +1866,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
         // bag to route it into, has nowhere to go — skip over emitting invalid Go.
         if (jsxName.includes('-')) return
-        lines.push(`\t\t\t${capitalizeFieldName(jsxName)}: ${goValue},`)
+        // Same resolution as `loopRowChildPropOverrides` (#2457): the child's
+        // own Go field, which differs from the JSX attribute under an aliased
+        // destructure (`{ n: count }` → field `Count`). Emitting the attribute
+        // name here put an unknown field in a Go struct literal — a build
+        // error rather than a silent drop, but wrong either way. Falls back to
+        // the capitalized attribute for a child this run never registered.
+        const fieldName =
+          this.childPropFieldNames.get(child.name)?.get(jsxName) ?? capitalizeFieldName(jsxName)
+        lines.push(`\t\t\t${fieldName}: ${goValue},`)
       }
       for (const prop of child.props) {
         switch (prop.value.kind) {

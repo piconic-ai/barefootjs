@@ -4681,6 +4681,41 @@ export function AliasedRowChildNoDerivedProp(props: { rows: Row[] }) {
     expect(types).not.toContain('RegisterReprops')
   })
 
+  // Copilot review on #2462: `ChildComponentShape.paramNames` is looked up by
+  // the PARENT against the name it wrote at the JSX call site, so it has to be
+  // keyed the same way `childPropFieldNames` is. Keyed by the local binding,
+  // an aliased prop on a child that ALSO has a rest bag looked undeclared —
+  // `loopRowChildPropOverrides`' rest-bag guard skipped it outright, so the
+  // override never reached the template at all. Same wrong-name-at-a-
+  // parent-side-lookup bug as #2457, one guard earlier.
+  test('an aliased prop on a rest-bag child is not mistaken for a rest-bag prop', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge({ text, n: count, ...rest }: { text: string; n: number; [k: string]: unknown }) {
+  return <span class="badge" {...rest}>{text}:{count}</span>
+}
+export function AliasedRestBagRowChild(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    // `n` is a DECLARED prop, so it rides the override under the child's own
+    // field name — not silently routed into the rest bag and not dropped.
+    expect(template).toContain('(bf_with_props $.BadgeSlot0 "Text" .Label "Count" .N)')
+  })
+
   // Sound-or-loud fallback: a shape whose Input can NOT be reconstructed from
   // Props gets no rebuilder, and the refusal has to stay. A `...rest` bag adds
   // an Input field with no Props counterpart, so it is declined — and because
