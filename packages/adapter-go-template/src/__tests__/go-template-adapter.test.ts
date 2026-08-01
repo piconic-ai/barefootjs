@@ -4606,6 +4606,46 @@ export function SignalRowChildDerivedProp(props: { rows: Row[] }) {
     expect(template).not.toContain('"N"')
   })
 
+  // An ALIASED destructure (`{ n: count }`) reads `count` in the memo body,
+  // but the only name the parent knows is the JSX attribute `n` — which is
+  // what `loopRowChildPropOverrides` capitalizes. `recordDerivedFieldDeps`
+  // keys dependencies by `ParamInfo.sourceName ?? name` for exactly this
+  // reason; keying on the local binding would file the dependency under
+  // `Count`, the lookup would miss, and the refusal would silently not fire.
+  test('an aliased destructured prop feeding a memo is still refused with BF101', () => {
+    const result = compileJSX(`
+'use client'
+import { createSignal, createMemo } from '@barefootjs/client'
+type Row = { id: number; label: string; n: number }
+function Badge({ text, n: count }: { text: string; n: number }) {
+  const dbl = createMemo(() => count * 2)
+  return <span class="badge">{text}:{dbl()}</span>
+}
+export function AliasedRowChildDerivedProp(props: { rows: Row[] }) {
+  const [rows] = createSignal<Row[]>(props.rows)
+  return (
+    <ul>
+      {rows().map(row => (
+        <li key={row.id}>
+          <Badge text={row.label} n={row.n} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+    const bf101s = (result.errors ?? []).filter(e => e.code === 'BF101')
+    expect(bf101s).toHaveLength(1)
+    // The message names the prop as the PARENT wrote it (`n`), not the
+    // child's local binding (`count`) — that's the name the author has to act
+    // on at the call site.
+    expect(bf101s[0]!.message).toContain("'n'")
+    expect(bf101s[0]!.message).toContain('dbl')
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).toContain('"Text" .Label')
+    expect(template).not.toContain('"N"')
+  })
+
   // Regression pin for #2445: a nested child with NO derived field (no
   // `createMemo`/`createSignal` reading the overridden prop) must still
   // compile clean and still emit `bf_with_props` — this refusal must not fire

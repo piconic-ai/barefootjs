@@ -664,6 +664,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * with no structurally-resolvable `parsed` initializer is skipped too: this
    * map is best-effort, and its absence costs a missed refusal (today's
    * behaviour), never a wrong one.
+   *
+   * Dependencies are keyed by the prop's CANONICAL source name
+   * (`ParamInfo.sourceName ?? name`), not the child's local binding. An
+   * ALIASED destructure (`function Badge({ n: count }: { n: number })`) reads
+   * `count` in the memo body, but the only name the parent knows is the JSX
+   * attribute `n` — `loopRowChildPropOverrides` capitalizes THAT. Keying on
+   * the local name would file the dependency under `Count`, the lookup would
+   * miss, and the refusal would silently not fire on exactly the shape it
+   * exists for.
+   *
+   * Note this canonicalization covers the DERIVED case only. An aliased prop
+   * with no derived field still has the parent emitting `"N" .N` against a
+   * child whose field is `Count`, which `bf.WithProps` silently passes over —
+   * tracked separately as #2457, a residual of #2445 rather than of #2448.
    */
   private recordDerivedFieldDeps(
     ir: Pick<ComponentIR, 'metadata'>,
@@ -671,7 +685,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     const name = ir.metadata.componentName
     if (!name) return
-    const propFieldNames = new Set([...paramNames].map(p => capitalizeFieldName(p)))
+    // Local binding → the prop name the PARENT writes at the call site.
+    // Identity for every un-aliased param (`sourceName` is set only on a
+    // renaming destructure).
+    const sourceOf = new Map(
+      (ir.metadata.propsParams ?? []).map(p => [p.name, p.sourceName ?? p.name]),
+    )
+    const canonical = (local: string): string => capitalizeFieldName(sourceOf.get(local) ?? local)
+    const propFieldNames = new Set([...paramNames].map(canonical))
     const deps = new Map<string, ReadonlySet<string>>()
     const ctorInits: { field: string; init: ParsedExpr | undefined }[] = [
       ...(ir.metadata.memos ?? []).map(m => ({ field: m.name, init: m.parsed })),
@@ -686,7 +707,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         paramNames,
       )
       if (read.size === 0) continue
-      deps.set(field, new Set([...read].map(d => capitalizeFieldName(d))))
+      deps.set(field, new Set([...read].map(canonical)))
     }
     if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
   }

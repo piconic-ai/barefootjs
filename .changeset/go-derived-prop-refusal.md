@@ -41,6 +41,11 @@ mode is a missed refusal (today's behaviour), never a wrong one. The walk
 carries an exhaustiveness pin so a new `ParsedExpr` kind cannot silently drop a
 dependency.
 
+Dependencies are keyed by the prop's canonical source name
+(`ParamInfo.sourceName ?? name`), so an aliased destructure
+(`function Badge({ n: count })`, whose memo reads `count` while the parent
+writes `n=`) refuses too rather than missing the lookup.
+
 New fixture `composite-row-child-derived-prop` pins the shape: `BF101` on Go,
 rendered correctly by every other adapter and CSR, which construct the child
 fresh per row and are unaffected.
