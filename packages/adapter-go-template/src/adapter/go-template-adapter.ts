@@ -158,13 +158,17 @@ type HigherOrderShape = {
 /**
  * Everything needed to emit a component's #2448 props rebuilder, captured when
  * its own types are generated so a PARENT can emit the registration into its
- * own type block (`emitPendingReprops`). `wire` is the field name the parent
- * computes from the JSX attribute; `field` is this component's own Input
- * field. They differ under an aliased destructure (`{ n: count }` → `"N"` vs
- * `Count`).
+ * own type block (`emitOwnedReprops`). `params` are this component's own
+ * Input fields — since #2457, the PARENT (`loopRowChildPropOverrides`, via
+ * `childPropFieldNames`) already resolves the JSX attribute name to the
+ * child's own field name before emitting the call, so the switch this spec
+ * drives is keyed by that one name on both sides; there is no longer a
+ * separate "wire" name to carry (an aliased destructure used to make the
+ * parent's JSX-attribute name and the child's field name differ — `"N"` vs
+ * `Count` — and this spec used to carry both).
  */
 type RepropsSpec = {
-  params: { field: string; wire: string }[]
+  params: string[]
   usesSearchParams: boolean
 }
 
@@ -659,6 +663,39 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childDerivedFieldDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
 
   /**
+   * component name -> (the prop name as WRITTEN AT THE JSX CALL SITE -> that
+   * component's own Go field name). #2457.
+   *
+   * `generateInputStruct` / `emitPropsDataFields` name a child's Go field from
+   * its LOCAL binding (`capitalizeFieldName(param.name)`), but a parent
+   * emitting a per-row override
+   * (`loopRowChildPropOverrides`) only knows the JSX attribute it wrote. For
+   * an un-aliased prop those are the same string, so this map is an identity
+   * for every existing shape and every currently-passing fixture stays
+   * byte-identical. For an ALIASED destructure (`{ n: count }`) they differ
+   * (`"N"` vs `Count`) — `bf.WithProps` documents unknown-field pairs as a
+   * silent passthrough, so emitting the JSX name against a struct that has no
+   * such field drops the override with no diagnostic. Resolving through this
+   * map once, at the parent's emission site (the only place that has both
+   * the JSX name and the child's shape), replaces that silent drop with the
+   * correct field.
+   *
+   * Key = `p.sourceName ?? p.name` (identity for an un-aliased param, the JSX
+   * attribute name for an aliased one). Value = `capitalizeFieldName(p.name)`
+   * — the child's own field, from its LOCAL binding, same as
+   * `generateInputStruct` uses.
+   *
+   * Populated from the same two doors as `childDerivedFieldDeps` — inside
+   * `recordDerivedFieldDeps`, unconditionally (before that method's own
+   * `deps.size > 0` gate), so every component gets an entry here regardless
+   * of whether it has a derived field. `recordRepropsSpec` (the other nearby
+   * populator) returns early for components with no derived field or an
+   * ineligible shape — this map must NOT inherit either gate, since an
+   * aliased child with no derived field at all is exactly the #2457 shape.
+   */
+  private childPropFieldNames: Map<string, Map<string, string>> = new Map()
+
+  /**
    * Components a `bf.RegisterReprops` rebuilder CAN be emitted for
    * (`recordRepropsSpec`, #2448), with everything needed to emit it. A parent
    * overriding a prop that feeds one of the child's derived fields emits
@@ -709,15 +746,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * (`ParamInfo.sourceName ?? name`), not the child's local binding. An
    * ALIASED destructure (`function Badge({ n: count }: { n: number })`) reads
    * `count` in the memo body, but the only name the parent knows is the JSX
-   * attribute `n` — `loopRowChildPropOverrides` capitalizes THAT. Keying on
-   * the local name would file the dependency under `Count`, the lookup would
-   * miss, and the refusal would silently not fire on exactly the shape it
-   * exists for.
+   * attribute `n` — `loopRowChildPropOverrides` looks THAT up in
+   * `childPropFieldNames` before checking this map. Keying on the local name
+   * would file the dependency under `Count`, the lookup would miss, and the
+   * refusal would silently not fire on exactly the shape it exists for.
    *
-   * Note this canonicalization covers the DERIVED case only. An aliased prop
-   * with no derived field still has the parent emitting `"N" .N` against a
-   * child whose field is `Count`, which `bf.WithProps` silently passes over —
-   * tracked separately as #2457, a residual of #2445 rather than of #2448.
+   * This canonicalization used to cover the DERIVED case only — an aliased
+   * prop with no derived field still had the parent emitting `"N" .N`
+   * against a child whose field is `Count`, silently passed over by
+   * `bf.WithProps` (#2457). `childPropFieldNames`, populated a few lines
+   * below in this same method, closes that residual gap by resolving every
+   * prop's field name at the parent's emission site, not just the ones a
+   * derived field depends on.
    */
   private recordDerivedFieldDeps(
     ir: Pick<ComponentIR, 'metadata'>,
@@ -733,6 +773,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     const canonical = (local: string): string => capitalizeFieldName(sourceOf.get(local) ?? local)
     const propFieldNames = new Set([...paramNames].map(canonical))
+    // #2457: record the JSX-attribute-name -> child's-own-field-name map for
+    // EVERY component, unconditionally — see `childPropFieldNames`'s
+    // docstring for why this can't share `recordRepropsSpec`'s gates.
+    const fieldNames = new Map<string, string>()
+    for (const p of ir.metadata.propsParams ?? []) {
+      fieldNames.set(p.sourceName ?? p.name, capitalizeFieldName(p.name))
+    }
+    this.childPropFieldNames.set(name, fieldNames)
     const deps = new Map<string, ReadonlySet<string>>()
     const ctorInits: { field: string; init: ParsedExpr | undefined }[] = [
       ...(ir.metadata.memos ?? []).map(m => ({ field: m.name, init: m.parsed })),
@@ -929,11 +977,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *   BfMount come from the base, and the Props-only fields (Scripts,
    *   BfIsRoot/BfIsChild/BfDataKey) are reapplied after the constructor.
    *
-   * The override switch is keyed by the name the PARENT writes — the JSX
-   * attribute, `ParamInfo.sourceName ?? name` — while the assignment targets
-   * the child's own Input field (`ParamInfo.name`). For an aliased destructure
-   * (`{ n: count }`) those differ (`"N"` vs `in.Count`), and this generated
-   * switch is where the two sides are reconciled.
+   * The override switch is keyed by the child's own Input field
+   * (`ParamInfo.name`) on both the case label and the assignment target. That
+   * used to differ under an aliased destructure — the case label carried the
+   * name the PARENT wrote (the JSX attribute, `ParamInfo.sourceName ?? name`)
+   * while the assignment targeted the child's own field, so this switch was
+   * where those two sides were reconciled. #2457 moved that reconciliation to
+   * the PARENT (`loopRowChildPropOverrides`, via `childPropFieldNames`): the
+   * parent now emits the child's own field name at the call site, so by the
+   * time a `bf_reprops` pipeline reaches this switch both sides already agree
+   * and there's exactly one place — the parent's emission — where the naming
+   * gets reconciled, instead of two.
    */
   private recordRepropsSpec(
     ir: ComponentIR,
@@ -956,10 +1010,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!eligible) return
 
     this.childRepropsReady.set(componentName, {
-      params: params.map(p => ({
-        field: capitalizeFieldName(p.name),
-        wire: capitalizeFieldName(p.sourceName ?? p.name),
-      })),
+      params: params.map(p => capitalizeFieldName(p.name)),
       usesSearchParams: this.usesSearchParams(ir),
     })
   }
@@ -1018,7 +1069,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t\t\tBfParent: b.BfParent,')
     lines.push('\t\t\tBfMount: b.BfMount,')
     if (usesSearchParams) lines.push('\t\t\tSearchParams: b.SearchParams,')
-    for (const { field } of params) {
+    for (const field of params) {
       lines.push(`\t\t\t${field}: b.${field},`)
     }
     lines.push('\t\t}')
@@ -1026,12 +1077,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t\t\tname, _ := kv[i].(string)')
     lines.push('\t\t\tvar err error')
     lines.push('\t\t\tswitch name {')
-    for (const { field, wire } of params) {
-      // Case label: the name the PARENT computed from the JSX attribute.
-      // Target: this component's own Input field. They differ under an
-      // aliased destructure.
-      lines.push(`\t\t\tcase ${JSON.stringify(wire)}:`)
-      lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(wire)}, &in.${field}, kv[i+1])`)
+    for (const field of params) {
+      // Case label and assignment target are the same name: the child's own
+      // Input field. The parent (`loopRowChildPropOverrides`, via
+      // `childPropFieldNames`, #2457) already resolved the JSX attribute to
+      // this field before emitting the call, so there is nothing left to
+      // reconcile here.
+      lines.push(`\t\t\tcase ${JSON.stringify(field)}:`)
+      lines.push(`\t\t\t\terr = bf.RepropsAssign(${q}, ${JSON.stringify(field)}, &in.${field}, kv[i+1])`)
     }
     // No silent drop. `bf_with_props` passes an unknown field through because
     // a rest-bag prop legitimately has no named field — but a rebuilder is
@@ -5320,6 +5373,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    *   exactly like the unsupported-expression refusal a few lines below.
    *   Refusing beats emitting silently-stale output.
    *
+   * #2457 — the `"Field"` half of each argument pair is the child's OWN Go
+   * field name (resolved through `childPropFieldNames`), not the JSX
+   * attribute name. For an un-aliased prop those are the same string; for an
+   * aliased destructure (`{ n: count }`) the child's field is `Count` while
+   * the JSX attribute is `n`, and emitting the attribute name left
+   * `bf.WithProps`/`bf.RepropsAssign` with a name the struct has no field
+   * for — silently dropped by the former, an unknown-field error from the
+   * latter. Resolving it here, once, means both helpers only ever see a name
+   * the struct actually has.
+   *
    * Returns the space-joined `"Field" value …` argument list plus the helper
    * the caller must wrap it in, or null when nothing needs overriding (caller
    * keeps the bare `$.<Name>SlotN` reference).
@@ -5440,7 +5503,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         })
         continue
       }
-      args.push(`${JSON.stringify(capitalizeFieldName(prop.name))} ${wrapIfMultiToken(go)}`)
+      // #2457: emit the CHILD's own Go field name, not the JSX attribute name.
+      // They differ under an aliased destructure (`{ n: count }` → attribute
+      // `n`, field `Count`); resolving through `childPropFieldNames` here —
+      // the parent's emission site, the only place that has both the JSX
+      // name and the child's shape — means `bf.WithProps`/`bf.RepropsAssign`
+      // never see a name the struct doesn't have. Falls back to today's
+      // capitalized-attribute behaviour for a cross-file child this run's
+      // pre-pass never registered (`childPropFieldNames` has no entry).
+      const fieldName =
+        this.childPropFieldNames.get(comp.name)?.get(prop.name) ?? capitalizeFieldName(prop.name)
+      args.push(`${JSON.stringify(fieldName)} ${wrapIfMultiToken(go)}`)
     }
     if (args.length === 0) return null
     return { args: args.join(' '), helper: needsRebuild ? 'bf_reprops' : 'bf_with_props' }
