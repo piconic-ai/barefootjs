@@ -83,6 +83,15 @@
         "text"
       ]
     },
+    "aliased-destructured-prop": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "arithmetic-text": {
       "kinds": [
         "binary",
@@ -2458,6 +2467,19 @@
         "text"
       ]
     },
+    "logical-and-zero": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "logical-or-jsx": {
       "kinds": [
         "identifier",
@@ -3714,6 +3736,19 @@
         "attribute"
       ]
     },
+    "select-value-ssr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "sibling-loops-key-isolation": {
       "kinds": [
         "identifier"
@@ -3769,6 +3804,19 @@
       ],
       "contexts": [
         "text"
+      ]
+    },
+    "signal-early-return": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition"
       ]
     },
     "signal-object-field": {
@@ -4451,6 +4499,19 @@
         "attribute"
       ]
     },
+    "textarea-value-ssr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "todo-app": {
       "kinds": [
         "array-literal",
@@ -4679,11 +4740,11 @@
     "array-method": 66,
     "arrow": 63,
     "binary": 79,
-    "call": 184,
+    "call": 187,
     "conditional": 23,
-    "identifier": 270,
+    "identifier": 275,
     "index-access": 12,
-    "literal": 222,
+    "literal": 226,
     "logical": 43,
     "member": 149,
     "object-literal": 51,
@@ -4726,10 +4787,10 @@
     "binary:===": 40,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 41,
-    "literal:null": 22,
+    "literal:boolean": 42,
+    "literal:null": 23,
     "literal:number": 95,
-    "literal:string": 161,
+    "literal:string": 163,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,

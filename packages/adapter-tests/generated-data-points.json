@@ -1,4 +1,51 @@
 {
+  "aliased-destructured-prop": [
+    {
+      "name": "gen:text:empty",
+      "props": {
+        "text": "",
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:text:markup",
+      "props": {
+        "text": "<b>&\"'</b>",
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:text:multibyte",
+      "props": {
+        "text": "日本語",
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "text": "hello",
+        "n": 7,
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "text": "hello",
+        "n": 7,
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "text": "hello",
+        "n": 7,
+        "count": 1234567890
+      }
+    }
+  ],
   "array-flat-dynamic-depth": [
     {
       "name": "gen:depth:zero",
@@ -928,6 +975,20 @@
       "props": {
         "className": "",
         "__instanceId": "Label_test"
+      }
+    }
+  ],
+  "logical-and-zero": [
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
       }
     }
   ],

@@ -29,4 +29,19 @@ export const renderDivergences: RenderDivergences = {
   // production). `buildDynamicChildLoopSeeding` (this package's
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
+
+  // Onboarding TSX-fidelity fixtures (PR #2461): `expectedHtml` is
+  // hand-authored to the CORRECT output because the emission bug lives in
+  // the shared compiler layer — every adapter, including the Hono
+  // reference, currently emits the broken form (verified against this
+  // adapter's emitted template; see each fixture's docstring). Graduate
+  // by fixing the shared emission, regenerating `expectedHtml` from the
+  // fixed reference, and deleting these lines (and the matching hono
+  // `skipJsx` entries).
+  'aliased-destructured-prop':
+    'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2460)',
+  'select-value-ssr':
+    'controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)',
+  'textarea-value-ssr':
+    'controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)',
 }
