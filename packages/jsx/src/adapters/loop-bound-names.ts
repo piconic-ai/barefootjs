@@ -50,6 +50,12 @@ export function collectLoopBoundNames(ir: ComponentIR): Set<string> {
         // param (which may differ from the map callback's `param`) before
         // any rename to the loop param happens.
         if (node.filterPredicate) names.add(node.filterPredicate.param)
+        // A `.map()` callback preamble's declarations lower to per-row locals
+        // in the loop body on every DSL adapter (#2447), so a preamble name is
+        // bound in body scope exactly like a param — and must get the same
+        // exclusion, or a same-named module const would inline over the local
+        // the loop just declared.
+        for (const name of node.preamble?.declaredNames ?? []) names.add(name)
         for (const child of node.children) visit(child)
         if (node.childComponent) {
           for (const child of node.childComponent.children) visit(child)

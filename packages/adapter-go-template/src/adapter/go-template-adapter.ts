@@ -5859,6 +5859,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // nested loops with the same index var name from clobbering the outer entry
     // on cleanup.
     const addedLoopVars: string[] = []
+    // A `.map()` callback preamble lowers to one `{{$cls := …}}` per-row
+    // variable per declaration (#2447). Registering the names on
+    // `loopVarRefCount` is what makes `identifier()` resolve each read as
+    // `$cls`; without it the read falls through to `rootFieldRef` and emits
+    // `$.Cls` — a PARENT-struct field, never populated, which rendered the
+    // attribute empty on every row (the same hoisted-to-parent class of
+    // defect as #2445).
+    for (const d of loop.preamble?.declarations ?? []) {
+      this.loopVarRefCount.set(d.name, (this.loopVarRefCount.get(d.name) ?? 0) + 1)
+      addedLoopVars.push(d.name)
+    }
     let pushedBindingMap = false
     if (supportableDestructure) {
       // Bindings resolve against the synthetic `$__bf_item` range var; don't push
@@ -5892,6 +5903,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.loopWrapperStack.push(!!loop.childComponent)
     this.loopKeyDepthStack.push(loop.depth)
+    // Rendered inside the pushed loop scope so each initializer resolves
+    // against the range item (`.Done`), in source order so a later
+    // initializer sees an earlier `$` variable — same as the source block.
+    const preambleAssignments = (loop.preamble?.declarations ?? [])
+      .map(d => `{{$${d.name} := ${this.renderParsedExpr(d.valueParsed)}}}`)
+      .join('')
     const children = this.renderChildren(loop.children)
     this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
@@ -5953,10 +5970,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         filterCond = 'true'
       }
 
-      return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}{{if ${filterCond}}}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
+      // The preamble assignments sit INSIDE the `{{if}}`, matching JS
+      // evaluation order: a `.filter(p).map(cb)` chain never runs `cb`'s
+      // body for a filtered-out item.
+      return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}{{if ${filterCond}}}${preambleAssignments}${itemMarker}${children}{{end}}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
     }
 
-    return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
+    return `{{bfComment "loop:${loop.markerId}"}}{{range $${rangeIndex}, $${rangeValue} := ${goArray}}}${preambleAssignments}${itemMarker}${children}{{end}}{{bfComment "/loop:${loop.markerId}"}}`
   }
 
   /**

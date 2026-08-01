@@ -10,8 +10,13 @@
 > (adapter-gate the Phase-1 `filter`/`sort` constraint), `#2374` (close the
 > `fill` gap + doc/comment cleanup), `#2375` (find/some/every off-subset
 > conformance), `#2376` (reduce/reduceRight/flatMap off-subset conformance).
-> Stage 2 has landed (if/else-if + `switch` fold, `const`-preamble fold
-> adapter-gated). Stage 3 has landed in two steps: the imperative array-builder
+> Stage 2 has landed (if/else-if + `switch` fold, `const`-preamble fold), and
+> Stage 2a with it: a value preamble is carried as backend-neutral
+> `declarations` and lowered to per-row template locals on every DSL adapter
+> (#2447 — before that it had only a JS-text carrier, so eight backends emitted
+> a row reading names they never assigned). A preamble that is NOT a sequence
+> of value declarations still refuses on a DSL target with `BF021` +
+> `/* @client */`. Stage 3 has landed in two steps: the imperative array-builder
 > body (`const out = []; for (…) out.push(<td/>); return <tr>{out}</tr>`)
 > renders verbatim on JS-runtime adapters (D4 + D5(a), keyFn hoisted; DSL
 > refuses with `BF021` + `/* @client */`), and the follow-up **root cure**
@@ -311,15 +316,42 @@ Each stage is independently shippable, tested, and PR-sized. Value/risk-ordered.
   into a nested `IRConditional` — the neutral IR a ternary map body already
   produces — instead of silently leaking the raw `if`/`switch` into the
   callback. All backends gain SSR fidelity for these shapes. A **leading
-  `const`/`let` preamble** folds on JS-runtime adapters and, since a DSL
-  backend can't carry a loop-local into a conditional branch template, is
-  adapter-gated: a DSL target refuses with `BF021` + `/* @client */` (never
-  silent divergence). Two shapes are deliberately **not** folded and bail
+  `const`/`let` preamble** folds on every backend (#2447 — see Stage 2a): the
+  fold puts the conditional inside the loop body, so a preamble lowered to
+  per-row locals is in scope in both arms. Two shapes are deliberately **not** folded and bail
   conservatively: a *branch-local* `const` (inside a branch block / case), and
   a **statement-level nested loop** (an imperative `for`-with-`push` that builds
   a JSX array) — the latter is an arbitrary imperative body handled by Stage 3's
   verbatim-JS path, not the neutral-IR fold. *Tests: compiler-unit, CSR +
   cross-adapter + hydration conformance (new fixtures), coverage.*
+- **Stage 2a — Lower a value preamble to per-row locals on DSL backends.** ✅
+  *Landed (#2447).* A `.map()` preamble had exactly one carrier —
+  `MapCallbackPreamble.segments`, JS text a template language cannot execute —
+  so eight DSL adapters emitted the row while assigning none of the names it
+  read: ERB read `v[:cls]` (an unseeded vars-Hash key), Go read `$.Cls` (a
+  PARENT-struct field, the same hoisted-to-parent defect class as #2445), the
+  rest read a bare undefined local. Every one rendered the attribute empty,
+  with no diagnostic. The fix is a **second, backend-neutral carrier**:
+  `MapCallbackPreamble.declarations`, one `{ name, valueParsed }` per
+  declaration, so each adapter emits a per-row local through the `ParsedExpr`
+  door it already has for `arrayParsed` / `filterPredicate` / `sortComparator`
+  (`{% set %}`, `@php()`, `<%- … -%>`, `: my $x = …;`, `{{$x := …}}`).
+  Declarations render in source order, so a later initializer sees an earlier
+  local; on a `.filter(p).map(cb)` chain they render inside the filter guard,
+  matching JS order. It is **all-or-nothing** — a preamble is an
+  order-dependent statement sequence, and lowering its declarable prefix while
+  dropping the rest would be the same silent divergence wearing the fix's
+  clothes — so one statement that is not a value declaration (an assignment, an
+  imperative loop, a destructure, an initializer off the expression subset)
+  leaves `declarations` unset and a DSL target refuses with `BF021` +
+  `/* @client */`, the sibling of every other Phase-1 callback gate. The
+  refusal that Stage 2 attached to *branches* is subsumed by this one: it keys
+  off "is the preamble declarable", not "does the body branch".
+  *Tests: `preamble-declarations.test.ts` (IR contract + gate + the
+  `/* @client */` escape); the `loop-preamble-attr-value` and
+  `map-preamble-branch-body` fixtures now render on all nine adapters and CSR,
+  which is what would catch a per-row declaration going missing on any one
+  backend.*
 - **Stage 3 — JS-runtime verbatim + `/* @client */` for the rest (D4 + D5).**
   Reaches the fidelity ceiling for JSX-`map`. Requires the Stage-0 `keyFn`
   decision. *Tests: runtime-unit (key contract), CSR conformance, E2E

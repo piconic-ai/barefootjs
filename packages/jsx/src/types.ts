@@ -855,6 +855,28 @@ export interface MapCallbackPreamble {
   /** const/let/function names the preamble declares (D5 key-derivability guard). */
   declaredNames: string[]
   /**
+   * The whole preamble as backend-neutral value declarations — set only when
+   * EVERY statement is one (#2447). This is the DSL SSR carrier: a template
+   * language cannot execute `segments` (that is JS text, for the client bundle
+   * and for JS-runtime SSR), but it CAN declare a per-row local, and each
+   * declaration's initializer is a {@link ParsedExpr} every adapter already
+   * knows how to emit in its own syntax — the same door `arrayParsed` /
+   * `filterPredicate.predicate` / `sortComparator` go through.
+   *
+   * All-or-nothing on purpose. A preamble is a statement SEQUENCE with
+   * order-dependent scope; lowering the declarable prefix and dropping the rest
+   * would leave later statements' effects missing with no diagnostic — the
+   * silent divergence #2447 was. So one non-declaration statement (an
+   * assignment, a loop, a call for side effects) or one initializer the
+   * expression subset cannot model leaves this `undefined`, and the Phase-1
+   * DSL gate refuses the whole loop with `/* @client *\/` guidance.
+   *
+   * Declarations appear in source order and may read earlier ones; adapters
+   * emit them in order, so an earlier local is in scope for a later
+   * initializer, exactly as in the source.
+   */
+  declarations?: PreambleValueDeclaration[]
+  /**
    * The subset of {@link declaredNames} that accumulate JSX leaves — the
    * `push`/`unshift` targets of a `jsx` segment and the declaration targets of
    * a leaf-bearing initializer (`const out = xs.map(x => <td/>)`). Only these
@@ -862,6 +884,25 @@ export interface MapCallbackPreamble {
    * keeps the plain interpolation it always had.
    */
   builderNames: string[]
+}
+
+/**
+ * One `const`/`let` value declaration from a `.map()` callback preamble, in
+ * backend-neutral form (#2447 — see {@link MapCallbackPreamble.declarations}).
+ * `name` is always a simple identifier: a destructuring binding declares
+ * several names from one initializer, which no adapter has a single per-row
+ * local form for, so that shape refuses instead of being carried here.
+ */
+export interface PreambleValueDeclaration {
+  /** Declared local name (simple identifier binding). */
+  name: string
+  /** Initializer, structured for per-adapter emission. */
+  valueParsed: ParsedExpr
+  /**
+   * Initializer source text, for a diagnostic that needs to quote it. Never an
+   * emission input — emission goes through `valueParsed`.
+   */
+  raw: string
 }
 
 /**

@@ -1814,7 +1814,7 @@
   },
   "fixtureDivergences": {
     "note": "Render-level honesty section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. Fixtures listed here diverge on at least one adapter — either refused loudly at build time (conformancePins) or rendering differently from the reference (renderDivergences, skipped in that adapter’s conformance suite until fixed). Fixtures absent from this table render to reference parity on every adapter.",
-    "totalFixtures": 287,
+    "totalFixtures": 288,
     "fixtures": {
       "date-method-uncatalogued": {
         "blade": {
@@ -2279,40 +2279,6 @@
           ]
         }
       },
-      "loop-preamble-attr-value": {
-        "blade": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declaration is hoisted to a parent-scope field instead of being built per row, so the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "a `.map()` callback preamble's value declarations are not lowered into the template, so the row reads an unassigned variable and the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)"
-        }
-      },
       "map-array-builder-body": {
         "blade": {
           "kind": "refusal",
@@ -2364,56 +2330,6 @@
         }
       },
       "map-array-builder-escaping": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF021"
-          ]
-        }
-      },
-      "map-preamble-branch-body": {
         "blade": {
           "kind": "refusal",
           "codes": [
@@ -2895,10 +2811,6 @@
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
       },
-      "loop-preamble-attr-value": {
-        "description": "Loop row preamble computes an attribute value; row text reads the item",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-attr-value.ts"
-      },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
@@ -2906,10 +2818,6 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
-      },
-      "map-preamble-branch-body": {
-        "description": "const preamble + if/else as a .map() body — JS-runtime folds, DSL refuses (BF021)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-preamble-branch-body.ts"
       },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",

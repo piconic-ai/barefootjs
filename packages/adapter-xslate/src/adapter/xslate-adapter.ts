@@ -880,6 +880,15 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Re-render children now that inLoop is set (so nested components use the
     // loop-child naming convention). renderedChildren above was computed with
     // the previous flag; recompute under the loop flag.
+
+    // Per-row locals for a `.map()` callback preamble (#2447), in source
+    // order so a later initializer sees an earlier local — same as the
+    // source block. Phase 1 refuses the loop outright when the preamble
+    // isn't fully declarable, so there is no partial-lowering case: either
+    // every statement is lowered here, or the build already failed.
+    const preambleLines = (loop.preamble?.declarations ?? []).map(
+      d => `: my $${d.name} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
+    )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
@@ -934,9 +943,11 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
         )
       }
       lines.push(`: if (${filterCond}) {`)
+      lines.push(...preambleLines)
       lines.push(bodyChildren)
       lines.push(`: }`)
     } else {
+      lines.push(...preambleLines)
       lines.push(bodyChildren)
     }
 

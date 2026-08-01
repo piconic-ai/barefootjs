@@ -29,11 +29,4 @@ export const renderDivergences: RenderDivergences = {
   // production). `buildDynamicChildLoopSeeding` (this package's
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
-
-  // #2447: same missing preamble lowering as the DSL adapters, with Go's
-  // usual twist (cf. #2445): the value is emitted as `{{$.Cls}}` — a
-  // PARENT-scope struct field, not a per-row one — and nothing populates it,
-  // so every row's attribute renders empty.
-  'loop-preamble-attr-value':
-    "a `.map()` callback preamble's value declaration is hoisted to a parent-scope field instead of being built per row, so the attribute renders empty (https://github.com/piconic-ai/barefootjs/issues/2447)",
 }

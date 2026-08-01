@@ -950,6 +950,15 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
     // Re-render children now that inLoop is set (so nested components use the
     // loop-child naming convention). renderedChildren above was computed with
     // the previous flag; recompute under the loop flag.
+
+    // Per-row locals for a `.map()` callback preamble (#2447), in source
+    // order so a later initializer sees an earlier local — same as the
+    // source block. Phase 1 refuses the loop outright when the preamble
+    // isn't fully declarable, so there is no partial-lowering case: either
+    // every statement is lowered here, or the build already failed.
+    const preambleLines = (loop.preamble?.declarations ?? []).map(
+      d => `{% set ${twigIdent(d.name)} = ${this.convertExpressionToTwig(d.raw, d.valueParsed)} %}`,
+    )
     const childrenUnderLoop = this.renderChildren(loop.children)
     this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
@@ -1012,9 +1021,11 @@ export class TwigAdapter extends BaseAdapter implements IRNodeEmitter<TwigRender
         )
       }
       lines.push(`{% if ${filterCond} %}`)
+      lines.push(...preambleLines)
       lines.push(bodyChildren)
       lines.push(`{% endif %}`)
     } else {
+      lines.push(...preambleLines)
       lines.push(bodyChildren)
     }
 
