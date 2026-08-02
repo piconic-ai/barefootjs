@@ -16,23 +16,13 @@ import type { TypeInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 
 /**
- * Convert a `TypeInfo` to a Go type string.
- *
- * @param defaultValue used to infer the type when `typeInfo.kind` is
- *   `unknown`, and to distinguish `int` vs `float64` when `kind` is
- *   `primitive`/`number` (#2168 math-methods/number-tofixed — a bare TS
- *   `number` blindly mapped to Go `int`, so a fractional signal initial
- *   value like `-7.6` silently truncated to the Go zero value)
- * @returns the Go type, falling back to `interface{}` when unresolvable
- */
-/**
  * Collapse a homogeneous LITERAL union (`'a' | 'b'`, `1 | 2`, `true | false`)
  * to the primitive that backs it, so a variant-typed signal or prop
  * (`createSignal<'a' | 'b'>('a')`, the `{ variant?: 'a' | 'b' }` prop shape)
  * gets a real Go type instead of `interface{}` — and, downstream in
  * `convertInitialValue`, a real seed instead of `nil`. #2477's Go leg: the
  * analyzer maps an explicit literal-union type argument to
- * `{kind:'union', unionTypes:[{kind:'unknown', raw:"'a'"}, …]}`, and with no
+ * `{kind:'union'}` of literal members, and with no
  * `union` arm here OR in `convertInitialValue` the field fell to
  * `interface{}` and the seed to `nil` — which the child's `string` field
  * then rejected at `go run` time (`cannot use nil as string value`).
@@ -48,17 +38,16 @@ export function collapseLiteralUnion(typeInfo: TypeInfo): TypeInfo {
   if (typeInfo.kind !== 'union' || !typeInfo.unionTypes || typeInfo.unionTypes.length === 0) {
     return typeInfo
   }
+  // Purely structural: `typeNodeToTypeInfo` lowers a literal member to
+  // `kind: 'primitive'` + `literalValue`, so the member's family is just
+  // its `primitive` — no re-parsing of `raw` (the first cut of this
+  // helper regexed the member text because the analyzer had no literal
+  // arm; that gap is closed at the source).
   const familyOf = (m: TypeInfo): 'string' | 'number' | 'boolean' | null => {
-    if (m.kind === 'primitive') {
-      return m.primitive === 'string' || m.primitive === 'number' || m.primitive === 'boolean'
-        ? m.primitive
-        : null
-    }
-    const raw = m.raw?.trim() ?? ''
-    if (/^(['"`]).*\1$/.test(raw)) return 'string'
-    if (/^-?\d+(\.\d+)?$/.test(raw)) return 'number'
-    if (raw === 'true' || raw === 'false') return 'boolean'
-    return null
+    if (m.kind !== 'primitive') return null
+    return m.primitive === 'string' || m.primitive === 'number' || m.primitive === 'boolean'
+      ? m.primitive
+      : null
   }
   const first = familyOf(typeInfo.unionTypes[0])
   if (!first) return typeInfo
@@ -68,6 +57,16 @@ export function collapseLiteralUnion(typeInfo: TypeInfo): TypeInfo {
   return { kind: 'primitive', raw: typeInfo.raw, primitive: first }
 }
 
+/**
+ * Convert a `TypeInfo` to a Go type string.
+ *
+ * @param defaultValue used to infer the type when `typeInfo.kind` is
+ *   `unknown`, and to distinguish `int` vs `float64` when `kind` is
+ *   `primitive`/`number` (#2168 math-methods/number-tofixed — a bare TS
+ *   `number` blindly mapped to Go `int`, so a fractional signal initial
+ *   value like `-7.6` silently truncated to the Go zero value)
+ * @returns the Go type, falling back to `interface{}` when unresolvable
+ */
 export function typeInfoToGo(
   ctx: GoEmitContext,
   _typeInfo: TypeInfo,

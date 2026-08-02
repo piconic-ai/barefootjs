@@ -393,8 +393,14 @@ function deriveFormat(locale: string, probeOptions: Record<string, string>): Loc
  */
 /** A quoted string-literal union member's value, or null when the member is anything else. */
 function unionMemberLiteral(member: TypeInfo): string | null {
-  const m = /^'([^'\\]*)'$|^"([^"\\]*)"$/.exec(member.raw.trim())
-  return m ? (m[1] ?? m[2]) : null
+  // Structural since the analyzer's literal-type arm: a string-literal
+  // member is `kind: 'primitive', primitive: 'string'` carrying its value
+  // in `literalValue`. (Previously regexed `member.raw` because literal
+  // members lowered to `kind: 'unknown'`.)
+  if (member.kind === 'primitive' && member.primitive === 'string' && member.literalValue !== undefined) {
+    return member.literalValue
+  }
+  return null
 }
 
 /**

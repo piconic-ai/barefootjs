@@ -448,6 +448,49 @@ export function typeNodeToTypeInfo(
     return { kind: 'array', raw, elementType: recurse(typeNode.elementType) }
   }
 
+  // Literal types (`'a'`, `42`, `-1`, `true`, `null`) — including as union
+  // members, which is where the absence of this arm hurt: `'a' | 'b'`
+  // members fell to `{kind:'unknown', raw:"'a'"}`, forcing every consumer
+  // that needed the member's family or value to re-parse `raw` with a
+  // regex (the Go adapter's literal-union collapse, #2324's
+  // `unionMemberLiteral`, `rich-type-evidence`'s nullish-arm match — all
+  // three carried one). A literal is structurally a primitive of its
+  // family carrying its value; consumers that only care about the family
+  // see a plain primitive, and the value rides along in `literalValue`
+  // for the ones that need it. `null` inside a union arrives as
+  // `LiteralTypeNode(NullKeyword)` — NOT the bare `NullKeyword` the
+  // switch above catches — which is exactly why nullish union arms were
+  // invisible before.
+  if (ts.isLiteralTypeNode(typeNode)) {
+    const lit = typeNode.literal
+    if (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit)) {
+      return { kind: 'primitive', raw, primitive: 'string', literalValue: lit.text }
+    }
+    if (ts.isNumericLiteral(lit)) {
+      return { kind: 'primitive', raw, primitive: 'number', literalValue: lit.text }
+    }
+    if (
+      ts.isPrefixUnaryExpression(lit) &&
+      lit.operator === ts.SyntaxKind.MinusToken &&
+      ts.isNumericLiteral(lit.operand)
+    ) {
+      return { kind: 'primitive', raw, primitive: 'number', literalValue: `-${lit.operand.text}` }
+    }
+    if (lit.kind === ts.SyntaxKind.TrueKeyword || lit.kind === ts.SyntaxKind.FalseKeyword) {
+      return {
+        kind: 'primitive',
+        raw,
+        primitive: 'boolean',
+        literalValue: lit.kind === ts.SyntaxKind.TrueKeyword ? 'true' : 'false',
+      }
+    }
+    if (lit.kind === ts.SyntaxKind.NullKeyword) {
+      return { kind: 'primitive', raw, primitive: 'null' }
+    }
+    // BigInt and anything newer: opaque, as before.
+    return { kind: 'unknown', raw }
+  }
+
   // Union types
   if (ts.isUnionTypeNode(typeNode)) {
     return { kind: 'union', raw, unionTypes: typeNode.types.map(recurse) }

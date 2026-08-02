@@ -69,13 +69,12 @@ type EvidenceMetadata = Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'prop
  * check callers gate on).
  */
 function isNullishArm(t: TypeInfo): boolean {
-  if (t.kind === 'primitive' && (t.primitive === 'null' || t.primitive === 'undefined')) return true
-  // `null` as a type annotation is a `ts.LiteralTypeNode` (not the
-  // `NullKeyword` `typeNodeToTypeInfo`'s primitive switch checks for), so it
-  // falls through to `{ kind: 'unknown', raw: 'null' }` there — a pre-existing
-  // gap in that shared helper, out of scope to fix here. Match on `raw` too
-  // so `Date | null` still strips down to `Date`.
-  return t.kind === 'unknown' && (t.raw === 'null' || t.raw === 'undefined')
+  // Purely structural: `typeNodeToTypeInfo`'s literal-type arm lowers a
+  // `null` union member (`ts.LiteralTypeNode(NullKeyword)`) to
+  // `{ kind: 'primitive', primitive: 'null' }`, the same shape a bare
+  // `null` annotation always produced — the raw-text fallback this helper
+  // used to carry for the analyzer gap is gone with the gap.
+  return t.kind === 'primitive' && (t.primitive === 'null' || t.primitive === 'undefined')
 }
 
 export function stripUnion(type: TypeInfo | null): TypeInfo | null {
