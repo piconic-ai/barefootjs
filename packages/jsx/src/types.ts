@@ -60,6 +60,13 @@ export interface TypeInfo {
   // For primitives
   primitive?: 'string' | 'number' | 'boolean' | 'null' | 'undefined'
 
+  /** Set when the type is a LITERAL of its primitive family (`'a'`, `42`,
+   *  `true`) — the literal's source value. `typeNodeToTypeInfo` lowers a
+   *  literal type to `kind: 'primitive'` + this field, so family-only
+   *  consumers need no special case and value consumers never re-parse
+   *  `raw`. */
+  literalValue?: string
+
   // For objects/interfaces
   properties?: PropertyInfo[]
 

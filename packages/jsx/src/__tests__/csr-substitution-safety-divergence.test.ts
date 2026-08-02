@@ -129,9 +129,15 @@ describe('CSR template: Stage-2 / post-substitution inline-safety divergence (#2
 
     // No bare `cls` identifier left in the template — it was inlined.
     expect(templateBody).not.toMatch(/(?<![-.\w$])cls(?![\w$])/)
-    // The module-scope object literal was substituted in place of `sizeMap`,
-    // and the prop was correctly bridged to `_p.size` — not marked unsafe.
-    expect(templateBody).toContain(`{ sm: 'h-4', md: 'h-6' })[_p.size]`)
+    // The record was substituted in place of `sizeMap`, and the prop was
+    // correctly bridged to `_p.size` — not marked unsafe. Since #2477 the
+    // one-hop const resolves at IR-build time through the shared `lookup`
+    // template part (the same route as an inline `sizeMap[size]`, #2300),
+    // so the baked record is the JSON-normalised lookup form rather than
+    // the CSR-substitution splice of the source text. The guard this test
+    // exists for — no over-suppression, no bare identifier, no
+    // `undefined` — is unchanged.
+    expect(templateBody).toContain(`({"sm": "h-4", "md": "h-6"})[_p.size]`)
     expect(templateBody).not.toContain('undefined')
   })
 })

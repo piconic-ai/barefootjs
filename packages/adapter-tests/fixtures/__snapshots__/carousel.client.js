@@ -2620,7 +2620,7 @@ export function initIcon(__scope, _p = {}) {
 
   createEffect(() => {
     if (_s0) {
-      { const __v = strokePaths[_p.name]; if (__v != null) _s0.setAttribute('d', String(__v)); else _s0.removeAttribute('d') }
+      { const __v = `${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`; if (__v != null) _s0.setAttribute('d', String(__v)); else _s0.removeAttribute('d') }
     }
   })
 
@@ -2714,51 +2714,7 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `$
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${_p.className}`) != null ? 'class="' + escapeAttr(`shrink-0 ${_p.className}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${((({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})[_p.name])) != null ? 'd="' + escapeAttr((({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})[_p.name])) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
+})[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${_p.className}`) != null ? 'class="' + escapeAttr(`shrink-0 ${_p.className}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
 export function Icon(_p, __bfKey) { return createComponent('Icon', _p, __bfKey) }
 var CarouselContext = CarouselContext ?? createContext()
 

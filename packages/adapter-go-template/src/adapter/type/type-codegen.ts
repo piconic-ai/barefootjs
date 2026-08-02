@@ -16,6 +16,48 @@ import type { TypeInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 
 /**
+ * Collapse a homogeneous LITERAL union (`'a' | 'b'`, `1 | 2`, `true | false`)
+ * to the primitive that backs it, so a variant-typed signal or prop
+ * (`createSignal<'a' | 'b'>('a')`, the `{ variant?: 'a' | 'b' }` prop shape)
+ * gets a real Go type instead of `interface{}` — and, downstream in
+ * `convertInitialValue`, a real seed instead of `nil`. #2477's Go leg: the
+ * analyzer maps an explicit literal-union type argument to
+ * `{kind:'union'}` of literal members, and with no
+ * `union` arm here OR in `convertInitialValue` the field fell to
+ * `interface{}` and the seed to `nil` — which the child's `string` field
+ * then rejected at `go run` time (`cannot use nil as string value`).
+ *
+ * Only a union whose EVERY member is a literal of ONE primitive family
+ * (string / number / boolean; a same-family primitive keyword member like
+ * `'a' | string` also counts) collapses. Anything else — mixed families,
+ * `null` / `undefined` members, object members — returns the input
+ * unchanged and keeps today's `interface{}` fallback, so the collapse can
+ * never widen what Go accepts, only type what it already receives.
+ */
+export function collapseLiteralUnion(typeInfo: TypeInfo): TypeInfo {
+  if (typeInfo.kind !== 'union' || !typeInfo.unionTypes || typeInfo.unionTypes.length === 0) {
+    return typeInfo
+  }
+  // Purely structural: `typeNodeToTypeInfo` lowers a literal member to
+  // `kind: 'primitive'` + `literalValue`, so the member's family is just
+  // its `primitive` — no re-parsing of `raw` (the first cut of this
+  // helper regexed the member text because the analyzer had no literal
+  // arm; that gap is closed at the source).
+  const familyOf = (m: TypeInfo): 'string' | 'number' | 'boolean' | null => {
+    if (m.kind !== 'primitive') return null
+    return m.primitive === 'string' || m.primitive === 'number' || m.primitive === 'boolean'
+      ? m.primitive
+      : null
+  }
+  const first = familyOf(typeInfo.unionTypes[0])
+  if (!first) return typeInfo
+  for (const m of typeInfo.unionTypes) {
+    if (familyOf(m) !== first) return typeInfo
+  }
+  return { kind: 'primitive', raw: typeInfo.raw, primitive: first }
+}
+
+/**
  * Convert a `TypeInfo` to a Go type string.
  *
  * @param defaultValue used to infer the type when `typeInfo.kind` is
@@ -27,9 +69,10 @@ import type { GoEmitContext } from '../emit-context.ts'
  */
 export function typeInfoToGo(
   ctx: GoEmitContext,
-  typeInfo: TypeInfo,
+  _typeInfo: TypeInfo,
   defaultValue?: string,
 ): string {
+  const typeInfo = collapseLiteralUnion(_typeInfo)
   switch (typeInfo.kind) {
     case 'primitive':
       switch (typeInfo.primitive) {
