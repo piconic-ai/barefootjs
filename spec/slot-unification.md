@@ -16,6 +16,31 @@ is in git.
 > benchmark.yml`). Only measurements that a design decision still rests on
 > are quoted below, and each says what it is load-bearing for.
 
+## 0. Target state — the four rules
+
+Everything in this document derives from four rules. When a change is hard
+to classify, classify it against these; when two sections seem to conflict,
+the rules win. The Japanese companion overview is
+[`slot-unification.ja.md`](./slot-unification.ja.md); this English document
+is normative.
+
+1. **Resolve a position once.** An element's address is decided at claim
+   time and held as a reference. Updates never re-walk the DOM.
+   (Enforced by the claim-once rule in §2 and the single `claimRefs` door
+   in `claim-slots.ts`.)
+2. **Separate assembly from initialization.** Finish building the string,
+   then make DOM nodes, then connect, then run `init`. No DOM nodes are
+   created mid-assembly. (The five-stage order in §4; stages 4–5 hold on
+   all three row paths; stage 2 is a §7 non-goal.)
+3. **Discriminate child positions at runtime.** A `Node` value is spliced
+   by identity; a string is escaped. Escaping is the default; raw is
+   explicit. (`__bfSlot` + structured IR; the write-side rule in
+   CLAUDE.md.)
+4. **Rows own no resources.** A loop row allocates no reactive resources;
+   you pay only for the rows that update. (§9's lazy row graph; the
+   eligibility gate in §9.4 falls back to eager emission, never to
+   unsoundness.)
+
 ## 1. What this replaced
 
 Before Steps A+B there were four separate reactive-content mechanisms over
@@ -233,7 +258,11 @@ after they ship when the *estimate* is the reusable part — a number that was
 wrong, and why, is worth as much as the change itself.
 
 - **General-case marker elision** (§5a). The one open item on axis (b), and
-  the only route to closing the HTML-size gap against solid.
+  the only route to closing the HTML-size gap against solid. Tracked as
+  issue #2483, which also fixes the required first step: an
+  investigation-only generation-order swap behind a flag, cataloguing what
+  breaks against the loop-row planner's invariants before any elision
+  lands.
 - **Claim-mechanism allocation shape — both pieces SHIPPED.** Kept here
   because the corrected estimates are the reusable part: the original numbers
   for both pieces were wrong in opposite directions, and each was measured on
