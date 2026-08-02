@@ -3818,11 +3818,13 @@
     },
     "select-value-ssr": {
       "kinds": [
+        "binary",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
+        "binary:===",
         "literal:string"
       ],
       "contexts": [
@@ -4576,7 +4578,8 @@
         "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "textarea-value-ssr": {
@@ -4589,7 +4592,8 @@
         "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "todo-app": {
@@ -4819,7 +4823,7 @@
     "array-literal": 69,
     "array-method": 66,
     "arrow": 63,
-    "binary": 80,
+    "binary": 81,
     "call": 193,
     "conditional": 23,
     "identifier": 281,
@@ -4864,7 +4868,7 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 41,
+    "binary:===": 42,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 45,

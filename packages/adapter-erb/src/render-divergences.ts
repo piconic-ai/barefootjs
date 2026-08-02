@@ -30,8 +30,4 @@ export const renderDivergences: RenderDivergences = {
   // `skipJsx` entries).
   'aliased-destructured-prop':
     'aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)',
-  'select-value-ssr':
-    'controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)',
-  'textarea-value-ssr':
-    'controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)',
 }

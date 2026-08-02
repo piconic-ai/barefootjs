@@ -1433,7 +1433,7 @@
           ]
         },
         "blade": {
-          "pass": 175,
+          "pass": 177,
           "total": 193,
           "gaps": [
             {
@@ -1491,10 +1491,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1512,16 +1508,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 177,
+          "pass": 179,
           "total": 193,
           "gaps": [
             {
@@ -1569,10 +1561,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1590,16 +1578,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 176,
+          "pass": 178,
           "total": 193,
           "gaps": [
             {
@@ -1653,10 +1637,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1674,16 +1654,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 175,
+          "pass": 177,
           "total": 193,
           "gaps": [
             {
@@ -1741,10 +1717,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1762,16 +1734,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 175,
+          "pass": 177,
           "total": 193,
           "gaps": [
             {
@@ -1829,10 +1797,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1850,16 +1814,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 176,
+          "pass": 178,
           "total": 193,
           "gaps": [
             {
@@ -1911,10 +1871,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1932,16 +1888,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 175,
+          "pass": 177,
           "total": 193,
           "gaps": [
             {
@@ -1999,10 +1951,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2020,16 +1968,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 175,
+          "pass": 177,
           "total": 193,
           "gaps": [
             {
@@ -2087,10 +2031,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2108,10 +2048,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -2277,106 +2213,6 @@
           ]
         },
         "blade": {
-          "pass": 260,
-          "total": 281,
-          "gaps": [
-            {
-              "fixture": "aliased-destructured-prop",
-              "issues": []
-            },
-            {
-              "fixture": "composite-row-child-aliased-prop",
-              "issues": []
-            },
-            {
-              "fixture": "date-method-uncatalogued",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2356"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "filter-nested-callback-predicate",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2320"
-              ]
-            },
-            {
-              "fixture": "filter-nested-find-predicate",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2320"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "map-array-builder-body",
-              "issues": []
-            },
-            {
-              "fixture": "map-array-builder-escaping",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "reduce-right-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "reduce-typeof-body",
-              "issues": []
-            },
-            {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "static-array-from-props",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            },
-            {
-              "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
-            }
-          ]
-        },
-        "erb": {
           "pass": 262,
           "total": 281,
           "gaps": [
@@ -2385,6 +2221,98 @@
               "issues": []
             },
             {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2356"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2320"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "map-array-builder-body",
+              "issues": []
+            },
+            {
+              "fixture": "map-array-builder-escaping",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "issues": []
+            }
+          ]
+        },
+        "erb": {
+          "pass": 264,
+          "total": 281,
+          "gaps": [
+            {
+              "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2356"
@@ -2437,10 +2365,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2458,16 +2382,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 261,
+          "pass": 263,
           "total": 281,
           "gaps": [
             {
@@ -2533,10 +2453,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2554,16 +2470,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 260,
+          "pass": 262,
           "total": 281,
           "gaps": [
             {
@@ -2633,10 +2545,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2654,16 +2562,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 260,
+          "pass": 262,
           "total": 281,
           "gaps": [
             {
@@ -2733,10 +2637,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2754,16 +2654,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 261,
+          "pass": 263,
           "total": 281,
           "gaps": [
             {
@@ -2827,10 +2723,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2848,16 +2740,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 260,
+          "pass": 262,
           "total": 281,
           "gaps": [
             {
@@ -2927,10 +2815,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2948,16 +2832,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 260,
+          "pass": 262,
           "total": 281,
           "gaps": [
             {
@@ -3027,10 +2907,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3048,10 +2924,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -3129,7 +3001,7 @@
           "total": 231
         },
         "blade": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3165,10 +3037,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3180,16 +3048,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3225,10 +3089,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3240,16 +3100,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3285,10 +3141,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3300,16 +3152,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3345,10 +3193,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3360,16 +3204,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3405,10 +3245,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3420,16 +3256,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3465,10 +3297,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3480,16 +3308,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3525,10 +3349,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3540,16 +3360,12 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 218,
+          "pass": 220,
           "total": 231,
           "gaps": [
             {
@@ -3585,10 +3401,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3600,10 +3412,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -7966,7 +7774,7 @@
           "total": 164
         },
         "blade": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -7994,10 +7802,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8006,15 +7810,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8042,10 +7842,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8054,15 +7850,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8090,10 +7882,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8102,15 +7890,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8138,10 +7922,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8150,15 +7930,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8186,10 +7962,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8198,15 +7970,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8234,10 +8002,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8246,15 +8010,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8282,10 +8042,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8294,15 +8050,11 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 154,
+          "pass": 156,
           "total": 164,
           "gaps": [
             {
@@ -8330,10 +8082,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8342,10 +8090,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         }

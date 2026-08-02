@@ -1262,6 +1262,78 @@ function transformJsxElement(
   return transformHtmlElement(node, ctx, tagName)
 }
 
+/**
+ * SSR projection of a controlled form-control `value` (#2464 / #2465).
+ *
+ * `value` is not an attribute on `<textarea>` (its initial value is its
+ * element content) and not an attribute on `<select>` (the selection is
+ * `selected` on the matching `<option>`). Emitting it verbatim ships
+ * invalid HTML that browsers ignore, so no-JS and pre-hydration users see
+ * an empty textarea / the wrong option until the client `.value` effect
+ * snaps it.
+ *
+ * Lowering (shared IR, so every adapter inherits it):
+ *  - the `value` attr is marked `clientOnly` — SSR skips it, the existing
+ *    hydrate-time `.value` property binding is unchanged;
+ *  - `<textarea>` with no children gains a NON-reactive expression child
+ *    (the initial value as element content — updates keep flowing through
+ *    the `.value` effect, deliberately not a live text slot);
+ *  - `<select>` distributes `selected={(value) === 'opt'}` onto each
+ *    statically-valued `<option>` (incl. under `<optgroup>`/fragments) —
+ *    the exact per-option comparison shape the `select-option-selected`
+ *    fixture already proves across every adapter. Options rendered by a
+ *    dynamic loop can't be statically distributed and are left to the
+ *    hydrate-time effect (tracked with #2466 on the #2464 thread).
+ */
+function lowerFormControlValueSsr(
+  tagName: string,
+  attrs: IRAttribute[],
+  children: IRNode[],
+): void {
+  if (tagName !== 'textarea' && tagName !== 'select') return
+  const valueAttr = attrs.find(a => a.name === 'value')
+  if (!valueAttr || valueAttr.clientOnly || valueAttr.value.kind !== 'expression') return
+  const { expr, templateExpr } = valueAttr.value
+
+  valueAttr.clientOnly = true
+
+  if (tagName === 'textarea') {
+    if (children.length > 0) return
+    children.push({
+      type: 'expression',
+      expr,
+      templateExpr,
+      typeInfo: null,
+      reactive: false,
+      slotId: null,
+      loc: valueAttr.loc,
+      origin: { phase: 'ssr', scope: 'template', effect: 'pure' },
+    })
+    return
+  }
+
+  const selectedFor = (optValue: string): AttrValue =>
+    AttrValueOf.expression(
+      `(${expr}) === ${JSON.stringify(optValue)}`,
+      templateExpr !== undefined
+        ? { templateExpr: `(${templateExpr}) === ${JSON.stringify(optValue)}` }
+        : undefined,
+    )
+  const distribute = (nodes: IRNode[]): void => {
+    for (const n of nodes) {
+      if (n.type === 'element' && n.tag === 'option') {
+        if (n.attrs.some(a => a.name === 'selected')) continue
+        const optValue = n.attrs.find(a => a.name === 'value')
+        if (!optValue || optValue.value.kind !== 'literal') continue
+        n.attrs.push({ name: 'selected', value: selectedFor(optValue.value.value), loc: n.loc })
+      } else if (n.type === 'fragment' || (n.type === 'element' && n.tag === 'optgroup')) {
+        distribute(n.children)
+      }
+    }
+  }
+  distribute(children)
+}
+
 function transformHtmlElement(
   node: ts.JsxElement,
   ctx: TransformContext,
@@ -1277,6 +1349,7 @@ function transformHtmlElement(
   ctx.isRoot = false
 
   const children = transformChildren(node.children, ctx)
+  lowerFormControlValueSsr(tagName, attrs, children)
 
   // Determine if this element needs a slot ID
   // Elements need slotIds if they have: events, dynamic children, reactive attributes, or refs
@@ -1332,6 +1405,8 @@ function transformSelfClosingElement(
   }
 
   const { attrs, events, ref } = processAttributes(node.attributes, ctx)
+  const selfClosingChildren: IRNode[] = []
+  lowerFormControlValueSsr(tagName, attrs, selfClosingChildren)
 
   // Elements need slotIds if they have events, reactive attributes, or refs
   const needsSlot = events.length > 0 || hasReactiveAttributes(attrs, ctx) || ref !== null
@@ -1346,7 +1421,7 @@ function transformSelfClosingElement(
     attrs,
     events,
     ref,
-    children: [],
+    children: selfClosingChildren,
     slotId,
     needsScope,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
