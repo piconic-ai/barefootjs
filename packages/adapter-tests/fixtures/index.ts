@@ -388,6 +388,7 @@ import { fixture as jsxElementProp } from './jsx-element-prop'
 import { fixture as grandchildComposition } from './grandchild-composition'
 import { fixture as compositeRowChildComponent } from './composite-row-child-component'
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
+import { fixture as compositeRowChildAliasedProp } from './composite-row-child-aliased-prop'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
 import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
@@ -452,6 +453,12 @@ import { fixture as signalEarlyReturn } from './signal-early-return'
 // `Slot`'s (dead, destructured-prop-conditioned) `asChild` exercises.
 import { fixture as ifStatementChildSwap } from './if-statement-child-swap'
 import { fixture as logicalAndZero } from './logical-and-zero'
+// HTML element/attribute semantics checklist (state-carrying attributes)
+import { fixture as controlledCheckboxChecked } from './controlled-checkbox-checked'
+import { fixture as controlledRadioChecked } from './controlled-radio-checked'
+import { fixture as detailsOpen } from './details-open'
+import { fixture as dialogOpen } from './dialog-open'
+import { fixture as progressMeterValue } from './progress-meter-value'
 
 import type { JSXFixture } from '../src/types'
 
@@ -736,6 +743,7 @@ export const jsxFixtures: JSXFixture[] = [
   grandchildComposition,
   compositeRowChildComponent,
   compositeRowChildDerivedProp,
+  compositeRowChildAliasedProp,
   loopPreambleAttrValue,
   loopPreambleChainedFilter,
   loopRowStaticConditional,
@@ -775,4 +783,9 @@ export const jsxFixtures: JSXFixture[] = [
   signalEarlyReturn,
   ifStatementChildSwap,
   logicalAndZero,
+  controlledCheckboxChecked,
+  controlledRadioChecked,
+  detailsOpen,
+  dialogOpen,
+  progressMeterValue,
 ]

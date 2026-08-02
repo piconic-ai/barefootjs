@@ -256,6 +256,12 @@ describe('CSR Conformance Tests', () => {
     // renders empty instead of the fixture's corrected expectedHtml.
     // https://github.com/piconic-ai/barefootjs/issues/2460
     'aliased-destructured-prop',
+    // Same #2460 CSR-template gap as `aliased-destructured-prop`, inside
+    // a keyed `.map()` loop row: the nested child's renamed prop reads
+    // `_p.count` off a row object shaped `{ text, n }`, so both rows'
+    // `s1` slot renders empty instead of the fixture's expectedHtml.
+    // https://github.com/piconic-ai/barefootjs/issues/2460
+    'composite-row-child-aliased-prop',
     // #2464 / #2465: the CSR template emits the same invalid
     // `value="..."` attribute as SSR, diverging from the fixtures'
     // corrected expectedHtml (`selected` on the matching option /

@@ -51,8 +51,6 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   // Onboarding TSX-fidelity pins (PR #2461): expectedHtml is hand-authored
   // to the CORRECT output because the Hono reference itself emits the
   // broken form. Regenerate + remove from this set when the issue is fixed.
-  // https://github.com/piconic-ai/barefootjs/issues/2460
-  'aliased-destructured-prop',
   // https://github.com/piconic-ai/barefootjs/issues/2464
   'select-value-ssr',
   // https://github.com/piconic-ai/barefootjs/issues/2465
