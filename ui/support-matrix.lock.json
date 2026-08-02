@@ -1433,9 +1433,13 @@
           ]
         },
         "blade": {
-          "pass": 171,
+          "pass": 170,
           "total": 188,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1679,9 +1683,13 @@
           ]
         },
         "jinja": {
-          "pass": 171,
+          "pass": 170,
           "total": 188,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1763,9 +1771,13 @@
           ]
         },
         "minijinja": {
-          "pass": 171,
+          "pass": 170,
           "total": 188,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1847,9 +1859,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 172,
+          "pass": 171,
           "total": 188,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1925,9 +1941,13 @@
           ]
         },
         "twig": {
-          "pass": 171,
+          "pass": 170,
           "total": 188,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2009,9 +2029,13 @@
           ]
         },
         "xslate": {
-          "pass": 171,
+          "pass": 170,
           "total": 188,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2253,11 +2277,15 @@
           ]
         },
         "blade": {
-          "pass": 256,
+          "pass": 255,
           "total": 276,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "composite-row-child-aliased-prop",
               "issues": []
             },
             {
@@ -2535,11 +2563,15 @@
           ]
         },
         "jinja": {
-          "pass": 256,
+          "pass": 255,
           "total": 276,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "composite-row-child-aliased-prop",
               "issues": []
             },
             {
@@ -2631,11 +2663,15 @@
           ]
         },
         "minijinja": {
-          "pass": 256,
+          "pass": 255,
           "total": 276,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "composite-row-child-aliased-prop",
               "issues": []
             },
             {
@@ -2727,11 +2763,15 @@
           ]
         },
         "mojolicious": {
-          "pass": 257,
+          "pass": 256,
           "total": 276,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "composite-row-child-aliased-prop",
               "issues": []
             },
             {
@@ -2817,11 +2857,15 @@
           ]
         },
         "twig": {
-          "pass": 256,
+          "pass": 255,
           "total": 276,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "composite-row-child-aliased-prop",
               "issues": []
             },
             {
@@ -2913,11 +2957,15 @@
           ]
         },
         "xslate": {
-          "pass": 256,
+          "pass": 255,
           "total": 276,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "composite-row-child-aliased-prop",
               "issues": []
             },
             {
@@ -3737,9 +3785,13 @@
           ]
         },
         "blade": {
-          "pass": 133,
+          "pass": 132,
           "total": 150,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -3983,9 +4035,13 @@
           ]
         },
         "jinja": {
-          "pass": 133,
+          "pass": 132,
           "total": 150,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4067,9 +4123,13 @@
           ]
         },
         "minijinja": {
-          "pass": 133,
+          "pass": 132,
           "total": 150,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4151,9 +4211,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 134,
+          "pass": 133,
           "total": 150,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4229,9 +4293,13 @@
           ]
         },
         "twig": {
-          "pass": 133,
+          "pass": 132,
           "total": 150,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4313,9 +4381,13 @@
           ]
         },
         "xslate": {
-          "pass": 133,
+          "pass": 132,
           "total": 150,
           "gaps": [
+            {
+              "fixture": "composite-row-child-aliased-prop",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
