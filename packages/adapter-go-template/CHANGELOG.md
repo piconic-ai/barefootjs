@@ -1,5 +1,330 @@
 # @barefootjs/go-template
 
+## 0.30.0
+
+### Minor Changes
+
+- 79a7a99: Rebuild a loop-row child's props per row instead of refusing (#2448)
+
+  #2456 made the Go adapter refuse with `BF101` when a per-row prop override
+  would leave a child's constructor-derived field stale. This replaces the
+  refusal with a fix: the child rebuilds itself per row.
+
+  `bf_with_props` (#2445) patches fields on the child's already-constructed
+  shared instance. It cannot re-run `New<Child>Props`, which is where a
+  `createMemo` body and a `createSignal` initial value are both baked — so
+  overriding `n` left `Dbl` at the one-shot value on every row. The blocker was
+  that `html/template` has no expression language and can only call FuncMap
+  entries, and `New<Child>Props` is not one.
+
+  The compiler now emits a props **rebuilder** per affected component and
+  registers it from the generated package's `init()`:
+
+  ```go
+  func init() {
+  	bf.RegisterReprops("Badge", func(base interface{}, kv ...interface{}) (interface{}, error) {
+  		b := base.(BadgeProps)
+  		in := BadgeInput{ScopeID: b.ScopeID, BfParent: b.BfParent, BfMount: b.BfMount,
+  			Text: b.Text, N: b.N}
+  		// … apply the row's overrides …
+  		p := NewBadgeProps(in)   // every derived field recomputes
+  		p.Scripts = b.Scripts
+  		return p, nil
+  	})
+  }
+  ```
+
+  and the row calls it through one new fixed FuncMap entry:
+
+  ```gotemplate
+  {{template "Badge" (bf_reprops "Badge" $.BadgeSlot0 "Text" .Label "N" .N)}}
+  ```
+
+  **No setup change.** `t.Funcs(bf.FuncMap())` is unchanged; `bf_reprops` is a
+  fixed entry that looks the rebuilder up at template EXECUTE time. That
+  deferral is load-bearing: Go initializes a package's variables before its
+  `init()` functions, so an app that builds its template set in a package-level
+  var calls `FuncMap()` while the registry is still empty. Merging the
+  constructors into `FuncMap()`'s return value would fail such an app at parse
+  time with `function "bf_new_Badge" not defined`; one fixed entry resolved at
+  execute time cannot. Pinned by `TestRepropsResolvesAtExecuteTimeNotFuncsTime`.
+
+  Identity is carried from the base instance, never re-derived — `New<Child>Props`
+  mints a random `ScopeID` when handed an empty one, and a per-row scope would
+  break hydration. `bf_with_children` still composes on the outside, so per-row
+  children are applied to the rebuilt value.
+
+  Blast radius is deliberately zero for everything else: only a child with a
+  constructor-derived field gets a rebuilder, and only an override that actually
+  feeds one of those fields switches helpers. A plain passthrough override stays
+  on `bf_with_props`, byte-identical.
+
+  `BF101` remains for shapes the rebuilder declines — a `...rest` bag, a spread
+  slot, context consumers, or nested child Inputs add Input fields with no Props
+  counterpart, so the Input can't be reconstructed. Refusing still beats emitting
+  silently-stale output.
+
+  `bf_with_props` stays exported and registered: templates generated before this
+  call it, and it remains the cheaper path when nothing is derived. Measured at
+  100 rows, the two are within noise of each other (`bf_reprops` is ~3–5% slower
+  per execution and allocates slightly less).
+
+  Aliased destructures are handled correctly on the rebuild path. The generated
+  override switch is keyed by the name the PARENT writes (`"N"`) and assigns to
+  the child's own Input field (`in.Count`), which is where those two naming sides
+  are reconciled. The `bf_with_props` path still has that mismatch when nothing
+  is derived — tracked as #2457.
+
+### Patch Changes
+
+- 3da47f9: Fix per-row props for a child component nested inside a composite dynamic loop row (#2445)
+
+  A child component nested inside a signal-driven `.map()` row whose root is a
+  plain element (`<li><Badge text={row.label}/></li>`) got ONE hoisted
+  `<Name>SlotN` props value, built once outside `{{range}}` — every row shared
+  the same instance, so a prop that read the row (`text={row.label}`) rendered
+  the same (always zero-value) content on every row instead of that row's own
+  value.
+
+  Fixed by reapplying a loop-dependent prop per row, at template-execution
+  time, via a new `bf_with_props` runtime helper — the props-argument sibling
+  of the existing `bf_with_children` helper, which already does this for
+  per-row JSX children on the same shared instance. A prop that doesn't depend
+  on the row is unaffected and stays on the constructor-only path. A per-row
+  prop shaped as a ternary or single interpolation (`row.on ? "yes" : "no"`)
+  is also supported; a prop that routes into the child's rest bag, or whose
+  expression is otherwise unsupported, safely stays on the constructor-only
+  path instead of emitting a broken pipeline argument.
+
+  The `composite-row-child-component` conformance fixture's render divergence
+  for this adapter is graduated (deleted from `render-divergences.ts`); the
+  sibling scope-id divergence tracked in #2444 (every other template-string
+  adapter) is unrelated and untouched.
+
+  Known follow-up (#2448): `bf_with_props` overrides the child's
+  already-constructed Props instance, so a field the child DERIVES from the
+  overridden prop (a memo, or a prop-shadowing signal's initial value) still
+  reflects the one-shot constructor's value, not the per-row one — only the
+  directly-overridden field itself is correct per row.
+
+- 07aecae: Declare render divergences for three new correct-output conformance fixtures (#2460, #2464, #2465)
+
+  No behavior change — this adds `renderDivergences` entries (published to
+  `ui/compat.lock.json` and the docs compatibility matrix) for gaps found in the
+  onboarding TSX-fidelity exploration (PR #2461), all of which live in the shared
+  compiler layer and affect every adapter including the Hono reference:
+
+  - `aliased-destructured-prop` (#2460): an aliased destructured prop
+    (`{ n: count }`) loses its rename — template vars, `ssrDefaults`, and the
+    props bridge key off the local name (on Go, the caller-side Input struct
+    literal fails `go run` outright with `unknown field N`).
+  - `select-value-ssr` (#2464): controlled `<select>` SSRs an invalid `value`
+    attribute instead of `selected` on the matching option.
+  - `textarea-value-ssr` (#2465): controlled `<textarea>` SSRs a `value`
+    attribute instead of element content.
+
+  Each entry documents its graduation path: fix the shared emission, regenerate
+  the fixture's `expectedHtml` from the fixed reference, delete the entry.
+
+- 437f822: Fix a per-row prop override silently dropped for an aliased destructured child prop (#2457)
+
+  A child nested inside a COMPOSITE dynamic loop row (`<li><Badge .../></li>`)
+  whose props use an ALIASED destructure had its per-row override discarded
+  with no diagnostic:
+
+  ```tsx
+  function Badge({ text, n: count }: { text: string; n: number }) {
+    return (
+      <span class="badge">
+        {text}:{count}
+      </span>
+    );
+  }
+  // <li key={row.id}><Badge text={row.label} n={row.n} /></li>
+  ```
+
+  `generateInputStruct` / `emitPropsDataFields` name a child's Go field from
+  its LOCAL binding — `n: count` becomes the struct field `Count`, not `N`.
+  `loopRowChildPropOverrides` (the per-row override emitter) capitalized the
+  JSX attribute name instead:
+
+  ```gotemplate
+  {{template "Badge" (bf_with_props $.BadgeSlot0 "Text" .Label "N" .N)}}
+  ```
+
+  `bf.WithProps` documents an unknown-field pair as a deliberate passthrough
+  (`bf_with_props` patches named fields on an already-constructed instance),
+  so `"N" .N` was silently dropped and `Count` kept the shared instance's
+  constructor-time value (row 0's `n`) on every row.
+
+  The fix resolves the child's own Go field name ONCE, at the parent's
+  emission site — the only place that has both the JSX attribute name and the
+  child's shape — instead of leaving the mismatch for the runtime helper to
+  paper over:
+
+  ```gotemplate
+  {{template "Badge" (bf_with_props $.BadgeSlot0 "Text" .Label "Count" .N)}}
+  ```
+
+  A new `childPropFieldNames` map (JSX attribute name → child's own Go field
+  name) is populated from the same two doors `childDerivedFieldDeps` already
+  uses — `registerChildComponentShape` (the CLI's cross-file pre-pass) and
+  `generate()`'s self-registration — so a same-file loop-row child (the only
+  kind this bug reaches) always has an entry by the time
+  `loopRowChildPropOverrides` looks.
+
+  This also simplifies the `#2448` props-rebuilder (`bf_reprops`): its
+  generated `switch` used to be keyed by the PARENT's name on the case label
+  and the CHILD's field on the assignment target, reconciling the two sides
+  right there. Now that the parent already emits the child's own field name,
+  the switch is keyed by that one name on both sides — one place to get the
+  naming right instead of two.
+
+  For an un-aliased prop the JSX attribute name and the child's field name are
+  the same string, so `childPropFieldNames` is an identity map and every
+  currently-passing fixture's emitted template stays byte-identical.
+
+  Verified end-to-end against the real Go runtime (`renderGoTemplateComponent`)
+  for both an aliased child with no derived field and one with a `createMemo`
+  depending on the aliased prop (the `#2448` rebuild path) — both now show the
+  correct value on every row.
+
+  No conformance fixture yet, and the reason is worth recording: building one
+  surfaced the mirror-image bug in the REFERENCE adapter. Hono emits an aliased
+  destructure as `{ text, count }` — the local binding used as the property key —
+  against a props type that has `n`, so any aliased destructured prop reads as
+  `undefined` there, independent of loops, `'use client'`, or this bug. Fixtures
+  generate their `expectedHtml` from Hono, so a fixture for this shape would bake
+  in the wrong reference value and measure every other adapter against it. Filed
+  as #2460; the fixture lands with that fix.
+
+- 8586a03: Refuse loudly when a per-row prop override would leave a derived child field stale (#2448)
+
+  Follow-up to #2445. That fix re-applies a loop-dependent prop per row via the
+  `bf_with_props` runtime helper, which overrides fields on the child's
+  already-constructed shared instance. It cannot re-run `New<Child>Props`, which
+  is where a memo body AND a signal's initial value are both computed:
+
+  ```go
+  func NewBadgeProps(in BadgeInput) BadgeProps {
+  	return BadgeProps{ ..., N: in.N, Dbl: in.N * 2 }
+  }
+  ```
+
+  So `N` became per-row correctly while `Dbl` kept the one-shot constructor's
+  value (`in.N == 0` → `0`) on every row — silently wrong output, no diagnostic.
+
+  The Go adapter now detects this and refuses with `BF101` naming the child, the
+  overridden prop, and the field that would go stale, suggesting either
+  `/* @client */` on the loop position or lifting the derived value into the
+  parent. Two alternatives were evaluated and rejected: a per-row props slice
+  (the `.TodoItems` wrapper shape) is populated by the route handler rather than
+  the generated constructor, so extending it here would demand handler work for
+  a component the user never named at a call site; and calling `New<Child>Props`
+  at template-execution time would require the generated components package to
+  register per-component constructors into the template FuncMap, a breaking
+  setup change for every Go user. Both are worse than a loud refusal, and the
+  behaviour being replaced is silently wrong output.
+
+  Detection is a structural walk over the child's own constructor-evaluated
+  `parsed` initializers — both `createMemo` bodies and `createSignal` initial
+  values, since `New<Child>Props` bakes each of them once and `bf_with_props`
+  re-runs neither (`const [dbl] = createSignal(props.n)` emits `Dbl: in.N` and
+  goes stale under a per-row `n` override exactly as the memo form does) —
+  collecting which input props each reads. It is best-effort by construction — a
+  declaration with no resolvable parsed initializer is skipped — so its failure
+  mode is a missed refusal (today's behaviour), never a wrong one. The walk
+  carries an exhaustiveness pin so a new `ParsedExpr` kind cannot silently drop a
+  dependency.
+
+  Dependencies are keyed by the prop's canonical source name
+  (`ParamInfo.sourceName ?? name`), so an aliased destructure
+  (`function Badge({ n: count })`, whose memo reads `count` while the parent
+  writes `n=`) refuses too rather than missing the lookup.
+
+  New fixture `composite-row-child-derived-prop` pins the shape: `BF101` on Go,
+  rendered correctly by every other adapter and CSR, which construct the child
+  fresh per row and are unaffected.
+
+- 8569610: Lower a `.map()` callback preamble's value declarations to per-row template locals (#2447)
+
+  A block-body `.map()` whose preamble computes a value used in the row —
+
+  ```tsx
+  {
+    rows().map((row) => {
+      const cls = row.done ? "done" : "open";
+      return (
+        <li key={row.id} class={cls}>
+          {row.label}
+        </li>
+      );
+    });
+  }
+  ```
+
+  — carried that preamble only as JS text, which a template language cannot
+  execute. Every DSL adapter emitted the row anyway, reading a name it never
+  assigned: ERB read `v[:cls]` (an unseeded vars-Hash key), Go read `$.Cls` (a
+  parent-struct field, the same hoisted-to-parent defect class as #2445), and
+  Blade / Twig / Jinja / minijinja / Kolon / Mojo each read a bare undefined
+  local. All eight rendered `class=""`, with no diagnostic. Hono and CSR were
+  correct throughout, so the divergence only showed up against a real DSL
+  runtime.
+
+  Fixed by giving the preamble a second, backend-neutral carrier:
+  `MapCallbackPreamble.declarations`, one `{ name, valueParsed }` per
+  declaration. Each adapter emits it as a per-row local in its own syntax
+  (`{% set %}`, `@php()`, `<%- … -%>`, `: my $x = …;`, `{{$x := …}}`) through the
+  same `ParsedExpr` door it already uses for the loop array, the filter
+  predicate, and the sort comparator — no new expression path, and no
+  per-adapter interpretation of the JS text. Declarations render in source
+  order, so a later initializer sees an earlier local; on a
+  `.filter(p).map(cb)` chain they render inside the filter guard, matching JS
+  evaluation order. The declared names are registered as loop-bound, so a
+  same-named module const can't inline over the local the loop just declared.
+
+  Lowering is all-or-nothing. A preamble is an order-dependent statement
+  sequence, so carrying its declarable prefix and dropping the rest would put
+  the missing statement's effect nowhere — the same silent divergence in a new
+  disguise. One statement that is not a value declaration (an assignment, an
+  imperative loop, a destructuring binding, an initializer outside the
+  expression subset) therefore refuses on a DSL target with `BF021` and the
+  `/* @client */` escape, alongside the existing filter / sort / array-builder /
+  flatMap gates. A JS runtime keeps running any preamble verbatim.
+
+  Two behaviour changes fall out of this:
+
+  - **`map-preamble-branch-body` now renders on every adapter.** Its `BF021`
+    pins are removed from all eight DSL adapters. They existed on the premise
+    that a loop-local cannot be carried into a conditional branch template; that
+    stopped being true once a value preamble lowers, because the if/else fold
+    puts the conditional _inside_ the loop body, where the local is in scope in
+    both arms. The refusal now keys off whether the preamble is declarable, not
+    whether the body branches.
+  - **A non-declarable preamble that used to compile is now a build error on DSL
+    targets.** It previously produced a template that read unassigned names, so
+    the change is from silently-wrong output to a diagnostic with a documented
+    escape.
+
+  The `loop-preamble-attr-value` fixture's render divergences are graduated
+  (deleted from all eight `render-divergences.ts` files). Both fixtures now pass
+  on all nine adapters and CSR conformance.
+
+  Unchanged and tracked separately: an attribute whose value comes from a
+  preamble local is still not classified as reactive on the client, so it is
+  interpolated into the row template and not rewritten on a same-key item
+  update. That is a client-side classification question, pinned as the current
+  contract in `packages/client/__tests__/runtime/lazy-row-preamble.test.ts`.
+
+- a7ffb8e: Resolve a one-hop const of a `Record[key]` lookup to the shared `lookup` template part, and collapse literal unions to their backing primitive in the Go adapter (#2477)
+
+  `const cls = variantClasses[variant]` followed by `className={cls}` fell through to a bare-expression attr. JSX-runtime SSR (Hono) evaluates the const fine, but every template backend emitted a reference to a variable the template never defines, rendering `class=""` with zero diagnostics — the inline form (`className={variantClasses[variant]}`, #2300) and the template-literal hop (`const cls = \`${variantClasses[variant]}\``) both already lowered correctly. The shared `Icon`component's`d={path}` had the same shape, so SVG icons server-rendered blank on every non-Hono backend until hydration.
+
+  Separately, an explicit literal-union type argument (`createSignal<'a' | 'b'>('a')`) had no `union` arm in the Go adapter's type or value lowering, so the field fell to `interface{}` and the seed to `nil` — failing `go run` outright when a child's `string` field received it. Literal unions now collapse to their backing primitive at both entry points, which must agree.
+
+  - @barefootjs/shared@0.30.0
+
 ## 0.29.0
 
 ### Patch Changes
