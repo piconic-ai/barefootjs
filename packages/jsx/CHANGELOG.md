@@ -1,5 +1,435 @@
 # @barefootjs/jsx
 
+## 0.30.0
+
+### Patch Changes
+
+- d95eb19: Fix scope id derivation for a child component nested inside a dynamic loop row
+
+  A component nested below a loop row root (e.g. `<li><Badge/></li>` inside
+  `{rows().map(row => <li>…</li>)}`) now derives its `bf-s` scope id from
+  `<parentScope>_<slot>`, matching the Hono reference, instead of getting a
+  freshly randomized `Name_<id>` on every other adapter and on CSR. A row-root
+  component (`{rows().map(row => <Row/>)}`) is unaffected — it keeps its own
+  randomized id.
+
+  The fix is IR-driven: a new `IRComponent.loopItemRoot` flag (set once, in the
+  loop-IR builder, only on a DIRECT loop-body member) backs a single shared
+  predicate, `derivesScopeFromSlot()`, that every backend now consults instead
+  of a mutable "am I inside a loop" flag that couldn't distinguish a row root
+  from a component nested below it. Hono's own `renderComponent` branch
+  selector is refactored onto the same IR flag, so the policy is expressed once
+  rather than approximated per adapter.
+
+  On the client runtime, `createComponent`/`materializeComponent` now derives a
+  slotted component's own scope id from its mount slot. (A companion fix in
+  `renderChild` — pushing that derived scope while its template evaluates, so a
+  THIRD composition level derives its own scope instead of collapsing onto the
+  second — was tried but reverted: it collided with `comment: true` wrapper
+  transparency, e.g. a `renderNode`-style callback prop, whenever the wrapped
+  component's own first slot id coincides with the wrapper's slot number.
+  `grandchild-composition` stays a known limitation.)
+
+  Since a slotted child was previously unreachable by the primary
+  `(bf-h, bf-m)` SSR-scope lookup on every non-Hono adapter, this also fixes a
+  latent SSR-hydration bug: such a child was silently never initialized on the
+  client.
+
+  Graduates the `composite-row-child-component` conformance fixture (still
+  skipped on Go — that adapter's divergence is a different failure, tracked in
+  #2445) and the `composite-row-child-component` CSR conformance skip.
+
+  Fixes https://github.com/piconic-ai/barefootjs/issues/2444.
+
+- aec34fa: Signal-conditioned early returns lower to the root-ternary branch-switch plan (#2463)
+
+  `if (loading()) return <A/>; return <B/>` is semantically the root ternary
+  `return loading() ? <A/> : <B/>`, and the `IRIfStatement` contract in
+  `spec/compiler.md` says the client JS handles all branches and switches at
+  runtime. Before this fix the statement form emitted no branch-switch effect —
+  the setter fired and nothing subscribed, so the UI could never leave the
+  SSR-rendered branch — and the CSR `template:` lambda referenced the
+  init-scoped signal (a `ReferenceError` on CSR mount; the last non-#2075
+  entry in the adapter-tests scope-gate ledger).
+
+  A conditional-return chain whose conditions all CALL signal/memo getters and
+  that declares no branch-local scope variables is now built as the same
+  `IRConditional` chain the root ternary produces, wrapped in the synthetic
+  `display:contents` scope element — so the `insert()` plan, per-branch
+  templates/event bindings, and template-scope signal substitution all apply
+  unchanged, and the runtime branch-swap behavior is the ternary machinery
+  that existing coverage already exercises.
+
+  Deliberately narrow: prop-conditioned or static chains, and chains with
+  branch-local declarations (`#1409`/`#1414` machinery), stay on the
+  IRIfStatement path byte-for-byte. The `signal-early-return` fixture
+  graduates from the scope-gate ledger and its `expectedHtml` is regenerated
+  to the wrapper form.
+
+- 6d66a61: Fix three CSR-template scope leaks (#2468) — init-scoped bindings no longer reach the module-scope `template:` lambda
+
+  The `hydrate('X', { template: (_p) => ... })` lambda runs at module scope, so
+  any init-scoped identifier it references is a guaranteed `ReferenceError` on
+  CSR mount. The adapter-tests client-JS scope gate inventoried three silent
+  emission paths that leaked them; all are fixed:
+
+  - **Memo bodies inlined into the template** kept bare destructured-prop refs
+    (`(value * 10)` instead of `(_p.value * 10)`). `MemoInfo` now carries
+    `templateComputation` — the memo twin of the signal `templateInitialValue`
+    rewrite (#2265) — and `buildSignalMemoEnv` splices that form.
+  - **Component props built from const-resolved template literals** collapsed
+    to an `expression` AttrValue whose `templateExpr` was never populated (the
+    derivation walked the original `classes` identifier, which has no prop
+    refs), so `renderChild('Slot', { className: \`... ${className}\` })` leaked
+the bare prop. The collapse now projects the parts' template variants
+(`templateValue`/`templateCondition`/`templateKey`) into `templateExpr`,
+and the `irToHtmlTemplate`renderChild site picks the template variant like
+its two sibling emit sites already did.`ref`callback props are dropped
+from module-scope`renderChild(...)`props the same way`on\*` handlers
+    are — a function prop cannot run during string rendering, and the leaked
+    closure referenced init-scope setters.
+  - **Getter-elided signals** (`const [, setActive] = createSignal(0)`) were
+    rejected by the analyzer's binding-pattern guard, dropping the declaration
+    from init entirely while emitted handlers still called the setter. The
+    analyzer now accepts the hole (synthesizing an internal getter name for
+    getter-keyed consumers) and emit reproduces the source's `[, setter]` form.
+
+  Graduates seven fixtures from the scope-gate ledger (button, tooltip, kbd,
+  command, map-index-handler, reactive-props, props-reactivity-comparison);
+  the remaining entries are #2075 (env-signal getter contract) and #2463
+  (early-return branch lowering), tracked separately.
+
+- 4470ec3: SSR-project controlled `value` on `<textarea>` and `<select>` (#2464, #2465)
+
+  `value` is not an attribute on `<textarea>` (its initial value is its element
+  content) or on `<select>` (the selection is `selected` on the matching
+  option). Emitting it verbatim shipped invalid HTML that browsers ignore, so
+  no-JS and pre-hydration users saw an empty textarea / the wrong option until
+  the hydrate-time `.value` effect snapped it.
+
+  The lowering lives in the shared IR build, so every adapter inherits it:
+
+  - the `value` attr is marked `clientOnly` — SSR skips it, the existing
+    hydrate-time `.value` property binding is unchanged;
+  - `<textarea>` with no authored children gains a NON-reactive expression
+    child (initial content only — updates keep flowing through the `.value`
+    effect);
+  - `<select>` distributes `selected={(value) === 'opt'}` onto each
+    statically-valued `<option>` (including under `<optgroup>`), the exact
+    per-option comparison shape the `select-option-selected` fixture already
+    proves across every adapter. An authored `selected` wins; options rendered
+    by a dynamic loop cannot be statically distributed and are left to the
+    hydrate-time effect (the reorder interaction is #2466).
+
+  The `select-value-ssr` / `textarea-value-ssr` fixtures graduate everywhere:
+  hono `skipJsx` is now empty, the `renderDivergences` entries in all 8
+  template adapters are deleted, and the generator's `SKIP_AUTO_UPDATE` set is
+  empty again — both fixtures' `expectedHtml` now regenerates from the
+  reference like any other fixture.
+
+- b4f5075: Fix the Hono adapter dropping a renamed destructured prop's caller-facing key (#2460)
+
+  `function Badge({ text, n: count }: { text: string; n: number })` — the
+  caller passes `n`, the body reads the local binding `count`. The Hono
+  adapter built its SSR props destructure keyed by `ParamInfo.name` (the
+  LOCAL binding) instead of `sourceName ?? name` (the CALLER-facing key —
+  `ParamInfo.sourceName`'s own documented rule), so the emitted function
+  read a `count` property the caller never passed:
+
+  ```tsx
+  // before (wrong): reads a `count` prop that doesn't exist on the caller's object
+  export function Badge({ text, count, __instanceId, ... }: BadgePropsWithHydration) { ... }
+  // after: keeps the rename
+  export function Badge({ text, n: count, __instanceId, ... }: BadgePropsWithHydration) { ... }
+  ```
+
+  `count` was therefore always `undefined`, with zero diagnostics. The fix
+  emits the plain shorthand when the caller-facing key matches the local
+  binding (byte-identical output for every existing, un-aliased component)
+  and a `key: local` rename otherwise — including a destructuring default
+  (`{ n: count = 7 }` → `n: count = 7`) and a non-identifier caller key
+  (quoted, e.g. `"data-key": local`). This also fixes the dead `class` →
+  `className` special case: the only way a `class`-named caller prop can
+  reach a destructured component is via an explicit alias
+  (`{ class: className }`, since `class` can never be an un-aliased
+  binding identifier), which now correctly emits the rename `class:
+className` instead of a bare `className`.
+
+  `@barefootjs/jsx`'s `extractSsrDefaults` (the template-stash adapters'
+  SSR-seed extractor) had the mirror-image bug: `propName` — the field the
+  Perl/PHP/etc. manifest consumer reads the CALLER's props by
+  (`$props->{propName}`) — was set to the local binding instead of
+  `sourceName ?? name`, so a renamed prop's SSR seed silently fell back to
+  `null` instead of the caller's value.
+
+  The sibling keyings audited in the same pass (props-to-serialize
+  filtering, the `__hydrateProps` hydration-blob assembly) were already
+  consistent — both sides key by the LOCAL binding, matching what the
+  generated client init function reads (`_p.<localName>`) — so they needed
+  no change.
+
+  Verified end-to-end through Hono (`renderHonoComponent`): aliased with no
+  default, aliased with a default (both caller-omitted and
+  caller-overridden), the un-aliased case (byte-identical destructure
+  text), the `class` rename, and the hydration-serialization path (the
+  `bf-p` blob carries the correct value under the local key that
+  `initBadge`'s `const count = _p.count` extraction reads).
+
+  Adds the composite-loop-row fixture #2457 (fixed on the Go side, #2462)
+  was blocked on: an aliased destructured prop on a child component inside
+  a keyed `.map()` row, with distinct per-row values. Verified passing on
+  Hono and ERB; expected to pass on Go per #2462's fix (not run here per
+  this change's scope — Go/CI will confirm). Skipped with a pointer back
+  to #2460 on Blade, Jinja, Mojolicious, Twig, Xslate, and minijinja/Rust,
+  which still key the caller-facing lookup by the local binding for a
+  standalone aliased prop — verified failing on all six before adding the
+  skip.
+
+- 94d51b3: Claim a lazy row's element refs per slot, on first use
+
+  An adopted (server-rendered) lazy row resolved its DOM refs through one
+  whole-row closure: `__e.refs ?? (__e.refs = __lzc_<loop>(__e))`, which ran a
+  `qsa` scan for EVERY reactive-attr slot in the row. So an `applyOuter` driving
+  one attribute still scanned for every other slot, on every row, at hydration —
+  a row with three attr slots ran three scans to write one attribute, 3,000 scans
+  across a 1,000-row list.
+
+  Each binding now claims its own slot on first use, the same deferral the
+  content door already had (`doorAccess`). `applyOuter` on that three-slot row
+  contains one `qsa`. The whole-row closure is gone, so there is one less
+  emission construct and one less per-loop allocation.
+
+  The cache test is `2 in __r`, not `??`. A slot whose scan finds nothing records
+  that and is not scanned again; a `??`-guarded cache would re-scan it on every
+  tick forever. `createRow` is untouched — it resolves refs from known clone
+  paths and never scanned.
+
+  **Measurement.** Counted, not timed, and the count is pinned in
+  `lazy-row-eligibility.test.ts`: three scans in `applyItem` (which does write
+  all three slots), one in `applyOuter`, zero in `createRow`. The existing SSR
+  heap bench does not move — 1573.1KB, unchanged — and cannot: its row has a
+  single reactive-attr slot, so its `applyOuter` already claimed exactly what it
+  wrote. The saving needs a row with several attr slots whose outer bindings
+  cover only some of them, which no current bench app has.
+
+- b116bd2: Let a wiring-free row conditional use the lazy row graph
+
+  A loop row containing a reactive conditional was refused the lazy row graph
+  outright, because the eager emission drives it with `insert()` — one
+  `createEffect` per row, plus a runtime probe of both branch templates to decide
+  element-vs-fragment form, a resolved search region, and per-branch `bindEvents`
+  cleanup. Calling that from a lazy row would reinstate exactly the per-row
+  reactive resource the design removes.
+
+  `analyzeLazyConditional` accepts the case where BOTH arms are static elements
+  that own nothing — no events, no child components, no inner loop, no nested
+  conditional, no reactive attr or text. For that shape everything `insert()` does
+  collapses to one operation: replace the `[bf-c]` element when the condition
+  flips. All the rest of `insert` exists for arms that own something.
+
+  No runtime addition was needed. Both arms are compile-time constants, so each is
+  parsed once per LOOP into a hoisted `<template>` and cloned on a flip; what
+  remains per row is a boolean, a dedup slot and a `replaceWith`. Element-vs-
+  fragment is decided by reading `addCondAttrToTemplate`'s output — the same door
+  the eager path uses — rather than re-deciding it here. `createRow` writes no DOM:
+  the row it just cloned already rendered the correct arm, so it records only the
+  dedup boolean. `applyOuter` seeds by comparing the browser's serialization of the
+  arm it would install against the live element's, so a server-rendered arm that
+  already agrees costs no write.
+
+  Still refused, each with its own reason: an arm owning wiring, an arm that
+  interpolates the item, a fragment conditional (`{cond ? 'a' : 'b'}` and
+  `{cond && …}` both), and a condition reading the loop index.
+
+  **Not measured, and currently unexercised by the corpus.** No committed fixture
+  or snapshot moved — every conditional in the corpus owns wiring — and the
+  benchmark row has no conditional. Coverage is a dedicated conformance fixture
+  (clean on all nine adapters and CSR) plus DOM tests on both row shapes,
+  including an adopted server-rendered row whose outer-driven condition seeds
+  against SSR. The claim is "this shape is now lazy and correct", not "a benchmark
+  moved".
+
+- 1e7469b: Let a value-only `.map()` preamble use the lazy row graph
+
+  A loop row whose callback had a preamble was refused the lazy row graph on
+  sight, so it kept the eager emission — a root, a signal and an effect per row.
+  The rule was "any preamble at all", and it was over-broad by construction: what
+  actually matters is whether the preamble declares row-local REACTIVITY, not
+  whether it declares anything.
+
+  `analyzeLazyPreamble` replaces it with a structural proof that re-executing the
+  statements is observationally free. A preamble qualifies when it is a sequence
+  of `const` declarations whose initializers contain no `new`, assignment,
+  `++`/`--`, `await`, `yield`, `delete`, function/arrow/class expression — and no
+  call, with one exception: a **zero-argument signal or memo read**. That
+  exception is the point. `const cls = selected() === row.id ? 'danger' : ''` is
+  the shape the krausest bench writes, and it is sound in all three plan bodies
+  because of where they run: `mapArrayLazy` wraps `createRow` and `applyItem` in
+  `untrack()`, and `applyOuter` is the loop-level effect that is supposed to
+  subscribe. Everything else stays refused with a reason naming the exact node —
+  `createSignal` is a call, `arr.push(x)` is a call, and `Math.random()` is a call
+  whose value would differ between `createRow` and `applyItem`.
+
+  The preamble is emitted into `createRow` ONLY, and before the clone: the
+  per-row template literal interpolates the declared local, because an attribute
+  reading a preamble local is not classified as reactive and therefore never
+  becomes a wired binding. The apply bodies never reference one, which is why they
+  do not need it.
+
+  A binding that READS a declared local refuses the loop. That case is currently
+  unreachable from either direction — a child-position read becomes a
+  `preambleRegions` entry, which the gate already refuses, and an
+  attribute-position read lands in the template as above — so the refusal is not
+  dead weight but the fail-safe that keeps this sound if either of those facts
+  changes. Modelling it instead would have meant re-running the preamble in
+  `applyItem`/`applyOuter` and threading the preamble's own dependencies into
+  every binding that reads a local, for a shape nothing can currently produce.
+
+  Two `#1065` regression tests moved with the shape rather than being weakened:
+  their sources are now lazy-eligible, so the assertion that the preamble goes
+  through `wrapLoopParamAsAccessor` (`cell.flag` → `cell().flag`) is made against
+  `createRow`, where the preamble now lands. It is the same
+  `mapPreambleWrapped` computation either way.
+
+  No SSR output change, and no change for any loop that stays ineligible.
+
+- cdf8144: Make an attribute reading a `.map()` callback preamble local reactive (#2447 follow-up)
+
+  ```tsx
+  {
+    rows().map((row) => {
+      const cls = row.done ? "done" : "open";
+      return (
+        <li key={row.id} class={cls}>
+          {row.label}
+        </li>
+      );
+    });
+  }
+  ```
+
+  `class={cls}` froze at its row-construction value. The loop runtimes reuse a
+  row's DOM node on a same-key item update and re-run only the wired slots, and
+  this attribute was not one: the reactivity classifier sees a bare local, not a
+  signal or loop-param read, so the value was interpolated into the row template
+  instead of bound. Row 1 kept `open` after its item turned `done: true` while
+  the sibling `{row.label}` text updated normally. The child-position twin of
+  this (`{stateLabel}`) was fixed as a preamble-patched region in #2389; the
+  attribute position was left as a declared limitation on #2447.
+
+  The fix spans two passes, because the obstacle is in two places:
+
+  - **Phase 1 grants the element a slot id.** An attribute is only wirable if
+    its element carries a `bf` marker, and that is decided when the element is
+    built — before the enclosing loop's preamble exists. The client-JS pass
+    cannot grant one after the fact, since the SSR template renders from the
+    same IR and would not carry the marker.
+  - **The client-JS pass wires it** and re-runs the preamble ahead of the write.
+    In the eager row effect the preamble re-run moves to the top of the body; it
+    previously sat between the attr writes and the region writes, which was
+    correct only while regions were its only readers.
+
+  **The lazy row graph keeps these rows.** `lazyRowEligibility` used to refuse
+  any binding that read a preamble local, on the grounds that `applyOuter` could
+  not prime a dependency the local hides — a fail-safe written while the case
+  was unreachable. Making it reachable would have pushed the exact row the §9.5
+  widening was built for (`const cls = selected() === row.id ? …`) back onto the
+  eager path. So the substitution that refusal stood in for is now real:
+  `analyzeLazyPreamble` reports the preamble's own free identifiers,
+  `classifyLazyBinding` runs them through the same rules it applies to a
+  binding's own names, and `applyItem` / `applyOuter` re-run the preamble only
+  when a binding they own reads one. A preamble no binding reads is still
+  emitted in `createRow` alone.
+
+  Both dependency shapes are verified against the live DOM: an item-driven
+  preamble updating through `applyItem`, and an outer-driven one updating
+  through `applyOuter` with its signal on the prime list — the case that would
+  silently never subscribe if the substitution named the wrong dependency.
+
+  Rows that gain a binding also gain a `bf` marker in SSR output, which shifts
+  slot numbering for the affected components. The `loop-preamble-attr-value` and
+  `loop-preamble-chained-filter` fixtures record the new markers; no rendered
+  content changed.
+
+- 8569610: Lower a `.map()` callback preamble's value declarations to per-row template locals (#2447)
+
+  A block-body `.map()` whose preamble computes a value used in the row —
+
+  ```tsx
+  {
+    rows().map((row) => {
+      const cls = row.done ? "done" : "open";
+      return (
+        <li key={row.id} class={cls}>
+          {row.label}
+        </li>
+      );
+    });
+  }
+  ```
+
+  — carried that preamble only as JS text, which a template language cannot
+  execute. Every DSL adapter emitted the row anyway, reading a name it never
+  assigned: ERB read `v[:cls]` (an unseeded vars-Hash key), Go read `$.Cls` (a
+  parent-struct field, the same hoisted-to-parent defect class as #2445), and
+  Blade / Twig / Jinja / minijinja / Kolon / Mojo each read a bare undefined
+  local. All eight rendered `class=""`, with no diagnostic. Hono and CSR were
+  correct throughout, so the divergence only showed up against a real DSL
+  runtime.
+
+  Fixed by giving the preamble a second, backend-neutral carrier:
+  `MapCallbackPreamble.declarations`, one `{ name, valueParsed }` per
+  declaration. Each adapter emits it as a per-row local in its own syntax
+  (`{% set %}`, `@php()`, `<%- … -%>`, `: my $x = …;`, `{{$x := …}}`) through the
+  same `ParsedExpr` door it already uses for the loop array, the filter
+  predicate, and the sort comparator — no new expression path, and no
+  per-adapter interpretation of the JS text. Declarations render in source
+  order, so a later initializer sees an earlier local; on a
+  `.filter(p).map(cb)` chain they render inside the filter guard, matching JS
+  evaluation order. The declared names are registered as loop-bound, so a
+  same-named module const can't inline over the local the loop just declared.
+
+  Lowering is all-or-nothing. A preamble is an order-dependent statement
+  sequence, so carrying its declarable prefix and dropping the rest would put
+  the missing statement's effect nowhere — the same silent divergence in a new
+  disguise. One statement that is not a value declaration (an assignment, an
+  imperative loop, a destructuring binding, an initializer outside the
+  expression subset) therefore refuses on a DSL target with `BF021` and the
+  `/* @client */` escape, alongside the existing filter / sort / array-builder /
+  flatMap gates. A JS runtime keeps running any preamble verbatim.
+
+  Two behaviour changes fall out of this:
+
+  - **`map-preamble-branch-body` now renders on every adapter.** Its `BF021`
+    pins are removed from all eight DSL adapters. They existed on the premise
+    that a loop-local cannot be carried into a conditional branch template; that
+    stopped being true once a value preamble lowers, because the if/else fold
+    puts the conditional _inside_ the loop body, where the local is in scope in
+    both arms. The refusal now keys off whether the preamble is declarable, not
+    whether the body branches.
+  - **A non-declarable preamble that used to compile is now a build error on DSL
+    targets.** It previously produced a template that read unassigned names, so
+    the change is from silently-wrong output to a diagnostic with a documented
+    escape.
+
+  The `loop-preamble-attr-value` fixture's render divergences are graduated
+  (deleted from all eight `render-divergences.ts` files). Both fixtures now pass
+  on all nine adapters and CSR conformance.
+
+  Unchanged and tracked separately: an attribute whose value comes from a
+  preamble local is still not classified as reactive on the client, so it is
+  interpolated into the row template and not rewritten on a same-key item
+  update. That is a client-side classification question, pinned as the current
+  contract in `packages/client/__tests__/runtime/lazy-row-preamble.test.ts`.
+
+- a7ffb8e: Resolve a one-hop const of a `Record[key]` lookup to the shared `lookup` template part, and collapse literal unions to their backing primitive in the Go adapter (#2477)
+
+  `const cls = variantClasses[variant]` followed by `className={cls}` fell through to a bare-expression attr. JSX-runtime SSR (Hono) evaluates the const fine, but every template backend emitted a reference to a variable the template never defines, rendering `class=""` with zero diagnostics — the inline form (`className={variantClasses[variant]}`, #2300) and the template-literal hop (`const cls = \`${variantClasses[variant]}\``) both already lowered correctly. The shared `Icon`component's`d={path}` had the same shape, so SVG icons server-rendered blank on every non-Hono backend until hydration.
+
+  Separately, an explicit literal-union type argument (`createSignal<'a' | 'b'>('a')`) had no `union` arm in the Go adapter's type or value lowering, so the field fell to `interface{}` and the seed to `nil` — failing `go run` outright when a child's `string` field received it. Literal unions now collapse to their backing primitive at both entry points, which must agree.
+
+  - @barefootjs/shared@0.30.0
+
 ## 0.29.0
 
 ### Patch Changes
