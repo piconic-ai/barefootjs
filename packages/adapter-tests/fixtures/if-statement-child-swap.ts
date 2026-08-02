@@ -1,16 +1,16 @@
 /**
- * SCRATCH verification fixture (#2463 coordinator follow-up) — proves
- * `insertRoot()`'s real branch-SWAP path (not just hydration) correctly
- * tears down and re-initializes a CHILD COMPONENT mounted inside one
- * branch of a signal-conditioned `if`/`else` early return. Neither
- * `signal-early-return` (plain text branches, no child component) nor
- * `button`/`kbd`/`Slot` (composes a child, but via a destructured `asChild`
- * prop that can never actually swap — see the PR discussion) exercises
- * this combination.
+ * Regression pin (#2463) for `insertRoot()`'s real branch-SWAP path — not
+ * just the hydration path — proving it tears down and re-initializes a
+ * CHILD COMPONENT mounted inside one branch of a signal-conditioned
+ * `if`/`else` early return.
  *
- * Not part of the permanent corpus — delete after verification, or keep
- * as a regression pin if the reviewer wants permanent coverage for this
- * shape.
+ * Nothing else in the corpus covers this combination: `signal-early-return`
+ * has plain text branches with no child component, and `button`/`kbd`/`Slot`
+ * compose a child but branch on a destructured `asChild` prop that can never
+ * actually swap after mount. Without this fixture, `copyRootIdentityAttrs`'
+ * scope-identity preservation across a swap — the reason a nested child's
+ * `.closest('[bf-s]')` still resolves after the root element is replaced —
+ * would have no coverage at all.
  */
 import { defineSharedFixture, type SharedFixtureSpec } from './_helpers'
 

@@ -447,8 +447,7 @@ export function insertRoot(
       setParentScopeId(parentScopeId)
       let result: BranchTemplateResult
       try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
-      const swapped = swapRootElement(currentEl, result)
-      if (swapped) currentEl = swapped
+      currentEl = swapRootElement(currentEl, result)
       return currentEl
     },
   })
@@ -469,15 +468,32 @@ function copyRootIdentityAttrs(oldEl: Element, newEl: Element): void {
 
 /**
  * Replace `currentEl` with the parsed branch template's root, preserving
- * scope-identity attributes. Returns the new element, or `null` when the
- * branch rendered nothing usable (defensive — every fixture that reaches
- * `insertRoot()` today renders exactly one element per branch).
+ * scope-identity attributes.
+ *
+ * `firstElementChild`, not `firstChild`: a branch whose template opens with
+ * a text run or a marker comment (`<>hello <button/></>`) has a non-element
+ * first node, and keying off `firstChild` would take the `null` path below
+ * and skip the swap — silently freezing the UI in exactly the way #2463
+ * exists to fix. The identity attributes belong on the first ELEMENT
+ * regardless; `replaceWith(fragment)` still moves every node the branch
+ * produced, leading text included.
+ *
+ * A branch with no element at all cannot carry scope identity, so it
+ * THROWS rather than returning quietly — a swap that cannot land must be
+ * diagnosable, not invisible. This is unreachable from the compiler today
+ * (an if-statement branch always renders at least one element) and exists
+ * so that stops being an unverified assumption.
  */
-function swapRootElement(currentEl: Element, result: BranchTemplateResult): Element | null {
+function swapRootElement(currentEl: Element, result: BranchTemplateResult): Element {
   const insertParent = currentEl.parentNode instanceof Element ? currentEl.parentNode : null
   const fragment = spliceSlots(parseHTML(result.html, insertParent), result.slots)
-  const newRoot = fragment.firstChild
-  if (!newRoot || newRoot.nodeType !== Node.ELEMENT_NODE) return null
+  const newRoot = fragment.firstElementChild
+  if (!newRoot) {
+    throw new Error(
+      'insertRoot: branch template produced no element to carry the component scope; ' +
+        'a root if/else branch must render at least one element',
+    )
+  }
   copyRootIdentityAttrs(currentEl, newRoot as Element)
   // Move by identity (not clone) so slot-spliced live Nodes keep their
   // bindings, and so any sibling nodes the branch template produced (a
