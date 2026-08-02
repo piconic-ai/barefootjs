@@ -24,6 +24,9 @@ export function Confirm() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test"><button bf="s0">Show</button><dialog bf="s1"><p>Sure?</p></dialog></div>
+    <div bf-s="test">
+      <button bf="s0">Show</button>
+      <dialog bf="s1"><p>Sure?</p></dialog>
+    </div>
   `,
 })

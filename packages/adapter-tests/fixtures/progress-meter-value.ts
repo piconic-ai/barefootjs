@@ -26,6 +26,10 @@ export function Usage() {
 }
 `,
   expectedHtml: `
-    <div bf-s="test"><progress value="30" max="100" bf="s0"></progress><meter value="30" min="0" max="100" bf="s1"></meter><button bf="s2">Add</button></div>
+    <div bf-s="test">
+      <progress bf="s0" max="100" value="30"></progress>
+      <meter bf="s1" max="100" min="0" value="30"></meter>
+      <button bf="s2">Add</button>
+    </div>
   `,
 })
