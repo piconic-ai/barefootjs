@@ -1850,6 +1850,36 @@
           "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
         }
       },
+      "branch-root-prop-attr": {
+        "blade": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
+        "erb": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
+        "jinja": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
+        "minijinja": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
+        "xslate": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        }
+      },
       "composite-row-child-aliased-prop": {
         "blade": {
           "kind": "render",
@@ -2910,6 +2940,10 @@
       "aliased-destructured-prop": {
         "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2460)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-destructured-prop.ts"
+      },
+      "branch-root-prop-attr": {
+        "description": "Prop-driven reactive class on an if/else early-return branch's own root element updates live (#2472)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/branch-root-prop-attr.ts"
       },
       "composite-row-child-aliased-prop": {
         "description": "Nested child in a dynamic loop row destructures a renamed prop ({ n: count })",

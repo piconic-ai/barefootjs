@@ -28,6 +28,8 @@ export const renderDivergences: RenderDivergences = {
   // by fixing the shared emission, regenerating `expectedHtml` from the
   // fixed reference, and deleting these lines (and the matching hono
   // `skipJsx` entries).
+  'branch-root-prop-attr':
+    'a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=""`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)',
   'aliased-destructured-prop':
     'aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)',
   'composite-row-child-aliased-prop':

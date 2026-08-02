@@ -1433,9 +1433,13 @@
           ]
         },
         "blade": {
-          "pass": 177,
+          "pass": 176,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "composite-row-child-aliased-prop",
               "issues": []
@@ -1521,9 +1525,13 @@
           ]
         },
         "erb": {
-          "pass": 179,
+          "pass": 178,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -1683,9 +1691,13 @@
           ]
         },
         "jinja": {
-          "pass": 177,
+          "pass": 176,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "composite-row-child-aliased-prop",
               "issues": []
@@ -1771,9 +1783,13 @@
           ]
         },
         "minijinja": {
-          "pass": 177,
+          "pass": 176,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "composite-row-child-aliased-prop",
               "issues": []
@@ -1859,9 +1875,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 178,
+          "pass": 177,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "composite-row-child-aliased-prop",
               "issues": []
@@ -1941,9 +1961,13 @@
           ]
         },
         "twig": {
-          "pass": 177,
+          "pass": 176,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "composite-row-child-aliased-prop",
               "issues": []
@@ -2029,9 +2053,13 @@
           ]
         },
         "xslate": {
-          "pass": 177,
+          "pass": 176,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "composite-row-child-aliased-prop",
               "issues": []
@@ -2277,11 +2305,15 @@
           ]
         },
         "blade": {
-          "pass": 262,
+          "pass": 261,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -2377,11 +2409,15 @@
           ]
         },
         "erb": {
-          "pass": 264,
+          "pass": 263,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -2563,11 +2599,15 @@
           ]
         },
         "jinja": {
-          "pass": 262,
+          "pass": 261,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -2663,11 +2703,15 @@
           ]
         },
         "minijinja": {
-          "pass": 262,
+          "pass": 261,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -2763,11 +2807,15 @@
           ]
         },
         "mojolicious": {
-          "pass": 263,
+          "pass": 262,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -2857,11 +2905,15 @@
           ]
         },
         "twig": {
-          "pass": 262,
+          "pass": 261,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -2957,11 +3009,15 @@
           ]
         },
         "xslate": {
-          "pass": 262,
+          "pass": 261,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -3077,36 +3133,78 @@
           "total": 13
         },
         "blade": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "erb": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "go-template": {
           "pass": 13,
           "total": 13
         },
         "jinja": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "minijinja": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         }
       },
       "source": {
@@ -3129,9 +3227,13 @@
           "total": 233
         },
         "blade": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3189,9 +3291,13 @@
           ]
         },
         "erb": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3309,9 +3415,13 @@
           ]
         },
         "jinja": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3369,9 +3479,13 @@
           ]
         },
         "minijinja": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3429,9 +3543,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3489,9 +3607,13 @@
           ]
         },
         "twig": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3549,9 +3671,13 @@
           ]
         },
         "xslate": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -4489,9 +4615,13 @@
           "total": 52
         },
         "blade": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4505,9 +4635,13 @@
           ]
         },
         "erb": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4537,9 +4671,13 @@
           ]
         },
         "jinja": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4553,9 +4691,13 @@
           ]
         },
         "minijinja": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4569,9 +4711,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4585,9 +4731,13 @@
           ]
         },
         "twig": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4601,9 +4751,13 @@
           ]
         },
         "xslate": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -7966,9 +8120,13 @@
           "total": 165
         },
         "blade": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8014,9 +8172,13 @@
           ]
         },
         "erb": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8110,9 +8272,13 @@
           ]
         },
         "jinja": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8158,9 +8324,13 @@
           ]
         },
         "minijinja": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8206,9 +8376,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8254,9 +8428,13 @@
           ]
         },
         "twig": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -8302,9 +8480,13 @@
           ]
         },
         "xslate": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
