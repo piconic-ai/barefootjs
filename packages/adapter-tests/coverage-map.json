@@ -1370,6 +1370,34 @@
         "text"
       ]
     },
+    "controlled-checkbox-checked": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "controlled-radio-checked": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "controlled-signal": {
       "kinds": [
         "call",
@@ -1672,6 +1700,19 @@
         "text"
       ]
     },
+    "details-open": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "dialog": {
       "kinds": [
         "arrow",
@@ -1699,6 +1740,19 @@
         "attribute",
         "condition",
         "text"
+      ]
+    },
+    "dialog-open": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "dropdown-menu": {
@@ -3224,6 +3278,19 @@
         "attribute",
         "loop",
         "text"
+      ]
+    },
+    "progress-meter-value": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "props-reactive": {
@@ -4752,12 +4819,12 @@
     "array-literal": 69,
     "array-method": 66,
     "arrow": 63,
-    "binary": 79,
-    "call": 188,
+    "binary": 80,
+    "call": 193,
     "conditional": 23,
-    "identifier": 276,
+    "identifier": 281,
     "index-access": 12,
-    "literal": 226,
+    "literal": 231,
     "logical": 43,
     "member": 150,
     "object-literal": 51,
@@ -4797,13 +4864,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 40,
+    "binary:===": 41,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 42,
+    "literal:boolean": 45,
     "literal:null": 23,
-    "literal:number": 95,
-    "literal:string": 163,
+    "literal:number": 96,
+    "literal:string": 164,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,
