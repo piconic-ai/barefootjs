@@ -5,7 +5,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report this!
+        Thanks for taking the time to report this — every report makes the compiler better. 🙏
+
+        **Nothing below is required.** A rough note is far better than no report; if anything
+        is missing we'll simply ask in the comments.
+
+        One thing that helps a lot, if it's easy for you: paste the component source (TSX)
+        that reproduces the problem. A pasted repro can usually be turned directly into a
+        permanent conformance fixture — meaning your report becomes a regression test that
+        guards the fix forever, and you get credited as `Co-authored-by` in the fixing commit.
 
         > **Note:** We don't accept external pull requests due to supply-chain and AI-slop concerns.
         > That said, design discussions and debugging help in issues are very welcome — and your
@@ -16,36 +24,32 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: Description
-      description: A clear description of the bug.
+      label: What happened?
+      description: Anything you can tell us — a sentence is fine.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: reproduction
     attributes:
-      label: Steps to Reproduce
-      description: Minimal steps to reproduce the behavior.
-      placeholder: |
-        1. Create a component with ...
-        2. Compile with ...
-        3. See error ...
+      label: Component source that reproduces it (if handy)
+      description: The TSX of the component (full file is ideal, snippet is fine). This is the part that turns into a regression test.
+      render: tsx
     validations:
-      required: true
+      required: false
 
   - type: textarea
-    id: expected
+    id: expected-vs-actual
     attributes:
-      label: Expected Behavior
-      description: What you expected to happen.
+      label: Expected vs. actual (if known)
+      description: What you expected to render/happen, and what actually rendered/happened. Rendered HTML snippets are great.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: environment
     attributes:
-      label: Environment
-      description: Version info and relevant environment details.
+      label: Environment (if relevant)
       placeholder: |
         - BarefootJS version:
         - Adapter (Hono / Go Template / etc.):
