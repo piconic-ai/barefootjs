@@ -337,6 +337,26 @@
       }
     }
   ],
+  "callback-param-shadows-prop": [
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語"
+      }
+    }
+  ],
   "checkbox": [
     {
       "name": "gen:defaultChecked:true",
@@ -1014,6 +1034,18 @@
       }
     }
   ],
+  "loop-param-shadows-bool-prop": [
+    {
+      "name": "gen:active:false",
+      "props": {
+        "active": false,
+        "flags": [
+          "on",
+          "off"
+        ]
+      }
+    }
+  ],
   "loop-param-shadows-outer-name": [
     {
       "name": "gen:label:empty",
@@ -1046,6 +1078,24 @@
           2,
           3
         ]
+      }
+    }
+  ],
+  "loop-param-shadows-spread-const": [
+    {
+      "name": "gen:big:false",
+      "props": {
+        "items": [
+          {
+            "id": 1,
+            "title": "first"
+          },
+          {
+            "id": 2,
+            "title": "second"
+          }
+        ],
+        "big": false
       }
     }
   ],

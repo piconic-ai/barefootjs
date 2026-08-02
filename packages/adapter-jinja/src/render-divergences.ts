@@ -32,4 +32,12 @@ export const renderDivergences: RenderDivergences = {
     'aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)',
   'composite-row-child-aliased-prop':
     'same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child\'s renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)',
+
+  // #2482 audit follow-ups: loop-scope holes in per-adapter name
+  // classification. Graduate by applying the loop-bound-name guards
+  // described in each issue and deleting the line.
+  'loop-param-shadows-bool-prop':
+    'a .map() param sharing a boolean prop\'s name is routed through the bool lowering in attribute position (renders "true"/"false" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)',
+  'loop-param-shadows-spread-const':
+    'a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)',
 }

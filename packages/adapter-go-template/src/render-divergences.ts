@@ -40,4 +40,18 @@ export const renderDivergences: RenderDivergences = {
   // `skipJsx` entries).
   'aliased-destructured-prop':
     'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2460)',
+
+  // #2482 audit follow-ups: loop-scope holes specific to this adapter's
+  // four-stack scope tracking and its SSR seeding. Graduate by applying
+  // the fix described in each issue and deleting the line.
+  'loop-destructured-param-condition':
+    'a destructured .map() param binding used as a row ternary CONDITION emits the root-scope `{{if $.Active}}` — `renderConditionExpr` omits `loopBindingStack`, unlike `identifierToGoRef` (text positions resolve the same binding correctly) (https://github.com/piconic-ai/barefootjs/issues/2486)',
+  'nested-loop-tail-content':
+    'outer-row content AFTER a nested inner loop renders through non-loop arms (spread lowers to the component-root `.Spread_0`) — `inLoop` is cleared, not restored, by the inner loop\'s exit; the same content BEFORE the inner loop emits correctly (https://github.com/piconic-ai/barefootjs/issues/2487)',
+  'loop-param-shadows-spread-const':
+    'spreading a loop row object mangles attribute names (`id` → `-i-d`, `title` → `-title`); the spread VALUE is correctly row-scoped, distinguishing this from the template-adapter const-shadow hole #2489 (https://github.com/piconic-ai/barefootjs/issues/2490)',
+  'loop-param-shadows-record-template-span':
+    'a dynamic-key element access on a loop row (`tone[k]`) renders empty at execute time — the emitted template contains no baked const (correct post-fix), but the row lookup resolves to nothing (https://github.com/piconic-ai/barefootjs/issues/2491)',
+  'callback-param-shadows-prop':
+    'JS-computed signal/memo initializers (`[…].map(…).join(…)`, memo over signal + prop) don\'t seed Go SSR — renders `[]` / empty where every other adapter renders the computed value; hydration snaps to correct (https://github.com/piconic-ai/barefootjs/issues/2492)',
 }

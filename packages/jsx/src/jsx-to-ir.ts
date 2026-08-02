@@ -6074,6 +6074,11 @@ function tryResolveTemplateSpanFromConst(
 ): IRTemplatePart[] | null {
   // ${IDENT}
   if (ts.isIdentifier(expr)) {
+    // #2222-family: inside a loop callback the name may be the loop's
+    // item/index binding shadowing a same-named const — resolving the
+    // const would bake the outer value into every row. Fall back to
+    // the bare-expression path, which sees the loop binding.
+    if (ctx.loopParams.has(expr.text)) return null
     const constInfo = findLocalConst(expr.text, ctx.analyzer)
     if (!constInfo) return null
     const ast = parseConstInitializer(constInfo)
@@ -6087,6 +6092,10 @@ function tryResolveTemplateSpanFromConst(
   // ${IDENT[KEY]}
   if (ts.isElementAccessExpression(expr)) {
     if (!ts.isIdentifier(expr.expression)) return null
+    // Same loop-shadowing guard as the ${IDENT} arm: `tone[k]` inside
+    // `items.map((tone) => …)` must read the row's `tone`, not a
+    // same-named module/component record const.
+    if (ctx.loopParams.has(expr.expression.text)) return null
     const constInfo = findLocalConst(expr.expression.text, ctx.analyzer)
     if (!constInfo) return null
     const ast = parseConstInitializer(constInfo)

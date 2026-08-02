@@ -428,6 +428,21 @@ import { fixture as filterParamNameDiffers } from './filter-param-name-differs'
 // object const; every Twig-family adapter used to bake the const's
 // literal into each iteration instead of reading the loop's own item.
 import { fixture as loopParamShadowsRecordConst } from './loop-param-shadows-record-const'
+// #2482 audit follow-ups: two compiler-side loop/callback scope holes
+// found by probing the unguarded name-resolution sites. The first pins
+// the scope-aware `rewriteBarePropRefs` (a nested callback param sharing
+// a prop name used to emit invalid `.map((_p.x) => …)` client JS); the
+// second pins the `${IDENT[KEY]}` template-span fold's loop-param guard.
+import { fixture as callbackParamShadowsProp } from './callback-param-shadows-prop'
+import { fixture as loopParamShadowsRecordTemplateSpan } from './loop-param-shadows-record-template-span'
+// #2482 audit follow-ups, adapter-side (pinned known limitations):
+// Go condition-position destructured bindings, Go nested-loop `inLoop`
+// state clobber, Twig-family boolean-prop-set misrouting, and the
+// emitSpread local-const shadow hole.
+import { fixture as loopDestructuredParamCondition } from './loop-destructured-param-condition'
+import { fixture as nestedLoopTailContent } from './nested-loop-tail-content'
+import { fixture as loopParamShadowsBoolProp } from './loop-param-shadows-bool-prop'
+import { fixture as loopParamShadowsSpreadConst } from './loop-param-shadows-spread-const'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as formatDate } from './format-date'
@@ -767,6 +782,12 @@ export const jsxFixtures: JSXFixture[] = [
   filterWrapperPropsReachable,
   filterParamNameDiffers,
   loopParamShadowsRecordConst,
+  callbackParamShadowsProp,
+  loopParamShadowsRecordTemplateSpan,
+  loopDestructuredParamCondition,
+  nestedLoopTailContent,
+  loopParamShadowsBoolProp,
+  loopParamShadowsSpreadConst,
   dateMethodUncatalogued,
   dateCatalogued,
   formatDate,
