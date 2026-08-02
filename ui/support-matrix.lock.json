@@ -1891,7 +1891,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 184,
+          "pass": 183,
           "total": 200,
           "gaps": [
             {
@@ -1935,6 +1935,10 @@
               "issues": []
             },
             {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
+            {
               "fixture": "preamble-cells",
               "issues": []
             },
@@ -1969,7 +1973,7 @@
           ]
         },
         "twig": {
-          "pass": 182,
+          "pass": 181,
           "total": 200,
           "gaps": [
             {
@@ -2016,6 +2020,10 @@
             },
             {
               "fixture": "loop-param-shadows-bool-prop",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -2835,7 +2843,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 269,
+          "pass": 268,
           "total": 288,
           "gaps": [
             {
@@ -2883,6 +2891,10 @@
               "issues": []
             },
             {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
+            {
               "fixture": "map-array-builder-body",
               "issues": []
             },
@@ -2925,7 +2937,7 @@
           ]
         },
         "twig": {
-          "pass": 267,
+          "pass": 266,
           "total": 288,
           "gaps": [
             {
@@ -2976,6 +2988,10 @@
             },
             {
               "fixture": "loop-param-shadows-bool-prop",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -3177,12 +3193,24 @@
           "total": 14
         },
         "mojolicious": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            }
+          ]
         },
         "twig": {
-          "pass": 14,
-          "total": 14
+          "pass": 13,
+          "total": 14,
+          "gaps": [
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            }
+          ]
         },
         "xslate": {
           "pass": 14,
@@ -3525,7 +3553,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 226,
+          "pass": 225,
           "total": 238,
           "gaps": [
             {
@@ -3550,6 +3578,10 @@
             },
             {
               "fixture": "loop-param-shadows-bool-prop",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -3581,7 +3613,7 @@
           ]
         },
         "twig": {
-          "pass": 225,
+          "pass": 224,
           "total": 238,
           "gaps": [
             {
@@ -3606,6 +3638,10 @@
             },
             {
               "fixture": "loop-param-shadows-bool-prop",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -4339,7 +4375,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 137,
+          "pass": 136,
           "total": 154,
           "gaps": [
             {
@@ -4376,6 +4412,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -4421,7 +4461,7 @@
           ]
         },
         "twig": {
-          "pass": 135,
+          "pass": 134,
           "total": 154,
           "gaps": [
             {
@@ -4464,6 +4504,10 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -4737,9 +4781,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 53,
+          "pass": 52,
           "total": 55,
           "gaps": [
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -4753,9 +4801,13 @@
           ]
         },
         "twig": {
-          "pass": 52,
+          "pass": 51,
           "total": 55,
           "gaps": [
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
             {
               "fixture": "loop-param-shadows-spread-const",
               "issues": []
@@ -4917,9 +4969,13 @@
           ]
         },
         "mojolicious": {
-          "pass": 29,
+          "pass": 28,
           "total": 30,
           "gaps": [
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
             {
               "fixture": "tag-cloud",
               "issues": []
@@ -4927,9 +4983,13 @@
           ]
         },
         "twig": {
-          "pass": 29,
+          "pass": 28,
           "total": 30,
           "gaps": [
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
             {
               "fixture": "tag-cloud",
               "issues": []
@@ -8112,7 +8172,7 @@
           ]
         },
         "mojolicious": {
-          "pass": 95,
+          "pass": 94,
           "total": 101,
           "gaps": [
             {
@@ -8121,6 +8181,10 @@
             },
             {
               "fixture": "loop-param-shadows-bool-prop",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -8142,7 +8206,7 @@
           ]
         },
         "twig": {
-          "pass": 94,
+          "pass": 93,
           "total": 101,
           "gaps": [
             {
@@ -8151,6 +8215,10 @@
             },
             {
               "fixture": "loop-param-shadows-bool-prop",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {
@@ -8462,46 +8530,6 @@
           ]
         },
         "mojolicious": {
-          "pass": 160,
-          "total": 168,
-          "gaps": [
-            {
-              "fixture": "every-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "preamble-cells",
-              "issues": []
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "issues": []
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "issues": [
-                "https://github.com/piconic-ai/barefootjs/issues/2321"
-              ]
-            }
-          ]
-        },
-        "twig": {
           "pass": 159,
           "total": 168,
           "gaps": [
@@ -8523,6 +8551,54 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
+              "issues": []
+            },
+            {
+              "fixture": "preamble-cells",
+              "issues": []
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "issues": [
+                "https://github.com/piconic-ai/barefootjs/issues/2321"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "pass": 158,
+          "total": 168,
+          "gaps": [
+            {
+              "fixture": "every-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "fill-unsupported",
+              "issues": []
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "issues": []
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "issues": []
+            },
+            {
+              "fixture": "loop-param-shadows-record-template-span",
               "issues": []
             },
             {

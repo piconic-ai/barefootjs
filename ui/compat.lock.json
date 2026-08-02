@@ -2389,6 +2389,14 @@
         "go-template": {
           "kind": "render",
           "reason": "a dynamic-key element access on a loop row (`tone[k]`) renders empty at execute time — the emitted template contains no baked const (correct post-fix), but the row lookup resolves to nothing (https://github.com/piconic-ai/barefootjs/issues/2491)"
+        },
+        "mojolicious": {
+          "kind": "render",
+          "reason": "a dynamic-key element access on a loop row (`tone[k]`) diverges on real Mojolicious at render time (same silent-empty family as ERB/Go/Twig; the Perl-side mechanism needs a dig) (https://github.com/piconic-ai/barefootjs/issues/2491)"
+        },
+        "twig": {
+          "kind": "render",
+          "reason": "a dynamic-key element access on a loop row (`tone[k]`) renders empty on real PHP Twig — the row lookup resolves to nothing at render time (Jinja/minijinja render it correctly, so this is the PHP-side data-shape/access path, not the emission) (https://github.com/piconic-ai/barefootjs/issues/2491)"
         }
       },
       "loop-param-shadows-spread-const": {

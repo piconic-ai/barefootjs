@@ -40,4 +40,6 @@ export const renderDivergences: RenderDivergences = {
     'a .map() param sharing a boolean prop\'s name is routed through the bool lowering in attribute position (`bf.bool_str` renders "true"/"false" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)',
   'loop-param-shadows-spread-const':
     'a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)',
+  'loop-param-shadows-record-template-span':
+    'a dynamic-key element access on a loop row (`tone[k]`) renders empty on real PHP Twig — the row lookup resolves to nothing at render time (Jinja/minijinja render it correctly, so this is the PHP-side data-shape/access path, not the emission) (https://github.com/piconic-ai/barefootjs/issues/2491)',
 }
