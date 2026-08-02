@@ -963,13 +963,18 @@ function buildIRRoot(analyzer: AnalyzerContext): IRNode | null {
     // "reactive" to the latter, and prop-conditioned chains must stay on
     // the IRIfStatement path — their branches only change on re-render,
     // and converting them would churn every #1401-family emission.
-    const allReactiveNoLocals = analyzer.conditionalReturns.every(cr =>
-      cr.scopeVariables.length === 0 &&
-      exprCallsReactiveGetters(cr.condition, ctx),
-    )
+    const allReactiveNoLocals =
+      analyzer.jsxReturn != null &&
+      analyzer.conditionalReturns.every(cr =>
+        cr.scopeVariables.length === 0 &&
+        exprCallsReactiveGetters(cr.condition, ctx),
+      )
     if (allReactiveNoLocals) {
       const chain = buildIfStatementChain(analyzer, ctx, { asConditional: true })
-      return chain ? wrapInScopeElement(chain) : null
+      if (!chain) return null
+      // Degenerate transforms can fall a link back to statement mode; the
+      // wrapper is owed only to a conditional root (the ternary shape).
+      return chain.type === 'conditional' ? wrapInScopeElement(chain) : chain
     }
     return buildIfStatementChain(analyzer, ctx)
   }
@@ -7300,7 +7305,7 @@ function buildIfStatementChain(
       analyzer.filePath
     )
 
-    if (asConditional) {
+    if (asConditional && alternate) {
       // #2463: emit the same node shape `transformConditional` builds for
       // the root ternary, so the downstream insert() plan, slot wrapping,
       // and template substitution all apply unchanged. Eligibility
