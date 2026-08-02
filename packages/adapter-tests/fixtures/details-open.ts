@@ -25,6 +25,9 @@ export function Faq() {
 }
 `,
   expectedHtml: `
-    <details open bf-s="test" bf="s1"><summary bf="s0">What is it?</summary><p>A compiler.</p></details>
+    <details bf-s="test" bf="s1" open>
+      <summary bf="s0">What is it?</summary>
+      <p>A compiler.</p>
+    </details>
   `,
 })

@@ -29,8 +29,8 @@ export function Prefs() {
 `,
   expectedHtml: `
     <fieldset bf-s="test">
-      <input type="checkbox" checked bf="s0">
-      <input type="checkbox" bf="s1">
+      <input bf="s0" checked type="checkbox">
+      <input bf="s1" type="checkbox">
     </fieldset>
   `,
 })
