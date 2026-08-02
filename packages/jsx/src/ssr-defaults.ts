@@ -107,15 +107,20 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   //     wins via `propName`).
   for (const p of metadata.propsParams) {
     if (p.isRest) continue
+    // `propName` is the CALLER-facing key (`$props->{propName}` in the Perl
+    // consumer above) — for a renaming destructure (`{ n: count }`) that's
+    // `n`, not the local binding `count` the template variable is keyed by.
+    // `sourceName ?? name` is an identity for every un-aliased prop.
+    const callerPropName = p.sourceName ?? p.name
     if (metadata.propsObjectName === null && p.defaultValue !== undefined) {
       const value = tryStaticEval(p.defaultValue, { bindings: {}, propsLike })
-      out[p.name] = { propName: p.name, value: resultToJsonable(value) }
+      out[p.name] = { propName: callerPropName, value: resultToJsonable(value) }
     } else {
       // No destructure default — the template reads the prop as-is;
       // Perl's `//` operator decides what `undef` becomes. The entry
       // still matters so the template variable exists and consumers
       // can supply the propName even with no static fallback.
-      out[p.name] = { propName: p.name, value: null }
+      out[p.name] = { propName: callerPropName, value: null }
     }
   }
   // Rest-props bag (`...props`) — tracked separately from `propsParams`

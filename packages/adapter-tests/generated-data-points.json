@@ -407,6 +407,14 @@
       }
     }
   ],
+  "composite-row-child-aliased-prop": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "composite-row-child-component": [
     {
       "name": "gen:items:empty",
