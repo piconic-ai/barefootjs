@@ -40,8 +40,4 @@ export const renderDivergences: RenderDivergences = {
   // `skipJsx` entries).
   'aliased-destructured-prop':
     'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2460)',
-  'select-value-ssr':
-    'controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)',
-  'textarea-value-ssr':
-    'controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)',
 }

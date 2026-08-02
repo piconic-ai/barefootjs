@@ -1461,15 +1461,15 @@ function C({ rows }: { rows?: number }) {
 
     test('leaves a concrete/defaulted attr unconditional (scope did not widen)', () => {
       const source = `
-function C({ value = '' }: { value?: string }) {
-  return <textarea value={value} />
+function C({ placeholder = '' }: { placeholder?: string }) {
+  return <textarea placeholder={placeholder} />
 }
 `
       const { template } = compileAndGenerate(source)
-      // `value` has a destructure default → concrete `string` field →
-      // never nil → emitted unconditionally, exactly like Hono's value="".
-      expect(template).toContain('value="{{.Value}}"')
-      expect(template).not.toContain('if ne .Value nil')
+      // `placeholder` has a destructure default → concrete `string` field →
+      // never nil → emitted unconditionally, exactly like Hono's placeholder="".
+      expect(template).toContain('placeholder="{{.Placeholder}}"')
+      expect(template).not.toContain('if ne .Placeholder nil')
     })
   })
 

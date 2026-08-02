@@ -1,20 +1,18 @@
 import { createFixture } from '../src/types'
 
 /**
- * Controlled `<select value={signal()}>` — SSR must express the initial
- * selection as `selected` on the matching `<option>`, not as a `value`
- * attribute on the `<select>` (which is invalid HTML that browsers
- * ignore, so no-JS / pre-hydration users see the wrong option).
+ * Controlled `<select value={signal()}>` — SSR expresses the initial
+ * selection as `selected` on the matching `<option>`, never as a `value`
+ * attribute on the `<select>` (invalid HTML that browsers ignore).
  *
- * Pins #2464. `expectedHtml` is hand-authored to the correct
- * React/Solid-parity output because the emission bug lives in the
- * shared compiler layer, so the Hono reference that normally generates
- * `expectedHtml` produces the wrong form (`<select value="banana">`,
- * no `selected` anywhere). Adapters still emitting that form skip this
- * fixture with a pointer to
- * https://github.com/piconic-ai/barefootjs/issues/2464; graduating
- * means fixing the emission, regenerating `expectedHtml` from the
- * fixed reference, and deleting the skip entries.
+ * FIXED (#2464): the shared-IR lowering marks the `value` attr
+ * `clientOnly` (the hydrate-time `.value` binding is unchanged) and
+ * distributes `selected={(value) === 'opt'}` onto each statically-valued
+ * option — the per-option shape `select-option-selected` proves across
+ * every adapter. Options rendered by a dynamic loop are left to the
+ * hydrate-time effect (#2466 tracks the reorder interaction). This
+ * fixture is the regression armor; `progress-meter-value` guards the
+ * other direction (elements where `value` IS the legitimate attribute).
  */
 export const fixture = createFixture({
   id: 'select-value-ssr',
@@ -37,7 +35,7 @@ export function FruitSelect() {
   expectedHtml: `
     <select bf-s="test" bf="s0">
       <option value="apple">Apple</option>
-      <option value="banana" selected>Banana</option>
+      <option selected value="banana">Banana</option>
       <option value="cherry">Cherry</option>
     </select>
   `,

@@ -262,14 +262,6 @@ describe('CSR Conformance Tests', () => {
     // `s1` slot renders empty instead of the fixture's expectedHtml.
     // https://github.com/piconic-ai/barefootjs/issues/2460
     'composite-row-child-aliased-prop',
-    // #2464 / #2465: the CSR template emits the same invalid
-    // `value="..."` attribute as SSR, diverging from the fixtures'
-    // corrected expectedHtml (`selected` on the matching option /
-    // element content).
-    // https://github.com/piconic-ai/barefootjs/issues/2464
-    // https://github.com/piconic-ai/barefootjs/issues/2465
-    'select-value-ssr',
-    'textarea-value-ssr',
     // #2463 FIXED: the fixture now lowers to the root-ternary plan and
     // its template evaluates cleanly — but the synthetic scope wrapper
     // has style="display:contents" before bf-s, the same CSR/SSR
