@@ -853,7 +853,11 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
       // instead of emitting empty placeholders (#435).
       const propsEntries = node.props
         .filter(p => p.name !== '...' && !p.name.startsWith('...') && p.name !== 'key')
-        .filter(p => !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
+        // `ref` joins the `on*` handlers here: a function prop cannot run
+        // during module-scope string rendering, and a ref closing over an
+        // init-scope setter would leak it into the template (#2468). The
+        // init path re-applies refs once real DOM exists.
+        .filter(p => p.name !== 'ref' && !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
         .map(p => {
           // `/* @client */` defers the prop to hydrate via initChild.
           if (p.clientOnly) return null
@@ -872,7 +876,15 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: Set<string>, lo
             case 'expression':
             case 'template':
             case 'spread': {
-              const expr = attrValueToString(p.value) ?? 'undefined'
+              // Template-variant form (`useTemplate`): this props object
+              // lands inside the module-scope registration template, which
+              // is not a closure over init's destructured-prop extractions
+              // — the raw form leaked bare refs like `${className}` into
+              // `renderChild(...)` (#2468). Mirrors the sibling component
+              // emit sites (`irToComponentTemplateWithOpts`,
+              // `generateCsrTemplateWithOpts`), which already pick the
+              // prop-rewritten variant.
+              const expr = attrValueToString(p.value, { useTemplate: true }) ?? 'undefined'
               return `${quotePropName(p.name)}: ${expr}`
             }
           }
@@ -1793,7 +1805,11 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       // Use renderChild() to render child component's template at runtime (#435)
       const propsEntries = node.props
         .filter(p => p.name !== '...' && !p.name.startsWith('...') && p.name !== 'key')
-        .filter(p => !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
+        // `ref` joins the `on*` handlers here: a function prop cannot run
+        // during module-scope string rendering, and a ref closing over an
+        // init-scope setter would leak it into the template (#2468). The
+        // init path re-applies refs once real DOM exists.
+        .filter(p => p.name !== 'ref' && !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
         .map(p => {
           // `/* @client */` defers the prop to hydrate via initChild.
           if (p.clientOnly) return null
@@ -2164,6 +2180,7 @@ export function computeDeferredChildSlots(
             // filter set MUST mirror the `propsEntries` filter in the CSR
             // `component` emit below so the deferral decision matches output.
             if (p.name === '...' || p.name.startsWith('...') || p.name === 'key') return false
+            if (p.name === 'ref') return false
             if (p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()) return false
             if (p.clientOnly) return false
             return propResolvesUnsafe(p, env, unsafeLocalNames)
@@ -2390,7 +2407,11 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
 
       const propsEntries = node.props
         .filter(p => p.name !== '...' && !p.name.startsWith('...') && p.name !== 'key')
-        .filter(p => !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
+        // `ref` joins the `on*` handlers here: a function prop cannot run
+        // during module-scope string rendering, and a ref closing over an
+        // init-scope setter would leak it into the template (#2468). The
+        // init path re-applies refs once real DOM exists.
+        .filter(p => p.name !== 'ref' && !(p.name.startsWith('on') && p.name.length > 2 && p.name[2] === p.name[2].toUpperCase()))
         .map(p => {
           // `/* @client */` defers the prop to hydrate. Drop from the
           // SSR `renderChild` props — `initChild`'s `propsExpr` getter

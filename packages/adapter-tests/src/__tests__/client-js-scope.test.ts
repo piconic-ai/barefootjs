@@ -67,38 +67,11 @@ const KNOWN_UNDECLARED: Record<string, KnownHole> = {
     names: ['searchParams'],
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2075',
   },
-  // #2468: CSR template lambdas referencing init-scoped bindings
-  // (destructured props, signal setters, locals) — the umbrella issue
-  // carries the full inventory and the fix contract (template closes
-  // only over `_p`, or the shape is refused loudly).
-  button: {
-    names: ['className', 'size', 'variant'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
-  tooltip: {
-    names: ['className', 'size', 'variant'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
-  kbd: {
-    names: ['className'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
-  command: {
-    names: ['className', 'setOpen', 'size', 'variant'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
-  'map-index-handler': {
-    names: ['setActive'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
-  'reactive-props': {
-    names: ['value'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
-  'props-reactivity-comparison': {
-    names: ['value'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2468',
-  },
+  // #2468 (CSR template lambdas referencing init-scoped bindings) is
+  // FIXED — the seven fixtures it pinned (button, tooltip, kbd, command,
+  // map-index-handler, reactive-props, props-reactivity-comparison)
+  // graduated with the memo/`templateExpr`/getter-elided-signal emission
+  // fixes; see the issue for the closing PR.
 }
 
 /** One virtual .ts file per emitted client-JS artifact. */

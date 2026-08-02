@@ -137,7 +137,7 @@ export function initDestructuredStyleChild(__scope, _p = {}) {
 
 }
 
-hydrate('DestructuredStyleChild__aca6fc98', { init: initDestructuredStyleChild, template: (_p) => `<div class="destructured-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeText((value * 10))}<!--/--></span></div>` })
+hydrate('DestructuredStyleChild__aca6fc98', { init: initDestructuredStyleChild, template: (_p) => `<div class="destructured-style-child"><span class="child-label" bf="s1"><!--bf:s0-->${escapeText(_p.label)}<!--/--></span><span class="child-raw-value" bf="s3"><!--bf:s2-->${escapeText(_p.value)}<!--/--></span><span class="child-computed-value" bf="s5"><!--bf:s4-->${escapeText((_p.value * 10))}<!--/--></span></div>` })
 export function DestructuredStyleChild(_p, __bfKey) { return createComponent('DestructuredStyleChild__aca6fc98', _p, __bfKey) }
 export function initPropsReactivityComparison(__scope, _p = {}) {
   if (!__scope) return

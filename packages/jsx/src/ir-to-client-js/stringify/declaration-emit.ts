@@ -65,12 +65,17 @@ function bfIdArg(bfId: string | undefined): string {
 }
 
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {
+  // Getter-elided source form (`const [, setX] = createSignal(...)`):
+  // reproduce the hole instead of introducing the synthesized internal
+  // getter name into output (#2468 sweep — dropping the declaration
+  // entirely left the setter as a guaranteed ReferenceError).
+  const getterSlot = plan.getterElided ? '' : plan.getter
   // Env signal (#2057): emit its own factory call verbatim (`createSearchParams()`)
   // — a stable request-scoped view, so no baked initial value, profile id,
   // controlled effect, or branch condition applies.
   if (plan.initializerOverride) {
     if (plan.setter) {
-      lines.push(`  const [${plan.getter}, ${plan.setter}] = ${plan.initializerOverride}`)
+      lines.push(`  const [${getterSlot}, ${plan.setter}] = ${plan.initializerOverride}`)
     } else {
       lines.push(`  const [${plan.getter}] = ${plan.initializerOverride}`)
     }
@@ -85,9 +90,9 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     // runs when the branch is taken. Sibling branches with different
     // signals coexist because each gets its own `let` + guarded assign.
     if (plan.setter) {
-      lines.push(`  let ${plan.getter}, ${plan.setter}`)
+      lines.push(plan.getterElided ? `  let ${plan.setter}` : `  let ${plan.getter}, ${plan.setter}`)
       lines.push(`  if (${plan.branchCondition}) {`)
-      lines.push(`    ;[${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
+      lines.push(`    ;[${getterSlot}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
       lines.push(`  }`)
     } else {
       lines.push(`  let ${plan.getter}`)
@@ -101,7 +106,7 @@ function emitSignal(lines: string[], plan: SignalEmitPlan): void {
     return
   }
   if (plan.setter) {
-    lines.push(`  const [${plan.getter}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
+    lines.push(`  const [${getterSlot}, ${plan.setter}] = createSignal(${plan.initialValueExpr}${id})`)
   } else {
     lines.push(`  const [${plan.getter}] = createSignal(${plan.initialValueExpr}${id})`)
   }

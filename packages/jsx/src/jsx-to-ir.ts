@@ -6624,8 +6624,20 @@ function processComponentProps(
     // (Hono) keep using `expr`. Boolean-attr is also promoted to
     // shorthand (`<X disabled />` → `disabled={true}`).
     if (value.kind === 'template') {
-      value = AttrValueOf.expression(templatePartsToJsString(value.parts), {
+      // Collapse using the raw part values, but also carry the
+      // template-variant projection (parts' `templateValue` /
+      // `templateCondition` / `templateKey`, i.e. destructured-prop refs
+      // rewritten to `_p.X`) as `templateExpr`. Without it, the
+      // `templateExpr` derivation below walks the ORIGINAL initializer AST
+      // — for a const-resolved template (`className={classes}`) that AST is
+      // the bare `classes` identifier with no prop refs, so the rewrite
+      // no-ops and the module-scope registration template leaks bare
+      // destructured props into `renderChild(...)` (#2468).
+      const collapsed = templatePartsToJsString(value.parts)
+      const collapsedTemplate = templatePartsToJsString(value.parts, { useTemplate: true })
+      value = AttrValueOf.expression(collapsed, {
         parts: value.parts,
+        ...(collapsedTemplate !== collapsed && { templateExpr: collapsedTemplate }),
       })
     } else if (value.kind === 'boolean-attr') {
       value = AttrValueOf.booleanShorthand()
@@ -6670,18 +6682,20 @@ function processComponentProps(
  * needs to be collapsed into an `expression` for component-prop forwarding —
  * component props are runtime JS values, not HTML attribute bodies.
  */
-function templatePartsToJsString(parts: readonly IRTemplatePart[]): string {
+function templatePartsToJsString(parts: readonly IRTemplatePart[], opts?: { useTemplate?: boolean }): string {
   let result = '`'
   for (const part of parts) {
     if (part.type === 'string') {
-      result += part.value
+      result += (opts?.useTemplate && part.templateValue) ? part.templateValue : part.value
     } else if (part.type === 'ternary') {
-      result += `\${${part.condition} ? '${part.whenTrue}' : '${part.whenFalse}'}`
+      const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
+      result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`
     } else if (part.type === 'lookup') {
+      const key = (opts?.useTemplate && part.templateKey) ? part.templateKey : part.key
       const obj = '{' + Object.entries(part.cases).map(
         ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
       ).join(', ') + '}'
-      result += `\${(${obj})[${part.key}]}`
+      result += `\${(${obj})[${key}]}`
     }
   }
   result += '`'

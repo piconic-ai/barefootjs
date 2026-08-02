@@ -25,8 +25,8 @@ export function SizePicker() {
 `,
   expectedHtml: `
     <fieldset bf-s="test">
-      <input type="radio" name="size" value="sm" bf="s0">
-      <input type="radio" name="size" value="md" checked bf="s1">
+      <input bf="s0" name="size" type="radio" value="sm">
+      <input bf="s1" checked name="size" type="radio" value="md">
     </fieldset>
   `,
 })

@@ -1454,6 +1454,15 @@ export interface SignalInfo {
    * AST-level pre-rewrite).
    */
   templateInitialValue?: string
+  /**
+   * True for the getter-elided declaration form `const [, setX] =
+   * createSignal(...)`. `getter` then holds a synthesized internal name
+   * (`__bfGet_<setter>`) that no expression ever references — it exists so
+   * getter-keyed consumers (substitution env, SSR seeding) stay total.
+   * Emit reproduces the source's `[, setter]` hole instead of introducing
+   * the synthesized name into output.
+   */
+  getterElided?: boolean
   type: TypeInfo
   loc: SourceLocation
   /**
@@ -1513,6 +1522,15 @@ export interface SignalInfo {
 export interface MemoInfo {
   name: string
   computation: string
+  /**
+   * `computation` with bare destructured-prop refs rewritten to `_p.X` —
+   * the memo twin of `SignalInfo.templateInitialValue` (#2265). Consumed by
+   * `buildSignalMemoEnv` when the memo body is inlined into the module-scope
+   * CSR `template:` arrow, which is not a closure over init's destructured
+   * extractions (#2468). Only set for destructured-arg components that
+   * actually reference a prop.
+   */
+  templateComputation?: string
   /** Computation with TypeScript type annotations preserved, for .tsx output */
   typedComputation?: string
   /**
