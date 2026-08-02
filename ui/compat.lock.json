@@ -1859,6 +1859,10 @@
           "kind": "render",
           "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
         },
+        "go-template": {
+          "kind": "render",
+          "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"
+        },
         "jinja": {
           "kind": "render",
           "reason": "a `Record[key]` class lookup keyed by a prop forwarded from a parent signal SSRs empty (`class=\"\"`) instead of the looked-up value; not caused by the early-return branch root the fixture also exercises (https://github.com/piconic-ai/barefootjs/issues/2477)"

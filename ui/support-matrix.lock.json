@@ -1607,9 +1607,13 @@
           ]
         },
         "go-template": {
-          "pass": 178,
+          "pass": 177,
           "total": 195,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2503,11 +2507,15 @@
           ]
         },
         "go-template": {
-          "pass": 263,
+          "pass": 262,
           "total": 283,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
+              "issues": []
+            },
+            {
+              "fixture": "branch-root-prop-attr",
               "issues": []
             },
             {
@@ -3153,8 +3161,14 @@
           ]
         },
         "go-template": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 13,
+          "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            }
+          ]
         },
         "jinja": {
           "pass": 12,
@@ -3355,9 +3369,13 @@
           ]
         },
         "go-template": {
-          "pass": 220,
+          "pass": 219,
           "total": 233,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -4655,9 +4673,13 @@
           ]
         },
         "go-template": {
-          "pass": 50,
+          "pass": 49,
           "total": 52,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -8224,9 +8246,13 @@
           ]
         },
         "go-template": {
-          "pass": 155,
+          "pass": 154,
           "total": 165,
           "gaps": [
+            {
+              "fixture": "branch-root-prop-attr",
+              "issues": []
+            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
