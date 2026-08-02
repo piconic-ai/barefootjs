@@ -4,26 +4,24 @@ import { createFixture } from '../src/types'
  * Signal-conditioned early return:
  * `if (loading()) return <button/>; return <p/>`.
  *
- * The SSR side renders the initial branch correctly — that is what
- * `expectedHtml` pins. The gap is the client side (#2463): no
- * branch-switch effect is emitted (clicking calls `setLoading(false)`
- * and nothing subscribes, so the UI can never leave the SSR branch),
- * and the CSR template lambda references `loading()` out of scope — a
- * `ReferenceError` on CSR mount, pinned by this fixture's skip entry
- * in `csr-conformance.test.ts` (pointer:
- * https://github.com/piconic-ai/barefootjs/issues/2463).
+ * FIXED (#2463): the statement form now lowers to the exact plan the
+ * semantically identical root ternary gets — the synthetic
+ * display:contents scope wrapper plus an `insert()` whose branches carry
+ * their own templates and event bindings, so the client switches
+ * branches at runtime and the CSR template lambda substitutes the
+ * signal's initial value instead of referencing it out of scope. This
+ * fixture is the regression armor for that lowering; the runtime
+ * branch-swap behavior itself is shared with (and covered by) the
+ * `top-level-ternary` machinery.
  *
- * The semantically identical root ternary
- * (`return loading() ? <button/> : <p/>`) compiles correctly to an
- * `insert()` with a branch-switch effect — see the `top-level-ternary`
- * fixture — so this pins the statement-form/expression-form asymmetry.
- * Not covered by the closed prop-conditioned early-return issues
- * (#1401 etc.); a fixture-hydrate `interactions` step (click → expect
- * `Ready`) should land together with the #2463 fix.
+ * The statement path is taken only for chains whose conditions all call
+ * signal/memo getters and that declare no branch-local scope variables —
+ * prop-conditioned chains (`conditional-return-button` etc.) stay on the
+ * #1401-family IRIfStatement emission.
  */
 export const fixture = createFixture({
   id: 'signal-early-return',
-  description: 'Signal-conditioned early return renders the initial branch (#2463 pins the client side)',
+  description: 'Signal-conditioned early return lowers to the root-ternary branch-switch plan (#2463)',
   source: `
 "use client"
 import { createSignal } from '@barefootjs/client'
@@ -37,6 +35,6 @@ export function LoadGate() {
 }
 `,
   expectedHtml: `
-    <button bf-s="test" bf="s0">Loading...</button>
+    <div bf-s="test" style="display:contents"><button bf-c="s1" bf="s0">Loading...</button></div>
   `,
 })

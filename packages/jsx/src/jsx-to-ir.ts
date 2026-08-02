@@ -946,6 +946,36 @@ function buildIRRoot(analyzer: AnalyzerContext): IRNode | null {
   // build an if-statement chain instead of a single node
   if (analyzer.conditionalReturns.length > 0) {
     const ctx = createTransformContext(analyzer)
+    // #2463: a chain whose conditions are ALL reactive (signal/memo reads)
+    // is semantically the root ternary, and the IRIfStatement contract
+    // ("client JS handles all branches and switches at runtime") demands
+    // the same insert() plan the ternary gets. Lower it through the
+    // conditional path + synthetic scope wrapper. Gated to chains with no
+    // branch-local scope variables — those carry #1409/#1414 machinery
+    // (branch consts, branch-scoped signals) that the conditional plan
+    // has no seat for, so they stay on the IRIfStatement path; a static
+    // or prop-conditioned chain stays there too (its branches cannot
+    // change after render without a re-render, so no runtime switch is
+    // owed). The eligibility check is analysis-only (no transforms run),
+    // so falling through to the statement path never skews slot ids.
+    // `exprCallsReactiveGetters` (signal/memo getter CALLS), not
+    // `isReactiveExpression`: bare destructured-prop reads also count as
+    // "reactive" to the latter, and prop-conditioned chains must stay on
+    // the IRIfStatement path — their branches only change on re-render,
+    // and converting them would churn every #1401-family emission.
+    const allReactiveNoLocals =
+      analyzer.jsxReturn != null &&
+      analyzer.conditionalReturns.every(cr =>
+        cr.scopeVariables.length === 0 &&
+        exprCallsReactiveGetters(cr.condition, ctx),
+      )
+    if (allReactiveNoLocals) {
+      const chain = buildIfStatementChain(analyzer, ctx, { asConditional: true })
+      if (!chain) return null
+      // Degenerate transforms can fall a link back to statement mode; the
+      // wrapper is owed only to a conditional root (the ternary shape).
+      return chain.type === 'conditional' ? wrapInScopeElement(chain) : chain
+    }
     return buildIfStatementChain(analyzer, ctx)
   }
 
@@ -7080,14 +7110,21 @@ function replaceBranchLocalRefs(
  */
 function buildIfStatementChain(
   analyzer: AnalyzerContext,
-  ctx: TransformContext
-): IRIfStatement {
+  ctx: TransformContext,
+  opts?: { asConditional?: boolean }
+): IRIfStatement | IRConditional | null {
   const conditionalReturns = analyzer.conditionalReturns
+  // #2463: conditional mode builds the same IRConditional links the root
+  // ternary produces (reactive insert() plan). The caller wraps the chain
+  // in the synthetic display:contents scope element, so branches must NOT
+  // claim the root scope themselves — mirror the ternary path's
+  // `ctx.isRoot = false`.
+  const asConditional = opts?.asConditional === true
 
   // Start with the final return (else case) if it exists
   let alternate: IRNode | null = null
   if (analyzer.jsxReturn) {
-    ctx.isRoot = true
+    ctx.isRoot = !asConditional
     alternate = transformNode(analyzer.jsxReturn, ctx)
   }
 
@@ -7215,8 +7252,9 @@ function buildIfStatementChain(
     }
 
     // Transform the JSX return in the then branch
-    // Reset isRoot so each branch gets needsScope=true
-    ctx.isRoot = true
+    // Reset isRoot so each branch gets needsScope=true (statement mode);
+    // in conditional mode (#2463) the synthetic wrapper carries the scope.
+    ctx.isRoot = !asConditional
     let consequent: IRNode | null
     try {
       consequent = transformNode(condReturn.jsxReturn, ctx)
@@ -7267,6 +7305,33 @@ function buildIfStatementChain(
       analyzer.filePath
     )
 
+    if (asConditional && alternate) {
+      // #2463: emit the same node shape `transformConditional` builds for
+      // the root ternary, so the downstream insert() plan, slot wrapping,
+      // and template substitution all apply unchanged. Eligibility
+      // (checked by the caller) guarantees a reactive condition and no
+      // branch scopeVariables.
+      const conditional: IRConditional = {
+        type: 'conditional',
+        condition,
+        templateCondition,
+        conditionType: null,
+        reactive: true,
+        whenTrue: consequent,
+        whenFalse: alternate,
+        slotId: generateSlotId(ctx),
+        loc,
+        origin: {
+          phase: 'tick',
+          scope: 'template',
+          effect: 'pure',
+          freeRefs: resolveFreeRefs(condReturn.condition, makeBindingEnv(ctx)),
+        },
+      }
+      alternate = conditional
+      continue
+    }
+
     // Create the if statement node
     const ifStmt: IRIfStatement = {
       type: 'if-statement',
@@ -7282,6 +7347,7 @@ function buildIfStatementChain(
     alternate = ifStmt
   }
 
-  // The final result should be an IRIfStatement (the first if in the chain)
-  return alternate as IRIfStatement
+  // The final result: the first link of the chain (an IRIfStatement in
+  // statement mode, an IRConditional in #2463's conditional mode).
+  return alternate as IRIfStatement | IRConditional | null
 }
