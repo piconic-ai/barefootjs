@@ -447,6 +447,12 @@ import { fixture as selectValueSsr } from './select-value-ssr'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 import { fixture as signalEarlyReturn } from './signal-early-return'
 import { fixture as logicalAndZero } from './logical-and-zero'
+// HTML element/attribute semantics checklist (state-carrying attributes)
+import { fixture as controlledCheckboxChecked } from './controlled-checkbox-checked'
+import { fixture as controlledRadioChecked } from './controlled-radio-checked'
+import { fixture as detailsOpen } from './details-open'
+import { fixture as dialogOpen } from './dialog-open'
+import { fixture as progressMeterValue } from './progress-meter-value'
 
 import type { JSXFixture } from '../src/types'
 
@@ -770,4 +776,9 @@ export const jsxFixtures: JSXFixture[] = [
   textareaValueSsr,
   signalEarlyReturn,
   logicalAndZero,
+  controlledCheckboxChecked,
+  controlledRadioChecked,
+  detailsOpen,
+  dialogOpen,
+  progressMeterValue,
 ]
