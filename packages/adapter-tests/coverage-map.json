@@ -2263,6 +2263,21 @@
         "text"
       ]
     },
+    "if-statement-child-swap": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "inline-array-map": {
       "kinds": [
         "array-literal",
@@ -4820,11 +4835,11 @@
     "array-method": 66,
     "arrow": 63,
     "binary": 80,
-    "call": 193,
+    "call": 194,
     "conditional": 23,
-    "identifier": 281,
+    "identifier": 282,
     "index-access": 12,
-    "literal": 231,
+    "literal": 232,
     "logical": 43,
     "member": 150,
     "object-literal": 51,
@@ -4867,9 +4882,9 @@
     "binary:===": 41,
     "binary:>": 11,
     "binary:>=": 1,
-    "literal:boolean": 45,
+    "literal:boolean": 46,
     "literal:null": 23,
-    "literal:number": 96,
+    "literal:number": 97,
     "literal:string": 164,
     "logical:&&": 7,
     "logical:??": 38,
