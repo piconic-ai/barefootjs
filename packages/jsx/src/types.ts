@@ -2225,6 +2225,19 @@ export interface CompileOptions {
    * byte-for-byte unchanged (SR8). Dev/profiling builds only.
    */
   profile?: boolean
+  /**
+   * Forwarded verbatim to `adapter.generate(..., { scriptAssets })` — see
+   * that field's docstring on `AdapterGenerateOptions` for the full
+   * precedence rules (`skipScriptRegistration` still wins; `[]` means "no
+   * scripts", distinct from `undefined`'s "use the legacy computed path").
+   *
+   * This is plain resolved data (an ordered URL list), not a rewrite
+   * callback — the caller (chiefly `@barefootjs/vite`) has already done all
+   * the resolution (bundling, hashing, manifest lookup) before calling
+   * `compileJSX`; the compiler only threads the list through to the
+   * adapter unchanged.
+   */
+  scriptAssets?: string[]
 }
 
 export interface FileOutput {

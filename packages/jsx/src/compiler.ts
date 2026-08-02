@@ -230,6 +230,7 @@ function compileMultipleComponents(
       scriptBaseName,
       siblingTemplatesRegistered: options.siblingTemplatesRegistered,
       rewriteRelativeImport: options.rewriteRelativeImport,
+      scriptAssets: options.scriptAssets,
     })
     const moduleExports = generateModuleExports(
       componentIR,
@@ -671,6 +672,7 @@ export function compileJSX(
     scriptBaseName: options.scriptBaseName,
     siblingTemplatesRegistered: options.siblingTemplatesRegistered,
     rewriteRelativeImport: options.rewriteRelativeImport,
+    scriptAssets: options.scriptAssets,
   })
 
   // `templatesPerComponent` adapters (Mojolicious) emit non-JS template files
