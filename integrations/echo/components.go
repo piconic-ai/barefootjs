@@ -22,7 +22,7 @@ func randomID(n int) string {
 // Message represents a message.
 type Message struct {
 	ID int `json:"id"`
-	Role interface{} `json:"role"`
+	Role string `json:"role"`
 	Content string `json:"content"`
 }
 
