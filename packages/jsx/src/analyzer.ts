@@ -1201,10 +1201,21 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   const callExpr = node.initializer as ts.CallExpression
 
   const elements = pattern.elements
+  // Getter-elided form: `const [, setActive] = createSignal(0)`. The first
+  // element is a hole (ts.OmittedExpression), not a BindingElement.
+  // Rejecting it here used to drop the whole declaration from the emitted
+  // init while the setter stayed referenced by handlers — a guaranteed
+  // ReferenceError (adapter-tests scope-gate, #2468 sweep). Accept it,
+  // synthesize an internal getter name for the IR (never referenced by any
+  // expression, so substitution/SSR consumers see an unused entry), and
+  // mark `getterElided` so emit reproduces the source's `[, setter]` shape.
+  const getterElided = elements.length === 2 && ts.isOmittedExpression(elements[0])
   if (
     elements.length < 1 || elements.length > 2 ||
-    !ts.isBindingElement(elements[0]) ||
-    !ts.isIdentifier(elements[0].name)
+    (!getterElided && (
+      !ts.isBindingElement(elements[0]) ||
+      !ts.isIdentifier(elements[0].name)
+    ))
   ) {
     return
   }
@@ -1216,10 +1227,11 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     return
   }
 
-  const getter = elements[0].name.text
   const setter = elements.length === 2 && ts.isBindingElement(elements[1]) && ts.isIdentifier(elements[1].name)
     ? elements[1].name.text
     : null
+  if (getterElided && !setter) return
+  const getter = getterElided ? `__bfGet_${setter}` : (elements[0] as ts.BindingElement & { name: ts.Identifier }).name.text
   const initialValue = callExpr.arguments[0] ? ctx.getJS(callExpr.arguments[0]) : ''
   const typedInitialValue = callExpr.arguments[0] ? callExpr.arguments[0].getText(ctx.sourceFile) : undefined
 
@@ -1257,6 +1269,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   ctx.signals.push({
     getter,
     setter,
+    getterElided: getterElided || undefined,
     initialValue,
     typedInitialValue: typedInitialValue !== initialValue ? typedInitialValue : undefined,
     templateInitialValue,
@@ -1577,9 +1590,26 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   const parsedBlockComplete =
     parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
 
+  // Destructured-arg components only — the memo twin of the signal
+  // `templateInitialValue` rewrite (#2265) a few hundred lines up: a memo
+  // body referencing a bare destructured prop (`createMemo(() => value *
+  // 10)` with `{ value }: { value: number }`) is inlined into the CSR
+  // `template:` arrow by `buildSignalMemoEnv`, and that arrow runs at
+  // module scope — it is not a closure over `initXxx`'s `const value =
+  // _p.value` extraction, so the bare ref must become `_p.value`
+  // (adapter-tests scope-gate, #2468 sweep).
+  let templateComputation: string | undefined
+  if (!ctx.propsObjectName && callExpr.arguments[0]) {
+    const propNames = new Set(ctx.propsParams.map(p => p.name))
+    if (propNames.size > 0) {
+      templateComputation = rewriteBarePropRefs(computation, callExpr.arguments[0], propNames)
+    }
+  }
+
   ctx.memos.push({
     name,
     computation,
+    templateComputation,
     parsedBlock,
     parsedBlockComplete,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,

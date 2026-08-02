@@ -28,6 +28,12 @@ export interface SignalEmitPlan {
   /** Setter identifier — `null` for read-only signals. */
   setter: string | null
   /**
+   * Source used the getter-elided form (`const [, setX] = ...`). `getter`
+   * holds the synthesized internal name (see `SignalInfo.getterElided`);
+   * stringify reproduces the source's hole instead of emitting it.
+   */
+  getterElided?: boolean
+  /**
    * Fully-resolved initial value expression. Prop rewrites
    * (`<propsName>.X` → `_p.X`) and `?? <default>` insertions for controlled
    * signals are already applied.

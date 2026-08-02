@@ -447,7 +447,12 @@ export function buildSignalMemoEnv(
   for (const m of memos) {
     substitutions.set(m.name, {
       kind: 'call',
-      replacement: extractMemoBodyExpr(m.computation),
+      // Destructured mode (#2468): `templateComputation` (when present) has
+      // bare destructured prop refs already rewritten to `_p.X` — the
+      // spliced body lands in the module-scope template arrow, which is not
+      // a closure over init's `const value = _p.value` extraction. Mirrors
+      // the signal `templateInitialValue` handling above (#2265).
+      replacement: extractMemoBodyExpr(m.templateComputation ?? m.computation),
       freeIdentifiers: m.computationFreeIdentifiers ?? new Set(),
     })
   }
