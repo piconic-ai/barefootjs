@@ -510,7 +510,7 @@ describe('MojoAdapter - SSR context propagation (#1297)', () => {
 import { createContext, useContext } from '@barefootjs/client'
 const ThemeContext = createContext('light')
 export function ThemeRoot() {
-  return <div><ThemeContext.Provider placeholder="dark"><ThemeLabel /></ThemeContext.Provider></div>
+  return <div><ThemeContext.Provider value="dark"><ThemeLabel /></ThemeContext.Provider></div>
 }
 function ThemeLabel() { const theme = useContext(ThemeContext); return <span>{theme}</span> }
 `)
@@ -545,7 +545,7 @@ export function Child(props: { value: number }) {
   return <span>{displayValue()}</span>
 }
 `)
-    expect(template).toContain('% my $displayValue = $placeholder * 10;')
+    expect(template).toContain('% my $displayValue = $value * 10;')
   })
 
   test('seeds a memo over a destructured prop', () => {
@@ -557,7 +557,7 @@ export function Child({ value }: { value: number }) {
   return <span>{displayValue()}</span>
 }
 `)
-    expect(template).toContain('% my $displayValue = $placeholder * 10;')
+    expect(template).toContain('% my $displayValue = $value * 10;')
   })
 })
 
@@ -1004,7 +1004,7 @@ export function C() {
 }`, 'C.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('bf->includes($placeholder, $needle)')
+    expect(template).toContain('bf->includes($value, $needle)')
     expect(template).not.toContain('$bf->includes')
   })
 
@@ -1073,7 +1073,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('lc($placeholder)')
+    expect(template).toContain('lc($value)')
     expect(template).not.toContain('$lc(')
   })
 
@@ -1086,7 +1086,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('uc($placeholder)')
+    expect(template).toContain('uc($value)')
     expect(template).not.toContain('$uc(')
   })
 
@@ -1101,7 +1101,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain('bf->trim($placeholder)')
+    expect(template).toContain('bf->trim($value)')
     expect(template).not.toContain('$bf->trim')
   })
 
@@ -1497,7 +1497,7 @@ import { fixture as reduceRightConcatFixture } from '../../../adapter-tests/fixt
 describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
   const cases = [
     { fixture: arrayIncludesFixture,    expect: 'bf->includes($items, $target)' },
-    { fixture: stringIncludesFixture,   expect: 'bf->includes($placeholder, $needle)' },
+    { fixture: stringIncludesFixture,   expect: 'bf->includes($value, $needle)' },
     { fixture: arrayIndexOfFixture,     expect: 'bf->index_of($items, $target)' },
     { fixture: arrayLastIndexOfFixture, expect: 'bf->last_index_of($items, $target)' },
     { fixture: arrayAtFixture,          expect: 'bf->at($items, -1)' },
@@ -1513,26 +1513,26 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     // .toReversed shares the helper with .reverse — pinning both
     // routings catches a future divergence between them.
     { fixture: arrayToReversedFixture,  expect: 'bf->reverse($items)' },
-    { fixture: stringToLowerCaseFixture,expect: 'lc($placeholder)' },
-    { fixture: stringToUpperCaseFixture,expect: 'uc($placeholder)' },
-    { fixture: stringTrimFixture,       expect: 'bf->trim($placeholder)' },
+    { fixture: stringToLowerCaseFixture,expect: 'lc($value)' },
+    { fixture: stringToUpperCaseFixture,expect: 'uc($value)' },
+    { fixture: stringTrimFixture,       expect: 'bf->trim($value)' },
     // #1448 Tier B — string → array. `.split(',')` lowers to
     // `bf->split`, here chained into `.join('|')` so the array ref is
-    // observable (`bf->join(bf->split($placeholder, ','), '|')`).
-    { fixture: stringSplitFixture,      expect: `bf->split($placeholder, ',')` },
-    { fixture: stringSplitLimitFixture, expect: `bf->split($placeholder, ',', 2)` },
+    // observable (`bf->join(bf->split($value, ','), '|')`).
+    { fixture: stringSplitFixture,      expect: `bf->split($value, ',')` },
+    { fixture: stringSplitLimitFixture, expect: `bf->split($value, ',', 2)` },
     // #1448 Tier B — string → boolean at condition position (`% if`).
-    { fixture: stringStartsWithFixture, expect: 'bf->starts_with($placeholder, $prefix)' },
-    { fixture: stringStartsWithPositionFixture, expect: `bf->starts_with($placeholder, 'world', 6)` },
-    { fixture: stringEndsWithFixture,   expect: 'bf->ends_with($placeholder, $suffix)' },
-    { fixture: stringEndsWithPositionFixture,   expect: `bf->ends_with($placeholder, 'hello', 5)` },
+    { fixture: stringStartsWithFixture, expect: 'bf->starts_with($value, $prefix)' },
+    { fixture: stringStartsWithPositionFixture, expect: `bf->starts_with($value, 'world', 6)` },
+    { fixture: stringEndsWithFixture,   expect: 'bf->ends_with($value, $suffix)' },
+    { fixture: stringEndsWithPositionFixture,   expect: `bf->ends_with($value, 'hello', 5)` },
     // #1448 Tier B — string → string, first-occurrence replace.
-    { fixture: stringReplaceFixture,    expect: `bf->replace($placeholder, 'o', '0')` },
+    { fixture: stringReplaceFixture,    expect: `bf->replace($value, 'o', '0')` },
     // #1448 Tier B — string → string, repeat n times.
-    { fixture: stringRepeatFixture,     expect: 'bf->repeat($placeholder, 3)' },
+    { fixture: stringRepeatFixture,     expect: 'bf->repeat($value, 3)' },
     // #1448 Tier B — string → string, padded to a target width.
-    { fixture: stringPadStartFixture,   expect: `bf->pad_start($placeholder, 5, '0')` },
-    { fixture: stringPadEndFixture,     expect: `bf->pad_end($placeholder, 5, '.')` },
+    { fixture: stringPadStartFixture,   expect: `bf->pad_start($value, 5, '0')` },
+    { fixture: stringPadEndFixture,     expect: `bf->pad_end($value, 5, '.')` },
     // #1448 Tier B — sort / toSorted. EXPR2 migration (#2018): both a
     // STANDALONE `.sort(cmp)` value call AND the `.sort().map()` loop-hoist
     // (#2018 P3) serialize the comparator body and emit `bf->sort_eval(...)`
