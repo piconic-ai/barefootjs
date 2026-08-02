@@ -78,6 +78,38 @@ export interface AdapterGenerateOptions {
    * incidentals are unaffected.
    */
   rewriteRelativeImport?: (importPath: string) => string
+  /**
+   * Ordered list of fully-resolved, absolute URLs to emit as ES module
+   * script registrations, in array order. When present (including the
+   * empty array `[]`), this **fully supersedes** the legacy
+   * `clientJsBasePath` / `barefootJsPath` / `scriptBaseName` computation
+   * that adapters otherwise use to bake exactly two script URLs (the
+   * shared runtime, then the component's own `.client.js`) at codegen
+   * time.
+   *
+   * Exists for callers — chiefly the Vite plugin — that only learn the
+   * real script URLs after bundling: under Vite, filenames are content-
+   * hashed, the runtime is no longer a separately-registered script (it
+   * arrives as an ESM import of a shared chunk pulled in by the
+   * component's own entry), and the number of scripts a component needs
+   * is not fixed at two. The caller is responsible for all of that
+   * resolution — including any dev-server client script and the
+   * component's own entry — and hands the adapter a plain, ordered URL
+   * list to register verbatim.
+   *
+   * `undefined` (the default) means "fall back to the legacy computed
+   * paths" — this is a purely additive option; every existing caller
+   * that never sets it keeps byte-identical output. An empty array is
+   * semantically distinct from `undefined`: it means "this component
+   * needs no script registrations at all" (e.g. the caller determined
+   * the component has no client interactivity), whereas `undefined`
+   * means "adapter, please decide using the legacy path options."
+   *
+   * `skipScriptRegistration: true` still wins over this unconditionally
+   * — it means "a parent/caller will register scripts for me", which
+   * takes precedence regardless of what `scriptAssets` says.
+   */
+  scriptAssets?: string[]
 }
 
 /**
