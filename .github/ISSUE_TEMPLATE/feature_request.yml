@@ -5,7 +5,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the idea!
+        Thanks for the idea — rough sketches are welcome. 🙏
+
+        **Nothing below is required.** A one-liner is fine; if we need more context
+        we'll simply ask in the comments.
 
         > **Note:** We don't accept external pull requests due to supply-chain and AI-slop concerns.
         > That said, design discussions in issues are very welcome — and your contributions here
@@ -14,25 +17,17 @@ body:
         > Happy hacking!
 
   - type: textarea
-    id: problem
+    id: idea
     attributes:
-      label: Problem
-      description: What problem does this solve? What's the use case?
-    validations:
-      required: true
-
-  - type: textarea
-    id: proposal
-    attributes:
-      label: Proposed Solution
-      description: How do you think this should work?
+      label: The idea
+      description: What would you like BarefootJS to do?
     validations:
       required: false
 
   - type: textarea
-    id: alternatives
+    id: motivation
     attributes:
-      label: Alternatives Considered
-      description: Any other approaches you've thought about?
+      label: What it would solve (if handy)
+      description: The use case or itch behind it — a code sketch of how you'd want to write it is especially helpful.
     validations:
       required: false
