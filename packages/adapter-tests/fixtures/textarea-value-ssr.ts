@@ -1,20 +1,17 @@
 import { createFixture } from '../src/types'
 
 /**
- * Controlled `<textarea value={signal()}>` — SSR must lower `value` to
+ * Controlled `<textarea value={signal()}>` — SSR lowers `value` to
  * element content (React semantics): `value` is not an attribute on
- * `<textarea>`, so emitting one leaves the control empty for no-JS /
+ * `<textarea>`, so emitting one left the control empty for no-JS /
  * pre-hydration users.
  *
- * Pins #2465 (sibling of the `<select value>` bug, #2464).
- * `expectedHtml` is hand-authored to the correct output because the
- * emission bug lives in the shared compiler layer, so the Hono
- * reference that normally generates `expectedHtml` produces the wrong
- * form (`<textarea value="initial note"></textarea>`). Adapters still
- * emitting the attribute skip this fixture with a pointer to
- * https://github.com/piconic-ai/barefootjs/issues/2465; graduating
- * means fixing the emission, regenerating `expectedHtml` from the
- * fixed reference, and deleting the skip entries.
+ * FIXED (#2465): the shared-IR lowering marks the `value` attr
+ * `clientOnly` and injects the expression as a NON-reactive child
+ * (initial content only — updates keep flowing through the `.value`
+ * property binding, deliberately not a live text slot). A textarea with
+ * authored children is left untouched. This fixture is the regression
+ * armor for the lowering.
  */
 export const fixture = createFixture({
   id: 'textarea-value-ssr',

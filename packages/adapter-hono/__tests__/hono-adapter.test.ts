@@ -19,23 +19,6 @@ runAdapterConformanceTests({
   // every conformance case. `conformancePins` is empty (no pins) but
   // still wired through for uniformity with the other 7 adapters.
   expectedDiagnostics: conformancePins,
-  // Correct-output fixtures Hono itself cannot pass yet. Hono is the
-  // reference adapter, so these fixtures' `expectedHtml` is hand-authored
-  // to the correct output instead of generated from Hono (each fixture's
-  // docstring explains). Graduating an entry = fixing the emission,
-  // regenerating `expectedHtml` from the fixed reference, and deleting
-  // the line here (plus the matching render-divergences entries in the
-  // other adapter packages).
-  skipJsx: [
-    // `<select value={sig()}>` SSRs an invalid `value` attribute instead
-    // of `selected` on the matching option.
-    // https://github.com/piconic-ai/barefootjs/issues/2464
-    'select-value-ssr',
-    // `<textarea value={sig()}>` SSRs a `value` attribute instead of
-    // element content.
-    // https://github.com/piconic-ai/barefootjs/issues/2465
-    'textarea-value-ssr',
-  ],
   skipMarkerConformance: new Set<string>([
     // TodoApp's keyed `.map` carries a `/* @client */` marker, which
     // the compiler intentionally elides on the SSR side (loop body

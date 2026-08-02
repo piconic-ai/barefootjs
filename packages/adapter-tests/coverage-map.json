@@ -891,21 +891,6 @@
         "text"
       ]
     },
-    "branch-root-prop-attr": {
-      "kinds": [
-        "call",
-        "identifier",
-        "index-access",
-        "literal",
-        "object-literal"
-      ],
-      "axes": [
-        "literal:string"
-      ],
-      "contexts": [
-        "condition"
-      ]
-    },
     "branch-self-closing": {
       "kinds": [
         "call",
@@ -3833,11 +3818,13 @@
     },
     "select-value-ssr": {
       "kinds": [
+        "binary",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
+        "binary:===",
         "literal:string"
       ],
       "contexts": [
@@ -4591,7 +4578,8 @@
         "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "textarea-value-ssr": {
@@ -4604,7 +4592,8 @@
         "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "text"
       ]
     },
     "todo-app": {
@@ -4834,15 +4823,15 @@
     "array-literal": 69,
     "array-method": 66,
     "arrow": 63,
-    "binary": 80,
-    "call": 194,
+    "binary": 81,
+    "call": 193,
     "conditional": 23,
-    "identifier": 282,
-    "index-access": 13,
-    "literal": 232,
+    "identifier": 281,
+    "index-access": 12,
+    "literal": 231,
     "logical": 43,
     "member": 150,
-    "object-literal": 52,
+    "object-literal": 51,
     "template-literal": 29,
     "unary": 23,
     "unsupported": 31
@@ -4879,13 +4868,13 @@
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
-    "binary:===": 41,
+    "binary:===": 42,
     "binary:>": 11,
     "binary:>=": 1,
     "literal:boolean": 45,
     "literal:null": 23,
     "literal:number": 96,
-    "literal:string": 165,
+    "literal:string": 164,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,

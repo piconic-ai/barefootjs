@@ -1026,15 +1026,15 @@
       }
     },
     "binary": {
-      "total": 80,
+      "total": 81,
       "cells": {
         "hono": {
-          "pass": 80,
-          "total": 80
+          "pass": 81,
+          "total": 81
         },
         "blade": {
-          "pass": 71,
-          "total": 80,
+          "pass": 72,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1081,8 +1081,8 @@
           ]
         },
         "erb": {
-          "pass": 72,
-          "total": 80,
+          "pass": 73,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1123,8 +1123,8 @@
           ]
         },
         "go-template": {
-          "pass": 71,
-          "total": 80,
+          "pass": 72,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1171,8 +1171,8 @@
           ]
         },
         "jinja": {
-          "pass": 71,
-          "total": 80,
+          "pass": 72,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1219,8 +1219,8 @@
           ]
         },
         "minijinja": {
-          "pass": 71,
-          "total": 80,
+          "pass": 72,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1267,8 +1267,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 72,
-          "total": 80,
+          "pass": 73,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1309,8 +1309,8 @@
           ]
         },
         "twig": {
-          "pass": 71,
-          "total": 80,
+          "pass": 72,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1357,8 +1357,8 @@
           ]
         },
         "xslate": {
-          "pass": 71,
-          "total": 80,
+          "pass": 72,
+          "total": 81,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -1418,11 +1418,11 @@
       }
     },
     "call": {
-      "total": 194,
+      "total": 193,
       "cells": {
         "hono": {
-          "pass": 193,
-          "total": 194,
+          "pass": 192,
+          "total": 193,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1433,8 +1433,8 @@
           ]
         },
         "blade": {
-          "pass": 176,
-          "total": 194,
+          "pass": 177,
+          "total": 193,
           "gaps": [
             {
               "fixture": "composite-row-child-aliased-prop",
@@ -1491,10 +1491,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1512,17 +1508,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 178,
-          "total": 194,
+          "pass": 179,
+          "total": 193,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1569,10 +1561,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1590,17 +1578,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 177,
-          "total": 194,
+          "pass": 178,
+          "total": 193,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -1653,10 +1637,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1674,17 +1654,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 176,
-          "total": 194,
+          "pass": 177,
+          "total": 193,
           "gaps": [
             {
               "fixture": "composite-row-child-aliased-prop",
@@ -1741,10 +1717,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1762,17 +1734,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 176,
-          "total": 194,
+          "pass": 177,
+          "total": 193,
           "gaps": [
             {
               "fixture": "composite-row-child-aliased-prop",
@@ -1829,10 +1797,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1850,17 +1814,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 177,
-          "total": 194,
+          "pass": 178,
+          "total": 193,
           "gaps": [
             {
               "fixture": "composite-row-child-aliased-prop",
@@ -1911,10 +1871,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -1932,17 +1888,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 176,
-          "total": 194,
+          "pass": 177,
+          "total": 193,
           "gaps": [
             {
               "fixture": "composite-row-child-aliased-prop",
@@ -1999,10 +1951,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2020,17 +1968,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 176,
-          "total": 194,
+          "pass": 177,
+          "total": 193,
           "gaps": [
             {
               "fixture": "composite-row-child-aliased-prop",
@@ -2087,10 +2031,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2108,10 +2048,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -2262,11 +2198,11 @@
       }
     },
     "identifier": {
-      "total": 282,
+      "total": 281,
       "cells": {
         "hono": {
-          "pass": 281,
-          "total": 282,
+          "pass": 280,
+          "total": 281,
           "gaps": [
             {
               "fixture": "date-method-uncatalogued",
@@ -2277,8 +2213,8 @@
           ]
         },
         "blade": {
-          "pass": 261,
-          "total": 282,
+          "pass": 262,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2347,10 +2283,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2368,17 +2300,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 263,
-          "total": 282,
+          "pass": 264,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2437,10 +2365,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2458,17 +2382,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 262,
-          "total": 282,
+          "pass": 263,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2533,10 +2453,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2554,17 +2470,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 261,
-          "total": 282,
+          "pass": 262,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2633,10 +2545,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2654,17 +2562,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 261,
-          "total": 282,
+          "pass": 262,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2733,10 +2637,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2754,17 +2654,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 262,
-          "total": 282,
+          "pass": 263,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2827,10 +2723,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2848,17 +2740,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 261,
-          "total": 282,
+          "pass": 262,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -2927,10 +2815,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -2948,17 +2832,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 261,
-          "total": 282,
+          "pass": 262,
+          "total": 281,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
@@ -3027,10 +2907,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3048,10 +2924,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -3070,43 +2942,43 @@
       }
     },
     "index-access": {
-      "total": 13,
+      "total": 12,
       "cells": {
         "hono": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "blade": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "erb": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "go-template": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "jinja": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "minijinja": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "mojolicious": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "twig": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         },
         "xslate": {
-          "pass": 13,
-          "total": 13
+          "pass": 12,
+          "total": 12
         }
       },
       "source": {
@@ -3115,22 +2987,22 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L168"
       },
       "example": {
-        "fixture": "branch-root-prop-attr",
-        "description": "Record[key] class lookup keyed by a forwarded prop, on an early-return branch root, SSRs resolved and updates live (#2477)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/branch-root-prop-attr.ts",
-        "code": "variantClasses[variant]"
+        "fixture": "record-index-lookup-via-child-prop",
+        "description": "Object literal indexed by a prop, passed to a child component prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-index-lookup-via-child-prop.ts",
+        "code": "classes[variant]"
       }
     },
     "literal": {
-      "total": 232,
+      "total": 231,
       "cells": {
         "hono": {
-          "pass": 232,
-          "total": 232
+          "pass": 231,
+          "total": 231
         },
         "blade": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3165,10 +3037,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3180,17 +3048,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3225,10 +3089,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3240,17 +3100,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3285,10 +3141,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3300,17 +3152,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3345,10 +3193,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3360,17 +3204,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3405,10 +3245,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3420,17 +3256,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3465,10 +3297,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3480,17 +3308,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3525,10 +3349,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3540,17 +3360,13 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 219,
-          "total": 232,
+          "pass": 220,
+          "total": 231,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -3585,10 +3401,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -3600,10 +3412,6 @@
             },
             {
               "fixture": "tag-cloud",
-              "issues": []
-            },
-            {
-              "fixture": "textarea-value-ssr",
               "issues": []
             }
           ]
@@ -4482,15 +4290,15 @@
       }
     },
     "object-literal": {
-      "total": 52,
+      "total": 51,
       "cells": {
         "hono": {
-          "pass": 52,
-          "total": 52
+          "pass": 51,
+          "total": 51
         },
         "blade": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4505,8 +4313,8 @@
           ]
         },
         "erb": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4521,8 +4329,8 @@
           ]
         },
         "go-template": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4537,8 +4345,8 @@
           ]
         },
         "jinja": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4553,8 +4361,8 @@
           ]
         },
         "minijinja": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4569,8 +4377,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4585,8 +4393,8 @@
           ]
         },
         "twig": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -4601,8 +4409,8 @@
           ]
         },
         "xslate": {
-          "pass": 50,
-          "total": 52,
+          "pass": 49,
+          "total": 51,
           "gaps": [
             {
               "fixture": "preamble-cells",
@@ -7132,15 +6940,15 @@
       }
     },
     "binary:===": {
-      "total": 41,
+      "total": 42,
       "cells": {
         "hono": {
-          "pass": 41,
-          "total": 41
+          "pass": 42,
+          "total": 42
         },
         "blade": {
-          "pass": 33,
-          "total": 41,
+          "pass": 34,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7181,8 +6989,8 @@
           ]
         },
         "erb": {
-          "pass": 34,
-          "total": 41,
+          "pass": 35,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7217,8 +7025,8 @@
           ]
         },
         "go-template": {
-          "pass": 33,
-          "total": 41,
+          "pass": 34,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7259,8 +7067,8 @@
           ]
         },
         "jinja": {
-          "pass": 33,
-          "total": 41,
+          "pass": 34,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7301,8 +7109,8 @@
           ]
         },
         "minijinja": {
-          "pass": 33,
-          "total": 41,
+          "pass": 34,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7343,8 +7151,8 @@
           ]
         },
         "mojolicious": {
-          "pass": 34,
-          "total": 41,
+          "pass": 35,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7379,8 +7187,8 @@
           ]
         },
         "twig": {
-          "pass": 33,
-          "total": 41,
+          "pass": 34,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7421,8 +7229,8 @@
           ]
         },
         "xslate": {
-          "pass": 33,
-          "total": 41,
+          "pass": 34,
+          "total": 42,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7959,15 +7767,15 @@
       }
     },
     "literal:string": {
-      "total": 165,
+      "total": 164,
       "cells": {
         "hono": {
-          "pass": 165,
-          "total": 165
+          "pass": 164,
+          "total": 164
         },
         "blade": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -7994,10 +7802,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8006,16 +7810,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "erb": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8042,10 +7842,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8054,16 +7850,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "go-template": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8090,10 +7882,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8102,16 +7890,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "jinja": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8138,10 +7922,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8150,16 +7930,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "minijinja": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8186,10 +7962,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8198,16 +7970,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "mojolicious": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8234,10 +8002,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8246,16 +8010,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "twig": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8282,10 +8042,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8294,16 +8050,12 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         },
         "xslate": {
-          "pass": 155,
-          "total": 165,
+          "pass": 156,
+          "total": 164,
           "gaps": [
             {
               "fixture": "every-typeof-predicate",
@@ -8330,10 +8082,6 @@
               "issues": []
             },
             {
-              "fixture": "select-value-ssr",
-              "issues": []
-            },
-            {
               "fixture": "some-typeof-predicate",
               "issues": []
             },
@@ -8342,10 +8090,6 @@
               "issues": [
                 "https://github.com/piconic-ai/barefootjs/issues/2321"
               ]
-            },
-            {
-              "fixture": "textarea-value-ssr",
-              "issues": []
             }
           ]
         }

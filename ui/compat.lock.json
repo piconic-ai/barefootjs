@@ -2589,40 +2589,6 @@
           ]
         }
       },
-      "select-value-ssr": {
-        "blade": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "controlled <select> SSRs an invalid `value` attribute instead of `selected` on the matching option (https://github.com/piconic-ai/barefootjs/issues/2464)"
-        }
-      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -2869,40 +2835,6 @@
           "codes": [
             "BF021"
           ]
-        }
-      },
-      "textarea-value-ssr": {
-        "blade": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "controlled <textarea> SSRs a `value` attribute instead of element content (https://github.com/piconic-ai/barefootjs/issues/2465)"
         }
       }
     },
@@ -2967,10 +2899,6 @@
         "description": "Off-subset `.reduce()` body (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-typeof-body.ts"
       },
-      "select-value-ssr": {
-        "description": "Controlled select SSRs `selected` on the matching option (#2464)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/select-value-ssr.ts"
-      },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/some-typeof-predicate.ts"
@@ -2986,10 +2914,6 @@
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
-      },
-      "textarea-value-ssr": {
-        "description": "Controlled textarea SSRs its value as element content (#2465)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/textarea-value-ssr.ts"
       }
     }
   },

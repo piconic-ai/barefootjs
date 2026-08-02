@@ -488,14 +488,14 @@ function C({ rows }: { rows?: number }) {
 
   test('leaves a defaulted attr unconditional (scope did not widen)', () => {
     const { template } = compileAndGenerate(`
-function C({ value = '' }: { value?: string }) {
-  return <textarea value={value} />
+function C({ placeholder = '' }: { placeholder?: string }) {
+  return <textarea placeholder={placeholder} />
 }
 `)
-    // `value` has a destructure default → never undef → unconditional,
-    // exactly like Hono's value="".
-    expect(template).toContain('value="<%= $value %>"')
-    expect(template).not.toContain('defined $value')
+    // `placeholder` has a destructure default → never undef → unconditional,
+    // exactly like Hono's placeholder="".
+    expect(template).toContain('placeholder="<%= $placeholder %>"')
+    expect(template).not.toContain('defined $placeholder')
   })
 })
 
