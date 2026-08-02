@@ -1197,6 +1197,19 @@
         "text"
       ]
     },
+    "composite-row-child-aliased-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "composite-row-child-component": {
       "kinds": [
         "call",
@@ -4740,13 +4753,13 @@
     "array-method": 66,
     "arrow": 63,
     "binary": 79,
-    "call": 187,
+    "call": 188,
     "conditional": 23,
-    "identifier": 275,
+    "identifier": 276,
     "index-access": 12,
     "literal": 226,
     "logical": 43,
-    "member": 149,
+    "member": 150,
     "object-literal": 51,
     "template-literal": 29,
     "unary": 23,

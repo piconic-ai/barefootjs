@@ -102,6 +102,50 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.n).toEqual({ value: 0 })
   })
 
+  test('aliased destructured prop (#2460): `propName` is the CALLER-facing key, not the local binding', () => {
+    // `{ n: count }` — the caller passes `n`, the template variable (and
+    // stash entry key) is the local binding `count`. The manifest
+    // consumer (`_derive_stash_from_defaults` in the Perl runtime) reads
+    // the caller's props by `propName`, so `propName` must be `n`, not
+    // `count` — using the local name here silently drops the caller's
+    // value (the stash entry falls back to the static `value`, `null`).
+    const metadata = metadataFor(`
+      function Badge({ text, n: count }: { text: string; n: number }) {
+        return <span>{text}:{count}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults).toBeDefined()
+    // Keyed by the LOCAL binding (the template variable name)...
+    expect(defaults?.count).toEqual({ propName: 'n', value: null })
+    // ...but `propName` is the CALLER-facing key.
+    expect(defaults?.text).toEqual({ propName: 'text', value: null })
+  })
+
+  test('aliased destructured prop with a default (#2460): `propName` still resolves to the source key', () => {
+    const metadata = metadataFor(`
+      function Badge({ n: count = 7 }: { n?: number }) {
+        return <span>{count}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.count).toEqual({ propName: 'n', value: 7 })
+  })
+
+  test('un-aliased destructured prop (regression): `propName` equals the local name', () => {
+    const metadata = metadataFor(`
+      function Badge({ text, n }: { text: string; n: number }) {
+        return <span>{text}:{n}</span>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.n).toEqual({ propName: 'n', value: null })
+    expect(defaults?.text).toEqual({ propName: 'text', value: null })
+  })
+
   test('memo derived from a signal evaluates through the chain', () => {
     const metadata = metadataFor(`
       'use client'

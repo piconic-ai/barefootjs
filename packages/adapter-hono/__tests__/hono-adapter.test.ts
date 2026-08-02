@@ -27,10 +27,6 @@ runAdapterConformanceTests({
   // the line here (plus the matching render-divergences entries in the
   // other adapter packages).
   skipJsx: [
-    // Aliased destructured prop `{ n: count }` loses its rename in the
-    // emitted destructure, so the aliased prop is always `undefined`.
-    // https://github.com/piconic-ai/barefootjs/issues/2460
-    'aliased-destructured-prop',
     // `<select value={sig()}>` SSRs an invalid `value` attribute instead
     // of `selected` on the matching option.
     // https://github.com/piconic-ai/barefootjs/issues/2464
