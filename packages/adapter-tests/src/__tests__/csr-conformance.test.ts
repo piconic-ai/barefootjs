@@ -270,11 +270,12 @@ describe('CSR Conformance Tests', () => {
     // https://github.com/piconic-ai/barefootjs/issues/2465
     'select-value-ssr',
     'textarea-value-ssr',
-    // #2463: the CSR template lambda references `loading()` out of
-    // scope (declared inside init) — evaluating it throws
-    // `ReferenceError: loading is not defined`. Same root cause as the
-    // missing branch-switch effect the issue tracks.
-    // https://github.com/piconic-ai/barefootjs/issues/2463
+    // #2463 FIXED: the fixture now lowers to the root-ternary plan and
+    // its template evaluates cleanly — but the synthetic scope wrapper
+    // has style="display:contents" before bf-s, the same CSR/SSR
+    // attribute-ordering divergence that skips `top-level-ternary`
+    // above (#968). Graduates to a full pass if that ordering is ever
+    // unified.
     'signal-early-return',
   ])
 

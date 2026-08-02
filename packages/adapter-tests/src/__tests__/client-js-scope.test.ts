@@ -41,13 +41,6 @@ interface KnownHole {
 }
 
 const KNOWN_UNDECLARED: Record<string, KnownHole> = {
-  // #2463: signal-conditioned early return — the CSR template embeds the
-  // branch ternary but `loading` is declared inside init; one facet of
-  // the missing branch-switch lowering the issue tracks.
-  'signal-early-return': {
-    names: ['loading'],
-    issue: 'https://github.com/piconic-ai/barefootjs/issues/2463',
-  },
   // #2075: the env-signal getter (`searchParams` / `sp`) is a
   // per-request binding wired at init/hydration; the template lambda
   // references it at module scope.
@@ -67,6 +60,9 @@ const KNOWN_UNDECLARED: Record<string, KnownHole> = {
     names: ['searchParams'],
     issue: 'https://github.com/piconic-ai/barefootjs/issues/2075',
   },
+  // #2463 (signal-conditioned early return) is FIXED — the statement
+  // form now lowers to the root-ternary insert() plan, so its template
+  // substitutes the signal initial instead of leaking `loading`.
   // #2468 (CSR template lambdas referencing init-scoped bindings) is
   // FIXED — the seven fixtures it pinned (button, tooltip, kbd, command,
   // map-index-handler, reactive-props, props-reactivity-comparison)
