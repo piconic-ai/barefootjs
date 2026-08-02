@@ -2,7 +2,7 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
+import { type IRNode, type IRElement, type IRComponent, type IRLoop, type IRProp, type IRIfStatement, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM } from './utils.ts'
 import { classifyReactivity, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings } from './reactivity.ts'
@@ -647,6 +647,40 @@ export function collectElements(
       // attrs get collected under the parent's bindEvents path.
       descend(true)
     },
+    // #2463 Defect 1: mirrors the `conditional:` arm immediately above —
+    // same `decideWrapFromAstFlags`/`!inCond` gate, same recursive descent —
+    // for a component-level `if (signal()) return <A/>; return <B/>` early
+    // return. Before this arm existed there was no `ifStatement:` visitor at
+    // all, so `walkIR` fell through to `descendDefault` (walker.ts) and the
+    // branches were collected as flat top-level content with
+    // `insideConditional` never set: no entry ever reached
+    // `ctx.conditionalElements`, so `emitConditionalUpdates` had nothing to
+    // iterate and no `insert()`/`insertRoot()` call was ever emitted — the
+    // click handler wired fine (ordinary top-level event collection), but
+    // nothing subscribed to the signal, so the DOM never updated.
+    //
+    // Pushes through `buildConditionalMetadataFromIfStatement` (not
+    // `buildConditionalMetadata`) — same `ConditionalElement` shape, same
+    // `summarizeBranch`/`irToHtmlTemplate` machinery, just adapted from
+    // `consequent`/`alternate` instead of `whenTrue`/`whenFalse`, and marked
+    // `rootSwap: true` so the emitter calls the runtime's `insertRoot()`
+    // instead of `insert()` (see `ConditionalElement.rootSwap`'s docstring —
+    // an if-statement's branches have no synthetic wrapper to search within
+    // the way a root ternary does, #968).
+    //
+    // A nested `if-statement` (an else-if chain, reached via this node's own
+    // `alternate`) is visited too via `descend(true)`, but `!inCond` skips
+    // building metadata for it — same asymmetric limitation nested ternaries
+    // have relative to `collectBranchConditionals` before #2347, tracked as
+    // a known follow-up rather than fixed here (out of scope for the single
+    // if/else this issue reports; only its own condition's reactivity would
+    // be silently frozen, not this node's).
+    ifStatement: ({ node: c, scope: inCond, descend }) => {
+      if (c.slotId && decideWrapFromAstFlags(c).wrap && !inCond) {
+        ctx.conditionalElements.push(buildConditionalMetadataFromIfStatement(c, ctx, siblingOffsets))
+      }
+      descend(true)
+    },
     loop: ({ node: l, scope: inCond }) => {
       // Loops inside conditionals are handled by the conditional template's inline
       // .map() expression. Don't collect them separately — insert() re-renders the
@@ -879,8 +913,9 @@ export function collectElements(
       })
       descend()
     },
-    // fragment / if-statement / async use the walker's default auto-descent
-    // with the same scope (insideConditional flag unchanged).
+    // fragment / async use the walker's default auto-descent with the same
+    // scope (insideConditional flag unchanged). `if-statement` has its own
+    // arm above (#2463 Defect 1) — it is no longer auto-descended.
   })
 }
 
@@ -1207,6 +1242,56 @@ function buildConditionalMetadata(
   ctx: ClientJsContext,
   siblingOffsets: Map<IRLoop, IRNode[]>,
 ): ConditionalElement {
+  return buildConditionalMetadataCore(node.slotId!, node.condition, node.whenTrue, node.whenFalse, ctx, siblingOffsets)
+}
+
+/**
+ * Build conditional metadata for a reactive component-level `if`/`else`
+ * early return (#2463 Defect 1). `IRIfStatement` has no `IRConditional` to
+ * delegate to — it carries `consequent`/`alternate` rather than
+ * `whenTrue`/`whenFalse` — so this maps that shape onto the same
+ * `buildConditionalMetadataCore` every ternary/`&&`/`||` conditional goes
+ * through, marking the result `rootSwap: true` (see that flag's docstring
+ * on `ConditionalElement`) so the emitter routes it to the runtime's
+ * `insertRoot()` instead of `insert()`.
+ *
+ * `alternate` can be `null` (a component with an early return but no final
+ * `return <JSX/>` — a type error in the user's own source, since the
+ * function then implicitly returns `undefined` on that path, but not this
+ * collector's job to diagnose). Falls back to a static `null` expression
+ * node, mirroring `transformLogicalAnd`'s `whenFalse` for a bare `a && <X/>`.
+ */
+function buildConditionalMetadataFromIfStatement(
+  node: IRIfStatement,
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, IRNode[]>,
+): ConditionalElement {
+  const alternate: IRNode = node.alternate ?? EMPTY_ALTERNATE
+  return {
+    ...buildConditionalMetadataCore(node.slotId!, node.condition, node.consequent, alternate, ctx, siblingOffsets),
+    rootSwap: true,
+  }
+}
+
+/** Fallback `IRNode` for `IRIfStatement.alternate === null` — see `buildConditionalMetadataFromIfStatement`. */
+const EMPTY_ALTERNATE: IRNode = {
+  type: 'expression',
+  expr: 'null',
+  typeInfo: { kind: 'primitive', raw: 'null', primitive: 'null' },
+  reactive: false,
+  slotId: null,
+  loc: { file: '<synthetic>', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+  origin: { phase: 'tick', scope: 'template', effect: 'pure', freeRefs: [] },
+}
+
+function buildConditionalMetadataCore(
+  slotId: string,
+  condition: string,
+  whenTrue: IRNode,
+  whenFalse: IRNode,
+  ctx: ClientJsContext,
+  siblingOffsets: Map<IRLoop, IRNode[]>,
+): ConditionalElement {
   const restNames = buildRestSpreadNames(ctx)
   // Use loopDepth=-1 so the first loop encountered inside the branch emits
   // data-key (depth 0) for its items, matching the mapArray item template
@@ -1217,12 +1302,12 @@ function buildConditionalMetadata(
   // route Element/Node returns through `__bfSlot` instead of being
   // stringified by the surrounding template literal.
   return {
-    slotId: node.slotId!,
-    condition: node.condition,
-    whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames, -1, undefined, '__slots'),
-    whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames, -1, undefined, '__slots'),
-    whenTrue: summarizeBranch(node.whenTrue, ctx, siblingOffsets),
-    whenFalse: summarizeBranch(node.whenFalse, ctx, siblingOffsets),
+    slotId,
+    condition,
+    whenTrueHtml: irToHtmlTemplate(whenTrue, restNames, -1, undefined, '__slots'),
+    whenFalseHtml: irToHtmlTemplate(whenFalse, restNames, -1, undefined, '__slots'),
+    whenTrue: summarizeBranch(whenTrue, ctx, siblingOffsets),
+    whenFalse: summarizeBranch(whenFalse, ctx, siblingOffsets),
   }
 }
 

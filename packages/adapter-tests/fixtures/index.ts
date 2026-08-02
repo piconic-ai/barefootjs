@@ -445,6 +445,12 @@ import { fixture as aliasedDestructuredProp } from './aliased-destructured-prop'
 import { fixture as selectValueSsr } from './select-value-ssr'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 import { fixture as signalEarlyReturn } from './signal-early-return'
+// #2463 follow-up: `signal-early-return` pins the plain-text-branch shape;
+// this pins the branch-contains-a-child-component shape (insertRoot's
+// swap path tearing down and re-initializing a `renderChild`-mounted
+// component), which neither `signal-early-return` nor `button`/`kbd`/
+// `Slot`'s (dead, destructured-prop-conditioned) `asChild` exercises.
+import { fixture as ifStatementChildSwap } from './if-statement-child-swap'
 import { fixture as logicalAndZero } from './logical-and-zero'
 
 import type { JSXFixture } from '../src/types'
@@ -767,5 +773,6 @@ export const jsxFixtures: JSXFixture[] = [
   selectValueSsr,
   textareaValueSsr,
   signalEarlyReturn,
+  ifStatementChildSwap,
   logicalAndZero,
 ]

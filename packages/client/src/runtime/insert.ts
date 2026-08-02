@@ -10,7 +10,7 @@ import { createEffect, untrack } from '@barefootjs/client/reactive'
 import { find, findCondTarget, commentsInScope } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
 import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
-import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
+import { BF_COND, BF_SCOPE, BF_LOOP_ITEM, BF_HOST, BF_AT, BF_KEY, BF_ROOT } from '@barefootjs/shared'
 
 /**
  * Resolved search context for an `insert()` call (#1665).
@@ -163,6 +163,91 @@ function evalBranchTemplate(branch: BranchConfig): BranchTemplateResult {
   return untrack(() => normalizeTemplate(branch.template()))
 }
 
+/**
+ * Shared branch-selection state machine for `insert()` and `insertRoot()`
+ * (#2463 follow-up). Both functions must agree on WHEN a branch swap
+ * happens and HOW the condition is read — first-run vs. a real change,
+ * the `TypeError` swallow, "skip if unchanged", cleanup-before-swap
+ * ordering — so that logic is factored out here ONCE rather than kept in
+ * sync by hand across two `createEffect` bodies. Only WHERE the swap lands
+ * differs between the two callers (a `[bf-c]`-queried descendant vs. the
+ * scope root itself), which is exactly what `hooks` parameterises:
+ *
+ *   - `hydrate(branch)`: first run. Reconcile whatever's already in the
+ *     DOM (SSR or a prior CSR create) with `branch` however the caller's
+ *     addressing scheme requires, and return the element `bindEvents`
+ *     should be called with.
+ *   - `swap(branch)`: a real branch change. Build the new branch's DOM,
+ *     install it, and return the element `bindEvents` should be called
+ *     with.
+ *
+ * Neither hook runs until the effect actually needs it — `runConditionalEffect`
+ * itself never touches the DOM.
+ */
+function runConditionalEffect(
+  conditionFn: () => boolean,
+  whenTrue: BranchConfig,
+  whenFalse: BranchConfig,
+  bfId: string | undefined,
+  hooks: {
+    hydrate: (branch: BranchConfig) => Element
+    swap: (branch: BranchConfig) => Element
+  },
+): void {
+  let prevCond: boolean | undefined
+  let branchCleanup: (() => void) | null = null
+
+  createEffect(() => {
+    let currCond: boolean
+    try {
+      currCond = Boolean(conditionFn())
+    } catch (err) {
+      // Condition evaluation may throw TypeError if parent branch is inactive
+      // (e.g., selectedMail().read when selectedMail() is null).
+      // Only swallow TypeErrors; rethrow unexpected errors to avoid hiding bugs.
+      if (err instanceof TypeError) {
+        currCond = false
+      } else {
+        throw err
+      }
+    }
+    const isFirstRun = prevCond === undefined
+    const prevVal = prevCond
+    prevCond = currCond
+
+    // Select the appropriate branch
+    const branch = currCond ? whenTrue : whenFalse
+
+    if (isFirstRun) {
+      const bindScope = hooks.hydrate(branch)
+      // Pass isFirstRun so branch composite loops can skip the
+      // wipe-then-rebuild path that is only needed for subsequent branch
+      // swaps (the SSR-rendered DOM already matches the data and mapArray
+      // reconciles by key from it).
+      const cleanup = branch.bindEvents(bindScope, { isFirstRun: true })
+      branchCleanup = typeof cleanup === 'function' ? cleanup : null
+      return
+    }
+
+    // Skip if condition hasn't changed.
+    // Reactive updates within a branch are handled by the effect system,
+    // not by DOM replacement. Only replace DOM when the branch switches.
+    if (currCond === prevVal) {
+      return
+    }
+
+    // Dispose previous branch's scoped effects before swapping DOM
+    if (branchCleanup) {
+      branchCleanup()
+      branchCleanup = null
+    }
+
+    const bindScope = hooks.swap(branch)
+    const cleanup = branch.bindEvents(bindScope, { isFirstRun: false })
+    branchCleanup = typeof cleanup === 'function' ? cleanup : null
+  }, bfId)
+}
+
 
 /**
  * Handle conditional DOM updates using branch configurations.
@@ -220,31 +305,13 @@ export function insert(
     }
   }
 
-  let prevCond: boolean | undefined
-  let branchCleanup: (() => void) | null = null
-
-  createEffect(() => {
-    let currCond: boolean
-    try {
-      currCond = Boolean(conditionFn())
-    } catch (err) {
-      // Condition evaluation may throw TypeError if parent branch is inactive
-      // (e.g., selectedMail().read when selectedMail() is null).
-      // Only swallow TypeErrors; rethrow unexpected errors to avoid hiding bugs.
-      if (err instanceof TypeError) {
-        currCond = false
-      } else {
-        throw err
-      }
-    }
-    const isFirstRun = prevCond === undefined
-    const prevVal = prevCond
-    prevCond = currCond
-
-    // Select the appropriate branch
-    const branch = currCond ? whenTrue : whenFalse
-
-    if (isFirstRun) {
+  // The two hooks below are the ONLY thing that differs from `insertRoot()`
+  // — see `runConditionalEffect`'s docstring. Both resolve to
+  // `region.bindScope` (the same element on every call for a non-comment
+  // scope), reconciling the DOM against `branch` via the `[bf-c="id"]`
+  // query addressing this function has always used.
+  runConditionalEffect(conditionFn, whenTrue, whenFalse, bfId, {
+    hydrate: (branch) => {
       // Hydration mode: check if existing DOM matches expected branch.
       // If not, swap first (e.g., SSR rendered whenFalse but now we need whenTrue).
       setParentScopeId(parentScopeId)
@@ -284,51 +351,141 @@ export function insert(
         // We need to insert the actual content on first run.
         updateFragmentConditional(region, id, result)
       }
-
-      // Bind events to the (possibly updated) SSR element. Pass isFirstRun
-      // so branch composite loops can skip the wipe-then-rebuild path that
-      // is only needed for subsequent branch swaps (the SSR-rendered DOM
-      // already matches the data and mapArray reconciles by key from it).
-      const cleanup = branch.bindEvents(region.bindScope, { isFirstRun: true })
-      branchCleanup = typeof cleanup === 'function' ? cleanup : null
-
       // Auto-focus on first run too (for components created via createComponent with editing=true)
       autoFocusConditionalElement(region, id)
-      return
-    }
-
-    // Skip if condition hasn't changed.
-    // Reactive updates within a branch are handled by the effect system,
-    // not by DOM replacement. Only replace DOM when the branch switches.
-    if (currCond === prevVal) {
-      return
-    }
-
-    // Dispose previous branch's scoped effects before swapping DOM
-    if (branchCleanup) {
-      branchCleanup()
-      branchCleanup = null
-    }
-
-    // Branch changed: swap DOM and bind events.
-    setParentScopeId(parentScopeId)
-    let result: BranchTemplateResult
-    try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
-    if (isFragmentCond) {
-      updateFragmentConditional(region, id, result)
-    } else {
-      updateElementConditional(region, id, result)
-    }
-
-    // Bind events to the newly inserted element (branch swap: not first run).
-    const cleanup = branch.bindEvents(region.bindScope, { isFirstRun: false })
-    branchCleanup = typeof cleanup === 'function' ? cleanup : null
-
-    // Auto-focus elements with autofocus attribute (for dynamically created elements)
-    autoFocusConditionalElement(region, id)
-  }, bfId)
+      return region.bindScope
+    },
+    swap: (branch) => {
+      // Branch changed: swap DOM and bind events.
+      setParentScopeId(parentScopeId)
+      let result: BranchTemplateResult
+      try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
+      if (isFragmentCond) {
+        updateFragmentConditional(region, id, result)
+      } else {
+        updateElementConditional(region, id, result)
+      }
+      // Auto-focus elements with autofocus attribute (for dynamically created elements)
+      autoFocusConditionalElement(region, id)
+      return region.bindScope
+    },
+  })
 }
 
+/**
+ * Root-level conditional swap for a component-level `if`/`else` early
+ * return (#2463 Defect 1) — `if (loading()) return <button/>; return <p/>`.
+ *
+ * Unlike `insert()`, there is no stable wrapper element to search within:
+ * an `IRIfStatement`'s branches are each the WHOLE component, so each
+ * branch's own root element carries `bf-s` directly (no `bf-c`, no
+ * `<div style="display:contents">` synthetic wrapper the way a root
+ * ternary gets — #968). `scope` — the SSR/CSR-mounted root — IS the swap
+ * target, tracked here by direct reference (`currentEl`) rather than by
+ * `[bf-c="id"]` DOM query the way `insert()`'s `updateElementConditional`
+ * works. `id` is accepted only for signature symmetry with `insert()`
+ * (call-site readability / future tooling); it is never used to query the
+ * DOM.
+ *
+ * On a real branch swap, `bf-s` / `bf-h` / `bf-m` / `bf-r` / `data-key` are
+ * copied from the outgoing root onto the incoming one (`copyRootIdentityAttrs`)
+ * so this component's scope identity survives the swap — anything doing
+ * `.closest('[bf-s]')` from inside the new branch (nested child components,
+ * `renderChild`'s `bf-h` stamping) still resolves to the same scope id a
+ * parent may have already recorded.
+ *
+ * Shares `runConditionalEffect` with `insert()` — the same
+ * condition-evaluation / first-run / skip-unchanged / cleanup-ordering
+ * state machine — so the two functions can only ever disagree on WHERE a
+ * swap lands (a `[bf-c]`-queried descendant vs. this root element by
+ * reference), never on WHEN one happens.
+ */
+export function insertRoot(
+  scope: Element,
+  id: string,
+  conditionFn: () => boolean,
+  whenTrue: BranchConfig,
+  whenFalse: BranchConfig,
+  bfId?: string
+): void {
+  if (!scope) return
+
+  // Invariant across swaps: an if-statement's branches are each the WHOLE
+  // component, so the scope id a parent may already reference never changes,
+  // only which element currently carries it.
+  const parentScopeId = scope.getAttribute(BF_SCOPE)
+
+  let currentEl: Element = scope
+
+  runConditionalEffect(conditionFn, whenTrue, whenFalse, bfId, {
+    // Hydration mode: reuse the SSR-rendered root as-is — no
+    // signature-mismatch swap the way `insert()`'s hydration path runs for
+    // a `bf-c`-marked branch. Deliberately simpler, for two reasons:
+    //
+    // 1. Correctness: the SSR default and the client's initial condition
+    //    read are baked from the SAME source for every shape this runs
+    //    for — a signal's `createSignal(initialValue)` literally is the
+    //    SSR default, and a prop's initial value comes from the same
+    //    `bf-p`-embedded props both sides render from. There is no window
+    //    for the two to disagree the way a nested `insert()` legitimately
+    //    can (e.g. a nullable-access branch an outer condition guards).
+    // 2. Safety: comparing raw template-string opening tags against the
+    //    live DOM's `outerHTML` is fragile here in a way it isn't for
+    //    `insert()`'s nested branches — root branches commonly carry
+    //    `children` (e.g. `<Button>Click me</Button>`), which the
+    //    template only has access to via `__bfSlot`'s live-Node capture,
+    //    not as data reconstructable from `_p` alone at hydration time. A
+    //    spurious swap here (triggered by something as harmless as an
+    //    empty reactive-attribute ternary leaving a double space in the
+    //    literal template text, which `outerHTML` normalises away) would
+    //    replace the real SSR content with an empty re-evaluation of
+    //    `children` — silently dropping the button's own label. Caught
+    //    exactly that way by the `button` fixture's real-browser hydration
+    //    test.
+    hydrate: () => currentEl,
+    swap: (branch) => {
+      setParentScopeId(parentScopeId)
+      let result: BranchTemplateResult
+      try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
+      const swapped = swapRootElement(currentEl, result)
+      if (swapped) currentEl = swapped
+      return currentEl
+    },
+  })
+}
+
+/** Scope-identity attributes that must survive an `insertRoot()` swap —
+ *  everything a parent (or this component's own init closure) might use to
+ *  re-find this component's root by `bf-s` / stamp a child under it via
+ *  `bf-h` / `bf-m` / carry its loop key / its "not a nested child" marker. */
+const ROOT_IDENTITY_ATTRS = [BF_SCOPE, BF_HOST, BF_AT, BF_KEY, BF_ROOT]
+
+function copyRootIdentityAttrs(oldEl: Element, newEl: Element): void {
+  for (const attr of ROOT_IDENTITY_ATTRS) {
+    const v = oldEl.getAttribute(attr)
+    if (v != null) newEl.setAttribute(attr, v)
+  }
+}
+
+/**
+ * Replace `currentEl` with the parsed branch template's root, preserving
+ * scope-identity attributes. Returns the new element, or `null` when the
+ * branch rendered nothing usable (defensive — every fixture that reaches
+ * `insertRoot()` today renders exactly one element per branch).
+ */
+function swapRootElement(currentEl: Element, result: BranchTemplateResult): Element | null {
+  const insertParent = currentEl.parentNode instanceof Element ? currentEl.parentNode : null
+  const fragment = spliceSlots(parseHTML(result.html, insertParent), result.slots)
+  const newRoot = fragment.firstChild
+  if (!newRoot || newRoot.nodeType !== Node.ELEMENT_NODE) return null
+  copyRootIdentityAttrs(currentEl, newRoot as Element)
+  // Move by identity (not clone) so slot-spliced live Nodes keep their
+  // bindings, and so any sibling nodes the branch template produced (a
+  // multi-root fragment) land in the same place — mirrors insert()'s
+  // updateFragmentConditional node-by-node move.
+  currentEl.replaceWith(fragment)
+  return newRoot as Element
+}
 
 /**
  * Auto-focus elements with autofocus attribute within a conditional slot.

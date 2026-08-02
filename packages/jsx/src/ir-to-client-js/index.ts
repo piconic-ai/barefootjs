@@ -14,7 +14,7 @@ import { collectElements, computeLoopSiblingOffsets } from './collect-elements.t
 import { generateInitFunction } from './generate-init.ts'
 import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.ts'
 import { addConstantPropRefsToSet } from './init-declarations.ts'
-import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
+import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, withSignalMemoUnsafeNames } from './html-template.ts'
 import { PROPS_PARAM } from './utils.ts'
 import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-registration.ts'
 import { buildEnvFromCtx } from './compute-inlinability.ts'
@@ -250,6 +250,9 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
   const graph = buildReferencesGraph(ctx, ir.root)
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, ir.root)
+  // #2463 Defect 2: see `withSignalMemoUnsafeNames`'s docstring — the static-
+  // template gate needs signal/memo names unioned in, not just unsafe consts.
+  const staticTemplateUnsafeNames = withSignalMemoUnsafeNames(ctx, unsafeLocalNames)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
   const restSpreadNames = new Set<string>()
@@ -258,7 +261,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   let templateHtml: string | undefined
 
-  if (canGenerateStaticTemplate(ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
+  if (canGenerateStaticTemplate(ir.root, propNamesForStaticCheck, inlinableConstants, staticTemplateUnsafeNames)) {
     templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
   }
 

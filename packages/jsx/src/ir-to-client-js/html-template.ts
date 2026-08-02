@@ -1860,6 +1860,37 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
 }
 
 /**
+ * The full "does not exist at module scope" name set for
+ * `canGenerateStaticTemplate`'s `unsafeLocalNames` parameter (#2463 Defect
+ * 2 follow-up) — every signal getter and memo name, UNIONED with whatever
+ * unsafe branch-local consts `buildInlinableConstants` already found.
+ *
+ * Built from `buildSignalMemoEnv`'s substitution keys rather than reading
+ * `ctx.signals`/`ctx.memos` directly, so this stays exactly the same name
+ * set the CSR builder (`generateCsrTemplate`) substitutes — no second,
+ * hand-rolled enumeration that could drift from it. That also means an
+ * env-reader signal (`searchParams()`, #2057 — a real runtime import, not
+ * an init-local) is correctly excluded: `buildSignalMemoEnv` already skips
+ * it (it has nothing to substitute), and it genuinely IS callable at
+ * module scope, unlike an ordinary `createSignal` getter.
+ *
+ * One call site, used by every caller of `canGenerateStaticTemplate` that
+ * has a `ClientJsContext` in hand (`emit-registration.ts`, `index.ts`) —
+ * so "signal/memo names count as unsafe" is asserted once, not
+ * re-derived per call site.
+ */
+export function withSignalMemoUnsafeNames(
+  ctx: ClientJsContext,
+  unsafeLocalNames: Set<string>,
+): Set<string> {
+  const env = buildSignalMemoEnv(ctx.signals, ctx.memos, ctx.propsObjectName)
+  if (env.substitutions.size === 0) return unsafeLocalNames
+  const combined = new Set(unsafeLocalNames)
+  for (const name of env.substitutions.keys()) combined.add(name)
+  return combined
+}
+
+/**
  * Check if a component can have a simple static template generated.
  * Returns false if the component has:
  * - Loops (which use dynamic signal arrays)
@@ -1873,7 +1904,12 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
  * @param node - IR node to check
  * @param propNames - Set of prop names (safe to reference via props parameter)
  * @param inlinableConstants - Constants that can be substituted with their values
- * @param unsafeLocalNames - Local names that cannot be used in module-scope templates
+ * @param unsafeLocalNames - Names that don't exist at module scope — branch-local
+ *   consts `buildInlinableConstants` couldn't inline, AND (#2463 Defect 2 follow-up)
+ *   every signal getter / memo name. Callers with a `ClientJsContext` should pass
+ *   `withSignalMemoUnsafeNames(ctx, unsafeLocalNames)` rather than the bare
+ *   `buildInlinableConstants` output, or a signal-conditioned node (a `conditional`
+ *   or `if-statement` reading `mySignal()`) will wrongly pass this check.
  */
 export function canGenerateStaticTemplate(
   node: IRNode,
@@ -1881,6 +1917,12 @@ export function canGenerateStaticTemplate(
   inlinableConstants?: Map<string, string>,
   unsafeLocalNames?: Set<string>
 ): boolean {
+  // `unsafeLocalNames` is expected to already include every signal getter
+  // and memo name (the caller unions in `buildSignalMemoEnv`'s substitution
+  // keys — see `emit-registration.ts` / `index.ts`), not just branch-local
+  // consts — so this one check is sufficient wherever a node's `origin`
+  // carries free-reference data: no separate "does the condition call
+  // something" string probe is needed alongside it.
   const hasUnsafeRef = (freeIds: ReadonlySet<string> | undefined): boolean => {
     return !!(unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIds, unsafeLocalNames))
   }
@@ -1924,10 +1966,13 @@ export function canGenerateStaticTemplate(
       return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
 
     case 'conditional':
+      // The condition's own free identifiers (`node.origin.freeRefs`,
+      // resolved from the TS AST at IR-build time — `resolveFreeRefs` in
+      // `transformConditional`/`transformNullishCoalescing`/etc, never
+      // re-derived here from the string). A signal-getter or memo name
+      // referenced here disqualifies module scope the same way an unsafe
+      // branch-local const does.
       if (hasUnsafeRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
-      if (node.condition.includes('()') && !isSimplePropExpression(node.condition, propNames)) {
-        return false
-      }
       return canGenerateStaticTemplate(node.whenTrue, propNames, inlinableConstants, unsafeLocalNames) &&
              canGenerateStaticTemplate(node.whenFalse, propNames, inlinableConstants, unsafeLocalNames)
 
@@ -1935,6 +1980,15 @@ export function canGenerateStaticTemplate(
       return node.children.every((c) => canGenerateStaticTemplate(c, propNames, inlinableConstants, unsafeLocalNames))
 
     case 'if-statement':
+      // #2463 Defect 2: mirrors the `conditional` arm above exactly — same
+      // `hasUnsafeRef` structural check against the condition's own
+      // `origin.freeRefs`, no string probe. Before this, the arm ran no
+      // check on the condition at all, so a signal-conditioned early
+      // return routed to the static builder and its module-scope template
+      // referenced the signal getter directly — a `ReferenceError` at CSR
+      // mount, since the getter is declared inside `init`, not in template
+      // scope.
+      if (hasUnsafeRef(freeIdsFromRefs(node.origin?.freeRefs))) return false
       if (!canGenerateStaticTemplate(node.consequent, propNames, inlinableConstants, unsafeLocalNames)) {
         return false
       }

@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, hydrate, initChild, isSSRPortal, onCleanup, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createPortal, createSignal, escapeAttr, hydrate, initChild, insertRoot, isSSRPortal, onCleanup, provideContext, qsa, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var DialogContext = DialogContext ?? createContext()
 
@@ -51,18 +51,36 @@ export function initDialogTrigger(__scope, _p = {}) {
     if (!_p.asChild) warnIfMisusedTrigger(el, 'DialogTrigger')
   }
 
-  const [_s1, _s0] = $(__scope, 's1', 's0')
+  const [_s2] = $(__scope, 's2')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogTriggerClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
-      _s0.disabled = !!(_p.disabled ?? false)
+  insertRoot(__scope, 's2', () => _p.asChild, {
+    template: () => { const __slots = []; return { html: `<span data-slot="dialog-trigger" style="display:contents" bf="s1">${__bfSlot(_p.children, __slots)}</span>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s1] = $(__branchScope, 's1')
+      if (_s1) (handleMount)(_s1)
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<button data-slot="dialog-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${dialogTriggerClasses} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${dialogTriggerClasses} ${_p.className ?? ''}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} bf="s0">${__bfSlot(_p.children, __slots)}</button>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s0] = $(__branchScope, 's0')
+      if (_s0) (handleMount)(_s0)
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = _p.id; if (__v != null) __ra_s0.setAttribute('id', String(__v)); else __ra_s0.removeAttribute('id') }
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `${dialogTriggerClasses} ${_p.className ?? ''}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          __ra_s0.disabled = !!(_p.disabled ?? false)
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
-  if (_s1) (handleMount)(_s1)
-  if (_s0) (handleMount)(_s0)
 }
 
 hydrate('DialogTrigger', { init: initDialogTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="dialog-trigger" style="display:contents" bf="s1">${_p.children}</span>` : `<button data-slot="dialog-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} bf="s0">${_p.children}</button>`}` })

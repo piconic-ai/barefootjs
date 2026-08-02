@@ -264,12 +264,6 @@ describe('CSR Conformance Tests', () => {
     // https://github.com/piconic-ai/barefootjs/issues/2465
     'select-value-ssr',
     'textarea-value-ssr',
-    // #2463: the CSR template lambda references `loading()` out of
-    // scope (declared inside init) — evaluating it throws
-    // `ReferenceError: loading is not defined`. Same root cause as the
-    // missing branch-switch effect the issue tracks.
-    // https://github.com/piconic-ai/barefootjs/issues/2463
-    'signal-early-return',
   ])
 
   for (const fixture of jsxFixtures) {

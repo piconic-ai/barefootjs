@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, insertRoot, lazySlots, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2606,21 +2606,36 @@ export function initIcon(__scope, _p = {}) {
       return null
     }
 
-  const [_s1, _s0] = $(__scope, 's1', 's0')
+  const [_s12, _s1] = $(__scope, 's12', 's1')
   const [_s11, _s10, _s9, _s8, _s7, _s6, _s5, _s4, _s3, _s2] = $c(__scope, 's11', 's10', 's9', 's8', 's7', 's6', 's5', 's4', 's3', 's2')
 
-  createEffect(() => {
-    if (_s1) {
-      { const __v = sizeMap[(_p.size ?? 'md')]; if (__v != null) _s1.setAttribute('width', String(__v)); else _s1.removeAttribute('width') }
-      { const __v = sizeMap[(_p.size ?? 'md')]; if (__v != null) _s1.setAttribute('height', String(__v)); else _s1.removeAttribute('height') }
-      { const __v = (buttLinecapIcons).includes(_p.name) ? 'butt' : 'round'; if (__v != null) _s1.setAttribute('stroke-linecap', String(__v)); else _s1.removeAttribute('stroke-linecap') }
-      { const __v = `shrink-0 ${(_p.className ?? '')}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+  insertRoot(__scope, 's12', () => name === 'github', {
+    template: () => { const __slots = []; return { html: `${renderChild('GitHubIcon', {size: size, className: className}, undefined, 's11')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's11')
+      if (__c0) initChild('GitHubIcon', __c0, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
     }
-  })
-
-  createEffect(() => {
-    if (_s0) {
-      { const __v = strokePaths[_p.name]; if (__v != null) _s0.setAttribute('d', String(__v)); else _s0.removeAttribute('d') }
+  }, {
+    template: () => { const __slots = []; return { html: ``, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's10')
+      if (__c0) initChild('SearchIcon', __c0, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c1] = $c(__branchScope, 's9')
+      if (__c1) initChild('SettingsIcon', __c1, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c2] = $c(__branchScope, 's8')
+      if (__c2) initChild('GlobeIcon', __c2, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c3] = $c(__branchScope, 's7')
+      if (__c3) initChild('LogOutIcon', __c3, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c4] = $c(__branchScope, 's6')
+      if (__c4) initChild('CircleHelpIcon', __c4, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c5] = $c(__branchScope, 's5')
+      if (__c5) initChild('CalendarIcon', __c5, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c6] = $c(__branchScope, 's4')
+      if (__c6) initChild('GripVerticalIcon', __c6, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c7] = $c(__branchScope, 's3')
+      if (__c7) initChild('LoaderCircleIcon', __c7, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c8] = $c(__branchScope, 's2')
+      if (__c8) initChild('PanelLeftIcon', __c8, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
     }
   })
 

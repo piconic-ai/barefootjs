@@ -1914,6 +1914,37 @@ function collectDomBindings(
       break
     }
     case 'if-statement': {
+      // #2463: mirrors the `conditional` case immediately above — same
+      // `decideWrapFromAstFlags` gate, same binding shape — for a
+      // component-level `if`/`else` early return. Without this arm, a
+      // reactive if-statement's own condition-effect id (the
+      // `insertRoot()` call's `<Component>#binding:<slotId>` in profile
+      // mode, `stringifyInsert`'s `condBfId`) has no matching entry in
+      // `bf debug graph`'s dependency graph or the profiler's id index —
+      // caught exactly that way by `profile-binding-ids.test.ts`'s "every
+      // emitted #binding id resolves" invariant once the emitter started
+      // giving if-statement conditions a slot.
+      const decision = decideWrapFromAstFlags(node)
+      const loopReactive =
+        loopParams.size > 0 && (node.origin?.freeRefs?.some(r => loopParams.has(r.name)) ?? false)
+      if ((decision.wrap || loopReactive) && node.slotId) {
+        const deps = extractReactiveDeps(node.condition, signalGetters, memoNames)
+        bindings.push({
+          kind: 'dom',
+          label: `conditional "${node.slotId}"`,
+          slotId: node.slotId,
+          deps,
+          type: 'conditional',
+          classification:
+            (decision.wrap && decision.reason === 'proven-reactive') || loopReactive
+              ? 'reactive'
+              : 'fallback',
+          expression: node.condition,
+          wrapReason: decision.wrap ? decision.reason : 'string-reactive',
+          loc: node.loc,
+          jsxPreview: `if (${truncateExpr(node.condition)}) { ... } else { ... }`,
+        })
+      }
       collectDomBindings(node.consequent, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)
       if (node.alternate) {
         collectDomBindings(node.alternate, bindings, signalGetters, memoNames, parentTag, loopParams, readsProp)

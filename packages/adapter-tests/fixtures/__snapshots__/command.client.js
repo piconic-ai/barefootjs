@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, isSSRPortal, lazySlots, onCleanup, provideContext, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrNode, forwardProps, hydrate, initChild, insert, insertRoot, isSSRPortal, lazySlots, onCleanup, provideContext, qsa, renderChild, spreadAttrs, upsertChild, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2606,21 +2606,36 @@ export function initIcon(__scope, _p = {}) {
       return null
     }
 
-  const [_s1, _s0] = $(__scope, 's1', 's0')
+  const [_s12, _s1] = $(__scope, 's12', 's1')
   const [_s11, _s10, _s9, _s8, _s7, _s6, _s5, _s4, _s3, _s2] = $c(__scope, 's11', 's10', 's9', 's8', 's7', 's6', 's5', 's4', 's3', 's2')
 
-  createEffect(() => {
-    if (_s1) {
-      { const __v = sizeMap[(_p.size ?? 'md')]; if (__v != null) _s1.setAttribute('width', String(__v)); else _s1.removeAttribute('width') }
-      { const __v = sizeMap[(_p.size ?? 'md')]; if (__v != null) _s1.setAttribute('height', String(__v)); else _s1.removeAttribute('height') }
-      { const __v = (buttLinecapIcons).includes(_p.name) ? 'butt' : 'round'; if (__v != null) _s1.setAttribute('stroke-linecap', String(__v)); else _s1.removeAttribute('stroke-linecap') }
-      { const __v = `shrink-0 ${(_p.className ?? '')}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+  insertRoot(__scope, 's12', () => name === 'github', {
+    template: () => { const __slots = []; return { html: `${renderChild('GitHubIcon', {size: size, className: className}, undefined, 's11')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's11')
+      if (__c0) initChild('GitHubIcon', __c0, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
     }
-  })
-
-  createEffect(() => {
-    if (_s0) {
-      { const __v = strokePaths[_p.name]; if (__v != null) _s0.setAttribute('d', String(__v)); else _s0.removeAttribute('d') }
+  }, {
+    template: () => { const __slots = []; return { html: ``, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's10')
+      if (__c0) initChild('SearchIcon', __c0, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c1] = $c(__branchScope, 's9')
+      if (__c1) initChild('SettingsIcon', __c1, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c2] = $c(__branchScope, 's8')
+      if (__c2) initChild('GlobeIcon', __c2, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c3] = $c(__branchScope, 's7')
+      if (__c3) initChild('LogOutIcon', __c3, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c4] = $c(__branchScope, 's6')
+      if (__c4) initChild('CircleHelpIcon', __c4, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c5] = $c(__branchScope, 's5')
+      if (__c5) initChild('CalendarIcon', __c5, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c6] = $c(__branchScope, 's4')
+      if (__c6) initChild('GripVerticalIcon', __c6, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c7] = $c(__branchScope, 's3')
+      if (__c7) initChild('LoaderCircleIcon', __c7, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c8] = $c(__branchScope, 's2')
+      if (__c8) initChild('PanelLeftIcon', __c8, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
     }
   })
 
@@ -2811,18 +2826,36 @@ export function initDialogTrigger(__scope, _p = {}) {
     if (!_p.asChild) warnIfMisusedTrigger(el, 'DialogTrigger')
   }
 
-  const [_s1, _s0] = $(__scope, 's1', 's0')
+  const [_s2] = $(__scope, 's2')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      { const __v = `${dialogTriggerClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
-      _s0.disabled = !!(_p.disabled ?? false)
+  insertRoot(__scope, 's2', () => _p.asChild, {
+    template: () => { const __slots = []; return { html: `<span data-slot="dialog-trigger" style="display:contents" bf="s1">${__bfSlot(_p.children, __slots)}</span>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s1] = $(__branchScope, 's1')
+      if (_s1) (handleMount)(_s1)
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<button data-slot="dialog-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${dialogTriggerClasses} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${dialogTriggerClasses} ${_p.className ?? ''}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} bf="s0">${__bfSlot(_p.children, __slots)}</button>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s0] = $(__branchScope, 's0')
+      if (_s0) (handleMount)(_s0)
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = _p.id; if (__v != null) __ra_s0.setAttribute('id', String(__v)); else __ra_s0.removeAttribute('id') }
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `${dialogTriggerClasses} ${_p.className ?? ''}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          __ra_s0.disabled = !!(_p.disabled ?? false)
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
-  if (_s1) (handleMount)(_s1)
-  if (_s0) (handleMount)(_s0)
 }
 
 hydrate('DialogTrigger', { init: initDialogTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="dialog-trigger" style="display:contents" bf="s1">${_p.children}</span>` : `<button data-slot="dialog-trigger" type="button" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3')} ${_p.className ?? ''}`) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} bf="s0">${_p.children}</button>`}` })
@@ -3494,10 +3527,23 @@ export function initSlot(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
+  const children = _p.children ?? {}
   const className = _p.className
-  const children = _p.children
 
+  const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
+
+  insertRoot(__scope, 's1', () => children && isValidElement(children), {
+    template: () => { const __slots = []; return { html: `${renderChild('Tag', {className: ([className, (((children.props).className) || '')].filter(Boolean).join(' ')), children: `${__bfSlot((children.props).children, __slots)}`}, undefined, 's0')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's0')
+      if (__c0) initChild('Tag', __c0, forwardProps(_p, { get className() { return ([className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `${__bfSlot(children, __slots)}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+    }
+  })
 
 
   // Reactive child component props
@@ -3518,18 +3564,32 @@ export function initKbd(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
   const asChild = _p.asChild ?? false
+  const className = _p.className ?? ''
   const children = _p.children
 
   const kbdBaseClasses = 'pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3'
 
-  const [_s0] = $(__scope, 's0')
+  const [_s2, _s0] = $(__scope, 's2', 's0')
   const [_s1] = $c(__scope, 's1')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+  insertRoot(__scope, 's2', () => asChild, {
+    template: () => { const __slots = []; return { html: `${renderChild('Slot', {className: `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`, children: `${__bfSlot(children, __slots)}`}, undefined, 's1')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's1')
+      if (__c0) initChild('Slot', __c0, forwardProps(_p, { get className() { return `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}` } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<kbd data-slot="kbd" ${(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`) != null ? 'class="' + escapeAttr(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`) + '"' : ''} bf="s0">${__bfSlot(children, __slots)}</kbd>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
@@ -3554,18 +3614,32 @@ export function initKbdGroup(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
   const asChild = _p.asChild ?? false
+  const className = _p.className ?? ''
   const children = _p.children
 
   const kbdGroupBaseClasses = 'inline-flex items-center gap-1'
 
-  const [_s0] = $(__scope, 's0')
+  const [_s2, _s0] = $(__scope, 's2', 's0')
   const [_s1] = $c(__scope, 's1')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = `inline-flex items-center gap-1 ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+  insertRoot(__scope, 's2', () => asChild, {
+    template: () => { const __slots = []; return { html: `${renderChild('Slot', {className: `inline-flex items-center gap-1 ${className}`, children: `${__bfSlot(children, __slots)}`}, undefined, 's1')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's1')
+      if (__c0) initChild('Slot', __c0, forwardProps(_p, { get className() { return `inline-flex items-center gap-1 ${className}` } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<kbd data-slot="kbd-group" ${(`inline-flex items-center gap-1 ${className}`) != null ? 'class="' + escapeAttr(`inline-flex items-center gap-1 ${className}`) + '"' : ''} bf="s0">${__bfSlot(children, __slots)}</kbd>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `inline-flex items-center gap-1 ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
@@ -3590,11 +3664,11 @@ export function initButton(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const size = _p.size ?? 'default'
-  const variant = _p.variant ?? 'default'
-  const className = _p.className ?? ''
   const asChild = _p.asChild ?? false
+  const className = _p.className ?? ''
+  const size = _p.size ?? 'default'
   const children = _p.children
+  const variant = _p.variant ?? 'default'
 
   const baseClasses = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation'
   const variantClasses = {
@@ -3614,12 +3688,26 @@ export function initButton(__scope, _p = {}) {
   'icon-lg': 'size-10',
 }
 
-  const [_s0] = $(__scope, 's0')
+  const [_s2, _s0] = $(__scope, 's2', 's0')
   const [_s1] = $c(__scope, 's1')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[(_p.variant ?? 'default')]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[(_p.size ?? 'default')]} ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+  insertRoot(__scope, 's2', () => asChild, {
+    template: () => { const __slots = []; return { html: `${renderChild('Slot', {className: `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}`, children: `${__bfSlot(children, __slots)}`}, undefined, 's1')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's1')
+      if (__c0) initChild('Slot', __c0, forwardProps(_p, { get className() { return `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}` } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<button ${(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}`) != null ? 'class="' + escapeAttr(`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}`) + '"' : ''} bf="s0">${__bfSlot(children, __slots)}</button>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive touch-action-manipulation ${({"default": "bg-primary text-primary-foreground hover:bg-primary/90", "destructive": "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60", "outline": "border border-input bg-background text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50", "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80", "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50", "link": "text-foreground underline-offset-4 hover:underline hover:text-primary"})[variant]} ${({"default": "h-9 px-4 py-2 has-[>svg]:px-3", "sm": "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5", "lg": "h-10 rounded-md px-6 has-[>svg]:px-4", "icon": "size-9", "icon-sm": "size-8", "icon-lg": "size-10"})[size]} ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 

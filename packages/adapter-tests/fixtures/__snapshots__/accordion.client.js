@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, forwardProps, hydrate, initChild, insert, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createContext, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, forwardProps, hydrate, initChild, insert, insertRoot, provideContext, qsa, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2606,21 +2606,36 @@ export function initIcon(__scope, _p = {}) {
       return null
     }
 
-  const [_s1, _s0] = $(__scope, 's1', 's0')
+  const [_s12, _s1] = $(__scope, 's12', 's1')
   const [_s11, _s10, _s9, _s8, _s7, _s6, _s5, _s4, _s3, _s2] = $c(__scope, 's11', 's10', 's9', 's8', 's7', 's6', 's5', 's4', 's3', 's2')
 
-  createEffect(() => {
-    if (_s1) {
-      { const __v = sizeMap[(_p.size ?? 'md')]; if (__v != null) _s1.setAttribute('width', String(__v)); else _s1.removeAttribute('width') }
-      { const __v = sizeMap[(_p.size ?? 'md')]; if (__v != null) _s1.setAttribute('height', String(__v)); else _s1.removeAttribute('height') }
-      { const __v = (buttLinecapIcons).includes(_p.name) ? 'butt' : 'round'; if (__v != null) _s1.setAttribute('stroke-linecap', String(__v)); else _s1.removeAttribute('stroke-linecap') }
-      { const __v = `shrink-0 ${(_p.className ?? '')}`; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
+  insertRoot(__scope, 's12', () => name === 'github', {
+    template: () => { const __slots = []; return { html: `${renderChild('GitHubIcon', {size: size, className: className}, undefined, 's11')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's11')
+      if (__c0) initChild('GitHubIcon', __c0, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
     }
-  })
-
-  createEffect(() => {
-    if (_s0) {
-      { const __v = strokePaths[_p.name]; if (__v != null) _s0.setAttribute('d', String(__v)); else _s0.removeAttribute('d') }
+  }, {
+    template: () => { const __slots = []; return { html: ``, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's10')
+      if (__c0) initChild('SearchIcon', __c0, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c1] = $c(__branchScope, 's9')
+      if (__c1) initChild('SettingsIcon', __c1, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c2] = $c(__branchScope, 's8')
+      if (__c2) initChild('GlobeIcon', __c2, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c3] = $c(__branchScope, 's7')
+      if (__c3) initChild('LogOutIcon', __c3, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c4] = $c(__branchScope, 's6')
+      if (__c4) initChild('CircleHelpIcon', __c4, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c5] = $c(__branchScope, 's5')
+      if (__c5) initChild('CalendarIcon', __c5, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c6] = $c(__branchScope, 's4')
+      if (__c6) initChild('GripVerticalIcon', __c6, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c7] = $c(__branchScope, 's3')
+      if (__c7) initChild('LoaderCircleIcon', __c7, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
+      const [__c8] = $c(__branchScope, 's2')
+      if (__c8) initChild('PanelLeftIcon', __c8, forwardProps(_p, { get size() { return size }, get className() { return className } }, ["size","className"]))
     }
   })
 
@@ -2885,20 +2900,40 @@ export function initAccordionTrigger(__scope, _p = {}) {
   }
   const className = _p.className ?? ''
 
-  const [_s2, _s1] = $(__scope, 's2', 's1')
+  const [_s3] = $(__scope, 's3')
   const [_s0] = $c(__scope, 's0')
 
-  createEffect(() => {
-    if (_s1) {
-      { const __v = _p.id; if (__v != null) _s1.setAttribute('id', String(__v)); else _s1.removeAttribute('id') }
-      _s1.disabled = !!(_p.disabled)
-      if (_p.disabled) _s1.setAttribute('aria-disabled', 'true')
-      else _s1.removeAttribute('aria-disabled')
+  insertRoot(__scope, 's3', () => _p.asChild, {
+    template: () => { const __slots = []; return { html: `<h3 class="flex"><span data-slot="accordion-trigger" style="display:contents" aria-expanded="false" bf="s2">${__bfSlot(_p.children, __slots)}</span></h3>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s2] = $(__branchScope, 's2')
+      if (_s2) (handleMount)(_s2)
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<h3 class="flex"><button data-slot="accordion-trigger" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${className}`) != null ? 'class="' + escapeAttr(`flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline disabled:pointer-events-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${className}`) + '"' : ''} ${_p.disabled ? 'disabled' : ''} aria-expanded="false" ${_p.disabled ? 'aria-disabled' : ''} bf="s1">${__bfSlot(_p.children, __slots)}${renderChild('ChevronDownIcon', {size: "sm", className: `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal`}, undefined, 's0')}</button></h3>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s1] = $(__branchScope, 's1')
+      if (_s1) (handleMount)(_s1)
+      const [__c0] = $c(__branchScope, 's0')
+      if (__c0) initChild('ChevronDownIcon', __c0, { size: "sm", get className() { return `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal` } })
+      const __disposers = []
+      { const __ra_s1 = qsa(__branchScope, '[bf="s1"]')
+      if (__ra_s1) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = _p.id; if (__v != null) __ra_s1.setAttribute('id', String(__v)); else __ra_s1.removeAttribute('id') }
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          __ra_s1.disabled = !!(_p.disabled)
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          if (_p.disabled) __ra_s1.setAttribute('aria-disabled', 'true')
+          else __ra_s1.removeAttribute('aria-disabled')
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
-  if (_s2) (handleMount)(_s2)
-  if (_s1) (handleMount)(_s1)
 
   // Initialize child components with props
   initChild('ChevronDownIcon', _s0, { size: "sm", get className() { return `text-muted-foreground pointer-events-none shrink-0 translate-y-0.5 transition-transform duration-normal` } })

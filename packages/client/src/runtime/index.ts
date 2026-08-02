@@ -117,7 +117,7 @@ export { findScope, find, $, $c, $t, qsa, qsaChildScope, qsaChildScopes, cssEsca
 export { date } from './date.ts'
 export { hydrate, rehydrateAll, rehydrateScope, disposeScope, flushHydration, getRegisteredDef } from './hydrate.ts'
 export { registerComponent, getComponentInit, initChild, upsertChild } from './registry.ts'
-export { insert, type BranchConfig, type BranchTemplateResult } from './insert.ts'
+export { insert, insertRoot, type BranchConfig, type BranchTemplateResult } from './insert.ts'
 export { __bfSlot } from './branch-slot.ts'
 // `__bfText` (dynamic-text.ts) and `$t` (query.ts) are kept: one narrow
 // emission site — a `@client`-nested-inside-a-top-level-conditional dynamic

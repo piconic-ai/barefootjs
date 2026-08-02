@@ -7085,6 +7085,26 @@ function buildIfStatementChain(
     const condition = ctx.getJS(condReturn.condition)
     const templateCondition = rewriteBarePropRefs(condition, condReturn.condition, ctx)
 
+    // #2463 Defect 1: same reactivity classification `transformConditional`
+    // computes for a ternary's condition — proven-reactive via the analyzer
+    // / origin, plus the Solid-style wrap-by-default AST flags (#937/#941).
+    // Without this, `IRIfStatement.reactive`/`callsReactiveGetters`/
+    // `hasFunctionCalls`/`origin` would stay unset and `decideWrapFromAstFlags`
+    // (ir-to-client-js/reactivity.ts) would never gate this if-statement into
+    // `ctx.conditionalElements` — the branches would stay flat content with
+    // no branch-switch effect (the bug this fix closes). `slotId` itself is
+    // allocated further below, AFTER `consequent` is transformed — see the
+    // docstring on `IRIfStatement.slotId`.
+    const conditionOrigin: OriginInfo = {
+      phase: 'tick',
+      scope: 'template',
+      effect: 'pure',
+      freeRefs: resolveFreeRefs(condReturn.condition, makeBindingEnv(ctx)),
+    }
+    const reactive = isReactiveExpression(condition, ctx, condReturn.condition) || isReactiveOrigin(conditionOrigin)
+    const callsReactive = exprCallsReactiveGetters(condReturn.condition, ctx)
+    const hasCalls = exprHasFunctionCalls(condReturn.condition)
+
     // #1409: overlay each branch's `const X = …` declarations onto
     // `ctx._branchScopeVars` so a JSX expression that references one
     // of them inlines the initializer at the use site instead of
@@ -7253,6 +7273,40 @@ function buildIfStatementChain(
       analyzer.filePath
     )
 
+    // #2463 Defect 1: allocate the if-statement's own slot AFTER `consequent`
+    // (transformed above) has already consumed whatever slots its own
+    // elements need. Mirrors `transformConditional`'s `needsSlot` gate, but
+    // deliberately allocated in the opposite order — a ternary's slotId is
+    // generated BEFORE its branches so the conditional "owns" the lowest
+    // number (`bf-c="s0"` wraps `bf="s1"`); an if-statement's own slot is
+    // never rendered as an attribute at all (SSR's `emitIfStatement` doesn't
+    // read it, and the client's `insertRoot()` tracks the mounted root by
+    // reference, not by DOM query — see `IRIfStatement.slotId`'s docstring),
+    // so allocating it first would only cost a needless renumbering: the
+    // button in `if (loading()) return <button onClick={...}>` would shift
+    // from `bf="s0"` to `bf="s1"` for no observable benefit, breaking every
+    // existing if-statement SSR/CSR snapshot pinned at the old numbering.
+    //
+    // Only the OUTERMOST if-statement (`i === 0`, the chain's first `if`,
+    // returned to the caller) ever has its slot read: the client-js
+    // collector's `ifStatement:` visitor (`collect-elements.ts`) only builds
+    // `insertRoot()` metadata for a node reached with `insideConditional ===
+    // false`, which is true only for the tree root. A deeper level (this
+    // node reached as an outer if's `alternate`, i.e. an `else if`) is
+    // walked with `insideConditional === true` and never reaches
+    // `ctx.conditionalElements` — same asymmetric limitation nested
+    // ternaries have relative to top-level ones, documented on the
+    // `ifStatement:` visitor. Allocating a slot there anyway would be pure
+    // waste: a real else-if chain (e.g. the `Icon` component's `name ===
+    // 'github'` / `name === 'search'` / … cascade, every arm reading the
+    // same reactive `name` prop) would burn one slot id per arm that is
+    // never referenced by anything, needlessly renumbering every sibling
+    // slot after it and bloating every affected snapshot for no behavioral
+    // gain — exactly what broke `button`/`kbd`/`checkbox`/… snapshots
+    // before this gate was added.
+    const needsSlot = i === 0 && (reactive || callsReactive || hasCalls)
+    const slotId = needsSlot ? generateSlotId(ctx) : null
+
     // Create the if statement node
     const ifStmt: IRIfStatement = {
       type: 'if-statement',
@@ -7262,6 +7316,11 @@ function buildIfStatementChain(
       alternate,
       scopeVariables,
       loc,
+      slotId,
+      reactive,
+      callsReactiveGetters: callsReactive || undefined,
+      hasFunctionCalls: hasCalls || undefined,
+      origin: conditionOrigin,
     }
 
     // This becomes the alternate for the next iteration (earlier if statement)

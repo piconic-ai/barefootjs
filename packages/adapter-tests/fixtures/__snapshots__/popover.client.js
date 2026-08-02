@@ -1,4 +1,4 @@
-import { $, $c, __bfSlot, createComponent, createContext, createEffect, createPortal, createSignal, escapeAttr, findSiblingSlot, hydrate, initChild, insert, isSSRPortal, provideContext, renderChild, useContext } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, createComponent, createContext, createDisposableEffect, createEffect, createPortal, createSignal, escapeAttr, findSiblingSlot, hydrate, initChild, insert, insertRoot, isSSRPortal, provideContext, qsa, renderChild, useContext } from '@barefootjs/client/runtime'
 
 var PopoverContext = PopoverContext ?? createContext()
 
@@ -57,18 +57,36 @@ export function initPopoverTrigger(__scope, _p = {}) {
     if (!_p.asChild) warnIfMisusedTrigger(el, 'PopoverTrigger')
   }
 
-  const [_s1, _s0] = $(__scope, 's1', 's0')
+  const [_s2] = $(__scope, 's2')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = _p.id; if (__v != null) _s0.setAttribute('id', String(__v)); else _s0.removeAttribute('id') }
-      _s0.disabled = !!(_p.disabled ?? false)
-      { const __v = `${popoverTriggerClasses} ${_p.className ?? ''}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+  insertRoot(__scope, 's2', () => _p.asChild, {
+    template: () => { const __slots = []; return { html: `<span data-slot="popover-trigger" aria-expanded="false" style="display:contents" bf="s1">${__bfSlot(_p.children, __slots)}</span>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s1] = $(__branchScope, 's1')
+      if (_s1) (handleMount)(_s1)
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<button data-slot="popover-trigger" type="button" aria-expanded="false" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${popoverTriggerClasses} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${popoverTriggerClasses} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${__bfSlot(_p.children, __slots)}</button>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [_s0] = $(__branchScope, 's0')
+      if (_s0) (handleMount)(_s0)
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = _p.id; if (__v != null) __ra_s0.setAttribute('id', String(__v)); else __ra_s0.removeAttribute('id') }
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          __ra_s0.disabled = !!(_p.disabled ?? false)
+        }))
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `${popoverTriggerClasses} ${_p.className ?? ''}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
-  if (_s1) (handleMount)(_s1)
-  if (_s0) (handleMount)(_s0)
 }
 
 hydrate('PopoverTrigger', { init: initPopoverTrigger, template: (_p) => `${_p.asChild ? `<span data-slot="popover-trigger" aria-expanded="false" style="display:contents" bf="s1">${_p.children}</span>` : `<button data-slot="popover-trigger" type="button" aria-expanded="false" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) != null ? 'class="' + escapeAttr(`${('inline-flex items-center disabled:pointer-events-none disabled:opacity-50')} ${_p.className ?? ''}`) + '"' : ''} bf="s0">${_p.children}</button>`}` })

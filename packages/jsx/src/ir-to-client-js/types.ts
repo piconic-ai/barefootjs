@@ -433,6 +433,20 @@ export interface ConditionalElement {
   whenFalseHtml: string
   whenTrue: BranchSummary
   whenFalse: BranchSummary
+  /**
+   * True when this conditional is a root-level `if-statement` early return
+   * (#2463 Defect 1) rather than a ternary/`&&`/`||` conditional embedded in
+   * JSX. A root if-statement has no synthetic `<div style="display:contents">`
+   * wrapper the way a root ternary does (#968) — each branch's own root
+   * element IS the component's scope root (carries `bf-s` directly, per the
+   * existing SSR emission this fix does not touch) — so the client can't use
+   * a `bf-c` marker to find the swap target the way `insert()` does for every
+   * other conditional shape. `buildInsertPlan`/`stringifyInsert` read this
+   * flag to skip `addCondAttrToTemplate` and emit a call to the runtime's
+   * `insertRoot()` (which tracks the mounted root by reference instead of by
+   * DOM query) instead of `insert()`.
+   */
+  rootSwap?: boolean
 }
 
 /**

@@ -58,7 +58,12 @@ export function stringifyInsert(
   const condBfId = plan.profileComponentName
     ? `, ${JSON.stringify(`${plan.profileComponentName}#binding:${plan.slotId}`)}`
     : ''
-  lines.push(`${leadingIndent}insert(${scopeVar}, '${plan.slotId}', () => ${plan.condition}, {`)
+  // #2463 Defect 1: a root if-statement's branches have no synthetic wrapper
+  // to search within for a `bf-c` marker (see `ConditionalElement.rootSwap`),
+  // so it calls the runtime's `insertRoot()` — which tracks the mounted root
+  // by reference — instead of `insert()`. Same call-argument shape either way.
+  const fn = plan.rootSwap ? 'insertRoot' : 'insert'
+  lines.push(`${leadingIndent}${fn}(${scopeVar}, '${plan.slotId}', () => ${plan.condition}, {`)
   emitArm(lines, plan.arms[0], plan.eventNameMode, armIndent, bodyIndent, plan.profileComponentName)
   lines.push(`${leadingIndent}}, {`)
   emitArm(lines, plan.arms[1], plan.eventNameMode, armIndent, bodyIndent, plan.profileComponentName)

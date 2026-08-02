@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, escapeAttr, forwardProps, hydrate, initChild, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, __bfSlot, applyRestAttrs, createComponent, createDisposableEffect, createEffect, escapeAttr, forwardProps, hydrate, initChild, insertRoot, qsa, renderChild } from '@barefootjs/client/runtime'
 
 var isValidElement = isValidElement ?? function(element) {
   return !!(element && typeof element === 'object' && 'tag' in element && 'props' in element)
@@ -8,10 +8,23 @@ export function initSlot(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
+  const children = _p.children ?? {}
   const className = _p.className
-  const children = _p.children
 
+  const [_s1] = $(__scope, 's1')
   const [_s0] = $c(__scope, 's0')
+
+  insertRoot(__scope, 's1', () => children && isValidElement(children), {
+    template: () => { const __slots = []; return { html: `${renderChild('Tag', {className: ([className, (((children.props).className) || '')].filter(Boolean).join(' ')), children: `${__bfSlot((children.props).children, __slots)}`}, undefined, 's0')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's0')
+      if (__c0) initChild('Tag', __c0, forwardProps(_p, { get className() { return ([className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `${__bfSlot(children, __slots)}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+    }
+  })
 
 
   // Reactive child component props
@@ -32,18 +45,32 @@ export function initKbd(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
   const asChild = _p.asChild ?? false
+  const className = _p.className ?? ''
   const children = _p.children
 
   const kbdBaseClasses = 'pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3'
 
-  const [_s0] = $(__scope, 's0')
+  const [_s2, _s0] = $(__scope, 's2', 's0')
   const [_s1] = $c(__scope, 's1')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+  insertRoot(__scope, 's2', () => asChild, {
+    template: () => { const __slots = []; return { html: `${renderChild('Slot', {className: `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`, children: `${__bfSlot(children, __slots)}`}, undefined, 's1')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's1')
+      if (__c0) initChild('Slot', __c0, forwardProps(_p, { get className() { return `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}` } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<kbd data-slot="kbd" ${(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`) != null ? 'class="' + escapeAttr(`pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`) + '"' : ''} bf="s0">${__bfSlot(children, __slots)}</kbd>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 
@@ -68,18 +95,32 @@ export function initKbdGroup(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  const className = _p.className ?? ''
   const asChild = _p.asChild ?? false
+  const className = _p.className ?? ''
   const children = _p.children
 
   const kbdGroupBaseClasses = 'inline-flex items-center gap-1'
 
-  const [_s0] = $(__scope, 's0')
+  const [_s2, _s0] = $(__scope, 's2', 's0')
   const [_s1] = $c(__scope, 's1')
 
-  createEffect(() => {
-    if (_s0) {
-      { const __v = `inline-flex items-center gap-1 ${(_p.className ?? '')}`; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
+  insertRoot(__scope, 's2', () => asChild, {
+    template: () => { const __slots = []; return { html: `${renderChild('Slot', {className: `inline-flex items-center gap-1 ${className}`, children: `${__bfSlot(children, __slots)}`}, undefined, 's1')}`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const [__c0] = $c(__branchScope, 's1')
+      if (__c0) initChild('Slot', __c0, forwardProps(_p, { get className() { return `inline-flex items-center gap-1 ${className}` } }, ["className"]))
+    }
+  }, {
+    template: () => { const __slots = []; return { html: `<kbd data-slot="kbd-group" ${(`inline-flex items-center gap-1 ${className}`) != null ? 'class="' + escapeAttr(`inline-flex items-center gap-1 ${className}`) + '"' : ''} bf="s0">${__bfSlot(children, __slots)}</kbd>`, slots: __slots } },
+    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
+      const __disposers = []
+      { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
+      if (__ra_s0) {
+        __disposers.push(createDisposableEffect(() => {
+          { const __v = `inline-flex items-center gap-1 ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+        }))
+      } }
+      return () => __disposers.forEach(d => d())
     }
   })
 

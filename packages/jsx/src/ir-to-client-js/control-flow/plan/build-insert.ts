@@ -46,9 +46,10 @@ export function buildInsertPlan(
     condition: elem.condition,
     eventNameMode: options.eventNameMode,
     profileComponentName: options.profileComponentName,
+    rootSwap: elem.rootSwap || undefined,
     arms: [
-      buildArm(elem.whenTrueHtml, elem.slotId, elem.whenTrue, options),
-      buildArm(elem.whenFalseHtml, elem.slotId, elem.whenFalse, options),
+      buildArm(elem.whenTrueHtml, elem.slotId, elem.whenTrue, options, elem.rootSwap),
+      buildArm(elem.whenFalseHtml, elem.slotId, elem.whenFalse, options, elem.rootSwap),
     ],
   }
 }
@@ -58,9 +59,15 @@ function buildArm(
   slotId: string,
   branch: BranchSummary,
   options: BuildInsertOptions,
+  rootSwap?: boolean,
 ): InsertArm {
   return {
-    templateHtml: addCondAttrToTemplate(html, slotId),
+    // A root if-statement's branch IS the component's own scope root (no
+    // synthetic `bf-c` wrapper — see `ConditionalElement.rootSwap`), so
+    // `addCondAttrToTemplate` must not run: adding `bf-c` here would mismatch
+    // the SSR HTML this fix does not touch (the pinned `bf-s`/`bf="sN"`-only
+    // shape), and `insertRoot()` never queries for it anyway.
+    templateHtml: rootSwap ? html : addCondAttrToTemplate(html, slotId),
     body: buildArmBody(branch, options),
   }
 }

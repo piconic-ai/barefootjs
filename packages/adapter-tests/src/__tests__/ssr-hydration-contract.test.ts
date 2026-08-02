@@ -82,6 +82,16 @@ const statelessFixtures = new Set([
   'static-array-children',
   'if-statement',
   'top-level-ternary',
+  // #2463: `if (asChild) return <Slot/>; return <button/>` — `asChild`
+  // is a prop, and props are reactive in this framework the same way a
+  // root ternary's `props.xxx` condition already was (see
+  // `conditional-return-button` below), so this if-statement now gets the
+  // same `insertRoot()` treatment. Default props render the `<button>`
+  // branch at SSR; the client JS wires markers for the `<Slot>` branch too.
+  // Same one-side-renders-less divergence as `conditional-return-button`.
+  'button',
+  // #2463: same `if (asChild) return <Kbd asChild>…` pattern as `button` above.
+  'kbd',
   // #1421: fallback branch is rendered at SSR (no `on` prop), but the
   // emitted client JS still wires up the truthy branch's `className`
   // slot. The marker for that slot doesn't appear in the falsy-branch
@@ -102,6 +112,23 @@ const statelessFixtures = new Set([
   //     `isStreaming()` is true; SSR with the default `false` state
   //     omits its marker but the client JS wires it up regardless.
   'conditional-return-button',
+  // #2463: `conditional-return-link` is `conditional-return-button`'s
+  // sibling fixture over the same `ConditionalReturn` component (same
+  // `props.variant` if-statement condition) — same one-side-renders-less
+  // divergence as `conditional-return-button` above, now that a reactive
+  // if-statement condition (props ARE reactive in this framework, not only
+  // signals) routes through `insertRoot()` and wires both branches' markers.
+  'conditional-return-link',
+  // #2463: signal-conditioned `if`/`else` early return (the issue's own
+  // repro). Same divergence as `if-statement`/`top-level-ternary` above —
+  // SSR renders only the `loading() === true` branch, but the client JS's
+  // `insertRoot()` wires markers for both branches.
+  'signal-early-return',
+  // #2463 follow-up: same divergence, for the branch-contains-a-child-
+  // component shape — SSR renders only the `showBadge() === true` branch
+  // (the `<Badge/>` child), but the client JS wires markers for the
+  // `off`-branch's own slot too.
+  'if-statement-child-swap',
   'todo-app',
   'ai-chat',
   // Priority-12 edge-case sweep: same one-side-renders-less divergence as

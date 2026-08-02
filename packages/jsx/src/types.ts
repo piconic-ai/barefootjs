@@ -1139,6 +1139,36 @@ export interface IRIfStatement {
     templateInitializer?: string
     typedInitializer?: string
   }>
+  /**
+   * Reactivity metadata for `condition` — mirrors the fields `IRConditional`
+   * has carried since its introduction (#2463 Defect 1). Before this, an
+   * `if (signal()) return <A/>; return <B/>` early return had NO way to
+   * signal "this needs a branch-switch effect" to the client-js collector,
+   * so `walkIR`'s default auto-descent (there is no `ifStatement:` visitor
+   * gate) silently treated the branches as flat content and no `insert()`
+   * call was ever emitted — clicking a setter inside the branch changed the
+   * signal but nothing re-rendered. The semantically identical
+   * `return signal() ? <A/> : <B/>` ternary lowers to `IRConditional` and
+   * always carried these fields, which is why only the statement form was
+   * affected.
+   *
+   * `slotId` is allocated (via `generateSlotId`) AFTER `consequent` /
+   * `alternate` are fully transformed — the reverse of `IRConditional`'s
+   * order — so the if-statement's own slot (only ever used as an internal
+   * `insertRoot()` effect id, never rendered as an attribute) doesn't shift
+   * the numbering of slots inside the branches themselves. SSR emission
+   * (`emitIfStatement`) never reads these fields, so existing snapshots are
+   * unaffected by their addition.
+   */
+  slotId: string | null
+  /** Proven-reactive: analyzer traced `condition` to a signal/memo/prop read. */
+  reactive: boolean
+  /** Solid-style wrap-by-default fallback (#937/#941): condition calls something that looks like a signal getter. */
+  callsReactiveGetters?: boolean
+  /** Solid-style wrap-by-default fallback: condition contains any `identifier()` call. */
+  hasFunctionCalls?: boolean
+  /** Same shape as `IRConditional.origin` — the condition's classification and free-reference resolution. */
+  origin: OriginInfo
   loc: SourceLocation
 }
 

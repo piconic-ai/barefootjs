@@ -54,8 +54,18 @@ describe('conditional JSX returns (if-statement)', () => {
 
     const clientJs = result.files.find(f => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
-    // Reactive attribute should generate createEffect for aria-expanded
-    expect(clientJs?.content).toContain('createEffect')
+    // #2463: `props.asChild` is a reactive condition (direct `props.xxx`
+    // access, not a destructured local — see `IRIfStatement.slotId`'s
+    // docstring), so this if-statement now gets the same `insertRoot()`
+    // branch-switch treatment a semantically identical ternary already
+    // had. The reactive `aria-expanded` attribute is therefore scoped to
+    // each branch's own `bindEvents` (a `createDisposableEffect`, so it
+    // re-attaches on every branch swap — #1071's existing convention for
+    // any reactive attribute inside a conditional branch), not a top-level
+    // `createEffect` that would keep writing to a stale, possibly-detached
+    // node after a swap.
+    expect(clientJs?.content).toContain('insertRoot')
+    expect(clientJs?.content).toContain('createDisposableEffect')
     expect(clientJs?.content).toContain('aria-expanded')
   })
 

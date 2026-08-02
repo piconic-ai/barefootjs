@@ -78,9 +78,13 @@ describe('prop-derived local const binding ids (Slot composition, #1863)', () =>
     const { graph } = buildComponentAnalysis(slotForwardSource, 'Btn.tsx')
     const index = buildIdIndex(graph)
     const bindingKeys = [...index.keys()].filter(k => k.startsWith('Btn#binding:'))
-    // Both the `<button class={classes}>` host attr and the `<Slot
-    // className={classes}>` child prop must resolve.
-    expect(bindingKeys.length).toBe(2)
+    // Three: the `<button class={classes}>` host attr, the `<Slot
+    // className={classes}>` child prop, AND (#2463) the `if (asChild)`
+    // condition itself — `asChild` is a destructured prop, and props are
+    // reactive in this framework the same way a root ternary's condition
+    // already was, so this if-statement now gets its own `insertRoot()`
+    // binding id exactly like a semantically identical ternary always had.
+    expect(bindingKeys.length).toBe(3)
     for (const key of bindingKeys) {
       const node = index.get(key)!
       expect(node.kind).toBe('effect')

@@ -35,6 +35,14 @@ export interface InsertPlan {
    * `<Component>#binding:<slotId>` id so the profiler attributes them.
    */
   profileComponentName?: string
+  /**
+   * Mirrors `ConditionalElement.rootSwap` (#2463 Defect 1) — set for a
+   * component-level `if`/`else` early return, never for a nested/ternary
+   * conditional. The stringifier emits a call to the runtime's
+   * `insertRoot()` instead of `insert()`, and the builder skips
+   * `addCondAttrToTemplate` on both arms — see that flag's docstring.
+   */
+  rootSwap?: boolean
 }
 
 /** A single branch arm of an insert(). */

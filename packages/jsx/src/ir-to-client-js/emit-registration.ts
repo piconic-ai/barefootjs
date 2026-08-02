@@ -8,7 +8,7 @@ import type { ComponentIR, IRFragment, IRNode, ReferencesGraph } from '../types.
 import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM } from './utils.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
-import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector } from './html-template.ts'
+import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate, createStringProtector, withSignalMemoUnsafeNames } from './html-template.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 
 /**
@@ -142,6 +142,11 @@ export function emitRegistrationAndHydration(
 
   const propNamesForStaticCheck = new Set(ctx.propsParams.map((p) => p.name))
   const { inlinableConstants, unsafeLocalNames } = inlinability ?? buildInlinableConstants(ctx, graph, _ir.root)
+  // #2463 Defect 2: `canGenerateStaticTemplate`'s `conditional`/`if-statement`
+  // arms gate on `unsafeLocalNames` alone (no separate string probe) — it
+  // must include every signal getter / memo name, not just unsafe branch-local
+  // consts, or a signal-conditioned node wrongly passes the static-template check.
+  const staticTemplateUnsafeNames = withSignalMemoUnsafeNames(ctx, unsafeLocalNames)
 
   // Build rest spread names: these are rest/props spreads handled by applyRestAttrs, not spreadAttrs
   const restSpreadNames = new Set<string>()
@@ -154,7 +159,7 @@ export function emitRegistrationAndHydration(
 
   // Build ComponentDef object for hydrate()
   const defParts: string[] = [`init: init${name}`]
-  if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, unsafeLocalNames)) {
+  if (canGenerateStaticTemplate(_ir.root, propNamesForStaticCheck, inlinableConstants, staticTemplateUnsafeNames)) {
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName)
     if (templateHtml) {
       defParts.push(`template: (${PROPS_PARAM}) => \`${templateHtml}\``)
