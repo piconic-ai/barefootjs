@@ -446,6 +446,11 @@ import { fixture as aliasedDestructuredProp } from './aliased-destructured-prop'
 import { fixture as selectValueSsr } from './select-value-ssr'
 import { fixture as textareaValueSsr } from './textarea-value-ssr'
 import { fixture as signalEarlyReturn } from './signal-early-return'
+// #2477: Record[key] class lookup keyed by a prop forwarded from a parent
+// signal, on an if/else early-return branch's own root element — the
+// ui/badge asChild shape. Pins the one-hop-const lookup lowering (SSR on
+// every adapter) and the live-prop class update (CSR interactions).
+import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
 import { fixture as logicalAndZero } from './logical-and-zero'
 // HTML element/attribute semantics checklist (state-carrying attributes)
 import { fixture as controlledCheckboxChecked } from './controlled-checkbox-checked'
@@ -775,6 +780,7 @@ export const jsxFixtures: JSXFixture[] = [
   selectValueSsr,
   textareaValueSsr,
   signalEarlyReturn,
+  branchRootPropAttr,
   logicalAndZero,
   controlledCheckboxChecked,
   controlledRadioChecked,

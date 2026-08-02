@@ -11,6 +11,7 @@ import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
+import { collapseLiteralUnion } from '../type/type-codegen.ts'
 
 /** Default for `getSignalInitialValueAsGo`'s optional fallback-var map. */
 const EMPTY_PROP_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
@@ -61,10 +62,14 @@ function nillableAwarePropRef(ctx: GoEmitContext, propName: string, expectedType
 export function convertInitialValue(
   ctx: GoEmitContext,
   value: string,
-  typeInfo: TypeInfo,
+  _typeInfo: TypeInfo,
   propsParams?: { name: string }[],
   preParsed?: ParsedExpr,
 ): string {
+  // Literal unions collapse to their backing primitive the same way
+  // `typeInfoToGo` collapses the field's type — the two MUST agree, or a
+  // `string` field gets a `nil` seed (#2477's `go run` failure).
+  const typeInfo = collapseLiteralUnion(_typeInfo)
   const propRef = (propName: string): string => nillableAwarePropRef(ctx, propName, typeInfo)
 
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {

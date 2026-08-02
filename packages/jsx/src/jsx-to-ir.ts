@@ -6189,6 +6189,30 @@ function tryResolveIdentifierAsTemplateLiteral(
     return [{ type: 'string', value: ast.text }]
   }
 
+  // `const cls = variantClasses[variant]` (#2477): the initializer IS the
+  // #2300 element-access shape, just not wrapped in a template literal.
+  // Route it through the same span resolver so the one-hop const
+  // (`className={cls}`) lowers to the identical `lookup` part as the
+  // inline form (`className={variantClasses[variant]}`, the #2300 arm in
+  // `getAttributeValue`) and the template-literal hop
+  // (`const cls = \`${variantClasses[variant]}\``, the arm below) — both
+  // of which every adapter already renders. Without this arm the attr
+  // fell through to a bare-expression `cls`, which JSX-runtime SSR
+  // (Hono) evaluates fine but every template backend emits as a
+  // reference to a variable the template never defines, rendering
+  // `class=""` with zero diagnostics. Same dynamic-key guard as the
+  // inline arm: a static-key index (`paths['icon']`) stays on the
+  // bare-expression path (jsx-to-ir regression pin — adapters resolve a
+  // constant-key index already, and it must remain a plain `expression`
+  // attr, not a single-case `lookup`).
+  if (
+    ts.isElementAccessExpression(ast) &&
+    !ts.isStringLiteralLike(ast.argumentExpression) &&
+    !ts.isNumericLiteral(ast.argumentExpression)
+  ) {
+    return tryResolveTemplateSpanFromConst(ast, ctx)
+  }
+
   if (!ts.isTemplateExpression(ast)) return null
 
   // We require at least one structurally-meaningful span (a string
