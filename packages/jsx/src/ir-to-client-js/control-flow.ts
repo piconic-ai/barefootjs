@@ -37,7 +37,7 @@ import { stringifyEventDelegation } from './control-flow/stringify/event-delegat
 export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): void {
   const profileComponentName = ctx.profile ? ctx.componentName : undefined
   for (const elem of ctx.conditionalElements) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom', profileComponentName, lazyScope: buildLazyRowScopeInfo(ctx) })
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'dom', profileComponentName, lazyScope: buildLazyRowScopeInfo(ctx), ctx })
     stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')
   }
@@ -47,7 +47,7 @@ export function emitConditionalUpdates(lines: string[], ctx: ClientJsContext): v
 export function emitClientOnlyConditionals(lines: string[], ctx: ClientJsContext): void {
   const profileComponentName = ctx.profile ? ctx.componentName : undefined
   for (const elem of ctx.clientOnlyConditionals) {
-    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw', profileComponentName, lazyScope: buildLazyRowScopeInfo(ctx) })
+    const plan = buildInsertPlan(elem, { scope: { kind: 'top' }, eventNameMode: 'raw', profileComponentName, lazyScope: buildLazyRowScopeInfo(ctx), ctx })
     lines.push(`  // @client conditional: ${elem.slotId}`)
     stringifyInsert(lines, plan, { leadingIndent: '  ', bodyIndent: '      ' })
     lines.push('')

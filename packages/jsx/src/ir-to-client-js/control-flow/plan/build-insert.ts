@@ -13,6 +13,8 @@ import type {
   BranchSummary,
 } from '../../types.ts'
 import { addCondAttrToTemplate } from '../../html-template.ts'
+import { rewriteDestructuredPropsInExpr } from '../../emit-reactive.ts'
+import type { ClientJsContext } from '../../types.ts'
 import { buildBranchLoopPlan } from './build-branch-loop.ts'
 import type { LazyRowScopeInfo } from './lazy-row-eligibility.ts'
 import type {
@@ -33,6 +35,17 @@ export interface BuildInsertOptions {
    * loops; omitted → those loops keep today's eager emission.
    */
   lazyScope?: LazyRowScopeInfo
+  /**
+   * Full component context, needed so branch-scoped reactive attributes go
+   * through the same `rewriteDestructuredPropsInExpr` pass the top-level
+   * path applies (`emit-reactive.ts`'s `emitReactiveAttributeUpdates`).
+   * Without it, a branch that IS the component's own root (`rootSwap`) reads
+   * a destructured local (captured once at hydration) instead of the live
+   * props object, freezing the computed value across prop updates (#2472
+   * regression: a reactive attribute on an early-return branch's own root
+   * element stopped tracking prop changes).
+   */
+  ctx: ClientJsContext
 }
 
 export function buildInsertPlan(
@@ -93,10 +106,17 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
       propsExpr: c.propsExpr,
     })),
     // Branch-scoped reactive attribute bindings (#1071). Spread the
-    // collected entry as-is — `ConditionalBranchReactiveAttr` already
-    // extends `AttrMeta` so the meta flags carry through to the
-    // emitter (`emitAttrUpdate` consumes them).
-    reactiveAttrs: branch.reactiveAttrs.map(a => ({ ...a })),
+    // collected entry — `ConditionalBranchReactiveAttr` already extends
+    // `AttrMeta` so the meta flags carry through to the emitter
+    // (`emitAttrUpdate` consumes them) — but rewrite the expression through
+    // the same `rewriteDestructuredPropsInExpr` pass the top-level path uses
+    // (`emit-reactive.ts`) so a destructured prop reference reads the live
+    // props object on every effect run instead of the once-captured local
+    // (#2472 regression fix).
+    reactiveAttrs: branch.reactiveAttrs.map(a => ({
+      ...a,
+      expression: rewriteDestructuredPropsInExpr(a.expression, options.ctx),
+    })),
     textEffects: branch.textEffects.map(t => ({
       slotId: t.slotId,
       expression: t.expression,
@@ -108,7 +128,7 @@ function buildArmBody(branch: BranchSummary, options: BuildInsertOptions): ArmBo
     // `__branchScope` (the parent arm's bindEvents argument), regardless of
     // the outer scope; only the eventNameMode is inherited.
     conditionals: branch.conditionals.map(c =>
-      buildInsertPlan(c, { scope: { kind: 'branchScope' }, eventNameMode: options.eventNameMode, profileComponentName: pc, lazyScope: options.lazyScope }),
+      buildInsertPlan(c, { scope: { kind: 'branchScope' }, eventNameMode: options.eventNameMode, profileComponentName: pc, lazyScope: options.lazyScope, ctx: options.ctx }),
     ),
   }
 }

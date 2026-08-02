@@ -452,6 +452,11 @@ import { fixture as signalEarlyReturn } from './signal-early-return'
 // component), which neither `signal-early-return` nor `button`/`kbd`/
 // `Slot`'s (dead, destructured-prop-conditioned) `asChild` exercises.
 import { fixture as ifStatementChildSwap } from './if-statement-child-swap'
+// #2472 regression pin: a prop-driven reactive class on an if/else
+// early-return branch's OWN ROOT ELEMENT — neither `signalEarlyReturn`
+// (static branches) nor `ifStatementChildSwap` (child-component branch,
+// no attribute coverage) exercises this shape.
+import { fixture as branchRootPropAttr } from './branch-root-prop-attr'
 import { fixture as logicalAndZero } from './logical-and-zero'
 // HTML element/attribute semantics checklist (state-carrying attributes)
 import { fixture as controlledCheckboxChecked } from './controlled-checkbox-checked'
@@ -782,6 +787,7 @@ export const jsxFixtures: JSXFixture[] = [
   textareaValueSsr,
   signalEarlyReturn,
   ifStatementChildSwap,
+  branchRootPropAttr,
   logicalAndZero,
   controlledCheckboxChecked,
   controlledRadioChecked,
