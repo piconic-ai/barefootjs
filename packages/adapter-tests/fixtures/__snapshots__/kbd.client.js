@@ -67,7 +67,7 @@ export function initKbd(__scope, _p = {}) {
       { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
       if (__ra_s0) {
         __disposers.push(createDisposableEffect(() => {
-          { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+          { const __v = `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm border bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none [&_svg:not([class*=size-])]:size-3 ${(_p.className ?? '')}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
         }))
       } }
       return () => __disposers.forEach(d => d())
@@ -117,7 +117,7 @@ export function initKbdGroup(__scope, _p = {}) {
       { const __ra_s0 = qsa(__branchScope, '[bf="s0"]')
       if (__ra_s0) {
         __disposers.push(createDisposableEffect(() => {
-          { const __v = `inline-flex items-center gap-1 ${className}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
+          { const __v = `inline-flex items-center gap-1 ${(_p.className ?? '')}`; if (__v != null) __ra_s0.setAttribute('class', String(__v)); else __ra_s0.removeAttribute('class') }
         }))
       } }
       return () => __disposers.forEach(d => d())

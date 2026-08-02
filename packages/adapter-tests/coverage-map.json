@@ -891,6 +891,22 @@
         "text"
       ]
     },
+    "branch-root-prop-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition"
+      ]
+    },
     "branch-self-closing": {
       "kinds": [
         "call",
@@ -4835,14 +4851,14 @@
     "array-method": 66,
     "arrow": 63,
     "binary": 80,
-    "call": 194,
+    "call": 195,
     "conditional": 23,
-    "identifier": 282,
-    "index-access": 12,
-    "literal": 232,
+    "identifier": 283,
+    "index-access": 13,
+    "literal": 233,
     "logical": 43,
     "member": 150,
-    "object-literal": 51,
+    "object-literal": 52,
     "template-literal": 29,
     "unary": 23,
     "unsupported": 31
@@ -4885,7 +4901,7 @@
     "literal:boolean": 46,
     "literal:null": 23,
     "literal:number": 97,
-    "literal:string": 164,
+    "literal:string": 165,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,
