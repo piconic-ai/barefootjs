@@ -38,6 +38,10 @@ export function NoteBox() {
     expect(template).not.toContain('value={')
     expect(template).toContain('{note()}')
     expect(clientJs).toContain('.value = __val')
+    // CSR registration template interpolates slotless children raw, so the
+    // client-only variant must escape — a value containing `</textarea>`
+    // must not break out of the element on CSR mount (Copilot review).
+    expect(clientJs).toMatch(/<textarea[^`]*\$\{escapeText\(/)
   })
 
   test('select value lowers to selected on statically-valued options', () => {
