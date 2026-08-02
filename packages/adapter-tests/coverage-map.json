@@ -945,6 +945,27 @@
         "text"
       ]
     },
+    "callback-param-shadows-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "camelcase-attributes": {
       "kinds": [
         "literal"
@@ -2576,6 +2597,22 @@
         "text"
       ]
     },
+    "loop-destructured-param-condition": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-item-conditional": {
       "kinds": [
         "array-literal",
@@ -2614,6 +2651,21 @@
       "contexts": [
         "attribute",
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-shadows-bool-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
@@ -2668,6 +2720,44 @@
         "attribute",
         "loop",
         "text"
+      ]
+    },
+    "loop-param-shadows-record-template-span": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-shadows-spread-const": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop"
       ]
     },
     "loop-preamble-attr-value": {
@@ -3035,6 +3125,22 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "nested-loop-tail-content": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -4835,19 +4941,19 @@
     }
   },
   "kindCounts": {
-    "array-literal": 69,
-    "array-method": 66,
-    "arrow": 63,
-    "binary": 81,
-    "call": 194,
-    "conditional": 23,
-    "identifier": 282,
-    "index-access": 13,
-    "literal": 232,
+    "array-literal": 70,
+    "array-method": 67,
+    "arrow": 64,
+    "binary": 82,
+    "call": 200,
+    "conditional": 24,
+    "identifier": 288,
+    "index-access": 14,
+    "literal": 238,
     "logical": 43,
-    "member": 150,
-    "object-literal": 52,
-    "template-literal": 29,
+    "member": 154,
+    "object-literal": 55,
+    "template-literal": 30,
     "unary": 23,
     "unsupported": 31
   },
@@ -4858,7 +4964,7 @@
     "array-method:flat": 4,
     "array-method:includes": 12,
     "array-method:indexOf": 1,
-    "array-method:join": 38,
+    "array-method:join": 39,
     "array-method:lastIndexOf": 1,
     "array-method:padEnd": 1,
     "array-method:padStart": 1,
@@ -4879,7 +4985,7 @@
     "binary:!=": 2,
     "binary:!==": 9,
     "binary:*": 10,
-    "binary:+": 18,
+    "binary:+": 19,
     "binary:-": 11,
     "binary:/": 1,
     "binary:<": 1,
@@ -4888,8 +4994,8 @@
     "binary:>=": 1,
     "literal:boolean": 45,
     "literal:null": 23,
-    "literal:number": 96,
-    "literal:string": 165,
+    "literal:number": 101,
+    "literal:string": 168,
     "logical:&&": 7,
     "logical:??": 38,
     "logical:||": 13,

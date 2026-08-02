@@ -94,3 +94,74 @@ export function Fire() {
     expect(clientJs).toMatch(/setFlag\s*\]\s*=\s*createSignal\(0\)/)
   })
 })
+
+/**
+ * Scope-aware prop rewrite (#2482 audit): `rewriteBarePropRefs` must
+ * not touch a name where a binding INSIDE the expression shadows the
+ * prop — a nested callback's parameter above all. The pre-fix global
+ * word-boundary regex rewrote the parameter declaration itself,
+ * emitting `.map((_p.title) => _p.title.a)`: a parse error that killed
+ * the whole client bundle.
+ */
+describe('scope-aware prop rewrite (nested callback param sharing a prop name)', () => {
+  test('memo computation keeps the callback param bare', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal, createMemo } from '@barefootjs/client'
+
+export function Titles({ title }: { title: string }) {
+  const [items, setItems] = createSignal([{ a: 'x' }])
+  const joined = createMemo(() => items().map((title) => title.a).join(','))
+  return <div><span>{joined()}</span><button onClick={() => setItems([])}>x</button></div>
+}
+`)
+    expect(clientJs).not.toMatch(/\(\s*_p\.title\s*\)\s*=>/)
+    expect(clientJs).not.toMatch(/_p\.title\.a/)
+  })
+
+  test('signal initializer keeps the callback param bare', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal } from '@barefootjs/client'
+
+export function Titles({ title }: { title: string }) {
+  const [joined, setJoined] = createSignal([{ a: 'x' }].map((title) => title.a).join(','))
+  return <div><span>{joined()}</span><button onClick={() => setJoined('')}>x</button></div>
+}
+`)
+    expect(clientJs).not.toMatch(/\(\s*_p\.title\s*\)\s*=>/)
+  })
+
+  test('mixed usage rewrites exactly the genuine outer reference', () => {
+    const clientJs = clientJsOf(`
+"use client"
+import { createSignal, createMemo } from '@barefootjs/client'
+
+export function Titles({ title }: { title: string }) {
+  const [items, setItems] = createSignal([{ a: 'x' }])
+  const label = createMemo(() => title + ':' + items().map((title) => title.a).join(','))
+  return <div><span>{label()}</span><button onClick={() => setItems([])}>x</button></div>
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Titles')
+    // outer ref rewritten…
+    expect(template).toContain('_p.title +')
+    // …inner param and its references untouched
+    expect(template).toMatch(/\(\s*title\s*\)\s*=>\s*title\.a/)
+    expect(template).not.toMatch(/\(\s*_p\.title\s*\)\s*=>/)
+  })
+
+  test('a loop-shadowed record const is not folded into a template span', () => {
+    const clientJs = clientJsOf(`
+const tone = { a: 'outer-a', b: 'outer-b' }
+
+export function Tones({ items, k }: { items: { id: number; a: string; b: string }[]; k: string }) {
+  return <ul>{items.map((tone) => <li key={tone.id} data-t={\`t \${tone[k]}\`}>{tone.a}</li>)}</ul>
+}
+`)
+    const template = templateLambdaOf(clientJs, 'Tones')
+    // The span must read the row binding, not the outer record literal.
+    expect(template).toContain('tone[_p.k]')
+    expect(template).not.toContain('outer-a')
+  })
+})
