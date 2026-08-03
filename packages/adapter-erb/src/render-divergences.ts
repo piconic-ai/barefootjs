@@ -36,6 +36,4 @@ export const renderDivergences: RenderDivergences = {
   // described in each issue and deleting the line.
   'loop-param-shadows-spread-const':
     'a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check (the live `loopBoundNames` map exists but is not consulted on this path), so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)',
-  'loop-param-shadows-record-template-span':
-    'a dynamic-key element access on a loop row (`tone[k]`) renders empty: row hashes deserialize with SYMBOL keys while the dynamic key is a STRING, so `tone["a"]` is nil (https://github.com/piconic-ai/barefootjs/issues/2491)',
 }

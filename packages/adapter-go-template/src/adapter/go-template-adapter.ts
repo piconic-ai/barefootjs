@@ -4024,11 +4024,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // Go's `index` builtin: `index $arr $i`. Both operands render through the
-    // same emitter so a loop-variable / arithmetic index lowers correctly. A
-    // multi-token operand (`bf_add $i 1`) must be parenthesised or Go parses it
-    // as extra `index` arguments.
-    return `index ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(index))}`
+    // Go's builtin `index` is exact-case only, and the shared analyzer
+    // types a dynamic index (e.g. a destructured .map() param used as a
+    // key, `tone[k]`) as `{kind:'unknown'}` — there is no compile-time
+    // witness available to guess whether the runtime value will be a
+    // string key or a numeric index (#2491). Route through the runtime's
+    // case-tolerant, kind-polymorphic `bf_get` (`getFieldValue`, bf.go)
+    // instead of guessing: it dispatches on the receiver's REFLECTED
+    // kind (map/struct vs slice/array/string) and accepts either a
+    // string or numeric `field` argument, so it's a strict superset of
+    // `index` — genuine numeric-index uses (`selected()[i]`) keep
+    // working, and string-keyed row lookups now resolve too. Both
+    // operands render through the same emitter so a loop-variable /
+    // arithmetic index lowers correctly. A multi-token operand
+    // (`bf_add $i 1`) must be parenthesised or Go parses it as extra
+    // `bf_get` arguments.
+    return `bf_get ${wrapIfMultiToken(emit(object))} ${wrapIfMultiToken(emit(index))}`
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {

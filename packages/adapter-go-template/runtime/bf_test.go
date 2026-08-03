@@ -1522,6 +1522,90 @@ func TestSort_FieldOnMapReceiver_TolerantToNilEntries(t *testing.T) {
 	// is that we didn't panic, and the result length is preserved.
 }
 
+// (#2491) `getFieldValue` (`bf_get`) is a strict superset of the `index`
+// builtin: it now dispatches on the receiver's reflected kind so a
+// slice/array/string receiver resolves a NUMERIC `field` the same way
+// `index` would, while a map/struct receiver still resolves a STRING
+// `field` through the existing case-tolerant lookup. This is what lets
+// `indexAccess` route every dynamic-key element access — including a
+// genuine numeric loop index (`selected()[i]`) — through one accessor
+// without a compile-time guess about which shape `field` will be.
+func TestGetFieldValue_NonIntegralIndexIsNotFound(t *testing.T) {
+	arr := []string{"row0", "row1", "row2"}
+	// JS `arr[1.2]` is a property lookup (undefined), not index 1 —
+	// truncating would diverge from every other adapter.
+	if got := getFieldValue(arr, 1.2); got != nil {
+		t.Errorf("getFieldValue(arr, 1.2) = %v, want nil", got)
+	}
+	if got := getFieldValue(arr, float32(0.5)); got != nil {
+		t.Errorf("getFieldValue(arr, 0.5) = %v, want nil", got)
+	}
+	// An integral float still indexes, matching JS `arr[1.0]`.
+	if got := getFieldValue(arr, 1.0); got != "row1" {
+		t.Errorf("getFieldValue(arr, 1.0) = %v, want row1", got)
+	}
+	// A non-numeric string key is not an index either.
+	if got := getFieldValue(arr, "not-numeric"); got != nil {
+		t.Errorf("getFieldValue(arr, \"not-numeric\") = %v, want nil", got)
+	}
+}
+
+func TestGetFieldValue_SliceNumericIndex(t *testing.T) {
+	items := []any{"row0", "row1", "row2"}
+	if got := getFieldValue(items, 1); got != "row1" {
+		t.Errorf("getFieldValue(slice, 1) = %v, want row1", got)
+	}
+	// A named int type (e.g. a loop-index variable of a distinct
+	// underlying kind) must still resolve via `isIntLike`.
+	if got := getFieldValue(items, int64(2)); got != "row2" {
+		t.Errorf("getFieldValue(slice, int64(2)) = %v, want row2", got)
+	}
+}
+
+func TestGetFieldValue_SliceIndexOutOfRange(t *testing.T) {
+	items := []any{"row0", "row1"}
+	if got := getFieldValue(items, 5); got != nil {
+		t.Errorf("getFieldValue(slice, 5) = %v, want nil", got)
+	}
+	if got := getFieldValue(items, -1); got != nil {
+		t.Errorf("getFieldValue(slice, -1) = %v, want nil", got)
+	}
+}
+
+func TestGetFieldValue_ArrayNumericIndex(t *testing.T) {
+	arr := [3]int{10, 20, 30}
+	if got := getFieldValue(arr, 2); got != 30 {
+		t.Errorf("getFieldValue(array, 2) = %v, want 30", got)
+	}
+}
+
+func TestGetFieldValue_StringNumericIndex(t *testing.T) {
+	if got := getFieldValue("hello", 1); got != "e" {
+		t.Errorf("getFieldValue(string, 1) = %v, want e", got)
+	}
+	if got := getFieldValue("hello", 99); got != nil {
+		t.Errorf("getFieldValue(string, 99) = %v, want nil", got)
+	}
+}
+
+// This is the direct regression for #2491: a `.map((tone) => ...)` row
+// keyed PascalCase (`goFieldNameForKey`'s contract) accessed by a
+// dynamic STRING key (the loop param's runtime value, `k = "a"`) must
+// resolve case-tolerantly, same as a static `tone.a` would.
+func TestGetFieldValue_MapDynamicStringKey(t *testing.T) {
+	row := map[string]any{"ID": 1, "A": "row1-a", "B": "row1-b"}
+	if got := getFieldValue(row, "a"); got != "row1-a" {
+		t.Errorf(`getFieldValue(row, "a") = %v, want row1-a`, got)
+	}
+}
+
+func TestGetFieldValue_NumericFieldAgainstMapReturnsNil(t *testing.T) {
+	row := map[string]any{"A": "row1-a"}
+	if got := getFieldValue(row, 0); got != nil {
+		t.Errorf("getFieldValue(map, 0) = %v, want nil", got)
+	}
+}
+
 // =============================================================================
 // JS-compat callees (#1188): bf_json / bf_string / bf_number /
 // bf_floor / bf_ceil / bf_round / bf_replace.

@@ -992,6 +992,35 @@ sub length ($self, $recv) {
     return $n;
 }
 
+# `arr[index]` / `hash[key]` — a runtime-polymorphic dynamic-key element
+# access (`emitIndexAccessPerl`, expr/operand.ts). Perl's deref syntax
+# forces a compile-time choice between `->{$k}` (hash) and `->[$k]`
+# (array), but the shared analyzer can't tell at compile time whether a
+# dynamic key (e.g. a destructured `.map()` param used as a key,
+# `tone[k]`) will turn out string- or number-shaped — it types it
+# `{kind:'unknown'}`. The previous compile-time guess picked `->[$k]`
+# (array deref) whenever it couldn't prove string-typed, which is a
+# FATAL "Not an ARRAY reference" against a hash row (#2491). Dispatch on
+# the receiver's RUNTIME `ref` instead — mirrors the Go adapter's
+# `getFieldValue`/`bf_get` and Twig's `attribute()`.
+sub get ($self, $collection, $key) {
+    return undef unless defined $key;
+    if (ref($collection) eq 'HASH') {
+        return $collection->{$key};
+    }
+    if (ref($collection) eq 'ARRAY') {
+        return undef unless $key =~ /^-?\d+$/;
+        my $idx = $key + 0;
+        # JS-semantics negative index is "not found" (`arr[-1] ===
+        # undefined`), NOT Perl's native from-the-end wraparound — guard
+        # it explicitly so this stays a superset of `->[]`, not a
+        # divergent accessor.
+        return undef if $idx < 0 || $idx >= scalar @$collection;
+        return $collection->[$idx];
+    }
+    return undef;
+}
+
 # `isValidElement(x)` -- the framework "is this a renderable element (not
 # plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266). Mirrors
 # JS's `'tag' in x && 'props' in x`: true only for a HASH ref carrying both

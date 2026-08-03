@@ -2396,11 +2396,22 @@ func projectSortKey(item any, keyKind, keyName string) any {
 	return item
 }
 
-// getFieldValue extracts a struct field value using reflection. For
-// map receivers it falls back to case-variant lookup so JSON-decoded
-// user data (`map[string]any{"price": 30}`) and PascalCase-emitted
-// test data both resolve under a single key name. (#1487)
-func getFieldValue(item any, field string) any {
+// getFieldValue extracts a struct field, map entry, or slice/array/string
+// element using reflection, dispatching on the RUNTIME kind of `item`
+// rather than a compile-time guess about `field`'s shape (#2491: a
+// dynamic-key element access on a loop row, `tone[k]`, is only known to
+// be string- or number-shaped at execution time — routing it through a
+// single runtime-polymorphic accessor, mirroring Jinja/minijinja `[]`
+// and Blade's `data_get()`, replaces the compile-time either/or guess
+// that broke for one shape or the other). For map/struct receivers it
+// falls back to case-variant lookup so JSON-decoded user data
+// (`map[string]any{"price": 30}`) and PascalCase-emitted test data both
+// resolve under a single key name. (#1487) `field` is `any` (not
+// `string`) precisely so a genuine numeric index (`bf_get $arr $i`,
+// e.g. `selected()[index]`) round-trips as an int rather than being
+// forced through a string conversion — this is a strict superset of the
+// `index` builtin, not a replacement that narrows numeric-index support.
+func getFieldValue(item any, field any) any {
 	v := reflect.ValueOf(item)
 	// Defensive IsNil guards mirror `SpreadAttrs` — keeps the helper
 	// safe against typed-nil pointer / nil-interface items inside a
@@ -2418,6 +2429,34 @@ func getFieldValue(item any, field string) any {
 		v = v.Elem()
 	}
 
+	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+		idx, ok := fieldAsIndex(field)
+		if !ok || idx < 0 || idx >= v.Len() {
+			return nil
+		}
+		return v.Index(idx).Interface()
+	}
+
+	if v.Kind() == reflect.String {
+		idx, ok := fieldAsIndex(field)
+		if !ok {
+			return nil
+		}
+		runes := []rune(v.String())
+		if idx < 0 || idx >= len(runes) {
+			return nil
+		}
+		return string(runes[idx])
+	}
+
+	// From here on only a string-shaped key can match a map or struct
+	// field — a numeric `field` (e.g. a loop index applied to a
+	// non-indexable receiver) has no lookup to perform.
+	fieldStr, ok := field.(string)
+	if !ok {
+		return nil
+	}
+
 	if v.Kind() == reflect.Map {
 		keyType := v.Type().Key()
 		if keyType.Kind() != reflect.String {
@@ -2433,15 +2472,15 @@ func getFieldValue(item any, field string) any {
 			}
 			return nil, false
 		}
-		if r, ok := lookup(field); ok {
+		if r, ok := lookup(fieldStr); ok {
 			return r
 		}
-		if cap := capitalize(field); cap != field {
+		if cap := capitalize(fieldStr); cap != fieldStr {
 			if r, ok := lookup(cap); ok {
 				return r
 			}
 		}
-		if low := decapitalize(field); low != field {
+		if low := decapitalize(fieldStr); low != fieldStr {
 			if r, ok := lookup(low); ok {
 				return r
 			}
@@ -2450,7 +2489,7 @@ func getFieldValue(item any, field string) any {
 		// all-caps key (`id` → `ID`), and `decapitalize("ID")` only
 		// lowers the first char (`iD`), so the JS-keyed map ("id") still
 		// misses. Try the fully-lowered key last to resolve it.
-		if lower := strings.ToLower(field); lower != field && lower != decapitalize(field) {
+		if lower := strings.ToLower(fieldStr); lower != fieldStr && lower != decapitalize(fieldStr) {
 			if r, ok := lookup(lower); ok {
 				return r
 			}
@@ -2462,7 +2501,7 @@ func getFieldValue(item any, field string) any {
 		return nil
 	}
 
-	fieldVal := v.FieldByName(field)
+	fieldVal := v.FieldByName(fieldStr)
 	if !fieldVal.IsValid() {
 		// Case-variant fallback: the evaluator carries the JS field name
 		// (`id` / `url`) against a Go-capitalised struct field (`ID` / `URL`),
@@ -2472,12 +2511,46 @@ func getFieldValue(item any, field string) any {
 		// match, so it stays safe. The legacy bf_sort/bf_reduce pass an
 		// already-capitalised name, so they hit the exact match above and never
 		// reach this fallback.
-		fieldVal = v.FieldByNameFunc(func(n string) bool { return strings.EqualFold(n, field) })
+		fieldVal = v.FieldByNameFunc(func(n string) bool { return strings.EqualFold(n, fieldStr) })
 		if !fieldVal.IsValid() {
 			return nil
 		}
 	}
 	return fieldVal.Interface()
+}
+
+// fieldAsIndex converts a `getFieldValue` key argument to a slice/array/
+// string element index. Accepts genuine numeric kinds (the loop-index
+// case, `bf_get $arr $i`) directly, and a numeric-looking string (a
+// dynamic key that happens to be digits) via `strconv.Atoi` so a
+// string-typed index used against an array-shaped receiver still
+// resolves rather than silently missing.
+func fieldAsIndex(field any) (int, bool) {
+	if isIntLike(field) {
+		return toInt(field), true
+	}
+	switch n := field.(type) {
+	// Only an INTEGRAL float is an index. JS `arr[1.2]` is a property
+	// lookup (undefined), not index 1, so truncating here would diverge.
+	case float32:
+		if float64(n) != math.Trunc(float64(n)) {
+			return 0, false
+		}
+		return int(n), true
+	case float64:
+		if n != math.Trunc(n) {
+			return 0, false
+		}
+		return int(n), true
+	case string:
+		i, err := strconv.Atoi(n)
+		if err != nil {
+			return 0, false
+		}
+		return i, true
+	default:
+		return 0, false
+	}
 }
 
 // AsMap normalizes a dynamically-typed prop value into a

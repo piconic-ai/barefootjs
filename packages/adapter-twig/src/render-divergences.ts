@@ -38,6 +38,4 @@ export const renderDivergences: RenderDivergences = {
   // described in each issue and deleting the line.
   'loop-param-shadows-spread-const':
     'a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)',
-  'loop-param-shadows-record-template-span':
-    'a dynamic-key element access on a loop row (`tone[k]`) renders empty on real PHP Twig — the row lookup resolves to nothing at render time (Jinja/minijinja render it correctly, so this is the PHP-side data-shape/access path, not the emission) (https://github.com/piconic-ai/barefootjs/issues/2491)',
 }

@@ -2345,24 +2345,6 @@
           ]
         }
       },
-      "loop-param-shadows-record-template-span": {
-        "erb": {
-          "kind": "render",
-          "reason": "a dynamic-key element access on a loop row (`tone[k]`) renders empty: row hashes deserialize with SYMBOL keys while the dynamic key is a STRING, so `tone[\"a\"]` is nil (https://github.com/piconic-ai/barefootjs/issues/2491)"
-        },
-        "go-template": {
-          "kind": "render",
-          "reason": "a dynamic-key element access on a loop row (`tone[k]`) renders empty at execute time — the emitted template contains no baked const (correct post-fix), but the row lookup resolves to nothing (https://github.com/piconic-ai/barefootjs/issues/2491)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "a dynamic-key element access on a loop row (`tone[k]`) diverges on real Mojolicious at render time (same silent-empty family as ERB/Go/Twig; the Perl-side mechanism needs a dig) (https://github.com/piconic-ai/barefootjs/issues/2491)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "a dynamic-key element access on a loop row (`tone[k]`) renders empty on real PHP Twig — the row lookup resolves to nothing at render time (Jinja/minijinja render it correctly, so this is the PHP-side data-shape/access path, not the emission) (https://github.com/piconic-ai/barefootjs/issues/2491)"
-        }
-      },
       "loop-param-shadows-spread-const": {
         "blade": {
           "kind": "render",
@@ -2942,10 +2924,6 @@
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
-      },
-      "loop-param-shadows-record-template-span": {
-        "description": ".map() param shadowing a record const stays row-scoped inside a `${base[key]}` template span",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-shadows-record-template-span.ts"
       },
       "loop-param-shadows-spread-const": {
         "description": ".map() param shadowing an object const spreads the row value, not the outer const",

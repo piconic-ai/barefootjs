@@ -8,12 +8,13 @@
  * rather than reading adapter instance state directly.
  *
  * `isStringTypedOperand` is byte-identical to the Mojo/Xslate adapters'
- * copy. `emitIndexAccessRuby` is ERB-specific: Ruby's `[]` operator is
- * syntactically the same for Array and Hash access (unlike Perl's
- * `->[]`/`->{}` split), but this runtime's object values are JSON-shaped
- * Ruby Hashes with SYMBOL keys — so a string-typed index still needs a
- * `.to_sym` conversion to become a valid Hash key, while a non-string
- * (numeric / loop-index) index passes straight through as an Array index.
+ * copy — NOTE: this is a stale pre-#2212 fork with no `identifier` arm;
+ * Mojo has since migrated to the shared analyzer-backed version. Left
+ * as-is here (out of scope for #2491; a separate cleanup).
+ * `emitIndexAccessRuby` no longer uses it: it always routes through the
+ * runtime's polymorphic `bf.get` helper (#2491) rather than guessing at
+ * compile time whether an index is a string key or numeric index — see
+ * its own docstring below.
  */
 
 import type { ParsedExpr } from '@barefootjs/jsx'
@@ -37,10 +38,19 @@ export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string)
 }
 
 /**
- * Lower `arr[index]` to a Ruby `[]` access. A string-typed index reads a
- * JSON-shaped Hash by symbol key (`.to_sym`); any other index (the common
- * loop-index / arithmetic case, e.g. `selected()[index]`) reads an Array by
- * its (already-numeric) value.
+ * Lower `arr[index]` to the runtime's polymorphic `bf.get` accessor
+ * (`lib/barefoot_js.rb`) rather than guessing at compile time whether
+ * `index` is a string key or a numeric index (#2491). Row hashes
+ * deserialize with `symbolize_names: true`, so keys are Symbols while a
+ * dynamic key (e.g. a destructured `.map()` param used as a key,
+ * `tone[k]`) is a runtime String — `isStringTypedOperand` can't see
+ * that shape (the shared analyzer types it `{kind:'unknown'}`), so the
+ * previous `.to_sym`-or-not compile-time branch guessed wrong for that
+ * case and silently returned nil. `bf.get` tries the Hash key as-is,
+ * then as a Symbol, then as a String, and falls back to numeric Array
+ * indexing — a strict superset of the two hand-picked forms this used
+ * to emit, so the common loop-index case (`selected()[index]`) keeps
+ * working unchanged.
  */
 export function emitIndexAccessRuby(
   object: ParsedExpr,
@@ -48,8 +58,5 @@ export function emitIndexAccessRuby(
   emit: (e: ParsedExpr) => string,
   isStringName: (n: string) => boolean,
 ): string {
-  const i = emit(index)
-  return isStringTypedOperand(index, isStringName)
-    ? `${emit(object)}[(${i}).to_sym]`
-    : `${emit(object)}[${i}]`
+  return `bf.get(${emit(object)}, ${emit(index)})`
 }

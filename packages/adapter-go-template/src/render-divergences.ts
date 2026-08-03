@@ -48,8 +48,6 @@ export const renderDivergences: RenderDivergences = {
     'the `inLoop` clobber is FIXED (#2487) — outer-row content after a nested loop now takes the loop arms and the spread resolves row-scoped. Residual: the spread\'s attribute NAMES are still mangled by the Go-cased-key kebab conversion (`data-kind` → `-data-kind`), which is #2490; this entry graduates with that fix (https://github.com/piconic-ai/barefootjs/issues/2490)',
   'loop-param-shadows-spread-const':
     'spreading a loop row object mangles attribute names (`id` → `-i-d`, `title` → `-title`); the spread VALUE is correctly row-scoped, distinguishing this from the template-adapter const-shadow hole #2489 (https://github.com/piconic-ai/barefootjs/issues/2490)',
-  'loop-param-shadows-record-template-span':
-    'a dynamic-key element access on a loop row (`tone[k]`) renders empty at execute time — the emitted template contains no baked const (correct post-fix), but the row lookup resolves to nothing (https://github.com/piconic-ai/barefootjs/issues/2491)',
   'callback-param-shadows-prop':
     'JS-computed signal/memo initializers (`[…].map(…).join(…)`, memo over signal + prop) don\'t seed Go SSR — renders `[]` / empty where every other adapter renders the computed value; hydration snaps to correct (https://github.com/piconic-ai/barefootjs/issues/2492)',
 }
