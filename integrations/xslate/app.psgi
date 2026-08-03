@@ -108,7 +108,17 @@ sub render_component ($component, %opts) {
     for my $child_name (keys %$children) {
         my $child_template = $children->{$child_name};
         my $child_init     = $signal_init->{$child_name};
-        $bf->register_child_renderer($child_name, sub ($props) {
+        # `$props, $caller` (renderer contract #1897 -- see BarefootJS.pm's
+        # `render_child`): a renderer is always invoked with the INVOKING
+        # instance too, since a renderer registered on the root may be
+        # called from a nested child render. `$caller` isn't needed for a
+        # top-level flat child of a standalone component page (unlike the
+        # blog's `_register_blog_child`, which chains off it) -- but this
+        # sub's signature must still ACCEPT it, or a two-arg call fails
+        # arity checking outright (was `sub ($props)`, unrelated to the
+        # Vite migration; surfaced once real perl/Text::Xslate first ran
+        # this route end to end).
+        $bf->register_child_renderer($child_name, sub ($props, $caller = undef) {
             my $child_bf = BarefootJS->new(undef, { backend => $backend });
             # Loop children carry no _bf_slot; fall back to template + suffix so
             # each instance gets a distinct scope id (client JS finds children
@@ -329,8 +339,18 @@ sub api_todos_reset ($req) {
 # layout (header + ThemeToggle in the shell, a hand-authored sidebar region
 # `nav:0` + the compiled <PageShell> nested content regions in the main column)
 # whose islands are the shared blog components in ../shared/blog, compiled by
-# this integration's `bf build`. The client router (client/router-entry.ts,
-# bundled to client/router-entry.js) swaps only the content region.
+# this integration's Vite build (vite.config.ts). The client router
+# (client/router-entry.ts, its bundled URL resolved into
+# $BLOG_ASSETS->{RouterEntry}) swaps only the content region.
+#
+# No import map is needed (unlike the pre-Vite build): the router bundle's
+# @barefootjs/client/runtime import and every compiled island's own
+# @barefootjs/client import are ordinary ESM imports Rollup/Vite resolve
+# through their real module graph, collapsing into ONE shared chunk (build)
+# or ONE cached module (dev) automatically — a single reactive runtime
+# instance without any hand-wired specifier redirection. That this
+# hand-written wiring could simply be deleted is the point of the
+# Vite-based design, not an incidental cleanup.
 #
 # There is no server JSX here: the page is composed in Perl from individually-
 # rendered island templates (`blog_island`), each sharing one request-scoped
@@ -351,6 +371,14 @@ sub _slurp_json ($path) {
     return eval { $J->decode($content) };
 }
 my $BLOG_MANIFEST = _slurp_json('dist/templates/manifest.json') // {};
+# The Vite-generated asset map (dist/bf-assets.json, written by
+# `@barefootjs/xslate/vite`'s `afterEmit` hook) — resolves a hand-written,
+# non-component script entry's bundled URL (dev: Vite origin URL;
+# production: content-hashed manifest path). Read once at startup, same
+# rationale as $BLOG_MANIFEST above: there is no compile step needing the
+# URL baked in ahead of time — a fresh copy lands under gitignored dist/ on
+# every build (dev AND production).
+my $BLOG_ASSETS = _slurp_json('dist/bf-assets.json') // {};
 my $BLOG_DATA = _slurp_json('dist/blog-data.json')
     // { posts => [], listItems => [], allTags => [] };
 
@@ -414,18 +442,13 @@ sub blog_island ($root, $component, $props = {}, $extra = {}, $children = {}) {
 # is the request-scoped runtime whose script collector the content islands (and
 # the shell islands rendered here) all share.
 sub blog_page ($root, $title, $base, $content_html) {
-    my $static    = "$BASE/client";
     my $theme     = blog_island($root, 'ThemeToggle');
     my $sidebar   = blog_island($root, 'Sidebar');
     my $shell     = blog_island($root, 'PageShell',
         {},                                                # no client props
         { children => $backend->mark_raw($content_html) }, # SSR-only: page content
         { reader_toolbar => 'ReaderToolbar' });
-    my $importmap = $J->encode({ imports => {
-        '@barefootjs/client'          => "$static/barefoot.js",
-        '@barefootjs/client/runtime'  => "$static/barefoot.js",
-        '@barefootjs/client/reactive' => "$static/barefoot.js",
-    } });
+    my $router_entry = $BLOG_ASSETS->{RouterEntry} // '';
     my $scripts   = $root->scripts;
     my $esc_title = _esc($title);
     return <<"HTML";
@@ -435,7 +458,6 @@ sub blog_page ($root, $title, $base, $content_html) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>$esc_title</title>
-<script type="importmap">$importmap</script>
 <link rel="stylesheet" href="$BASE/styles/blog.css">
 </head>
 <body>
@@ -448,7 +470,7 @@ sub blog_page ($root, $title, $base, $content_html) {
 <main>$shell</main>
 </div>
 $scripts
-<script type="module" src="$static/router-entry.js"></script>
+<script type="module" src="$router_entry"></script>
 </body>
 </html>
 HTML
@@ -477,6 +499,15 @@ sub blog_index_route ($req) {
             sortHref  => $base,
             tagClass  => 'tag',
             tagHref   => $base,
+            # `bf.query($root, ...)`'s first arg is the plain base-URL STRING
+            # every per-link sort/tag href builds against (see
+            # BarefootJS.pm's `query`, and integrations/php's/integrations/
+            # flask's identical `'root' => $base` seed) -- unrelated to the
+            # Vite migration, but was missing here, so every PostList render
+            # died with "Global symbol '$root' requires explicit package
+            # name" the first time this route was exercised against a real
+            # perl/Text::Xslate (previously always skipped in `bun test`).
+            root      => $base,
         },
         { post_list_item => 'PostListItem' });
     my $now = blog_island($root, 'NowPlaying', {}, { Math => { min => 0 } });
