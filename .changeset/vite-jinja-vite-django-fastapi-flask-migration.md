@@ -51,7 +51,11 @@ for `build`/`build:watch`, `build.outDir` scoped to `dist/client` (matching
 the existing `client_static`/`styles_static` Django views), and `app.py`'s
 `MANIFEST`/import map updated the same way as `ExampleApp.php`'s.
 `integrations/django`'s Playwright E2E suite (104 tests) passes end-to-end
-against the migrated build, run twice for stability.
+against the migrated build, run twice for stability. `integrations/fastapi`
+and `integrations/flask` follow the identical pattern (StaticFiles mount /
+Blueprint `url_prefix` instead of Django's `path()` dispatch, otherwise
+byte-for-byte the same `vite.config.ts` and `MANIFEST`/`ASSETS` reads);
+each also passes its own 104-test Playwright suite, run twice.
 
 Confirms the `@barefootjs/blade/vite` changeset's finding a second time:
 writing the SAME `/vite` shape for a second template-string adapter was
