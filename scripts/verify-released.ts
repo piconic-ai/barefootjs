@@ -167,11 +167,23 @@ async function checkCpan(): Promise<Problem[]> {
       // One release wears three hats — "0.30.2" in the .pm literal, "v0.30.2"
       // in META/02packages, "0.030002" in PAUSE's numified form. Compare
       // through the parser that defines them.
-      const same = await perl('exit(version->parse($ARGV[0]) == version->parse($ARGV[1]) ? 0 : 1)', [
-        indexed,
-        version,
-      ])
-      if (same.exitCode !== 0) {
+      //
+      // `use version` is belt and braces: version:: is bootstrapped into the
+      // interpreter, so `version->parse` resolves even though version.pm is
+      // not in %INC, but nothing here should rest on that. 0 and 1 are the
+      // only answers — anything else (a die on unparseable input, say) is not
+      // a verdict, so it throws to exit 2 rather than reporting drift, the
+      // same rule httpGet follows.
+      const same = await perl(
+        'use version; exit(version->parse($ARGV[0]) == version->parse($ARGV[1]) ? 0 : 1)',
+        [indexed, version],
+      )
+      if (same.exitCode !== 0 && same.exitCode !== 1) {
+        throw new Error(
+          `comparing ${module} ${indexed} against ${version}: ${same.stderr.toString().trim()}`,
+        )
+      }
+      if (same.exitCode === 1) {
         found.push({ registry: 'CPAN', subject: module, expected: version, found: `indexed at ${indexed}` })
       }
     }

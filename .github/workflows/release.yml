@@ -101,6 +101,11 @@ jobs:
         id: fallback
         if: steps.changesets.outputs.published != 'true'
         run: |
+          # pipefail matters below: `bun run release:publish | tee` reports
+          # tee's status without it, so a failed publish would fall through to
+          # the parsing step and mark a partial release as a successful one —
+          # the exact silent-failure shape this whole step exists to remove.
+          set -o pipefail
           set +e
           bun scripts/verify-released.ts --npm
           drift=$?
