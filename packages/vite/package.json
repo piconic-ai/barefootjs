@@ -4,11 +4,22 @@
   "description": "Vite plugin for BarefootJS: Vite/Rollup owns bundling, hashing, chunking, tree-shaking and minification of client assets, BarefootJS keeps only the JSX to (template, client JS) compile",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "import": "./dist/index.js"
+    }
+  },
+  "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves `types` to dist/ instead of src/ too — nothing outside this workspace should type-check against source.",
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
     }
   },
   "files": [

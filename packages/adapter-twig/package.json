@@ -22,7 +22,7 @@
       "import": "./src/build.ts"
     },
     "./vite": {
-      "types": "./dist/vite.d.ts",
+      "types": "./src/vite.ts",
       "import": "./dist/vite.js"
     }
   },

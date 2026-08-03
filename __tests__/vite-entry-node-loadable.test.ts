@@ -4,17 +4,27 @@
 // `@barefootjs/hono/vite`, so Node — NOT bun — is the one that resolves
 // and loads them. Node has no built-in TypeScript support unless the
 // running version happens to have type-stripping on by default (22.18+):
-// pointing a `./vite` export (or `@barefootjs/vite`'s own `.` export) at
-// `.ts` source works only by accident of the dev container's Node
-// version, and breaks with
+// pointing a `./vite` export's RUNTIME condition (`import` — the one
+// Node's ESM loader actually reads) at `.ts` source works only by
+// accident of the dev container's Node version, and breaks with
 // `TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".ts"`
 // on any older Node.
 //
-// This test reads every workspace package's manifest and asserts that
-// none of these Node-loaded entry points resolve to a `.ts` file — a
-// tenth adapter (or a new @barefootjs/vite export) that copies the
-// `.ts`-pointing shape must fail loudly here rather than silently
-// depending on a new-enough Node.
+// `types` is a DIFFERENT condition — TypeScript reads it, Node never
+// does — so it is deliberately exempt here: `./vite`'s `types` points at
+// real `.ts` source on purpose (so `tsgo`/`tsc` type-check straight from
+// source with nothing built, decoupling type resolution from build
+// order — see the `vite-entry-node-loadable` changeset). Only `import`
+// (and `default`, on the rare export shape that carries one) is what
+// Node ever loads, so those are the conditions this test holds to "must
+// already be built JS, never raw TypeScript". `.d.ts` declaration files
+// are unaffected either way — Node never loads those, TypeScript does.
+//
+// This test reads every workspace package's manifest and asserts that no
+// Node-loaded entry point's `import`/`default` condition resolves to a
+// `.ts` file — a tenth adapter (or a new `@barefootjs/vite` export) that
+// copies the old fully-`.ts`-pointing shape must fail loudly here rather
+// than silently depending on a new-enough Node.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, test } from 'bun:test'
@@ -25,6 +35,7 @@ const PACKAGES_DIR = resolve(REPO_ROOT, 'packages')
 interface ExportTarget {
   types?: string
   import?: string
+  default?: string
   bun?: string
 }
 
@@ -65,21 +76,25 @@ function nodeLoadedKeysFor(pkgName: string): string[] {
   return keys
 }
 
-function targetsToCheck(target: ExportTarget | string | undefined): string[] {
+/** Only the conditions Node's ESM loader itself ever resolves — NOT
+ * `types` (TypeScript-only, allowed to point at source; see file header)
+ * and NOT `bun` (a separate condition bun's own runtime picks, exempt for
+ * the same reason `types` is). */
+function runtimeTargetsToCheck(target: ExportTarget | string | undefined): string[] {
   if (!target) return []
   if (typeof target === 'string') return [target]
-  return [target.types, target.import].filter((v): v is string => typeof v === 'string')
+  return [target.import, target.default].filter((v): v is string => typeof v === 'string')
 }
 
 /** True for raw TypeScript SOURCE Node's ESM loader would choke on
  * (`ERR_UNKNOWN_FILE_EXTENSION`) — but not for a `.d.ts` DECLARATION file,
- * which is never executed and is exactly what a `types` field should
- * point at once an entry is built. */
+ * which is never executed (and never appears on `import`/`default`
+ * anyway; kept for robustness against a manifest typo). */
 function isRawTsSource(path: string): boolean {
   return path.endsWith('.ts') && !path.endsWith('.d.ts')
 }
 
-describe('Node-loaded package exports never point at .ts source', () => {
+describe('Node-loaded package exports never resolve import/default to .ts source', () => {
   const manifests = packageDirs
     .map(dir => ({ dir, manifest: loadManifest(dir) }))
     .filter((entry): entry is { dir: string; manifest: PackageManifest } => entry.manifest !== null)
@@ -97,19 +112,20 @@ describe('Node-loaded package exports never point at .ts source', () => {
       const published = manifest.publishConfig?.exports?.[key]
       if (topLevel === undefined && published === undefined) continue
 
-      test(`${manifest.name}${key === '.' ? '' : key} does not resolve to .ts source`, () => {
+      test(`${manifest.name}${key === '.' ? '' : key}'s import/default condition does not resolve to .ts source`, () => {
         // The workspace (dev/bun) resolution — this is the one Vite's
         // Node config loader actually walks when a sibling package's
-        // `vite.config.ts` imports this specifier, so it is the entry
-        // that must never point at `.ts`.
-        for (const path of targetsToCheck(topLevel)) {
+        // `vite.config.ts` imports this specifier, so its `import`
+        // condition is the one that must never point at `.ts`. `types`
+        // is deliberately NOT checked — see file header.
+        for (const path of runtimeTargetsToCheck(topLevel)) {
           expect(isRawTsSource(path)).toBe(false)
         }
         // The published-tarball resolution (after swap-publish-config.mjs
         // merges `publishConfig` in at pack time) — checked too so a
         // future edit can't silently regress just the published shape
         // while leaving the workspace shape fixed.
-        for (const path of targetsToCheck(published)) {
+        for (const path of runtimeTargetsToCheck(published)) {
           expect(isRawTsSource(path)).toBe(false)
         }
         // `dir` is asserted on implicitly above (loadManifest read from
