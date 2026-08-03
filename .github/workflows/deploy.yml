@@ -76,6 +76,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
 
       - name: Build site
@@ -112,6 +113,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/hono' build
           bun run --filter '@barefootjs/form' build
@@ -157,6 +159,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/hono' build
 
@@ -194,6 +197,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/hono' build
 
@@ -231,6 +235,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/hono' build
 
@@ -268,6 +273,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/go-template' build
 
@@ -308,6 +314,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/go-template' build
 
@@ -348,6 +355,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/go-template' build
 
@@ -388,6 +396,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/go-template' build
 
@@ -428,6 +437,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/mojolicious' build
 
@@ -468,6 +478,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/xslate' build
 
@@ -508,6 +519,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/jinja' build
 
@@ -548,6 +560,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/jinja' build
 
@@ -588,6 +601,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/erb' build
 
@@ -628,6 +642,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/erb' build
 
@@ -668,6 +683,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/rust' build
 
@@ -708,6 +724,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/twig' build
 
@@ -748,6 +765,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/jinja' build
 
@@ -788,6 +806,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/blade' build
 
@@ -828,6 +847,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/blade' build
 

@@ -60,6 +60,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/erb' build
 

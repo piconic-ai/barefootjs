@@ -65,6 +65,7 @@ jobs:
       - name: Build packages
         run: |
           bun run --filter '@barefootjs/jsx' build
+          bun run --filter '@barefootjs/vite' build
           bun run --filter '@barefootjs/client' build
           # packages/compat (the compat engine + `bun run compat:lock`)
           # imports every workspace adapter. These 8 have `main`/`exports`
