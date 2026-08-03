@@ -97,6 +97,11 @@ __pycache__/
 vendor/
 composer.lock
 
+# Ruby (Bundler) — barefoot_js is a library, so the lockfile is not committed;
+# dependencies resolve from barefoot_js.gemspec on every run.
+Gemfile.lock
+.bundle/
+
 # Benchmarks: generated output (runner/build.ts, babel transform temp, results)
 benchmarks/results/
 benchmarks/**/.babel-out*/

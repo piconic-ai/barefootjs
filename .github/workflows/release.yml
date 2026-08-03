@@ -229,21 +229,22 @@ jobs:
         # GEM_HOST_API_KEY for the `gem push` below.
         uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
 
-      # tzinfo (#2344): the one runtime gem — named-IANA-zone resolution in
-      # `format_date` (loaded lazily; every other helper stays stdlib-only).
-      # The gemspec declares it, but `bundler-cache: false` means nothing
-      # installs it, and the suite below `require`s it for real. ci-erb.yml
-      # has had this step all along; only this job was missing it, so the
-      # tests failed here on every release and `gem push` was never reached.
-      - name: Install runtime gems
-        run: gem install tzinfo --no-document
+      # Nothing installed the gemspec's dependencies here, so the suite below
+      # died on `require 'tzinfo'` and `gem push` was never reached — on every
+      # release since 0.25.0. ci-erb.yml installed them by hand and this job
+      # did not, which is exactly the drift that hid it. Both now install from
+      # barefoot_js.gemspec via the Gemfile, so a new dependency is declared
+      # once and neither workflow has to learn about it.
+      - name: Install gem dependencies
+        working-directory: packages/adapter-erb
+        run: bundle install
 
       - name: Build, test, and publish Ruby runtime to RubyGems
         working-directory: packages/adapter-erb
         run: |
           gemspec=$(find . -maxdepth 1 -name '*.gemspec' -print -quit)
           test -n "$gemspec"
-          ruby -Ilib -Itest -e 'Dir["test/**/*_test.rb"].sort.each { |f| require_relative f }'
+          bundle exec ruby -Ilib -Itest -e 'Dir["test/**/*_test.rb"].sort.each { |f| require_relative f }'
           gem build "$gemspec"
           gem push ./*.gem
 

@@ -63,16 +63,19 @@ jobs:
           bun run --filter '@barefootjs/client' build
           bun run --filter '@barefootjs/erb' build
 
-      # tzinfo (#2344): the one runtime gem — named-IANA-zone resolution in
-      # `format_date` (loaded lazily; every other helper stays stdlib-only).
-      - name: Install runtime gems
-        run: gem install tzinfo --no-document
+      # Dependencies come from barefoot_js.gemspec via the Gemfile, so adding
+      # a gem needs no change here or in release.yml. Bundler installs into
+      # the default gem home, which keeps them reachable from the bare `ruby`
+      # the conformance suite below spawns.
+      - name: Install gem dependencies
+        working-directory: packages/adapter-erb
+        run: bundle install
 
       - name: Run Ruby minitest suite
+        working-directory: packages/adapter-erb
         run: |
-          cd packages/adapter-erb
           for f in test/*_test.rb; do
-            ruby -Ilib -Itest "$f" || exit 1
+            bundle exec ruby -Ilib -Itest "$f" || exit 1
           done
 
       # The bun conformance suite compiles fixtures to ERB and renders them
