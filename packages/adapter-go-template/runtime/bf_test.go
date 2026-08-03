@@ -3,6 +3,7 @@ package bf
 import (
 	"html/template"
 	"math"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -1936,6 +1937,86 @@ func TestSpreadAttrs(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestJSKeys covers the loop-row Go-casing reversal (#2490): struct via
+// json tag, map via the `capitalizeFieldName` inverse, and the end-to-end
+// composition with `SpreadAttrs` that motivated the helper.
+func TestJSKeys(t *testing.T) {
+	t.Run("struct with json tags", func(t *testing.T) {
+		type row struct {
+			ID       string `json:"id"`
+			Title    string `json:"title"`
+			DataKind string `json:"data-kind"`
+		}
+		got := JSKeys(row{ID: "1", Title: "first", DataKind: "a"})
+		want := map[string]any{"id": "1", "title": "first", "data-kind": "a"}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("JSKeys(struct) = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("struct without json tag falls back to un-cased field name", func(t *testing.T) {
+		type row struct {
+			ID    string
+			Title string
+		}
+		got := JSKeys(row{ID: "1", Title: "first"})
+		want := map[string]any{"id": "1", "title": "first"}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("JSKeys(struct, no tags) = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("initialism with trailing digits round-trips", func(t *testing.T) {
+		// `capitalizeFieldName` maps the catalogued initialism `utf8` to
+		// `UTF8`; the inverse must consume the digit run too, or it
+		// decapitalizes to the wrong `uTF8`.
+		got := JSKeys(map[string]any{"UTF8": "y", "ID": "1"})
+		want := map[string]any{"utf8": "y", "id": "1"}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("JSKeys(map w/ UTF8) = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("map with Go-cased keys", func(t *testing.T) {
+		got := JSKeys(map[string]any{"ID": "1", "Title": "first", "DataKind": "a"})
+		want := map[string]any{"id": "1", "title": "first", "dataKind": "a"}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("JSKeys(map) = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("map with already-lowercase keys is unchanged", func(t *testing.T) {
+		got := JSKeys(map[string]any{"id": "1", "data-kind": "a"})
+		want := map[string]any{"id": "1", "data-kind": "a"}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("JSKeys(map, lowercase) = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("nil returns empty map", func(t *testing.T) {
+		got := JSKeys(nil)
+		if len(got) != 0 {
+			t.Errorf("JSKeys(nil) = %v, want empty", got)
+		}
+	})
+
+	t.Run("non-struct/non-map returns empty map", func(t *testing.T) {
+		got := JSKeys("x")
+		if len(got) != 0 {
+			t.Errorf("JSKeys(string) = %v, want empty", got)
+		}
+	})
+
+	t.Run("end-to-end composition with SpreadAttrs", func(t *testing.T) {
+		bag := map[string]any{"ID": "1", "Title": "first", "DataKind": "a"}
+		got := SpreadAttrs(JSKeys(bag))
+		want := template.HTMLAttr(`data-kind="a" id="1" title="first"`)
+		if got != want {
+			t.Errorf("SpreadAttrs(JSKeys(bag)) = %q, want %q", got, want)
+		}
+	})
 }
 
 func TestStyleToCss(t *testing.T) {
