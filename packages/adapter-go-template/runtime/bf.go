@@ -2530,9 +2530,17 @@ func fieldAsIndex(field any) (int, bool) {
 		return toInt(field), true
 	}
 	switch n := field.(type) {
+	// Only an INTEGRAL float is an index. JS `arr[1.2]` is a property
+	// lookup (undefined), not index 1, so truncating here would diverge.
 	case float32:
+		if float64(n) != math.Trunc(float64(n)) {
+			return 0, false
+		}
 		return int(n), true
 	case float64:
+		if n != math.Trunc(n) {
+			return 0, false
+		}
 		return int(n), true
 	case string:
 		i, err := strconv.Atoi(n)

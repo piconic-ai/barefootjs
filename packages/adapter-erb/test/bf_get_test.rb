@@ -53,6 +53,17 @@ class BfGetTest < Minitest::Test
     assert_nil @bf.get(arr, -1)
   end
 
+  def test_array_non_integral_key_returns_nil
+    arr = %w[row0 row1 row2]
+    # `to_i` would coerce these to 0/1 and hand back an element JS never
+    # would: `arr["not-numeric"]` and `arr[1.2]` are both undefined.
+    assert_nil @bf.get(arr, 'not-numeric')
+    assert_nil @bf.get(arr, '')
+    assert_nil @bf.get(arr, 1.2)
+    # An integral Float still indexes, matching JS `arr[1.0]`.
+    assert_equal 'row1', @bf.get(arr, 1.0)
+  end
+
   def test_nil_collection_or_key_returns_nil
     assert_nil @bf.get(nil, 'a')
     assert_nil @bf.get({ a: 1 }, nil)

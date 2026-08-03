@@ -10,6 +10,7 @@ SECURITY.md
 MANIFEST
 Makefile.PL
 README.md
+t/bf_get.t
 t/controller_cycle.t
 t/dev_reload.t
 t/eval_vectors.t

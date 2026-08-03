@@ -1530,6 +1530,26 @@ func TestSort_FieldOnMapReceiver_TolerantToNilEntries(t *testing.T) {
 // `indexAccess` route every dynamic-key element access — including a
 // genuine numeric loop index (`selected()[i]`) — through one accessor
 // without a compile-time guess about which shape `field` will be.
+func TestGetFieldValue_NonIntegralIndexIsNotFound(t *testing.T) {
+	arr := []string{"row0", "row1", "row2"}
+	// JS `arr[1.2]` is a property lookup (undefined), not index 1 —
+	// truncating would diverge from every other adapter.
+	if got := getFieldValue(arr, 1.2); got != nil {
+		t.Errorf("getFieldValue(arr, 1.2) = %v, want nil", got)
+	}
+	if got := getFieldValue(arr, float32(0.5)); got != nil {
+		t.Errorf("getFieldValue(arr, 0.5) = %v, want nil", got)
+	}
+	// An integral float still indexes, matching JS `arr[1.0]`.
+	if got := getFieldValue(arr, 1.0); got != "row1" {
+		t.Errorf("getFieldValue(arr, 1.0) = %v, want row1", got)
+	}
+	// A non-numeric string key is not an index either.
+	if got := getFieldValue(arr, "not-numeric"); got != nil {
+		t.Errorf("getFieldValue(arr, \"not-numeric\") = %v, want nil", got)
+	}
+}
+
 func TestGetFieldValue_SliceNumericIndex(t *testing.T) {
 	items := []any{"row0", "row1", "row2"}
 	if got := getFieldValue(items, 1); got != "row1" {

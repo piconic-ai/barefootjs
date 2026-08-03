@@ -800,9 +800,19 @@ module BarefootJS
 
         nil
       when Array
-        return nil unless key.is_a?(Numeric) || key.is_a?(String)
+        # Only an INTEGRAL index reads an element. `key.to_i` would be
+        # wrong on both ends: it coerces a non-numeric String to 0
+        # (`arr["nope"]` must be nil, not the first element) and it
+        # truncates a fractional number (JS `arr[1.2]` is a property
+        # lookup, i.e. undefined -- not index 1).
+        idx =
+          case key
+          when Integer then key
+          when Numeric then (key % 1).zero? ? key.to_i : nil
+          when String then (key =~ /\A-?\d+\z/ ? key.to_i : nil)
+          end
+        return nil if idx.nil?
 
-        idx = key.to_i
         # JS-semantics negative index is "not found" (`arr[-1] ===
         # undefined`), NOT Ruby's native from-the-end wraparound -- guard
         # it explicitly so this stays a superset of bracket access rather
