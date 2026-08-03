@@ -16,37 +16,39 @@
 //     BarefootJS-0.30.0 report listed four modules as indexed while 02packages
 //     kept pointing at 0.29.0.
 //
-// So don't model the pipeline — ask npm and CPAN what is there.
+// So don't model the pipeline — ask the registries what is there.
 //
-// Two modes:
+// Every registry a release touches is checked, and the reasons differ:
 //
-//   --npm    what release.yml runs to decide whether to publish. npm is
-//            synchronous, so "main is ahead of npm" is actionable at once, and
-//            acting on it is what makes releases independent of merge order.
-//   (full)   adds the two registries where "accepted" does not mean "live",
-//            because publishing to them is fire-and-forget:
+//   CPAN, Packagist    "accepted" does not mean "live". cpan-upload returns
+//                      once PAUSE takes the tarball and a separate indexer
+//                      cron writes 02packages later; the Packagist jobs push
+//                      a subtree split and POST to an update API that only
+//                      asks Packagist to crawl. Neither failure turns
+//                      anything red. PAUSE at least mails a report — though
+//                      it is the report that said "Successfully indexed" for
+//                      four modules whose index transaction had rolled back.
 //
-//              CPAN       cpan-upload returns once PAUSE takes the tarball;
-//                         a separate indexer cron writes 02packages later,
-//                         and can fail on its own.
-//              Packagist  the job pushes a subtree split and POSTs to the
-//                         update API; Packagist then crawls the tag whenever
-//                         it gets round to it.
+//   npm, JSR, PyPI,    Uploads are synchronous, so a failure is a failed
+//   RubyGems, crates   step and the job goes red. That was once the argument
+//                      for leaving them out of here. It was wrong: the gem
+//                      sat at 0.25.0 for eleven releases while
+//                      rubygems-release went red on every one of them, and
+//                      nobody noticed (#2521). Red is not the same as
+//                      noticed, and a check nobody reads is worth less than
+//                      one that answers the whole question.
 //
-//            Neither failure turns anything red. PAUSE at least mails a
-//            report — though it is the report that said "Successfully indexed"
-//            for four modules whose index transaction had rolled back —
-//            while Packagist says nothing at all. Run by hand after a release:
+// Run it by hand after a release:
 //
-//              bun scripts/verify-released.ts
-//
-//            PyPI, RubyGems, crates.io and JSR are deliberately absent. Their
-//            uploads are synchronous, so a failure is a failed step and
-//            already red; there is no state for a check to catch.
+//   bun scripts/verify-released.ts          every registry
+//   bun scripts/verify-released.ts --npm    npm only; no perl needed
 //
 // Exit: 0 everything live, 1 something is not released, 2 could not tell.
-// 1 and 2 are distinct because exit 1 triggers a publish in release.yml — a
-// registry outage must not be able to read as "not published" and provoke one.
+// Nothing consumes these programmatically today — release.yml's fallback
+// publish, which did, was reverted in #2517. Keep 1 and 2 apart anyway: a
+// registry that could not be reached has told you nothing, and reporting
+// that as "not published" is how a check like this trains people to ignore
+// it.
 
 import { resolve } from 'node:path'
 import { $ } from 'bun'
@@ -72,8 +74,45 @@ const PACKAGIST = [
   { npm: '@barefootjs/php', dir: 'packages/adapter-php', composer: 'barefootjs/php' },
 ]
 
+// npm package -> a registry that publishes synchronously, with the URL that
+// answers "is this exact version there?" — 404 when it is not. These need no
+// dist directory: one npm package maps to one artifact.
+const SYNC_REGISTRIES = [
+  {
+    registry: 'PyPI' as const,
+    npm: '@barefootjs/jinja',
+    subject: 'barefootjs',
+    url: (v: string) => `https://pypi.org/pypi/barefootjs/${v}/json`,
+  },
+  {
+    registry: 'RubyGems' as const,
+    npm: '@barefootjs/erb',
+    subject: 'barefoot_js',
+    url: (v: string) => `https://rubygems.org/api/v2/rubygems/barefoot_js/versions/${v}.json`,
+  },
+  {
+    registry: 'crates.io' as const,
+    npm: '@barefootjs/rust',
+    subject: 'barefootjs',
+    url: (v: string) => `https://crates.io/api/v1/crates/barefootjs/${v}`,
+  },
+]
+
+// JSR is deliberately absent. Checking it means knowing which packages are
+// eligible, and that rule lives in scripts/jsr-publish.ts: scoped, not
+// private, not in the ignore list, *not a `bin` package*, and — further down —
+// dropped when its exports resolve to nothing publishable. Restating it here
+// is the same duplication that let rubygems-release drift for eleven releases,
+// and getting it wrong is worse than not checking: a first attempt reported
+// @barefootjs/perl, /php and /cli as missing when they are simply not
+// published there. Asking JSR what the scope contains would sidestep the rule
+// entirely, but api.jsr.io is not reachable from here, so that path could not
+// be tested — and shipping an untested check is how this file's own history
+// went wrong. Left out until it can be written against something verifiable.
+const UA = 'barefootjs-verify-released (https://github.com/piconic-ai/barefootjs)'
+
 interface Problem {
-  registry: 'npm' | 'CPAN' | 'Packagist'
+  registry: 'npm' | 'PyPI' | 'RubyGems' | 'crates.io' | 'CPAN' | 'Packagist'
   subject: string
   expected: string
   found: string
@@ -89,7 +128,8 @@ interface Problem {
  * which Bun's fetch does not reliably traverse.
  */
 async function httpGet(url: string): Promise<string | null> {
-  const r = await $`curl -sS --max-time 30 -w ${'\n%{http_code}'} ${url}`.quiet().nothrow()
+  // crates.io rejects requests without a User-Agent, so every call carries one.
+  const r = await $`curl -sS --max-time 30 -A ${UA} -w ${'\n%{http_code}'} ${url}`.quiet().nothrow()
   if (r.exitCode !== 0) throw new Error(`GET ${url}: ${r.stderr.toString().trim()}`)
   const out = r.text()
   const split = out.lastIndexOf('\n')
@@ -99,7 +139,8 @@ async function httpGet(url: string): Promise<string | null> {
   return out.slice(0, split)
 }
 
-async function checkNpm(): Promise<Problem[]> {
+/** Everything Changesets publishes: non-private, not in its ignore list. */
+async function publishable(): Promise<{ name: string; version: string }[]> {
   const ignored: string[] =
     (await Bun.file(resolve(repoRoot, '.changeset/config.json')).json()).ignore ?? []
 
@@ -110,7 +151,11 @@ async function checkNpm(): Promise<Problem[]> {
     targets.push({ name: pkg.name, version: pkg.version })
   }
   if (targets.length === 0) throw new Error('No publishable packages found — the glob is wrong')
+  return targets
+}
 
+async function checkNpm(): Promise<Problem[]> {
+  const targets = await publishable()
   console.log(`npm — checking ${targets.length} packages`)
   const found: Problem[] = []
   await Promise.all(
@@ -128,6 +173,24 @@ async function checkNpm(): Promise<Problem[]> {
             ? 'not on npm at all'
             : `latest published ${(JSON.parse(latest) as { version: string }).version}`,
       })
+    }),
+  )
+  return found
+}
+
+async function checkSyncRegistries(): Promise<Problem[]> {
+  const versionOf = async (npm: string) => {
+    const dir = npm.replace('@barefootjs/', 'packages/adapter-')
+    return (await Bun.file(resolve(repoRoot, dir, 'package.json')).json()).version as string
+  }
+
+  console.log(`PyPI / RubyGems / crates.io — checking ${SYNC_REGISTRIES.length} packages`)
+  const found: Problem[] = []
+  await Promise.all(
+    SYNC_REGISTRIES.map(async ({ registry, npm, subject, url }) => {
+      const version = await versionOf(npm)
+      if ((await httpGet(url(version))) !== null) return
+      found.push({ registry, subject: `${subject} (${npm})`, expected: version, found: 'not published' })
     }),
   )
   return found
@@ -218,7 +281,13 @@ let problems: Problem[]
 try {
   problems = [
     ...(await checkNpm()),
-    ...(npmOnly ? [] : [...(await checkCpan()), ...(await checkPackagist())]),
+    ...(npmOnly
+      ? []
+      : [
+          ...(await checkSyncRegistries()),
+          ...(await checkCpan()),
+          ...(await checkPackagist()),
+        ]),
   ]
 } catch (err) {
   console.error(`\nCould not determine release state: ${err instanceof Error ? err.message : err}`)
@@ -234,6 +303,16 @@ console.error(`\n${problems.length} version(s) on main are not released:\n`)
 for (const p of problems) {
   console.error(`  ${p.registry.padEnd(9)}  ${p.subject}`)
   console.error(`             main says ${p.expected} — ${p.found}`)
+}
+
+if (problems.some((p) => ['PyPI', 'RubyGems', 'crates.io'].includes(p.registry))) {
+  console.error(
+    '\nPyPI / RubyGems / crates.io: these publish synchronously, so the job\n' +
+      'went red when it failed — read its log rather than guessing. Re-running\n' +
+      'the failed job on the release run retries at the same SHA. If a version\n' +
+      'is missing across several releases the job has been failing that whole\n' +
+      'time; that is how barefoot_js sat at 0.25.0 for eleven of them.',
+  )
 }
 
 if (problems.some((p) => p.registry === 'Packagist')) {
