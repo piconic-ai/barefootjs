@@ -6,10 +6,17 @@
  */
 
 import type { ParsedExpr, TypeInfo } from '@barefootjs/jsx'
+import {
+  asCallbackMethodCall,
+  freeVarsInBody,
+  materializeGetterCalls,
+  serializeParsedExpr,
+} from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { escapeGoString } from '../lib/go-emit.ts'
 import { parsedLiteralToGo } from './parsed-literal-to-go.ts'
 import { collapseLiteralUnion } from '../type/type-codegen.ts'
 
@@ -102,6 +109,20 @@ export function convertInitialValue(
       }
       if (value.startsWith('"') && value.endsWith('"')) {
         return value
+      }
+      // A `.map(cb).join(sep)` chain (#2492): the analyzer's `.join()`
+      // trailing-suffix rule (`inferTypeFromValue`) types a signal carrying
+      // this shape `string`, so it lands HERE rather than the `array`
+      // branch below — bake it the same way a memo's derived `.map().join()`
+      // value bakes (`memoInitialFromParsedBody`'s sibling arm in
+      // `memo-compute.ts`), through the runtime evaluator's `MapEval` +
+      // `Join` composition, instead of falling to the `""` zero value.
+      if (preParsed) {
+        const chain = matchMapJoinChain(preParsed)
+        if (chain) {
+          const chainGo = mapJoinChainToGo(ctx, chain, [], propsParams ?? [], EMPTY_PROP_FALLBACK_VARS)
+          if (chainGo !== null) return chainGo
+        }
       }
       return '""'
     }
@@ -242,4 +263,155 @@ export function getSignalInitialValueAsGo(
   }
 
   return '0'
+}
+
+/**
+ * A value-producing `.map(cb).join(sep)` chain — `<object>.map((param) =>
+ * <body>).join(<sepExpr>)` — the constructor-Go-source analogue of the
+ * template-position `bf_join (bf_map_eval …)` lowering (`emitMapEval`,
+ * `go-emit.ts`). `.join(...)` folds to the `array-method` IR node at parse
+ * time (`expression-parser.ts`); its `object` is recognised as a `.map(cb)`
+ * callback call via `asCallbackMethodCall` (the same recognition
+ * `matchFilterArmMemo`, `memo-compute.ts`, uses for `.filter`). Returns the
+ * receiver array, the mapper arrow, and the join separator argument (absent
+ * when `.join()` was called with no argument — JS defaults to `,`), or null
+ * when `expr` isn't this shape.
+ */
+export function matchMapJoinChain(expr: ParsedExpr): {
+  object: ParsedExpr
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>
+  sepArg?: ParsedExpr
+} | null {
+  if (expr.kind !== 'array-method' || expr.method !== 'join') return null
+  const mapCb = asCallbackMethodCall(expr.object)
+  if (!mapCb || mapCb.method !== 'map') return null
+  return { object: mapCb.object, arrow: mapCb.arrow, sepArg: expr.args[0] }
+}
+
+/**
+ * Resolve a `.map().join()` chain's receiver array to a Go expression — a
+ * signal-backed field, a prop field, or an inline array literal.
+ *
+ * A SIGNAL receiver (`items()`) re-derives the signal's own initial value
+ * from ITS OWN initializer (`convertInitialValue`, baked against the
+ * synthesised element struct in `state.synthStructTypes` when one was
+ * inferred for it) rather than referencing a struct field — this expression
+ * is itself one field value inside the SAME `<Props>{ ... }` composite
+ * literal the signal's own field is being built into, so it can't reference
+ * a sibling field by name. Mirrors `resolveGetterValueAsGo` /
+ * `getSignalInitialValueAsGo`'s existing convention of re-deriving a
+ * referenced signal rather than pointing at a not-yet-assigned field.
+ *
+ * A PROP receiver (`props.X` / bare destructured `X`) resolves to a bare
+ * `in.<Field>` reference, mirroring `matchFilterArmMemo`'s `itemsField` (no
+ * nillable-scalar type assertion — the receiver is an array, never one of
+ * the scalar kinds that assertion guards).
+ *
+ * An array-LITERAL receiver bakes element-by-element: an object element goes
+ * through `objectLiteralToGoMap` (a plain `map[string]interface{}`, source-
+ * cased keys) rather than `jsLiteralToGo`'s struct-backed baking, since this
+ * nested literal is a `.map()` RECEIVER, not a signal's own typed value, and
+ * so has no named struct synthesised for it.
+ *
+ * @returns the Go expression, or null when the receiver isn't one of the
+ *   three shapes above, or an object-array-literal element doesn't bake.
+ */
+function resolveMapJoinBaseAsGo(
+  ctx: GoEmitContext,
+  object: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string }[],
+): string | null {
+  if (object.kind === 'call' && object.callee.kind === 'identifier' && object.args.length === 0) {
+    const calleeName = object.callee.name
+    const sig = signals.find(s => s.getter === calleeName)
+    if (sig) {
+      const bakeType = ctx.state.synthStructTypes.get(sig.getter) ?? sig.type ?? { kind: 'array', raw: 'unknown[]' }
+      return convertInitialValue(ctx, sig.initialValue, bakeType, propsParams, sig.parsed)
+    }
+  }
+
+  const propName =
+    object.kind === 'member' && !object.computed && object.object.kind === 'identifier' && object.object.name === 'props'
+      ? object.property
+      : object.kind === 'identifier'
+        ? object.name
+        : null
+  if (propName && propsParams.some(p => p.name === propName)) {
+    return `in.${capitalizeFieldName(propName)}`
+  }
+
+  if (object.kind === 'array-literal') {
+    if (object.elements.length === 0) return '[]interface{}{}'
+    const elems: string[] = []
+    for (const el of object.elements) {
+      const go = el.kind === 'object-literal' ? objectLiteralToGoMap(ctx, el) : parsedLiteralToGo(ctx, el)
+      if (go === null) return null
+      elems.push(go)
+    }
+    return `[]interface{}{${elems.join(', ')}}`
+  }
+
+  return null
+}
+
+/**
+ * Lower a `.map(cb).join(sep)` chain (matched by {@link matchMapJoinChain})
+ * to a `bf.Join(bf.MapEval(<items>, "<projJSON>", "<param>", <envMap>),
+ * <sep>)` Go expression — the constructor-source analogue of
+ * `matchFilterArmMemo`'s `bf.FilterEval` emit (`memo-compute.ts`), reusing
+ * the SAME two runtime evaluator functions (`MapEval`, `eval.go`; `Join`,
+ * `bf.go`) the template-position `bf_map_eval`/`bf_join` lowering already
+ * calls. Shared by a memo's derived value (`memoInitialFromParsedBody`'s
+ * concatenation-chain arm) and a SIGNAL's own initializer
+ * (`convertInitialValue`'s `string` branch, #2492).
+ *
+ * @returns the Go expression, or null when the receiver doesn't resolve
+ *   ({@link resolveMapJoinBaseAsGo}), the projection body isn't
+ *   representable to the runtime evaluator (`serializeParsedExpr` refusal),
+ *   a captured free variable doesn't resolve, or the separator isn't a
+ *   string literal (a dynamic separator — out of scope for this arm).
+ */
+export function mapJoinChainToGo(
+  ctx: GoEmitContext,
+  chain: { object: ParsedExpr; arrow: Extract<ParsedExpr, { kind: 'arrow' }>; sepArg?: ParsedExpr },
+  signals: { getter: string; initialValue: string; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  const itemsGo = resolveMapJoinBaseAsGo(ctx, chain.object, signals, propsParams)
+  if (itemsGo === null) return null
+
+  const knownGetterNames = new Set(signals.map(s => s.getter))
+  const materialized = materializeGetterCalls(chain.arrow.body, knownGetterNames)
+  const projJSON = serializeParsedExpr(materialized)
+  if (projJSON === null) return null
+
+  const paramName = chain.arrow.params[0] ?? '_'
+  const freeVars = freeVarsInBody(materialized, new Set(chain.arrow.params))
+  const envEntries: string[] = []
+  for (const name of freeVars) {
+    const sig = signals.find(s => s.getter === name)
+    let goExpr: string | null = null
+    if (sig) {
+      goExpr = getSignalInitialValueAsGo(ctx, sig.initialValue, propsParams, propFallbackVars, sig.type)
+    } else if (propsParams.some(p => p.name === name)) {
+      const hoisted = propFallbackVars.get(name)
+      goExpr = hoisted ? hoisted.varName : `in.${capitalizeFieldName(name)}`
+    }
+    if (goExpr === null) return null
+    envEntries.push(`${JSON.stringify(name)}: ${goExpr}`)
+  }
+  const envMap = `map[string]any{${envEntries.join(', ')}}`
+
+  let sepGo: string
+  if (!chain.sepArg) {
+    sepGo = JSON.stringify(',')
+  } else if (chain.sepArg.kind === 'literal' && chain.sepArg.literalType === 'string') {
+    sepGo = JSON.stringify(chain.sepArg.value)
+  } else {
+    return null
+  }
+
+  return `bf.Join(bf.MapEval(${itemsGo}, "${escapeGoString(projJSON)}", ${JSON.stringify(paramName)}, ${envMap}), ${sepGo})`
 }

@@ -1,0 +1,6 @@
+---
+"@barefootjs/jsx": patch
+"@barefootjs/go-template": patch
+---
+
+Fix a signal/memo initializer shaped as a `.map(cb).join(sep)` chain (or a `+`-concatenation over one, e.g. `title + ':' + items().map(t => t.a).join(',')`) not seeding on Go SSR (#2492). The shared analyzer's `inferTypeFromValue` heuristic didn't special-case a trailing `.join(...)` suffix, so a signal ending in `.join(...)` mistyped as `array` (from the leading `[`) instead of `string`, producing a `nil` Go slice that stringifies as `[]`; it now yields `string` before the array check runs, affecting every adapter's type inference. On the Go template adapter, `computeMemoInitialValueOrNull`'s hand-matched memo-shape catalogue had no arm for a `.map().join()` chain (or the fixture's composite `+`-concatenation over one), so it fell through to the Go zero value (`""`); a signal's own `.map().join()` initializer landed in `convertInitialValue`'s new `string` branch with the same gap. Both now lower through a new `mapJoinChainToGo`/`matchMapJoinChain` pair (`value-lowering.ts`) that emits `bf.Join(bf.MapEval(...))`, reusing the existing runtime evaluator functions — no new Go runtime code. Graduates the `callback-param-shadows-prop` pin in `render-divergences.ts`.
