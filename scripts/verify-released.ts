@@ -18,7 +18,7 @@
 //
 // So don't model the pipeline — ask the registries what is there.
 //
-// Every registry a release touches is checked, and the reasons differ:
+// What it checks, and why the reasons differ:
 //
 //   CPAN, Packagist    "accepted" does not mean "live". cpan-upload returns
 //                      once PAUSE takes the tarball and a separate indexer
@@ -29,7 +29,7 @@
 //                      it is the report that said "Successfully indexed" for
 //                      four modules whose index transaction had rolled back.
 //
-//   npm, JSR, PyPI,    Uploads are synchronous, so a failure is a failed
+//   npm, PyPI,         Uploads are synchronous, so a failure is a failed
 //   RubyGems, crates   step and the job goes red. That was once the argument
 //                      for leaving them out of here. It was wrong: the gem
 //                      sat at 0.25.0 for eleven releases while
@@ -38,9 +38,12 @@
 //                      noticed, and a check nobody reads is worth less than
 //                      one that answers the whole question.
 //
+// JSR is the one registry a release touches that this does NOT check. The
+// reason is worth reading before adding it — see the note at SYNC_REGISTRIES.
+//
 // Run it by hand after a release:
 //
-//   bun scripts/verify-released.ts          every registry
+//   bun scripts/verify-released.ts          all of the above
 //   bun scripts/verify-released.ts --npm    npm only; no perl needed
 //
 // Exit: 0 everything live, 1 something is not released, 2 could not tell.
@@ -104,11 +107,12 @@ const SYNC_REGISTRIES = [
 // dropped when its exports resolve to nothing publishable. Restating it here
 // is the same duplication that let rubygems-release drift for eleven releases,
 // and getting it wrong is worse than not checking: a first attempt reported
-// @barefootjs/perl, /php and /cli as missing when they are simply not
-// published there. Asking JSR what the scope contains would sidestep the rule
-// entirely, but api.jsr.io is not reachable from here, so that path could not
-// be tested — and shipping an untested check is how this file's own history
-// went wrong. Left out until it can be written against something verifiable.
+// @barefootjs/perl, @barefootjs/php and @barefootjs/cli as missing when they
+// are simply not published there. Asking JSR what the scope contains would
+// sidestep the rule entirely, but api.jsr.io is not reachable from here, so
+// that path could not be tested — and shipping an untested check is how this
+// file's own history went wrong. Left out until it can be written against
+// something verifiable.
 const UA = 'barefootjs-verify-released (https://github.com/piconic-ai/barefootjs)'
 
 interface Problem {
