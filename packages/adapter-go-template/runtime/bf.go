@@ -200,6 +200,14 @@ func FuncMap() template.FuncMap {
 		// JSX intrinsic-element spread lowering (#1407)
 		"bf_spread_attrs": SpreadAttrs,
 
+		// Reverse the loop-row field-access Go-casing before a whole-item
+		// spread reaches `bf_spread_attrs` (#2490): a row's dot context is
+		// necessarily keyed `ID`/`Title`/`DataKind` (the same casing that
+		// makes `attrs.id` emit `{{.ID}}`), and `toAttrName`'s
+		// camelCase→kebab conversion mangles an uppercase-led key
+		// (`ID` → `-i-d`). See JSKeys' docstring for the recovery rule.
+		"bf_js_keys": JSKeys,
+
 		// Destructure object-rest spread-onto-element residual (#2087):
 		// "every field except these" for a struct/map, keyed by json tag.
 		"bf_omit": Omit,
@@ -976,6 +984,110 @@ func Omit(item any, excludeKeys ...string) map[string]any {
 			if _, skip := exclude[key]; skip {
 				continue
 			}
+			val := rv.MapIndex(k)
+			if val.IsValid() {
+				out[key] = val.Interface()
+			}
+		}
+	}
+	return out
+}
+
+// goInitialisms mirrors GO_INITIALISMS
+// (packages/adapter-go-template/src/adapter/lib/go-naming.ts) — the Go-side
+// copy `jsKeyFromGoCasedKey` needs to recognize a whole-word initialism run
+// the same way the TS-side `capitalizeFieldName` produced it (#2490). Keep
+// both lists in sync by hand; there is no shared source between the two
+// languages.
+var goInitialisms = map[string]struct{}{
+	"id": {}, "url": {}, "http": {}, "https": {}, "api": {}, "json": {}, "xml": {},
+	"html": {}, "css": {}, "sql": {}, "ip": {}, "tcp": {}, "udp": {}, "dns": {},
+	"ssh": {}, "tls": {}, "ssl": {}, "uri": {}, "uid": {}, "uuid": {}, "ascii": {},
+	"utf8": {}, "eof": {}, "grpc": {}, "rpc": {}, "cpu": {}, "gpu": {}, "ram": {}, "os": {},
+}
+
+// jsKeyFromGoCasedKey inverts `capitalizeFieldName` (go-naming.ts): recovers
+// the JS-original property name from a Go-cased map key produced by the
+// row's field-access contract (#2490). A leading run of 2+ uppercase ASCII
+// letters that, lowercased, is a whole-word Go initialism lowers as a
+// block (`ID` → `id`, matching `capitalizeFieldName`'s `id` → `ID`
+// whole-word branch); otherwise only the first rune lowers (`Title` →
+// `title`, `DataKind` → `dataKind` — kebab-casing that back to
+// `data-kind` is `toAttrName`'s job, not this function's). A key whose
+// first rune is already lowercase (not Go-cased) is returned unchanged.
+func jsKeyFromGoCasedKey(key string) string {
+	if key == "" {
+		return key
+	}
+	first, _ := utf8.DecodeRuneInString(key)
+	if !unicode.IsUpper(first) {
+		return key
+	}
+	runLen := 0
+	for runLen < len(key) && key[runLen] >= 'A' && key[runLen] <= 'Z' {
+		runLen++
+	}
+	if runLen >= 2 {
+		if _, ok := goInitialisms[strings.ToLower(key[:runLen])]; ok {
+			return strings.ToLower(key[:runLen]) + key[runLen:]
+		}
+	}
+	return decapitalize(key)
+}
+
+// JSKeys reverses the loop-row Go-casing described above for a WHOLE
+// receiver, keyed by ORIGINAL JS property name — the counterpart to
+// `SpreadAttrs`' `bf_js_keys` registration, applied ONLY to the loop-row
+// whole-item spread path (`{...row}` where `row` is the bare `.map()`
+// param, #2490).
+//
+// Struct receiver: prefer each field's `json` tag when present (same
+// json-tag recovery `Omit` already does above — the tag carries the
+// ORIGINAL source property name verbatim, robust to composite/hyphenated
+// names a pure un-casing can't reconstruct); fall back to
+// `jsKeyFromGoCasedKey` on the bare field name when no tag is set.
+//
+// Map receiver: `jsKeyFromGoCasedKey` per key.
+//
+// Anything else (nil, a non-struct/non-map interface) returns an empty
+// map rather than panicking.
+func JSKeys(item any) map[string]any {
+	out := map[string]any{}
+	rv := reflect.ValueOf(item)
+	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return out
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Struct:
+		rt := rv.Type()
+		for i := 0; i < rt.NumField(); i++ {
+			field := rt.Field(i)
+			if !field.IsExported() {
+				continue
+			}
+			key := jsKeyFromGoCasedKey(field.Name)
+			if tag, ok := field.Tag.Lookup("json"); ok {
+				if comma := strings.Index(tag, ","); comma >= 0 {
+					tag = tag[:comma]
+				}
+				if tag == "-" {
+					continue
+				}
+				if tag != "" {
+					key = tag
+				}
+			}
+			out[key] = rv.Field(i).Interface()
+		}
+	case reflect.Map:
+		for _, k := range rv.MapKeys() {
+			if k.Kind() != reflect.String {
+				continue
+			}
+			key := jsKeyFromGoCasedKey(k.String())
 			val := rv.MapIndex(k)
 			if val.IsValid() {
 				out[key] = val.Interface()

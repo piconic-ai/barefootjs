@@ -6839,7 +6839,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const trimmed = value.expr.trim()
         const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
         if (currentLoopParam && trimmed === currentLoopParam) {
-          return `{{bf_spread_attrs .}}`
+          // The row's keys are Go-cased by the field-access contract: the
+          // same lowering that makes `attrs.id` emit `{{.ID}}`
+          // (`goFieldNameForKey` → `capitalizeFieldName`) requires the
+          // seeded row map/struct to be keyed `ID`/`Title`/`DataKind`.
+          // `bf_js_keys` (bf.go) undoes just that capitalization — struct
+          // via json tag, map via the `capitalizeFieldName` inverse —
+          // before `toAttrName`'s UNCHANGED camelCase→kebab conversion
+          // sees the real JS names (#2490).
+          return `{{bf_spread_attrs (bf_js_keys .)}}`
         }
         // Destructure object-rest spread onto an element (`{...rest}`, #2087
         // Phase B): `rest` alone would spread the WHOLE item (every field,
@@ -6848,17 +6856,29 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // exactly those sibling keys. Only a spread whose expr is the BARE
         // rest name matches (`isLowerableLoopDestructure`'s admitted shape);
         // anything else (`{...fn(rest)}`) already refused at the IR gate.
+        // `Omit` already recovers original names via json tag (struct) /
+        // passthrough (map), so this arm does NOT need `bf_js_keys`.
         const restInfo = this.lookupRestExclude(trimmed)
         if (restInfo) {
           const excludeArgs = restInfo.excludeKeys.map(k => JSON.stringify(k)).join(' ')
           const omitArgs = excludeArgs ? `${restInfo.parent} ${excludeArgs}` : restInfo.parent
           return `{{bf_spread_attrs (bf_omit ${omitArgs})}}`
         }
+        // A field/member read off the loop row (`{...g.extra}`) — same
+        // Go-casing exposure as the bare-item case above, PLUS an
+        // ambiguity the compiler can't resolve at compile time: a
+        // `Record<string, string>` field's runtime map could have been
+        // seeded with JS-native data keys (`data-kind`) OR Go-cased
+        // field-name keys, and nothing in the TYPE says which. `bf_js_keys`
+        // is a no-op on an already-lowercase-first-rune key (lowercasing
+        // `data-kind`'s first rune changes nothing) and corrective on a
+        // Go-cased one, so wrapping here is safe for both conventions
+        // rather than betting on one (#2490).
         const goExpr = this.convertExpressionToGo(value.expr)
         // `convertExpressionToGo` already pushes BF101 for unsupported
         // expressions and returns `""`; pass through so the template still
         // compiles.
-        return `{{bf_spread_attrs ${goExpr}}}`
+        return `{{bf_spread_attrs (bf_js_keys ${goExpr})}}`
       }
       return `{{bf_spread_attrs .${value.slotId}}}`
     },
