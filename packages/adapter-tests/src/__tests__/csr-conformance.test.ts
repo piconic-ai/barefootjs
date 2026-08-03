@@ -250,17 +250,22 @@ describe('CSR Conformance Tests', () => {
     //     component's own first slot id coincides with the wrapper's slot
     //     number (see `site/ui`'s xyflow Highlight-Depth demo regression).
     'grandchild-composition',
-    // #2460: the CSR template drops the destructure rename the same way
-    // the SSR side does — the aliased `count` reads a property named
-    // `count` off a props object shaped `{ text, n }`, so the `s1` slot
-    // renders empty instead of the fixture's corrected expectedHtml.
-    // https://github.com/piconic-ai/barefootjs/issues/2460
+    // Originally filed under #2460: the CSR template drops the
+    // destructure rename the same way the SSR side used to — the aliased
+    // `count` reads a property named `count` off a props object shaped
+    // `{ text, n }`, so the `s1` slot renders empty instead of the
+    // fixture's corrected expectedHtml. #2460 itself is CLOSED (the
+    // shared SSR-side layer was fixed in b4f5075); this CSR client-JS
+    // gap is still live and is now tracked by
+    // https://github.com/piconic-ai/barefootjs/issues/2524. Re-verified
+    // still failing (2026-08-03).
     'aliased-destructured-prop',
-    // Same #2460 CSR-template gap as `aliased-destructured-prop`, inside
-    // a keyed `.map()` loop row: the nested child's renamed prop reads
+    // Same CSR-template gap as `aliased-destructured-prop`, inside a
+    // keyed `.map()` loop row: the nested child's renamed prop reads
     // `_p.count` off a row object shaped `{ text, n }`, so both rows'
     // `s1` slot renders empty instead of the fixture's expectedHtml.
-    // https://github.com/piconic-ai/barefootjs/issues/2460
+    // Tracked by https://github.com/piconic-ai/barefootjs/issues/2524.
+    // Re-verified still failing (2026-08-03).
     'composite-row-child-aliased-prop',
     // #2463 FIXED: the fixture now lowers to the root-ternary plan and
     // its template evaluates cleanly — but the synthetic scope wrapper

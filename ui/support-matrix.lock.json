@@ -2936,7 +2936,7 @@
       },
       "example": {
         "fixture": "aliased-destructured-prop",
-        "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2460)",
+        "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2524)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-destructured-prop.ts",
         "code": "text"
       }
