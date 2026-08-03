@@ -44,6 +44,15 @@ the identical TS-constructor-parameter-property shape:
   `@barefootjs/vite`'s core plugin writes, instead of the legacy CLI's
   single combined `manifest.json`.
 
+Ports `integrations/django` (the first of three integrations moving onto
+this adapter — `fastapi`/`flask` next) the same way `laravel` proved
+`@barefootjs/blade/vite`: `vite.config.ts` replaces `barefoot.config.ts`
+for `build`/`build:watch`, `build.outDir` scoped to `dist/client` (matching
+the existing `client_static`/`styles_static` Django views), and `app.py`'s
+`MANIFEST`/import map updated the same way as `ExampleApp.php`'s.
+`integrations/django`'s Playwright E2E suite (104 tests) passes end-to-end
+against the migrated build, run twice for stability.
+
 Confirms the `@barefootjs/blade/vite` changeset's finding a second time:
 writing the SAME `/vite` shape for a second template-string adapter was
 fully mechanical, and needed strictly less than Go's reference (no type
