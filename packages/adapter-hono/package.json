@@ -69,6 +69,10 @@
       "types": "./src/build.ts",
       "import": "./src/build.ts"
     },
+    "./vite": {
+      "types": "./src/vite.ts",
+      "import": "./src/vite.ts"
+    },
     "./app": {
       "types": "./src/app.ts",
       "import": "./src/app.ts"
@@ -150,6 +154,10 @@
         "types": "./dist/build.d.ts",
         "import": "./dist/build.js"
       },
+      "./vite": {
+        "types": "./dist/vite.d.ts",
+        "import": "./dist/vite.js"
+      },
       "./app": {
         "types": "./dist/app.d.ts",
         "import": "./dist/app.js"
@@ -170,7 +178,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/scripts.tsx ./src/portals.tsx ./src/portal-ssr.tsx ./src/dialog-context.tsx ./src/client-shim.ts ./src/preload.tsx ./src/dev.tsx ./src/dev-worker.ts ./src/jsx/jsx-runtime/index.ts ./src/jsx/jsx-dev-runtime/index.ts ./src/async.tsx ./src/utils.ts ./src/build.ts ./src/app.ts ./src/render.ts ./src/request-env.ts --root ./src --outdir ./dist --format esm --external hono --external @barefootjs/client --external @barefootjs/jsx --external @barefootjs/shared",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/scripts.tsx ./src/portals.tsx ./src/portal-ssr.tsx ./src/dialog-context.tsx ./src/client-shim.ts ./src/preload.tsx ./src/dev.tsx ./src/dev-worker.ts ./src/jsx/jsx-runtime/index.ts ./src/jsx/jsx-dev-runtime/index.ts ./src/async.tsx ./src/utils.ts ./src/build.ts ./src/vite.ts ./src/app.ts ./src/render.ts ./src/request-env.ts --root ./src --outdir ./dist --format esm --external hono --external @barefootjs/client --external @barefootjs/jsx --external @barefootjs/shared --external @barefootjs/vite --external vite",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",
@@ -194,13 +202,25 @@
     "@barefootjs/client": ">=0.2.0",
     "@barefootjs/jsx": ">=0.2.0",
     "@barefootjs/shared": ">=0.2.0",
-    "hono": "^4.0.0"
+    "@barefootjs/vite": ">=0.2.0",
+    "hono": "^4.0.0",
+    "vite": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@barefootjs/vite": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@barefootjs/adapter-tests": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
     "@types/jsdom": "^27.0.0",
     "hono": "^4.6.0",
     "jsdom": "^27.3.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
   }
 }
