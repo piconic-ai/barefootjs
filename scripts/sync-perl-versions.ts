@@ -7,7 +7,11 @@
 //
 // For each entry in PACKAGES:
 //   1. Read the bumped version from package.json.
-//   2. Update `our $VERSION` in every Perl module listed under `modules`.
+//   2. Update every `our $VERSION` line in every Perl module listed under
+//      `modules` — a file may declare more than one package (BarefootJS.pm
+//      also holds BarefootJS::Date), and each one needs its own literal
+//      $VERSION or META's `provides` reports it as undef and PAUSE drops it
+//      from the index as a decreasing version number.
 //   3. Insert the versioned entry immediately after {{$NEXT}} in Changes,
 //      keeping the placeholder in place for the next release cycle.
 //   4. Pin each cpanfile dependency listed under `cpanfileRequires` to the
@@ -78,7 +82,7 @@ for (const pkg of PACKAGES) {
     const modulePath = join(pkgDir, mod);
     const source = readFileSync(modulePath, 'utf8');
     const updated = source.replace(
-      /^our \$VERSION = ".+?";/m,
+      /^our \$VERSION = ".+?";/gm,
       `our $VERSION = "${version}";`,
     );
     if (updated === source) {
