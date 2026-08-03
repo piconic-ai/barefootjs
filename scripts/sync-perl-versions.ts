@@ -11,7 +11,10 @@
 //      `modules` — a file may declare more than one package (BarefootJS.pm
 //      also holds BarefootJS::Date), and each one needs its own literal
 //      $VERSION or META's `provides` reports it as undef and PAUSE drops it
-//      from the index as a decreasing version number.
+//      from the index as a decreasing version number. This step is
+//      idempotent and always runs, so drift is repaired rather than
+//      inherited; steps 3-4 are once-per-release and are skipped for a dist
+//      that was not bumped in this cycle.
 //   3. Insert the versioned entry immediately after {{$NEXT}} in Changes,
 //      keeping the placeholder in place for the next release cycle.
 //   4. Pin each cpanfile dependency listed under `cpanfileRequires` to the
@@ -67,17 +70,24 @@ for (const pkg of PACKAGES) {
 
   const { version } = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'));
 
-  // Skip if the primary module already reflects the target version — this
-  // package was not bumped in the current release cycle.
+  // Whether this dist was bumped in the current release cycle. The primary
+  // module's first $VERSION is the marker changeset moves, so it answers the
+  // question — but it answers ONLY that question. It is not evidence that
+  // every other $VERSION line agrees, so it gates the once-per-release
+  // bookkeeping below (Changes entry, cpanfile pin) and nothing else.
   const primaryPath = join(pkgDir, pkg.modules[0]);
   const primarySource = readFileSync(primaryPath, 'utf8');
   const currentVersionMatch = primarySource.match(/^our \$VERSION = "(.+?)";/m);
-  if (currentVersionMatch?.[1] === version) {
-    console.log(`Skipping ${pkg.dir} — already at ${version}`);
-    continue;
-  }
+  const alreadyReleased = currentVersionMatch?.[1] === version;
 
-  // Update $VERSION in every Perl module belonging to this dist.
+  // Update every `our $VERSION` line in every Perl module belonging to this
+  // dist. Runs unconditionally: the rewrite is idempotent, and gating it on
+  // `alreadyReleased` would let a drifted line hide forever behind an
+  // in-sync first line — a second package inside a file (BarefootJS::Date in
+  // BarefootJS.pm), or a module added to `modules` after its dist's last
+  // bump. That is how Evaluator/SearchParams sat at 0.14.0 for releases on
+  // end, and META `provides` turns any such drift into a package PAUSE
+  // refuses to index.
   for (const mod of pkg.modules) {
     const modulePath = join(pkgDir, mod);
     const source = readFileSync(modulePath, 'utf8');
@@ -85,12 +95,17 @@ for (const pkg of PACKAGES) {
       /^our \$VERSION = ".+?";/gm,
       `our $VERSION = "${version}";`,
     );
-    if (updated === source) {
+    if (!/^our \$VERSION = ".+?";/m.test(source)) {
       console.warn(`[warn] $VERSION not updated in ${mod} — pattern not found`);
-    } else {
+    } else if (updated !== source) {
       writeFileSync(modulePath, updated);
       console.log(`Updated $VERSION → ${version} in ${mod}`);
     }
+  }
+
+  if (alreadyReleased) {
+    console.log(`Skipping Changes/cpanfile for ${pkg.dir} — already at ${version}`);
+    continue;
   }
 
   // Pin cpanfile dependency floors to this release (step 4 above).

@@ -19,5 +19,9 @@ number". It would have stayed pinned at 0.29.0 through every future release.
 `BarefootJS::Date` now carries its own literal `$VERSION`, and
 `scripts/sync-perl-versions.ts` bumps every `our $VERSION` line in a module
 rather than only the first, so a file holding more than one package stays in
-lockstep. A `t/meta_provides.t` in each of the three Perl dists asserts that
-every package in META `provides` declares a version and that they all match.
+lockstep. That rewrite now also runs unconditionally: it used to sit behind a
+skip that reads only the primary module's *first* `$VERSION`, which would have
+let a drifted line hide behind an in-sync one indefinitely. The skip now gates
+only the once-per-release bookkeeping (the `Changes` entry and the `cpanfile`
+pin). A `t/meta_provides.t` in each of the three Perl dists asserts that every
+package in META `provides` declares a version and that they all match.
