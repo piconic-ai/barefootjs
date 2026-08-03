@@ -2,7 +2,7 @@ import { describe, test, expect, afterEach } from 'bun:test'
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { hasUseClientDirective, discoverComponentFiles, discoverComponents } from '../discover.ts'
+import { buildChildNameIndex, hasUseClientDirective, discoverComponentFiles, discoverComponents } from '../discover.ts'
 
 describe('hasUseClientDirective', () => {
   test('detects a leading double-quoted directive', () => {
@@ -74,5 +74,28 @@ describe('discoverComponents', () => {
     const byName = Object.fromEntries(found.map(f => [f.absPath.slice(dir.length + 1), f.isClient]))
     expect(byName['Client.tsx']).toBe(true)
     expect(byName['Server.tsx']).toBe(false)
+  })
+})
+
+describe('buildChildNameIndex', () => {
+  test('keys \'use client\' files by their basename without extension', () => {
+    const index = buildChildNameIndex([
+      { absPath: '/proj/components/TodoItem.tsx', isClient: true },
+      { absPath: '/proj/blog/LikeButton.tsx', isClient: true },
+    ])
+    expect(index.get('TodoItem')).toBe('/proj/components/TodoItem.tsx')
+    expect(index.get('LikeButton')).toBe('/proj/blog/LikeButton.tsx')
+  })
+
+  test('excludes server-only files — a @bf-child marker only ever names an interactive component', () => {
+    const index = buildChildNameIndex([
+      { absPath: '/proj/components/ServerOnly.tsx', isClient: false },
+    ])
+    expect(index.has('ServerOnly')).toBe(false)
+  })
+
+  test('accepts a .ts extension too', () => {
+    const index = buildChildNameIndex([{ absPath: '/proj/components/Widget.ts', isClient: true }])
+    expect(index.get('Widget')).toBe('/proj/components/Widget.ts')
   })
 })

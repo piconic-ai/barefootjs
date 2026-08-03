@@ -135,6 +135,37 @@ describe('resolveId hook', () => {
     const plugin = makePlugin('src/components', 'internal/views')
     expect(plugin.resolveId('@/components/signals.client.js', '/a/consumer.tsx')).toBeNull()
   })
+
+  test('resolves a @bf-child: marker to the named child\'s real absolute path once discovered', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-resolveid-bfchild-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    await writeFile(join(dir, 'src/components/Parent.tsx'), '\'use client\'\nexport function Parent() { return <div/> }')
+    await writeFile(join(dir, 'src/components/Child.tsx'), '\'use client\'\nexport function Child() { return <div/> }')
+
+    const plugin = makePlugin('src/components', 'internal/views')
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    await plugin.configResolved({ root: dir, base: '/', build: { outDir: 'dist', manifest: true } })
+
+    const resolved = plugin.resolveId('/* @bf-child:Child */', join(dir, 'src/components/Parent.tsx'))
+    expect(resolved).toBe(join(dir, 'src/components/Child.tsx'))
+  })
+
+  test('falls back to the shared no-op virtual module for an unresolvable @bf-child: name', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-resolveid-bfchild-unknown-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+
+    const plugin = makePlugin('src/components', 'internal/views')
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    await plugin.configResolved({ root: dir, base: '/', build: { outDir: 'dist', manifest: true } })
+
+    const resolved = plugin.resolveId('/* @bf-child:Nonexistent */', join(dir, 'src/components/Parent.tsx'))
+    expect(resolved).toEqual({ id: '\0barefoot-bf-child-noop', moduleSideEffects: false })
+
+    // `load` serves that id as an empty module — Rollup's own tree-shaking
+    // (moduleSideEffects: false) then elides the bare import entirely.
+    expect(plugin.load('\0barefoot-bf-child-noop')).toBe('')
+    expect(plugin.load('/some/other/module.tsx')).toBeNull()
+  })
 })
 
 describe('transform hook', () => {
@@ -245,6 +276,39 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
     // no script registration text at all.
     expect(greetingTpl).not.toContain('Scripts.Register')
     expect(greetingTpl).toContain('Hi')
+  })
+
+  test('does not refuse (BF103) a sibling-imported child rendered inside a .map() loop — the eager pass always registers every template together (#gin-migration)', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-writebundle-bf103-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    await writeFile(join(dir, 'src/components/Row.tsx'), '\'use client\'\nexport function Row(props: { label: string }) { return <li>{props.label}</li> }')
+    await writeFile(
+      join(dir, 'src/components/List.tsx'),
+      [
+        '\'use client\'',
+        'import { createSignal } from \'@barefootjs/client\'',
+        'import { Row } from \'./Row\'',
+        'export function List() {',
+        '  const [items] = createSignal([{ id: 1, label: \'a\' }])',
+        '  return <ul>{items().map(item => <Row key={item.id} label={item.label} />)}</ul>',
+        '}',
+      ].join('\n'),
+    )
+
+    const templatesDir = join(dir, 'internal/views')
+    const adapter = new GoTemplateAdapter({ packageName: 'main' })
+    const plugin = makePlugin('src/components', 'internal/views', adapter)
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    plugin.configResolved({ root: dir, base: '/', build: { outDir: 'dist', manifest: true } })
+    await mkdir(join(dir, 'dist/.vite'), { recursive: true })
+    await writeFile(join(dir, 'dist/.vite/manifest.json'), '{}')
+
+    // Would throw `[barefoot] compile failed: ... BF103` without
+    // `siblingTemplatesRegistered: true` on the compileJSX calls.
+    await expect(plugin.writeBundle()).resolves.toBeUndefined()
+
+    const listTpl = await readFile(join(templatesDir, `List${adapter.extension}`), 'utf8')
+    expect(listTpl).toContain('{{template "Row"')
   })
 })
 

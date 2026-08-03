@@ -72,9 +72,10 @@ import {
 } from '@barefootjs/jsx'
 import type { BarefootViteOptions } from './types.ts'
 import { CompileCache } from './compile-cache.ts'
-import { discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
+import { BF_CHILD_NOOP_ID, bfChildMarkerName } from './child-marker.ts'
+import { buildChildNameIndex, discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
 import { resolveClientJsSpecifier } from './resolve-client-js.ts'
-import { buildRelativeImportRewriter, toPosixRelative } from './paths.ts'
+import { buildRelativeImportRewriter, safeRollupEntryName, toPosixRelative } from './paths.ts'
 import { loadManifest, resolveScriptAssets } from './manifest.ts'
 import { planEmits, writeEmits, type EmitTarget } from './emit.ts'
 import {
@@ -121,6 +122,14 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   let templatesDir = ''
   let resolvedConfig: ResolvedConfig | undefined
 
+  // Name → absolute-path index for resolving `@bf-child:<Name>` markers
+  // (see `child-marker.ts` and `discover.ts`'s `buildChildNameIndex`).
+  // Built once in `configResolved` — before Rollup's graph pass starts
+  // calling `resolveId`, which is the only consumer — from a dedicated
+  // discovery pass (cheap: a directory walk + a `'use client'` directive
+  // peek per file, no compiling).
+  let childNameIndex = new Map<string, string>()
+
   // Re-anchors a relative import written in `absPath` so it still resolves
   // once the template is emitted under `templatesDir`. Pure function of
   // (absPath, componentDirs, templatesDir) — safe to compute for every
@@ -146,6 +155,24 @@ export function barefoot(options: BarefootViteOptions): Plugin {
         // scripts. See this module's docstring.
         scriptAssets: [],
         rewriteRelativeImport: rewriterFor(absPath),
+        // The eager pass ALWAYS writes every discovered component's
+        // template into the SAME `templates` dir for the app to register
+        // together at request/startup time (that's the whole point of
+        // walking `components` directly instead of following the module
+        // graph) — the exact guarantee `siblingTemplatesRegistered`
+        // exists to assert. Without it, a DSL-template adapter (Go,
+        // ERB, Blade, Jinja, ...) refuses to compile ANY component that
+        // uses a sibling-imported child inside a `.map()` loop (BF103),
+        // even though the shape works fine once the app's own template
+        // registration (e.g. Go's `filepath.WalkDir` + `ParseFiles` over
+        // every `.tmpl`) puts every template on one instance — which this
+        // plugin's design already requires. The legacy CLI makes the same
+        // assumption unconditionally (`packages/cli/src/lib/
+        // build.ts`'s `siblingTemplatesRegistered: true`); this mirrors
+        // it. Harmless for the client-JS graph pass that also calls this
+        // function — the option only ever reaches `adapter.generate()`'s
+        // TEMPLATE codegen, never client JS.
+        siblingTemplatesRegistered: true,
       }),
     )
   }
@@ -188,6 +215,8 @@ export function barefoot(options: BarefootViteOptions): Plugin {
             sourceMaps: true,
             scriptAssets,
             rewriteRelativeImport: rewriterFor(component.absPath),
+            // See `compileCanonical`'s docstring on this same field.
+            siblingTemplatesRegistered: true,
           })
           reportErrors(result, content, projectDir)
         }
@@ -230,13 +259,17 @@ export function barefoot(options: BarefootViteOptions): Plugin {
    * content hash, so a stale in-memory listing is harmless, but a stale
    * listing that MISSES a newly added file would not be) and bakes
    * `devOrigin`-based `scriptAssets` instead of manifest-resolved ones.
-   * Also (re)writes the dev-artifact marker — see `dev-server.ts`.
+   * Also (re)writes the dev-artifact marker — see `dev-server.ts` — and
+   * refreshes `childNameIndex` (a component added or removed mid-session
+   * must be reflected in `@bf-child:` marker resolution the same way it's
+   * reflected in everything else this pass recomputes from scratch).
    */
   async function runDevEagerPass(devOrigin: string): Promise<void> {
     const config = resolvedConfig
     if (!config) return
 
     const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
+    childNameIndex = buildChildNameIndex(discovered)
     const types = await emitTemplatesFor(discovered, config.root, component =>
       devScriptAssets(config, devOrigin, component.absPath),
     )
@@ -276,7 +309,13 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       const input: Record<string, string> = {}
       for (const c of found) {
         if (!c.isClient) continue
-        input[toPosixRelative(guessedRoot, c.absPath)] = c.absPath
+        // The object KEY only names the output chunk (Rollup's `[name]`) —
+        // it must be safe even for a `components` dir outside `root` (see
+        // `safeRollupEntryName`). It is NOT the manifest lookup key
+        // (`writeBundle` computes that separately via `toPosixRelative`
+        // against Vite's real resolved root, matching Vite's own
+        // manifest keying, which this name has no effect on).
+        input[safeRollupEntryName(guessedRoot, c.absPath, dirs)] = c.absPath
       }
 
       // Cross-origin dev default: the page comes from the backend, its
@@ -311,14 +350,36 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       }
     },
 
-    configResolved(config) {
+    async configResolved(config) {
       resolvedConfig = config
       componentDirs = options.components.map(d => resolve(config.root, d))
       templatesDir = resolve(config.root, options.templates)
+      const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
+      childNameIndex = buildChildNameIndex(discovered)
     },
 
     resolveId(source, importer) {
+      // See `child-marker.ts`: a `@bf-child:` marker isn't a real module.
+      // Resolve it to the named child's REAL `.tsx` file when discovery
+      // found one — Rollup then treats it as an ordinary entry-to-entry
+      // import (the child is independently a Rollup entry too, being
+      // `'use client'`), which is what makes the browser fetch and
+      // execute the child's script as a side effect of loading the
+      // parent's. Falls back to a shared empty virtual module (elided by
+      // Rollup's tree-shaking, `moduleSideEffects: false`) for a name this
+      // simple map doesn't cover, rather than failing the build outright.
+      const childName = bfChildMarkerName(source)
+      if (childName !== null) {
+        const childAbsPath = childNameIndex.get(childName)
+        if (childAbsPath) return childAbsPath
+        return { id: BF_CHILD_NOOP_ID, moduleSideEffects: false }
+      }
       return resolveClientJsSpecifier(source, importer)
+    },
+
+    load(id) {
+      if (id === BF_CHILD_NOOP_ID) return ''
+      return null
     },
 
     transform(code, id) {

@@ -130,6 +130,23 @@ describe('e2e: vite build', () => {
     expect(template).toContain(`{{.Scripts.Register "${expectedUrl}"}}`)
   })
 
+  test('a sibling-imported child rendered inside a CSR .map() loop resolves to a REAL import, not the raw @bf-child: marker (#gin-migration)', async () => {
+    const manifest = JSON.parse(await readFile(resolve(outDir, '.vite/manifest.json'), 'utf8'))
+    const loopParentKey = Object.keys(manifest).find(k => k.endsWith('LoopParent.tsx'))!
+    const loopChildKey = Object.keys(manifest).find(k => k.endsWith('LoopChild.tsx'))!
+
+    // LoopChild is independently a Rollup entry (every 'use client' file is)
+    // AND reachable from LoopParent's own compiled output — proof the
+    // `@bf-child:LoopChild` marker resolved to LoopChild's real module
+    // instead of the unresolvable literal string, and that Rollup wired an
+    // entry-to-entry import rather than leaving it external.
+    expect(manifest[loopParentKey].imports).toContain(loopChildKey)
+
+    const parentContent = await readFile(resolve(outDir, manifest[loopParentKey].file), 'utf8')
+    expect(parentContent).not.toContain('@bf-child')
+    expect(parentContent).not.toContain('bf-child')
+  })
+
   test('emits a template for the server-only component (never in the Rollup graph) with NO script registration', async () => {
     const manifest = JSON.parse(await readFile(resolve(outDir, '.vite/manifest.json'), 'utf8'))
     expect(Object.keys(manifest).some(k => k.endsWith('Greeting.tsx'))).toBe(false)

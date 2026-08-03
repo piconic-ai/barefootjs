@@ -11,7 +11,7 @@
  * plugin. See CLAUDE.md: "reuse or port it, don't reinvent."
  */
 import { readdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 
 /** Does `content` start with a `'use client'` / `"use client"` directive
  * (after skipping leading block/line comments)? */
@@ -108,4 +108,36 @@ export async function discoverComponents(
     }
   }
   return out
+}
+
+/**
+ * Component-name → absolute-path index used to resolve `@bf-child:<Name>`
+ * markers (see `child-marker.ts`) to a real file: a bare-marker child
+ * reference embeds only the referenced component's NAME (the compiler has
+ * no filesystem access at that phase — see `child-components.ts`), so
+ * `resolveId` needs a name→file lookup built from a full discovery pass.
+ *
+ * Keyed by each `'use client'` file's own basename without extension —
+ * the one-component-per-file convention this repo's shared components
+ * follow (`TodoItem.tsx` exports `TodoItem`) and the same convention the
+ * legacy CLI's inlining fallback used for its OWN name→file lookup
+ * (`combineParentChildClientJs`'s `componentToFile`). Server-only files are
+ * excluded: a `@bf-child:` marker only ever names another component this
+ * one instantiates at runtime (`initChild`/`createComponent`), which
+ * requires an `init` function only a `'use client'` file has.
+ *
+ * Known limitation, inherited from the same convention the legacy fallback
+ * also only partially covered: a multi-component export file (e.g.
+ * `icon/index.tsx` exporting `CopyIcon` + `CheckIcon`) is keyed by its OWN
+ * basename (`index`), not by either exported component's name — a
+ * `@bf-child:CopyIcon` marker won't resolve through this map and falls
+ * back to the no-op module (see `plugin.ts`'s `resolveId`).
+ */
+export function buildChildNameIndex(discovered: readonly DiscoveredComponent[]): Map<string, string> {
+  const index = new Map<string, string>()
+  for (const c of discovered) {
+    if (!c.isClient) continue
+    index.set(basename(c.absPath).replace(/\.tsx?$/, ''), c.absPath)
+  }
+  return index
 }

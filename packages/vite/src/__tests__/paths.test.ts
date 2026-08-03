@@ -5,6 +5,7 @@ import {
   withExtension,
   perComponentRelPath,
   buildRelativeImportRewriter,
+  safeRollupEntryName,
 } from '../paths.ts'
 
 describe('toPosixRelative', () => {
@@ -68,5 +69,25 @@ describe('buildRelativeImportRewriter', () => {
     // the rewritten specifier re-relativises from the template's new home
     // (/views/ui/button/) back to that same absolute file.
     expect(rewrite('../../../types')).toBe('../../../proj/src/types')
+  })
+})
+
+describe('safeRollupEntryName', () => {
+  test('uses the plain root-relative path when the file is under root', () => {
+    expect(safeRollupEntryName('/proj', '/proj/src/components/Counter.tsx', ['/proj/src/components'])).toBe(
+      'src/components/Counter.tsx',
+    )
+  })
+
+  test('falls back to the componentDir-relative path when the file is OUTSIDE root (a `..`-prefixed name Rollup rejects as [name])', () => {
+    expect(
+      safeRollupEntryName('/proj/gin', '/proj/shared/blog/LikeButton.tsx', ['/proj/shared/blog']),
+    ).toBe('LikeButton.tsx')
+  })
+
+  test('the out-of-root fallback never starts with ".." (what Rollup actually rejects)', () => {
+    const name = safeRollupEntryName('/proj/gin', '/proj/shared/blog/nested/LikeButton.tsx', ['/proj/shared/blog'])
+    expect(name.startsWith('..')).toBe(false)
+    expect(name).toBe('nested/LikeButton.tsx')
   })
 })

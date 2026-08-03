@@ -18,6 +18,35 @@ export function toPosixRelative(root: string, absPath: string): string {
 }
 
 /**
+ * A `rollupOptions.input` OBJECT KEY safe for `absPath`, given the Vite
+ * project root — NOT the same thing as a manifest lookup key (Vite's own
+ * manifest is keyed by the source file's root-relative path regardless of
+ * what name you give an entry here; see `manifest.ts` / `writeBundle` in
+ * `plugin.ts`, which never call this and must not start).
+ *
+ * Rollup uses an object-form `input`'s key AS THE CHUNK NAME (the `[name]`
+ * substitution in `output.entryFileNames`), and REJECTS a name that is
+ * itself an absolute or parent-relative path outright
+ * (`Invalid substitution "…" for placeholder "[name]"`) — which
+ * `toPosixRelative(root, absPath)` produces whenever `absPath` is OUTSIDE
+ * `root`, exactly the common case this monorepo's real layouts hit (a
+ * `components` dir that's a SIBLING of, not a descendant of, the app's
+ * Vite root — see `plugin.ts`'s `configureServer` docstring for the same
+ * layout fact from the dev side). Falls back to `absPath`'s position under
+ * whichever configured `componentDirs` entry contains it (the same
+ * mirroring `relativeUnderComponentDir` already does for emitted template
+ * paths) — short and readable (`blog/LikeButton`), unlike falling all the
+ * way back to the bare filesystem-rooted absolute path, which would work
+ * (no `..` possible once `path.resolve()`-normalized) but bakes the
+ * building machine's own directory structure into every output filename.
+ */
+export function safeRollupEntryName(root: string, absPath: string, componentDirs: readonly string[]): string {
+  const rel = toPosixRelative(root, absPath)
+  if (!rel.startsWith('..')) return rel
+  return relativeUnderComponentDir(absPath, componentDirs)
+}
+
+/**
  * `absPath`'s position relative to whichever `componentDirs` entry
  * contains it (POSIX, WITH extension) — e.g. `ui/button/index.tsx` for
  * `<componentDir>/ui/button/index.tsx`. Falls back to the bare basename
