@@ -34,8 +34,6 @@ export const renderDivergences: RenderDivergences = {
   // #2482 audit follow-ups: loop-scope holes in per-adapter name
   // classification. Graduate by applying the loop-bound-name guards
   // described in each issue and deleting the line.
-  'loop-param-shadows-bool-prop':
-    'a .map() param sharing a boolean prop\'s name is routed through the bool lowering in attribute position (renders "true"/"false" instead of the row string) — `collectBooleanTypedProps` lacks the loop-bound-name subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)',
   'loop-param-shadows-spread-const':
     'a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check (the live `loopBoundNames` map exists but is not consulted on this path), so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)',
   'loop-param-shadows-record-template-span':
