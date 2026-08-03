@@ -58,8 +58,8 @@ jobs:
     # default 6h, blocking every queued release run behind it.
     timeout-minutes: 30
     outputs:
-      published: ${{ steps.changesets.outputs.published == 'true' && 'true' || steps.fallback.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.published == 'true' && steps.changesets.outputs.publishedPackages || steps.fallback.outputs.publishedPackages }}
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -81,58 +81,6 @@ jobs:
           publish: bun run release:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Whether a release happens must not depend on what else merged.
-      #
-      # changesets/action decides between "open a Version PR" and "publish"
-      # from whether `.changeset/` is empty — global state any PR can change.
-      # A changeset landing on main between the Version PR being refreshed and
-      # merged turns that merge into another version PR, and the run goes green
-      # having released nothing (0.30.1: #2500 merged 29s before #2495).
-      #
-      # So decide from what is actually on npm instead. release:publish is
-      # idempotent and version-driven — it compares each package.json against
-      # the registry and skips what is already there — so this is a no-op in
-      # the ordinary case and a release in the case above. Guarded by the
-      # verify script so the ordinary case costs 22 small HTTP requests rather
-      # than a full build; exit 2 (could not reach a registry) deliberately
-      # does not trigger a publish.
-      - name: Publish anything main has that npm does not
-        id: fallback
-        if: steps.changesets.outputs.published != 'true'
-        run: |
-          # pipefail matters below: `bun run release:publish | tee` reports
-          # tee's status without it, so a failed publish would fall through to
-          # the parsing step and mark a partial release as a successful one —
-          # the exact silent-failure shape this whole step exists to remove.
-          set -o pipefail
-          set +e
-          bun scripts/verify-released.ts --npm
-          drift=$?
-          set -e
-          if [ "$drift" -eq 0 ]; then
-            echo "main matches npm — nothing to publish"
-            exit 0
-          fi
-          if [ "$drift" -ne 1 ]; then
-            echo "::error::could not determine what is published; not publishing"
-            exit 1
-          fi
-
-          echo "::warning::main is ahead of npm — publishing (changesets took the version path)"
-          bun run release:publish | tee publish.log
-
-          # Rebuild the shape changesets/action would have emitted, so
-          # cpan-release and every sibling native-registry job still fire.
-          # changeset-publish.ts prints one "New tag: <name>@<version>" per
-          # package it published — the same line the action itself parses.
-          entries=$(sed -n 's/^New tag: \(.*\)@\([^@]*\)$/{"name":"\1","version":"\2"}/p' publish.log | paste -sd, -)
-          if [ -z "$entries" ]; then
-            echo "::error::main was ahead of npm but nothing published — check the log above"
-            exit 1
-          fi
-          echo "published=true" >> "$GITHUB_OUTPUT"
-          echo "publishedPackages=[$entries]" >> "$GITHUB_OUTPUT"
 
   # Mirror whatever Changesets just published to npm onto JSR. Delegates to
   # the reusable jsr-publish.yml so the release-driven path and the manual
