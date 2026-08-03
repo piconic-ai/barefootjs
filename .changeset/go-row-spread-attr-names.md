@@ -1,5 +1,0 @@
----
-"@barefootjs/go-template": patch
----
-
-Fix Go-template SSR mangling attribute NAMES (`id` → `-i-d`, `title` → `-title`, `data-kind` → `-data-kind`) when a `.map()` row object — or a field read off one (`{...row.extra}`) — is spread onto its row element, while the spread values were already correctly row-scoped. The row's dot context is necessarily keyed Go-style (`ID`/`Title`/`DataKind`) — the same field-access contract that makes `attrs.id` emit `{{.ID}}` — and that capitalization broke the shared `toAttrName` helper's camelCase→kebab conversion. The fix adds a new `bf_js_keys` runtime helper that un-cases keys back to their original JS names, applied at both the loop-row whole-item spread site AND the loop-row member-expression spread site (`{...row.extra}`) — the latter is a no-op when the field's keys already arrived JS-native and corrective when they arrived Go-cased, so the emission no longer has to guess which convention a `Record<string, string>` field was seeded with. `toAttrName`, `SpreadAttrs`, and `Omit` (all pinned for JS-runtime byte-parity / already-correct json-tag recovery) are untouched.
