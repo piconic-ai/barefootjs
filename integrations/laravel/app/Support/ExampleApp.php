@@ -54,14 +54,38 @@ final class ExampleApp
     }
 
     /**
-     * The build manifest -- a plain build artifact (dist/templates/manifest.json),
-     * not adapter internals -- lists each component's `ssrDefaults`: the set of
-     * signal/memo names an optional-prop-derived initial value needs BOUND (to
-     * the real prop or to `null`) in the render context. This integration's
-     * shared components aren't manifest-registered under `ui/*` (see
-     * BarefootHelper::renderComponent's manual child wiring, mirroring
-     * integrations/blade), so root-level renders derive the stash themselves
-     * via stashFromSsrDefaults().
+     * The Vite-generated asset map (dist/bf-assets.json, written by
+     * `@barefootjs/blade/vite`'s `afterEmit` hook) -- resolves a hand-written,
+     * non-component script entry's bundled URL (dev: Vite origin URL;
+     * production: content-hashed manifest path). Read at request time, same
+     * pattern as manifest() below: PHP has no compile step, so there is
+     * nothing to commit -- a fresh copy lands under gitignored dist/ on every
+     * build (dev AND production).
+     */
+    public static function assets(): array
+    {
+        static $assets = null;
+        if ($assets === null) {
+            $path = base_path('dist/bf-assets.json');
+            $assets = is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : [];
+        }
+        return $assets;
+    }
+
+    /**
+     * The build manifest -- reassembled from `dist/templates/*.ssr-defaults.json`
+     * (one file per component, written by `@barefootjs/vite`'s core plugin --
+     * see `packages/vite/src/emit.ts`'s `planEmits`), not a single combined
+     * `manifest.json` the legacy CLI used to write. Each component's
+     * `ssrDefaults` -- the set of signal/memo names an optional-prop-derived
+     * initial value needs BOUND (to the real prop or to `null`) in the render
+     * context -- lands in its own file; this glob-and-merge reassembles the
+     * SAME `{ [component]: { ssrDefaults: {...} } }` shape every call site
+     * below already expects, so stashFromSsrDefaults() and registerBlogChild()
+     * need no changes. This integration's shared components aren't manifest-
+     * registered under `ui/*` (see BarefootHelper::renderComponent's manual
+     * child wiring, mirroring integrations/blade), so root-level renders
+     * derive the stash themselves via stashFromSsrDefaults().
      *
      * PHP's cli-server resets statics per request, so this (and blogData) is
      * a per-request lazy read -- the same cost point as integrations/blade
@@ -71,8 +95,14 @@ final class ExampleApp
     {
         static $manifest = null;
         if ($manifest === null) {
-            $path = base_path('dist/templates/manifest.json');
-            $manifest = is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : [];
+            $manifest = [];
+            foreach (glob(base_path('dist/templates/*.ssr-defaults.json')) ?: [] as $path) {
+                $component = basename($path, '.ssr-defaults.json');
+                $defaults = json_decode((string) file_get_contents($path), true);
+                if (is_array($defaults)) {
+                    $manifest[$component] = ['ssrDefaults' => $defaults];
+                }
+            }
         }
         return $manifest;
     }
@@ -170,6 +200,15 @@ final class ExampleApp
     // Blog -- the @barefootjs/router showcase. Ports of integrations/blade's
     // register_blog_child / blog_island / blog_page; see that file's blog
     // section docstring for the searchParams() SSR seeding rationale.
+    //
+    // No import map is needed (unlike the pre-Vite build): the router
+    // bundle's `@barefootjs/client/runtime` import and every compiled
+    // island's own `@barefootjs/client` import are ordinary ESM imports
+    // Rollup/Vite resolve through their real module graph, collapsing into
+    // ONE shared chunk (build) or ONE cached module (dev) automatically --
+    // a single reactive runtime instance without any hand-wired specifier
+    // redirection. That this hand-written wiring could simply be deleted is
+    // the point of the Vite-based design, not an incidental cleanup.
     // -------------------------------------------------------------------
 
     /** Register a renderer for a flat (non-`ui/*`) child component from the
@@ -252,7 +291,6 @@ final class ExampleApp
     public static function blogPage(BarefootJS $root, string $title, string $base, string $contentHtml): string
     {
         $BASE = self::base();
-        $static = "{$BASE}/client";
         $theme = self::blogIsland($root, 'ThemeToggle');
         $sidebar = self::blogIsland($root, 'Sidebar');
         $shell = self::blogIsland(
@@ -262,14 +300,8 @@ final class ExampleApp
             ['children' => $root->backend->mark_raw($contentHtml)], // SSR-only: page content
             ['reader_toolbar' => 'ReaderToolbar'],
         );
-        $importMap = json_encode([
-            'imports' => [
-                '@barefootjs/client' => "{$static}/barefoot.js",
-                '@barefootjs/client/runtime' => "{$static}/barefoot.js",
-                '@barefootjs/client/reactive' => "{$static}/barefoot.js",
-            ],
-        ]);
         $scripts = $root->scripts();
+        $routerEntry = self::assets()['RouterEntry'] ?? '';
         $escTitle = htmlspecialchars($title, ENT_QUOTES);
         return <<<HTML
 <!DOCTYPE html>
@@ -278,7 +310,6 @@ final class ExampleApp
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{$escTitle}</title>
-<script type="importmap">{$importMap}</script>
 <link rel="stylesheet" href="{$BASE}/styles/blog.css">
 </head>
 <body>
@@ -291,7 +322,7 @@ final class ExampleApp
 <main>{$shell}</main>
 </div>
 {$scripts}
-<script type="module" src="{$static}/router-entry.js"></script>
+<script type="module" src="{$routerEntry}"></script>
 </body>
 </html>
 HTML;

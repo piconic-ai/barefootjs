@@ -65,6 +65,45 @@ Go-only weight this port sheds outright, not carries over:
   lives under `dist/` (already gitignored) and is regenerated fresh on
   every build, dev or production.
 
+## Two more things a real migration surfaced that unit tests didn't
+
+Writing `vite.ts` and its unit tests was mechanical and green on the first
+try. Actually running `vite build` against `integrations/laravel`'s real
+`vite.config.ts` found two more things, neither caught by `vite.test.ts`'s
+mocked/fixture-scale builds:
+
+1. **`expr/emitters.ts`'s TS constructor-parameter-property syntax breaks
+   `vite build`, not `bun test`.** Vite's own config loader
+   (`bundleConfigFile`) marks every BARE (non-relative) import as
+   `external`, so `import { barefoot } from '@barefootjs/blade/vite'` in
+   `vite.config.ts` ends up loaded by Node's OWN native TypeScript
+   type-stripping (default-on since Node 22.18/23.6), not esbuild — and
+   Node's strip-only mode does not support parameter properties
+   (`SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain
+   annotations. `go-template`'s and `hono`'s adapter code happen not to use
+   this syntax anywhere reachable from their own `vite.ts`, so this was
+   invisible until Blade's (and — same fix applied — Jinja's/ERB's)
+   `expr/emitters.ts`, which does, was loaded the same way. Fixed by
+   rewriting the two affected constructors (`BladeFilterEmitter`,
+   `BladeTopLevelEmitter`) as plain field declarations + explicit
+   assignment — behaviorally identical, Node-native-TS-safe.
+2. **`ssrDefaults` needs a runtime-read manifest for Blade the way Go/Hono
+   never did.** Go bakes `ssrDefaults` directly into each component's
+   generated `NewXxxProps` constructor; Hono's self-contained `.tsx` file
+   inlines them as JS defaults. Blade has neither — `stash_from_ssr_
+   defaults`-equivalent PHP reads them from a JSON side-channel at request
+   time. The legacy CLI wrote ONE combined `dist/templates/manifest.json`;
+   `@barefootjs/vite`'s core plugin instead writes one `<Name>.ssr-
+   defaults.json` per component (`packages/vite/src/emit.ts`'s `planEmits`
+   — the SAME "per-file, not combined" choice its own docstring already
+   makes for `types`, just not previously exercised by a consumer that
+   needs the combined shape). Fixed on the READ side, not by adding
+   combining back into `vite.ts`: `ExampleApp::manifest()` now globs
+   `dist/templates/*.ssr-defaults.json` and reassembles the same
+   `{ [component]: { ssrDefaults: {...} } }` map every call site already
+   expected — zero change to `stashFromSsrDefaults()`/`registerBlogChild()`,
+   and zero new logic in `@barefootjs/blade/vite` itself.
+
 ## Conclusion for the design brief's question
 
 `@barefootjs/go-template/vite`'s SHAPE (adapter construction + optional
