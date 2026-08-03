@@ -129,15 +129,33 @@ export function truthyTest(node: ParsedExpr, rendered: string): string {
  * callback's receiver.
  */
 export class TwigFilterEmitter implements ParsedExprEmitter {
+  // Plain field declarations + assignment, NOT TS constructor-parameter-
+  // property shorthand: Vite's `bundleConfigFile` externalizes any bare
+  // (non-relative) import when loading `vite.config.ts` (see
+  // `@barefootjs/twig/vite`'s docstring), so this file can be loaded
+  // directly by Node's OWN native TypeScript type-stripping (enabled by
+  // default since Node 22.18/23.6) rather than esbuild — and Node's
+  // strip-only mode does not support parameter properties (`SyntaxError
+  // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
+  private readonly param: string
+  private readonly localVarMap: Map<string, string>
+  private readonly isStringName: (n: string) => boolean
+  // Records a BF101 for predicate shapes this emitter can only degrade
+  // (#2038). Optional so emitter construction stays possible without an
+  // adapter; a missing hook keeps the old silent-degrade emit.
+  private readonly onUnsupported?: (message: string, reason?: string) => void
+
   constructor(
-    private readonly param: string,
-    private readonly localVarMap: Map<string, string>,
-    private readonly isStringName: (n: string) => boolean = () => false,
-    // Records a BF101 for predicate shapes this emitter can only degrade
-    // (#2038). Optional so emitter construction stays possible without an
-    // adapter; a missing hook keeps the old silent-degrade emit.
-    private readonly onUnsupported?: (message: string, reason?: string) => void,
-  ) {}
+    param: string,
+    localVarMap: Map<string, string>,
+    isStringName: (n: string) => boolean = () => false,
+    onUnsupported?: (message: string, reason?: string) => void,
+  ) {
+    this.param = param
+    this.localVarMap = localVarMap
+    this.isStringName = isStringName
+    this.onUnsupported = onUnsupported
+  }
 
   identifier(name: string): string {
     if (name === this.param) return twigIdent(this.param)
@@ -301,7 +319,13 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
  *   - no lambda fallback exists (see the file header, divergence 5).
  */
 export class TwigTopLevelEmitter implements ParsedExprEmitter {
-  constructor(private readonly ctx: TwigEmitContext) {}
+  // Plain field + assignment, not a parameter property — see
+  // `TwigFilterEmitter`'s constructor comment above for why.
+  private readonly ctx: TwigEmitContext
+
+  constructor(ctx: TwigEmitContext) {
+    this.ctx = ctx
+  }
 
   identifier(name: string): string {
     // `undefined` / `null` nested inside a larger expression tree — Twig
