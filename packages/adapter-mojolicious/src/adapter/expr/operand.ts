@@ -12,14 +12,23 @@
  * (Perl's `->[]` vs `->{}` split has no Kolon equivalent).
  */
 
-import { isStringTypedOperand, type ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr } from '@barefootjs/jsx'
 
 /**
- * Lower `arr[index]` to a Perl deref. Perl distinguishes array
- * (`->[$i]`) from hash (`->{$k}`) access, which JS's single `[]` does
- * not — so we pick by the index expression's type: a string-typed key
- * derefs the hash, anything else (the common loop-index / arithmetic
- * case, e.g. `selected()[index]`) derefs the array. #1897.
+ * Lower `arr[index]` to the runtime's polymorphic `bf->get` accessor
+ * (`BarefootJS.pm`, adapter-perl) rather than guessing at compile time
+ * whether `index` is a string key or a numeric index (#2491). Perl
+ * distinguishes array (`->[$i]`) from hash (`->{$k}`) access, which
+ * JS's single `[]` does not — the previous compile-time guess (string-
+ * typed key → hash deref, else → array deref) FAILS FATALLY
+ * ("Not an ARRAY reference") whenever a dynamic key of unknowable type
+ * (e.g. a destructured `.map()` param used as a key, `tone[k]` — the
+ * shared analyzer types it `{kind:'unknown'}`) is applied to a hash-
+ * shaped row, because the guess defaults to the array branch. `bf->get`
+ * dispatches on the receiver's RUNTIME `ref` instead, so it's a strict
+ * superset of the two hand-picked deref forms this used to emit — the
+ * common loop-index case (`selected()[index]`, #1897) keeps working
+ * unchanged.
  */
 export function emitIndexAccessPerl(
   object: ParsedExpr,
@@ -27,8 +36,5 @@ export function emitIndexAccessPerl(
   emit: (e: ParsedExpr) => string,
   isStringName: (n: string) => boolean,
 ): string {
-  const i = emit(index)
-  return isStringTypedOperand(index, isStringName)
-    ? `${emit(object)}->{${i}}`
-    : `${emit(object)}->[${i}]`
+  return `bf->get(${emit(object)}, ${emit(index)})`
 }

@@ -33,6 +33,4 @@ export const renderDivergences: RenderDivergences = {
   'composite-row-child-aliased-prop':
     'same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child\'s renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)',
 
-  'loop-param-shadows-record-template-span':
-    'a dynamic-key element access on a loop row (`tone[k]`) diverges on real Mojolicious at render time (same silent-empty family as ERB/Go/Twig; the Perl-side mechanism needs a dig) (https://github.com/piconic-ai/barefootjs/issues/2491)',
 }

@@ -772,6 +772,47 @@ module BarefootJS
       string(recv).each_char.sum { |c| c.ord > 0xFFFF ? 2 : 1 }
     end
 
+    # Runtime-polymorphic element/key access for `arr[index]` /
+    # `hash[key]` (`emitIndexAccessRuby`, expr/operand.ts). Row hashes
+    # deserialize with `symbolize_names: true`, so a dynamic key whose
+    # runtime value is a String (e.g. a destructured `.map()` param used
+    # as a key, `tone[k]`) misses a Symbol-keyed Hash outright -- and the
+    # shared analyzer can't tell at compile time whether an index will
+    # turn out to be a string key or a numeric index (it types a
+    # destructured param `{kind:'unknown'}`), so no compile-time branch
+    # can pick the right access form (#2491). Mirrors `getFieldValue`'s
+    # (Go adapter, bf.go) case-tolerant lookup and Twig's `attribute()`:
+    # for a Hash, try the key as-is, then as a Symbol, then as a String;
+    # for an Array, index numerically; anything else has no lookup to
+    # perform.
+    def get(collection, key)
+      return nil if key.nil?
+
+      case collection
+      when Hash
+        return collection[key] if collection.key?(key)
+
+        sym = key.respond_to?(:to_sym) ? key.to_sym : nil
+        return collection[sym] if sym && collection.key?(sym)
+
+        str = key.to_s
+        return collection[str] if collection.key?(str)
+
+        nil
+      when Array
+        return nil unless key.is_a?(Numeric) || key.is_a?(String)
+
+        idx = key.to_i
+        # JS-semantics negative index is "not found" (`arr[-1] ===
+        # undefined`), NOT Ruby's native from-the-end wraparound -- guard
+        # it explicitly so this stays a superset of bracket access rather
+        # than a divergent one.
+        return nil if idx.negative?
+
+        collection[idx]
+      end
+    end
+
     # Mirrors Hono's own CSS-injection guard (`hono/jsx/utils.ts`'s
     # `hasUnsafeStyleValue` -- the ORACLE a dynamic `style={{...}}` value
     # must match, #2261): a hand-rolled structural scan for characters that

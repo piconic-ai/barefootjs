@@ -167,10 +167,21 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // Twig's `[]` postfix is polymorphic (list index or hash key),
-    // mirroring JS — no list/hash split is needed. #1897 (data-table's
-    // `selected()[index]`).
-    return `${emit(object)}[${emit(index)}]`
+    // NOT `[]` — Twig compiles bracket syntax as ARRAY_CALL, which
+    // returns null against a PHP object receiver and never falls back
+    // to property access; it is NOT polymorphic (that was this
+    // comment's previous, incorrect claim — the polymorphic form is
+    // `.`, used by `member()` above, which is the actual source of the
+    // confusion). Props cross into PHP as `stdClass` (`json_decode`
+    // without assoc), so loop rows are objects, and a dynamic-key
+    // access (`tone[k]`) needs a runtime-polymorphic accessor rather
+    // than a compile-time guess about the key's shape (#2491). Twig's
+    // built-in `attribute()` function IS that accessor: verified to
+    // resolve stdClass properties, assoc-array keys, and numeric list
+    // indices identically to `.`. #1897 (data-table's
+    // `selected()[index]`) still works — `attribute()` is a strict
+    // superset of `[]` for that numeric-index case.
+    return `attribute(${emit(object)}, ${emit(index)})`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -349,9 +360,17 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // Twig's `[]` postfix is polymorphic (list index or hash key),
-    // mirroring JS. #1897 (data-table's `selected()[index]`).
-    return `${emit(object)}[${emit(index)}]`
+    // NOT `[]` — see the top-level emitter's `indexAccess` docstring:
+    // Twig's bracket syntax compiles to ARRAY_CALL, which does not fall
+    // back to property access on a PHP object (`stdClass`) receiver, so
+    // it is NOT polymorphic the way `.` is. Route through the built-in
+    // `attribute()` function instead, which resolves stdClass
+    // properties, assoc-array keys, and numeric list indices uniformly
+    // — the runtime-polymorphic accessor a dynamic-key row access
+    // (`tone[k]`) needs (#2491). #1897 (data-table's
+    // `selected()[index]`) keeps working — `attribute()` is a strict
+    // superset of `[]` for that numeric-index case.
+    return `attribute(${emit(object)}, ${emit(index)})`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
