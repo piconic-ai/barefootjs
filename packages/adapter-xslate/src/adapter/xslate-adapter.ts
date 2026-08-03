@@ -267,10 +267,10 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
    * `staticLoopSourceBoundNames` above: that set is a whole-component
    * union used only to guard static-const inlining (safe to over-suppress
    * there — the fallback is just "don't inline"), whereas the boolean-prop
-   * and nullable-optional classification sites need to know whether a name
-   * is loop-bound AT THIS POSITION, because for those two the coarse
-   * fallback would silently mis-render a genuine prop occurrence outside
-   * the loop too (#2488).
+   * and nullable-optional classification sites (#2488) and `emitSpread`'s
+   * local-const fallback (#2489) need to know whether a name is loop-bound
+   * AT THIS POSITION, because for those the coarse fallback would silently
+   * mis-render a genuine occurrence of the same name outside the loop too.
    */
   private loopBoundNames: Map<string, number> = new Map()
 
@@ -1412,7 +1412,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
       // and route through the same conditional-spread lowering. Only
       // function-scope (`!isModule`) consts whose value is NOT itself a bare
       // identifier (loop guard) are considered.
-      if (/^[A-Za-z_$][\w$]*$/.test(trimmed)) {
+      //
+      // `loopBoundNames` guard (#2489): an enclosing `.map()` callback's own
+      // param can shadow this outer const's name (`.map((attrs) => <p
+      // {...attrs} />)`) — without the guard this forwarded the OUTER
+      // const's value at every iteration instead of the per-item value.
+      // Must be the LIVE map, not `staticLoopSourceBoundNames` — the same
+      // name spread at ROOT must still resolve the const.
+      if (/^[A-Za-z_$][\w$]*$/.test(trimmed) && !this.loopBoundNames.has(trimmed)) {
         const localConst = (this.localConstants ?? []).find(
           c => c.name === trimmed && !c.isModule,
         )

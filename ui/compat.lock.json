@@ -2339,32 +2339,6 @@
           ]
         }
       },
-      "loop-param-shadows-spread-const": {
-        "blade": {
-          "kind": "render",
-          "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check (the live `loopBoundNames` map exists but is not consulted on this path), so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
-        }
-      },
       "map-array-builder-body": {
         "blade": {
           "kind": "refusal",
@@ -2904,10 +2878,6 @@
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
-      },
-      "loop-param-shadows-spread-const": {
-        "description": ".map() param shadowing an object const spreads the row value, not the outer const",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-shadows-spread-const.ts"
       },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",

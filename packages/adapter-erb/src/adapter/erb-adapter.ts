@@ -1536,7 +1536,12 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       // text and route through the same conditional-spread lowering. Only
       // function-scope (`!isModule`) consts whose value is NOT itself a
       // bare identifier (loop guard) are considered.
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+      //
+      // `loopBoundNames` guard (#2489): an enclosing `.map()` callback's own
+      // param can shadow this outer const's name (`.map((attrs) => <p
+      // {...attrs} />)`) — without the guard this forwarded the OUTER
+      // const's value at every iteration instead of the per-item value.
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed) && !this.loopBoundNames.has(trimmed)) {
         const localConst = this.localConstants.find(
           c => c.name === trimmed && !c.isModule,
         )
