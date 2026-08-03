@@ -3,23 +3,12 @@
   "version": "0.30.0",
   "description": "Vite plugin for BarefootJS: Vite/Rollup owns bundling, hashing, chunking, tree-shaking and minification of client assets, BarefootJS keeps only the JSX to (template, client JS) compile",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    }
-  },
-  "//publishConfig": "At pack time, swap-publish-config.mjs merges these overrides into the top-level so the published tarball resolves entry points to dist/ instead of src/.",
-  "publishConfig": {
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.js"
-      }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -28,7 +17,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts --root ./src --outdir ./dist --format esm --external vite --external @barefootjs/jsx --external @barefootjs/shared --external typescript",
+    "build:js": "bun build ./src/index.ts --outfile ./dist/index.js --format esm --target node --external vite --external typescript",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",
