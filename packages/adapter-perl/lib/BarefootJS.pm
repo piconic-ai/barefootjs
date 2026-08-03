@@ -1,5 +1,5 @@
 package BarefootJS;
-our $VERSION = "0.30.2";
+our $VERSION = "0.30.4";
 use strict;
 use warnings;
 use utf8;
@@ -2022,7 +2022,7 @@ package BarefootJS::Date;
 # compartment where `$BarefootJS::VERSION` is not visible and collapses to
 # 0. scripts/sync-perl-versions.ts bumps every `our $VERSION` line in the
 # file, so this stays in lockstep with the package version above.
-our $VERSION = "0.30.2";
+our $VERSION = "0.30.4";
 
 sub new {
     my ($class, $epoch_ms) = @_;
