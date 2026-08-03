@@ -33,6 +33,23 @@ export function hasUseClientDirective(content: string): boolean {
 }
 
 /**
+ * Is `name` (a bare filename, not a path) a component source file this
+ * plugin should discover/compile? `.tsx`, excluding `.test.tsx`,
+ * `.spec.tsx`, and `.preview.tsx`. Exported separately from
+ * `discoverComponentFiles` so the dev-server file watcher (`plugin.ts`'s
+ * `configureServer`) can apply the exact same filter to a single changed
+ * path without re-walking a directory.
+ */
+export function isComponentSourceFile(name: string): boolean {
+  return (
+    name.endsWith('.tsx') &&
+    !name.endsWith('.test.tsx') &&
+    !name.endsWith('.spec.tsx') &&
+    !name.endsWith('.preview.tsx')
+  )
+}
+
+/**
  * Recursively discover `.tsx` component files in a directory.
  * Skips `.test.tsx`, `.spec.tsx`, and `.preview.tsx` files.
  */
@@ -57,12 +74,7 @@ export async function discoverComponentFiles(
     if (entry.isDirectory()) {
       if (skipDirs?.has(String(entry.name))) continue
       results.push(...await discoverComponentFiles(fullPath, options))
-    } else if (
-      String(entry.name).endsWith('.tsx') &&
-      !String(entry.name).endsWith('.test.tsx') &&
-      !String(entry.name).endsWith('.spec.tsx') &&
-      !String(entry.name).endsWith('.preview.tsx')
-    ) {
+    } else if (isComponentSourceFile(String(entry.name))) {
       results.push(fullPath)
     }
   }

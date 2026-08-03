@@ -9,35 +9,50 @@
  *      reach from `build.rollupOptions.input`; this plugin compiles each
  *      one and hands back plain client JS for Rollup to bundle, hash,
  *      tree-shake, chunk, and minify like any other module.
- *   2. eager pass (`writeBundle`) — walks every `.tsx` under `components`
- *      directly, NOT via the module graph. Server-only components (no
- *      `'use client'`) never appear in the graph at all (nothing imports
- *      them as a script, so Rollup never visits them) but still need a
- *      template — this pass is the only place that happens. Runs in
- *      `writeBundle` specifically because the Vite manifest is only final
- *      once Rollup has finished hashing output filenames.
+ *   2. eager pass (`writeBundle` for `vite build`, `configureServer` for
+ *      `vite dev`) — walks every `.tsx` under `components` directly, NOT
+ *      via the module graph. Server-only components (no `'use client'`)
+ *      never appear in the graph at all (nothing imports them as a
+ *      script, so Rollup never visits them) but still need a template —
+ *      this pass is the only place that happens. The build variant runs
+ *      in `writeBundle` specifically because the Vite manifest is only
+ *      final once Rollup has finished hashing output filenames; the dev
+ *      variant runs once the dev server starts listening (the resolved
+ *      port is needed to build dev-origin URLs) and again on every
+ *      tracked `.tsx` change.
  *
  * Both passes share one `CompileCache` (§4) so a given file's content is
  * compiled at most twice: once canonically (`scriptAssets: []`, cached,
  * shared by both passes — this is the ONLY compile a server-only file, or
  * any file whose real `scriptAssets` also turns out to be `[]`, ever
- * needs) and, only for a `'use client'` file whose manifest entry resolves
- * to a non-empty URL list, one further compile with the real
- * `scriptAssets` to bake the correct URL into the template. That second
- * compile is unavoidable within `compileJSX`'s current API shape: a
- * component's template and its client JS are produced by ONE call, but
- * only the template depends on `scriptAssets` (client JS comes from an
- * entirely separate codegen path `adapter.generate()` never touches) — and
- * `scriptAssets` can't be known until Rollup has already hashed the
- * bundle, which requires `transform` to have already run. So `transform`
- * unavoidably compiles once per file before the real URL exists, and
- * `writeBundle` MUST recompile once more, only for the strict subset of
- * files whose true `scriptAssets` differs from the cached `[]` canonical
- * form, to get a template with the correct URL baked in.
+ * needs) and, only for a `'use client'` file whose real script list
+ * (manifest-resolved for build, dev-origin-based for dev) resolves to a
+ * non-empty URL list, one further compile with the real `scriptAssets` to
+ * bake the correct URL into the template. That second compile is
+ * unavoidable within `compileJSX`'s current API shape: a component's
+ * template and its client JS are produced by ONE call, but only the
+ * template depends on `scriptAssets` (client JS comes from an entirely
+ * separate codegen path `adapter.generate()` never touches) — and for the
+ * build variant, `scriptAssets` can't be known until Rollup has already
+ * hashed the bundle, which requires `transform` to have already run. So
+ * `transform` unavoidably compiles once per file before the real URL
+ * exists, and the eager pass MUST recompile once more, only for the
+ * strict subset of files whose true `scriptAssets` differs from the
+ * cached `[]` canonical form, to get a template with the correct URL
+ * baked in.
+ *
+ * Dev's `configureServer` intentionally does NOT diff what changed and
+ * recompile only that file's dependents — it re-runs the ENTIRE eager
+ * pass on every tracked change. A change to a shared signal module or a
+ * child component changes the *parent's* template too, so anything less
+ * than a full re-run needs dependency tracking (the complexity this
+ * migration is deleting from the legacy CLI's `build-cache.ts`). The
+ * content-hash `CompileCache` makes the full pass cheap: every unchanged
+ * file's `compileCanonical` call is a cache hit.
  */
-import { readFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import type { Plugin, ResolvedConfig } from 'vite'
+import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import {
   compileJSX,
   formatError,
@@ -45,11 +60,18 @@ import {
 } from '@barefootjs/jsx'
 import type { BarefootViteOptions } from './types.ts'
 import { CompileCache } from './compile-cache.ts'
-import { discoverComponents, type DiscoveredComponent } from './discover.ts'
+import { discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
 import { resolveClientJsSpecifier } from './resolve-client-js.ts'
 import { buildRelativeImportRewriter, toPosixRelative } from './paths.ts'
 import { loadManifest, resolveScriptAssets } from './manifest.ts'
 import { planEmits, writeEmits } from './emit.ts'
+import {
+  DEFAULT_DEV_CORS_ORIGIN,
+  DEV_ARTIFACT_MARKER_CONTENT,
+  DEV_ARTIFACT_MARKER_FILENAME,
+  devScriptAssets,
+  resolveDevOrigin,
+} from './dev-server.ts'
 
 const PLUGIN_NAME = 'barefoot'
 
@@ -109,6 +131,63 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     return componentDirs.some(dir => absPath === dir || absPath.startsWith(`${dir}/`))
   }
 
+  /**
+   * Shared eager-pass body: compile + emit a template for every discovered
+   * component, resolving each `'use client'` component's real
+   * `scriptAssets` via the caller-supplied `resolveScriptAssetsFor` (the
+   * manifest for `writeBundle`, dev-origin URLs for `configureServer`).
+   * See this module's docstring for why both callers need the FULL
+   * discovered set every time, not just what changed.
+   */
+  async function emitTemplatesFor(
+    discovered: DiscoveredComponent[],
+    projectDir: string,
+    resolveScriptAssetsFor: (component: DiscoveredComponent) => string[],
+  ): Promise<void> {
+    for (const component of discovered) {
+      const content = await readFile(component.absPath, 'utf8')
+      const canonical = compileCanonical(component.absPath, content)
+      reportErrors(canonical, content, projectDir)
+
+      let result = canonical
+      if (component.isClient) {
+        const scriptAssets = resolveScriptAssetsFor(component)
+        if (scriptAssets.length > 0) {
+          result = compileJSX(content, component.absPath, {
+            adapter: options.adapter,
+            sourceMaps: true,
+            scriptAssets,
+            rewriteRelativeImport: rewriterFor(component.absPath),
+          })
+          reportErrors(result, content, projectDir)
+        }
+      }
+
+      const targets = planEmits(result, component.absPath, componentDirs, options.adapter)
+      await writeEmits(templatesDir, targets)
+    }
+  }
+
+  /**
+   * Dev variant of the eager pass: discovers every component fresh (a
+   * changed file's new content must be picked up — `CompileCache` keys on
+   * content hash, so a stale in-memory listing is harmless, but a stale
+   * listing that MISSES a newly added file would not be) and bakes
+   * `devOrigin`-based `scriptAssets` instead of manifest-resolved ones.
+   * Also (re)writes the dev-artifact marker — see `dev-server.ts`.
+   */
+  async function runDevEagerPass(devOrigin: string): Promise<void> {
+    const config = resolvedConfig
+    if (!config) return
+
+    const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
+    await emitTemplatesFor(discovered, config.root, component =>
+      devScriptAssets(config, devOrigin, component.absPath),
+    )
+
+    await writeFile(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), DEV_ARTIFACT_MARKER_CONTENT)
+  }
+
   return {
     name: PLUGIN_NAME,
     enforce: 'pre',
@@ -134,12 +213,29 @@ export function barefoot(options: BarefootViteOptions): Plugin {
         input[toPosixRelative(guessedRoot, c.absPath)] = c.absPath
       }
 
+      // Cross-origin dev default: the page comes from the backend, its
+      // module scripts from Vite — two different origins. Vite 6+ defaults
+      // `cors` to same-origin-only, which would reject those cross-origin
+      // module requests outright. Fill in a localhost-only default ONLY
+      // when the user hasn't set `server.cors` themselves — this stays a
+      // 3-option plugin (`adapter` / `components` / `templates`); no 4th
+      // `devOrigin`-style option is added for this. Done here in `config`
+      // (not `configureServer`) so it lands before Vite installs its own
+      // CORS middleware, and so it's plain, synchronously-testable data
+      // instead of a hook-timing dependency on Vite's internal
+      // configureServer/middleware install order.
+      const serverDefaults: Record<string, unknown> = {}
+      if (!userConfig.server?.cors) {
+        serverDefaults.cors = { origin: DEFAULT_DEV_CORS_ORIGIN }
+      }
+
       return {
         appType: 'custom',
         build: {
           manifest: true,
           rollupOptions: { input },
         },
+        server: serverDefaults,
       }
     },
 
@@ -183,29 +279,66 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       const outDir = resolve(config.root, config.build.outDir)
       const manifest = await loadManifest(outDir, config.build.manifest)
 
-      for (const component of discovered) {
-        const content = await readFile(component.absPath, 'utf8')
-        const canonical = compileCanonical(component.absPath, content)
-        reportErrors(canonical, content, config.root)
+      await emitTemplatesFor(discovered, config.root, component => {
+        const manifestKey = toPosixRelative(config.root, component.absPath)
+        return resolveScriptAssets(manifest, manifestKey, config.base)
+      })
 
-        let result = canonical
-        if (component.isClient) {
-          const manifestKey = toPosixRelative(config.root, component.absPath)
-          const scriptAssets = resolveScriptAssets(manifest, manifestKey, config.base)
-          if (scriptAssets.length > 0) {
-            result = compileJSX(content, component.absPath, {
-              adapter: options.adapter,
-              sourceMaps: true,
-              scriptAssets,
-              rewriteRelativeImport: rewriterFor(component.absPath),
-            })
-            reportErrors(result, content, config.root)
-          }
-        }
+      // A prior `vite dev` run may have left the dev-artifact marker (and
+      // dev-origin URLs) behind — this pass just overwrote every template
+      // with production URLs, so the marker is now stale. Best-effort:
+      // there may never have been one.
+      await rm(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), { force: true })
+    },
 
-        const targets = planEmits(result, component.absPath, componentDirs, options.adapter)
-        await writeEmits(templatesDir, targets)
+    configureServer(server: ViteDevServer) {
+      // Mandatory: Vite's dev watcher only reliably covers the module
+      // graph plus whatever's under its own project `root`. Server-only
+      // components (no `'use client'`) never enter the module graph at
+      // all (nothing imports them as a script), and in this monorepo's
+      // real layouts `components` dirs are commonly siblings of — not
+      // descendants of — the Vite project root (an app's `vite.config.ts`
+      // root is the backend app dir; components live in a shared `ui/`
+      // directory next to it). Without this explicit `add`, editing such
+      // a file is silently invisible to the dev server: no watcher event,
+      // no re-emit, no reload. See `e2e-vite-dev.test.ts`'s server-only /
+      // out-of-root regression coverage.
+      for (const dir of componentDirs) {
+        server.watcher.add(dir)
       }
+
+      let devOrigin: string | undefined
+
+      async function runInitialPass(): Promise<void> {
+        devOrigin = resolveDevOrigin(server)
+        await runDevEagerPass(devOrigin)
+      }
+
+      if (server.httpServer) {
+        // The resolved port isn't known until the server actually starts
+        // listening — Vite auto-increments past an in-use configured port
+        // unless `strictPort` is set, so anything read earlier could be
+        // wrong. `configureServer` itself always runs before `listen()`.
+        server.httpServer.once('listening', () => {
+          runInitialPass().catch(err => server.config.logger.error(String(err)))
+        })
+      } else {
+        // Middleware mode: no `httpServer`, so no `'listening'` event ever
+        // fires. Run immediately with whatever origin is already
+        // configured (or the bare `localhost:<configured port>` fallback
+        // inside `resolveDevOrigin`).
+        runInitialPass().catch(err => server.config.logger.error(String(err)))
+      }
+
+      server.watcher.on('change', (file: string) => {
+        if (!isComponentSourceFile(file) || !isUnderComponentDir(file)) return
+        if (!devOrigin) return // initial pass (above) will cover this file once it runs
+
+        ;(async () => {
+          await runDevEagerPass(devOrigin!)
+          server.ws.send({ type: 'full-reload' })
+        })().catch(err => server.config.logger.error(String(err)))
+      })
     },
   }
 }
