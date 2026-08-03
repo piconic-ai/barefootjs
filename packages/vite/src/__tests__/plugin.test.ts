@@ -247,3 +247,82 @@ describe('writeBundle: manifest → scriptAssets resolution', () => {
     expect(greetingTpl).toContain('Hi')
   })
 })
+
+describe('afterEmit', () => {
+  let dir: string
+
+  afterEach(async () => {
+    if (dir) await rm(dir, { recursive: true, force: true })
+  })
+
+  test('writeBundle calls afterEmit once with mode "build", per-file types, and resolved dir paths', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-aftertemit-build-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    await writeFile(
+      join(dir, 'src/components/Counter.tsx'),
+      '\'use client\'\nimport { createSignal } from \'@barefootjs/client\'\nexport function Counter() {\n  const [count, setCount] = createSignal(0)\n  return <button onClick={() => setCount(count() + 1)}>{count()}</button>\n}\n',
+    )
+
+    const templatesDir = join(dir, 'internal/views')
+    const adapter = new GoTemplateAdapter({ packageName: 'main' })
+    const calls: unknown[] = []
+    const plugin = barefoot({
+      adapter,
+      components: ['src/components'],
+      templates: templatesDir,
+      afterEmit: async ctx => { calls.push(ctx) },
+    })
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    plugin.configResolved({
+      root: dir,
+      base: '/static/build/',
+      build: { outDir: 'dist', manifest: true },
+    })
+
+    await mkdir(join(dir, 'dist/.vite'), { recursive: true })
+    await writeFile(
+      join(dir, 'dist/.vite/manifest.json'),
+      JSON.stringify({
+        'src/components/Counter.tsx': { file: 'assets/Counter-abc123.js', isEntry: true },
+      }),
+    )
+
+    await plugin.writeBundle()
+
+    expect(calls).toHaveLength(1)
+    const ctx = calls[0] as {
+      types: Map<string, string>
+      projectDir: string
+      templatesDir: string
+      outDir: string
+      mode: string
+    }
+    expect(ctx.mode).toBe('build')
+    expect(ctx.projectDir).toBe(dir)
+    expect(ctx.templatesDir).toBe(templatesDir)
+    expect(ctx.outDir).toBe(join(dir, 'dist'))
+    expect(ctx.types.size).toBe(1)
+    const [[key, content]] = ctx.types
+    expect(key).toBe(join(dir, 'src/components/Counter.tsx'))
+    expect(content).toContain('CounterProps')
+    // Never handed emitted client JS — narrow by construction, not just by
+    // convention. `ctx` has no field that could carry it.
+    expect(Object.keys(ctx).sort()).toEqual(['mode', 'outDir', 'projectDir', 'templatesDir', 'types'])
+  })
+
+  test('writeBundle does not call afterEmit when the option is omitted', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-aftertemit-omitted-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+    await writeFile(join(dir, 'src/components/Greeting.tsx'), 'export function Greeting() { return <p>Hi</p> }')
+
+    const plugin = makePlugin('src/components', join(dir, 'internal/views'), new GoTemplateAdapter({ packageName: 'main' }))
+    await plugin.config({ root: dir }, { command: 'build', mode: 'production' })
+    plugin.configResolved({ root: dir, base: '/', build: { outDir: 'dist', manifest: true } })
+    await mkdir(join(dir, 'dist/.vite'), { recursive: true })
+    await writeFile(join(dir, 'dist/.vite/manifest.json'), '{}')
+
+    // Would throw if the plugin unconditionally called a non-existent
+    // afterEmit — this just needs to not blow up.
+    await expect(plugin.writeBundle()).resolves.toBeUndefined()
+  })
+})

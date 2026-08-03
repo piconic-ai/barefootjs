@@ -79,7 +79,11 @@ function countFullReloads(sent: unknown[]): number {
   return sent.filter(m => (m as { type?: string }).type === 'full-reload').length
 }
 
-async function startDevServer(templatesDir: string, extraServerOptions: Record<string, unknown> = {}) {
+async function startDevServer(
+  templatesDir: string,
+  extraServerOptions: Record<string, unknown> = {},
+  afterEmit?: (ctx: { types: Map<string, string>; projectDir: string; templatesDir: string; outDir: string; mode: string }) => void,
+) {
   const server = await createServer({
     configFile: false,
     root: APP_ROOT,
@@ -101,6 +105,7 @@ async function startDevServer(templatesDir: string, extraServerOptions: Record<s
         adapter: new GoTemplateAdapter({ packageName: 'main' }),
         components: ['../components'],
         templates: templatesDir,
+        afterEmit,
       }),
     ],
   })
@@ -316,6 +321,47 @@ describe('e2e: vite dev server — server-only component watcher regression', ()
     } finally {
       restore()
       await writeFile(GREETING_PATH, originalGreetingSource)
+    }
+  })
+})
+
+describe('e2e: vite dev server — afterEmit', () => {
+  let server: ViteDevServer
+  let templatesDir: string
+
+  afterAll(async () => {
+    await server?.close()
+    await rm(templatesDir, { recursive: true, force: true })
+  })
+
+  test('fires with mode "dev" on the initial pass, and again on a tracked-file change', async () => {
+    templatesDir = await mkdtemp(join(tmpdir(), 'barefoot-vite-dev-views-afteremit-'))
+    const calls: Array<{ mode: string; projectDir: string; templatesDir: string; outDir: string; types: Map<string, string> }> = []
+    ;({ server } = await startDevServer(templatesDir, {}, ctx => { calls.push(ctx as never) }))
+
+    await waitFor(() => calls.length >= 1)
+    expect(calls[0]?.mode).toBe('dev')
+    expect(calls[0]?.templatesDir).toBe(templatesDir)
+    expect(calls[0]?.projectDir).toBe(APP_ROOT)
+    // No component in this fixture produces a `types` output (testAdapter-
+    // shaped Go adapter with no Props needing a struct isn't guaranteed
+    // either way) — the meaningful assertion is the narrow shape itself,
+    // not that it's non-empty. Never carries client JS: the type alone
+    // makes that impossible, this just pins the field set at runtime too.
+    expect(Object.keys(calls[0] ?? {}).sort()).toEqual(['mode', 'outDir', 'projectDir', 'templatesDir', 'types'])
+
+    const originalSource = await readFile(COUNTER_PATH, 'utf8')
+    const callsBeforeEdit = calls.length
+    const edited = originalSource.replace(
+      '<button onClick=',
+      '<button data-aftertemit-marker="1" onClick=',
+    )
+    await writeFile(COUNTER_PATH, edited)
+    try {
+      await waitFor(() => calls.length > callsBeforeEdit)
+      expect(calls[calls.length - 1]?.mode).toBe('dev')
+    } finally {
+      await writeFile(COUNTER_PATH, originalSource)
     }
   })
 })

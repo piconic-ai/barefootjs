@@ -49,6 +49,18 @@
  * migration is deleting from the legacy CLI's `build-cache.ts`). The
  * content-hash `CompileCache` makes the full pass cheap: every unchanged
  * file's `compileCanonical` call is a cache hit.
+ *
+ * `options.afterEmit`, if supplied, fires once at the end of EITHER eager
+ * pass (`writeBundle`'s `mode: 'build'`, `runDevEagerPass`'s `mode: 'dev'`)
+ * with a narrow `AfterEmitContext` (`types`, `projectDir`, `templatesDir`,
+ * `outDir`, `mode` — see its docstring in `types.ts`). It exists so an
+ * adapter's own `/vite` subpath can combine per-file `types` output into
+ * one backend-native file (Go's `components.go`, stripping headers,
+ * deduping, injecting shared helpers — real per-language work core has no
+ * business doing generically) without a `postBuild`-style rewrite hook on
+ * emitted client JS ever being on the table. It fires from BOTH passes,
+ * not just the build one, because e.g. Go's `components.go` has to exist
+ * for `go run .` to compile even in dev.
  */
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -149,12 +161,19 @@ export function barefoot(options: BarefootViteOptions): Plugin {
    * manifest for `writeBundle`, dev-origin URLs for `configureServer`).
    * See this module's docstring for why both callers need the FULL
    * discovered set every time, not just what changed.
+   *
+   * Returns every `types`-typed output this pass produced, keyed by
+   * source absolute path — the raw material `afterEmit` receives (see
+   * `AfterEmitContext`). Collected here (not read back off disk) since
+   * `planEmits`/`writeEmits` already have the compiled `CompileResult` in
+   * hand; no adapter-specific knowledge is needed to harvest it.
    */
   async function emitTemplatesFor(
     discovered: DiscoveredComponent[],
     projectDir: string,
     resolveScriptAssetsFor: (component: DiscoveredComponent) => string[],
-  ): Promise<void> {
+  ): Promise<Map<string, string>> {
+    const types = new Map<string, string>()
     for (const component of discovered) {
       const content = await readFile(component.absPath, 'utf8')
       const canonical = compileCanonical(component.absPath, content)
@@ -177,7 +196,12 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       const targets = planEmits(result, component.absPath, componentDirs, options.adapter)
       lastEmitsByAbsPath.set(component.absPath, targets)
       await writeEmits(templatesDir, targets)
+
+      for (const file of result.files) {
+        if (file.type === 'types') types.set(component.absPath, file.content)
+      }
     }
+    return types
   }
 
   /**
@@ -213,11 +237,21 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     if (!config) return
 
     const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
-    await emitTemplatesFor(discovered, config.root, component =>
+    const types = await emitTemplatesFor(discovered, config.root, component =>
       devScriptAssets(config, devOrigin, component.absPath),
     )
 
     await writeFile(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), DEV_ARTIFACT_MARKER_CONTENT)
+
+    if (options.afterEmit) {
+      await options.afterEmit({
+        types,
+        projectDir: config.root,
+        templatesDir,
+        outDir: resolve(config.root, config.build.outDir),
+        mode: 'dev',
+      })
+    }
   }
 
   return {
@@ -317,7 +351,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       const outDir = resolve(config.root, config.build.outDir)
       const manifest = await loadManifest(outDir, config.build.manifest)
 
-      await emitTemplatesFor(discovered, config.root, component => {
+      const types = await emitTemplatesFor(discovered, config.root, component => {
         const manifestKey = toPosixRelative(config.root, component.absPath)
         return resolveScriptAssets(manifest, manifestKey, config.base)
       })
@@ -327,6 +361,10 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       // with production URLs, so the marker is now stale. Best-effort:
       // there may never have been one.
       await rm(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), { force: true })
+
+      if (options.afterEmit) {
+        await options.afterEmit({ types, projectDir: config.root, templatesDir, outDir, mode: 'build' })
+      }
     },
 
     configureServer(server: ViteDevServer) {
