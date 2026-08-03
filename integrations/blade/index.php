@@ -82,16 +82,37 @@ $backend = new BladeBackend([
     'cache_dir' => sys_get_temp_dir() . '/barefootjs-blade-cache',
 ]);
 
-// The build manifest -- a plain build artifact (dist/templates/manifest.json),
-// not adapter internals -- lists each component's `ssrDefaults`: the set of
-// signal/memo names an optional-prop-derived initial value needs BOUND (to
-// the real prop or to `null`) in the render context. This integration's
-// shared components aren't manifest-registered under `ui/*` (see
-// render_component's manual child wiring below, mirroring app.py's comment),
-// so root-level renders derive the stash themselves via
-// stash_from_ssr_defaults(), the same way app.py does.
-$manifestPath = $HERE . '/dist/templates/manifest.json';
-$MANIFEST = is_file($manifestPath) ? (json_decode(file_get_contents($manifestPath), true) ?: []) : [];
+// The build manifest -- reassembled from `dist/templates/*.ssr-defaults.json`
+// (one file per component, written by `@barefootjs/vite`'s core plugin --
+// see `packages/vite/src/emit.ts`'s `planEmits`), not a single combined
+// `manifest.json` the legacy CLI used to write. Each component's
+// `ssrDefaults` -- the set of signal/memo names an optional-prop-derived
+// initial value needs BOUND (to the real prop or to `null`) in the render
+// context -- lands in its own file; this glob-and-merge reassembles the
+// SAME `{ [component]: { ssrDefaults: {...} } }` shape every call site
+// below already expects. This integration's shared components aren't
+// manifest-registered under `ui/*` (see render_component's manual child
+// wiring below, mirroring app.py's comment), so root-level renders derive
+// the stash themselves via stash_from_ssr_defaults(), the same way app.py
+// does.
+$MANIFEST = [];
+foreach (glob($HERE . '/dist/templates/*.ssr-defaults.json') ?: [] as $path) {
+    $component = basename($path, '.ssr-defaults.json');
+    $defaults = json_decode(file_get_contents($path), true);
+    if (is_array($defaults)) {
+        $MANIFEST[$component] = ['ssrDefaults' => $defaults];
+    }
+}
+
+// The Vite-generated asset map (dist/bf-assets.json, written by
+// `@barefootjs/blade/vite`'s `afterEmit` hook) -- resolves a hand-written,
+// non-component script entry's bundled URL (dev: Vite origin URL;
+// production: content-hashed manifest path). Read once at request time,
+// same rationale as $MANIFEST above: PHP has no compile step, so there is
+// nothing to commit -- a fresh copy lands under gitignored dist/ on every
+// build (dev AND production).
+$assetsPath = $HERE . '/dist/bf-assets.json';
+$ASSETS = is_file($assetsPath) ? (json_decode(file_get_contents($assetsPath), true) ?: []) : [];
 
 // The blog post corpus -- generated at build time by scripts/gen-blog-data.ts
 // from ../shared/blog/posts.ts (the single TS source of truth the JS adapters
@@ -472,9 +493,19 @@ HTML;
 // Mojolicious ports): a region-shell layout (header + ThemeToggle in the
 // shell, a hand-authored sidebar region `nav:0` + the compiled <PageShell>
 // nested content regions in the main column) whose islands are the shared
-// blog components in ../shared/blog, compiled by this integration's
-// `bf build`. The client router (client/router-entry.ts, bundled to
-// client/router-entry.js) swaps only the content region.
+// blog components in ../shared/blog, compiled by this integration's Vite
+// build (vite.config.ts). The client router (client/router-entry.ts,
+// its bundled URL resolved into $ASSETS['RouterEntry']) swaps only the
+// content region.
+//
+// No import map is needed (unlike the pre-Vite build): the router bundle's
+// `@barefootjs/client/runtime` import and every compiled island's own
+// `@barefootjs/client` import are ordinary ESM imports Rollup/Vite resolve
+// through their real module graph, collapsing into ONE shared chunk
+// (build) or ONE cached module (dev) automatically -- a single reactive
+// runtime instance without any hand-wired specifier redirection. That this
+// hand-written wiring could simply be deleted is the point of the
+// Vite-based design, not an incidental cleanup.
 //
 // There is no special server-side "partial navigation" endpoint: the router
 // (packages/router/src/router.ts) fetches a full HTML page for every
@@ -582,8 +613,7 @@ function blog_island(BarefootJS $root, string $component, array $props = [], arr
  * islands (and the shell islands rendered here) all share. */
 function blog_page(BarefootJS $root, string $title, string $base, string $contentHtml): string
 {
-    global $BASE;
-    $static = "{$BASE}/client";
+    global $BASE, $ASSETS;
     $theme = blog_island($root, 'ThemeToggle');
     $sidebar = blog_island($root, 'Sidebar');
     $shell = blog_island(
@@ -593,14 +623,8 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
         ['children' => $root->backend->mark_raw($contentHtml)], // SSR-only: page content
         ['reader_toolbar' => 'ReaderToolbar'],
     );
-    $importMap = json_encode([
-        'imports' => [
-            '@barefootjs/client' => "{$static}/barefoot.js",
-            '@barefootjs/client/runtime' => "{$static}/barefoot.js",
-            '@barefootjs/client/reactive' => "{$static}/barefoot.js",
-        ],
-    ]);
     $scripts = $root->scripts();
+    $routerEntry = $ASSETS['RouterEntry'] ?? '';
     $escTitle = htmlspecialchars($title, ENT_QUOTES);
     return <<<HTML
 <!DOCTYPE html>
@@ -609,7 +633,6 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{$escTitle}</title>
-<script type="importmap">{$importMap}</script>
 <link rel="stylesheet" href="{$BASE}/styles/blog.css">
 </head>
 <body>
@@ -622,7 +645,7 @@ function blog_page(BarefootJS $root, string $title, string $base, string $conten
 <main>{$shell}</main>
 </div>
 {$scripts}
-<script type="module" src="{$static}/router-entry.js"></script>
+<script type="module" src="{$routerEntry}"></script>
 </body>
 </html>
 HTML;
