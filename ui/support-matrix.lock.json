@@ -131,13 +131,9 @@
           ]
         },
         "go-template": {
-          "pass": 57,
+          "pass": 58,
           "total": 70,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -533,13 +529,9 @@
           ]
         },
         "go-template": {
-          "pass": 63,
+          "pass": 64,
           "total": 67,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -751,13 +743,9 @@
           ]
         },
         "go-template": {
-          "pass": 54,
+          "pass": 55,
           "total": 64,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1135,13 +1123,9 @@
           ]
         },
         "go-template": {
-          "pass": 72,
+          "pass": 73,
           "total": 82,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -1607,13 +1591,9 @@
           ]
         },
         "go-template": {
-          "pass": 184,
+          "pass": 185,
           "total": 200,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -2463,15 +2443,11 @@
           ]
         },
         "go-template": {
-          "pass": 269,
+          "pass": 270,
           "total": 288,
           "gaps": [
             {
               "fixture": "aliased-destructured-prop",
-              "issues": []
-            },
-            {
-              "fixture": "callback-param-shadows-prop",
               "issues": []
             },
             {
@@ -3209,13 +3185,9 @@
           ]
         },
         "go-template": {
-          "pass": 226,
+          "pass": 227,
           "total": 238,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []
@@ -3891,13 +3863,9 @@
           ]
         },
         "go-template": {
-          "pass": 136,
+          "pass": 137,
           "total": 154,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "date-method-uncatalogued",
               "issues": [
@@ -4489,13 +4457,9 @@
           ]
         },
         "go-template": {
-          "pass": 52,
+          "pass": 53,
           "total": 55,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "preamble-cells",
               "issues": []
@@ -5664,13 +5628,9 @@
           ]
         },
         "go-template": {
-          "pass": 36,
+          "pass": 37,
           "total": 39,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "fill-unsupported",
               "issues": []
@@ -6883,13 +6843,9 @@
           ]
         },
         "go-template": {
-          "pass": 17,
+          "pass": 18,
           "total": 19,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "static-array-from-props-with-component",
               "issues": [
@@ -8074,13 +8030,9 @@
           ]
         },
         "go-template": {
-          "pass": 159,
+          "pass": 160,
           "total": 168,
           "gaps": [
-            {
-              "fixture": "callback-param-shadows-prop",
-              "issues": []
-            },
             {
               "fixture": "every-typeof-predicate",
               "issues": []

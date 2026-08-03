@@ -40,10 +40,4 @@ export const renderDivergences: RenderDivergences = {
   // `skipJsx` entries).
   'aliased-destructured-prop':
     'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2460)',
-
-  // #2482 audit follow-ups: loop-scope holes specific to this adapter's
-  // four-stack scope tracking and its SSR seeding. Graduate by applying
-  // the fix described in each issue and deleting the line.
-  'callback-param-shadows-prop':
-    'JS-computed signal/memo initializers (`[…].map(…).join(…)`, memo over signal + prop) don\'t seed Go SSR — renders `[]` / empty where every other adapter renders the computed value; hydration snaps to correct (https://github.com/piconic-ai/barefootjs/issues/2492)',
 }

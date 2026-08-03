@@ -20,7 +20,12 @@ import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
-import { convertInitialValue, getSignalInitialValueAsGo } from '../value/value-lowering.ts'
+import {
+  convertInitialValue,
+  getSignalInitialValueAsGo,
+  mapJoinChainToGo,
+  matchMapJoinChain,
+} from '../value/value-lowering.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
 import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from './memo-value.ts'
@@ -570,6 +575,60 @@ export function memoInitialFromParsedBody(
   if (body.kind === 'identifier') {
     const param = propsParams.find(p => p.name === body.name)
     if (param) return `in.${capitalizeFieldName(body.name)}`
+  }
+
+  // () => <a> + <b> + … — a string-concatenation chain whose every leaf is a
+  // string literal, a prop reference, or a `.map(cb).join(sep)` chain
+  // (#2492's `joined` memo: `title + ':' + items().map((title) =>
+  // title.a).join(',')`). Doesn't grow into a general `binary` catalogue
+  // entry — only fires for a pure `+` tree resolvable end-to-end via
+  // `resolveStringConcatChainGo`; any other leaf shape falls through to the
+  // caller's zero-value default, same as any other unsupported shape.
+  if (body.kind === 'binary' && body.op === '+') {
+    const concatGo = resolveStringConcatChainGo(ctx, body, signals, propsParams, propFallbackVars, propRef)
+    if (concatGo !== null) return concatGo
+  }
+
+  return null
+}
+
+/**
+ * `<expr> + <expr> + …` chain whose every leaf resolves to a Go string
+ * expression: a string literal, a prop reference (`propRef`, hoisted-aware),
+ * or a `.map(cb).join(sep)` chain ({@link matchMapJoinChain} /
+ * {@link mapJoinChainToGo} — `value-lowering.ts`, #2492). Recurses on nested
+ * `+` so a left-associative chain (`a + b + c` parses as `(a + b) + c`)
+ * resolves leaf-by-leaf.
+ *
+ * @returns the concatenated Go expression, or null when any leaf isn't one
+ *   of the three shapes above
+ */
+function resolveStringConcatChainGo(
+  ctx: GoEmitContext,
+  expr: ParsedExpr,
+  signals: { getter: string; initialValue: string; type?: TypeInfo }[],
+  propsParams: { name: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  propRef: (propName: string) => string,
+): string | null {
+  if (expr.kind === 'binary' && expr.op === '+') {
+    const l = resolveStringConcatChainGo(ctx, expr.left, signals, propsParams, propFallbackVars, propRef)
+    const r = resolveStringConcatChainGo(ctx, expr.right, signals, propsParams, propFallbackVars, propRef)
+    return l !== null && r !== null ? `${l} + ${r}` : null
+  }
+
+  if (expr.kind === 'literal' && expr.literalType === 'string') {
+    return JSON.stringify(expr.value)
+  }
+
+  const propName = propsMemberName(expr) ?? (expr.kind === 'identifier' ? expr.name : null)
+  if (propName && propsParams.some(p => p.name === propName)) {
+    return propRef(propName)
+  }
+
+  const chain = matchMapJoinChain(expr)
+  if (chain) {
+    return mapJoinChainToGo(ctx, chain, signals, propsParams, propFallbackVars)
   }
 
   return null

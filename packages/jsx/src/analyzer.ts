@@ -3564,6 +3564,7 @@ function inferTypeFromValue(value: string): TypeInfo {
   //   .length / .size       → number
   //   .some(...) / .every(...) / .includes(...)           → boolean
   //   .indexOf(...) / .findIndex(...) / .lastIndexOf(...) → number
+  //   .join(...)             → string
   //   .at(...) / .find(...) → unknown (element type; can't recover here)
   if (/\.(length|size)\s*$/.test(trimmed)) {
     return { kind: 'primitive', raw: 'number', primitive: 'number' }
@@ -3573,6 +3574,10 @@ function inferTypeFromValue(value: string): TypeInfo {
   }
   if (/\.(indexOf|findIndex|findLastIndex|lastIndexOf)\s*\([\s\S]*\)\s*$/.test(trimmed)) {
     return { kind: 'primitive', raw: 'number', primitive: 'number' }
+  }
+  // .join() always returns a string in JS, regardless of element type.
+  if (/\.join\s*\([\s\S]*\)\s*$/.test(trimmed)) {
+    return { kind: 'primitive', raw: 'string', primitive: 'string' }
   }
 
   // Number

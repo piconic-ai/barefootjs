@@ -1850,12 +1850,6 @@
           "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
         }
       },
-      "callback-param-shadows-prop": {
-        "go-template": {
-          "kind": "render",
-          "reason": "JS-computed signal/memo initializers (`[…].map(…).join(…)`, memo over signal + prop) don't seed Go SSR — renders `[]` / empty where every other adapter renders the computed value; hydration snaps to correct (https://github.com/piconic-ai/barefootjs/issues/2492)"
-        }
-      },
       "composite-row-child-aliased-prop": {
         "blade": {
           "kind": "render",
@@ -2874,10 +2868,6 @@
       "aliased-destructured-prop": {
         "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2460)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-destructured-prop.ts"
-      },
-      "callback-param-shadows-prop": {
-        "description": "Nested callback param sharing a prop name stays a param in the CSR template (no invalid `_p.`…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-param-shadows-prop.ts"
       },
       "composite-row-child-aliased-prop": {
         "description": "Nested child in a dynamic loop row destructures a renamed prop ({ n: count })",
