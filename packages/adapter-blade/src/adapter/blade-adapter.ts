@@ -1097,7 +1097,9 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     } else if (loop.objectIteration === 'keys' || loop.objectIteration === 'values') {
       loopBound.push(param)
     } else if (loop.iterationShape === 'keys') {
-      loopBound.push(param)
+      // The header still binds the throwaway loop var; `param` is only the
+      // index alias set beneath it (#2488).
+      loopBound.push('__bf_item', param)
     } else if (supportableDestructure) {
       loopBound.push('__bf_item', ...(loop.paramBindings ?? []).map(b => b.name))
       if (loop.index) loopBound.push(loop.index)

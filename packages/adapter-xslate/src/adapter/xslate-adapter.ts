@@ -914,11 +914,14 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // preamble's declared locals. Ref-counted so nested loops compose.
     const loopBound: string[] = []
     if (loop.objectIteration === 'entries') {
-      loopBound.push(loop.index ?? param, param)
+      // `.kv()` binds the pair var the key/value locals are derived from (#2488).
+      loopBound.push('__bf_pair', loop.index ?? param, param)
     } else if (loop.objectIteration === 'keys' || loop.objectIteration === 'values') {
       loopBound.push(param)
     } else if (loop.iterationShape === 'keys') {
-      loopBound.push(param)
+      // The header still binds the throwaway loop var; `param` is only the
+      // index alias derived from it beneath (#2488).
+      loopBound.push('__bf_item', param)
     } else if (supportableDestructure) {
       loopBound.push('__bf_item', ...(loop.paramBindings ?? []).map(b => b.name))
       if (loop.index) loopBound.push(loop.index)
