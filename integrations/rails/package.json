@@ -2,9 +2,10 @@
   "name": "barefootjs-rails-example",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts",
-    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "build": "vite build && bun run scripts/gen-blog-data.ts && bun run scripts/assemble-deps.ts",
+    "build:watch": "vite dev",
     "dev": "BASE_PATH=/integrations/rails bin/rails server -p 3011 -b 0.0.0.0",
     "deploy": "bun run build && wrangler deploy",
     "test:e2e": "bunx playwright test",
@@ -17,10 +18,12 @@
   "devDependencies": {
     "@barefootjs/erb": "workspace:*",
     "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
     "@cloudflare/containers": "^0.3.2",
     "@cloudflare/workers-types": "^4",
     "@playwright/test": "^1.41.0",
     "bun-types": "^1.1.0",
+    "vite": "^6.0.0",
     "wrangler": "^4"
   }
 }
