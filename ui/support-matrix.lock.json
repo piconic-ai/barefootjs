@@ -1611,7 +1611,7 @@
           ]
         },
         "go-template": {
-          "pass": 180,
+          "pass": 181,
           "total": 200,
           "gaps": [
             {
@@ -1654,10 +1654,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "loop-destructured-param-condition",
               "issues": []
             },
             {
@@ -2499,7 +2495,7 @@
           ]
         },
         "go-template": {
-          "pass": 265,
+          "pass": 266,
           "total": 288,
           "gaps": [
             {
@@ -2546,10 +2542,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "loop-destructured-param-condition",
               "issues": []
             },
             {
@@ -3297,7 +3289,7 @@
           ]
         },
         "go-template": {
-          "pass": 222,
+          "pass": 223,
           "total": 238,
           "gaps": [
             {
@@ -3322,10 +3314,6 @@
             },
             {
               "fixture": "flatmap-typeof-projection",
-              "issues": []
-            },
-            {
-              "fixture": "loop-destructured-param-condition",
               "issues": []
             },
             {
@@ -7970,15 +7958,11 @@
           ]
         },
         "go-template": {
-          "pass": 92,
+          "pass": 93,
           "total": 101,
           "gaps": [
             {
               "fixture": "fill-unsupported",
-              "issues": []
-            },
-            {
-              "fixture": "loop-destructured-param-condition",
               "issues": []
             },
             {

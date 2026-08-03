@@ -5736,6 +5736,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     switch (expr.kind) {
       case 'identifier':
         {
+          // Destructure-param bindings (`.map(({ id, active }) => active ? …)`):
+          // resolve the binding name to its accessor on the range var the same
+          // way the value path (`identifier` in `ParsedExprEmitter`) does.
+          // Without this, a destructured name falls through to `rootFieldRef`
+          // and the condition emits a ROOT-scope field instead of the row's
+          // (#2486). Innermost-first, and BEFORE module-const inlining so a
+          // binding whose name collides with a module string const still
+          // resolves to the loop item — same ordering as `identifier` above.
+          for (let i = this.loopBindingStack.length - 1; i >= 0; i--) {
+            const acc = this.loopBindingStack[i].get(expr.name)
+            if (acc !== undefined) return plain(acc)
+          }
           const inlined = this.resolveModuleStringConst(expr.name)
           if (inlined !== null) return plain(inlined)
           const currentLoopParam = this.loopParamStack[this.loopParamStack.length - 1]
@@ -6281,6 +6293,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       goArray = `.${loop.childComponent.name}s`
     }
 
+    // Save/restore rather than plain assign: this loop's own body may contain
+    // a NESTED loop that also flips `inLoop` true→false around itself. Without
+    // saving, the inner loop's exit clobbers `inLoop` to `false` for the
+    // remainder of THIS (outer) loop's body, so any outer-scope content
+    // rendered after the nested loop wrongly takes the non-loop emission arms
+    // (e.g. spread attrs resolve to the component-root slot mechanism instead
+    // of the row-scoped field) (#2487).
+    const wasInLoopOuter = this.inLoop
     this.inLoop = true
     // Track Go template loop variables. The range *value* variable is the dot
     // context (`.`) and goes on `loopParamStack`; the range *index* variable
@@ -6361,7 +6381,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.loopBindingStack.pop()
       this.loopRestExcludeStack.pop()
     }
-    this.inLoop = false
+    this.inLoop = wasInLoopOuter
 
     // Apply sort if present: wrap the array in a sort pipeline before `range`.
     // Evaluator-first (#2018 P3): serialize the comparator body + emit
@@ -6429,6 +6449,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * return `''` here anyway.
    */
   private renderUnrolledStaticElementLoop(loop: IRLoop, items: readonly unknown[]): string {
+    // Save/restore, not a plain assign — see the matching comment in
+    // `renderLoop` (#2487): a nested loop inside this unrolled body must not
+    // clobber `inLoop` for the remainder of an outer loop's rendering.
+    const wasInLoopOuter = this.inLoop
     this.inLoop = true
     this.loopWrapperStack.push(false)
     this.loopKeyDepthStack.push(loop.depth)
@@ -6462,7 +6486,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.loopScalarItemStack.pop()
     this.loopKeyDepthStack.pop()
     this.loopWrapperStack.pop()
-    this.inLoop = false
+    this.inLoop = wasInLoopOuter
 
     return `{{bfComment "loop:${loop.markerId}"}}${body}{{bfComment "/loop:${loop.markerId}"}}`
   }
