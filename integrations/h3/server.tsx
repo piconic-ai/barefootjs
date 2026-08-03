@@ -49,7 +49,6 @@ if (typeof process !== 'undefined' && typeof process.on === 'function') {
 }
 import { Layout } from './renderer'
 import { registerBlog } from './blog'
-import manifest from './dist/components/manifest.json' with { type: 'json' }
 import { Counter } from '@/components/Counter'
 import { Toggle } from '@/components/Toggle'
 import TodoApp from '@/components/TodoApp'
@@ -137,7 +136,7 @@ const router = createRouter()
 
 const homeHandler = eventHandler(async () =>
   page(
-    <Layout title="BarefootJS + h3" manifest={manifest} base={BASE}>
+    <Layout title="BarefootJS + h3" base={BASE}>
       <h1>BarefootJS + h3 Integration</h1>
       <nav>
         <ul>
@@ -161,7 +160,7 @@ router.get(
   link('/counter'),
   eventHandler(async () =>
     page(
-      <Layout title="Counter — BarefootJS + h3" manifest={manifest} base={BASE}>
+      <Layout title="Counter — BarefootJS + h3" base={BASE}>
         <h1>Counter</h1>
         <Counter initial={0} />
         <p><a href={link('/')}>← Back</a></p>
@@ -174,7 +173,7 @@ router.get(
   link('/toggle'),
   eventHandler(async () =>
     page(
-      <Layout title="Toggle — BarefootJS + h3" manifest={manifest} base={BASE}>
+      <Layout title="Toggle — BarefootJS + h3" base={BASE}>
         <h1>Toggle</h1>
         <Toggle
           toggleItems={[
@@ -195,7 +194,6 @@ router.get(
     page(
       <Layout
         title="Todo (@client) — BarefootJS + h3"
-        manifest={manifest}
         base={BASE}
         styles={[link('/shared/styles/todo-app.css')]}
       >
@@ -215,7 +213,6 @@ router.get(
     page(
       <Layout
         title="Todo (SSR) — BarefootJS + h3"
-        manifest={manifest}
         base={BASE}
         styles={[link('/shared/styles/todo-app.css')]}
       >
@@ -235,7 +232,6 @@ router.get(
     page(
       <Layout
         title="AI Chat — BarefootJS + h3"
-        manifest={manifest}
         base={BASE}
         styles={[link('/shared/styles/ai-chat.css')]}
       >
@@ -356,14 +352,18 @@ router.get(
 
 // Blog routes (`@barefootjs/router` showcase) — `${BASE}/blog` + posts. Its
 // own region-shell layout, separate from the catalog `Layout`.
-registerBlog(router, BASE, manifest)
+registerBlog(router, BASE)
 
 const app = createApp()
 app.use(router)
 const webHandler = toWebHandler(app)
 
 // ── static assets ──────────────────────────────────────────────────────────
-// {BASE}/static/components/* → ./dist/components/*  (barefoot.js + *.client.js)
+// {BASE}/static/components/* → ./dist/static/components/*  (Vite's hashed
+//                               client bundles — build.outDir, see
+//                               vite.config.ts; NOT dist/components, which
+//                               is the SSR template dir `@/components/*`
+//                               resolves, never served to the browser)
 // {BASE}/shared/styles/*     → ../shared/styles/*   (demo stylesheets)
 //
 // On Workers these are served by the Assets binding (see wrangler.toml);
@@ -380,7 +380,7 @@ function isStaticPath(pathname: string): boolean {
 
 async function serveFromDisk(pathname: string): Promise<Response> {
   const [dir, prefix] = pathname.startsWith(`${BASE}/static/components/`)
-    ? [join(import.meta.dir, 'dist/components'), `${BASE}/static/components/`]
+    ? [join(import.meta.dir, 'dist/static/components'), `${BASE}/static/components/`]
     : [join(import.meta.dir, '../shared/styles'), `${BASE}/shared/styles/`]
   // normalize() collapses any `..` so a crafted path can't escape `dir`.
   const rel = normalize(pathname.slice(prefix.length))

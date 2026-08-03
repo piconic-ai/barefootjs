@@ -2,9 +2,10 @@
   "name": "barefootjs-h3-example",
   "version": "0.1.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build && bun run scripts/assemble-public.ts",
-    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "build": "vite build && bun run scripts/assemble-public.ts",
+    "build:watch": "vite dev",
     "dev": "bun run build && wrangler dev",
     "deploy": "bun run build && wrangler deploy",
     "start": "bun run server.tsx",
@@ -20,7 +21,9 @@
     "hono": "^4"
   },
   "devDependencies": {
+    "@barefootjs/vite": "workspace:*",
     "bun-types": "^1.1.0",
+    "vite": "^6.0.0",
     "wrangler": "^4"
   }
 }

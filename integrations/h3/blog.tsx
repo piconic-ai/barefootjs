@@ -10,9 +10,9 @@
 // `nav:0` + the compiled `<PageShell>` nested content regions + a shell
 // `ThemeToggle` + the `router-entry` bootstrap), separate from the catalog
 // `Layout`. The islands are the shared blog components in `../shared/blog`,
-// compiled into `dist/components` by this integration's `bf build`; links are
-// base-path aware via `BLOG`, so the same shared components work under any
-// adapter's mount point.
+// compiled into `dist/components` by this integration's Vite build
+// (`vite.config.ts`); links are base-path aware via `BLOG`, so the same
+// shared components work under any adapter's mount point.
 //
 // `searchParams()` SSR rides the adapter's existing reader seam: the whole
 // fetch runs inside `withRequestEnv` (see server.tsx), so the index render of a
@@ -26,8 +26,6 @@ import {
   createRouter,
 } from 'h3'
 import { renderToHtml } from '@barefootjs/hono/render'
-import { BfScripts } from '@barefootjs/hono/app'
-import type { BarefootBuildManifest } from '@barefootjs/hono/app'
 import { Sidebar } from '@/components/Sidebar'
 import { PageShell } from '@/components/PageShell'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -35,37 +33,29 @@ import { NowPlaying } from '@/components/NowPlaying'
 import { PostList } from '@/components/PostList'
 import { PostArticle } from '@/components/PostArticle'
 import { allTags, listItems, articleNav } from '../shared/blog/posts'
+import { Assets } from './dist/bf-assets'
+import { ComponentScripts } from './renderer'
 
 interface LayoutProps {
   base: string
-  manifest: BarefootBuildManifest
   title?: string
   children?: unknown
 }
 
-function BlogLayout({ base, manifest, title, children }: LayoutProps) {
-  const componentsBase = `${base}/static/components`
+// No import map: `searchParams()` lives in the single physical
+// `@barefootjs/client/reactive` module every `@barefootjs/client*` entry
+// re-exports, so the island and the router bootstrap share ONE signal
+// instance simply because Rollup bundles both through the same real module
+// graph into one shared chunk — no specifier redirection needed (same
+// conclusion gin/hono already proved).
+function BlogLayout({ base, title, children }: LayoutProps) {
   const blog = `${base}/blog`
-  // `searchParams()` lives in the single physical `@barefootjs/client/reactive`
-  // module re-exported by every `@barefootjs/client*` entry, so the island and
-  // the router bootstrap share ONE signal instance just by resolving the bare
-  // specifiers to the same `barefoot.js`. `BfImportMap` only emits the
-  // `/client` + `/runtime` keys, so the blog writes its own map to add
-  // `/reactive` (same as the Hono integration).
-  const importMap = JSON.stringify({
-    imports: {
-      '@barefootjs/client': `${componentsBase}/barefoot.js`,
-      '@barefootjs/client/runtime': `${componentsBase}/barefoot.js`,
-      '@barefootjs/client/reactive': `${componentsBase}/barefoot.js`,
-    },
-  })
   return (
     <html lang="en" data-theme="dark">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title ?? 'Barefoot Blog'}</title>
-        <script type="importmap" dangerouslySetInnerHTML={{ __html: importMap }} />
         <link rel="stylesheet" href={`${base}/shared/styles/blog.css`} />
       </head>
       <body>
@@ -91,11 +81,12 @@ function BlogLayout({ base, manifest, title, children }: LayoutProps) {
             <PageShell>{children}</PageShell>
           </main>
         </div>
-        {/* h3 has no per-page script collector, so BfScripts emits every island
-            in the manifest (the same way every other h3 page does); the router
-            bootstrap is appended once. */}
-        <BfScripts base={componentsBase} manifest={manifest} />
-        <script type="module" src={`${componentsBase}/router-entry.js`} />
+        {/* h3 has no per-page script collector, so every discovered client
+            component's script loads unconditionally (the same way every
+            other h3 page does — see renderer.tsx); the router bootstrap is
+            appended once. */}
+        <ComponentScripts />
+        <script type="module" src={Assets.RouterEntry} />
       </body>
     </html>
   )
@@ -107,27 +98,26 @@ async function renderPage(node: unknown): Promise<string> {
 
 /**
  * Register the blog routes on the h3 router. `base` is the integration's
- * BASE_PATH; the blog mounts at `${base}/blog` and every link is built relative
- * to it. `manifest` is the shared `dist/components/manifest.json` (now including
- * the blog islands, compiled via `barefoot.config.ts`).
+ * BASE_PATH; the blog mounts at `${base}/blog` and every link is built
+ * relative to it.
  */
 export function registerBlog(
   router: ReturnType<typeof createRouter>,
   base: string,
-  manifest: BarefootBuildManifest,
 ): void {
   const blog = `${base}/blog`
 
   // Index — the post list reacts to ?sort= / ?tag= via searchParams() with no
-  // region swap. SSR resolves the query per-request through the reader seam
-  // (active because this module imports `@barefootjs/hono/app`), so the server
-  // render of a `?sort=` / `?tag=` URL matches the client with no priming.
+  // region swap. SSR resolves the query per-request through the
+  // `withRequestEnv` reader seam (see server.tsx / `@barefootjs/hono/
+  // request-env`), so the server render of a `?sort=` / `?tag=` URL matches
+  // the client with no priming.
   const indexHandler = eventHandler(async (event) => {
     const tag = getQuery(event).tag as string | undefined
     const items = listItems
     const title = tag ? `#${tag} — Barefoot Blog` : 'Barefoot Blog — Latest posts'
     return renderPage(
-      <BlogLayout base={base} manifest={manifest} title={title}>
+      <BlogLayout base={base} title={title}>
         <PostList items={items} tags={allTags} base={blog} />
         {/* v1: the player also lives in the content region on the index, marked
             `data-bf-permanent`, so the router moves the same live node between
@@ -153,7 +143,7 @@ export function registerBlog(
       // The whole article is the shared <PostArticle> island (nested children:
       // LikeButton / ReadingTimer / NowPlaying), rendered from post data.
       return renderPage(
-        <BlogLayout base={base} manifest={manifest} title={`${p.title} — Barefoot Blog`}>
+        <BlogLayout base={base} title={`${p.title} — Barefoot Blog`}>
           <PostArticle
             slug={p.slug}
             title={p.title}
