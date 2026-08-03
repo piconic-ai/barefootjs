@@ -2,19 +2,21 @@
   "name": "barefootjs-csr-example",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "bun run ../../packages/cli/src/index.ts build",
-    "build:watch": "bun run ../../packages/cli/src/index.ts build --watch",
+    "build": "vite build",
+    "build:watch": "vite build --watch",
     "dev": "bun run server.ts",
     "test:e2e": "bunx playwright test",
     "test:e2e:ui": "bunx playwright test --ui"
   },
   "dependencies": {
-    "@barefootjs/client": "workspace:*",
-    "@barefootjs/hono": "workspace:*"
+    "@barefootjs/client": "workspace:*"
   },
   "devDependencies": {
-    "@barefootjs/hono": "workspace:*",
-    "bun-types": "^1.1.0"
+    "@barefootjs/jsx": "workspace:*",
+    "@barefootjs/vite": "workspace:*",
+    "bun-types": "^1.1.0",
+    "vite": "^6.0.0"
   }
 }

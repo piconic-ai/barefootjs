@@ -1,15 +1,22 @@
 /**
  * BarefootJS CSR example server
  *
- * Serves static HTML pages + compiled client JS.
+ * Serves Vite-built HTML pages + compiled client JS.
  * Each page contains an empty mount point where components render via CSR.
+ *
+ * Pages live in `dist/pages/` (Vite build output), NOT the `pages/` source
+ * dir: each source page's inline `<script type="module">` imports a
+ * component `.tsx` file directly and `@barefootjs/client/runtime` by bare
+ * specifier — both need `vite build`'s own HTML processing to become real,
+ * resolvable, hashed asset references before a plain static file server
+ * like this one can serve them (see `vite.config.ts`).
  */
 
 import { resolve, dirname } from 'node:path'
 
 const ROOT_DIR = dirname(import.meta.path)
-const PAGES_DIR = resolve(ROOT_DIR, 'pages')
 const DIST_DIR = resolve(ROOT_DIR, 'dist')
+const PAGES_DIR = resolve(DIST_DIR, 'pages')
 const SHARED_DIR = resolve(ROOT_DIR, '../shared')
 
 // In-memory todo storage (same as Hono server)
