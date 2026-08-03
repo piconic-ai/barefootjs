@@ -64,6 +64,35 @@ describe('config hook', () => {
 
     expect(Object.keys(result.build.rollupOptions.input)).toEqual([])
   })
+
+  test('fills in a localhost-only server.cors default when the user set none', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-config-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+
+    const plugin = makePlugin('src/components', 'internal/views')
+    const result = await plugin.config({ root: dir }, { command: 'serve', mode: 'development' })
+
+    expect(result.server.cors).toBeDefined()
+    expect(result.server.cors.origin.test('http://localhost:3010')).toBe(true)
+    expect(result.server.cors.origin.test('https://evil.example.com')).toBe(false)
+  })
+
+  test('does NOT overwrite a user-supplied server.cors', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-config-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+
+    const plugin = makePlugin('src/components', 'internal/views')
+    const userCors = { origin: 'https://my-own-cors-policy.example.com' }
+    const result = await plugin.config(
+      { root: dir, server: { cors: userCors } },
+      { command: 'serve', mode: 'development' },
+    )
+
+    // The plugin's `server` return has no `cors` key at all in this case —
+    // Vite's config merge leaves the user's `server.cors` untouched only if
+    // we don't hand it a competing value to merge in.
+    expect(result.server.cors).toBeUndefined()
+  })
 })
 
 describe('resolveId hook', () => {
