@@ -60,11 +60,24 @@ export interface BarefootViteOptions {
   /** Source directories to scan for `.tsx` components, relative to the
    * Vite project root (or absolute). */
   components: string[]
-  /** Where compiled templates, `ssrDefaults`, and adapter-generated types
+  /**
+   * Where compiled templates, `ssrDefaults`, and adapter-generated types
    * land — relative to the Vite project root (or absolute). This is a
    * backend source directory the server-side app reads, NOT
-   * `build.outDir` (which is Vite's client-asset output). */
-  templates: string
+   * `build.outDir` (which is Vite's client-asset output).
+   *
+   * Optional for an adapter whose `generate()` output is ALWAYS empty
+   * (e.g. `CSRAdapter` — CSR has no template-language backend to point a
+   * `templates` dir at). When omitted, the eager pass still compiles every
+   * discovered component (client JS generation is unaffected) but writes
+   * nothing to disk on its behalf — no per-component template/ssrDefaults/
+   * types files, no `manifest.json`. If some discovered component turns
+   * out to produce a REAL (non-empty) template anyway, the eager pass
+   * refuses loudly instead of silently dropping it: omitting `templates`
+   * is a claim about the adapter's output that this plugin verifies rather
+   * than trusts. See `plugin.ts`'s `assertNoRealTemplateOutput`.
+   */
+  templates?: string
   /**
    * Optional escape hatch called once per eager pass (build AND dev), after
    * templates are written, with a narrow `AfterEmitContext`. NOT a

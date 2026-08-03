@@ -120,7 +120,12 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   // be set; then again in `configResolved` with Vite's authoritative
   // `root`, which is what `resolveId` / `transform` / `writeBundle` use.
   let componentDirs: string[] = []
-  let templatesDir = ''
+  // `undefined` exactly when `options.templates` was never set — the CSR
+  // degenerate case. Every write path below (`writeEmits`, `manifest.json`,
+  // the dev-artifact marker, `afterEmit`) is gated on this being defined;
+  // `assertNoRealTemplateOutput` is what makes skipping those writes safe
+  // rather than a silent drop.
+  let templatesDir: string | undefined
   let resolvedConfig: ResolvedConfig | undefined
 
   // Name → absolute-path index for resolving `@bf-child:<Name>` markers
@@ -153,8 +158,41 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   // (Hono-shaped JS-runtime adapters; Go/Mojo/etc. templates have no
   // imports and never call this at all).
   function rewriterFor(absPath: string): (importPath: string) => string {
+    // No `templates` dir configured (the CSR degenerate case) — there is
+    // nowhere for a rewritten import to point, but that's harmless: a
+    // relative import only reaches emitted template text (never client
+    // JS), and `assertNoRealTemplateOutput` refuses loudly the moment any
+    // component's template output turns out non-empty. Identity is a safe
+    // placeholder for output that can never survive to be read.
+    if (templatesDir === undefined) return importPath => importPath
     const outputPathGuess = resolve(templatesDir, relativeUnderComponentDir(absPath, componentDirs))
     return buildRelativeImportRewriter(absPath, outputPathGuess, componentDirs, templatesDir)
+  }
+
+  /**
+   * Refuses loudly when `options.templates` is omitted but `result` (a
+   * specific discovered component's compile) produced a REAL `markedTemplate`
+   * — non-empty content that would otherwise be silently dropped by the
+   * `templatesDir === undefined` skip below. `ssrDefaults`/`types` output is
+   * deliberately NOT checked here: the legacy CLI's own `clientOnly` gate
+   * (`packages/cli/src/lib/build.ts`) drops those unconditionally alongside
+   * the template even for an adapter whose components carry real signal
+   * defaults (a CSR `Counter` DOES produce non-empty `ssrDefaults` — proven
+   * by inspection — precisely because that computation reads IR metadata,
+   * not the adapter's `generate()` output), so treating them as
+   * loudness-worthy here would make `templates` impossible to omit for the
+   * one adapter (`CSRAdapter`) this option exists to accommodate.
+   */
+  function assertNoRealTemplateOutput(result: CompileResult, absPath: string): void {
+    const real = result.files.find(f => f.type === 'markedTemplate' && f.content.trim() !== '')
+    if (!real) return
+    throw new Error(
+      `[${PLUGIN_NAME}] adapter "${options.adapter.name}" produced a real template for ` +
+      `"${absPath}", but no \`templates\` option is configured on barefoot() — that output ` +
+      `would be silently dropped. Set \`templates: '<dir>'\`, or use an adapter whose ` +
+      `generate() output is always empty (e.g. CSRAdapter) if this project truly emits no ` +
+      `templates.`,
+    )
   }
 
   function compileCanonical(absPath: string, content: string): CompileResult {
@@ -211,6 +249,13 @@ export function barefoot(options: BarefootViteOptions): Plugin {
    * `AfterEmitContext`). Collected here (not read back off disk) since
    * `planEmits`/`writeEmits` already have the compiled `CompileResult` in
    * hand; no adapter-specific knowledge is needed to harvest it.
+   *
+   * When `options.templates` is omitted (`templatesDir === undefined`),
+   * this still compiles every discovered component — the graph pass
+   * (`transform`) needs the same canonical compile anyway, and
+   * `assertNoRealTemplateOutput` needs a real `CompileResult` to check —
+   * but writes nothing to disk on any component's behalf and returns an
+   * empty `types` map. See `types.ts`'s docstring on `templates`.
    */
   async function emitTemplatesFor(
     discovered: DiscoveredComponent[],
@@ -221,7 +266,8 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     // Combined `manifest.json` row per source file — see
     // `component-manifest.ts`'s header for why this is written alongside
     // (not instead of) the per-component `.ssr-defaults.json` files
-    // `writeEmits` already produces.
+    // `writeEmits` already produces. Stays empty (and unwritten) when
+    // `templatesDir` is undefined.
     const manifestEntries: Record<string, ManifestEntry> = {}
     for (const component of discovered) {
       const content = await readFile(component.absPath, 'utf8')
@@ -244,6 +290,11 @@ export function barefoot(options: BarefootViteOptions): Plugin {
         }
       }
 
+      if (templatesDir === undefined) {
+        assertNoRealTemplateOutput(result, component.absPath)
+        continue
+      }
+
       const targets = planEmits(result, component.absPath, componentDirs, options.adapter)
       lastEmitsByAbsPath.set(component.absPath, targets)
       await writeEmits(templatesDir, targets)
@@ -255,6 +306,8 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       const manifestRow = buildManifestEntry(result, component.absPath, componentDirs, options.adapter)
       if (manifestRow) manifestEntries[manifestRow.manifestKey] = manifestRow.entry
     }
+
+    if (templatesDir === undefined) return types
 
     // Written unconditionally every pass (matching `writeEmits`'s own
     // no-diffing convention for this eager pass, and the legacy CLI's own
@@ -283,7 +336,12 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       const targets = lastEmitsByAbsPath.get(absPath)
       lastEmitsByAbsPath.delete(absPath)
       cache.delete(absPath)
-      if (!targets) continue
+      // `lastEmitsByAbsPath` is only ever populated inside `emitTemplatesFor`
+      // when `templatesDir` is defined (see its `continue` for the CSR
+      // degenerate case), so `targets` is never non-empty here without
+      // `templatesDir` also being defined — this check is for the type
+      // checker, not a real runtime possibility.
+      if (!targets || templatesDir === undefined) continue
       for (const target of targets) {
         await rm(resolve(templatesDir, target.relPath), { force: true })
       }
@@ -310,6 +368,11 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     const types = await emitTemplatesFor(discovered, config.root, component =>
       devScriptAssets(config, devOrigin, component.absPath),
     )
+
+    // Both the marker and `afterEmit` exist to annotate/post-process
+    // `templatesDir` — neither has anything to do when there isn't one
+    // (the CSR degenerate case).
+    if (templatesDir === undefined) return
 
     await writeFile(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), DEV_ARTIFACT_MARKER_CONTENT)
 
@@ -390,7 +453,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     async configResolved(config) {
       resolvedConfig = config
       componentDirs = options.components.map(d => resolve(config.root, d))
-      templatesDir = resolve(config.root, options.templates)
+      templatesDir = options.templates !== undefined ? resolve(config.root, options.templates) : undefined
       const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
       childNameIndex = buildChildNameIndex(discovered)
     },
@@ -453,6 +516,11 @@ export function barefoot(options: BarefootViteOptions): Plugin {
         const manifestKey = toPosixRelative(config.root, component.absPath)
         return resolveScriptAssets(manifest, manifestKey, config.base)
       })
+
+      // No `templates` dir configured (the CSR degenerate case) — nothing
+      // was written for `emitTemplatesFor` to have staled, and `afterEmit`
+      // exists to post-process `templatesDir`, which doesn't exist here.
+      if (templatesDir === undefined) return
 
       // A prior `vite dev` run may have left the dev-artifact marker (and
       // dev-origin URLs) behind — this pass just overwrote every template
