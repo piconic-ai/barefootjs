@@ -426,8 +426,18 @@ $r->post('/api/todos/reset' => sub ($c) {
 # ThemeToggle in the shell, a hand-authored sidebar region `nav:0` + the
 # compiled <PageShell> nested content regions in the main column) whose islands
 # are the shared blog components in ../shared/blog, compiled by this
-# integration's `bf build`. The client router (client/router-entry.ts, bundled
-# to client/router-entry.js) swaps only the content region on navigation.
+# integration's Vite build (vite.config.ts). The client router
+# (client/router-entry.ts, its bundled URL resolved into
+# $BLOG_ASSETS->{RouterEntry}) swaps only the content region on navigation.
+#
+# No import map is needed (unlike the pre-Vite build): the router bundle's
+# @barefootjs/client/runtime import and every compiled island's own
+# @barefootjs/client import are ordinary ESM imports Rollup/Vite resolve
+# through their real module graph, collapsing into ONE shared chunk (build)
+# or ONE cached module (dev) automatically — a single reactive runtime
+# instance without any hand-wired specifier redirection. That this
+# hand-written wiring could simply be deleted is the point of the
+# Vite-based design, not an incidental cleanup.
 #
 # Unlike Hono — where the whole page is one JSX tree — there is no server JSX
 # here: the page is composed in Perl from individually-rendered island
@@ -444,6 +454,17 @@ $r->post('/api/todos/reset' => sub ($c) {
 
 my $BLOG_MANIFEST = do {
     my $f = app->home->child('dist/templates/manifest.json');
+    -r $f ? decode_json($f->slurp) : {};
+};
+# The Vite-generated asset map (dist/bf-assets.json, written by
+# `@barefootjs/mojolicious/vite`'s `afterEmit` hook) — resolves a
+# hand-written, non-component script entry's bundled URL (dev: Vite origin
+# URL; production: content-hashed manifest path). Read once at startup,
+# same rationale as $BLOG_MANIFEST above: there is no compile step needing
+# the URL baked in ahead of time — a fresh copy lands under gitignored
+# dist/ on every build (dev AND production).
+my $BLOG_ASSETS = do {
+    my $f = app->home->child('dist/bf-assets.json');
     -r $f ? decode_json($f->slurp) : {};
 };
 my $BLOG_DATA = do {
@@ -525,7 +546,6 @@ helper blog_island => sub ($c, $component, $props = {}, $extra = {}, $children =
 
 # Assemble the full region-shell page around already-rendered content HTML.
 sub _blog_page ($c, $title, $base, $content_html) {
-    my $static = "$BASE_PATH/client";
     my $theme   = $c->blog_island('ThemeToggle');
     my $sidebar = $c->blog_island('Sidebar');
     my $shell   = $c->blog_island(
@@ -534,15 +554,7 @@ sub _blog_page ($c, $title, $base, $content_html) {
         { children => b($content_html) },         # SSR-only: the page content
         { reader_toolbar => 'ReaderToolbar' },
     );
-    # `searchParams()` lives in the single physical `@barefootjs/client/reactive`
-    # module re-exported by every `@barefootjs/client*` entry, so the islands and
-    # the router bootstrap share ONE signal instance by resolving the bare
-    # specifiers to the same `barefoot.js`.
-    my $importmap = encode_json({ imports => {
-        '@barefootjs/client'         => "$static/barefoot.js",
-        '@barefootjs/client/runtime' => "$static/barefoot.js",
-        '@barefootjs/client/reactive'=> "$static/barefoot.js",
-    } });
+    my $router_entry = $BLOG_ASSETS->{RouterEntry} // '';
     my $scripts = $c->bf->scripts;
     my $esc_title = xml_escape($title);
     return <<"HTML";
@@ -552,7 +564,6 @@ sub _blog_page ($c, $title, $base, $content_html) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>$esc_title</title>
-<script type="importmap">$importmap</script>
 <link rel="stylesheet" href="$BASE_PATH/styles/blog.css">
 </head>
 <body>
@@ -565,7 +576,7 @@ sub _blog_page ($c, $title, $base, $content_html) {
 <main>$shell</main>
 </div>
 $scripts
-<script type="module" src="$static/router-entry.js"></script>
+<script type="module" src="$router_entry"></script>
 </body>
 </html>
 HTML
@@ -600,6 +611,15 @@ $r_blog->get('/blog' => sub ($c) {
             sortHref  => $base,
             tagClass  => 'tag',
             tagHref   => $base,
+            # `bf->query($root, ...)`'s first arg is the plain base-URL STRING
+            # every per-link sort/tag href builds against (see
+            # BarefootJS.pm's `query`, and integrations/php's/integrations/
+            # flask's identical `'root' => $base` seed) -- unrelated to the
+            # Vite migration, but was missing here, so every PostList render
+            # died with "Global symbol '$root' requires explicit package
+            # name" the first time this route was exercised against a real
+            # perl/Mojolicious (previously always skipped in `bun test`).
+            root      => $base,
         },
         { post_list_item => 'PostListItem' },
     );
