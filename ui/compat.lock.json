@@ -2345,12 +2345,6 @@
           ]
         }
       },
-      "loop-destructured-param-condition": {
-        "go-template": {
-          "kind": "render",
-          "reason": "a destructured .map() param binding used as a row ternary CONDITION emits the root-scope `{{if $.Active}}` — `renderConditionExpr` omits `loopBindingStack`, unlike `identifierToGoRef` (text positions resolve the same binding correctly) (https://github.com/piconic-ai/barefootjs/issues/2486)"
-        }
-      },
       "loop-param-shadows-record-template-span": {
         "erb": {
           "kind": "render",
@@ -2502,7 +2496,7 @@
       "nested-loop-tail-content": {
         "go-template": {
           "kind": "render",
-          "reason": "outer-row content AFTER a nested inner loop renders through non-loop arms (spread lowers to the component-root `.Spread_0`) — `inLoop` is cleared, not restored, by the inner loop's exit; the same content BEFORE the inner loop emits correctly (https://github.com/piconic-ai/barefootjs/issues/2487)"
+          "reason": "the `inLoop` clobber is FIXED (#2487) — outer-row content after a nested loop now takes the loop arms and the spread resolves row-scoped. Residual: the spread's attribute NAMES are still mangled by the Go-cased-key kebab conversion (`data-kind` → `-data-kind`), which is #2490; this entry graduates with that fix (https://github.com/piconic-ai/barefootjs/issues/2490)"
         }
       },
       "preamble-cells": {
@@ -2948,10 +2942,6 @@
       "flatmap-typeof-projection": {
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
-      },
-      "loop-destructured-param-condition": {
-        "description": "Destructured .map() param binding used as a row ternary condition stays row-scoped",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-destructured-param-condition.ts"
       },
       "loop-param-shadows-record-template-span": {
         "description": ".map() param shadowing a record const stays row-scoped inside a `${base[key]}` template span",
