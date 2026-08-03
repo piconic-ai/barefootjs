@@ -2010,6 +2010,20 @@ sub spread_attrs ($self, $bag) {
 # ---------------------------------------------------------------------------
 package BarefootJS::Date;
 
+# Must carry its own literal $VERSION. META's `provides` is built by
+# Module::Metadata (see Makefile.PL), which reads each package's own
+# $VERSION and reports undef for one that has none -- and since a dist
+# with `provides` makes PAUSE index from META instead of scanning the
+# .pm files, an undef here is what PAUSE compares against the previously
+# indexed version. That reads as a *decreasing* version number and the
+# package drops out of the index -- which is what happened to this one in
+# BarefootJS-0.30.0, freezing it at the 0.29.0 tarball. It has to be
+# a literal string: Module::Metadata evaluates the version line in a Safe
+# compartment where `$BarefootJS::VERSION` is not visible and collapses to
+# 0. scripts/sync-perl-versions.ts bumps every `our $VERSION` line in the
+# file, so this stays in lockstep with the package version above.
+our $VERSION = "0.30.0";
+
 sub new {
     my ($class, $epoch_ms) = @_;
     return bless { epoch_ms => $epoch_ms }, $class;

@@ -6,4 +6,5 @@ CONTRIBUTING.md
 SECURITY.md
 MANIFEST
 Makefile.PL
+t/meta_provides.t
 t/render.t

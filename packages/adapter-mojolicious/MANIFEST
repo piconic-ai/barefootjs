@@ -10,4 +10,5 @@ MANIFEST
 Makefile.PL
 t/dev_reload.t
 t/manifest_defaults.t
+t/meta_provides.t
 t/render_named.t

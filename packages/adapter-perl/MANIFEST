@@ -15,6 +15,7 @@ t/dev_reload.t
 t/format_date.t
 t/helper_vectors.t
 t/manifest_components.t
+t/meta_provides.t
 t/search_params.t
 t/spread_attrs.t
 t/template_primitives.t
