@@ -1027,6 +1027,12 @@ func jsKeyFromGoCasedKey(key string) string {
 	for runLen < len(key) && key[runLen] >= 'A' && key[runLen] <= 'Z' {
 		runLen++
 	}
+	// An initialism may carry trailing digits (`utf8` → `UTF8`); without
+	// consuming them the lookup misses and `UTF8` decapitalizes to the
+	// wrong `uTF8`.
+	for runLen < len(key) && key[runLen] >= '0' && key[runLen] <= '9' {
+		runLen++
+	}
 	if runLen >= 2 {
 		if _, ok := goInitialisms[strings.ToLower(key[:runLen])]; ok {
 			return strings.ToLower(key[:runLen]) + key[runLen:]

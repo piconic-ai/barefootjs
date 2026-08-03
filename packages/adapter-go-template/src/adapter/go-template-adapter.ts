@@ -6878,7 +6878,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // `convertExpressionToGo` already pushes BF101 for unsupported
         // expressions and returns `""`; pass through so the template still
         // compiles.
-        return `{{bf_spread_attrs (bf_js_keys ${goExpr})}}`
+        // `goExpr` is not necessarily a single token — a member spread can
+        // lower to a pipeline (`bf_get . $.K`), which the template parser
+        // would otherwise read as extra ARGUMENTS to `bf_js_keys`.
+        return `{{bf_spread_attrs (bf_js_keys ${wrapIfMultiToken(goExpr)})}}`
       }
       return `{{bf_spread_attrs .${value.slotId}}}`
     },

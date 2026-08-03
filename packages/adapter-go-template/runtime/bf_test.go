@@ -1968,6 +1968,17 @@ func TestJSKeys(t *testing.T) {
 		}
 	})
 
+	t.Run("initialism with trailing digits round-trips", func(t *testing.T) {
+		// `capitalizeFieldName` maps the catalogued initialism `utf8` to
+		// `UTF8`; the inverse must consume the digit run too, or it
+		// decapitalizes to the wrong `uTF8`.
+		got := JSKeys(map[string]any{"UTF8": "y", "ID": "1"})
+		want := map[string]any{"utf8": "y", "id": "1"}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("JSKeys(map w/ UTF8) = %v, want %v", got, want)
+		}
+	})
+
 	t.Run("map with Go-cased keys", func(t *testing.T) {
 		got := JSKeys(map[string]any{"ID": "1", "Title": "first", "DataKind": "a"})
 		want := map[string]any{"id": "1", "title": "first", "dataKind": "a"}
