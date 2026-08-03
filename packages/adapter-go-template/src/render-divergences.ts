@@ -44,10 +44,8 @@ export const renderDivergences: RenderDivergences = {
   // #2482 audit follow-ups: loop-scope holes specific to this adapter's
   // four-stack scope tracking and its SSR seeding. Graduate by applying
   // the fix described in each issue and deleting the line.
-  'loop-destructured-param-condition':
-    'a destructured .map() param binding used as a row ternary CONDITION emits the root-scope `{{if $.Active}}` — `renderConditionExpr` omits `loopBindingStack`, unlike `identifierToGoRef` (text positions resolve the same binding correctly) (https://github.com/piconic-ai/barefootjs/issues/2486)',
   'nested-loop-tail-content':
-    'outer-row content AFTER a nested inner loop renders through non-loop arms (spread lowers to the component-root `.Spread_0`) — `inLoop` is cleared, not restored, by the inner loop\'s exit; the same content BEFORE the inner loop emits correctly (https://github.com/piconic-ai/barefootjs/issues/2487)',
+    'the `inLoop` clobber is FIXED (#2487) — outer-row content after a nested loop now takes the loop arms and the spread resolves row-scoped. Residual: the spread\'s attribute NAMES are still mangled by the Go-cased-key kebab conversion (`data-kind` → `-data-kind`), which is #2490; this entry graduates with that fix (https://github.com/piconic-ai/barefootjs/issues/2490)',
   'loop-param-shadows-spread-const':
     'spreading a loop row object mangles attribute names (`id` → `-i-d`, `title` → `-title`); the spread VALUE is correctly row-scoped, distinguishing this from the template-adapter const-shadow hole #2489 (https://github.com/piconic-ai/barefootjs/issues/2490)',
   'loop-param-shadows-record-template-span':
