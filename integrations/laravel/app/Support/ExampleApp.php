@@ -73,19 +73,14 @@ final class ExampleApp
     }
 
     /**
-     * The build manifest -- reassembled from `dist/templates/*.ssr-defaults.json`
-     * (one file per component, written by `@barefootjs/vite`'s core plugin --
-     * see `packages/vite/src/emit.ts`'s `planEmits`), not a single combined
-     * `manifest.json` the legacy CLI used to write. Each component's
-     * `ssrDefaults` -- the set of signal/memo names an optional-prop-derived
-     * initial value needs BOUND (to the real prop or to `null`) in the render
-     * context -- lands in its own file; this glob-and-merge reassembles the
-     * SAME `{ [component]: { ssrDefaults: {...} } }` shape every call site
-     * below already expects, so stashFromSsrDefaults() and registerBlogChild()
-     * need no changes. This integration's shared components aren't manifest-
-     * registered under `ui/*` (see BarefootHelper::renderComponent's manual
-     * child wiring, mirroring integrations/blade), so root-level renders
-     * derive the stash themselves via stashFromSsrDefaults().
+     * The build manifest -- a plain build artifact (dist/templates/manifest.json),
+     * not adapter internals -- lists each component's `ssrDefaults`: the set of
+     * signal/memo names an optional-prop-derived initial value needs BOUND (to
+     * the real prop or to `null`) in the render context. This integration's
+     * shared components aren't manifest-registered under `ui/*` (see
+     * BarefootHelper::renderComponent's manual child wiring, mirroring
+     * integrations/blade), so root-level renders derive the stash themselves
+     * via stashFromSsrDefaults().
      *
      * PHP's cli-server resets statics per request, so this (and blogData) is
      * a per-request lazy read -- the same cost point as integrations/blade
@@ -95,14 +90,8 @@ final class ExampleApp
     {
         static $manifest = null;
         if ($manifest === null) {
-            $manifest = [];
-            foreach (glob(base_path('dist/templates/*.ssr-defaults.json')) ?: [] as $path) {
-                $component = basename($path, '.ssr-defaults.json');
-                $defaults = json_decode((string) file_get_contents($path), true);
-                if (is_array($defaults)) {
-                    $manifest[$component] = ['ssrDefaults' => $defaults];
-                }
-            }
+            $path = base_path('dist/templates/manifest.json');
+            $manifest = is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : [];
         }
         return $manifest;
     }

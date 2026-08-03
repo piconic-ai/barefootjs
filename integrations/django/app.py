@@ -99,23 +99,18 @@ def jbool(v: Any) -> bool:
     return bool(v)
 
 
-# The build manifest -- reassembled from `dist/templates/*.ssr-defaults.json`
-# (one file per component, written by `@barefootjs/vite`'s core plugin --
-# see `packages/vite/src/emit.ts`'s `planEmits`), not the legacy CLI's
-# single combined `dist/templates/manifest.json`. Each component's
-# `ssrDefaults` -- the set of signal/memo names an optional-prop-derived
-# initial value needs BOUND (to the real prop or to `None`) in the render
-# context -- lands in its own file; this glob-and-merge reassembles the
-# SAME `{ [component]: { "ssrDefaults": {...} } }` shape every call site
-# below already expects. `register_child_renderer` via
-# `register_components_from_manifest` derives this automatically for
-# manifest-registered (`ui/*`) children; this integration's shared
-# components aren't manifest-registered (see render_component's manual
-# child wiring below), so root-level renders derive it themselves, the
-# same way.
-MANIFEST: dict[str, Any] = {}
-for _p in (HERE / "dist" / "templates").glob("*.ssr-defaults.json"):
-    MANIFEST[_p.name[: -len(".ssr-defaults.json")]] = {"ssrDefaults": _json.loads(_p.read_text())}
+# The build manifest -- a plain build artifact (dist/templates/manifest.json),
+# not adapter internals -- lists each component's `ssrDefaults`: the set of
+# signal/memo names an optional-prop-derived initial value needs BOUND (to
+# the real prop or to `None`) in the render context. `register_child_renderer`
+# via `register_components_from_manifest` derives this automatically for
+# manifest-registered (`ui/*`) children; this integration's shared components
+# aren't manifest-registered (see render_component's manual child wiring
+# below), so root-level renders derive it themselves, the same way.
+try:
+    MANIFEST: dict[str, Any] = _json.loads((HERE / "dist" / "templates" / "manifest.json").read_text())
+except FileNotFoundError:
+    MANIFEST = {}
 
 # The Vite-generated asset map (dist/bf-assets.json, written by
 # `@barefootjs/jinja/vite`'s `afterEmit` hook) -- resolves a hand-written,

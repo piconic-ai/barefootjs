@@ -93,16 +93,16 @@ mocked/fixture-scale builds:
    inlines them as JS defaults. Blade has neither — `stash_from_ssr_
    defaults`-equivalent PHP reads them from a JSON side-channel at request
    time. The legacy CLI wrote ONE combined `dist/templates/manifest.json`;
-   `@barefootjs/vite`'s core plugin instead writes one `<Name>.ssr-
-   defaults.json` per component (`packages/vite/src/emit.ts`'s `planEmits`
-   — the SAME "per-file, not combined" choice its own docstring already
-   makes for `types`, just not previously exercised by a consumer that
-   needs the combined shape). Fixed on the READ side, not by adding
-   combining back into `vite.ts`: `ExampleApp::manifest()` now globs
-   `dist/templates/*.ssr-defaults.json` and reassembles the same
-   `{ [component]: { ssrDefaults: {...} } }` map every call site already
-   expected — zero change to `stashFromSsrDefaults()`/`registerBlogChild()`,
-   and zero new logic in `@barefootjs/blade/vite` itself.
+   `@barefootjs/vite`'s core plugin only wrote one `<Name>.ssr-
+   defaults.json` per component. First pass here closed the gap on the
+   READ side (`ExampleApp::manifest()` glob-and-reassembling the per-
+   component files) — review correctly pushed back: that's seven copies of
+   identical reconstruction logic across three languages for a build
+   ARTIFACT the pipeline used to just hand over. Fixed in core instead
+   (see the `@barefootjs/vite` changeset in this same PR): `manifest.json`
+   is now written alongside the per-component files, matching the legacy
+   shape exactly. `ExampleApp::manifest()` is back to a single
+   `json_decode` of that one file — byte-for-byte the pre-migration code.
 
 ## Conclusion for the design brief's question
 

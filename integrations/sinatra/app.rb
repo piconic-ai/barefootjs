@@ -103,22 +103,7 @@ rescue JSON::ParserError
   nil
 end
 
-# Reassembles the SAME `{ component_sym => { ssrDefaults: {...} } }` shape a
-# single combined `dist/templates/manifest.json` (the legacy CLI's output)
-# used to provide, from `@barefootjs/vite`'s core plugin's ACTUAL
-# per-component output instead: one `<Name>.ssr-defaults.json` file per
-# component (see `packages/vite/src/emit.ts`'s `planEmits`). `slurp_json`'s
-# `symbolize_names: true` already matches every downstream
-# `entry[:ssrDefaults]` read below.
-def load_blog_manifest
-  Dir.glob('dist/templates/*.ssr-defaults.json').each_with_object({}) do |path, acc|
-    component = File.basename(path, '.ssr-defaults.json').to_sym
-    defaults = slurp_json(path)
-    acc[component] = { ssrDefaults: defaults } if defaults
-  end
-end
-
-BLOG_MANIFEST = load_blog_manifest
+BLOG_MANIFEST = slurp_json('dist/templates/manifest.json') || {}
 BLOG_DATA = slurp_json('dist/blog-data.json') || { posts: [], listItems: [], allTags: [] }
 
 # The Vite-generated asset map (dist/bf-assets.json, written by

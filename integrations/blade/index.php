@@ -82,27 +82,16 @@ $backend = new BladeBackend([
     'cache_dir' => sys_get_temp_dir() . '/barefootjs-blade-cache',
 ]);
 
-// The build manifest -- reassembled from `dist/templates/*.ssr-defaults.json`
-// (one file per component, written by `@barefootjs/vite`'s core plugin --
-// see `packages/vite/src/emit.ts`'s `planEmits`), not a single combined
-// `manifest.json` the legacy CLI used to write. Each component's
-// `ssrDefaults` -- the set of signal/memo names an optional-prop-derived
-// initial value needs BOUND (to the real prop or to `null`) in the render
-// context -- lands in its own file; this glob-and-merge reassembles the
-// SAME `{ [component]: { ssrDefaults: {...} } }` shape every call site
-// below already expects. This integration's shared components aren't
-// manifest-registered under `ui/*` (see render_component's manual child
-// wiring below, mirroring app.py's comment), so root-level renders derive
-// the stash themselves via stash_from_ssr_defaults(), the same way app.py
-// does.
-$MANIFEST = [];
-foreach (glob($HERE . '/dist/templates/*.ssr-defaults.json') ?: [] as $path) {
-    $component = basename($path, '.ssr-defaults.json');
-    $defaults = json_decode(file_get_contents($path), true);
-    if (is_array($defaults)) {
-        $MANIFEST[$component] = ['ssrDefaults' => $defaults];
-    }
-}
+// The build manifest -- a plain build artifact (dist/templates/manifest.json),
+// not adapter internals -- lists each component's `ssrDefaults`: the set of
+// signal/memo names an optional-prop-derived initial value needs BOUND (to
+// the real prop or to `null`) in the render context. This integration's
+// shared components aren't manifest-registered under `ui/*` (see
+// render_component's manual child wiring below, mirroring app.py's comment),
+// so root-level renders derive the stash themselves via
+// stash_from_ssr_defaults(), the same way app.py does.
+$manifestPath = $HERE . '/dist/templates/manifest.json';
+$MANIFEST = is_file($manifestPath) ? (json_decode(file_get_contents($manifestPath), true) ?: []) : [];
 
 // The Vite-generated asset map (dist/bf-assets.json, written by
 // `@barefootjs/blade/vite`'s `afterEmit` hook) -- resolves a hand-written,

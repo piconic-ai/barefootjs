@@ -41,10 +41,11 @@ preserved verbatim across the rewrite):
 
 - `ErbFilterEmitter`/`ErbTopLevelEmitter`'s constructors rewritten as plain
   field declarations + explicit assignment.
-- The Rails/Sinatra manifest reads reassemble `{ [component]: {
-  ssrDefaults } }` from the per-component `dist/templates/*.ssr-
-  defaults.json` files `@barefootjs/vite`'s core plugin writes, instead of
-  the legacy CLI's single combined `manifest.json`.
+- The Rails/Sinatra `BLOG_MANIFEST` reads the single combined
+  `dist/templates/manifest.json` `@barefootjs/vite`'s core plugin now
+  writes (see that package's own changeset in this PR), via the same
+  `symbolize_names: true` `slurp_json` helper both integrations already
+  had — byte-for-byte the pre-migration code.
 
 Third confirmation of the `@barefootjs/blade/vite` changeset's finding:
 writing the SAME `/vite` shape a third time, for a third template-string
@@ -52,11 +53,6 @@ adapter, was fully mechanical, and needed strictly less than Go's reference
 — not an equal amount reshaped.
 
 `integrations/rails` and `integrations/sinatra` both move onto this
-package's `/vite` in this PR (`config/initializers/example_app.rb`'s
-`BLOG_MANIFEST`/Rails, `app.rb`'s `BLOG_MANIFEST`/Sinatra — both
-`symbolize_names: true`, both reassembled from the per-component
-`dist/templates/*.ssr-defaults.json` files the same way as Laravel's/
-Django's PHP/Python read sides, just keyed by `Symbol` instead of
-`String` since every existing call site already does `entry[:ssrDefaults]`).
-Each integration's own 104-test Playwright E2E suite passes end-to-end
-against its migrated build, run twice for stability.
+package's `/vite` in this PR. Each integration's own 104-test Playwright
+E2E suite passes end-to-end against its migrated build, run twice for
+stability.

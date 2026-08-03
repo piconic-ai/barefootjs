@@ -62,7 +62,7 @@
  * not just the build one, because e.g. Go's `components.go` has to exist
  * for `go run .` to compile even in dev.
  */
-import { readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import {
@@ -78,6 +78,7 @@ import { resolveClientJsSpecifier } from './resolve-client-js.ts'
 import { buildRelativeImportRewriter, relativeUnderComponentDir, safeRollupEntryName, toPosixRelative } from './paths.ts'
 import { loadManifest, resolveScriptAssets } from './manifest.ts'
 import { planEmits, writeEmits, type EmitTarget } from './emit.ts'
+import { buildManifestEntry, type ManifestEntry } from './component-manifest.ts'
 import {
   DEFAULT_DEV_CORS_ORIGIN,
   DEV_ARTIFACT_MARKER_CONTENT,
@@ -217,6 +218,11 @@ export function barefoot(options: BarefootViteOptions): Plugin {
     resolveScriptAssetsFor: (component: DiscoveredComponent) => string[],
   ): Promise<Map<string, string>> {
     const types = new Map<string, string>()
+    // Combined `manifest.json` row per source file — see
+    // `component-manifest.ts`'s header for why this is written alongside
+    // (not instead of) the per-component `.ssr-defaults.json` files
+    // `writeEmits` already produces.
+    const manifestEntries: Record<string, ManifestEntry> = {}
     for (const component of discovered) {
       const content = await readFile(component.absPath, 'utf8')
       const canonical = compileCanonical(component.absPath, content)
@@ -245,7 +251,22 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       for (const file of result.files) {
         if (file.type === 'types') types.set(component.absPath, file.content)
       }
+
+      const manifestRow = buildManifestEntry(result, component.absPath, componentDirs, options.adapter)
+      if (manifestRow) manifestEntries[manifestRow.manifestKey] = manifestRow.entry
     }
+
+    // Written unconditionally every pass (matching `writeEmits`'s own
+    // no-diffing convention for this eager pass, and the legacy CLI's own
+    // always-write-unless-clientOnly behavior) — `discovered` is always the
+    // FULL current set (see this module's docstring on why this plugin
+    // never does a partial/diffed re-run), so this naturally drops a
+    // deleted component's row without any separate cleanup step. `mkdir`
+    // first: an empty `discovered` set means `writeEmits` never ran (no
+    // targets to create `templatesDir` for), so it may not exist yet.
+    await mkdir(templatesDir, { recursive: true })
+    await writeFile(resolve(templatesDir, 'manifest.json'), JSON.stringify(manifestEntries, null, 2))
+
     return types
   }
 

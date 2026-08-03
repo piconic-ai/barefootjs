@@ -162,4 +162,25 @@ describe('e2e: vite build', () => {
     expect(files).toContain('SharedCounter.tmpl')
     expect(files).toContain('Greeting.tmpl')
   })
+
+  test('writes a combined manifest.json alongside the per-component templates, matching the legacy CLI\'s shape (#2494 review)', async () => {
+    const manifest = JSON.parse(await readFile(resolve(templatesDir, 'manifest.json'), 'utf8'))
+
+    // Keyed by component name (GoTemplateAdapter isn't `templatesPerComponent`,
+    // so no `components` sub-map is expected — see `component-manifest.ts`).
+    // Counter's own `count` signal seeds a literal SSR default even with no
+    // backing prop (`ssrDefaults` covers every signal needing an in-template
+    // seed, not only optional-prop-derived ones); Greeting's required `name`
+    // prop reference seeds a `{ propName, value: null }` row the same way.
+    expect(manifest.Counter).toEqual({ markedTemplate: 'Counter.tmpl', ssrDefaults: { count: { value: 0 } } })
+    expect(manifest.Greeting).toEqual({
+      markedTemplate: 'Greeting.tmpl',
+      ssrDefaults: { name: { propName: 'name', value: null } },
+    })
+    expect('components' in manifest.Counter).toBe(false)
+    // The absent-key contract itself (no entry carries `ssrDefaults: {}`)
+    // is covered precisely, on fabricated input, by
+    // `component-manifest.test.ts` — this test's job is just proving the
+    // combined file actually lands on disk from a REAL build.
+  })
 })
