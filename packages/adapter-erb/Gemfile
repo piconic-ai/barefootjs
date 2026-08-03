@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+# The gemspec is the single source of truth for this runtime's dependencies —
+# `gemspec` pulls in both its runtime and development requirements. Adding a
+# gem means editing barefoot_js.gemspec and nothing else; no workflow has to
+# learn about it. That matters here specifically: release.yml's
+# rubygems-release and ci-erb.yml each installed gems by hand, drifted apart,
+# and the gem sat unpublished at 0.25.0 for eleven releases as a result.
+source 'https://rubygems.org'
+
+gemspec

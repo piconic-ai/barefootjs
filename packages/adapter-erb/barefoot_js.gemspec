@@ -24,6 +24,12 @@ Gem::Specification.new do |s|
   # installed). Loaded lazily — every other helper stays stdlib-only.
   s.add_dependency 'tzinfo', '~> 2.0'
 
+  # Test-only. Declared here rather than in the Gemfile so the gemspec stays
+  # the one place dependencies are listed. minitest ships with Ruby but is a
+  # bundled gem, not a default one, so it is not on the load path under
+  # `bundle exec` unless the bundle asks for it.
+  s.add_development_dependency 'minitest', '~> 5.0'
+
   s.metadata['documentation_uri'] = 'https://barefootjs.dev'
   s.metadata['source_code_uri'] = 'https://github.com/piconic-ai/barefootjs/tree/main/packages/adapter-erb'
   s.metadata['rubygems_mfa_required'] = 'true'
