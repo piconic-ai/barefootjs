@@ -30,10 +30,4 @@ export const renderDivergences: RenderDivergences = {
   // `skipJsx` entries).
   'aliased-destructured-prop':
     'aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)',
-
-  // #2482 audit follow-ups: loop-scope holes in per-adapter name
-  // classification. Graduate by applying the loop-bound-name guards
-  // described in each issue and deleting the line.
-  'loop-param-shadows-spread-const':
-    'a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check (the live `loopBoundNames` map exists but is not consulted on this path), so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)',
 }
