@@ -44,6 +44,27 @@ jobs:
         # the full runtime chain for named-IANA-zone resolution in format_date.
         run: cpanm --notest Module::CPANfile Test2::Suite Text::Xslate Mojolicious DateTime
 
+      # Only MANIFEST-listed files are packaged, and `make test` runs t/*.t off
+      # the working tree — so a test missing from MANIFEST passes here forever
+      # while never once running for a CPAN tester. Seven such tests had
+      # accumulated in adapter-perl and one in adapter-mojolicious before this
+      # check existed. `make distcheck` would be the idiomatic tool but reports
+      # every unlisted file (package.json, CHANGELOG.md, …), so scope it to t/.
+      - name: Every t/*.t is listed in MANIFEST
+        run: |
+          status=0
+          for dist in packages/adapter-perl packages/adapter-xslate packages/adapter-mojolicious; do
+            missing=$(comm -23 \
+              <(cd "$dist" && ls t/*.t | sort) \
+              <(grep '^t/' "$dist/MANIFEST" | sort))
+            if [ -n "$missing" ]; then
+              echo "::error::$dist/MANIFEST is missing:"
+              echo "$missing" | sed 's/^/  /'
+              status=1
+            fi
+          done
+          exit $status
+
       # Core must be built and installed first so the backend dists can resolve
       # `requires 'BarefootJS'` from their cpanfile.
       - name: Build, test & install core (BarefootJS)
@@ -67,3 +88,24 @@ jobs:
           perl Makefile.PL
           make test
           make dist
+
+      # The runs above test the working tree, where the whole monorepo is on
+      # disk — a shipped test that reaches outside its own dist still passes.
+      # Re-run each tarball's suite from an extraction OUTSIDE the checkout,
+      # which is what a CPAN tester actually does: only MANIFEST-listed files
+      # exist, and only cpanfile-declared deps are installed. Tests that need
+      # monorepo-only fixtures (t/helper_vectors.t, t/eval_vectors.t) are
+      # expected to `plan skip_all` here rather than fail.
+      - name: Test each tarball standalone, outside the checkout
+        run: |
+          standalone=$(mktemp -d)
+          for tarball in \
+            packages/adapter-perl/BarefootJS-*.tar.gz \
+            packages/adapter-xslate/BarefootJS-Backend-Xslate-*.tar.gz \
+            packages/adapter-mojolicious/Mojolicious-Plugin-BarefootJS-*.tar.gz
+          do
+            echo "::group::$(basename "$tarball")"
+            tar xzf "$(realpath "$tarball")" -C "$standalone"
+            ( cd "$standalone/$(basename "$tarball" .tar.gz)" && perl Makefile.PL && make test )
+            echo "::endgroup::"
+          done
