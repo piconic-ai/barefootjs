@@ -3,6 +3,14 @@
  *
  * Uses hono/jsx-renderer with streaming support.
  * BfScripts component renders collected script tags at body end.
+ *
+ * No import map: under the Vite build, `@barefootjs/client` is an ordinary
+ * bundled ESM specifier every island's compiled entry imports — Rollup
+ * folds it into one shared chunk (the single-runtime-instance guarantee
+ * the hand-written import map used to provide), and the browser follows
+ * that import on its own with no specifier redirection needed. See
+ * `vite.config.ts` and `@barefootjs/hono/vite`'s `scriptAssets` codegen
+ * (`HonoAdapter.generate()` / `registerComponentScripts`).
  */
 
 import { jsxRenderer } from 'hono/jsx-renderer'
@@ -10,14 +18,6 @@ import { BfScripts } from '../../packages/adapter-hono/src/scripts'
 import { BfDevReload } from '../../packages/adapter-hono/src/app'
 
 const BASE_PATH = process.env.BASE_PATH ?? '/integrations/hono'
-
-// Import map for resolving @barefootjs/client in client JS
-const importMapScript = JSON.stringify({
-  imports: {
-    '@barefootjs/client': `${BASE_PATH}/static/components/barefoot.js`,
-    '@barefootjs/client/runtime': `${BASE_PATH}/static/components/barefoot.js`,
-  },
-})
 
 function SiteHeader() {
   return (
@@ -45,7 +45,6 @@ export const renderer = jsxRenderer(
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>BarefootJS + Hono/JSX</title>
-          <script type="importmap" dangerouslySetInnerHTML={{ __html: importMapScript }} />
           <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/tokens.css`} />
           <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/layout.css`} />
           <link rel="stylesheet" href={`${BASE_PATH}/shared/styles/components.css`} />

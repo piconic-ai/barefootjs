@@ -99,6 +99,15 @@ turned out to split one-for-one and one-for-none:
   boot-id reconnection protocol is what detects THAT half, which nothing
   in this design replaces.
 
+One CORE `@barefootjs/vite` bug found and fixed along the way (own
+changeset, `vite-relative-import-rewrite-fix.md`): `rewriterFor`'s
+output-path guess for re-anchoring a relative import was root-relative
+instead of component-dir-relative, producing a broken specifier for any
+component importing a same-directory sibling out of a `components` dir
+that isn't the Vite root (`../shared/blog`'s `PageShell.tsx` → `./ReaderToolbar`).
+Only a JS-runtime adapter's real `import` syntax exercises this at all —
+invisible to gin (Go templates have no imports) and to PR01-03's fixtures.
+
 `vite.config.ts` replaces the `build`/`build:watch` scripts (matching
 `integrations/gin`, `barefoot.config.ts` itself stays, unused, until PR07
 removes the legacy CLI). `scripts/assemble-public.ts` (Cloudflare Workers
