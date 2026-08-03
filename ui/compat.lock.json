@@ -2354,10 +2354,6 @@
           "kind": "render",
           "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check (the live `loopBoundNames` map exists but is not consulted on this path), so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
         },
-        "go-template": {
-          "kind": "render",
-          "reason": "spreading a loop row object mangles attribute names (`id` → `-i-d`, `title` → `-title`); the spread VALUE is correctly row-scoped, distinguishing this from the template-adapter const-shadow hole #2489 (https://github.com/piconic-ai/barefootjs/issues/2490)"
-        },
         "jinja": {
           "kind": "render",
           "reason": "a .map() param shadowing an object const is resolved by `emitSpread` against `localConstants` with no loop-shadow check, so every row spreads the OUTER const instead of the row value (https://github.com/piconic-ai/barefootjs/issues/2489)"
@@ -2473,12 +2469,6 @@
           "codes": [
             "BF021"
           ]
-        }
-      },
-      "nested-loop-tail-content": {
-        "go-template": {
-          "kind": "render",
-          "reason": "the `inLoop` clobber is FIXED (#2487) — outer-row content after a nested loop now takes the loop arms and the spread resolves row-scoped. Residual: the spread's attribute NAMES are still mangled by the Go-cased-key kebab conversion (`data-kind` → `-data-kind`), which is #2490; this entry graduates with that fix (https://github.com/piconic-ai/barefootjs/issues/2490)"
         }
       },
       "preamble-cells": {
@@ -2936,10 +2926,6 @@
       "map-array-builder-escaping": {
         "description": "special characters in array-builder leaf text escape identically at SSR and CSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-escaping.ts"
-      },
-      "nested-loop-tail-content": {
-        "description": "Outer-row content after a nested inner loop still renders row-scoped (spread over a row field)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-tail-content.ts"
       },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
