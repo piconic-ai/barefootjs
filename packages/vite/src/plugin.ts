@@ -75,7 +75,7 @@ import { CompileCache } from './compile-cache.ts'
 import { BF_CHILD_NOOP_ID, bfChildMarkerName } from './child-marker.ts'
 import { buildChildNameIndex, discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
 import { resolveClientJsSpecifier } from './resolve-client-js.ts'
-import { buildRelativeImportRewriter, safeRollupEntryName, toPosixRelative } from './paths.ts'
+import { buildRelativeImportRewriter, relativeUnderComponentDir, safeRollupEntryName, toPosixRelative } from './paths.ts'
 import { loadManifest, resolveScriptAssets } from './manifest.ts'
 import { planEmits, writeEmits, type EmitTarget } from './emit.ts'
 import {
@@ -135,8 +135,24 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   // (absPath, componentDirs, templatesDir) — safe to compute for every
   // compile, including the canonical `transform`-time one where it's
   // unused (client JS generation never reads `rewriteRelativeImport`).
+  //
+  // `outputPathGuess` MUST mirror `planEmits`'s actual on-disk output
+  // location — the position of `absPath` under WHICHEVER `componentDirs`
+  // entry contains it, joined onto `templatesDir` (`relativeUnderComponentDir`,
+  // the same helper `planEmits`/`safeRollupEntryName` use) — not a
+  // root-relative guess. The two coincide only when every configured
+  // `components` dir IS the Vite root; this repo's real layouts commonly
+  // configure MULTIPLE sibling `components` dirs (e.g. `../shared/blog`)
+  // that are flattened directly under `templatesDir` with no `shared/blog/`
+  // prefix preserved. A root-relative guess computes a phantom nested path
+  // (`dist/shared/blog/Foo.tsx`) that diverges from where the file is
+  // actually written (`dist/components/Foo.tsx`), corrupting every
+  // relative import a same-directory sibling file re-anchors from it — only
+  // surfaced by an adapter whose templates carry real `import` syntax
+  // (Hono-shaped JS-runtime adapters; Go/Mojo/etc. templates have no
+  // imports and never call this at all).
   function rewriterFor(absPath: string): (importPath: string) => string {
-    const outputPathGuess = resolve(templatesDir, toPosixRelative(resolvedConfig!.root, absPath))
+    const outputPathGuess = resolve(templatesDir, relativeUnderComponentDir(absPath, componentDirs))
     return buildRelativeImportRewriter(absPath, outputPathGuess, componentDirs, templatesDir)
   }
 
