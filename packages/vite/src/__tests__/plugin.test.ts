@@ -93,6 +93,23 @@ describe('config hook', () => {
     // we don't hand it a competing value to merge in.
     expect(result.server.cors).toBeUndefined()
   })
+
+  test('does NOT override an explicit server.cors: false (a falsy-but-set value)', async () => {
+    dir = await mkdtemp(join(tmpdir(), 'barefoot-plugin-config-'))
+    await mkdir(join(dir, 'src/components'), { recursive: true })
+
+    const plugin = makePlugin('src/components', 'internal/views')
+    const result = await plugin.config(
+      { root: dir, server: { cors: false } },
+      { command: 'serve', mode: 'development' },
+    )
+
+    // `server.cors = false` explicitly DISABLES cors — `!false` is `true`,
+    // so a naive `if (!userConfig.server?.cors)` check would wrongly treat
+    // this the same as "unset" and clobber it with the localhost default.
+    // The fix checks `=== undefined` specifically; this pins that.
+    expect(result.server.cors).toBeUndefined()
+  })
 })
 
 describe('resolveId hook', () => {

@@ -65,6 +65,20 @@ function captureWsSends(server: ViteDevServer): { sent: unknown[]; restore: () =
   return { sent, restore: () => { server.ws.send = originalSend } }
 }
 
+function captureLoggerErrors(server: ViteDevServer): { errors: unknown[]; restore: () => void } {
+  const errors: unknown[] = []
+  const originalError = server.config.logger.error.bind(server.config.logger)
+  server.config.logger.error = ((msg: string, opts?: unknown) => {
+    errors.push(msg)
+    return originalError(msg, opts as never)
+  }) as typeof server.config.logger.error
+  return { errors, restore: () => { server.config.logger.error = originalError } }
+}
+
+function countFullReloads(sent: unknown[]): number {
+  return sent.filter(m => (m as { type?: string }).type === 'full-reload').length
+}
+
 async function startDevServer(templatesDir: string, extraServerOptions: Record<string, unknown> = {}) {
   const server = await createServer({
     configFile: false,
@@ -184,10 +198,76 @@ describe('e2e: vite dev server', () => {
         return tpl !== null && tpl.includes('data-edited="counter-marker"')
       })
 
-      expect(sent.some(m => (m as { type?: string }).type === 'full-reload')).toBe(true)
+      expect(countFullReloads(sent)).toBeGreaterThanOrEqual(1)
     } finally {
       restore()
       await writeFile(COUNTER_PATH, originalCounterSource)
+    }
+  })
+
+  // The deterministic proof that passes never overlap and a mid-pass
+  // trigger is coalesced into exactly one follow-up (not dropped, not
+  // duplicated) is `debounced-serial-runner.test.ts` — it controls task
+  // completion directly via manually-resolved promises, which a real e2e
+  // test cannot: this fixture's eager pass finishes in low single-digit
+  // milliseconds, far too fast to reliably force a real "change arrives
+  // while a pass is in flight" race through wall-clock timing alone. This
+  // test is the complementary end-to-end confirmation: real rapid disk
+  // writes, through the real watcher, into the real debounced runner,
+  // converge on the correct final state with no corruption and no crash.
+  test('rapid successive edits converge on the final content with no corruption or errors', async () => {
+    const { sent, restore: restoreWs } = captureWsSends(server)
+    const { errors, restore: restoreLogger } = captureLoggerErrors(server)
+    const EDIT_COUNT = 8
+
+    try {
+      // Fire edits back-to-back, faster than the 100ms watcher debounce —
+      // simulates a save-twice-quickly / multi-file-save / `git checkout`.
+      for (let i = 1; i <= EDIT_COUNT; i++) {
+        await writeFile(
+          COUNTER_PATH,
+          originalCounterSource.replace('<button onClick=', `<button data-edit-n="${i}" onClick=`),
+        )
+      }
+
+      // Give the debounce window plus a full eager pass time to settle.
+      await waitFor(async () => {
+        const tpl = await readIfExists(join(templatesDir, 'Counter.tmpl'))
+        return tpl !== null && tpl.includes(`data-edit-n="${EDIT_COUNT}"`)
+      })
+      // Settle further: if an overlapping/racing pass were still in
+      // flight and about to clobber the file with stale content, a short
+      // wait would catch it reverting.
+      await new Promise(r => setTimeout(r, 300))
+
+      const finalTemplate = await readFile(join(templatesDir, 'Counter.tmpl'), 'utf8')
+      expect(finalTemplate).toContain(`data-edit-n="${EDIT_COUNT}"`)
+      // Not just the last edit "eventually" landing — no EARLIER edit's
+      // marker should still be present either (that would mean two
+      // template-writing passes raced and left mixed output).
+      for (let i = 1; i < EDIT_COUNT; i++) {
+        expect(finalTemplate).not.toContain(`data-edit-n="${i}"`)
+      }
+
+      expect(errors).toEqual([])
+      const reloadCount = countFullReloads(sent)
+      expect(reloadCount).toBeGreaterThanOrEqual(1)
+      // A soft signal, not the proof (see the comment above the test): with
+      // 8 back-to-back writes this fast, the underlying watcher's own
+      // polling interval typically coalesces most of them into far fewer
+      // raw events before this plugin's debounce even runs — so this
+      // mainly guards against a REGRESSION to one-reload-per-write (e.g. a
+      // watcher config change to non-polling native events), not against
+      // debouncing being removed outright.
+      expect(reloadCount).toBeLessThan(EDIT_COUNT)
+    } finally {
+      restoreWs()
+      restoreLogger()
+      await writeFile(COUNTER_PATH, originalCounterSource)
+      await waitFor(async () => {
+        const tpl = await readIfExists(join(templatesDir, 'Counter.tmpl'))
+        return tpl !== null && !tpl.includes('data-edit-n=')
+      })
     }
   })
 })
@@ -256,5 +336,75 @@ describe('e2e: vite dev server — user-supplied server.cors is not overwritten'
     }))
 
     expect(server.config.server.cors).toEqual({ origin: 'https://my-own-cors-policy.example.com' })
+  })
+})
+
+describe('e2e: vite dev server — user-supplied server.cors: false is not overwritten', () => {
+  let server: ViteDevServer
+  let templatesDir: string
+
+  afterAll(async () => {
+    await server?.close()
+    await rm(templatesDir, { recursive: true, force: true })
+  })
+
+  test('server.cors: false (explicitly disabled) survives untouched, unlike an unset value', async () => {
+    templatesDir = await mkdtemp(join(tmpdir(), 'barefoot-vite-dev-views-cors-false-'))
+    ;({ server } = await startDevServer(templatesDir, { cors: false }))
+
+    // `!false` is `true` — a naive "fill in if falsy" check would replace
+    // this with the localhost default. Only "fill in if unset" is correct.
+    expect(server.config.server.cors).toBe(false)
+  })
+})
+
+describe('e2e: vite dev server — creating and deleting a component file', () => {
+  // Its own server + templates dir, and its own component file (never
+  // touched by any other describe block), so these tests can freely
+  // create/delete `.tsx` files without disturbing shared fixture state.
+  let server: ViteDevServer
+  let templatesDir: string
+  const WIDGET_PATH = join(COMPONENTS_DIR, 'Widget.tsx')
+
+  beforeAll(async () => {
+    templatesDir = await mkdtemp(join(tmpdir(), 'barefoot-vite-dev-views-addunlink-'))
+    ;({ server } = await startDevServer(templatesDir))
+    await waitFor(async () => (await readIfExists(join(templatesDir, 'Counter.tmpl'))) !== null)
+  }, 30_000)
+
+  afterAll(async () => {
+    await rm(WIDGET_PATH, { force: true })
+    await server?.close()
+    await rm(templatesDir, { recursive: true, force: true })
+  })
+
+  test('creating a new component file mid-session emits a template for it and reloads', async () => {
+    const { sent, restore } = captureWsSends(server)
+    try {
+      await writeFile(WIDGET_PATH, 'export function Widget() { return <p>brand new</p> }\n')
+
+      await waitFor(async () => (await readIfExists(join(templatesDir, 'Widget.tmpl'))) !== null)
+      const template = await readFile(join(templatesDir, 'Widget.tmpl'), 'utf8')
+      expect(template).toContain('brand new')
+      expect(countFullReloads(sent)).toBeGreaterThanOrEqual(1)
+    } finally {
+      restore()
+    }
+  })
+
+  test('deleting a component file removes its emitted template and reloads', async () => {
+    // Widget.tsx and Widget.tmpl both exist already, from the previous
+    // test (bun test runs a describe's tests in declaration order).
+    expect(await readIfExists(join(templatesDir, 'Widget.tmpl'))).not.toBeNull()
+
+    const { sent, restore } = captureWsSends(server)
+    try {
+      await rm(WIDGET_PATH)
+
+      await waitFor(async () => (await readIfExists(join(templatesDir, 'Widget.tmpl'))) === null)
+      expect(countFullReloads(sent)).toBeGreaterThanOrEqual(1)
+    } finally {
+      restore()
+    }
   })
 })

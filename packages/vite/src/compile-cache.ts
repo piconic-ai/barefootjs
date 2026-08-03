@@ -50,6 +50,13 @@ export class CompileCache {
     return this.rows.get(absPath)?.result
   }
 
+  /** Drop a single file's cached entry — used when a file is deleted
+   * (dev watcher `'unlink'`) so a later file recreated at the same path
+   * never reuses a stale result keyed only by path, not content. */
+  delete(absPath: string): void {
+    this.rows.delete(absPath)
+  }
+
   clear(): void {
     this.rows.clear()
   }

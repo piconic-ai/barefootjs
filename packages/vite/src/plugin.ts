@@ -64,14 +64,16 @@ import { discoverComponents, isComponentSourceFile, type DiscoveredComponent } f
 import { resolveClientJsSpecifier } from './resolve-client-js.ts'
 import { buildRelativeImportRewriter, toPosixRelative } from './paths.ts'
 import { loadManifest, resolveScriptAssets } from './manifest.ts'
-import { planEmits, writeEmits } from './emit.ts'
+import { planEmits, writeEmits, type EmitTarget } from './emit.ts'
 import {
   DEFAULT_DEV_CORS_ORIGIN,
   DEV_ARTIFACT_MARKER_CONTENT,
   DEV_ARTIFACT_MARKER_FILENAME,
+  DEV_WATCH_DEBOUNCE_MS,
   devScriptAssets,
   resolveDevOrigin,
 } from './dev-server.ts'
+import { createDebouncedSerialRunner } from './debounced-serial-runner.ts'
 
 const PLUGIN_NAME = 'barefoot'
 
@@ -89,6 +91,15 @@ function reportErrors(result: CompileResult, source: string, projectDir: string)
 
 export function barefoot(options: BarefootViteOptions): Plugin {
   const cache = new CompileCache()
+
+  // What `emitTemplatesFor` last wrote for a given source file, keyed by
+  // absolute path. The ONLY consumer is the dev watcher's `'unlink'`
+  // handler: when a component file is deleted, this is how it knows which
+  // on-disk template/ssrDefaults/types files to remove without having to
+  // re-derive the (possibly `templatesPerComponent`, i.e. named after the
+  // exported component rather than the source file) output path from a
+  // file that no longer exists to read.
+  const lastEmitsByAbsPath = new Map<string, EmitTarget[]>()
 
   // Populated (redundantly but cheaply — a directory walk, no compiling)
   // once in `config` with a best-effort root, so `rollupOptions.input` can
@@ -164,7 +175,28 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       }
 
       const targets = planEmits(result, component.absPath, componentDirs, options.adapter)
+      lastEmitsByAbsPath.set(component.absPath, targets)
       await writeEmits(templatesDir, targets)
+    }
+  }
+
+  /**
+   * Remove whatever `emitTemplatesFor` last wrote for each of `absPaths`
+   * (a deleted component's template, `ssrDefaults`, and `.types` fragment)
+   * and forget it — both from the emit-tracking map and the compile
+   * cache, so a file later recreated at the same path never reuses a
+   * stale cached result. Best-effort: `rm(..., { force: true })` so a
+   * file already gone (or never successfully written) isn't an error.
+   */
+  async function removeEmitsFor(absPaths: Iterable<string>): Promise<void> {
+    for (const absPath of absPaths) {
+      const targets = lastEmitsByAbsPath.get(absPath)
+      lastEmitsByAbsPath.delete(absPath)
+      cache.delete(absPath)
+      if (!targets) continue
+      for (const target of targets) {
+        await rm(resolve(templatesDir, target.relPath), { force: true })
+      }
     }
   }
 
@@ -224,8 +256,14 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       // CORS middleware, and so it's plain, synchronously-testable data
       // instead of a hook-timing dependency on Vite's internal
       // configureServer/middleware install order.
+      //
+      // Checked against `undefined` specifically, NOT falsiness: a user
+      // who writes `server.cors = false` to explicitly DISABLE CORS means
+      // exactly that, and `!false` is `true` — a truthiness check would
+      // silently override their choice with this default, the opposite of
+      // "only fill in when unset".
       const serverDefaults: Record<string, unknown> = {}
-      if (!userConfig.server?.cors) {
+      if (userConfig.server?.cors === undefined) {
         serverDefaults.cors = { origin: DEFAULT_DEV_CORS_ORIGIN }
       }
 
@@ -308,6 +346,33 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       }
 
       let devOrigin: string | undefined
+      // Deleted files queued for cleanup by the `'unlink'` handler,
+      // drained by the runner's own task the next time it actually runs —
+      // NOT deleted synchronously in the handler, so an unlink that lands
+      // while a pass is already in flight for other reasons is still
+      // batched into the SAME follow-up run as everything else instead of
+      // racing it.
+      const pendingUnlinks = new Set<string>()
+
+      // One serialized, debounced entry point for every dev-watcher event
+      // this plugin reacts to (`change` / `add` / `unlink`). See
+      // `debounced-serial-runner.ts`: a burst of events collapses into one
+      // pass, an event arriving mid-pass is queued as exactly one
+      // follow-up (never dropped, never overlapped), and no distinction
+      // needs to be drawn between which files changed — the pass itself
+      // re-discovers everything from disk (see this module's docstring on
+      // why a diff-based re-run is the wrong shape here).
+      const devPassRunner = createDebouncedSerialRunner(
+        async () => {
+          if (!devOrigin) return // initial pass (below) will cover current disk state once it runs
+          await removeEmitsFor(pendingUnlinks)
+          pendingUnlinks.clear()
+          await runDevEagerPass(devOrigin)
+          server.ws.send({ type: 'full-reload' })
+        },
+        DEV_WATCH_DEBOUNCE_MS,
+        err => server.config.logger.error(String(err)),
+      )
 
       async function runInitialPass(): Promise<void> {
         devOrigin = resolveDevOrigin(server)
@@ -330,14 +395,29 @@ export function barefoot(options: BarefootViteOptions): Plugin {
         runInitialPass().catch(err => server.config.logger.error(String(err)))
       }
 
+      // `'change'`: an existing tracked file's content changed.
       server.watcher.on('change', (file: string) => {
         if (!isComponentSourceFile(file) || !isUnderComponentDir(file)) return
-        if (!devOrigin) return // initial pass (above) will cover this file once it runs
+        devPassRunner.trigger()
+      })
 
-        ;(async () => {
-          await runDevEagerPass(devOrigin!)
-          server.ws.send({ type: 'full-reload' })
-        })().catch(err => server.config.logger.error(String(err)))
+      // `'add'`: a brand-new component file. Without this, a file created
+      // mid-session gets no template at all until some OTHER file happens
+      // to change and drags it along on the next full pass — creating a
+      // component is completely ordinary, not an edge case.
+      server.watcher.on('add', (file: string) => {
+        if (!isComponentSourceFile(file) || !isUnderComponentDir(file)) return
+        devPassRunner.trigger()
+      })
+
+      // `'unlink'`: a tracked file was deleted. Its template would
+      // otherwise linger on disk forever — queue it for `removeEmitsFor`
+      // inside the same debounced/serialized pass rather than deleting
+      // synchronously here (see `pendingUnlinks` above).
+      server.watcher.on('unlink', (file: string) => {
+        if (!isComponentSourceFile(file) || !isUnderComponentDir(file)) return
+        pendingUnlinks.add(file)
+        devPassRunner.trigger()
       })
     },
   }

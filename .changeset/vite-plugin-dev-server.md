@@ -65,6 +65,43 @@ backend (Go/PHP/Ruby), not by Vite, so a component's compiled output can
 only take effect on the next full backend render. Fine-grained HMR would
 need to cross a boundary this architecture doesn't have yet.
 
+Three fixes from review, all with regression coverage:
+
+- **`server.cors: false` was silently overridden.** The "fill in only when
+  unset" check was `!userConfig.server?.cors`, and `!false` is `true` — a
+  user explicitly disabling CORS got the localhost default instead, the
+  opposite of what they asked for. Fixed to check `=== undefined`
+  specifically; falsy-but-set (`false`) now survives untouched, same as any
+  other explicit value.
+- **Adding or deleting a component file during a dev session did nothing.**
+  Only `'change'` was handled; chokidar emits `'add'` and `'unlink'`
+  separately. A new file got no template until some unrelated file
+  happened to change and dragged it along on the next full pass; a deleted
+  file's template lingered on disk forever. Both are now handled: `'add'`
+  triggers the same eager pass as `'change'` (it already re-discovers
+  everything from disk, so no special-casing is needed for a new file);
+  `'unlink'` additionally needs to know WHICH on-disk files to remove for a
+  source that no longer exists to re-derive that from — solved by having
+  the eager pass record what it last emitted per source file
+  (`lastEmitsByAbsPath`), consulted (and then discarded, along with the
+  now-stale `CompileCache` entry) when a file disappears.
+- **Rapid successive changes could run overlapping eager passes**, all
+  writing the same template files with no serialization — a save-twice-
+  quickly, a multi-file save, or a `git checkout` touching many files could
+  trigger this, exactly the race the legacy CLI's `watch()`
+  (`packages/cli/src/lib/build.ts`) debounced at 100ms to avoid. Added
+  `debounced-serial-runner.ts`: a small, dependency-free primitive that
+  debounces a burst of triggers into one run and, if a run is already in
+  flight when the debounce fires, queues exactly one follow-up instead of
+  starting a second overlapping one — a change arriving mid-pass is
+  delayed, never dropped, and at most one pass is ever active. Proven
+  deterministically in its own unit tests (via manually-resolved promises
+  standing in for the real eager pass, since the real one finishes in
+  low-single-digit milliseconds — far too fast to reliably force a
+  wall-clock race in an e2e test); backed by an end-to-end test confirming
+  real rapid disk writes converge on the correct final template content
+  with no corruption and no crash.
+
 Out of scope for this change: migrating any `integrations/*` app to the new
 plugin, `packages/cli`, and combining adapter `types` output into one
 backend-native file (still tracked as a follow-up, unrelated to the dev

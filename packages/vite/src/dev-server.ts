@@ -37,6 +37,15 @@ const FS_SERVE_PREFIX = '@fs'
  */
 export const DEFAULT_DEV_CORS_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
 
+/**
+ * Debounce window (ms) for the dev watcher's `'change'` / `'add'` /
+ * `'unlink'` handlers, matching the legacy CLI's `watch()`
+ * (`packages/cli/src/lib/build.ts`) — long enough to coalesce a
+ * save-twice-quickly or a multi-file save/`git checkout` into a single
+ * eager pass, short enough that a reload still feels instant.
+ */
+export const DEV_WATCH_DEBOUNCE_MS = 100
+
 /** Posix-normalize an absolute filesystem path (Windows uses `sep`; POSIX
  * paths already use `/`). */
 function toPosixAbsolute(absPath: string): string {
