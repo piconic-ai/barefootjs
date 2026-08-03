@@ -381,6 +381,10 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
       bare = bare.slice(this.propsObjectName.length + 1)
     }
     if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
+    // Inside a `.map()` callback, a param that shares a boolean prop's name
+    // is the ROW binding, not the prop — route it through plain string
+    // emission instead of `bf.bool_str` (#2488).
+    if (this.isLoopBoundName(bare)) return false
     return this.booleanTypedProps.has(bare)
   }
 
@@ -1427,7 +1431,11 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
         /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-        this.nullableOptionalProps.has(normalizedBareId)
+        this.nullableOptionalProps.has(normalizedBareId) &&
+        // Inside a `.map()` callback, a param that shadows a nullable
+        // optional prop's name is the row binding, not the prop — skip the
+        // spurious `.nil?` guard (#2488).
+        !this.isLoopBoundName(normalizedBareId)
       ) {
         const ruby = this.convertExpressionToRuby(value.expr)
         const body =

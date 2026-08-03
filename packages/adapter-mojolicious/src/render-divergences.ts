@@ -33,12 +33,6 @@ export const renderDivergences: RenderDivergences = {
   'composite-row-child-aliased-prop':
     'same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child\'s renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)',
 
-  // #2482 audit follow-up. Graduate by applying the loop-bound-name
-  // guard described in the issue and deleting the line. (The emitSpread
-  // sibling hole #2489 does NOT affect this adapter — its emitter
-  // consults the live `loopBoundNames` map on that path.)
-  'loop-param-shadows-bool-prop':
-    'a .map() param sharing a boolean prop\'s name is routed through the bool lowering in attribute position (renders "true"/"false" instead of the row string) — `collectBooleanTypedProps` lacks the loop-bound-name subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)',
   'loop-param-shadows-record-template-span':
     'a dynamic-key element access on a loop row (`tone[k]`) diverges on real Mojolicious at render time (same silent-empty family as ERB/Go/Twig; the Perl-side mechanism needs a dig) (https://github.com/piconic-ai/barefootjs/issues/2491)',
 }

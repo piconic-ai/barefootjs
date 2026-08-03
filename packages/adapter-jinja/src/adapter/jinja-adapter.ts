@@ -286,6 +286,21 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
   private staticLoopSourceBoundNames: Set<string> = new Set()
 
   /**
+   * Names currently bound by an enclosing loop body — the block-param
+   * locals `renderLoop` introduces (item, index, per-binding destructure
+   * fields, `.map()` preamble declarations) — ref-counted so nested loops
+   * compose. This is the POSITION-ACCURATE twin of the coarse
+   * `staticLoopSourceBoundNames` above: that set is a whole-component
+   * union used only to guard static-const inlining (safe to over-suppress
+   * there — the fallback is just "don't inline"), whereas the boolean-prop
+   * and nullable-optional classification sites need to know whether a name
+   * is loop-bound AT THIS POSITION, because for those two the coarse
+   * fallback would silently mis-render a genuine prop occurrence outside
+   * the loop too (#2488).
+   */
+  private loopBoundNames: Map<string, number> = new Map()
+
+  /**
    * Optional, no-default props that are `None` when the caller omits them.
    * Their bare-reference attribute emission is guarded with a Jinja
    * `is defined and is not none` test so the attribute DROPS rather than
@@ -318,6 +333,7 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     this.booleanTypedProps = collectBooleanTypedProps(ir)
     this.localConstants = ir.metadata.localConstants ?? []
     this.staticLoopSourceBoundNames = collectLoopBoundNames(ir)
+    this.loopBoundNames.clear()
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.stringValueNames = collectStringValueNames(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
@@ -911,7 +927,39 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
     const preambleLines = (loop.preamble?.declarations ?? []).map(
       d => `{% set ${jinjaIdent(d.name)} = ${this.convertExpressionToJinja(d.raw, d.valueParsed)} %}`,
     )
+    // Names this loop binds in body scope, for the position-accurate
+    // `loopBoundNames` guard (#2488) — mirrors the ERB adapter's `loopBound`
+    // derivation, adapted to what THIS renderLoop actually binds: the
+    // for-header target(s) (`loopVar` / `objectIteration` key+value /
+    // `iterationShape === 'keys'`'s `param`), each `indexLocalLines` name
+    // (explicit index, or a destructure binding), and the `.map()`
+    // preamble's declared locals. Ref-counted so nested loops compose.
+    const loopBound: string[] = []
+    if (loop.objectIteration === 'entries') {
+      loopBound.push(loop.index ?? param, param)
+    } else if (loop.objectIteration === 'keys' || loop.objectIteration === 'values') {
+      loopBound.push(param)
+    } else if (loop.iterationShape === 'keys') {
+      // The header still binds the throwaway loop var; `param` is only the
+      // index alias set beneath it (#2488).
+      loopBound.push('__bf_item', param)
+    } else if (supportableDestructure) {
+      loopBound.push('__bf_item', ...(loop.paramBindings ?? []).map(b => b.name))
+      if (loop.index) loopBound.push(loop.index)
+    } else {
+      loopBound.push(param)
+      if (loop.index) loopBound.push(loop.index)
+    }
+    for (const d of loop.preamble?.declarations ?? []) loopBound.push(d.name)
+    for (const n of loopBound) {
+      this.loopBoundNames.set(n, (this.loopBoundNames.get(n) ?? 0) + 1)
+    }
     const childrenUnderLoop = this.renderChildren(loop.children)
+    for (const n of loopBound) {
+      const c = (this.loopBoundNames.get(n) ?? 1) - 1
+      if (c <= 0) this.loopBoundNames.delete(n)
+      else this.loopBoundNames.set(n, c)
+    }
     this.currentLoopKeyDepth = prevLoopKeyDepth
     this.inLoop = prevInLoop
     void renderedChildren
@@ -1303,7 +1351,11 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
         !isBooleanAttr(name) &&
         !value.presenceOrUndefined &&
         /^[A-Za-z_$][\w$]*$/.test(normalizedBareId) &&
-        this.nullableOptionalProps.has(normalizedBareId)
+        this.nullableOptionalProps.has(normalizedBareId) &&
+        // Inside a `.map()` callback, a param that shadows a nullable
+        // optional prop's name is the row binding, not the prop — skip the
+        // spurious "is defined and is not none" guard (#2488).
+        !this.isLoopBoundName(normalizedBareId)
       ) {
         const jinja = this.convertExpressionToJinja(value.expr)
         const body = this.shouldBoolStr(value.expr, name)
@@ -1806,7 +1858,16 @@ export class JinjaAdapter extends BaseAdapter implements IRNodeEmitter<JinjaRend
       bare = bare.slice(this.propsObjectName.length + 1)
     }
     if (!/^[A-Za-z_$][\w$]*$/.test(bare)) return false
+    // Inside a `.map()` callback, a param that shares a boolean prop's name
+    // is the ROW binding, not the prop — route it through plain string
+    // emission instead of `bf.bool_str` (#2488).
+    if (this.isLoopBoundName(bare)) return false
     return this.booleanTypedProps.has(bare)
+  }
+
+  /** Position-accurate loop-bound-name check — see `loopBoundNames`'s docstring. */
+  private isLoopBoundName(name: string): boolean {
+    return this.loopBoundNames.has(name)
   }
 
   /**

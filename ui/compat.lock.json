@@ -2351,36 +2351,6 @@
           "reason": "a destructured .map() param binding used as a row ternary CONDITION emits the root-scope `{{if $.Active}}` — `renderConditionExpr` omits `loopBindingStack`, unlike `identifierToGoRef` (text positions resolve the same binding correctly) (https://github.com/piconic-ai/barefootjs/issues/2486)"
         }
       },
-      "loop-param-shadows-bool-prop": {
-        "blade": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        },
-        "erb": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the loop-bound-name subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        },
-        "jinja": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        },
-        "minijinja": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        },
-        "mojolicious": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the loop-bound-name subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        },
-        "twig": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (`bf.bool_str` renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        },
-        "xslate": {
-          "kind": "render",
-          "reason": "a .map() param sharing a boolean prop's name is routed through the bool lowering in attribute position (renders \"true\"/\"false\" instead of the row string) — `collectBooleanTypedProps` lacks the `collectLoopBoundNames` subtraction its sibling `collectStringValueNames` got in #2236 (https://github.com/piconic-ai/barefootjs/issues/2488)"
-        }
-      },
       "loop-param-shadows-record-template-span": {
         "erb": {
           "kind": "render",
@@ -2982,10 +2952,6 @@
       "loop-destructured-param-condition": {
         "description": "Destructured .map() param binding used as a row ternary condition stays row-scoped",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-destructured-param-condition.ts"
-      },
-      "loop-param-shadows-bool-prop": {
-        "description": ".map() param sharing a boolean prop name renders the row value, not a bool lowering",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-shadows-bool-prop.ts"
       },
       "loop-param-shadows-record-template-span": {
         "description": ".map() param shadowing a record const stays row-scoped inside a `${base[key]}` template span",
