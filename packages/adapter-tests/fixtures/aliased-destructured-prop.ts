@@ -4,7 +4,7 @@ import { createFixture } from '../src/types'
  * Aliased (renaming) destructured prop on a plain stateless component:
  * `{ text, n: count }` — the caller supplies `n`, the body reads `count`.
  *
- * Pins #2460, which is NOT Hono-only: every consumer that keys off
+ * Originally filed as #2460, which was NOT Hono-only: every consumer that keys off
  * `ParamInfo.name` instead of `sourceName ?? name` drops the rename.
  * Verified per adapter: Hono used to emit `{ text, count }` (reading a
  * `count` property off a props object shaped `{ text, n }` → always
@@ -22,14 +22,20 @@ import { createFixture } from '../src/types'
  * `expectedHtml` below is the CORRECT output (the `s1` slot carries `7`)
  * and is now generated from Hono like any other fixture (Hono was the
  * broken party before, which is exactly why #2460 notes no aliased-prop
- * fixture could exist until it was fixed). Adapters that still drop the
- * rename skip this fixture with a pointer to
- * https://github.com/piconic-ai/barefootjs/issues/2460; graduating
- * means fixing the emission and deleting the skip entry.
+ * fixture could exist until it was fixed). #2460 itself is CLOSED (fixed
+ * in b4f5075) — the shared layer (Hono, `extractSsrDefaults`) now keys
+ * off `sourceName ?? name` correctly. The 7 template-string adapters
+ * still drop the rename silently and are tracked by
+ * https://github.com/piconic-ai/barefootjs/issues/2524; Go's `go run`
+ * exit-1 failure is tracked by
+ * https://github.com/piconic-ai/barefootjs/issues/2525. Adapters that
+ * still drop the rename skip this fixture with a pointer to the
+ * relevant tracker; graduating means fixing the emission and deleting
+ * the skip entry.
  */
 export const fixture = createFixture({
   id: 'aliased-destructured-prop',
-  description: 'Aliased destructured prop ({ n: count }) keeps the rename (#2460)',
+  description: 'Aliased destructured prop ({ n: count }) keeps the rename (#2524)',
   source: `
 export function Badge({ text, n: count }: { text: string; n: number }) {
   return <span>{text}:{count}</span>

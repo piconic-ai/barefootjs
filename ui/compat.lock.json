@@ -1819,61 +1819,61 @@
       "aliased-destructured-prop": {
         "blade": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "erb": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "go-template": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:\"count\"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:\"count\"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2525)"
         },
         "jinja": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "minijinja": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "mojolicious": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "twig": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "xslate": {
           "kind": "render",
-          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "aliased destructured prop `{ n: count }` loses its rename — template vars, ssr-defaults, and the props bridge all key off the local name, so the prop is always undefined (https://github.com/piconic-ai/barefootjs/issues/2524)"
         }
       },
       "composite-row-child-aliased-prop": {
         "blade": {
           "kind": "render",
-          "reason": "same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "same defect as `aliased-destructured-prop` (#2524), inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "jinja": {
           "kind": "render",
-          "reason": "same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "same defect as `aliased-destructured-prop` (#2524), inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "minijinja": {
           "kind": "render",
-          "reason": "same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "same defect as `aliased-destructured-prop` (#2524), inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "mojolicious": {
           "kind": "render",
-          "reason": "same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "same defect as `aliased-destructured-prop` (#2524), inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "twig": {
           "kind": "render",
-          "reason": "same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "same defect as `aliased-destructured-prop` (#2524), inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2524)"
         },
         "xslate": {
           "kind": "render",
-          "reason": "same #2460 defect as `aliased-destructured-prop`, inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2460)"
+          "reason": "same defect as `aliased-destructured-prop` (#2524), inside a keyed `.map()` loop row: the nested child's renamed prop (`{ n: count }`) is always undefined, so both rows render an empty count (https://github.com/piconic-ai/barefootjs/issues/2524)"
         }
       },
       "date-method-uncatalogued": {
@@ -2840,7 +2840,7 @@
     },
     "docs": {
       "aliased-destructured-prop": {
-        "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2460)",
+        "description": "Aliased destructured prop ({ n: count }) keeps the rename (#2524)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/aliased-destructured-prop.ts"
       },
       "composite-row-child-aliased-prop": {

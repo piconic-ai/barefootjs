@@ -30,14 +30,18 @@ export const renderDivergences: RenderDivergences = {
   // `test-render.ts`) now replicates that documented contract for a
   // signal-backed dynamic child-component loop.
 
-  // Onboarding TSX-fidelity fixtures (PR #2461): `expectedHtml` is
-  // hand-authored to the CORRECT output because the emission bug lives in
+  // Onboarding TSX-fidelity fixtures (PR #2461): `expectedHtml` was
+  // hand-authored to the CORRECT output while the emission bug lived in
   // the shared compiler layer — every adapter, including the Hono
-  // reference, currently emits the broken form (verified against this
-  // adapter's emitted template; see each fixture's docstring). Graduate
-  // by fixing the shared emission, regenerating `expectedHtml` from the
-  // fixed reference, and deleting these lines (and the matching hono
-  // `skipJsx` entries).
+  // reference, used to emit the broken form. That shared-layer defect
+  // (#2460) is now FIXED (b4f5075): `expectedHtml` is generated from the
+  // Hono reference like any other fixture. The remaining gap is
+  // Go-specific — the Input struct field stays keyed by the local
+  // binding instead of `sourceName ?? name`, so the caller-side struct
+  // literal fails `go run` outright — tracked by #2525 (go-template's
+  // `go run` exit-1 failure). Graduate by keying the Input struct field
+  // by `sourceName ?? name` and deleting this line (and the matching
+  // hono `skipJsx` entry, already gone).
   'aliased-destructured-prop':
-    'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2460)',
+    'aliased destructured prop `{ n: count }` loses its rename — the Input struct field is Count `json:"count"`, so the caller-side struct literal keyed by the real prop name fails `go run` outright (unknown field N, exit 1) (https://github.com/piconic-ai/barefootjs/issues/2525)',
 }
