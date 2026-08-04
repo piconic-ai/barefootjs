@@ -10,6 +10,9 @@ export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutp
 
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
 export { extractSsrDefaults } from './ssr-defaults.ts'
+
+// Shared props-destructure binding + alias-map helpers (#2524)
+export { propsDestructureBinding, buildPropAliasMap, isIdentifierName } from './props-binding.ts'
 export type { SsrDefault } from './ssr-defaults.ts'
 
 // Backend-neutral SSR seed plan (in-template derived signal/memo seeding)

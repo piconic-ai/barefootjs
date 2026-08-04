@@ -25,9 +25,10 @@ export function emitPropsEventHandlers(
   for (const handlerName of usedFunctions) {
     if (localNames.has(handlerName)) continue
     if (neededProps.has(handlerName)) continue
-    const isProp = ctx.propsParams.some(p => p.name === handlerName)
-    if (!isProp) continue
-    lines.push(`  const ${handlerName} = ${PROPS_PARAM}.${handlerName}`)
+    const prop = ctx.propsParams.find(p => p.name === handlerName)
+    if (!prop) continue
+    // `_p` is always keyed by the caller-facing name (#2524 CSR half).
+    lines.push(`  const ${handlerName} = ${PROPS_PARAM}.${prop.sourceName ?? handlerName}`)
     addedAny = true
   }
   if (addedAny) lines.push('')

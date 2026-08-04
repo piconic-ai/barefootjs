@@ -159,7 +159,8 @@ function resolveSignalInitialValue(
     // Case 2b: synthesize the prop accessor + default.
     const prop = lookups.propByName.get(controlled.propName)
     const defaultVal = prop?.defaultValue ?? inferDefaultValue(signal.type)
-    return `${PROPS_PARAM}.${controlled.propName} ?? ${defaultVal}`
+    // `_p` is always keyed by the caller-facing name (#2524 CSR half).
+    return `${PROPS_PARAM}.${prop?.sourceName ?? controlled.propName} ?? ${defaultVal}`
   }
 
   // Case 3: non-controlled `propsObjectName.X` (only when destructured-
@@ -181,9 +182,11 @@ function buildControlledSignalEffect(
   if (!signal.setter) return null // read-only — no sync needed
 
   const prop = lookups.propByName.get(controlled.propName)
+  // `_p` is always keyed by the caller-facing name (#2524 CSR half).
+  const callerKey = prop?.sourceName ?? controlled.propName
   const accessorExpr = prop?.defaultValue
-    ? `(${PROPS_PARAM}.${controlled.propName} ?? ${prop.defaultValue})`
-    : `${PROPS_PARAM}.${controlled.propName}`
+    ? `(${PROPS_PARAM}.${callerKey} ?? ${prop.defaultValue})`
+    : `${PROPS_PARAM}.${callerKey}`
 
   return { setter: signal.setter, accessorExpr }
 }

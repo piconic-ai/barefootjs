@@ -49,6 +49,7 @@ import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
   collectAstPropRefs,
 } from './prop-rewrite.ts'
+import { buildPropAliasMap } from './props-binding.ts'
 import { resolveFreeRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -91,6 +92,15 @@ interface TransformContext {
   _moduleClientSignalNames?: Set<string>
   /** Cached set of destructured prop names for AST-based rewriting */
   _destructuredPropNames?: Set<string> | null
+  /**
+   * Cached local-name → caller-facing-key (`sourceName ?? name`) map for
+   * `_destructuredPropNames`, entries only for names that actually rename
+   * (`{ n: count }` → `count` → `n`). Built alongside `_destructuredPropNames`
+   * so both stay in lockstep with the same shadow-filtered eligible set —
+   * consumed by `rewriteBarePropRefsCore` to emit `_p.<caller>` instead of
+   * `_p.<local>` (#2524 CSR half: `_p` is always caller-keyed).
+   */
+  _destructuredPropAliases?: Map<string, string> | null
   /** Active loop parameter names for slotId assignment to loop-param-dependent expressions */
   loopParams: Set<string>
   /**
@@ -536,7 +546,8 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
   // `_branchScopePropDeps` at branch entry; here we just walk `expr`
   // for references to those locals and union the matching dep sets.
   const extraPropRefs = collectBranchLocalPropRefsViaSubstitution(expr, ctx)
-  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs)
+  const propAliases = getDestructuredPropAliases(ctx)
+  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined)
 }
 
 /**
@@ -618,12 +629,24 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
         if (!isDestructureFromProps) shadowed.add(c.name)
       }
     }
-    const names = ctx.analyzer.propsParams
-      .map(p => p.name)
-      .filter(n => !shadowed.has(n))
+    const eligible = ctx.analyzer.propsParams.filter(p => !shadowed.has(p.name))
+    const names = eligible.map(p => p.name)
     ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
+    ctx._destructuredPropAliases = buildPropAliasMap(eligible) ?? null
   }
   return ctx._destructuredPropNames ?? null
+}
+
+/**
+ * Companion to `getDestructuredPropNames`: the local-name → caller-key
+ * alias map for the SAME shadow-filtered eligible set, populated as a
+ * side effect of that call. Always call `getDestructuredPropNames` first
+ * (or accept it may return an empty cache) — the two caches are written
+ * together in one pass.
+ */
+function getDestructuredPropAliases(ctx: TransformContext): Map<string, string> | null {
+  if (ctx._destructuredPropNames === undefined) getDestructuredPropNames(ctx)
+  return ctx._destructuredPropAliases ?? null
 }
 
 function createTransformContext(analyzer: AnalyzerContext): TransformContext {

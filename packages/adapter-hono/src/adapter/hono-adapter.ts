@@ -34,8 +34,8 @@ import {
   emitIRNode,
   emitAttrValue,
   buildLoopChainExpr,
+  propsDestructureBinding,
 } from '@barefootjs/jsx'
-import ts from 'typescript'
 
 /**
  * Hono adapter's IRNode render context: which surrounding render
@@ -96,28 +96,6 @@ function applyHonoLoopChain(loop: IRLoop): string {
     filterPredicate: loop.filterPredicate,
     chainOrder: loop.chainOrder,
   })
-}
-
-/**
- * Authoritative IdentifierName classification for a destructure-pattern
- * property key, built on TS's own `isIdentifierStart` / `isIdentifierPart`
- * primitives (Unicode-aware, stays aligned with what TS itself accepts as
- * a bare property key). Mirrors the `isIdent` precedent in
- * `jsx-to-ir.ts` (#1244) — a source key like `data-key` or `aria-label`
- * can't be emitted as a bare `key: local` destructure and must be quoted
- * (`"data-key": local`).
- */
-function isIdentifierName(key: string): boolean {
-  if (key.length === 0) return false
-  for (let i = 0; i < key.length; ) {
-    const cp = key.codePointAt(i)!
-    const ok = i === 0
-      ? ts.isIdentifierStart(cp, ts.ScriptTarget.Latest)
-      : ts.isIdentifierPart(cp, ts.ScriptTarget.Latest)
-    if (!ok) return false
-    i += cp > 0xFFFF ? 2 : 1
-  }
-  return true
 }
 
 export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderCtx> {
@@ -594,25 +572,11 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     } else {
       const hydrationProps = `__instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}`
       const parts: string[] = []
+      // Rename-aware `key: local` bindings (b4f5075), shared with
+      // TestAdapter via `propsDestructureBinding` — see its docstring for
+      // the `class` → `className` reserved-word rationale.
       const propsParams = ir.metadata.propsParams
-        .map((p: ParamInfo) => {
-          // The caller-facing key is `sourceName ?? name` (ParamInfo's own
-          // rule) — `name` is only ever the LOCAL binding. Emit the plain
-          // shorthand when they match (byte-identical to before this was
-          // rename-aware); emit a `key: local` rename otherwise. This also
-          // covers the `class` → `className` rename correctly: a source
-          // prop literally named `class` can only reach `propsParams` via
-          // an aliased destructure (`{ class: className }` — `class` is a
-          // reserved word, so it can never be an un-aliased binding), which
-          // already sets `sourceName: 'class'` and is handled by the rename
-          // branch below (`class: className`), not a bare `className`.
-          const callerKey = p.sourceName ?? p.name
-          const localName = p.name
-          const binding = callerKey === localName
-            ? localName
-            : `${isIdentifierName(callerKey) ? callerKey : JSON.stringify(callerKey)}: ${localName}`
-          return p.defaultValue ? `${binding} = ${p.defaultValue}` : binding
-        })
+        .map((p: ParamInfo) => propsDestructureBinding(p))
         .join(', ')
       if (propsParams) {
         parts.push(propsParams)
@@ -696,7 +660,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
         // Skip functions and JSX elements (they can't be JSON serialized)
         // Use propsObjectName.propName for SolidJS-style, direct propName for destructured
         const propAccess = propsObjectName ? `${propsObjectName}.${p.name}` : p.name
-        lines.push(`  if (typeof ${propAccess} !== 'function' && !(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${p.name}'] = ${propAccess}`)
+        // The `bf-p` blob key is always the caller-facing name (#2524 CSR
+        // half) — every non-Hono `_p` producer/consumer keys the same way,
+        // so a renaming destructure (`{ n: count }`) must serialize under
+        // `n`, not the local binding `count`.
+        const callerKey = p.sourceName ?? p.name
+        lines.push(`  if (typeof ${propAccess} !== 'function' && !(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
       }
       lines.push(`  const __bfPropsJson = __bfParentProps || (Object.keys(__hydrateProps).length > 0 ? JSON.stringify(__hydrateProps) : undefined)`)
     } else if (hasClientInteractivity && isRootComponent) {

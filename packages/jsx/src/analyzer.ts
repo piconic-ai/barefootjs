@@ -11,6 +11,7 @@ import type { ImportSpecifier, TypeInfo, ParamInfo, ReactiveFactoryInfo, Decline
 import { parseExpression, parseBlockBodyTolerant, foldBlockToExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { rewriteBarePropRefs } from './prop-rewrite.ts'
+import { buildPropAliasMap } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -1273,7 +1274,8 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   if (!ctx.propsObjectName && callExpr.arguments[0]) {
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
-      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames)
+      const propAliases = buildPropAliasMap(ctx.propsParams)
+      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames, undefined, propAliases)
     }
   }
 
@@ -1613,7 +1615,8 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
   if (!ctx.propsObjectName && callExpr.arguments[0]) {
     const propNames = new Set(ctx.propsParams.map(p => p.name))
     if (propNames.size > 0) {
-      templateComputation = rewriteBarePropRefs(computation, callExpr.arguments[0], propNames)
+      const propAliases = buildPropAliasMap(ctx.propsParams)
+      templateComputation = rewriteBarePropRefs(computation, callExpr.arguments[0], propNames, undefined, propAliases)
     }
   }
 
@@ -3129,9 +3132,15 @@ function collectConstant(
   let templateValue: string | undefined
   if (value && ctx.propsParams.length > 0 && node.initializer) {
     let propNames: Set<string>
+    // Local → caller-facing key (#2524 CSR half) — only Case 1 propsParams
+    // entries can carry `sourceName`; Case 2's alias set below is keyed by
+    // the destructured-from-`props.X` local name, which by its own
+    // `isPureAlias` construction always equals the source key.
+    let propAliases: Map<string, string> | undefined
     if (!ctx.propsObjectName) {
       // Case 1: destructured-arg — all propsParams are bare locals.
       propNames = new Set(ctx.propsParams.map(p => p.name))
+      propAliases = buildPropAliasMap(ctx.propsParams)
     } else {
       // Case 2: `(props)`-arg — restrict to body-destructured pure aliases
       // of `props.X` (entries pushed by the body-destructure expansion at
@@ -3157,7 +3166,7 @@ function collectConstant(
       )
     }
     if (propNames.size > 0) {
-      const rewritten = rewriteBarePropRefs(value, node.initializer, propNames)
+      const rewritten = rewriteBarePropRefs(value, node.initializer, propNames, undefined, propAliases)
       if (rewritten !== undefined) {
         templateValue = rewritten
         // For the body-destructure case, also rewrite the init-body
