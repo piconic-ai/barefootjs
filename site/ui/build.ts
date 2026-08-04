@@ -18,16 +18,16 @@ import { compileJSX, combineParentChildClientJs, createProgramForCorpus } from '
 import { HonoAdapter } from '@barefootjs/hono/adapter'
 import { mkdir, readdir, rm } from 'node:fs/promises'
 import { dirname, resolve, join, relative } from 'node:path'
+import { resolveRelativeImports } from '../../packages/cli/src/lib/resolve-imports'
+import { transpile } from '../../packages/cli/src/lib/runtime'
+import { loadIndex } from '../../packages/cli/src/lib/meta-loader'
+import { generateUiLlmsTxt } from '../../packages/cli/src/lib/llms-txt-generator'
 import {
   hasUseClientDirective,
   discoverComponentFiles as discoverFiles,
   generateHash,
-  resolveRelativeImports,
-} from '../../packages/cli/src/lib/build'
-import { transpile } from '../../packages/cli/src/lib/runtime'
-import { loadIndex } from '../../packages/cli/src/lib/meta-loader'
-import { generateUiLlmsTxt } from '../../packages/cli/src/lib/llms-txt-generator'
-import { addScriptCollection } from '../../packages/adapter-hono/src/build'
+  addScriptCollection,
+} from '../shared/lib/legacy-build-helpers'
 
 const ROOT_DIR = dirname(import.meta.path)
 
