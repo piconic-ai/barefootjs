@@ -90,3 +90,27 @@ export interface BarefootViteOptions {
    */
   afterEmit?: (ctx: AfterEmitContext) => Promise<void> | void
 }
+
+/**
+ * Shape exposed on the returned plugin's `.api` — Vite's own convention
+ * (a plugin may attach an `api` property "designed for other plugins or
+ * Vite-based tools to access") for exactly this: tooling that wants this
+ * plugin's resolved options without re-deriving them from `vite.config.ts`
+ * text. The `bf` CLI (`packages/cli/src/context.ts`) is the one consumer
+ * today — it uses Vite's own `loadConfigFromFile` to get the resolved
+ * config, finds the plugin by name (`PLUGIN_NAME`, exported from
+ * `plugin.ts`) in its `plugins` array, and reads `api.options.components`
+ * as `sourceDirs`.
+ *
+ * Populated synchronously the moment `barefoot(options)` is called —
+ * `options` needs no Vite lifecycle hook to have already run, deliberately:
+ * `loadConfigFromFile` never calls a plugin's hooks (`config`,
+ * `configResolved`, ...) at all, it just evaluates `vite.config.ts` and
+ * returns the resulting plugin instances, so anything gated behind
+ * `configResolved` (e.g. the plugin's own resolved absolute `componentDirs`)
+ * would never be visible to a caller going through that path.
+ */
+export interface BarefootPluginApi {
+  /** The exact options object `barefoot()` was constructed with. */
+  options: BarefootViteOptions
+}

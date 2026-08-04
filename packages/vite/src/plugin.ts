@@ -70,7 +70,7 @@ import {
   formatError,
   type CompileResult,
 } from '@barefootjs/jsx'
-import type { BarefootViteOptions } from './types.ts'
+import type { BarefootPluginApi, BarefootViteOptions } from './types.ts'
 import { CompileCache } from './compile-cache.ts'
 import { BF_CHILD_NOOP_ID, bfChildMarkerName } from './child-marker.ts'
 import { buildChildNameIndex, discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
@@ -90,7 +90,11 @@ import {
 } from './dev-server.ts'
 import { createDebouncedSerialRunner } from './debounced-serial-runner.ts'
 
-const PLUGIN_NAME = 'barefoot'
+// Exported so tooling can find this plugin by name in a resolved Vite
+// config's `plugins` array (e.g. `bf`'s `context.ts`, reading `api` off it —
+// see `BarefootPluginApi`'s docstring) without hardcoding the string
+// independently of what this file actually names the plugin.
+export const PLUGIN_NAME = 'barefoot'
 
 function reportErrors(result: CompileResult, source: string, projectDir: string): void {
   const errors = result.errors.filter(e => e.severity === 'error')
@@ -400,6 +404,10 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   return {
     name: PLUGIN_NAME,
     enforce: 'pre',
+    // Vite's own "plugin API" convention — see `BarefootPluginApi`'s
+    // docstring for who reads this and why it's populated here (at
+    // construction time) rather than from a lifecycle hook.
+    api: { options } satisfies BarefootPluginApi,
 
     async config(userConfig) {
       // Best-effort root for the eager discovery this hook needs to set

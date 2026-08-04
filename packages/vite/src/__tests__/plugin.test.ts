@@ -12,8 +12,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { testAdapter } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from '@barefootjs/go-template/adapter'
-import { barefoot } from '../plugin.ts'
-import type { BarefootViteOptions } from '../types.ts'
+import { barefoot, PLUGIN_NAME } from '../plugin.ts'
+import type { BarefootPluginApi, BarefootViteOptions } from '../types.ts'
 
 // biome-ignore lint: hooks are called directly, bypassing Vite's own
 // dispatch/typing — casting to `any` is the standard way to unit-test a
@@ -31,6 +31,31 @@ function makePlugin(
     templates: templatesDir,
   })
 }
+
+describe('plugin.api', () => {
+  // Reconnaissance PR (bf#future-07a): `bf`'s CLI reads this to derive
+  // `sourceDirs` from `vite.config.ts` without parsing it as text — see
+  // `packages/cli/src/context.ts` and `BarefootPluginApi`'s docstring.
+  test('exposes the exact options object under plugin.name === PLUGIN_NAME, with no Vite lifecycle hook run first', () => {
+    const options: BarefootViteOptions = {
+      adapter: testAdapter,
+      components: ['src/components', '../shared/blog'],
+      templates: 'internal/views',
+    }
+    const plugin = barefoot(options) as AnyPlugin
+
+    expect(plugin.name).toBe(PLUGIN_NAME)
+    expect(PLUGIN_NAME).toBe('barefoot')
+    const api = plugin.api as BarefootPluginApi
+    expect(api.options).toBe(options)
+    expect(api.options.components).toEqual(['src/components', '../shared/blog'])
+  })
+
+  test('the `templates` option omitted (CSR degenerate case) still surfaces via api.options', () => {
+    const plugin = barefoot({ adapter: testAdapter, components: ['src'] }) as AnyPlugin
+    expect((plugin.api as BarefootPluginApi).options.templates).toBeUndefined()
+  })
+})
 
 describe('config hook', () => {
   let dir: string

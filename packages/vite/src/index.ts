@@ -1,6 +1,6 @@
-export { barefoot } from './plugin.ts'
+export { barefoot, PLUGIN_NAME } from './plugin.ts'
 export { barefoot as default } from './plugin.ts'
-export type { AfterEmitContext, BarefootViteOptions } from './types.ts'
+export type { AfterEmitContext, BarefootPluginApi, BarefootViteOptions } from './types.ts'
 
 // Re-exported so an adapter's own `/vite` subpath (e.g.
 // `@barefootjs/go-template/vite`) can resolve script/asset URLs the SAME
