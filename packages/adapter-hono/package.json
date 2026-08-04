@@ -38,10 +38,6 @@
       "types": "./src/preload.tsx",
       "import": "./src/preload.tsx"
     },
-    "./dev": {
-      "types": "./src/dev.tsx",
-      "import": "./src/dev.tsx"
-    },
     "./dev-worker": {
       "types": "./src/dev-worker.ts",
       "import": "./src/dev-worker.ts"
@@ -64,10 +60,6 @@
     },
     "./test-render": {
       "bun": "./src/test-render.ts"
-    },
-    "./build": {
-      "types": "./src/build.ts",
-      "import": "./src/build.ts"
     },
     "./vite": {
       "types": "./src/vite.ts",
@@ -123,10 +115,6 @@
         "types": "./dist/preload.d.ts",
         "import": "./dist/preload.js"
       },
-      "./dev": {
-        "types": "./dist/dev.d.ts",
-        "import": "./dist/dev.js"
-      },
       "./dev-worker": {
         "types": "./dist/dev-worker.d.ts",
         "import": "./dist/dev-worker.js"
@@ -149,10 +137,6 @@
       },
       "./test-render": {
         "bun": "./src/test-render.ts"
-      },
-      "./build": {
-        "types": "./dist/build.d.ts",
-        "import": "./dist/build.js"
       },
       "./vite": {
         "types": "./dist/vite.d.ts",
@@ -178,7 +162,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/scripts.tsx ./src/portals.tsx ./src/portal-ssr.tsx ./src/dialog-context.tsx ./src/client-shim.ts ./src/preload.tsx ./src/dev.tsx ./src/dev-worker.ts ./src/jsx/jsx-runtime/index.ts ./src/jsx/jsx-dev-runtime/index.ts ./src/async.tsx ./src/utils.ts ./src/build.ts ./src/app.ts ./src/render.ts ./src/request-env.ts --root ./src --outdir ./dist --format esm --external hono --external @barefootjs/client --external @barefootjs/jsx --external @barefootjs/shared --external @barefootjs/vite --external vite && bun build ./src/vite.ts --outfile ./dist/vite.js --format esm --target node --external @barefootjs/vite --external vite --external typescript",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/scripts.tsx ./src/portals.tsx ./src/portal-ssr.tsx ./src/dialog-context.tsx ./src/client-shim.ts ./src/preload.tsx ./src/dev-worker.ts ./src/jsx/jsx-runtime/index.ts ./src/jsx/jsx-dev-runtime/index.ts ./src/async.tsx ./src/utils.ts ./src/app.ts ./src/render.ts ./src/request-env.ts --root ./src --outdir ./dist --format esm --external hono --external @barefootjs/client --external @barefootjs/jsx --external @barefootjs/shared --external @barefootjs/vite --external vite && bun build ./src/vite.ts --outfile ./dist/vite.js --format esm --target node --external @barefootjs/vite --external vite --external typescript",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",

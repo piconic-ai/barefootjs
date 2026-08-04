@@ -69,11 +69,10 @@ export interface HonoAdapterOptions {
   clientJsFilename?: string
 
   /**
-   * Display name surfaced through `JsxAdapter.name` — read by `bf build`
-   * for its `Adapter: …` banner. Defaults to `'hono'`. CSR-mode callers
-   * (`@barefootjs/client/build`) pass `'csr'` so the banner reflects the
-   * mode the user picked at scaffold time instead of leaking the
-   * fact that CSR currently reuses HonoAdapter under the hood.
+   * Display name surfaced through `JsxAdapter.name`. Defaults to `'hono'`.
+   * (CSR mode no longer reuses `HonoAdapter` under the hood — see
+   * `@barefootjs/client/csr-adapter`'s own in-package `CSRAdapter` — so
+   * this option has no CSR-specific caller today.)
    */
   name?: string
 }

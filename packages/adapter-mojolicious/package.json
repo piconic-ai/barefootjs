@@ -17,10 +17,6 @@
     "./test-render": {
       "bun": "./src/test-render.ts"
     },
-    "./build": {
-      "types": "./src/build.ts",
-      "import": "./src/build.ts"
-    },
     "./vite": {
       "types": "./src/vite.ts",
       "import": "./dist/vite.js"
@@ -39,10 +35,6 @@
       "./test-render": {
         "bun": "./src/test-render.ts"
       },
-      "./build": {
-        "types": "./dist/build.d.ts",
-        "import": "./dist/build.js"
-      },
       "./vite": {
         "types": "./dist/vite.d.ts",
         "import": "./dist/vite.js"
@@ -56,7 +48,7 @@
   ],
   "scripts": {
     "build": "bun run build:js && bun run build:types",
-    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts ./src/build.ts --root ./src --outdir ./dist --format esm --external @barefootjs/jsx --external @barefootjs/shared --external typescript --external @barefootjs/vite --external vite && bun build ./src/vite.ts --outfile ./dist/vite.js --format esm --target node --external @barefootjs/vite --external vite --external typescript",
+    "build:js": "bun build ./src/index.ts ./src/adapter/index.ts --root ./src --outdir ./dist --format esm --external @barefootjs/jsx --external @barefootjs/shared --external typescript --external @barefootjs/vite --external vite && bun build ./src/vite.ts --outfile ./dist/vite.js --format esm --target node --external @barefootjs/vite --external vite --external typescript",
     "build:types": "tsgo --emitDeclarationOnly --outDir ./dist",
     "test": "bun test",
     "clean": "rm -rf dist",

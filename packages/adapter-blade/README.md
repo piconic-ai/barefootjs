@@ -52,17 +52,21 @@ contract each helper must satisfy, and the package's own tests under
 ## Usage
 
 ```ts
-// barefoot.config.ts
-import { createConfig } from '@barefootjs/blade/build'
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/blade/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` then emits `.blade.php` templates + client JS under `outDir`. A
-PHP host renders a component by constructing an `illuminate/view` `Factory`
+`vite build` then emits `.blade.php` templates + client JS under `templates`
+/ Vite's own `build.outDir`. A PHP host renders a component by constructing
+an `illuminate/view` `Factory`
 standalone (`Filesystem` + event `Dispatcher` + `EngineResolver` registering
 a `blade` engine over a `BladeCompiler` + `FileViewFinder`, all wired
 together by the `Factory` — see `php/src/BladeBackend.php`'s constructor)

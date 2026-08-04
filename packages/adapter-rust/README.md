@@ -122,16 +122,20 @@ to the binary.
 ## Usage
 
 ```ts
-// barefoot.config.ts
-import { createConfig } from '@barefootjs/rust/build'
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/rust/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` then emits `.j2` templates + client JS under `outDir`. A Rust
+`vite build` then emits `.j2` templates + client JS under `templates` /
+Vite's own `build.outDir`. A Rust
 host renders a component by constructing a `minijinja::Environment` (per
 the contract above) over `minijinja::path_loader` pointed at the emitted
 templates, wiring in the `barefootjs` crate's `backend_minijinja` module as

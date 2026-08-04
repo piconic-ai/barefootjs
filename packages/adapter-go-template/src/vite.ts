@@ -68,7 +68,7 @@ import { barefoot as coreBarefoot } from '@barefootjs/vite'
 import type { AfterEmitContext } from '@barefootjs/vite'
 import { devModuleUrl, loadManifest, resolveDevOrigin, resolveScriptAssets, toPosixRelative } from '@barefootjs/vite'
 import { GoTemplateAdapter } from './adapter/index.ts'
-import { combineGoTypes } from './build.ts'
+import { combineGoTypes } from './go-types.ts'
 
 export interface GoTemplateViteOptions {
   /** Source directories to scan for `.tsx` components, relative to the

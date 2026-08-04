@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { combineGoTypes, deduplicateGoTypes } from '../build'
+import { combineGoTypes, deduplicateGoTypes } from '../go-types'
 
 describe('combineGoTypes stdlib imports', () => {
   // The combined types file strips each component's own import block and

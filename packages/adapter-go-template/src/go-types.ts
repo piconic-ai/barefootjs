@@ -1,21 +1,5 @@
-// Go template build config factory for barefoot.config.ts
-
-import type { BuildOptions, PostBuildContext } from '@barefootjs/jsx'
-import { GoTemplateAdapter } from './adapter/index.ts'
-import type { GoTemplateAdapterOptions } from './adapter/index.ts'
-
-export interface GoTemplateBuildOptions extends BuildOptions {
-  /** Adapter-specific options passed to GoTemplateAdapter */
-  adapterOptions?: GoTemplateAdapterOptions
-  /** Output path for combined Go types file (relative to projectDir, default: 'components.go') */
-  typesOutputFile?: string
-  /** Transform the combined types string before writing (for app-specific type fixes) */
-  transformTypes?: (types: string) => string
-  /** Manual type definitions to append (app-specific types not generated from components) */
-  manualTypes?: string
-}
-
-// ── Go type helpers ──────────────────────────────────────────────────────
+// Go type-combination helpers shared by the Vite plugin's post-emit hook
+// (`vite.ts`'s `combineGoTypes` call, writing `components.go`).
 
 /**
  * Strip Go package header and import block, returning only type definitions.
@@ -204,72 +188,4 @@ export function combineGoTypes(options: {
   }
 
   return parts.join('\n') + '\n'
-}
-
-// ── Config factory ───────────────────────────────────────────────────────
-
-/**
- * Create a BarefootBuildConfig for Go html/template projects.
- *
- * Uses structural typing — does not import BarefootBuildConfig to avoid
- * circular dependency between @barefootjs/go-template and @barefootjs/cli.
- */
-export function createConfig(options: GoTemplateBuildOptions = {}) {
-  const packageName = options.adapterOptions?.packageName ?? 'main'
-  const typesOutputFile = options.typesOutputFile ?? 'components.go'
-
-  const postBuild = async (ctx: PostBuildContext) => {
-    if (ctx.types.size === 0) return
-
-    const content = combineGoTypes({
-      types: ctx.types,
-      packageName,
-      manualTypes: options.manualTypes,
-      transformTypes: options.transformTypes,
-    })
-
-    if (content) {
-      const { resolve } = await import('node:path')
-      const { readFile, writeFile } = await import('node:fs/promises')
-      const outPath = resolve(ctx.projectDir, typesOutputFile)
-      // Write only when content changed so cache-hit builds don't trip the
-      // dev-reload sentinel (ctx.markChanged) and trigger a spurious reload.
-      // Use node:fs/promises (not Bun.*) so this hook runs under either
-      // runtime — the published `barefoot` CLI bin starts via Node.
-      const prev = await readFile(outPath, 'utf-8').catch(() => null)
-      if (prev !== content) {
-        await writeFile(outPath, content)
-        ctx.markChanged?.()
-        console.log(`Generated: ${typesOutputFile}`)
-      }
-    }
-  }
-
-  // Chain user's postBuild with Go types generation
-  const userPostBuild = options.postBuild
-  const combinedPostBuild = userPostBuild
-    ? async (ctx: PostBuildContext) => {
-        await postBuild(ctx)
-        await userPostBuild(ctx)
-      }
-    : postBuild
-
-  return {
-    adapter: new GoTemplateAdapter(options.adapterOptions),
-    paths: options.paths,
-    components: options.components,
-    outDir: options.outDir,
-    minify: options.minify,
-    contentHash: options.contentHash,
-    externals: options.externals,
-    externalsBasePath: options.externalsBasePath,
-    bundleEntries: options.bundleEntries,
-    localImportPrefixes: options.localImportPrefixes,
-    outputLayout: options.outputLayout ?? {
-      templates: 'templates',
-      clientJs: 'client',
-      runtime: 'client',
-    },
-    postBuild: combinedPostBuild,
-  }
 }

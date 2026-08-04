@@ -116,7 +116,7 @@ describe.skipIf(!INTEGRATION)(
 
     describe('app.pl serves static assets', () => {
       // Mojolicious's built-in static dispatcher does not honour URL
-      // prefixes. The scaffold's `barefoot.config.ts` and layout `<link>`s
+      // prefixes. The scaffold's `vite.config.ts` and layout `<link>`s
       // all reference `/static/*` URLs, so `app.pl` needs explicit
       // forwarding routes — without them every stylesheet and client bundle
       // 404s in the browser even though the SSR HTML rendered correctly.
