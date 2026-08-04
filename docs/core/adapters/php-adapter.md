@@ -63,18 +63,21 @@ is shared unchanged between `TwigBackend` and `BladeBackend`.
 npm install @barefootjs/twig
 ```
 
-Configure the build (`barefoot.config.ts`):
+Configure the build (`vite.config.ts`):
 
 ```typescript
-import { createConfig } from '@barefootjs/twig/build'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/twig/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` emits `.twig` templates plus client JS under `outDir`. On the PHP
+`vite build` emits `.twig` templates plus client JS under `templates` / Vite's own `build.outDir`. On the PHP
 side, require `barefootjs/twig` via Composer and point a `TwigBackend` at the
 emitted templates — it builds a `FilesystemLoader`-backed `Twig\Environment`
 with the defaults the templates assume (`autoescape: 'html'`,
@@ -105,18 +108,21 @@ backends.
 npm install @barefootjs/blade
 ```
 
-Configure the build (`barefoot.config.ts`):
+Configure the build (`vite.config.ts`):
 
 ```typescript
-import { createConfig } from '@barefootjs/blade/build'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/blade/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` emits `.blade.php` templates plus client JS under `outDir`. Blade
+`vite build` emits `.blade.php` templates plus client JS under `templates` / Vite's own `build.outDir`. Blade
 runs on `illuminate/view` used **standalone** — no Laravel application or
 service container required. Construct a `Factory` (`Filesystem` + an event
 `Dispatcher` + an `EngineResolver` registering a `blade` engine over a

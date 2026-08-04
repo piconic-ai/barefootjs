@@ -280,15 +280,9 @@ Client components register their scripts via the `.Scripts` interface:
 The `ScriptCollector` tracks needed scripts and renders `<script>` tags at page end. Each script loads at most once.
 
 
-## Importmap (externals)
+## Vendor code-splitting
 
-This adapter sets `importMapInjection: 'html-snippet'`, so when you configure [`externals`](../advanced/code-splitting.md), `bf build` emits a ready-to-include `barefoot-importmap.html` next to `barefoot-externals.json`. Parse the build output directory into your template set and include the snippet in your page `<head>`:
-
-```go-template
-{{ template "barefoot-importmap.html" . }}
-```
-
-See [Code splitting & externals](../advanced/code-splitting.md#template-string-adapters) for what the snippet contains and how the manifest is generated.
+Vendor code-splitting is Vite's job now, via stock `build.rollupOptions.output.manualChunks` — see [Vendor code-splitting](../advanced/code-splitting.md). There is no BarefootJS-specific importmap manifest to generate or include: Vite resolves and bundles component + vendor chunks ahead of time, and `combineGoTypes`'s generated `components.go` only carries type definitions, not asset URLs.
 
 
 ## Go Helper Functions

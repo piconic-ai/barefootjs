@@ -66,14 +66,18 @@ Scaffold a runnable starter:
 npm create barefootjs@latest -- --adapter mojo
 ```
 
-Configure the build (`barefoot.config.ts`):
+Configure the build (`vite.config.ts`):
 
 ```typescript
-import { createConfig } from '@barefootjs/mojolicious/build'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/mojolicious/vite'
 
-export default createConfig({
-  components: ['./components'],
-  outDir: 'dist',
+export default defineConfig({
+  build: { outDir: 'dist/client' },
+  plugins: barefoot({
+    components: ['./components'],
+    templates: 'dist/templates',
+  }),
 })
 ```
 
@@ -108,11 +112,16 @@ npm create barefootjs@latest -- --adapter xslate
 ```
 
 ```typescript
-import { createConfig } from '@barefootjs/xslate/build'
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/xslate/vite'
 
-export default createConfig({
-  components: ['./components'],
-  outDir: 'dist',
+export default defineConfig({
+  build: { outDir: 'dist/client' },
+  plugins: barefoot({
+    components: ['./components'],
+    templates: 'dist/templates',
+  }),
 })
 ```
 

@@ -55,18 +55,21 @@ array/string helpers, `spread_attrs`, `query`, …).
 npm install @barefootjs/jinja
 ```
 
-Configure the build (`barefoot.config.ts`):
+Configure the build (`vite.config.ts`):
 
 ```typescript
-import { createConfig } from '@barefootjs/jinja/build'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/jinja/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` emits `.jinja` templates plus client JS under `outDir`. On the
+`vite build` emits `.jinja` templates plus client JS under `templates` / Vite's own `build.outDir`. On the
 Python side, vendor `python/barefootjs/` (from `@barefootjs/jinja`) into
 your app and render a component by constructing a `jinja2.Environment` over
 a `FileSystemLoader` pointed at the emitted templates, with the exact

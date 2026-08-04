@@ -78,18 +78,21 @@ array/string helpers, `spread_attrs`, `query`, …).
 npm install @barefootjs/rust
 ```
 
-Configure the build (`barefoot.config.ts`):
+Configure the build (`vite.config.ts`):
 
 ```typescript
-import { createConfig } from '@barefootjs/rust/build'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/rust/vite'
 
-export default createConfig({
-  components: ['./src/components'],
-  outDir: './dist',
+export default defineConfig({
+  plugins: barefoot({
+    components: ['./src/components'],
+    templates: './dist/templates',
+  }),
 })
 ```
 
-`bf build` emits `.j2` templates plus client JS under `outDir`. On the Rust
+`vite build` emits `.j2` templates plus client JS under `templates` / Vite's own `build.outDir`. On the Rust
 side, depend on the `barefootjs` crate, build the `Environment` via
 `build_environment` (per the contract above), and render a component
 through a `RenderSession` + root `BfInstance`:

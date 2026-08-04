@@ -51,10 +51,12 @@ Decide and record:
 Create `packages/adapter-<name>/` by copying the chosen reference. The invariant shape:
 
 ```
-package.json          # exports: "." , "./adapter" (src), "./build", "./test-render" ("bun" condition ONLY)
+package.json          # exports: "." , "./adapter" (src), "./vite", "./test-render" ("bun" condition ONLY)
 tsconfig.json
 src/index.ts          # re-exports adapter + conformancePins
-src/build.ts          # createConfig() consumed by the user's barefoot.config.ts (bf build has NO registry)
+src/vite.ts            # barefoot() — composes core @barefootjs/vite's plugin with this adapter's
+                        # TemplateAdapter instance; the user's vite.config.ts imports this, not a
+                        # barefoot.config.ts factory (that pipeline is gone — see PR 7a-7c)
 src/conformance-pins.ts  # ConformancePins — per-fixture BF101/BF103 refusals (also consumed by bf compat)
 src/test-render.ts    # spawns the REAL backend toolchain; Bun-only, behind the "bun" export condition
 src/__tests__/<name>-adapter.test.ts  # the single runAdapterConformanceTests(...) call

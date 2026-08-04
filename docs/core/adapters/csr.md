@@ -17,25 +17,31 @@ When you do control the server (Hono, Go, etc.), prefer SSR + hydration instead.
 
 ## Configuration
 
-Use `createConfig` from `@barefootjs/client/build` in `barefoot.config.ts`. It wires the in-package `CSRAdapter` and skips marked template output automatically — no `clientOnly` flag is needed:
+Pass `CSRAdapter` (from `@barefootjs/client/csr-adapter`) as the `adapter` option to `@barefootjs/vite`'s `barefoot()` plugin. Its `generate()` always returns empty output — CSR has no template-language backend — so `templates` stays unset; the Vite plugin verifies that claim itself:
 
 ```typescript
-// barefoot.config.ts
-import { createConfig } from '@barefootjs/client/build'
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/vite'
+import { CSRAdapter } from '@barefootjs/client/csr-adapter'
 
-export default createConfig({
-  components: ['./components'],
-  outDir: 'dist',
+export default defineConfig({
+  build: { outDir: 'dist' },
+  plugins: [
+    barefoot({
+      adapter: new CSRAdapter(),
+      components: ['./components'],
+    }),
+  ],
 })
 ```
 
-Build output:
+Build output (`vite build`):
 
 ```
 dist/
-└── components/
-    ├── barefoot.js        # client runtime bundle
-    └── Counter.client.js  # compiled component
+└── assets/
+    └── Counter.tsx-<hash>.js  # compiled component (imports the runtime as a shared chunk)
 ```
 
 ## API
