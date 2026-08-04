@@ -2,7 +2,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { barefoot } from '@barefootjs/vite'
-import { CSRAdapter } from '@barefootjs/client/build'
+import { CSRAdapter } from '@barefootjs/client/csr-adapter'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 

@@ -9,15 +9,12 @@
  * Combining is a real per-language operation — for Go specifically it
  * means stripping each fragment's `package`/import header and injecting a
  * single shared `randomID` helper the individual fragments assume exists
- * (see `@barefootjs/go-template/build`'s `combineGoTypes`) — and today
- * that combination step lives entirely OUTSIDE the core CLI pipeline, in
- * each adapter's own `barefoot.config.ts` factory (`createConfig`'s
- * `postBuild` hook). This plugin has no `postBuild`-equivalent option (and
- * per this PR's scope, isn't adding one), so per-language combination is
- * left as a follow-up — either a new optional `TemplateAdapter` method, or
- * a dedicated post-processing step outside this plugin. Each `.types`
- * fragment is written next to its template so it's visible on disk, but
- * treat it as source material, not a ready-to-compile file.
+ * (see `@barefootjs/go-template/go-types.ts`'s `combineGoTypes`) — and it
+ * lives entirely OUTSIDE this core plugin, in each adapter's own `/vite`
+ * composition wrapper, driven by core's `afterEmit` escape hatch (see
+ * `AfterEmitContext`). Each `.types` fragment is written next to its
+ * template so it's visible on disk, but treat it as source material, not a
+ * ready-to-compile file.
  */
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'

@@ -19,7 +19,7 @@ import { mkdtemp, rm, mkdir, writeFile, access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { testAdapter } from '@barefootjs/jsx'
-import { CSRAdapter } from '@barefootjs/client/build'
+import { CSRAdapter } from '@barefootjs/client/csr-adapter'
 import { barefoot } from '../plugin.ts'
 
 // biome-ignore lint: hooks are called directly, bypassing Vite's own
