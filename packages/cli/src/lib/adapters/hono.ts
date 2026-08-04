@@ -10,7 +10,6 @@
 import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
-  COMPONENTS_MANIFEST_SEED,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
   FAVICON_SVG,
@@ -44,18 +43,23 @@ app.get('/', (c) =>
 export default app
 `
 
+// No import map: under the Vite build, \`@barefootjs/client\` is an
+// ordinary bundled ESM specifier every island's compiled entry imports —
+// Rollup folds it into one shared chunk (the single-runtime-instance
+// guarantee an import map used to provide under the legacy pipeline),
+// and the browser follows that import on its own with no specifier
+// redirection needed. \`<BfScripts />\` needs no \`manifest\`/\`base\`
+// props either — \`HonoAdapter.generate()\` bakes each component's
+// Vite-resolved script URL(s) in at codegen time (see
+// \`registerComponentScripts\` in \`@barefootjs/hono/scripts\`).
 const HONO_RENDERER_TSX = `import { jsxRenderer } from 'hono/jsx-renderer'
-import { BfImportMap } from '@barefootjs/hono/app'
 import { BfScripts } from '@barefootjs/hono/scripts'
-import manifest from './public/components/manifest.json' with { type: 'json' }
 
 declare module 'hono' {
   interface ContextRenderer {
     (children: unknown, props?: { title?: string }): Response
   }
 }
-
-const componentsBase = '/components'
 
 export const renderer = jsxRenderer(({ children, title }) => (
   <html lang="en">
@@ -74,41 +78,61 @@ export const renderer = jsxRenderer(({ children, title }) => (
       <link rel="stylesheet" href="/styles.css" />
       <link rel="stylesheet" href="/uno.css" />
       ${CSS_LINKS_END}
-      <BfImportMap base={componentsBase} />
     </head>
     <body>
       {children}
-      <BfScripts base={componentsBase} manifest={manifest} />
+      <BfScripts />
     </body>
   </html>
 ))
 `
 
-// Static assets (styles, tokens, generated client JS, manifest) live
-// under \`./public/\` so Workers Assets serves them automatically per
-// the binding in \`wrangler.jsonc\`. \`bf build\` mirrors the
-// input directory layout under \`outDir\`, so \`outDir: 'public'\`
-// produces \`public/components/<file>.client.js\` — the URLs the
-// renderer references at \`/components/...\`.
-const HONO_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/hono/build'
+// Static assets (styles, tokens, generated client JS) live under
+// \`./public/\` so Workers Assets serves them automatically per the
+// binding in \`wrangler.jsonc\`. \`build.outDir: 'public/components'\`
+// produces \`public/components/<hashed-file>.js\` — the URLs
+// \`HonoAdapter.generate()\` bakes into every SSR template's
+// \`<script src>\`. \`templates: 'dist/components'\` is a SEPARATE,
+// non-web-exposed directory: the compiled SSR \`.tsx\` files wrangler's
+// own bundler imports via \`server.tsx\`'s \`@/components/*\` path
+// mapping, never served over HTTP.
+const HONO_VITE_CONFIG_TS = `import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/hono/vite'
 
-export default createConfig({
-  // Project layout — read by \`bf add\`, \`search\`, \`meta:extract\`, etc.
-  paths: {
-    components: 'components/ui',
-    tokens: 'tokens',
-    meta: 'meta',
+const HERE = dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig({
+  base: '/components/',
+  resolve: {
+    // Mirrors tsconfig.json's \`@/components/*\` path mapping — Vite's
+    // dev-server dependency pre-scan parses raw source directly (before
+    // this plugin's own \`transform\` hook runs) and has no notion of
+    // tsconfig \`paths\` without this. Points at the SOURCE tree (not
+    // \`dist/components\`, the compiled SSR output tsconfig also maps):
+    // Vite's client bundler only ever needs to resolve the starter
+    // Counter's \`@/components/ui/button\` import to a real \`.tsx\` file
+    // to bundle, which is always the source one.
+    alias: {
+      '@/components': resolve(HERE, 'components'),
+    },
   },
-  // Build inputs and output. barefoot mirrors the input dir under
-  // \`outDir\`, so \`components/\` lands at \`public/components/\` —
-  // exactly where Workers Assets serves it from.
-  components: ['components'],
-  outDir: 'public',
-  scriptBasePath: '/components/',
-  adapterOptions: {
-    clientJsBasePath: '/components/',
-    barefootJsPath: '/components/barefoot.js',
+  // \`build.outDir\` (\`public/components\`) is itself a subdirectory of
+  // \`public/\` — Vite's own default \`publicDir\` behavior would copy
+  // \`public/\`'s OTHER contents (styles.css, tokens.css, favicon.svg,
+  // uno.css) into \`public/components\` too, which nothing reads (Workers
+  // Assets already serves them straight from \`public/\` itself) and
+  // which \`emptyOutDir\` would then immediately churn on the next build.
+  publicDir: false,
+  build: {
+    outDir: 'public/components',
+    emptyOutDir: true,
   },
+  plugins: barefoot({
+    components: ['components'],
+    templates: 'dist/components',
+  }),
 })
 `
 
@@ -133,11 +157,11 @@ const HONO_TSCONFIG = `{
       // Build output first so wrangler resolves the compiled SSR
       // template (with hydration markers + script collection).
       // Source is the fallback for files not yet built.
-      "@/components/*": ["./public/components/*", "./components/*"]
+      "@/components/*": ["./dist/components/*", "./components/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "public/components"]
+  "exclude": ["node_modules", "dist/components"]
 }
 `
 
@@ -160,18 +184,17 @@ const HONO_WRANGLER_JSONC = `{
 
 // Ignore patterns paired with the Hono scaffold's layout. `public/`
 // itself is committed — `public/styles.css` and `public/tokens.css`
-// are hand-written design tokens — so the bf-output section names only
-// the generated children (compiled SSR templates, hashed client JS,
-// the build cache, the emit ledger, the `--watch` dev-reload sentinel)
-// and lets `public/uno.css` ride the shared base's uno entry.
+// are hand-written design tokens — so the vite-output section names only
+// the generated children (hashed client JS under `public/components/`)
+// and lets `public/uno.css` ride the shared base's uno entry. Compiled
+// SSR templates land under `dist/components/` (never served over HTTP),
+// covered by the same entry.
 const HONO_GITIGNORE = buildGitignore([
   {
-    heading: 'bf build outputs (regenerated by `bf build` / `bf build --watch`)',
+    heading: 'vite build outputs (regenerated by `vite build` / `vite dev`)',
     entries: [
       'public/components/',
-      'public/.buildcache.json',
-      'public/.bfemit.json',
-      'public/.dev/',
+      'dist/',
     ],
   },
   {
@@ -187,12 +210,12 @@ export const HONO_ADAPTER: AdapterTemplate = {
   files: {
     'server.tsx': HONO_SERVER_TSX,
     'renderer.tsx': HONO_RENDERER_TSX,
-    'barefoot.config.ts': HONO_BAREFOOT_CONFIG_TS,
+    'vite.config.ts': HONO_VITE_CONFIG_TS,
     'tsconfig.json': HONO_TSCONFIG,
     'wrangler.jsonc': HONO_WRANGLER_JSONC,
     'uno.config.ts': unoConfigTs([
       'components/**/*.tsx',
-      'public/components/**/*.tsx',
+      'dist/components/**/*.tsx',
       'server.tsx',
       'renderer.tsx',
     ]),
@@ -202,7 +225,6 @@ export const HONO_ADAPTER: AdapterTemplate = {
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
     'public/favicon.svg': FAVICON_SVG,
-    'public/components/manifest.json': COMPONENTS_MANIFEST_SEED,
     '.gitignore': HONO_GITIGNORE,
   },
   scripts: {
@@ -210,13 +232,14 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // resolve it straight from `node_modules/.bin` — no `npx`/`bunx`/
     // `pnpm dlx` wrapper needed (and no unpinned download on first
     // `<pm> run dev`, since the version is pinned in devDependencies).
-    dev: 'concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "wrangler dev --live-reload"',
-    // `--minify` here (not on `dev`/`watch`): the site's landing-page
-    // runtime-size claim ("~14 kB min+gzip", site/core/build.ts) is
-    // measured on a minified build, and the dev pipeline intentionally
-    // serves the unminified runtime for readable stack traces.
-    build: 'bf build --minify && unocss',
-    deploy: 'bf build --minify && unocss && wrangler deploy',
+    // `vite build` runs once up front so `public/components` +
+    // `dist/components` exist before `wrangler dev` starts; `vite dev`
+    // then takes over the watch loop, re-emitting SSR templates with
+    // dev-origin script URLs on every component edit — mirrors
+    // `@barefootjs/hono`'s own migrated integration.
+    dev: 'vite build && unocss && concurrently -k -n vite,uno,wrangler -c blue,magenta,green "vite dev" "unocss --watch" "wrangler dev --live-reload"',
+    build: 'vite build && unocss',
+    deploy: 'vite build && unocss && wrangler deploy',
   },
   deploy: {
     target: 'Cloudflare Workers',
@@ -255,6 +278,12 @@ export const HONO_ADAPTER: AdapterTemplate = {
     // type package.
     concurrently: '^9.0.0',
     typescript: '^5.6.0',
+    // `@barefootjs/hono`'s composed `/vite` wrapper peer-depends on
+    // both — real devDependencies here (not just a hoisted transitive
+    // resolution) so `vite build` / `vite dev` resolve without an extra
+    // install step, matching every migrated integration.
+    '@barefootjs/vite': 'latest',
+    vite: '^6.0.0',
     // Pinned so `<pm> run dev` / `<pm> run deploy` resolve a known
     // `wrangler` from `node_modules/.bin` instead of pausing on an
     // unpinned download the first time they run (see the `scripts`
