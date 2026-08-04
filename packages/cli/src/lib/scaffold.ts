@@ -45,7 +45,7 @@ export interface ScaffoldOptions {
  *   `"use client"` decision + sub-component import list).
  * @param componentsBasePath - Directory the new component is written under,
  *   relative to the project root. Monorepo: `ui/components/ui` (default).
- *   Scaffolded app: pass `barefoot.config.ts`'s `paths.components`
+ *   Scaffolded app: pass `vite.config.ts`'s `paths.components`
  *   (typically `components/ui`) so files don't land in `node_modules/ui/...`.
  * @param options - Per-runner overrides for the emitted test file.
  */

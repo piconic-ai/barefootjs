@@ -104,8 +104,8 @@ async function flattenPlugins(plugins: PluginOption[] | undefined): Promise<Plug
  * Returns null when the file has no barefoot plugin registered at all — a
  * `vite.config.ts` that exists for an unrelated reason (a different tool's
  * config living at the same project root) shouldn't behave any differently
- * than "no config" to the caller, which falls through to the
- * `barefoot.config.ts` / defaults chain (see `context.ts`).
+ * than "no config" to the caller, which falls through to `DEFAULT_PATHS`
+ * (see `context.ts`).
  *
  * Throws when the config sets `root` to something other than its own
  * directory: every `sourceDirs` consumer downstream (`resolve-source.ts`,

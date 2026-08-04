@@ -2,9 +2,9 @@
 //
 // Ships a static HTML page with an empty mount point, built by Vite,
 // and a tiny `node:http` server that serves the page + the compiled
-// client bundles Vite produces. `CSRAdapter` from `@barefootjs/client/
-// build` switches the compiler into CSR mode — no SSR — everything
-// renders in the browser via @barefootjs/client/runtime.
+// client bundles Vite produces. `CSRAdapter` from
+// `@barefootjs/client/csr-adapter` switches the compiler into CSR mode —
+// no SSR — everything renders in the browser via @barefootjs/client/runtime.
 //
 // The server is plain Node (run via `tsx`, same as the hono-node
 // starter) so a user on npm / pnpm / yarn isn't forced to install Bun.
@@ -46,7 +46,7 @@ const CSR_VITE_CONFIG_TS = `import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { barefoot } from '@barefootjs/vite'
-import { CSRAdapter } from '@barefootjs/client/build'
+import { CSRAdapter } from '@barefootjs/client/csr-adapter'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 

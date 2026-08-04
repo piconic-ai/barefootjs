@@ -17,9 +17,8 @@
 //                              component lands. Monorepo: `ui/components/ui`
 //                              (the registry layout). Scaffolded app:
 //                              `paths.components` (typically `components/ui`
-//                              — a hardcoded default today, since neither
-//                              `vite.config.ts`'s `barefoot()` nor the
-//                              legacy `barefoot.config.ts` carries a
+//                              — a hardcoded default today, since
+//                              `vite.config.ts`'s `barefoot()` carries no
 //                              project-configurable override; see
 //                              `context.ts`'s `BarefootConfig.paths`).
 //

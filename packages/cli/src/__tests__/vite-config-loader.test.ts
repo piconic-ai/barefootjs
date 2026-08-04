@@ -3,9 +3,8 @@
 // `packages/vite/src/__tests__/plugin.test.ts`'s `plugin.api` describe for
 // the producer side of `BarefootPluginApi` this consumes.
 //
-// Fixtures are created UNDER `packages/cli/` (not the system tmpdir, unlike
-// `config-loader.test.ts`'s `barefoot.config.ts` fixtures) because these
-// configs `import { barefoot } from '@barefootjs/vite'` for real —
+// Fixtures are created UNDER `packages/cli/` (not the system tmpdir) because
+// these configs `import { barefoot } from '@barefootjs/vite'` for real —
 // resolving that bare specifier needs `packages/cli/node_modules`'s
 // workspace symlinks, which only Node/esbuild's upward node_modules walk
 // from a nested directory provides.

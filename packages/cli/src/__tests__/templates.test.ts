@@ -381,7 +381,7 @@ describe('adapter registry', () => {
     expect(csr.devDependencies['@types/bun']).toBeUndefined()
     expect(csr.files['pages/index.html']).toMatch(/<div id="app">/)
     expect(csr.files['pages/index.html']).toMatch(/@barefootjs\/client\/runtime/)
-    expect(csr.files['vite.config.ts']).toMatch(/@barefootjs\/client\/build/)
+    expect(csr.files['vite.config.ts']).toMatch(/@barefootjs\/client\/csr-adapter/)
   })
 
   // Recurring regression guard (this has bitten us more than once): a
