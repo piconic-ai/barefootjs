@@ -182,6 +182,28 @@ describe('e2e: vite dev server', () => {
     expect(marker).toContain('DEV BUILD OUTPUT')
   })
 
+  test('writes the legacy cross-language dev-reload sentinel one directory above templates', async () => {
+    const sentinel = await readIfExists(resolve(templatesDir, '..', '.dev', 'build-id'))
+    expect(sentinel).not.toBeNull()
+    expect(sentinel).toMatch(/^\d+$/)
+  })
+
+  test('editing a component updates the dev-reload sentinel value', async () => {
+    const sentinelPath = resolve(templatesDir, '..', '.dev', 'build-id')
+    const before = await readFile(sentinelPath, 'utf8')
+    try {
+      const edited = originalGreetingSource.replace('Hello', 'Hello!!!')
+      await writeFile(GREETING_PATH, edited)
+
+      await waitFor(async () => {
+        const after = await readIfExists(sentinelPath)
+        return after !== null && after !== before
+      })
+    } finally {
+      await writeFile(GREETING_PATH, originalGreetingSource)
+    }
+  })
+
   test('a request with a cross-origin Origin header gets the localhost-only CORS default', async () => {
     const res = await fetch(`${baseUrl}/@vite/client`, {
       headers: { Origin: 'http://localhost:3010' },

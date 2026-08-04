@@ -39,7 +39,11 @@ app.use(renderer)
 //
 // NOT superseded by Vite's own dev websocket (kept deliberately, unlike
 // the import map above): `vite dev` and `wrangler dev` are two separate
-// processes solving two separate problems. Vite's websocket only tells the
+// processes solving two separate problems — `package.json`'s `dev` script
+// runs both together via `concurrently` so one command covers editing
+// EITHER a shared component (Vite's own websocket reloads for that) OR
+// this file / `blog.tsx` (this SSE reloader catches the Worker restart
+// that causes). Vite's websocket only tells the
 // browser "a CLIENT bundle changed" (the URLs `registerComponentScripts`
 // baked into a page, via `devScriptAssets`'s `@vite/client` entry) — it
 // has no visibility into wrangler restarting the Worker isolate for a

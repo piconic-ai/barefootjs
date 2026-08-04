@@ -85,6 +85,7 @@ import {
   DEV_ARTIFACT_MARKER_FILENAME,
   DEV_WATCH_DEBOUNCE_MS,
   devScriptAssets,
+  devSentinelPath,
   resolveDevOrigin,
 } from './dev-server.ts'
 import { createDebouncedSerialRunner } from './debounced-serial-runner.ts'
@@ -376,6 +377,15 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
     await writeFile(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), DEV_ARTIFACT_MARKER_CONTENT)
 
+    // Legacy cross-language dev-reload sentinel (see `devSentinelPath`'s
+    // docstring) — written unconditionally on every pass, initial pass
+    // included, matching the legacy CLI's `watch()` writing it both on
+    // the initial build and every rebuild. A fresh timestamp is enough:
+    // consumers only compare it against their own last-seen value.
+    const sentinelPath = devSentinelPath(templatesDir)
+    await mkdir(resolve(sentinelPath, '..'), { recursive: true })
+    await writeFile(sentinelPath, String(Date.now()))
+
     if (options.afterEmit) {
       await options.afterEmit({
         types,
@@ -527,6 +537,11 @@ export function barefoot(options: BarefootViteOptions): Plugin {
       // with production URLs, so the marker is now stale. Best-effort:
       // there may never have been one.
       await rm(resolve(templatesDir, DEV_ARTIFACT_MARKER_FILENAME), { force: true })
+      // Same for the dev-reload sentinel: a production build is not a dev
+      // rebuild, so a stale `.dev/build-id` left over from an earlier
+      // `vite dev` session should not trick a still-running Go/Perl dev
+      // server into firing a reload for output that didn't come from it.
+      await rm(devSentinelPath(templatesDir), { force: true })
 
       if (options.afterEmit) {
         await options.afterEmit({ types, projectDir: config.root, templatesDir, outDir, mode: 'build' })

@@ -183,4 +183,9 @@ describe('e2e: vite build', () => {
     // `component-manifest.test.ts` — this test's job is just proving the
     // combined file actually lands on disk from a REAL build.
   })
+
+  test('a production build leaves no dev-reload sentinel behind (see e2e-vite-dev.test.ts for the dev-side write)', async () => {
+    const sentinel = await readFile(resolve(templatesDir, '..', '.dev', 'build-id'), 'utf8').catch(() => null)
+    expect(sentinel).toBeNull()
+  })
 })

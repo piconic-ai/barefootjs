@@ -3,15 +3,17 @@
  * dev origin, building the two-URL `scriptAssets` list a `'use client'`
  * component needs in dev (the `@vite/client` HMR/full-reload socket plus
  * the component's own `.tsx` module), the localhost-only CORS default,
- * and the on-disk marker that flags a `templates` directory as holding
- * dev artifacts (localhost URLs baked in) rather than production output.
+ * the on-disk marker that flags a `templates` directory as holding dev
+ * artifacts (localhost URLs baked in) rather than production output, and
+ * the legacy cross-language dev-reload sentinel path (see
+ * `devSentinelPath`'s docstring).
  *
  * The pure, easily-unit-tested pieces live here; the orchestration
  * (compiling, writing files, wiring the watcher) stays in `plugin.ts`
  * where the shared `CompileCache` / `componentDirs` / `templatesDir`
  * closures already live.
  */
-import { sep } from 'node:path'
+import { resolve, sep } from 'node:path'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import { joinBaseAndFile } from './manifest.ts'
 
@@ -147,3 +149,40 @@ Run \`vite build\` to regenerate this directory with real, hashed,
 production asset URLs — the build overwrites every template here and
 removes this file.
 `
+
+/**
+ * Legacy cross-language dev-reload sentinel: `<outDir>/.dev/build-id`,
+ * ONE DIRECTORY ABOVE `templates` — matching `packages/cli/src/lib/
+ * build.ts`'s `DEV_SENTINEL_SUBDIR`/`DEV_SENTINEL_FILENAME` under
+ * `config.outDir`, where `templatesSubdir` was always a direct child of
+ * `outDir` (`layout?.templates ?? 'components'`, never nested deeper) —
+ * so "one directory above `templates`" and "the legacy CLI's `outDir`"
+ * are the same location for every adapter that followed that layout.
+ *
+ * Several adapter runtimes still poll this exact path for a value change
+ * and push an SSE `event: reload` on it — a mechanism that does NOT
+ * require the polling process to restart, only the file's mtime/content
+ * to change: `bfdev.NewReloadHandler` (Go — echo/gin/chi/nethttp),
+ * `Mojolicious::Plugin::BarefootJS::DevReload` /
+ * `BarefootJS::DevReload` (Perl — mojolicious/xslate), and
+ * `barefoot_js/dev_reload.rb` (Ruby — sinatra/rails, ERB). The legacy CLI
+ * (`bf build --watch`) used to write it; nothing did once those adapters'
+ * `build:watch` moved to `vite dev` — this restores it from the one place
+ * every migrated adapter's dev pass now runs through.
+ *
+ * Hono's dev-reload story does not consume this at all: Cloudflare
+ * Workers detect a Worker-isolate restart directly (`dev-worker.ts`'s
+ * boot id over the SAME SSE endpoint, no file involved), and the Node
+ * scaffold target's sentinel-reading `dev.tsx` is fed by the legacy CLI,
+ * which is unmigrated. Writing this sentinel unconditionally whenever
+ * `templates` is configured is harmless there — nothing reads it — which
+ * is what keeps this a zero-config, adapter-agnostic signal rather than a
+ * 4th plugin option naming which adapters want it.
+ */
+export const DEV_SENTINEL_SUBDIR = '.dev'
+export const DEV_SENTINEL_FILENAME = 'build-id'
+
+/** Absolute path of the dev-reload sentinel for a given `templates` dir. */
+export function devSentinelPath(templatesDir: string): string {
+  return resolve(templatesDir, '..', DEV_SENTINEL_SUBDIR, DEV_SENTINEL_FILENAME)
+}
