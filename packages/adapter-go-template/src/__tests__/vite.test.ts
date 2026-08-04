@@ -41,6 +41,30 @@ describe('@barefootjs/go-template/vite: real vite build', () => {
     expect(plugins).toHaveLength(1)
   })
 
+  // Reconnaissance PR (bf#future-07a): core's `barefoot()` attaches
+  // `api.options` (see `BarefootPluginApi`) to the SAME plugin object this
+  // wrapper returns unchanged as `plugins[0]` — this pins that composition
+  // doesn't lose it, for either array shape (`assets` omitted vs. present,
+  // which adds a SECOND, unrelated companion plugin alongside it).
+  test('surfaces core\'s plugin.api.options unchanged on the returned plugin, with the GoTemplateAdapter it constructed', () => {
+    const plugins = barefoot({ components: ['src/components', '../shared/blog'], templates: 'views' }) as any[]
+    const core = plugins[0]
+    expect(core.name).toBe('barefoot')
+    expect(core.api.options.components).toEqual(['src/components', '../shared/blog'])
+    expect(core.api.options.templates).toBe('views')
+    expect(core.api.options.adapter.constructor.name).toBe('GoTemplateAdapter')
+  })
+
+  test('still surfaces api.options on plugins[0] when `assets` adds a second companion plugin', () => {
+    const plugins = barefoot({
+      components: ['src/components'],
+      templates: 'views',
+      assets: { Bootstrap: 'client/bootstrap.ts' },
+    }) as any[]
+    expect(plugins).toHaveLength(2)
+    expect(plugins[0].api.options.components).toEqual(['src/components'])
+  })
+
   test('writes a compilable combined components.go after `vite build`, using the SAME combineGoTypes as ./build', async () => {
     const outDir = await mkdtemp(join(tmpdir(), 'barefoot-go-vite-dist-'))
     const templatesDir = await mkdtemp(join(tmpdir(), 'barefoot-go-vite-views-'))

@@ -33,6 +33,20 @@ describe('@barefootjs/hono/vite: real vite build', () => {
     expect(plugins).toHaveLength(1)
   })
 
+  // Reconnaissance PR (bf#future-07a): core's `barefoot()` attaches
+  // `api.options` (see `@barefootjs/vite`'s `BarefootPluginApi`) to the SAME
+  // plugin object this wrapper returns unchanged as `plugins[0]` — this
+  // pins that composition doesn't lose it, for either array shape (`assets`
+  // omitted vs. present, which adds a SECOND, unrelated companion plugin).
+  test('surfaces core\'s plugin.api.options unchanged on the returned plugin, with the HonoAdapter it constructed', () => {
+    const plugins = barefoot({ components: ['src/components', '../shared/blog'], templates: 'views' }) as any[]
+    const core = plugins[0]
+    expect(core.name).toBe('barefoot')
+    expect(core.api.options.components).toEqual(['src/components', '../shared/blog'])
+    expect(core.api.options.templates).toBe('views')
+    expect(core.api.options.adapter.constructor.name).toBe('HonoAdapter')
+  })
+
   test('writes a self-contained SSR template with scriptAssets baked in, same as core alone would do', async () => {
     const outDir = await mkdtemp(join(tmpdir(), 'barefoot-hono-vite-dist-'))
     const templatesDir = await mkdtemp(join(tmpdir(), 'barefoot-hono-vite-views-'))
