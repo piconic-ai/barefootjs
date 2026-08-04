@@ -424,11 +424,6 @@ export default defineConfig({
 `
 }
 
-// Empty manifest seed so the static \`import manifest from
-// './dist/components/manifest.json'\` in renderer.tsx resolves on the
-// very first server boot, before \`bf build\` has run.
-export const COMPONENTS_MANIFEST_SEED = '{}\n'
-
 // UnoCSS shared dev/runtime deps (every adapter pulls UnoCSS for now).
 export const UNOCSS_DEV_DEPENDENCIES = {
   '@unocss/cli': '^66.0.0',

@@ -141,7 +141,7 @@ export function formatMissingComponentError(
       lines.push(
         `registry component. \`bf docs\` / \`bf gen preview\` only cover registry`,
       )
-      lines.push(`components (under \`paths.components\` in barefoot.config.ts).`)
+      lines.push(`components (under \`paths.components\` in your project config).`)
       lines.push(``)
       lines.push(`For top-level components, try:`)
       lines.push(`  bf debug graph ${name}    — reactive structure`)

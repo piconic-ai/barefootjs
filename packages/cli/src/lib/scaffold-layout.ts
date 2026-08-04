@@ -16,8 +16,12 @@
 //   - `componentsBasePath`   : project-root-relative dir where the new
 //                              component lands. Monorepo: `ui/components/ui`
 //                              (the registry layout). Scaffolded app:
-//                              `barefoot.config.ts`'s `paths.components`
-//                              (typically `components/ui`).
+//                              `paths.components` (typically `components/ui`
+//                              — a hardcoded default today, since neither
+//                              `vite.config.ts`'s `barefoot()` nor the
+//                              legacy `barefoot.config.ts` carries a
+//                              project-configurable override; see
+//                              `context.ts`'s `BarefootConfig.paths`).
 //
 // Keeping both behind one helper means future `bf gen *` commands stay
 // scaffold-aware by construction.

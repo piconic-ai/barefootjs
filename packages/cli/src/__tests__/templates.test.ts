@@ -48,7 +48,7 @@ describe('adapter registry', () => {
       expect(adapter.files['bf_render.go']).toContain('bf.TemplateFuncMap(root)')
       // Client JS and public assets are served from disjoint prefixes
       // (so Gin's router tree doesn't panic on nested catch-alls).
-      expect(adapter.files['barefoot.config.ts']).toContain("clientJsBasePath: '/client/'")
+      expect(adapter.files['vite.config.ts']).toContain("base: '/client/'")
     },
   )
 
@@ -86,11 +86,13 @@ describe('adapter registry', () => {
   test('hono-node centralises NODE_ENV checks in env.ts', () => {
     // Generated files import `isDev` / `isProd` from env.ts instead of
     // sprinkling `process.env.NODE_ENV` calls across the project.
+    // renderer.tsx no longer needs env.ts itself — the Vite pipeline
+    // bakes each component's script URL(s) in at codegen time, so
+    // there's no live manifest to gate a dev-only re-read behind.
     const honoNode = ADAPTERS['hono-node']
     expect(honoNode.files['env.ts']).toContain('export const isProd')
     expect(honoNode.files['env.ts']).toContain('export const isDev')
     expect(honoNode.files['factory.ts']).toContain("from './env'")
-    expect(honoNode.files['renderer.tsx']).toContain("from './env'")
     // @types/node provides the `process` type the env file relies on.
     expect(honoNode.devDependencies['@types/node']).toBeTruthy()
   })
@@ -120,13 +122,20 @@ describe('adapter registry', () => {
   // through fails CI loudly instead of silently in someone's hand
   // test.
   describe('dev-time re-read contract', () => {
-    test('hono-node renderer reads the manifest per request in dev', () => {
+    test('hono-node has no live-manifest cache left to go stale', () => {
+      // Under the Vite pipeline, `HonoAdapter.generate()` bakes each
+      // component's resolved script URL(s) into its compiled SSR
+      // template at codegen time (`vite dev`'s eager pass re-runs that
+      // codegen on every component edit) — there is no in-process
+      // manifest cache for renderer.tsx to read, live or otherwise.
+      // Staleness is instead handled by `tsx watch server.tsx`
+      // restarting the whole process on the next `dist/components`
+      // rewrite, which is the same mechanism `server.tsx`'s static
+      // `@/components/Counter` import already depends on.
       const renderer = ADAPTERS['hono-node'].files['renderer.tsx']
-      // Reads the JSON from disk each time (not just a static import).
-      expect(renderer).toContain("from 'node:fs'")
-      expect(renderer).toMatch(/readFileSync\(.*manifest/i)
-      // Behind a dev gate — prod keeps the cheap static import.
-      expect(renderer).toMatch(/isDev \? .*: staticManifest/)
+      expect(renderer).not.toContain('manifest')
+      expect(renderer).not.toContain('readFileSync')
+      expect(ADAPTERS['hono-node'].scripts.dev).toContain('tsx watch server.tsx')
     })
 
     test('echo centralises dev/prod detection in env.go via APP_ENV', () => {
@@ -283,11 +292,11 @@ describe('adapter registry', () => {
     })
   })
 
-  test('every adapter has a label, port, and barefoot.config.ts file', () => {
+  test('every adapter has a label, port, and vite.config.ts file', () => {
     for (const [id, adapter] of Object.entries(ADAPTERS)) {
       expect(adapter.label, `${id} missing label`).toBeTruthy()
       expect(adapter.port, `${id} missing port`).toBeGreaterThan(0)
-      expect(adapter.files['barefoot.config.ts'], `${id} missing barefoot.config.ts`).toBeTruthy()
+      expect(adapter.files['vite.config.ts'], `${id} missing vite.config.ts`).toBeTruthy()
     }
   })
 
@@ -353,8 +362,8 @@ describe('adapter registry', () => {
     expect(xslate.files['app.psgi']).toContain('dist/templates/manifest.json')
     expect(xslate.files['app.psgi']).toContain('ssrDefaults')
     expect(xslate.files['app.psgi']).toMatch(/sub ssr_defaults/)
-    // Config targets the xslate build factory.
-    expect(xslate.files['barefoot.config.ts']).toContain("from '@barefootjs/xslate/build'")
+    // Config targets the xslate Vite composition.
+    expect(xslate.files['vite.config.ts']).toContain("from '@barefootjs/xslate/vite'")
     // Starter Counter is self-contained (native buttons, no registry fetch).
     expect(xslate.bundledRegistryComponents).toEqual([])
     expect(xslate.files['components/Counter.tsx']).toContain('<button')
@@ -372,7 +381,7 @@ describe('adapter registry', () => {
     expect(csr.devDependencies['@types/bun']).toBeUndefined()
     expect(csr.files['pages/index.html']).toMatch(/<div id="app">/)
     expect(csr.files['pages/index.html']).toMatch(/@barefootjs\/client\/runtime/)
-    expect(csr.files['barefoot.config.ts']).toMatch(/@barefootjs\/client\/build/)
+    expect(csr.files['vite.config.ts']).toMatch(/@barefootjs\/client\/build/)
   })
 
   // Recurring regression guard (this has bitten us more than once): a
@@ -480,20 +489,17 @@ describe('adapter registry', () => {
   )
 
   test('hono adapter .gitignore covers public-as-outDir specifics, not whole-public', () => {
-    // Hono's outDir IS `public/`, so we have to thread the needle:
-    // ignore `public/components/` + `public/.buildcache.json` +
-    // `public/.bfemit.json` but commit `public/styles.css` /
-    // `public/tokens.css`. Other adapters use `dist/` so a single
-    // line covers their build output; only Hono needs the per-file split.
+    // Hono's vite `build.outDir` IS a subdirectory of `public/`
+    // (`public/components`), so we have to thread the needle: ignore
+    // `public/components/` (vite-bundled client JS) and `dist/`
+    // (compiled SSR templates) but commit `public/styles.css` /
+    // `public/tokens.css`. Other adapters use a single top-level `dist/`
+    // for everything; only Hono needs the per-subdirectory split since
+    // its build output lives inside the committed `public/` tree.
     const gitignore = ADAPTERS.hono.files['.gitignore']!
     expect(gitignore).toContain('.wrangler/')
     expect(gitignore).toContain('public/components/')
-    expect(gitignore).toContain('public/.buildcache.json')
-    expect(gitignore).toContain('public/.bfemit.json')
-    // `--watch` dev-reload sentinel (`public/.dev/build-id`) — build
-    // output, not source. Other adapters ignore `dist/` wholesale so
-    // their `.dev/` is already covered; only Hono needs it named.
-    expect(gitignore).toContain('public/.dev/')
+    expect(gitignore).toContain('dist/')
     // Negative guard: hand-written starter assets must NOT be ignored.
     expect(gitignore).not.toMatch(/^public\/styles\.css/m)
     expect(gitignore).not.toMatch(/^public\/tokens\.css/m)
@@ -646,27 +652,33 @@ describe('adapter registry', () => {
     )
   })
 
-  // Issue #2124 item 3a: `--minify` on build/deploy (not dev/watch) so
-  // the scaffold's production build matches the site's "~14 kB
-  // min+gzip" runtime-size claim, which is measured on a minified
-  // build (site/core/build.ts).
-  describe('build/deploy scripts pass --minify to `bf build` (issue #2124)', () => {
-    test.each(Object.keys(ADAPTERS))('%s build script includes --minify', (id) => {
+  // Issue #2124 item 3a's `bf build --minify` guarantee ("production
+  // build matches the site's '~14 kB min+gzip' runtime-size claim,
+  // measured on a minified build") now comes for free from `vite
+  // build`, which minifies by default — there is no separate flag to
+  // pass or pin. This describe block pins the OPPOSITE half of the old
+  // contract that's still meaningful post-migration: every build/deploy
+  // script actually invokes `vite build` (so it participates in that
+  // default minification at all), and no script hand-rolls a
+  // `--minify`-style flag that `vite build` doesn't recognize.
+  describe('build/deploy scripts invoke `vite build` (issue #2124)', () => {
+    test.each(Object.keys(ADAPTERS))('%s build script includes vite build', (id) => {
       const build = ADAPTERS[id].scripts.build
       const rendered = typeof build === 'function' ? build('npm') : build
-      expect(rendered).toMatch(/\bbf build --minify\b/)
+      expect(rendered).toMatch(/\bvite build\b/)
     })
 
-    test('hono deploy script includes --minify', () => {
+    test('hono deploy script includes vite build', () => {
       const deploy = ADAPTERS.hono.scripts.deploy!
       const rendered = typeof deploy === 'function' ? deploy('npm') : deploy
-      expect(rendered).toMatch(/\bbf build --minify\b/)
+      expect(rendered).toMatch(/\bvite build\b/)
     })
 
-    test.each(Object.keys(ADAPTERS))('%s dev script does NOT pass --minify', (id) => {
-      const dev = ADAPTERS[id].scripts.dev
-      const rendered = typeof dev === 'function' ? dev('npm') : dev
-      expect(rendered, `${id} dev script should stay unminified`).not.toContain('--minify')
+    test.each(Object.keys(ADAPTERS))('%s scripts pass no --minify flag (vite build has none)', (id) => {
+      for (const [name, value] of Object.entries(ADAPTERS[id].scripts)) {
+        const rendered = typeof value === 'function' ? value('npm') : value
+        expect(rendered, `${id} script "${name}" should not pass --minify`).not.toContain('--minify')
+      }
     })
   })
 })
