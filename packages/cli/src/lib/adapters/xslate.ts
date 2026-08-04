@@ -13,7 +13,6 @@ import { execSync } from 'node:child_process'
 import type { AdapterTemplate } from '../templates'
 import {
   buildGitignore,
-  COMPONENTS_MANIFEST_SEED,
   CSS_LINKS_BEGIN,
   CSS_LINKS_END,
   FAVICON_SVG,
@@ -25,29 +24,54 @@ import {
   unoConfigTs,
 } from './shared'
 
-const XSLATE_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/xslate/build'
+// \`templates: 'dist/templates'\` is a SEPARATE, non-web-exposed
+// directory the Plack app reads locally (never served over HTTP — see
+// app.psgi's Text::Xslate \`path\` option). \`build.outDir\` is the
+// CLIENT asset half — hashed JS bundles app.psgi's mount table serves
+// from \`dist/client\` at \`/static/components/\`.
+const XSLATE_VITE_CONFIG_TS = `import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/xslate/vite'
 
-export default createConfig({
-  paths: {
-    components: 'components/ui',
-    tokens: 'tokens',
-    meta: 'meta',
+const HERE = dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig({
+  base: '/static/components/',
+  resolve: {
+    // Mirrors tsconfig.json's \`@/components/*\` path mapping (unused by
+    // the starter Counter, which is self-contained — see
+    // XSLATE_COUNTER_TSX — but a future \`bf add\` fetching a registry
+    // component that imports via \`@/components/...\` would need it; see
+    // the Go adapters' \`vite.config.ts\` docstring for why Vite's
+    // dev-server dependency pre-scan needs this even though \`tsc\`/\`tsx\`
+    // already resolve it from tsconfig alone).
+    alias: {
+      '@/components': resolve(HERE, 'components'),
+    },
   },
-  components: ['components'],
-  outDir: 'dist',
-  adapterOptions: {
-    clientJsBasePath: '/static/components/',
-    barefootJsPath: '/static/components/barefoot.js',
+  // \`./public\` is served directly by app.psgi's Plack::App::File mount,
+  // not by Vite — see the Go adapters' \`vite.config.ts\` docstring for
+  // why Vite's own default \`publicDir\` copy-into-\`outDir\` behavior has
+  // to be turned off here.
+  publicDir: false,
+  build: {
+    outDir: 'dist/client',
+    emptyOutDir: true,
   },
+  plugins: barefoot({
+    components: ['components'],
+    templates: 'dist/templates',
+  }),
 })
 `
 
 // Plain Plack/PSGI app. The Text::Xslate backend has no framework
 // dependency, so the whole server is a single PSGI coderef plus a
 // Plack::Builder mount table for static assets + the dev-reload SSE
-// endpoint. `bf build` writes Kolon `.tx` templates to dist/templates
-// and the client bundles to dist/client; the handwritten stylesheets
-// live under public/.
+// endpoint. \`vite build\` / \`vite dev\` writes Kolon \`.tx\` templates
+// to dist/templates and the client bundles to dist/client; the
+// handwritten stylesheets live under public/.
 const XSLATE_APP_PSGI = `#!/usr/bin/env perl
 use strict;
 use warnings;
@@ -75,7 +99,7 @@ my $DEV = ($ENV{PLACK_ENV} // 'development') ne 'production';
 my $J = JSON::PP->new->canonical->allow_nonref->utf8;
 
 # One Text::Xslate backend renders every component from dist/templates.
-# In dev the template cache is disabled so \`bf build --watch\` edits render
+# In dev the template cache is disabled so \`vite dev\` edits render
 # on the next request without restarting the server.
 my $backend = BarefootJS::Backend::Xslate->new(
     path           => ['dist/templates'],
@@ -83,7 +107,8 @@ my $backend = BarefootJS::Backend::Xslate->new(
     xslate_options => { cache => $DEV ? 0 : 1 },
 );
 
-# Load the build manifest (\`bf build\` writes dist/templates/manifest.json).
+# Load the build manifest (\`vite build\` / \`vite dev\` writes
+# dist/templates/manifest.json).
 # It carries each component's \`ssrDefaults\` — the static fallback for every
 # template variable (signals, memos, and the props they read). A plain PSGI
 # app has no plugin to seed those automatically (unlike the Mojolicious
@@ -99,7 +124,7 @@ sub load_manifest () {
     return (ref $m eq 'HASH') ? $m : {};
 }
 # Cache the manifest in production; re-read each request in dev so a
-# \`bf build --watch\` rebuild surfaces new defaults without a restart.
+# \`vite dev\` rebuild surfaces new defaults without a restart.
 my $MANIFEST = $DEV ? undef : load_manifest();
 sub manifest () { return $DEV ? load_manifest() : $MANIFEST }
 
@@ -168,7 +193,7 @@ my $app = sub ($env) {
 
 # Mount table. Plack::App::URLMap matches the longest path prefix, so the
 # nested /static/components mount wins over /static for client bundles.
-#   - /static/components/* -> dist/client/*  (clientJsBasePath)
+#   - /static/components/* -> dist/client/*  (matches vite.config.ts's base)
 #   - /static/*            -> public/*        (handwritten stylesheets)
 builder {
     enable 'Plack::Middleware::ContentLength';
@@ -321,12 +346,12 @@ describe('Counter', () => {
 })
 `
 
-// Xslate scaffold: `dist/` is the bf build output. `local/` is where
+// Xslate scaffold: `dist/` is the vite build output. `local/` is where
 // `carton install` (cpanfile-driven) drops vendored CPAN modules; `log/`
 // + `*.tmp` cover dev-server scratch.
 const XSLATE_GITIGNORE = buildGitignore([
   {
-    heading: 'bf build outputs (regenerated by `bf build` / `bf build --watch`)',
+    heading: 'vite build outputs (regenerated by `vite build` / `vite dev`)',
     entries: ['dist/'],
   },
   {
@@ -343,11 +368,12 @@ export const XSLATE_ADAPTER: AdapterTemplate = {
   files: {
     'app.psgi': XSLATE_APP_PSGI,
     'cpanfile': XSLATE_CPANFILE,
-    'barefoot.config.ts': XSLATE_BAREFOOT_CONFIG_TS,
+    'vite.config.ts': XSLATE_VITE_CONFIG_TS,
     'tsconfig.json': XSLATE_TSCONFIG,
+    // Only the source `components/` tree needs scanning: Xslate has no
+    // compiled `.tsx` output to also scan.
     'uno.config.ts': unoConfigTs([
       'components/**/*.tsx',
-      'dist/components/**/*.tsx',
     ]),
     'components/Counter.tsx': XSLATE_COUNTER_TSX,
     'components/Counter.test.tsx': XSLATE_COUNTER_TEST_TSX,
@@ -355,18 +381,15 @@ export const XSLATE_ADAPTER: AdapterTemplate = {
     'public/tokens.css': TOKENS_CSS,
     'public/uno.css': UNO_CSS_PLACEHOLDER,
     'public/favicon.svg': FAVICON_SVG,
-    'dist/components/manifest.json': COMPONENTS_MANIFEST_SEED,
     '.gitignore': XSLATE_GITIGNORE,
   },
   scripts: {
-    // Watchers + Starman side-by-side. The build/uno watchers do their own
-    // initial build at startup, so no separate cold-build prefix is needed.
+    // `vite build` runs once up front so `dist/templates` exists before
+    // Starman starts; `vite dev` then takes over the watch loop.
     // Starman (not plackup's default single-process server) so the
     // dev-reload SSE endpoint can stream while requests are served.
-    dev: `concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "plackup -s Starman --workers 5 -p ${XSLATE_PORT} app.psgi"`,
-    // `--minify` (not on `dev`): matches the site's "~14 kB min+gzip"
-    // runtime-size claim, which is measured on a minified build.
-    build: 'bf build --minify && unocss',
+    dev: `vite build && unocss && concurrently -k -n dev,uno,server -c blue,magenta,green "vite dev" "unocss --watch" "plackup -s Starman --workers 5 -p ${XSLATE_PORT} app.psgi"`,
+    build: 'vite build && unocss',
     start: `PLACK_ENV=production plackup -s Starman --workers 5 -p ${XSLATE_PORT} app.psgi`,
   },
   dependencies: {
@@ -379,6 +402,8 @@ export const XSLATE_ADAPTER: AdapterTemplate = {
     ...UNOCSS_DEV_DEPENDENCIES,
     '@barefootjs/cli': 'latest',
     '@barefootjs/test': 'latest',
+    '@barefootjs/vite': 'latest',
+    vite: '^6.0.0',
     concurrently: '^9.0.0',
     typescript: '^5.6.0',
   },
