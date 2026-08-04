@@ -71,8 +71,15 @@ await build({
   platform: 'node',
   format: 'esm',
   target: 'node22',
-  // Keep runtime deps external so they are resolved from node_modules, not inlined.
-  external: ['typescript', 'esbuild'],
+  // Keep runtime deps external so they are resolved from node_modules, not
+  // inlined. `vite` joins this list alongside `typescript`/`esbuild` for the
+  // same reason: `@barefootjs/vite`'s own build already keeps `vite`
+  // external (`--external vite`), so its bundled `dist/index.js` still
+  // contains a bare `from 'vite'` import that THIS bundle would otherwise
+  // try to inline — and `vite` itself pulls in Rollup's platform-specific
+  // native binaries, which esbuild can't sanely bundle into a single file
+  // regardless.
+  external: ['typescript', 'esbuild', 'vite'],
   // Rewrite bare Node builtins to the `node:` specifier so the bundle
   // loads under Deno as well as Node/Bun.
   plugins: [nodeProtocolPlugin],

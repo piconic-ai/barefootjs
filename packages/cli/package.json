@@ -29,8 +29,10 @@
   "dependencies": {
     "esbuild": "^0.25.0",
     "typescript": "^5.0.0",
+    "vite": "^6.0.0",
     "@barefootjs/client": "workspace:*",
-    "@barefootjs/shared": "workspace:*"
+    "@barefootjs/shared": "workspace:*",
+    "@barefootjs/vite": "workspace:*"
   },
   "devDependencies": {
     "@barefootjs/jsx": "workspace:*",
