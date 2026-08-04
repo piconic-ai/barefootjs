@@ -36,7 +36,7 @@
  * regression test.
  */
 
-import { compileJSX, extractSsrDefaults, importsSearchParams, evaluateSignalInit, tryEvaluateSignalInit } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -415,7 +415,11 @@ function buildChildRenderersRuby(
       // branch and JSX rest semantics: a caller prop the child didn't
       // destructure belongs in the bag, not as a top-level vars key the
       // template never reads.
-      const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.name)
+      // Caller-facing keys — `child_props` (below) is keyed by whatever the
+      // CALLING template passed (the JSX attribute name), so the keep-set
+      // must match that spelling, not an aliased child's local binding
+      // (#2524).
+      const paramNames = (childIR.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name)
       const keep = [...new Set([...paramNames, restPropsName, 'children', 'key', '_bf_slot'])]
       const keepList = keep.map(rubySymbol).join(', ')
       lines.push(`  keep = [${keepList}]`)
@@ -499,24 +503,29 @@ function buildRubyProps(
   obj.scope_id = explicitScope
 
   // Prop params with defaults (before signals, so signals can reference them).
+  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
+  // production `derive_vars_from_defaults` this harness ALSO calls below for
+  // child components) so an aliased destructured prop's CALLER-facing key
+  // (`propName`, e.g. `n` for `{ n: count }`) is honoured, not just the
+  // local template var name (#2524 SSR half). `props` is keyed by the
+  // caller-facing name, exactly what `propName` resolves against.
+  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
   for (const param of ir.metadata.propsParams) {
-    if (props && param.name in props) continue
-    if (param.defaultValue) {
-      const result = tryEvaluateSignalInit(param.defaultValue.trim(), props)
-      if (result.ok) {
-        obj[param.name] = result.value
-        continue
-      }
-    }
+    if (param.isRest) continue
     // No default + no caller value: seed `nil` so a bare reference to an
     // optional prop's vars-Hash key resolves (to nil) instead of the key
     // being wholly absent — matches the Perl harnesses' explicit `undef`.
-    obj[param.name] = null
+    obj[param.name] = derivedProps[param.name] ?? null
   }
 
   // Route undeclared props into the rest bag (`spread_attrs(v[:<rest>])`).
   const restPropsName = ir.metadata.restPropsName
-  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.name))
+  // Caller-facing keys, per prop — an aliased destructured prop's DECLARED
+  // set for rest-bag routing purposes must match what the caller actually
+  // sent (`n`), not the local binding (`count`), or the caller's own prop
+  // silently gets swept into the rest bag as an undeclared extra (#2524).
+  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.sourceName ?? p.name))
   const restBagEntries: Array<[string, unknown]> = []
   if (restPropsName && props) {
     for (const [key, value] of Object.entries(props)) {
@@ -531,11 +540,20 @@ function buildRubyProps(
     obj[restPropsName] = Object.fromEntries(restBagEntries)
   }
 
-  // User props.
+  // User props. Skip a key that's already a declared param's LOCAL template
+  // var name — `derivedProps` above already resolved that var correctly
+  // (through `propName`, for an aliased prop); re-assigning the raw
+  // `props[key]` here would silently clobber it with an UNRELATED value
+  // whenever a caller happens to also pass a same-spelled-as-local-name prop
+  // that isn't this param's actual `propName` (#2524 — surfaced by the
+  // aliased-destructured-prop generated data points, which pass both `n`
+  // (the real propName) and an incidental `count` key).
+  const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
+      if (localParamNames.has(key)) continue
       obj[key] = value
     }
   }
@@ -553,9 +571,8 @@ function buildRubyProps(
 
   // Memo values seeded from the statically-evaluated ssrDefaults, same
   // as the production plugin's before_render hook.
-  const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
   for (const memo of ir.metadata.memos) {
-    obj[memo.name] = ssrDefaults[memo.name]?.value ?? 0
+    obj[memo.name] = rootSsrDefaults[memo.name]?.value ?? 0
   }
 
   const needsSearchParams = importsSearchParams(ir.metadata)

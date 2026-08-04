@@ -126,6 +126,37 @@ subtest 'plugin before_render — caller stash wins over manifest defaults' => s
     is $c->stash('count'), 10, 'caller-supplied stash value preserved';
 };
 
+subtest 'plugin before_render — resolves an aliased destructured prop\'s CALLER-facing key (#2524)' => sub {
+    # `{ n: count }` — the manifest entry is keyed by the LOCAL binding
+    # (`count`) but carries `propName: 'n'`, the CALLER-facing key. A route
+    # handler stashes the caller-facing prop (`$c->stash(n => 7)`, as it
+    # would set any other prop) before rendering; the hook must resolve it
+    # onto the template's `count` var, not just fall back to the static
+    # default. Before this fix, `$d->{value}` was read directly (ignoring
+    # `propName`), so a caller-supplied `n` was silently discarded.
+    my $dir = tempdir;
+    my $manifest_file = $dir->child('manifest.json');
+    $manifest_file->spew(encode_json({
+        Badge => {
+            markedTemplate => 'templates/Badge.html.ep',
+            ssrDefaults    => {
+                count => { propName => 'n', value => undef },
+                text  => { propName => 'text', value => undef },
+            },
+        },
+    }));
+
+    my $app = Mojolicious->new;
+    $app->plugin('BarefootJS' => { manifest_path => "$manifest_file" });
+    my $c = $app->build_controller;
+
+    $c->stash(n => 7, text => 'hello');
+    $app->plugins->emit_hook(before_render => $c, { template => 'Badge' });
+
+    is $c->stash('count'), 7,       'caller-facing `n` resolved onto the local `count` var';
+    is $c->stash('text'),  'hello', 'un-aliased prop still resolves';
+};
+
 subtest 'plugin before_render — seeds searchParams from the request query (#1922)' => sub {
     my $dir = tempdir;
     my $manifest_file = $dir->child('manifest.json');

@@ -62,6 +62,76 @@ export interface SsrDefault {
   isRestProps?: boolean
 }
 
+/**
+ * TS twin of the runtime `derive*FromDefaults` family that ships in every
+ * OTHER SSR runtime port (Ruby's `BarefootJS::Context.derive_vars_from_defaults`
+ * — `packages/adapter-erb/lib/barefoot_js.rb:337-360` — plus Python's
+ * `barefootjs.runtime._derive_stash_from_defaults`, PHP's
+ * `Barefoot\BarefootJS::deriveStashFromDefaults`, Perl's
+ * `BarefootJS::_derive_stash_from_defaults`, and Rust's
+ * `barefootjs::manifest::derive_stash_from_defaults`). TypeScript had no such
+ * function — every adapter-tests conformance harness (and 3 production
+ * integration sites) either discarded `SsrDefault.propName` outright or keyed
+ * its seeding loop off the LOCAL template-var name instead of the
+ * caller-facing prop key, which is exactly the #2157 defect class (and its
+ * #2524 SSR-seeding recurrence) restated at
+ * `packages/adapter-erb/src/test-render.ts:276-287`. Any harness or
+ * integration deriving template-stash vars from an `extractSsrDefaults(...)`
+ * map MUST route through this function (or its runtime-language twin, when
+ * one is reachable) instead of hand-flattening `SsrDefault.value` and
+ * merging raw caller props over it — that flattening is precisely what
+ * silently drops the rename.
+ *
+ * Semantics (mirrors `derive_vars_from_defaults`'s observable behavior,
+ * including its edge cases — though not always the identical mechanism;
+ * e.g. Python's `_derive_stash_from_defaults` checks `props.get(prop_name)
+ * is not None` with no separate `in` membership test, relying on `dict.get`
+ * defaulting a missing key to `None` — behaviorally identical to this
+ * function's explicit `propName in props && props[propName] != null` for a
+ * plain dict/object, just expressed differently):
+ *   - A non-object entry (a bare JSON value some callers may still pass,
+ *     e.g. a manifest round-tripped through a generic JSON domain) is used
+ *     AS-IS.
+ *   - `isRestProps` entries: prefer `props[<this entry's own key>]` when the
+ *     caller supplied one (checked via `in`, so an explicit `undefined` /
+ *     `null` value still counts as "supplied" — the rest bag is a
+ *     caller-assembled aggregate, not a single scalar with a meaningful
+ *     "absent" state), else the static `value` fallback (normally `{}`).
+ *   - Otherwise: prefer `props[propName]` when `propName` is set AND the
+ *     caller supplied a NON-NULLISH (`!= null`, so `undefined` and `null`
+ *     both fall through — mirrors every other port's "present and defined"
+ *     check) value for it, else the static `value` fallback. `propName`-less
+ *     entries (signal / memo locals) always use the static value — the
+ *     caller cannot override them by construction.
+ */
+export function deriveStashFromDefaults(
+  defaults: Record<string, SsrDefault>,
+  props: Record<string, unknown>,
+): Record<string, unknown> {
+  const extra: Record<string, unknown> = {}
+  for (const [name, d] of Object.entries(defaults)) {
+    if (d === null || typeof d !== 'object') {
+      // Defensive: every ENTRY `extractSsrDefaults` itself emits is always
+      // the `{ value, propName?, isRestProps? }` shape, but a caller may
+      // feed this a manifest round-tripped through a generic JSON domain
+      // (mirrors every runtime port's own `ref($d) eq 'HASH'` /
+      // `d.is_a?(Hash)` / `isinstance(d, dict)` guard).
+      extra[name] = d
+      continue
+    }
+    if (d.isRestProps) {
+      extra[name] = name in props ? props[name] : d.value
+      continue
+    }
+    if (d.propName !== undefined && d.propName in props && props[d.propName] != null) {
+      extra[name] = props[d.propName]
+    } else {
+      extra[name] = d.value
+    }
+  }
+  return extra
+}
+
 const UNRESOLVED = Symbol('unresolved')
 type EvalResult = unknown | typeof UNRESOLVED
 

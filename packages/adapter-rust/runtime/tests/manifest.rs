@@ -146,6 +146,41 @@ fn register_from_flat_manifest_applies_signal_init_override() {
     assert_eq!(html.trim(), "9");
 }
 
+/// A `signal_init` override wins over a CALLER-SUPPLIED prop of the same
+/// name, not just the manifest's static default (#2524 precedence flip --
+/// see `manifest.rs`'s registration-site comment). Pre-#2524 this function
+/// flattened `ssr_defaults` at registration time and `render_child` applied
+/// the caller's props LAST, so a caller-supplied `level` would have beaten
+/// the override; now `render_child` applies the resolved `signal_init`
+/// override LAST, matching the Python/PHP/Perl ports' `{**props, **extra}`
+/// / `props.merge(extra)` merge order.
+#[test]
+fn register_from_flat_manifest_override_wins_over_caller_prop() {
+    let dir = TempDir::new("override-vs-caller");
+    dir.write("root.j2", "{{ bf.render_child('widget', {'level': 3}) | safe }}");
+    dir.write("Widget.j2", "{{ bf.string(level) }}");
+
+    let manifest = obj(vec![(
+        "Widget",
+        obj(vec![
+            ("markedTemplate", JsValue::String("templates/Widget.j2".into())),
+            ("ssrDefaults", obj(vec![("level", obj(vec![("value", JsValue::Number(1.0))]))])),
+        ]),
+    )]);
+
+    let mut signal_init = HashMap::new();
+    signal_init.insert("widget".to_string(), obj(vec![("level", JsValue::Number(9.0))]));
+
+    let session = RenderSession::new();
+    register_components_from_manifest(&session, &manifest, &signal_init);
+
+    let env = backend_minijinja::build_environment(&dir.0);
+    let root = BfInstance::root(Arc::clone(&session), "test".to_string());
+    let html = backend_minijinja::render_named(&env, "root", root.as_mj_value(), &JsValue::Object(BTreeMap::new())).unwrap();
+    // The caller passed `level: 3`, but the `signal_init` override (9) wins.
+    assert_eq!(html.trim(), "9");
+}
+
 /// `ui/<name>/index`-shaped entries (the component-library registry
 /// convention Python's port targets) still register correctly.
 #[test]

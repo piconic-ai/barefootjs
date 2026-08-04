@@ -28,8 +28,8 @@
  * that closes that gap.
  */
 
-import { compileJSX, extractSsrDefaults, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
-import type { ComponentIR } from '@barefootjs/jsx'
+import { compileJSX, extractSsrDefaults, deriveStashFromDefaults, importsSearchParams, evaluateSignalInit } from '@barefootjs/jsx'
+import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -362,24 +362,30 @@ function collectImportedComponentNames(ir: ComponentIR): string[] {
  * design doc; see `runtime/src/backend_minijinja.rs`'s `render_child` for
  * the Rust-side closure — the near-verbatim structural counterpart of
  * adapter-jinja's `buildChildRenderers`, which instead emitted Python
- * closure SOURCE per child). `ssr_defaults` mirrors `ssrDefaultsToPy`:
- * only the static fallback `value` of each `{ value, propName?,
- * isRestProps? }` ssrDefaults entry is needed — the child renderer's
- * caller props always win over it.
+ * closure SOURCE per child). `ssr_defaults` is sent VERBATIM — `value` /
+ * `propName` / `isRestProps` intact — so the Rust runtime's
+ * `derive_stash_from_defaults` (called per-call, inside `render_child`,
+ * against the REAL child props) can resolve an aliased destructured prop's
+ * CALLER-facing key (`n`) onto its local template var (`count`). Sending
+ * only the flattened static `value` here was the #2524 SSR-half bug — it
+ * left nothing for that resolution to read. `param_names` carries the
+ * CALLER-facing name (`sourceName ?? name`) per prop — `render_child`'s
+ * rest-bag "keep" set compares against child props keyed by whatever the
+ * calling template passed, not the child's local binding.
  */
 function buildChildrenPayload(
   childTemplates: Map<string, { template: string; ir: ComponentIR }>,
 ): Array<{
   name: string
   template: string
-  ssr_defaults: Record<string, unknown>
+  ssr_defaults: Record<string, SsrDefault>
   rest_props_name: string | null
   param_names: string[]
 }> {
   const out: Array<{
     name: string
     template: string
-    ssr_defaults: Record<string, unknown>
+    ssr_defaults: Record<string, SsrDefault>
     rest_props_name: string | null
     param_names: string[]
   }> = []
@@ -388,25 +394,10 @@ function buildChildrenPayload(
     out.push({
       name: componentName,
       template: toSnakeCase(componentName),
-      ssr_defaults: ssrDefaultsToVars(ssrDefaults),
+      ssr_defaults: ssrDefaults,
       rest_props_name: childIR.metadata.restPropsName ?? null,
-      param_names: (childIR.metadata.propsParams ?? []).map(p => p.name),
+      param_names: (childIR.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name),
     })
-  }
-  return out
-}
-
-/** Reduce an ssrDefaults map to its static fallback values (plain JS object). */
-function ssrDefaultsToVars(defaults: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const [name, d] of Object.entries(defaults)) {
-    // ssrDefaults entries are `{ value, propName?, isRestProps? }` or a
-    // bare value. The child renderer's caller props win, so we only need
-    // the static fallback `value` here.
-    out[name] =
-      d && typeof d === 'object' && 'value' in (d as Record<string, unknown>)
-        ? (d as Record<string, unknown>).value
-        : d
   }
   return out
 }
@@ -445,24 +436,31 @@ function buildVars(
   const vars: Record<string, unknown> = {}
 
   // Prop params with defaults (before signals, so signals can reference them).
+  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
+  // production `derive_stash_from_defaults` the Rust runtime calls at
+  // render time for child components — see `render_child` in
+  // `runtime/src/runtime.rs`) so an aliased destructured prop's
+  // CALLER-facing key (`propName`, e.g. `n` for `{ n: count }`) is
+  // honoured, not just the local template var name (#2524 SSR half).
+  // `props` is keyed by the caller-facing name, exactly what `propName`
+  // resolves against.
+  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
   for (const param of ir.metadata.propsParams) {
-    if (props && param.name in props) continue
-    if (param.defaultValue) {
-      const value = evaluateSignalInit(param.defaultValue.trim(), props)
-      if (value !== null) {
-        vars[param.name] = value
-        continue
-      }
-    }
+    if (param.isRest) continue
     // No default + no caller value: pass `null` (Rust's `None`/minijinja
     // Undefined) so a bare reference to an optional prop doesn't fault
     // before its falsy branch elides.
-    vars[param.name] = null
+    vars[param.name] = derivedProps[param.name] ?? null
   }
 
   // Route undeclared props into the rest bag (`bf.spread_attrs($<rest>)`).
   const restPropsName = ir.metadata.restPropsName
-  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.name))
+  // Caller-facing keys — an aliased destructured prop's DECLARED set for
+  // rest-bag routing must match what the caller actually sent (`n`), not
+  // the local binding (`count`), or the caller's own prop silently gets
+  // swept into the rest bag as an undeclared extra (#2524).
+  const declaredParams = new Set(ir.metadata.propsParams.map(p => p.sourceName ?? p.name))
   const restBagEntries: Array<[string, unknown]> = []
   if (restPropsName && props) {
     for (const [key, value] of Object.entries(props)) {
@@ -477,11 +475,20 @@ function buildVars(
     vars[restPropsName] = Object.fromEntries(restBagEntries)
   }
 
-  // User props.
+  // User props. Skip a key that's already a declared param's LOCAL template
+  // var name — `derivedProps` above already resolved that var correctly
+  // (through `propName`, for an aliased prop); re-assigning the raw
+  // `props[key]` here would silently clobber it with an UNRELATED value
+  // whenever a caller happens to also pass a same-spelled-as-local-name prop
+  // that isn't this param's actual `propName` (#2524 — surfaced by the
+  // aliased-destructured-prop generated data points, which pass both `n`
+  // (the real propName) and an incidental `count` key).
+  const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
+      if (localParamNames.has(key)) continue
       if (
         typeof value === 'string' ||
         typeof value === 'number' ||
@@ -507,11 +514,9 @@ function buildVars(
 
   // Memo values seeded from the statically-evaluated ssrDefaults, same
   // as the production plugin's before_render hook.
-  const ssrDefaults = extractSsrDefaults(ir.metadata) ?? {}
   for (const memo of ir.metadata.memos) {
-    const entry = ssrDefaults[memo.name]
-    const value = entry && typeof entry === 'object' && 'value' in entry ? entry.value : 0
-    vars[memo.name] = value ?? 0
+    const entry = rootSsrDefaults[memo.name]
+    vars[memo.name] = entry ? (entry.value ?? 0) : 0
   }
 
   return vars

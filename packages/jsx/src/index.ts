@@ -9,7 +9,7 @@ export { compileJSX, buildMetadata } from './compiler.ts'
 export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler.ts'
 
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
-export { extractSsrDefaults } from './ssr-defaults.ts'
+export { extractSsrDefaults, deriveStashFromDefaults } from './ssr-defaults.ts'
 
 // Shared props-destructure binding + alias-map helpers (#2524)
 export { propsDestructureBinding, buildPropAliasMap, isIdentifierName } from './props-binding.ts'

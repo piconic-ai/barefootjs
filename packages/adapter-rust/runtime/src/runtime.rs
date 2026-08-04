@@ -796,13 +796,19 @@ pub struct ChildRendererSpec {
     pub component_name: String,
     /// snake_case `.j2` template base name.
     pub template: String,
-    /// Static ssrDefaults values (already flattened to plain values, NOT
-    /// the `{value, propName, isRestProps}` wrapper shape -- see the module
-    /// docstring's note on why `_derive_stash_from_defaults` isn't ported).
-    /// Converted from JSON to `Value` at REGISTRATION time (`bf-render.rs`)
-    /// -- see `render_child`'s docstring on why child props stay `Value`
-    /// end-to-end rather than round-tripping through `JsValue`.
-    pub ssr_defaults: MjValue,
+    /// Static ssrDefaults, RAW -- the FULL `{value, propName?, isRestProps?}`
+    /// wrapper shape (or a bare value for a propName-less entry), exactly as
+    /// `extractSsrDefaults` emits it. Resolved PER-CALL against the real
+    /// caller props by [`crate::manifest::derive_stash_from_defaults`] inside
+    /// `render_child` below -- NOT flattened at registration time (that was
+    /// the #2524 production bug: flattening early, before the caller's props
+    /// are known, discards `propName` and so can never resolve an aliased
+    /// destructured prop's CALLER-facing key onto its local template var).
+    /// Kept as `JsValue` (not `MjValue`) because `derive_stash_from_defaults`
+    /// operates in the JSON-shaped `JsValue` domain; converted to `MjValue`
+    /// only for the resolved OUTPUT (see `render_child`'s docstring on why
+    /// child props otherwise stay `Value` end-to-end).
+    pub ssr_defaults: JsValue,
     pub rest_props_name: Option<String>,
     pub param_names: Vec<String>,
 }
@@ -1115,16 +1121,88 @@ impl BfInstance {
             data_key,
         };
 
-        // Seed template vars: static ssrDefaults first, caller's props win
-        // -- mirrors buildChildRenderers' `_vars = {**_defaults, **child_props}`.
-        let mut vars: BTreeMap<String, MjValue> =
-            mj_map_to_btreemap(&spec.ssr_defaults).into_iter().map(|(k, v)| (mangle_ident(&k), v)).collect();
-        vars.extend(map);
+        // Seed template vars through `resolve_child_vars`, resolving each
+        // entry's `propName` against the REAL (already-mangled) caller props
+        // -- mirrors the Ruby/Python/PHP/Perl runtime ports'
+        // `derive_vars_from_defaults` / `_derive_stash_from_defaults` (#2524
+        // SSR half: a flat `{**_defaults, **child_props}` merge never
+        // resolves an aliased destructured prop's CALLER-facing key (`n`)
+        // onto its local template var (`count`) -- `spec.ssr_defaults` is
+        // the FULL `{value, propName?, isRestProps?}` shape, not flattened,
+        // so this resolution has something to read). Caller props still win
+        // for any key resolution did NOT touch (an extraneous, undeclared
+        // prop); `extra` wins for the keys it DOES resolve -- the same
+        // `props.merge(extra)` order every other language port uses.
+        //
+        // Deliberately NOT `crate::manifest::derive_stash_from_defaults`
+        // (the `JsValue`-only free function): that would round-trip every
+        // caller prop through `mj_to_js`/`js_to_mj`, which has no safe/
+        // unsafe distinction and silently strips a SAFE `Value`'s flag (a
+        // JSX children capture, `bf.string(...)`'d markup) -- exactly the
+        // "children lost their safe flag" bug this method's docstring
+        // above warns about. `resolve_child_vars` stays in the `MjValue`
+        // domain for every caller-supplied value; only the STATIC fallback
+        // (`d.value`, from the manifest/generated payload, never JSX
+        // content) goes through `js_to_mj`.
+        let extra = resolve_child_vars(&spec.ssr_defaults, &map);
+        let mut vars: BTreeMap<String, MjValue> = map;
+        vars.extend(extra);
 
         let rendered = backend_minijinja::render_named_from_state_values(state, &spec.template, child.as_mj_value(), vars)?;
         // chomp: remove at most one trailing newline.
         Ok(rendered.strip_suffix('\n').map(str::to_string).unwrap_or(rendered))
     }
+}
+
+/// `MjValue`-domain twin of [`crate::manifest::derive_stash_from_defaults`],
+/// used by [`BfInstance::render_child`] so a caller-supplied prop value --
+/// which may be a SAFE `Value` (a JSX children capture, `bf.string(...)`'d
+/// markup) -- is used AS-IS when `propName` resolves it, never round-tripped
+/// through the JSON-shaped `JsValue` domain (which has no safe/unsafe
+/// distinction and would silently strip that flag, double-escaping the
+/// child's HTML -- see `render_child`'s docstring). `ssr_defaults` is the
+/// RAW (un-flattened) `{value, propName?, isRestProps?}` shape; `props` is
+/// the caller's ALREADY-mangled prop map. Only the STATIC fallback
+/// (`d.value`, from the manifest/generated payload -- JSX prop values are
+/// never statically evaluable, so they're always `null` there) goes through
+/// [`js_to_mj`]. Returns keys already mangled (matching `props`'s own
+/// convention), ready to merge/overwrite directly.
+fn resolve_child_vars(ssr_defaults: &JsValue, props: &BTreeMap<String, MjValue>) -> BTreeMap<String, MjValue> {
+    let mut extra = BTreeMap::new();
+    let defaults_map = match ssr_defaults.as_object() {
+        Some(m) => m,
+        None => return extra,
+    };
+    for (name, d) in defaults_map {
+        let key = mangle_ident(name);
+        let dm = match d.as_object() {
+            Some(m) => m,
+            None => {
+                // Bare (non-object) entry -- used as-is, mirrors every other
+                // port's `ref($d) eq 'HASH'` / `isinstance(d, dict)` guard.
+                extra.insert(key, js_to_mj(d));
+                continue;
+            }
+        };
+        let fallback = || js_to_mj(&dm.get("value").cloned().unwrap_or(JsValue::Null));
+        if matches!(dm.get("isRestProps"), Some(JsValue::Bool(true))) {
+            // The rest bag is already assembled (as a real `Value`, member
+            // safe flags intact) under its own mangled key by the rest-bag
+            // routing above -- prefer that live value over the static
+            // fallback.
+            let v = props.get(&key).cloned().unwrap_or_else(fallback);
+            extra.insert(key, v);
+            continue;
+        }
+        let prop_name = dm.get("propName").and_then(|v| v.as_str());
+        let from_props = prop_name.and_then(|pn| props.get(&mangle_ident(pn)));
+        let v = match from_props {
+            Some(pv) if !matches!(pv.kind(), ValueKind::None | ValueKind::Undefined) => pv.clone(),
+            _ => fallback(),
+        };
+        extra.insert(key, v);
+    }
+    extra
 }
 
 // ---------------------------------------------------------------------------

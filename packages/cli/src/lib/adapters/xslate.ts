@@ -128,26 +128,37 @@ sub load_manifest () {
 my $MANIFEST = $DEV ? undef : load_manifest();
 sub manifest () { return $DEV ? load_manifest() : $MANIFEST }
 
-# Build the SSR stash for a component from its manifest \`ssrDefaults\`.
-sub ssr_defaults ($component) {
+# Build the SSR stash for a component from its manifest \`ssrDefaults\`,
+# resolved against \`%props\` (the caller-supplied override) through the
+# production \`BarefootJS::_derive_stash_from_defaults\` (mirrors the
+# corrected Perl shape in \`BarefootJS.pm\`'s own \`register_components_
+# from_manifest\`) — so an aliased destructured prop's CALLER-facing key
+# (\`propName\`, e.g. \`n\` for \`{ n: count }\`) is honoured, not just the
+# local template var name. Resolving \`$d->{value}\` directly, ignoring
+# \`propName\`, silently dropped every caller-supplied value for a renamed
+# prop.
+sub ssr_defaults ($component, %props) {
     my $entry = manifest()->{$component} or return ();
     my $defaults = $entry->{ssrDefaults} or return ();
-    my %stash;
-    for my $name (keys %$defaults) {
-        my $d = $defaults->{$name};
-        $stash{$name} = ref($d) eq 'HASH' ? $d->{value} : $d;
-    }
-    return %stash;
+    return BarefootJS::_derive_stash_from_defaults($defaults, \\%props);
 }
 
 sub rand_suffix () { return substr(sprintf('%f', rand()) =~ s/^0\\.//r, 0, 6) }
 
 # Render a top-level component template and wrap it in the page layout.
-# Manifest defaults seed the stash; any caller-supplied \`%override\` wins.
+# Manifest defaults seed the stash (resolved against \`%override\`, the
+# caller-supplied props, so an aliased prop's rename resolves correctly).
+# \`ssr_defaults\`' resolved extras go LAST in the hash literal (later key
+# wins in a Perl hash construction), so they win over the raw \`%override\`
+# map for any key they resolve — matching the production merge order
+# (\`BarefootJS.pm\`'s \`register_components_from_manifest\`: \`{ %\$props,
+# %extra }\`, extra applied last) instead of the reverse. \`%override\`
+# still wins for any key \`ssr_defaults\` did NOT touch (an extraneous,
+# undeclared prop \`ssr_defaults\` has no manifest entry for).
 sub render_component ($component, %override) {
     my $bf = BarefootJS->new(undef, { backend => $backend });
     $bf->_scope_id($component . '_' . rand_suffix());
-    my %stash = (ssr_defaults($component), %override);
+    my %stash = (%override, ssr_defaults($component, %override));
     my $body = $backend->render_named($component, $bf, \\%stash);
     return layout(body => $body, scripts => $bf->scripts);
 }

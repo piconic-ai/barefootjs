@@ -13,7 +13,8 @@
 //     computations that derive from those signals (`count() * 2`).
 
 import { describe, test, expect } from 'bun:test'
-import { extractSsrDefaults } from '../ssr-defaults'
+import { extractSsrDefaults, deriveStashFromDefaults } from '../ssr-defaults'
+import type { SsrDefault } from '../ssr-defaults'
 import { analyzeComponent } from '../analyzer'
 import { buildMetadata } from '../compiler'
 
@@ -251,5 +252,127 @@ describe('extractSsrDefaults', () => {
     // props.className is undefined → `?? ''` → '' → 'a b c d  tail' (the double
     // space mirrors Hono's empty-className interpolation).
     expect(defaults?.classes).toEqual({ value: 'a b c d  tail' })
+  })
+})
+
+// TS twin of the Ruby/Python/PHP/Perl/Rust `derive*FromDefaults` runtime
+// ports (#2524 SSR half). Matches `derive_vars_from_defaults`'s edge cases
+// exactly — see that Ruby method's docstring
+// (packages/adapter-erb/lib/barefoot_js.rb:337-360) for the reference
+// semantics this mirrors.
+describe('deriveStashFromDefaults', () => {
+  test('aliased prop: resolves the CALLER-facing propName, not the local key', () => {
+    // `{ n: count }` — extractSsrDefaults keys the entry by the LOCAL
+    // binding (`count`) with `propName: 'n'`. The caller supplies `n`.
+    const defaults: Record<string, SsrDefault> = {
+      count: { propName: 'n', value: null },
+    }
+    expect(deriveStashFromDefaults(defaults, { n: 7 })).toEqual({ count: 7 })
+  })
+
+  test('un-aliased prop: propName equals the local key, resolves the same way', () => {
+    const defaults: Record<string, SsrDefault> = {
+      n: { propName: 'n', value: null },
+    }
+    expect(deriveStashFromDefaults(defaults, { n: 7 })).toEqual({ n: 7 })
+  })
+
+  test('caller omits the prop: falls back to the static default value', () => {
+    const defaults: Record<string, SsrDefault> = {
+      count: { propName: 'n', value: 3 },
+    }
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ count: 3 })
+  })
+
+  test('caller supplies null / undefined for the propName: falls back to the static value', () => {
+    // Mirrors every runtime port's "present AND defined" check — an
+    // explicit null/undefined caller value does not count as an override.
+    const defaults: Record<string, SsrDefault> = {
+      count: { propName: 'n', value: 3 },
+    }
+    expect(deriveStashFromDefaults(defaults, { n: null })).toEqual({ count: 3 })
+    expect(deriveStashFromDefaults(defaults, { n: undefined })).toEqual({ count: 3 })
+  })
+
+  test('caller supplies a falsy-but-defined propName value: the caller value wins', () => {
+    // `0` / `''` / `false` are legitimate override values, not "absent".
+    const defaults: Record<string, SsrDefault> = {
+      count: { propName: 'n', value: 99 },
+    }
+    expect(deriveStashFromDefaults(defaults, { n: 0 })).toEqual({ count: 0 })
+  })
+
+  test('propName-less entry (signal / memo local): always uses the static value', () => {
+    // A caller cannot override an internal signal/memo by construction —
+    // even a same-named caller prop must not leak in.
+    const defaults: Record<string, SsrDefault> = {
+      doubled: { value: 10 },
+    }
+    expect(deriveStashFromDefaults(defaults, { doubled: 999 })).toEqual({ doubled: 10 })
+  })
+
+  test('isRestProps entry: prefers the caller-assembled rest bag under its OWN key', () => {
+    const defaults: Record<string, SsrDefault> = {
+      rest: { isRestProps: true, value: {} },
+    }
+    expect(deriveStashFromDefaults(defaults, { rest: { href: '/x' } })).toEqual({
+      rest: { href: '/x' },
+    })
+  })
+
+  test('isRestProps entry: falls back to the static value (normally {}) when the caller supplied none', () => {
+    const defaults: Record<string, SsrDefault> = {
+      rest: { isRestProps: true, value: {} },
+    }
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ rest: {} })
+  })
+
+  test('isRestProps entry: an explicit `undefined` caller value still counts as supplied', () => {
+    // Unlike the ordinary propName branch (nullish check), the isRestProps
+    // branch tests presence via `in` — the rest bag is a caller-assembled
+    // aggregate, not a single scalar with a meaningful "absent" state, so
+    // an explicit `undefined` still wins over the static fallback instead
+    // of falling through to it.
+    const defaults: Record<string, SsrDefault> = {
+      rest: { isRestProps: true, value: { fallback: true } },
+    }
+    const result = deriveStashFromDefaults(defaults, { rest: undefined })
+    expect('rest' in result).toBe(true)
+    expect(result.rest).toBeUndefined()
+  })
+
+  test('a bare (non-object) entry passes through as-is', () => {
+    // Defensive parity with every runtime port's `ref($d) eq 'HASH'` /
+    // `isinstance(d, dict)` guard — never emitted by `extractSsrDefaults`
+    // itself, but a caller may hand this a manifest round-tripped through a
+    // generic JSON domain.
+    const defaults = { flag: true } as unknown as Record<string, SsrDefault>
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ flag: true })
+  })
+
+  test('a literal null entry hits the same non-object passthrough guard', () => {
+    // `d === null` is checked ALONGSIDE `typeof d !== 'object'` (not just
+    // the latter) — `typeof null === 'object'` in JS, so without the
+    // explicit `d === null` check a null entry would wrongly fall into the
+    // object-shaped branches below and throw reading `d.isRestProps`.
+    const defaults = { flag: null } as unknown as Record<string, SsrDefault>
+    expect(deriveStashFromDefaults(defaults, {})).toEqual({ flag: null })
+  })
+
+  test('mixed defaults map resolves every entry kind independently', () => {
+    const defaults: Record<string, SsrDefault> = {
+      count: { propName: 'n', value: null },
+      text: { propName: 'text', value: null },
+      doubled: { value: 0 },
+      rest: { isRestProps: true, value: {} },
+    }
+    expect(
+      deriveStashFromDefaults(defaults, { n: 7, rest: { extra: 'x' } }),
+    ).toEqual({
+      count: 7,
+      text: null,
+      doubled: 0,
+      rest: { extra: 'x' },
+    })
   })
 })
