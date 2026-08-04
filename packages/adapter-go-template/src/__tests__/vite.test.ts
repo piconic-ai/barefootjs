@@ -79,10 +79,13 @@ describe('@barefootjs/go-template/vite: real vite build', () => {
     }
   }, 60_000)
 
-  test('`assets` resolves a non-component entry\'s manifest-hashed URL into a generated Go asset map', async () => {
+  test('`assets` resolves a non-component entry\'s manifest-hashed URL into the `production`-tagged, gitignored sibling file', async () => {
     const outDir = await mkdtemp(join(tmpdir(), 'barefoot-go-vite-dist-assets-'))
     const templatesDir = await mkdtemp(join(tmpdir(), 'barefoot-go-vite-views-assets-'))
-    const assetsGoPath = join(FIXTURE_ROOT, 'bf_assets.go')
+    // A real `build()` is the `mode: 'build'` pass, so this writes the
+    // PRODUCTION-tagged sibling (`bf_assets_prod.go`), not the dev-tagged
+    // `bf_assets.go` default filename — see writeAssetMap's mode branch.
+    const assetsGoPath = join(FIXTURE_ROOT, 'bf_assets_prod.go')
 
     try {
       await build({
@@ -109,8 +112,15 @@ describe('@barefootjs/go-template/vite: real vite build', () => {
       const expectedUrl = `/static/build/${manifest['client/bootstrap.ts'].file}`
 
       const content = await readFile(assetsGoPath, 'utf8')
+      expect(content).toContain('//go:build production')
       expect(content).toContain('package main')
       expect(content).toContain(`"Bootstrap": ${JSON.stringify(expectedUrl)}`)
+
+      // The dev-tagged default filename must NOT be touched by a build pass
+      // — that file only gets (re)written by the dev pass, and a stray
+      // build-triggered write to it would defeat its "stable, safe to
+      // commit" property (see the module docstring).
+      await expect(readFile(join(FIXTURE_ROOT, 'bf_assets.go'), 'utf8')).rejects.toThrow()
     } finally {
       await rm(outDir, { recursive: true, force: true })
       await rm(templatesDir, { recursive: true, force: true })
@@ -140,7 +150,7 @@ describe('@barefootjs/go-template/vite: real vite build', () => {
     } finally {
       await rm(outDir, { recursive: true, force: true })
       await rm(templatesDir, { recursive: true, force: true })
-      await rm(join(FIXTURE_ROOT, 'bf_assets.go'), { force: true })
+      await rm(join(FIXTURE_ROOT, 'bf_assets_prod.go'), { force: true })
     }
   }, 60_000)
 })

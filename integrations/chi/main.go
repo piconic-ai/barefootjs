@@ -253,6 +253,11 @@ func main() {
 		basePath = "/integrations/chi"
 	}
 
+	// Fail loudly, before serving a single request, if this is a production
+	// run of a binary compiled without `-tags production` — see
+	// bfdev.GuardAssets. A no-op in dev.
+	bfdev.GuardAssets(Assets)
+
 	devMode := isDevEnv()
 
 	// Layout wraps defaultLayout with the dev auto-reload snippet (empty in

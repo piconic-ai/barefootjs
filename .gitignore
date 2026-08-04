@@ -25,6 +25,15 @@ integrations/chi/chi
 integrations/nethttp/tmp/
 integrations/nethttp/nethttp
 
+# Go asset-map build-tag split (@barefootjs/go-template/vite's writeAssetMap):
+# bf_assets.go (tag !production, dev-server URLs, stable) is committed;
+# bf_assets_prod.go (tag production, content-hashed build URLs, churns every
+# `vite build`) is regenerated on every build and never committed.
+integrations/echo/bf_assets_prod.go
+integrations/gin/bf_assets_prod.go
+integrations/chi/bf_assets_prod.go
+integrations/nethttp/bf_assets_prod.go
+
 # Mojolicious example: staged BarefootJS Perl plugin copy
 integrations/mojolicious/lib
 

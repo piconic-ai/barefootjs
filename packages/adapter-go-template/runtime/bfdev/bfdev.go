@@ -78,6 +78,85 @@ func IsDevDefault() bool {
 	return os.Getenv("APP_ENV") == "development"
 }
 
+// devOriginPrefixes are the URL prefixes `@barefootjs/go-template/vite`
+// bakes into the dev-tagged asset map (`resolveDevOrigin`'s default:
+// `http://localhost:<port>`, occasionally `127.0.0.1` on hosts that
+// resolve "localhost" oddly). A URL starting with one of these in a
+// compiled Assets map is dev-only by construction — see GuardAssets.
+var devOriginPrefixes = []string{
+	"http://localhost:",
+	"http://127.0.0.1:",
+	"https://localhost:",
+	"https://127.0.0.1:",
+}
+
+func isDevOriginURL(url string) bool {
+	for _, prefix := range devOriginPrefixes {
+		if strings.HasPrefix(url, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// GuardAssets is a startup check against the build-tag hazard the
+// `bf_assets.go` / `bf_assets_prod.go` split (`@barefootjs/go-template/
+// vite`'s `writeAssetMap`) introduces: the untagged default compiles the
+// DEV-tagged file (`//go:build !production`, dev-server-origin URLs) so a
+// fresh clone builds with zero ceremony, and a deliberate `-tags
+// production` is required to compile the hashed-URL production file
+// instead. That inversion means the dangerous mistake is no longer
+// forgetting to add a dev tag — it's forgetting to add `-tags production`
+// before shipping, which silently produces a binary that looks correct
+// (it compiles, it starts, most routes work) but serves `<script
+// src="http://localhost:5173/...">` to real users wherever `Assets` is
+// read, breaking client hydration in a way that never shows up in `go
+// build`'s output and is easy to miss in a quick smoke test.
+//
+// GuardAssets closes that gap: called once at startup with the package's
+// compiled `Assets` map, it panics if the process is NOT running in dev
+// (IsDevDefault() is false) but any entry still looks like a Vite
+// dev-server URL — the only way that combination arises is a production
+// run of a binary built without `-tags production`. It panics rather than
+// logging at error level because the alternative is silently serving a
+// broken app indefinitely: nothing else about the request path fails, so
+// without a hard stop this would only surface downstream as "the site is
+// broken" reports with no obvious cause. A panic at process startup fails
+// the deploy immediately and loudly (crash loop, deploy-health alarms)
+// instead of degrading in production — the exact "sound-or-loud" trade
+// this whole build-tag split exists to enforce. Call it once, early in
+// main(), after Assets is in scope:
+//
+//	bfdev.GuardAssets(Assets)
+//
+// A no-op in dev (IsDevDefault() true) since dev-origin URLs are correct
+// there, and a no-op when Assets is empty or every entry resolves to
+// something other than a recognized dev origin (a custom `server.origin`
+// this heuristic doesn't recognize would defeat the guard — see
+// devOriginPrefixes — but the default, unconfigured dev origin this
+// project's own tooling produces is always caught).
+func GuardAssets(assets map[string]string) {
+	if IsDevDefault() {
+		return
+	}
+	for name, url := range assets {
+		if !isDevOriginURL(url) {
+			continue
+		}
+		panic(fmt.Sprintf(
+			"bfdev: Assets[%q] = %q is a Vite dev-server URL, but this process "+
+				"is not running in dev (APP_ENV != \"development\"). This almost "+
+				"always means the binary was compiled WITHOUT `-tags production` "+
+				"— bf_assets.go's dev URLs compile by default (tag !production); "+
+				"bf_assets_prod.go's hashed build URLs need the tag (tag "+
+				"production). Rebuild with `go build -tags production .` (or add "+
+				"`-tags production` wherever this binary's Dockerfile/CI/webServer "+
+				"command invokes `go build`/`go run`).",
+			name, url,
+		))
+	}
+}
+
 // NewReloadHandler returns an http.Handler that streams Server-Sent Events
 // and emits `event: reload` whenever `<DistDir>/.dev/build-id` changes. When
 // cfg.Disabled is true, the handler responds 404 and never opens a stream.
