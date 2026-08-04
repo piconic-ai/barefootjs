@@ -17,8 +17,27 @@ import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { loadConfigFromFile } from 'vite'
 import type { Plugin, PluginOption } from 'vite'
-import { PLUGIN_NAME } from '@barefootjs/vite'
 import type { BarefootPluginApi } from '@barefootjs/vite'
+
+/**
+ * `@barefootjs/vite`'s `PLUGIN_NAME`, duplicated as a literal rather than
+ * imported — deliberately, and the type-only import above is why it is
+ * safe to: types are erased, so this module pulls in NOTHING from
+ * `@barefootjs/vite` at runtime.
+ *
+ * A value import would make every `bf` command load that package at
+ * startup, including ones that never look at a Vite config (`bf init`,
+ * `--list-adapters`). Since its `.` export resolves to `dist/index.js` so
+ * Node's ESM loader can read it, that turns "is the workspace built?" into
+ * a precondition for commands that have nothing to do with building —
+ * which is exactly how CI broke.
+ *
+ * Drift is caught rather than assumed: `vite-config-loader.test.ts`
+ * imports the real `PLUGIN_NAME` and asserts it equals this literal. That
+ * test runs under bun with the workspace present, where the dependency is
+ * free.
+ */
+const PLUGIN_NAME = 'barefoot'
 
 const VITE_CONFIG_FILENAME = 'vite.config.ts'
 

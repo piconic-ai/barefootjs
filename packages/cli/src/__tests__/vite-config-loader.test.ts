@@ -12,7 +12,24 @@
 import { describe, test, expect, afterEach } from 'bun:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
+import { PLUGIN_NAME } from '@barefootjs/vite'
 import { findViteConfig, loadViteBarefootConfig } from '../lib/vite-config-loader'
+
+// `vite-config-loader.ts` duplicates `PLUGIN_NAME` as a literal instead of
+// importing it, so that no `bf` command loads `@barefootjs/vite` at
+// startup just to know a string (see that constant's docstring for why
+// that mattered). This pins the duplicate: if the plugin ever renames
+// itself, the loader silently stops finding it in the plugin array and
+// every config-dependent command falls back to defaults — a failure with
+// no error message. Catch it here instead.
+describe('PLUGIN_NAME literal stays in sync with @barefootjs/vite', () => {
+  test('the loader looks for the name the plugin actually registers', async () => {
+    const src = await Bun.file(
+      resolve(import.meta.dirname, '..', 'lib', 'vite-config-loader.ts'),
+    ).text()
+    expect(src).toContain(`const PLUGIN_NAME = '${PLUGIN_NAME}'`)
+  })
+})
 
 const FIXTURE_ROOT = resolve(import.meta.dirname, '..', '..')
 
