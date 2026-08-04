@@ -25,7 +25,7 @@ import (
 
 func main() {
 	// Load + cache templates once (re-parsed per request in dev so a
-	// \`bf build --watch\` rebuild shows up on refresh). See bf_render.go.
+	// \`vite dev\` rebuild shows up on refresh). See bf_render.go.
 	renderer := mustNewRenderer()
 
 	r := gin.Default()
@@ -36,7 +36,7 @@ func main() {
 	MountDevReload(r)
 
 	// The go-template adapter emits client bundles under dist/client/
-	// and templates reference them at /client/ (per barefoot.config.ts).
+	// and templates reference them at /client/ (per vite.config.ts).
 	// Public assets (CSS) live under public/ and are served at /static/.
 	// The two prefixes are kept disjoint so Gin's router tree doesn't
 	// panic on nested catch-alls.
@@ -45,7 +45,7 @@ func main() {
 
 	r.GET("/", func(c *gin.Context) {
 		// \`NewCounterProps\` / \`CounterInput\` are generated into
-		// components.go by \`bf build\` — they wire up scope IDs,
+		// components.go by \`vite build\` / \`vite dev\` — they wire up scope IDs,
 		// child-slot props, and signal initial values. Use them instead
 		// of constructing props by hand.
 		props := NewCounterProps(CounterInput{Initial: 0})

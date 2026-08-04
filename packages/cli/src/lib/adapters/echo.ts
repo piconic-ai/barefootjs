@@ -46,24 +46,45 @@ const ECHO_BF_RUNTIME_GO_MOD = `module github.com/barefootjs/runtime/bf
 go 1.22
 `
 
-const ECHO_BAREFOOT_CONFIG_TS = `import { createConfig } from '@barefootjs/go-template/build'
+const ECHO_VITE_CONFIG_TS = `import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
+import { barefoot } from '@barefootjs/go-template/vite'
 
-export default createConfig({
-  paths: {
-    components: 'components/ui',
-    tokens: 'tokens',
-    meta: 'meta',
+const HERE = dirname(fileURLToPath(import.meta.url))
+
+// Compiled client bundles are served from /static/components/ (see
+// main.go's e.Static("/static/components", "dist/client")).
+export default defineConfig({
+  base: '/static/components/',
+  resolve: {
+    // Mirrors tsconfig.json's \`@/components/*\` path mapping — see the
+    // Gin/Chi/net-http adapters' \`vite.config.ts\` docstring for why
+    // Vite's dev-server dependency pre-scan needs this even though
+    // \`tsc\`/\`tsx\` already resolve it from tsconfig alone.
+    alias: {
+      '@/components': resolve(HERE, 'components'),
+    },
   },
-  components: ['components'],
-  outDir: 'dist',
-  adapterOptions: {
+  // \`./public\` is served directly by main.go (e.Static("/static",
+  // "public")), not by Vite — see the Gin/Chi/net-http adapters'
+  // \`vite.config.ts\` docstring for why Vite's own default \`publicDir\`
+  // copy-into-\`outDir\` behavior has to be turned off here.
+  publicDir: false,
+  build: {
+    outDir: 'dist/client',
+    emptyOutDir: true,
+  },
+  plugins: barefoot({
+    components: ['components'],
+    // Compiled Go html/template files land here — bf_render.go's
+    // loadTemplates() walks this directory recursively.
+    templates: 'dist/templates',
     packageName: 'main',
-    clientJsBasePath: '/static/components/',
-    barefootJsPath: '/static/components/barefoot.js',
-  },
-  // Generated Go struct types for every component, written next to main.go.
-  // Overwritten on every \`bf build\` run.
-  typesOutputFile: 'components.go',
+    // Generated Go struct types for every component, written next to
+    // main.go. Overwritten on every \`vite build\` / \`vite dev\` pass.
+    typesOutputFile: 'components.go',
+  }),
 })
 `
 
@@ -97,14 +118,14 @@ func main() {
 \te.Renderer = mustNewRenderer()
 
 \t// The go-template adapter emits client bundles under dist/client/
-\t// and templates reference them at /static/components/ (per the
-\t// barefoot.config.ts \`clientJsBasePath\`). Bridge URL → disk.
+\t// and templates reference them at /static/components/ (per
+\t// vite.config.ts's \`base\`). Bridge URL → disk.
 \te.Static("/static/components", "dist/client")
 \te.Static("/static", "public")
 
 \te.GET("/", func(c echo.Context) error {
 \t\t// \`NewCounterProps\` / \`CounterInput\` are generated into
-\t\t// components.go by \`bf build\` — they wire up scope IDs,
+\t\t// components.go by \`vite build\` / \`vite dev\` — they wire up scope IDs,
 \t\t// child-slot props, and signal initial values. Use them
 \t\t// instead of constructing props by hand.
 \t\tprops := NewCounterProps(CounterInput{Initial: 0})
@@ -246,7 +267,7 @@ func loadTemplates() (*template.Template, error) {
 //
 // In dev mode (env.go's IsDev() — i.e. APP_ENV != "production") it
 // re-parses dist/templates/ on every Render call so a
-// \`bf build --watch\` update surfaces as soon as the browser
+// \`vite dev\` update surfaces as soon as the browser
 // refreshes — no Go server restart needed. In production the parse
 // happens once at startup.
 type echoRenderer struct {
@@ -276,7 +297,7 @@ func mustNewRenderer() echo.Renderer {
 \ttmpl, err := loadTemplates()
 \tif err != nil {
 \t\tfmt.Fprintf(os.Stderr, "barefoot: failed to load templates from dist/templates: %v\\n", err)
-\t\tfmt.Fprintln(os.Stderr, "barefoot: did you run \`bf build\` first?")
+\t\tfmt.Fprintln(os.Stderr, "barefoot: did you run \`vite build\` first?")
 \t\tos.Exit(1)
 \t}
 \treturn &echoRenderer{
@@ -288,7 +309,7 @@ func mustNewRenderer() echo.Renderer {
 // ── dev auto-reload ──────────────────────────────────────────────────
 //
 // Browser auto-reload over SSE. The mechanism has two complementary
-// triggers — together they cover both \`bf build --watch\`
+// triggers — together they cover both \`vite dev\`
 // rebuilds (the common case during component editing) and Go-side
 // process restarts (less common, but \`Last-Event-ID\` recovers
 // gracefully even then).
@@ -501,14 +522,14 @@ const ECHO_TSCONFIG = `{
 }
 `
 
-// Echo / Go scaffold: `dist/` is the bf build output (compiled Go
-// + templates + manifest). The compiled Go binary lands next to
+// Echo / Go scaffold: `dist/` is the vite build output (compiled Go
+// templates + client JS + manifest). The compiled Go binary lands next to
 // `main.go` and is named after the project directory — too dynamic
 // to enumerate, so cover it with the wildcard pattern `go build`
 // produces by default.
 const ECHO_GITIGNORE = buildGitignore([
   {
-    heading: 'bf build outputs (regenerated by `bf build` / `bf build --watch`)',
+    heading: 'vite build outputs (regenerated by `vite build` / `vite dev`)',
     entries: ['dist/'],
   },
   {
@@ -535,11 +556,12 @@ export const ECHO_ADAPTER: AdapterTemplate = {
     'bf-runtime/reprops.go': repropsGoSource,
     'bf-runtime/streaming.go': streamingGoSource,
     'bf-runtime/go.mod': ECHO_BF_RUNTIME_GO_MOD,
-    'barefoot.config.ts': ECHO_BAREFOOT_CONFIG_TS,
+    'vite.config.ts': ECHO_VITE_CONFIG_TS,
     'tsconfig.json': ECHO_TSCONFIG,
+    // Only the source `components/` tree needs scanning: Go has no
+    // compiled `.tsx` output to also scan.
     'uno.config.ts': unoConfigTs([
       'components/**/*.tsx',
-      'dist/components/**/*.tsx',
     ]),
     'components/Counter.tsx': SHARED_COUNTER_TSX,
     'components/Counter.test.tsx': SHARED_COUNTER_TEST_TSX,
@@ -550,10 +572,10 @@ export const ECHO_ADAPTER: AdapterTemplate = {
     '.gitignore': ECHO_GITIGNORE,
   },
   scripts: {
-    dev: 'go mod tidy && bf build && unocss && concurrently -k -n build,uno,server -c blue,magenta,green "bf build --watch" "unocss --watch" "go run ."',
-    // `--minify` (not on `dev`): matches the site's "~14 kB min+gzip"
-    // runtime-size claim, which is measured on a minified build.
-    build: 'go mod tidy && bf build --minify && unocss',
+    // `vite build` runs once up front so `dist/templates` exists before
+    // `go run .` starts; `vite dev` then takes over the watch loop.
+    dev: 'go mod tidy && vite build && unocss && concurrently -k -n dev,uno,server -c blue,magenta,green "vite dev" "unocss --watch" "go run ."',
+    build: 'go mod tidy && vite build && unocss',
     start: 'go run .',
   },
   dependencies: {
@@ -566,6 +588,8 @@ export const ECHO_ADAPTER: AdapterTemplate = {
     ...UNOCSS_DEV_DEPENDENCIES,
     '@barefootjs/cli': 'latest',
     '@barefootjs/test': 'latest',
+    '@barefootjs/vite': 'latest',
+    vite: '^6.0.0',
     concurrently: '^9.0.0',
     typescript: '^5.6.0',
   },
