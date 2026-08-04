@@ -18,6 +18,14 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 // html-entry-point detection never runs and `dist/index.html` is never
 // emitted — same reasoning as the CSR scaffold's own vite.config.ts.
 export default defineConfig({
+  // Relative asset URLs, not Vite's default absolute `/assets/…`. The
+  // benchmark runner's static server (`benchmarks/runner/serve.ts`) maps
+  // `/<app>/…` onto `apps/<app>/dist/…`, so this app is mounted at
+  // `/barefoot/` — an absolute `/assets/index-<hash>.js` resolves to
+  // `apps/assets/dist/…` and 404s, leaving the page never setting
+  // `data-ready` and the runner timing out after 30s. `'./'` works at any
+  // mount depth, including the root-served shape `smoke.ts` uses.
+  base: './',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
