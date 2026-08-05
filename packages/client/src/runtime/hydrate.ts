@@ -135,7 +135,15 @@ function scheduleWalk(): void {
 export function hydrate(name: string, def: ComponentDef): void {
   // Ensure name is always set on the def so createComponentFromDef()
   // doesn't rely on def.init.name (which may be lost under minification).
-  def.name = name
+  //
+  // Defaulted, NOT overwritten: `name` is the registry KEY, which for a
+  // non-exported component is file-scoped (`Name__<8hex>`) to keep two
+  // private same-named components apart. The compiler puts the plain name
+  // on the def precisely so scope IDs can stay the documented
+  // `Name_abc123`; clobbering it here leaked the disambiguator into every
+  // CSR `bf-s` (#2518). This line predates file-scoping, when the key and
+  // the display name were always the same string.
+  def.name ??= name
 
   registeredDefs.set(name, def)
 

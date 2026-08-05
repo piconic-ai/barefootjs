@@ -283,7 +283,11 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   lines.push('')
   lines.push(`function init${name}() {}`)
   lines.push('')
-  lines.push(`hydrate('${registryKey}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\` })`)
+  // `name: '...'` only when the key was file-scoped — same reason as in
+  // `emitRegistrationAndHydration`: the hashed key must not reach `bf-s`
+  // (#2518).
+  const nameField = registryKey !== name ? `, name: '${name}'` : ''
+  lines.push(`hydrate('${registryKey}', { init: init${name}, template: (${PROPS_PARAM}) => \`${templateHtml}\`${nameField} })`)
   // See `emitRegistrationAndHydration` (./emit-registration.ts) for the
   // rationale on why the component is also emitted as a callable
   // shim. The same applies for template-only components since they

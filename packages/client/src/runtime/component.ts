@@ -246,7 +246,10 @@ function materializeComponent(
   const def = getRegisteredDef(name)
   const isCommentWrapper = def?.comment === true
   const derivedScopeId = slot?.parent && slot.mount ? `${slot.parent}_${slot.mount}` : null
-  const scopeId = isCommentWrapper ? null : (derivedScopeId ?? `${name}_${generateId()}`)
+  // Same as in `renderChild`: `name` is the registry key, which is
+  // file-scoped (`Name__<8hex>`) for a non-exported component. The scope ID
+  // must carry the plain name — see `ComponentDef.name` (#2518).
+  const scopeId = isCommentWrapper ? null : (derivedScopeId ?? `${def?.name ?? name}_${generateId()}`)
 
   // 5. Generate HTML from props.
   //
@@ -415,9 +418,17 @@ export function renderChild(
   // use the parent scope ID so child scope IDs match the SSR convention
   // (e.g., ~ParentName_parentHash_s5 instead of ~Button_randomHash_s5).
   // This enables $cSingle's getDualScopeIds verification to pass.
+  // `name` here is the REGISTRY KEY, which for a non-exported component is
+  // file-scoped (`Name__<8hex>`) to stop two private same-named components
+  // colliding. That disambiguator must not reach `bf-s`: the scope ID is a
+  // documented contract (`Name_abc123`) that the SSR adapters emit and
+  // `integrations/shared/e2e/toggle.spec.ts` asserts. The def carries the
+  // plain name for exactly this — see `ComponentDef.name`, "Used for scope
+  // ID generation" (#2518).
+  const displayName = getRegisteredDef(name)?.name ?? name
   const scopePrefix = (_parentScopeId && slotSuffix)
     ? _parentScopeId
-    : `${name}_${generateId()}`
+    : `${displayName}_${generateId()}`
   const keyAttr = key !== undefined ? ` ${BF_KEY}="${key}"` : ''
   // Slot-relationship markers — only emitted when both host and slot are
   // known; top-level renders without parent context omit them.
