@@ -1,15 +1,15 @@
 ---
-"@barefootjs/cli": major
-"@barefootjs/client": major
-"@barefootjs/hono": major
-"@barefootjs/go-template": major
-"@barefootjs/blade": major
-"@barefootjs/erb": major
-"@barefootjs/jinja": major
-"@barefootjs/mojolicious": major
-"@barefootjs/rust": major
-"@barefootjs/twig": major
-"@barefootjs/xslate": major
+"@barefootjs/cli": minor
+"@barefootjs/client": minor
+"@barefootjs/hono": minor
+"@barefootjs/go-template": minor
+"@barefootjs/blade": minor
+"@barefootjs/erb": minor
+"@barefootjs/jinja": minor
+"@barefootjs/mojolicious": minor
+"@barefootjs/rust": minor
+"@barefootjs/twig": minor
+"@barefootjs/xslate": minor
 ---
 
 Remove the legacy build pipeline — `bf build`, `barefoot.config.ts`, and every adapter's `createConfig`
@@ -17,8 +17,14 @@ Remove the legacy build pipeline — `bf build`, `barefoot.config.ts`, and every
 The last PR of the Vite migration (7a resolved `bf`'s project config from
 `vite.config.ts`; 7b made every scaffold emit `vite.config.ts`). All
 nineteen integrations run on `@barefootjs/vite`, and nothing depends on the
-second implementation any more — this deletes it. This is a breaking
-change, shipped as one release with the rest of the migration.
+second implementation any more — this deletes it.
+
+This is a **breaking** change, shipped as one release with the rest of the
+migration. It is bumped as a MINOR, not a major: BarefootJS is pre-1.0
+(0.30.x), where a minor is the breaking-change slot under semver's §4, and
+1.0 is a stability commitment this release does not make. Read the "Removed"
+and "Moved" sections below as the upgrade checklist regardless of the
+version digit that moves.
 
 ## Removed
 
