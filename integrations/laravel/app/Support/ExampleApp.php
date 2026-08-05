@@ -177,12 +177,19 @@ final class ExampleApp
     {
         $bf->_scripts(new \ArrayObject());
         $bf->_script_seen(new \ArrayObject());
+        // Same `ArrayObject`-for-reference-semantics trick, for the
+        // `<link rel="modulepreload">` collector -- see `register_preload`'s
+        // docblock in BarefootJS.php.
+        $bf->_preloads(new \ArrayObject());
+        $bf->_preload_seen(new \ArrayObject());
     }
 
     public static function shareScriptCollector(BarefootJS $from, BarefootJS $to): void
     {
         $to->_scripts($from->_scripts());
         $to->_script_seen($from->_script_seen());
+        $to->_preloads($from->_preloads());
+        $to->_preload_seen($from->_preload_seen());
     }
 
     // -------------------------------------------------------------------

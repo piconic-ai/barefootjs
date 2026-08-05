@@ -2238,6 +2238,18 @@ export interface CompileOptions {
    * adapter unchanged.
    */
   scriptAssets?: string[]
+  /**
+   * Forwarded verbatim to `adapter.generate(..., { preloadAssets })` — see
+   * that field's docstring on `AdapterGenerateOptions` for the full
+   * precedence rules (`skipScriptRegistration` still wins; `[]` means
+   * "resolved, nothing to preload", distinct from `undefined`'s "no
+   * preload information").
+   *
+   * Same plain-resolved-data contract as `scriptAssets`: the caller
+   * (`@barefootjs/vite`) has already walked the manifest; the compiler
+   * only threads the list through unchanged.
+   */
+  preloadAssets?: string[]
 }
 
 export interface FileOutput {

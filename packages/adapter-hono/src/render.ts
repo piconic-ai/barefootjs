@@ -15,7 +15,7 @@
  *                        `<Suspense>` boundaries flush out-of-order.
  *
  * Both accept a `hono/jsx` node (typically a full page including the
- * layout shell, `<BfImportMap>`, and `<BfScripts>`).
+ * layout shell and `<BfScripts>`).
  */
 
 import { renderToReadableStream } from 'hono/jsx/streaming'

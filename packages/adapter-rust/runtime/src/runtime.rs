@@ -811,6 +811,14 @@ pub struct ChildRendererSpec {
 pub struct RenderSession {
     pub scripts: Mutex<Vec<String>>,
     pub script_seen: Mutex<HashSet<String>>,
+    /// `<link rel="modulepreload">` hints, kept as their own list/dedup-set
+    /// pair mirroring `scripts`/`script_seen` exactly -- see
+    /// `register_preload`'s docstring. A preload URL and a script URL are
+    /// never the same concern (preloads are the entry's TRANSITIVE deps,
+    /// never the entry itself), so there is no cross-dedup between the two
+    /// sets.
+    pub preloads: Mutex<Vec<String>>,
+    pub preload_seen: Mutex<HashSet<String>>,
     pub child_renderers: Mutex<HashMap<String, ChildRendererSpec>>,
     pub context_stacks: Mutex<HashMap<String, Vec<JsValue>>>,
     rng_counter: Mutex<u64>,
@@ -821,6 +829,8 @@ impl RenderSession {
         Arc::new(RenderSession {
             scripts: Mutex::new(Vec::new()),
             script_seen: Mutex::new(HashSet::new()),
+            preloads: Mutex::new(Vec::new()),
+            preload_seen: Mutex::new(HashSet::new()),
             child_renderers: Mutex::new(HashMap::new()),
             context_stacks: Mutex::new(HashMap::new()),
             rng_counter: Mutex::new(0),
@@ -976,20 +986,54 @@ impl BfInstance {
         self.session.scripts.lock().unwrap().push(path.to_string());
     }
 
+    /// Register a `<link rel="modulepreload">` hint (a component's resolved
+    /// TRANSITIVE-chunk preload URL, per `AdapterGenerateOptions.
+    /// preloadAssets`) into the SAME session every `BfInstance` clone in
+    /// this render tree shares (`Arc<RenderSession>` -- see the struct
+    /// docstring), exactly mirroring `register_script` above. Because every
+    /// clone (root, and every child minted by `render_child`) holds the
+    /// SAME `Arc`, a preload registered three levels deep is visible to the
+    /// root's `scripts()` call with no separate propagation step needed --
+    /// unlike the PHP/Python ports, which mutate per-instance state and
+    /// must explicitly re-seed each child's collector from the parent's.
+    fn register_preload(&self, path: &str) {
+        let mut seen = self.session.preload_seen.lock().unwrap();
+        if seen.contains(path) {
+            return;
+        }
+        seen.insert(path.to_string());
+        self.session.preloads.lock().unwrap().push(path.to_string());
+    }
+
     /// `pub` (beyond the `"scripts"` `call_method` dispatch below) so a
-    /// production host can read back the accumulated `<script>` tags AFTER
-    /// rendering, to splice into its own page layout (mirrors Python
-    /// integrations' `bf.scripts()` call in their layout helper, e.g.
+    /// production host can read back the accumulated `<link>`/`<script>`
+    /// tags AFTER rendering, to splice into its own page layout (mirrors
+    /// Python integrations' `bf.scripts()` call in their layout helper, e.g.
     /// `integrations/flask/app.py`'s `layout(..., scripts=bf.scripts())`).
+    ///
+    /// Preload hints are emitted FIRST, ahead of every `<script
+    /// type="module">` tag -- a hint that arrives after the script it
+    /// describes is useless. Preloads carry no execution-order constraint
+    /// the way scripts do (they are just hints, not code that runs), so
+    /// registration order is emitted as-is.
     pub fn scripts(&self) -> String {
-        self.session
+        let preload_tags = self
+            .session
+            .preloads
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|p| format!("<link rel=\"modulepreload\" crossorigin href=\"{p}\">"))
+            .collect::<Vec<_>>();
+        let script_tags = self
+            .session
             .scripts
             .lock()
             .unwrap()
             .iter()
             .map(|p| format!("<script type=\"module\" src=\"{p}\"></script>"))
-            .collect::<Vec<_>>()
-            .join("\n")
+            .collect::<Vec<_>>();
+        preload_tags.into_iter().chain(script_tags).collect::<Vec<_>>().join("\n")
     }
 
     /// Renderer contract (#1897): invoked from a template as
@@ -1303,6 +1347,10 @@ impl Object for BfInstance {
             // -- Script registration ---------------------------------------
             "register_script" => {
                 self.register_script(a(0).as_str().unwrap_or(""));
+                Ok(MjValue::from(()))
+            }
+            "register_preload" => {
+                self.register_preload(a(0).as_str().unwrap_or(""));
                 Ok(MjValue::from(()))
             }
             "scripts" => Ok(safe(self.scripts())),

@@ -49,6 +49,17 @@ cp node_modules/@barefootjs/xyflow/dist/xyflow.browser.min.js.map \
 
 The three `@barefootjs/client*` entries all pointing at the same file is what makes the browser deduplicate them into a single module instance, so reactive primitives share one `Listener`/`Owner` global.
 
+Two things to get right when hand-writing this snippet:
+
+- **Escape `<` inside the importmap JSON.** A mapped URL containing `</script>` (unlikely for a static local path like the ones above, but possible if a URL is assembled dynamically) would close the `<script type="importmap">` element early. Before writing the serialized JSON into the `<script>` tag, replace every `<` character with its six-character Unicode escape for code point U+003C (backslash, `u`, `0`, `0`, `3`, `c`) — the JSON parser decodes that escape straight back to the original character, so the mapping itself is unaffected.
+- **Add `crossorigin` if you also `modulepreload` a cross-origin URL** — e.g. pointing straight at the unpkg/jsDelivr URL from "package.json fields" below instead of the copied local file:
+
+  ```html
+  <link rel="modulepreload" href="https://unpkg.com/@barefootjs/xyflow" crossorigin>
+  ```
+
+  The actual `import` of a cross-origin module is always a CORS fetch, so without `crossorigin` the preload request doesn't match it — the browser discards the preload and fetches the module a second time. Harmless to include on a same-origin preload too, since the credentials mode is the same either way.
+
 ## package.json fields
 
 The file is also exposed via the `umd` export condition and the `unpkg`/`jsdelivr` top-level fields:

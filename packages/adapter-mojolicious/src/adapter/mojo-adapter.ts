@@ -144,9 +144,6 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   name = 'mojolicious'
   extension = '.html.ep'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a static
-  // `barefoot-importmap.html` to `%= include` into the page <head> (#1644).
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the Mojo runtime can render in template
@@ -323,7 +320,7 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // Generate script registration
     const scriptReg = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     // SSR context consumers (`const x = useContext(Ctx)`): seed each local
     // from the active provider value (or the `createContext` default) so the
@@ -467,7 +464,12 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(
+    ir: ComponentIR,
+    scriptBaseName?: string,
+    scriptAssets?: string[],
+    preloadAssets?: string[],
+  ): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` pair — see
     // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
@@ -475,7 +477,15 @@ export class MojoAdapter extends BaseAdapter implements IRNodeEmitter<MojoRender
     // whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
-      const lines = scriptAssets.map((url) => `% bf->register_script('${url}');`)
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` (see `AdapterGenerateOptions.preloadAssets`), and
+      // every preload registration is emitted BEFORE every script
+      // registration — a hint that arrives after the script it describes
+      // is useless. `% ...;` is a no-output EP statement line, same as
+      // `register_script` below — `register_preload`'s return value is
+      // never printed.
+      const lines = (preloadAssets ?? []).map((url) => `% bf->register_preload('${url}');`)
+      lines.push(...scriptAssets.map((url) => `% bf->register_script('${url}');`))
       lines.push('')
       return lines.join('\n')
     }

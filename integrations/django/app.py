@@ -267,6 +267,8 @@ def render_component(
                 # <script> set.
                 child_bf._scripts(bf._scripts())
                 child_bf._script_seen(bf._script_seen())
+                child_bf._preloads(bf._preloads())
+                child_bf._preload_seen(bf._preload_seen())
                 extra = child_init(props) if child_init else {}
                 return backend.render_named(child_template, child_bf, {**props, **extra})
 
@@ -652,6 +654,8 @@ def _register_blog_child(
             child._child_renderers(parent_bf._child_renderers())
             child._scripts(parent_bf._scripts())
             child._script_seen(parent_bf._script_seen())
+            child._preloads(parent_bf._preloads())
+            child._preload_seen(parent_bf._preload_seen())
             extra = stash_from_ssr_defaults(component, props) if defaults else {}
             return backend.render_named(component, child, {**extra, **extra_seed, **props})
 
@@ -685,6 +689,8 @@ def blog_island(
         bf._props(props)
     bf._scripts(root._scripts())
     bf._script_seen(root._script_seen())
+    bf._preloads(root._preloads())
+    bf._preload_seen(root._preload_seen())
     bf._child_renderers(root._child_renderers())
     for slot, spec in children.items():
         template_name, seed = spec if isinstance(spec, tuple) else (spec, {})

@@ -241,9 +241,6 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   name = 'minijinja'
   extension = '.j2'
   templatesPerComponent = true
-  // Template-string target with no component layer: `bf build` emits a static
-  // import-map HTML snippet to include into the page <head>.
-  importMapInjection = 'html-snippet' as const
 
   /**
    * Identifier-path callees the Jinja runtime can render in template scope.
@@ -408,7 +405,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // Generate script registration
     const scriptReg = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     // SSR context consumers (`const x = useContext(Ctx)`): seed each local
     // from the active provider value (or the `createContext` default). The
@@ -450,7 +447,7 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[], preloadAssets?: string[]): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` pair — see
     // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
@@ -458,9 +455,23 @@ export class MinijinjaAdapter extends BaseAdapter implements IRNodeEmitter<Jinja
     // whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
-      const lines = scriptAssets.map(
-        (url, i) => `{% set _bf_reg${i} = bf.register_script('${url}') %}`,
-      )
+      const lines: string[] = []
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` (see `AdapterGenerateOptions.preloadAssets`) — this
+      // branch is only reached when that already holds. Emitted BEFORE the
+      // script registrations: every preload hint must precede the script
+      // tags it describes, or the hint is useless (see `register_preload`'s
+      // docstring in the Rust runtime — `bf.register_preload`/`bf.scripts()`
+      // preserve that ordering downstream, so codegen order is what fixes
+      // it here).
+      if (preloadAssets && preloadAssets.length > 0) {
+        preloadAssets.forEach((url, i) => {
+          lines.push(`{% set _bf_pre${i} = bf.register_preload('${url}') %}`)
+        })
+      }
+      scriptAssets.forEach((url, i) => {
+        lines.push(`{% set _bf_reg${i} = bf.register_script('${url}') %}`)
+      })
       lines.push('')
       return lines.join('\n')
     }

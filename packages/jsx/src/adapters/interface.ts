@@ -110,6 +110,35 @@ export interface AdapterGenerateOptions {
    * takes precedence regardless of what `scriptAssets` says.
    */
   scriptAssets?: string[]
+  /**
+   * Ordered list of fully-resolved, absolute URLs to emit as
+   * `<link rel="modulepreload">` hints, in array order, alongside the
+   * `<script type="module">` registrations driven by `scriptAssets`.
+   *
+   * These are the chunks the entry pulls in **transitively** — not the
+   * entry's own file, which is already covered by `scriptAssets`. Under
+   * Vite, a component's entry chunk is rarely a leaf: it imports the
+   * shared `@barefootjs/client` runtime chunk and, for a parent that
+   * renders a child island, the child's own entry chunk. Left alone, the
+   * browser only discovers those imports after it has fetched and parsed
+   * the entry — a second sequential round trip before the component can
+   * hydrate. A preload hint issued up front collapses that into one wave.
+   *
+   * `undefined` (the default) means "the caller has no preload
+   * information" — adapters emit nothing, exactly like the
+   * `clientJsBasePath`-computed path never emitted preloads before this
+   * option existed. An empty array is semantically distinct: it means
+   * "resolved, and there is nothing to preload" (e.g. the entry is a
+   * leaf with no transitive imports) — also emits nothing, but for a
+   * different reason, mirroring the `undefined`/`[]` distinction on
+   * `scriptAssets`.
+   *
+   * Only meaningful alongside a non-empty `scriptAssets` — there is
+   * nothing to preload ahead of if nothing is being registered.
+   * `skipScriptRegistration: true` still wins over this unconditionally,
+   * exactly as it does over `scriptAssets`.
+   */
+  preloadAssets?: string[]
 }
 
 /**
@@ -202,26 +231,6 @@ export interface TemplateAdapter {
    * Required for adapters that look up templates by filename (e.g. Mojolicious).
    */
   templatesPerComponent?: boolean
-  /**
-   * How the application author injects the externals importmap (and any
-   * `<link rel="modulepreload">` hints) into the page `<head>` when an
-   * externals manifest (`ExternalsManifest`) is in use.
-   *
-   * - `'component'` — the adapter ships a render-time component (e.g. Hono's
-   *   `BfImportMap`) that renders whatever manifest the app passes it; no
-   *   static snippet file is involved.
-   * - `'html-snippet'` — the adapter targets a template-string language (Go
-   *   html/template, Mojolicious EP) with no component layer, so the app
-   *   renders its manifest to a static `barefoot-importmap.html` snippet
-   *   itself (via `renderImportMapHtml`) and includes it into the page.
-   *
-   * Optional only for backward compatibility (and internal-only adapters like
-   * the CSR test adapter). Every *shipping* adapter must set it — the
-   * adapter-tests importmap-injection contract enforces this so a new adapter
-   * cannot silently leave a configured externals manifest with no injection
-   * point. See issue #1644.
-   */
-  importMapInjection?: 'component' | 'html-snippet'
   /**
    * Module specifier of the SSR shim for `@barefootjs/client` (and
    * `/runtime`). When set, the compiler rewrites client-package imports in

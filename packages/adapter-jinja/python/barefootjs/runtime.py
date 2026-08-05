@@ -531,6 +531,8 @@ class BarefootJS:
 
     _scripts = _dual_accessor("_scripts", lambda self: [])
     _script_seen = _dual_accessor("_script_seen", lambda self: {})
+    _preloads = _dual_accessor("_preloads", lambda self: [])
+    _preload_seen = _dual_accessor("_preload_seen", lambda self: {})
     _child_renderers = _dual_accessor("_child_renderers", lambda self: {})
     _is_child = _dual_accessor("_is_child", False)
     _scope_id = _dual_accessor("_scope_id")
@@ -675,6 +677,24 @@ class BarefootJS:
         seen[path] = True
         self._scripts().append(path)
 
+    def register_preload(self, path: str) -> None:
+        """Register a `<link rel="modulepreload">` hint (a component's
+        resolved TRANSITIVE-chunk preload URL, per
+        `AdapterGenerateOptions.preloadAssets`) -- mirrors `register_script`
+        above exactly. Kept as a SEPARATE `_preloads`/`_preload_seen` pair
+        -- a preload URL and a script URL are never the same concern, so
+        there is no cross-dedup to do between the two. Python lists/dicts
+        are mutable REFERENCE types (unlike PHP arrays), so
+        `child_bf._preloads(parent._preloads())` shares the SAME underlying
+        list -- no `ArrayObject`-style wrapper is needed for cross-instance
+        propagation the way the PHP port requires (see that port's
+        `register_preload` docblock)."""
+        seen = self._preload_seen()
+        if seen.get(path):
+            return
+        seen[path] = True
+        self._preloads().append(path)
+
     # -----------------------------------------------------------------
     # Child Component Rendering
     # -----------------------------------------------------------------
@@ -788,6 +808,8 @@ class BarefootJS:
                     child_bf._child_renderers(parent._child_renderers())
                     child_bf._scripts(parent._scripts())
                     child_bf._script_seen(parent._script_seen())
+                    child_bf._preloads(parent._preloads())
+                    child_bf._preload_seen(parent._preload_seen())
 
                     extra: dict = {}
                     if signal_init_fn:
@@ -811,7 +833,14 @@ class BarefootJS:
     # -----------------------------------------------------------------
 
     def scripts(self) -> str:
-        tags = [f'<script type="module" src="{path}"></script>' for path in self._scripts()]
+        """Renders every collected `<link rel="modulepreload">` hint, THEN
+        every collected `<script type="module">` tag -- preloads always
+        precede the scripts they describe, or the hint is useless. Preloads
+        carry no execution-order constraint the way scripts do (they are
+        just hints, not code that runs), so registration order is emitted
+        as-is."""
+        tags = [f'<link rel="modulepreload" crossorigin href="{path}">' for path in self._preloads()]
+        tags += [f'<script type="module" src="{path}"></script>' for path in self._scripts()]
         return "\n".join(tags)
 
     # -----------------------------------------------------------------

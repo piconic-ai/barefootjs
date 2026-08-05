@@ -97,8 +97,9 @@ final class BarefootJS
      * collection-typed attrs); calling with one positional arg writes and
      * returns `$this` for chaining. Covers `_scope_id`, `_bf_parent`,
      * `_bf_mount`, `_props`, `_data_key`, `_is_child`, `_scripts`,
-     * `_script_seen`, `_child_renderers` -- the internal state generated
-     * render scripts and the test harness poke directly (e.g.
+     * `_script_seen`, `_preloads`, `_preload_seen`, `_child_renderers` --
+     * the internal state generated render scripts and the test harness
+     * poke directly (e.g.
      * `$bf->_scope_id('Widget_test')`), mirroring the Python port's
      * `_dual_accessor` factory.
      */
@@ -118,7 +119,11 @@ final class BarefootJS
             }
             return $this->attrs[$name] ?? false;
         }
-        if ($name === '_scripts' || $name === '_script_seen' || $name === '_child_renderers') {
+        if (
+            $name === '_scripts' || $name === '_script_seen'
+            || $name === '_preloads' || $name === '_preload_seen'
+            || $name === '_child_renderers'
+        ) {
             if ($args) {
                 $this->attrs[$name] = $args[0];
                 return $this;
@@ -339,6 +344,33 @@ final class BarefootJS
         $this->_scripts($scripts);
     }
 
+    /**
+     * Register a `<link rel="modulepreload">` hint (a component's resolved
+     * TRANSITIVE-chunk preload URL, per `AdapterGenerateOptions.
+     * preloadAssets`) -- mirrors `register_script` above exactly, including
+     * its dedup-then-append shape and its reliance on a shared-by-reference
+     * collector (`ArrayObject`, seeded by the host -- see e.g.
+     * `integrations/php/index.php`'s `new_script_collector`) for
+     * cross-component propagation, since plain PHP arrays are
+     * copy-on-write VALUES, not references (see `register_script`'s own
+     * class docblock note above this method's usage sites for the full
+     * rationale). Kept as a SEPARATE `_preloads`/`_preload_seen` pair from
+     * `_scripts`/`_script_seen` -- a preload URL and a script URL are never
+     * the same concern, so there is no cross-dedup to do between the two.
+     */
+    public function register_preload(string $path): void
+    {
+        $seen = $this->_preload_seen();
+        if (!empty($seen[$path])) {
+            return;
+        }
+        $seen[$path] = true;
+        $this->_preload_seen($seen);
+        $preloads = $this->_preloads();
+        $preloads[] = $path;
+        $this->_preloads($preloads);
+    }
+
     // -----------------------------------------------------------------
     // Child Component Rendering
     // -----------------------------------------------------------------
@@ -472,6 +504,8 @@ final class BarefootJS
                 $childBf->_child_renderers($parent->_child_renderers());
                 $childBf->_scripts($parent->_scripts());
                 $childBf->_script_seen($parent->_script_seen());
+                $childBf->_preloads($parent->_preloads());
+                $childBf->_preload_seen($parent->_preload_seen());
 
                 $extra = [];
                 if ($signalInit !== null) {
@@ -548,9 +582,19 @@ final class BarefootJS
     // Script Output
     // -----------------------------------------------------------------
 
+    /**
+     * Renders every collected `<link rel="modulepreload">` hint, THEN every
+     * collected `<script type="module">` tag -- preloads always precede the
+     * scripts they describe, or the hint is useless. Preloads carry no
+     * execution-order constraint the way scripts do (they are just hints,
+     * not code that runs), so registration order is emitted as-is.
+     */
     public function scripts(): string
     {
         $tags = [];
+        foreach ($this->_preloads() as $path) {
+            $tags[] = '<link rel="modulepreload" crossorigin href="' . $path . '">';
+        }
         foreach ($this->_scripts() as $path) {
             $tags[] = '<script type="module" src="' . $path . '"></script>';
         }

@@ -43,3 +43,47 @@ export function resolveScriptAssets(
   if (!entry) return []
   return [joinBaseAndFile(base, entry.file)]
 }
+
+/**
+ * The ordered `preloadAssets` list for one component's entry: every chunk
+ * the entry pulls in **transitively** via static `imports`, excluding the
+ * entry's own file (that one is already covered by `resolveScriptAssets`).
+ *
+ * Walked **breadth-first** from the entry so the chunks most likely to be
+ * shared across components (the runtime chunk, common child islands) sort
+ * first, and deduped by manifest key — both needed to keep the returned
+ * order deterministic across builds; a rebuild that reshuffles this list
+ * for no reason would show up as a spurious template diff. A `seen` set
+ * keyed by manifest key also guards against import cycles.
+ *
+ * Deliberately does NOT follow `dynamicImports`: a dynamic import is by
+ * definition not needed for first paint — the app chose to defer it — and
+ * preloading it would pull that deferred work forward, defeating the
+ * point of having split it out.
+ *
+ * `[]` when the entry isn't in the manifest, same as `resolveScriptAssets`.
+ */
+export function resolvePreloadAssets(
+  manifest: Manifest,
+  manifestKey: string,
+  base: string,
+): string[] {
+  const entry = manifest[manifestKey]
+  if (!entry) return []
+
+  const seen = new Set<string>([manifestKey])
+  const queue = [...(entry.imports ?? [])]
+  const result: string[] = []
+
+  while (queue.length > 0) {
+    const key = queue.shift() as string
+    if (seen.has(key)) continue
+    seen.add(key)
+    const row = manifest[key]
+    if (!row) continue
+    result.push(joinBaseAndFile(base, row.file))
+    queue.push(...(row.imports ?? []))
+  }
+
+  return result
+}

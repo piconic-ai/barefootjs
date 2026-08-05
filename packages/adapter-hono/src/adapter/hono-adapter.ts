@@ -124,10 +124,6 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   name = 'hono'
   extension = '.tsx'
   clientShimSource = '@barefootjs/hono/client-shim'
-  // Importmap is injected at render time by the `BfImportMap` component
-  // (from its `externals` prop) — there is no static snippet file for
-  // Hono to emit.
-  importMapInjection = 'component' as const
 
   // The Hono SSR runtime is JavaScript (Node / Bun / CF Workers), so any
   // synchronous JS call the user writes can be rendered as-is at template
@@ -179,6 +175,14 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * mirrors from `GoTemplateAdapter`.
    */
   private scriptAssets?: string[]
+  /**
+   * Per-call `AdapterGenerateOptions.preloadAssets`, same stash-for-the-
+   * duration-of-one-`generate()`-call lifecycle as `scriptAssets`. Only
+   * consulted when `hasScriptAssets()` is also true — see
+   * `AdapterGenerateOptions.preloadAssets`'s docstring: preloads are only
+   * meaningful alongside a non-empty `scriptAssets`.
+   */
+  private preloadAssets?: string[]
 
   constructor(options: HonoAdapterOptions = {}) {
     super()
@@ -194,7 +198,19 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     this.componentName = ir.metadata.componentName
     this.isClientComponent = ir.metadata.isClientComponent
     this.rewriteRelativeImport = options?.rewriteRelativeImport
-    this.scriptAssets = options?.scriptAssets
+    // `skipScriptRegistration` wins over `scriptAssets`/`preloadAssets`
+    // unconditionally — see both fields' docstrings on
+    // `AdapterGenerateOptions`. Stashing `undefined` for both here (rather
+    // than gating each call site individually) makes every downstream
+    // `hasScriptAssets()`/`hasPreloadAssets()` check "just work" without
+    // its own skip check.
+    if (options?.skipScriptRegistration) {
+      this.scriptAssets = undefined
+      this.preloadAssets = undefined
+    } else {
+      this.scriptAssets = options?.scriptAssets
+      this.preloadAssets = options?.preloadAssets
+    }
 
     // Generate component body FIRST so we can scan it for used imports
     const component = this.generateComponent(ir)
@@ -232,6 +248,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
     this.rewriteRelativeImport = undefined
     this.scriptAssets = undefined
+    this.preloadAssets = undefined
     return result
   }
 
@@ -244,6 +261,18 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    */
   private hasScriptAssets(): boolean {
     return !!this.scriptAssets && this.scriptAssets.length > 0
+  }
+
+  /**
+   * True when `options.preloadAssets` was resolved AND non-empty for this
+   * `generate()` call, AND `hasScriptAssets()` also holds — see
+   * `AdapterGenerateOptions.preloadAssets`'s docstring: preloads are only
+   * meaningful alongside a non-empty `scriptAssets`. Consulted by
+   * `generateImports`/`generateComponent`/`renderIfStatement` alongside
+   * `hasScriptAssets()` before emitting preload-registration codegen.
+   */
+  private hasPreloadAssets(): boolean {
+    return this.hasScriptAssets() && !!this.preloadAssets && this.preloadAssets.length > 0
   }
 
   private generateModuleLevelContextBindings(ir: ComponentIR): string {
@@ -281,8 +310,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only imported when this call's `scriptAssets` (see the field
     // docstring, and `generateComponent`) actually resolved to a non-empty
     // URL list, so a server-only file emits no dead import.
+    // `registerComponentPreloads` is imported alongside them only when
+    // `preloadAssets` also resolved non-empty (`hasPreloadAssets()`).
     if (this.hasScriptAssets()) {
-      lines.push(`import { registerComponentScripts, wrapWithInlineScripts } from '@barefootjs/hono/scripts'`)
+      const names = this.hasPreloadAssets()
+        ? ['registerComponentScripts', 'registerComponentPreloads', 'wrapWithInlineScripts']
+        : ['registerComponentScripts', 'wrapWithInlineScripts']
+      lines.push(`import { ${names.join(', ')} } from '@barefootjs/hono/scripts'`)
     }
 
     // Import Suspense / ErrorBoundary when async boundaries are used. Both
@@ -622,6 +656,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // root via `renderIfStatement`) so a component rendered after
     // `<BfScripts />` (e.g. inside Suspense) ships its scripts inline
     // instead of silently dropping them from the already-flushed collector.
+    // `__bfInlinePreloads` (registered FIRST, so preloads flush ahead of
+    // scripts wherever `<BfScripts />` renders them) follows the exact
+    // same pattern for `preloadAssets` — see `AdapterGenerateOptions.
+    // preloadAssets` and `hasPreloadAssets()`.
+    if (this.hasPreloadAssets()) {
+      lines.push(`  const __bfInlinePreloads = registerComponentPreloads(${JSON.stringify(this.preloadAssets)})`)
+    }
     if (this.hasScriptAssets()) {
       lines.push(`  const __bfInlineScripts = registerComponentScripts(${JSON.stringify(this.scriptAssets)})`)
     }
@@ -676,7 +717,11 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (this.hasScriptAssets()) {
       lines.push(`  return wrapWithInlineScripts((`)
       lines.push(`    ${jsxBody}`)
-      lines.push(`  ), __bfInlineScripts)`)
+      lines.push(
+        this.hasPreloadAssets()
+          ? `  ), __bfInlineScripts, __bfInlinePreloads)`
+          : `  ), __bfInlineScripts)`,
+      )
     } else {
       lines.push(`  return (`)
       lines.push(`    ${jsxBody}`)
@@ -1088,9 +1133,17 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // when this call's `scriptAssets` resolved non-empty — same
     // `__bfInlineScripts` binding `generateComponent` declares at the top
     // of the function, reused across every branch this if-chain can take.
+    // `__bfInlinePreloads` (same declare-once-reuse-every-branch pattern)
+    // is threaded in as a third argument when `preloadAssets` also
+    // resolved non-empty.
     const wrap = this.hasScriptAssets()
+    const wrapPreload = this.hasPreloadAssets()
     const openReturn = wrap ? '    return wrapWithInlineScripts((' : '    return ('
-    const closeReturn = wrap ? '    ), __bfInlineScripts)' : '    )'
+    const closeReturn = wrap
+      ? wrapPreload
+        ? '    ), __bfInlineScripts, __bfInlinePreloads)'
+        : '    ), __bfInlineScripts)'
+      : '    )'
 
     // Build the if statement
     lines.unshift(`  if (${ifStmt.condition}) {`)
@@ -1111,7 +1164,13 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
         const alternate = this.renderNode(ifStmt.alternate, ctx)
         lines.push(wrap ? '  return wrapWithInlineScripts((' : '  return (')
         lines.push(`    ${alternate}`)
-        lines.push(wrap ? '  ), __bfInlineScripts)' : '  )')
+        lines.push(
+          wrap
+            ? wrapPreload
+              ? '  ), __bfInlineScripts, __bfInlinePreloads)'
+              : '  ), __bfInlineScripts)'
+            : '  )',
+        )
       }
     } else {
       // No alternate - return null

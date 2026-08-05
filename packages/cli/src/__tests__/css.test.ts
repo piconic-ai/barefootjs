@@ -51,7 +51,7 @@ describe('processCssHead', () => {
       expect(out, `${id}/${file} kept tokens.css`).not.toContain('tokens.css')
       expect(out, `${id}/${file} kept styles.css`).not.toContain('styles.css')
       // Surrounding markup survives — only the marked region is gone.
-      expect(out, `${id}/${file} dropped </head>`).toMatch(/<\/head>|BfImportMap/)
+      expect(out, `${id}/${file} dropped </head>`).toMatch(/<\/head>/)
     }
   })
 
