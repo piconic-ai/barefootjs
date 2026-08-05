@@ -41,11 +41,11 @@ describe('@barefootjs/go-template/vite: real vite build', () => {
     expect(plugins).toHaveLength(1)
   })
 
-  // Reconnaissance PR (bf#future-07a): core's `barefoot()` attaches
-  // `api.options` (see `BarefootPluginApi`) to the SAME plugin object this
-  // wrapper returns unchanged as `plugins[0]` — this pins that composition
-  // doesn't lose it, for either array shape (`assets` omitted vs. present,
-  // which adds a SECOND, unrelated companion plugin alongside it).
+  // core's `barefoot()` attaches `api.options` (see `BarefootPluginApi`) to
+  // the SAME plugin object this wrapper returns unchanged as `plugins[0]`
+  // — this pins that composition doesn't lose it, for either array shape
+  // (`assets` omitted vs. present, which adds a SECOND, unrelated
+  // companion plugin alongside it).
   test('surfaces core\'s plugin.api.options unchanged on the returned plugin, with the GoTemplateAdapter it constructed', () => {
     const plugins = barefoot({ components: ['src/components', '../shared/blog'], templates: 'views' }) as any[]
     const core = plugins[0]
@@ -247,7 +247,7 @@ describe('@barefootjs/go-template/vite: afterEmit → components.go, via direct 
     expect(secondMtime).toBe(firstMtime)
   })
 
-  test('honors manualTypes and transformTypes, same as ./build\'s createConfig', async () => {
+  test('honors manualTypes and transformTypes', async () => {
     dir = await mkdtemp(join(tmpdir(), 'barefoot-go-vite-hooks-manual-'))
     await mkdir(join(dir, 'src/components'), { recursive: true })
     await writeFile(join(dir, 'src/components/Greeting.tsx'), 'export function Greeting() { return <p>Hi</p> }\n')
@@ -257,9 +257,9 @@ describe('@barefootjs/go-template/vite: afterEmit → components.go, via direct 
       components: ['src/components'],
       templates: templatesDir,
       // manualTypes is appended verbatim, AFTER transformTypes runs on the
-      // component-derived content (see `combineGoTypes`) — matching
-      // `./build`'s `createConfig` exactly, so app-specific hand-written
-      // types are never mangled by a transform meant for generated code.
+      // component-derived content (see `combineGoTypes`), so app-specific
+      // hand-written types are never mangled by a transform meant for
+      // generated code.
       manualTypes: '// app-specific hand-written type\ntype AppOnly struct{}',
       transformTypes: types => types.replace(/GreetingProps/g, 'GreetingPropsRenamed'),
     })[0]

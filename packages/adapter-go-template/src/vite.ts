@@ -18,9 +18,7 @@
  * that mistake.
  *
  * A user never passes `adapter` — this wraps core's `barefoot()` and
- * constructs `GoTemplateAdapter` itself, mirroring `@barefootjs/go-
- * template/build`'s `createConfig` (same idea, moved from the legacy CLI
- * config shape onto a Vite plugin):
+ * constructs `GoTemplateAdapter` itself:
  *
  *   import { barefoot } from '@barefootjs/go-template/vite'
  *
@@ -126,10 +124,10 @@ export interface GoTemplateViteOptions {
 
 /** write-if-changed: writes `content` to `absPath` only if it differs from
  * what's already there, logging `label` when it actually wrote. Shared by
- * both `components.go` and the asset map for the same reason `./build`'s
- * `createConfig` uses it: an unrelated eager pass (triggered by editing a
- * DIFFERENT component) touching a generated file's mtime would falsely
- * trip a Go-side file watcher (`air`, etc.) into a no-op rebuild. */
+ * both `components.go` and the asset map: an unrelated eager pass
+ * (triggered by editing a DIFFERENT component) touching a generated file's
+ * mtime would falsely trip a Go-side file watcher (`air`, etc.) into a
+ * no-op rebuild. */
 async function writeIfChanged(absPath: string, content: string, label: string): Promise<void> {
   const prev = await readFile(absPath, 'utf-8').catch(() => null)
   if (prev === content) return

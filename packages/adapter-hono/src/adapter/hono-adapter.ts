@@ -125,7 +125,8 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   extension = '.tsx'
   clientShimSource = '@barefootjs/hono/client-shim'
   // Importmap is injected at render time by the `BfImportMap` component
-  // (reads `barefoot-externals.json`), so `bf build` emits no static snippet.
+  // (from its `externals` prop) — there is no static snippet file for
+  // Hono to emit.
   importMapInjection = 'component' as const
 
   // The Hono SSR runtime is JavaScript (Node / Bun / CF Workers), so any
@@ -170,13 +171,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * `rewriteRelativeImport`) so `generateImports`/`generateComponent`/
    * `renderIfStatement` can all see it without threading it through every
    * method signature. `undefined` means "the caller didn't resolve
-   * scriptAssets" (the legacy `bf build` + `transformMarkedTemplate` path —
-   * script registration there is a post-process on the COMBINED file, see
-   * `build.ts`'s `addScriptCollection`); `[]` means "resolved, and empty"
-   * (a server-only file, or a client file whose bundle isn't in the
-   * manifest yet); a non-empty array means "bake exactly these URLs in".
-   * See `AdapterGenerateOptions.scriptAssets`'s docstring for the full
-   * precedence contract this mirrors from `GoTemplateAdapter`.
+   * scriptAssets", so no script-registration codegen is emitted; `[]`
+   * means "resolved, and empty" (a server-only file, or a client file
+   * whose bundle isn't in the manifest yet); a non-empty array means
+   * "bake exactly these URLs in". See `AdapterGenerateOptions.
+   * scriptAssets`'s docstring for the full precedence contract this
+   * mirrors from `GoTemplateAdapter`.
    */
   private scriptAssets?: string[]
 
@@ -278,11 +278,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       lines.push(`import { ${utilImports.join(', ')} } from '@barefootjs/hono/utils'`)
     }
 
-    // Vite-pipeline script registration (see `scriptAssets`'s field
-    // docstring and `generateComponent`): only imported when this call's
-    // `scriptAssets` actually resolved to a non-empty URL list, so a
-    // server-only file (or the legacy `bf build` path, which never sets
-    // `scriptAssets` at all) emits no dead import.
+    // Only imported when this call's `scriptAssets` (see the field
+    // docstring, and `generateComponent`) actually resolved to a non-empty
+    // URL list, so a server-only file emits no dead import.
     if (this.hasScriptAssets()) {
       lines.push(`import { registerComponentScripts, wrapWithInlineScripts } from '@barefootjs/hono/scripts'`)
     }

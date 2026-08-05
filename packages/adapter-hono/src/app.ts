@@ -43,10 +43,10 @@ const DEV_RELOAD_ENDPOINT_KEY = 'bfDevReloadEndpoint'
 // ── helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Build manifest shape produced by `bf build`. Each compiled
- * component is keyed by its manifest name; `__barefoot__` is the
- * runtime entry. `clientJs` is a path under `dist/`, e.g.
- * `"components/Counter.client.js"`.
+ * Build manifest shape read by `manifestToScriptUrls` (and `BfScripts`
+ * below) to emit per-component `<script>` tags. Each compiled component
+ * is keyed by its manifest name; `__barefoot__` is the runtime entry.
+ * `clientJs` is a path under `dist/`, e.g. `"components/Counter.client.js"`.
  *
  * `stubDeps` lists the manifest keys of every `'use client'` sibling
  * this bundle reaches via a stub rewrite (i.e. via an imperative
@@ -59,8 +59,7 @@ const DEV_RELOAD_ENDPOINT_KEY = 'bfDevReloadEndpoint'
  * `ui/button/index.tsx`), not the runtime registry name passed to
  * `createComponent(...)` (e.g. `"Button"`). For top-level
  * single-component files the two coincide; for nested layouts they
- * differ. `build.ts` does the path → manifest-key conversion before
- * writing this field.
+ * differ.
  */
 export interface BarefootBuildManifest {
   __barefoot__?: { clientJs?: string }
@@ -106,8 +105,8 @@ export interface BfImportMapProps {
    * mappings are emitted — the pre-#1639 behavior.
    *
    * Typed with the shared {@link ImportMapManifest} from `@barefootjs/jsx`,
-   * so the component and the `bf build` snippet path describe the manifest
-   * with one type.
+   * so every importmap-snippet consumer describes the manifest with one
+   * type.
    */
   externals?: ImportMapManifest
   /**
@@ -131,15 +130,15 @@ export interface BfImportMapProps {
  * rendering — importmap JSON escaping, `<link rel="modulepreload">`
  * emission with `crossorigin` (#1648) — is delegated to the shared
  * `renderImportMapHtml` so this path can never drift from the static
- * `barefoot-importmap.html` snippet `bf build` emits for template-string
- * adapters (#1644). Imported from the `@barefootjs/jsx/import-map` subpath,
- * a zero-dependency module, to keep this runtime file free of the compiler.
+ * `barefoot-importmap.html` snippet emitted for template-string adapters
+ * (#1644). Imported from the `@barefootjs/jsx/import-map` subpath, a
+ * zero-dependency module, to keep this runtime file free of the compiler.
  */
 export function BfImportMap(props: BfImportMapProps): HtmlEscapedString | Promise<HtmlEscapedString> {
   const base = props.base.replace(/\/$/, '')
   // Built-in defaults first, then manifest imports so a configured
-  // `@barefootjs/client` mapping (emitted by `bf build` against the
-  // build's `externalsBasePath`) wins over the prop-derived one.
+  // `@barefootjs/client` mapping (from a build's configured
+  // `externalsBasePath`) wins over the prop-derived one.
   const imports: Record<string, string> = {
     '@barefootjs/client': `${base}/barefoot.js`,
     '@barefootjs/client/runtime': `${base}/barefoot.js`,
@@ -168,9 +167,9 @@ let __bfEmptyManifestWarned = false
  * manifest, runtime first. Place at the end of `<body>`.
  *
  * Logs a one-time warning when the manifest is empty — a strong
- * signal the user is running the server before `bf build` has
- * produced anything, which would otherwise present as a silent
- * "page renders but nothing is interactive."
+ * signal the user is running the server before a build has produced
+ * anything, which would otherwise present as a silent "page renders
+ * but nothing is interactive."
  */
 export function BfScripts(props: BfScriptsProps): HtmlEscapedString | Promise<HtmlEscapedString> {
   const urls = manifestToScriptUrls(props.manifest, props.base)
@@ -178,7 +177,7 @@ export function BfScripts(props: BfScriptsProps): HtmlEscapedString | Promise<Ht
     __bfEmptyManifestWarned = true
     console.warn(
       '[barefootjs] BfScripts: manifest is empty — no <script> tags emitted. ' +
-        'Run `bf build` to compile components and rebuild the manifest.',
+        'Run `vite build` to compile components and rebuild the manifest.',
     )
   }
   const tags = urls

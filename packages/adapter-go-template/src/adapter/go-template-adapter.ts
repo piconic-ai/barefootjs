@@ -617,10 +617,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
-    // legacy computed `barefootJsPath` / `clientJsBasePath` pair — see
-    // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
-    // plugin) has already decided the exact ordered URL list, including
-    // whether any script is needed at all.
+    // adapter-computed `barefootJsPath` / `clientJsBasePath` fallback pair
+    // below — see `AdapterGenerateOptions.scriptAssets`. The caller (e.g.
+    // the Vite plugin) has already decided the exact ordered URL list,
+    // including whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
       const registrations = scriptAssets.map((url) => `{{.Scripts.Register "${url}"}}`)

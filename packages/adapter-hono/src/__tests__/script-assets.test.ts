@@ -1,16 +1,14 @@
 /**
  * Coverage of `HonoAdapter.generate()`'s `AdapterGenerateOptions.scriptAssets`
- * handling — the Vite-pipeline replacement for `build.ts`'s
- * `addScriptCollection` post-process (see `scripts.tsx`'s
- * `registerComponentScripts`/`wrapWithInlineScripts` docstrings and
- * `hono-adapter.ts`'s `scriptAssets` field docstring for the full design).
+ * handling (see `scripts.tsx`'s `registerComponentScripts`/
+ * `wrapWithInlineScripts` docstrings and `hono-adapter.ts`'s `scriptAssets`
+ * field docstring for the full design).
  *
- * Mirrors `GoTemplateAdapter`'s own `scriptAssets` contract:
- * `undefined` → legacy codegen untouched (no scriptAssets-driven output at
- * all — the post-process path still owns script registration);
- * `[]` → resolved, but nothing to register (server-only file, or a
- * client file whose bundle isn't in the manifest yet) — no dead codegen;
- * non-empty → bake exactly these URLs in via `registerComponentScripts`.
+ * Mirrors `GoTemplateAdapter`'s own `scriptAssets` contract: `undefined` →
+ * no scriptAssets-driven output at all; `[]` → resolved, but nothing to
+ * register (server-only file, or a client file whose bundle isn't in the
+ * manifest yet) — no dead codegen; non-empty → bake exactly these URLs in
+ * via `registerComponentScripts`.
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '@barefootjs/jsx'
@@ -50,7 +48,7 @@ export function Toggle(props: { asChild?: boolean }) {
 `
 
 describe('HonoAdapter scriptAssets codegen', () => {
-  test('undefined scriptAssets: no scriptAssets-driven codegen at all (legacy path untouched)', () => {
+  test('undefined scriptAssets: no scriptAssets-driven codegen at all', () => {
     const output = compileMarkedTemplate(CLIENT_COMPONENT, undefined)
     expect(output).not.toContain('registerComponentScripts')
     expect(output).not.toContain('wrapWithInlineScripts')

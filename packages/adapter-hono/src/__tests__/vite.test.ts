@@ -33,11 +33,11 @@ describe('@barefootjs/hono/vite: real vite build', () => {
     expect(plugins).toHaveLength(1)
   })
 
-  // Reconnaissance PR (bf#future-07a): core's `barefoot()` attaches
-  // `api.options` (see `@barefootjs/vite`'s `BarefootPluginApi`) to the SAME
-  // plugin object this wrapper returns unchanged as `plugins[0]` — this
-  // pins that composition doesn't lose it, for either array shape (`assets`
-  // omitted vs. present, which adds a SECOND, unrelated companion plugin).
+  // core's `barefoot()` attaches `api.options` (see `@barefootjs/vite`'s
+  // `BarefootPluginApi`) to the SAME plugin object this wrapper returns
+  // unchanged as `plugins[0]` — this pins that composition doesn't lose it,
+  // for either array shape (`assets` omitted vs. present, which adds a
+  // SECOND, unrelated companion plugin).
   test('surfaces core\'s plugin.api.options unchanged on the returned plugin, with the HonoAdapter it constructed', () => {
     const plugins = barefoot({ components: ['src/components', '../shared/blog'], templates: 'views' }) as any[]
     const core = plugins[0]
@@ -65,8 +65,7 @@ describe('@barefootjs/hono/vite: real vite build', () => {
       })
 
       const template = await readFile(join(templatesDir, 'Counter.tsx'), 'utf8')
-      // The scriptAssets-driven codegen path (see hono-adapter.ts), not the
-      // legacy `addScriptCollection` post-process shape.
+      // The scriptAssets-driven codegen path (see hono-adapter.ts).
       expect(template).toContain('registerComponentScripts(')
       expect(template).toContain("from '@barefootjs/hono/scripts'")
       // No separate runtime registration — the shared `@barefootjs/client`

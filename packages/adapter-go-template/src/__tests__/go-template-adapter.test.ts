@@ -5620,7 +5620,7 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
   })
 })
 
-describe('GoTemplateAdapter - scriptAssets (Vite late-binding, PR1)', () => {
+describe('GoTemplateAdapter - scriptAssets (Vite late-binding)', () => {
   const CLIENT_COMPONENT = `
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -5670,12 +5670,12 @@ export function Counter() {
     expect(template).not.toContain('.Scripts.Register')
   })
 
-  test('absent scriptAssets leaves legacy computed-path behavior unchanged', () => {
+  test('absent scriptAssets falls back to adapter-computed script paths', () => {
     const ir = compileToIR(CLIENT_COMPONENT)
-    const legacy = new GoTemplateAdapter().generate(ir).template
+    const computed = new GoTemplateAdapter().generate(ir).template
     const explicitUndefined = new GoTemplateAdapter().generate(ir, { scriptAssets: undefined }).template
-    expect(legacy).toContain('{{.Scripts.Register "/static/client/barefoot.js"}}')
-    expect(legacy).toContain('{{.Scripts.Register "/static/client/Counter.client.js"}}')
-    expect(explicitUndefined).toBe(legacy)
+    expect(computed).toContain('{{.Scripts.Register "/static/client/barefoot.js"}}')
+    expect(computed).toContain('{{.Scripts.Register "/static/client/Counter.client.js"}}')
+    expect(explicitUndefined).toBe(computed)
   })
 })

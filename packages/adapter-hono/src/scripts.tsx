@@ -168,13 +168,10 @@ export function BfScripts(props: BfScriptsProps = {}) {
  * can't rely on the end-of-body collector; its scripts have to ship inline
  * at the point of render for streaming to deliver them at all).
  *
- * This is the Vite-pipeline replacement for `build.ts`'s `addScriptCollection`
- * post-process: under `@barefootjs/hono/vite`, `HonoAdapter.generate()` calls
- * this directly from CODEGEN (one call per rendered component, with `urls`
- * baked in as `AdapterGenerateOptions.scriptAssets` — the Vite plugin's
- * already-resolved, manifest-hashed or dev-origin URL list) instead of a
- * post-hoc regex rewrite of the whole compiled file. Two consequences of
- * that shift:
+ * `HonoAdapter.generate()` calls this directly from CODEGEN — one call per
+ * rendered component, with `urls` baked in as
+ * `AdapterGenerateOptions.scriptAssets` (the Vite plugin's already-resolved,
+ * manifest-hashed or dev-origin URL list). Two properties follow from that:
  *
  * - No separate `barefoot.js` runtime registration: `scriptAssets` under
  *   Vite is just the component's own bundled entry (see
@@ -189,9 +186,8 @@ export function BfScripts(props: BfScriptsProps = {}) {
  *   two different components that happen to share a chunk both correctly
  *   collapse to one `<script>` tag.
  *
- * Swallows a missing request context (no `jsxRenderer` in the render path)
- * the same way `addScriptCollection`'s injected try/catch did, returning
- * `[]` — SSR still renders, just without hydration scripts.
+ * Swallows a missing request context (no `jsxRenderer` in the render path),
+ * returning `[]` — SSR still renders, just without hydration scripts.
  */
 export function registerComponentScripts(urls: string[]): string[] {
   try {
@@ -216,12 +212,10 @@ export function registerComponentScripts(urls: string[]): string[] {
 
 /**
  * Wrap `jsx` with a trailing `<script type="module">` per entry in
- * `inlineScripts` (the return value of `registerComponentScripts`) — the
- * codegen-time replacement for `addScriptCollection`'s injected `__bfWrap`
- * helper, now a single shared function every generated component imports
- * instead of a duplicated-per-file source-text splice. Returns `jsx`
- * unchanged when `inlineScripts` is empty (the common case: collected, not
- * inline).
+ * `inlineScripts` (the return value of `registerComponentScripts`) — a
+ * single shared function every generated component imports, rather than
+ * per-file duplicated inline-script logic. Returns `jsx` unchanged when
+ * `inlineScripts` is empty (the common case: collected, not inline).
  */
 export function wrapWithInlineScripts(jsx: unknown, inlineScripts: string[]) {
   if (inlineScripts.length === 0) return jsx
