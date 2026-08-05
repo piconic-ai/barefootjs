@@ -65,8 +65,13 @@ export async function defaultRehydrate(region: Element): Promise<void> {
     return
   }
   // Fall back to the runtime's named exports. The specifier is a *variable* so
-  // bundlers can't statically resolve (and thus bundle) the optional peer; the
-  // browser resolves the bare specifier through the page's import map.
+  // bundlers can't statically resolve (and thus bundle) the optional peer —
+  // that is what keeps `@barefootjs/client` optional for a static-shell site.
+  // The flip side is that this bare specifier reaches the browser unresolved,
+  // so it only loads on a page that maps it (a hand-written import map, or an
+  // app that marks the runtime external). Under Vite nothing maps it, and
+  // nothing needs to: `setupStreaming()` installs the seams above, which this
+  // never gets past. This branch exists for the page that skipped that call.
   try {
     const spec = '@barefootjs/client/runtime'
     const mod = (await import(spec)) as {
@@ -120,7 +125,8 @@ function warnIfIslandsUnreachable(region: Element, op: 'dispose' | 're-hydrate')
   if (!regionHasIslands(region)) return
   console.error(
     `[barefootjs/router] could not load @barefootjs/client/runtime to ${op} a region that contains islands. ` +
-      `The swapped content may leak handlers or not be interactive — ensure the runtime is served and mapped in the page's import map.`,
+      `The swapped content may leak handlers or not be interactive — call setupStreaming() from ` +
+      `@barefootjs/client/runtime in your client entry, before startRouter().`,
   )
 }
 

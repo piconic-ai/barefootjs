@@ -1,5 +1,6 @@
 ---
 "@barefootjs/jsx": minor
+"@barefootjs/router": minor
 "@barefootjs/hono": minor
 "@barefootjs/blade": minor
 "@barefootjs/erb": minor
@@ -38,6 +39,20 @@ pre-1.0 (0.31.x), where a minor is the breaking-change slot under semver's
   blade, erb, go-template, hono, jinja, mojolicious, rust, twig, xslate.
   None of them read the field — only the adapter-tests contract test
   (also removed) did.
+
+## Corrected alongside it
+
+`@barefootjs/router`'s `defaultRehydrate` / `defaultDispose` keep
+`'@barefootjs/client/runtime'` in a *variable* so bundlers cannot resolve it —
+that is what keeps the client runtime an optional peer for a static-shell
+site. The comment there said the browser resolves it "through the page's
+import map", and the error message told users to make sure the runtime was
+"mapped in the page's import map". Neither is actionable: nothing emits such
+a map, and `BfImportMap` would have mapped that specifier to
+`<base>/barefoot.js`, which does not exist. The fallback is unreachable in a
+correctly-wired app anyway — `setupStreaming()` installs the
+`__bf_hydrate_within` / `__bf_dispose_within` seams the code checks first.
+The message now names that call instead.
 
 ## What to do instead
 
