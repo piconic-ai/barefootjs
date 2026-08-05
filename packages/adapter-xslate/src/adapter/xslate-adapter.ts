@@ -331,7 +331,7 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // Generate script registration
     const scriptReg = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     // SSR context consumers (`const x = useContext(Ctx)`): seed each local
     // from the active provider value (or the `createContext` default). The
@@ -373,7 +373,12 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(
+    ir: ComponentIR,
+    scriptBaseName?: string,
+    scriptAssets?: string[],
+    preloadAssets?: string[],
+  ): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` pair — see
     // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
@@ -381,9 +386,16 @@ export class XslateAdapter extends BaseAdapter implements IRNodeEmitter<XslateRe
     // whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
-      const lines = scriptAssets.map(
-        (url, i) => `: my $_bf_reg${i} = $bf.register_script('${url}');`,
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` — see `AdapterGenerateOptions.preloadAssets`. Emitted
+      // as literal `<link rel="modulepreload">` tags, before the
+      // `register_script` calls.
+      const lines = (preloadAssets ?? []).map(
+        (url) => `<link rel="modulepreload" crossorigin href="${url}">`,
       )
+      for (const [i, url] of scriptAssets.entries()) {
+        lines.push(`: my $_bf_reg${i} = $bf.register_script('${url}');`)
+      }
       lines.push('')
       return lines.join('\n')
     }

@@ -491,7 +491,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const scriptRegistrations = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     let template = `{{define "${this.state.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
     // Companion children defines execute with the parent's data via `bf_tmpl`.
@@ -614,7 +614,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Props struct) and guards the registrations with `{{if .Scripts}}` for a nil
    * collector.
    */
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(
+    ir: ComponentIR,
+    scriptBaseName?: string,
+    scriptAssets?: string[],
+    preloadAssets?: string[],
+  ): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` fallback pair
     // below — see `AdapterGenerateOptions.scriptAssets`. The caller (e.g.
@@ -622,8 +627,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // including whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` — see `AdapterGenerateOptions.preloadAssets`. Emitted
+      // as literal `<link rel="modulepreload">` tags, before the
+      // `.Scripts.Register` calls, so the browser sees the hint before it
+      // discovers this component's own registration.
+      const preloadTags = (preloadAssets ?? []).map(
+        (url) => `<link rel="modulepreload" crossorigin href="${url}">`,
+      )
       const registrations = scriptAssets.map((url) => `{{.Scripts.Register "${url}"}}`)
-      return `{{if .Scripts}}${registrations.join('')}{{end}}\n`
+      return `${preloadTags.join('')}{{if .Scripts}}${registrations.join('')}{{end}}\n`
     }
 
     const hasInteractivity = hasClientInteractivity(ir)

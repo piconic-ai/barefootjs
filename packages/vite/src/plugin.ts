@@ -76,7 +76,7 @@ import { BF_CHILD_NOOP_ID, bfChildMarkerName } from './child-marker.ts'
 import { buildChildNameIndex, discoverComponents, isComponentSourceFile, type DiscoveredComponent } from './discover.ts'
 import { resolveClientJsSpecifier } from './resolve-client-js.ts'
 import { buildRelativeImportRewriter, relativeUnderComponentDir, safeRollupEntryName, toPosixRelative } from './paths.ts'
-import { loadManifest, resolveScriptAssets } from './manifest.ts'
+import { loadManifest, resolvePreloadAssets, resolveScriptAssets } from './manifest.ts'
 import { planEmits, writeEmits, type EmitTarget } from './emit.ts'
 import { buildManifestEntry, type ManifestEntry } from './component-manifest.ts'
 import {
@@ -240,10 +240,12 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   /**
    * Shared eager-pass body: compile + emit a template for every discovered
    * component, resolving each `'use client'` component's real
-   * `scriptAssets` via the caller-supplied `resolveScriptAssetsFor` (the
-   * manifest for `writeBundle`, dev-origin URLs for `configureServer`).
-   * See this module's docstring for why both callers need the FULL
-   * discovered set every time, not just what changed.
+   * `scriptAssets`/`preloadAssets` via the caller-supplied
+   * `resolveAssetsFor` (the manifest for `writeBundle`, dev-origin URLs
+   * for `configureServer`) — one callback returning both lists, since
+   * both come from the same single manifest lookup. See this module's
+   * docstring for why both callers need the FULL discovered set every
+   * time, not just what changed.
    *
    * Returns every `types`-typed output this pass produced, keyed by
    * source absolute path — the raw material `afterEmit` receives (see
@@ -261,7 +263,7 @@ export function barefoot(options: BarefootViteOptions): Plugin {
   async function emitTemplatesFor(
     discovered: DiscoveredComponent[],
     projectDir: string,
-    resolveScriptAssetsFor: (component: DiscoveredComponent) => string[],
+    resolveAssetsFor: (component: DiscoveredComponent) => { scriptAssets: string[]; preloadAssets: string[] },
   ): Promise<Map<string, string>> {
     const types = new Map<string, string>()
     // Combined `manifest.json` row per source file — see
@@ -277,12 +279,13 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
       let result = canonical
       if (component.isClient) {
-        const scriptAssets = resolveScriptAssetsFor(component)
+        const { scriptAssets, preloadAssets } = resolveAssetsFor(component)
         if (scriptAssets.length > 0) {
           result = compileJSX(content, component.absPath, {
             adapter: options.adapter,
             sourceMaps: true,
             scriptAssets,
+            preloadAssets,
             rewriteRelativeImport: rewriterFor(component.absPath),
             // See `compileCanonical`'s docstring on this same field.
             siblingTemplatesRegistered: true,
@@ -366,9 +369,15 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
     const discovered = await discoverComponents(componentDirs, absPath => readFile(absPath, 'utf8'))
     childNameIndex = buildChildNameIndex(discovered)
-    const types = await emitTemplatesFor(discovered, config.root, component =>
-      devScriptAssets(config, devOrigin, component.absPath),
-    )
+    const types = await emitTemplatesFor(discovered, config.root, component => ({
+      scriptAssets: devScriptAssets(config, devOrigin, component.absPath),
+      // Dev serves unbundled modules and runs its own on-demand dep
+      // pre-bundling — there is no stable, hashed chunk graph to walk (no
+      // manifest exists in dev mode at all), so there is nothing correct
+      // to preload. Emitting hints here would just be noise the browser
+      // has to fetch and discard.
+      preloadAssets: [],
+    }))
 
     // Both the marker and `afterEmit` exist to annotate/post-process
     // `templatesDir` — neither has anything to do when there isn't one
@@ -527,7 +536,10 @@ export function barefoot(options: BarefootViteOptions): Plugin {
 
       const types = await emitTemplatesFor(discovered, config.root, component => {
         const manifestKey = toPosixRelative(config.root, component.absPath)
-        return resolveScriptAssets(manifest, manifestKey, config.base)
+        return {
+          scriptAssets: resolveScriptAssets(manifest, manifestKey, config.base),
+          preloadAssets: resolvePreloadAssets(manifest, manifestKey, config.base),
+        }
       })
 
       // No `templates` dir configured (the CSR degenerate case) — nothing

@@ -46,6 +46,10 @@ export type CollectedScript = {
   src: string
 }
 
+export type CollectedPreload = {
+  href: string
+}
+
 export interface BfScriptsProps {
   /**
    * Build manifest from `dist/components/manifest.json`. When supplied
@@ -103,6 +107,7 @@ export function BfScripts(props: BfScriptsProps = {}) {
     c.set('bfScriptsRendered', true)
 
     const scripts: CollectedScript[] = c.get('bfCollectedScripts') || []
+    const preloads: CollectedPreload[] = c.get('bfCollectedPreloads') || []
     const outputSet: Set<string> = c.get('bfOutputScripts') || new Set()
     const { manifest, base, entryRoots } = props
     // `entryRoots` extends both the walk-root set AND the `excluded` set.
@@ -146,8 +151,16 @@ export function BfScripts(props: BfScriptsProps = {}) {
       ...componentScripts.reverse(),
     ]
 
+    // Preloads carry no execution-order constraint the way scripts do (they
+    // are just hints, not code that runs) — insertion order is emitted as-
+    // is, ahead of every `<script type="module">` tag, so the browser sees
+    // the hint before it would otherwise discover the same chunk as an
+    // import of one of those scripts.
     return (
       <Fragment>
+        {preloads.map(({ href }) => (
+          <link rel="modulepreload" crossorigin="" href={href} />
+        ))}
         {finalScripts.map(({ src }) => (
           <script type="module" src={src} />
         ))}
@@ -211,16 +224,71 @@ export function registerComponentScripts(urls: string[]): string[] {
 }
 
 /**
- * Wrap `jsx` with a trailing `<script type="module">` per entry in
- * `inlineScripts` (the return value of `registerComponentScripts`) — a
- * single shared function every generated component imports, rather than
- * per-file duplicated inline-script logic. Returns `jsx` unchanged when
- * `inlineScripts` is empty (the common case: collected, not inline).
+ * Register `urls` (a component's resolved TRANSITIVE-chunk preload URLs for
+ * THIS render, per `AdapterGenerateOptions.preloadAssets`) into the same
+ * request-context collector `BfScripts` reads, and return the subset that
+ * must be rendered INLINE right here instead — same
+ * already-rendered-`<BfScripts />` escape hatch as `registerComponentScripts`
+ * (see that function's docstring), and the same reasons apply: a component
+ * whose SSR happens inside a Suspense boundary that renders after
+ * `<BfScripts />` has already flushed can't rely on the end-of-body
+ * collector.
+ *
+ * Kept as a SEPARATE collector (`bfCollectedPreloads` / `bfOutputPreloads`)
+ * from `registerComponentScripts`'s `bfCollectedScripts` /
+ * `bfOutputScripts` — a preload URL and a script URL are never the same
+ * concern (preloads are the entry's TRANSITIVE deps, never the entry
+ * itself — see `AdapterGenerateOptions.preloadAssets`), so there is no
+ * cross-dedup to do between the two sets; keeping them separate avoids
+ * conflating "this was preloaded" with "this was registered as a script".
+ *
+ * Dedup keys on the URL itself, same as `registerComponentScripts`:
+ * rendering the SAME component N times (e.g. inside a `.map()`), or two
+ * different components that happen to share a transitive chunk, both
+ * correctly collapse to one `<link rel="modulepreload">` tag.
+ *
+ * Swallows a missing request context, returning `[]` — SSR still renders,
+ * just without preload hints.
  */
-export function wrapWithInlineScripts(jsx: unknown, inlineScripts: string[]) {
-  if (inlineScripts.length === 0) return jsx
+export function registerComponentPreloads(urls: string[]): string[] {
+  try {
+    const c = useRequestContext()
+    const preloads: CollectedPreload[] = c.get('bfCollectedPreloads') || []
+    const outputPreloads: Set<string> = c.get('bfOutputPreloads') || new Set()
+    const rendered = c.get('bfScriptsRendered')
+    const inline: string[] = []
+    for (const href of urls) {
+      if (outputPreloads.has(href)) continue
+      outputPreloads.add(href)
+      if (rendered) inline.push(href)
+      else preloads.push({ href })
+    }
+    c.set('bfCollectedPreloads', preloads)
+    c.set('bfOutputPreloads', outputPreloads)
+    return inline
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Wrap `jsx` with a leading `<link rel="modulepreload">` per entry in
+ * `inlinePreloads` and a trailing `<script type="module">` per entry in
+ * `inlineScripts` (the return values of `registerComponentPreloads` and
+ * `registerComponentScripts` respectively) — a single shared function
+ * every generated component imports, rather than per-file duplicated
+ * inline-asset logic. Returns `jsx` unchanged when both are empty (the
+ * common case: collected, not inline).
+ *
+ * `inlinePreloads` defaults to `[]` so existing generated call sites that
+ * only ever pass `inlineScripts` (a component with `scriptAssets` but no
+ * `preloadAssets`) keep compiling and behaving exactly as before.
+ */
+export function wrapWithInlineScripts(jsx: unknown, inlineScripts: string[], inlinePreloads: string[] = []) {
+  if (inlineScripts.length === 0 && inlinePreloads.length === 0) return jsx
   return (
     <Fragment>
+      {inlinePreloads.map(href => <link rel="modulepreload" crossorigin="" href={href} />)}
       {jsx as never}
       {inlineScripts.map(src => <script type="module" src={src} />)}
     </Fragment>
