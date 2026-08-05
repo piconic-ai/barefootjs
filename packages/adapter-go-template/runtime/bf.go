@@ -3105,18 +3105,31 @@ func (pc *PortalCollector) Render() template.HTML {
 // Script Collection
 // =============================================================================
 
-// ScriptCollector collects client scripts with deduplication.
-// It preserves insertion order for deterministic output.
+// ScriptCollector collects client scripts (and modulepreload hints) with
+// deduplication. It preserves insertion order for deterministic output.
+//
+// Preloads share this same collector/struct rather than a parallel
+// PreloadCollector type: the collector is already threaded to every child
+// component via `setScriptsField`/`setScriptsOnSlice`/`setScriptsOnSingle`
+// (the `Scripts` struct field), so a preload registered inside a child
+// automatically survives to the page-level render through that existing
+// propagation — no separate child-propagation code needed (see #preload
+// task notes).
 type ScriptCollector struct {
 	scripts map[string]bool
 	order   []string
+
+	preloads     map[string]bool
+	preloadOrder []string
 }
 
 // NewScriptCollector creates a new ScriptCollector.
 func NewScriptCollector() *ScriptCollector {
 	return &ScriptCollector{
-		scripts: make(map[string]bool),
-		order:   []string{},
+		scripts:      make(map[string]bool),
+		order:        []string{},
+		preloads:     make(map[string]bool),
+		preloadOrder: []string{},
 	}
 }
 
@@ -3131,18 +3144,47 @@ func (sc *ScriptCollector) Register(src string) string {
 	return "" // Return empty string for template use
 }
 
+// RegisterPreload adds a `<link rel="modulepreload">` href to the
+// collection, mirroring Register's dedup/order semantics exactly. Called
+// from a generated template as a no-output statement
+// (`{{.Scripts.RegisterPreload "URL"}}`), never rendered directly — the
+// `<link>` tag itself is only ever emitted by BfScripts below, so a preload
+// registration never injects a node into a component's own template output.
+func (sc *ScriptCollector) RegisterPreload(href string) string {
+	if sc.preloads[href] {
+		return "" // Already registered
+	}
+	sc.preloads[href] = true
+	sc.preloadOrder = append(sc.preloadOrder, href)
+	return "" // Return empty string for template use
+}
+
 // Scripts returns all registered scripts in insertion order.
 func (sc *ScriptCollector) Scripts() []string {
 	return sc.order
 }
 
-// BfScripts generates script tags for all registered scripts.
-// Returns HTML safe for embedding in templates.
+// Preloads returns all registered preload hrefs in insertion order.
+func (sc *ScriptCollector) Preloads() []string {
+	return sc.preloadOrder
+}
+
+// BfScripts generates `<link rel="modulepreload">` hints followed by
+// `<script type="module">` tags for everything registered on collector.
+// Preloads are always emitted before scripts (a hint that arrives after the
+// script it describes is useless). Returns HTML safe for embedding in
+// templates.
 func BfScripts(collector *ScriptCollector) template.HTML {
 	if collector == nil {
 		return ""
 	}
 	var result strings.Builder
+	for _, href := range collector.Preloads() {
+		result.WriteString(`<link rel="modulepreload" crossorigin href="`)
+		result.WriteString(href)
+		result.WriteString(`">`)
+		result.WriteString("\n")
+	}
 	for _, src := range collector.Scripts() {
 		result.WriteString(`<script type="module" src="`)
 		result.WriteString(src)

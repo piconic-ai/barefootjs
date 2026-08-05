@@ -508,7 +508,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // Generate script registration
     const scriptReg = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     // SSR context consumers (`const x = useContext(Ctx)`): seed each local
     // from the active provider value (or the `createContext` default). The
@@ -550,7 +550,7 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[], preloadAssets?: string[]): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` pair — see
     // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
@@ -558,7 +558,16 @@ export class BladeAdapter extends BaseAdapter implements IRNodeEmitter<BladeRend
     // whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
-      const lines = scriptAssets.map((url) => `@php($bf->register_script('${url}'))`)
+      const lines: string[] = []
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` (see `AdapterGenerateOptions.preloadAssets`) — this
+      // branch is only reached when that already holds. Emitted BEFORE the
+      // script registrations: every preload hint must precede the script
+      // tags it describes, or the hint is useless.
+      if (preloadAssets && preloadAssets.length > 0) {
+        for (const url of preloadAssets) lines.push(`@php($bf->register_preload('${url}'))`)
+      }
+      for (const url of scriptAssets) lines.push(`@php($bf->register_script('${url}'))`)
       lines.push('')
       return lines.join('\n')
     }

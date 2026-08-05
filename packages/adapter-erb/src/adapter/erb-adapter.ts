@@ -324,7 +324,7 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // Generate script registration
     const scriptReg = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     // SSR context consumers (`const x = useContext(Ctx)`): seed each local
     // from the active provider value (or the `createContext` default) so
@@ -476,7 +476,12 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
   // Script Registration
   // ===========================================================================
 
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(
+    ir: ComponentIR,
+    scriptBaseName?: string,
+    scriptAssets?: string[],
+    preloadAssets?: string[],
+  ): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` pair — see
     // `AdapterGenerateOptions.scriptAssets`. The caller (e.g. the Vite
@@ -484,7 +489,15 @@ export class ErbAdapter extends BaseAdapter implements IRNodeEmitter<ErbRenderCt
     // whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
-      const lines = scriptAssets.map((url) => `<%- bf.register_script('${url}') -%>`)
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` (see `AdapterGenerateOptions.preloadAssets`), and
+      // every preload registration is emitted BEFORE every script
+      // registration — a hint that arrives after the script it describes
+      // is useless. Same `<%- ... -%>` no-output ERB tag as
+      // `register_script`: the `<link rel="modulepreload">` itself is only
+      // ever rendered by `Context#scripts` (barefoot_js.rb), never here.
+      const lines = (preloadAssets ?? []).map((url) => `<%- bf.register_preload('${url}') -%>`)
+      lines.push(...scriptAssets.map((url) => `<%- bf.register_script('${url}') -%>`))
       lines.push('')
       return lines.join('\n')
     }

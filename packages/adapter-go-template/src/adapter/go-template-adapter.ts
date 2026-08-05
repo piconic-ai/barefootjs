@@ -491,7 +491,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const scriptRegistrations = options?.skipScriptRegistration
       ? ''
-      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets)
+      : this.generateScriptRegistrations(ir, options?.scriptBaseName, options?.scriptAssets, options?.preloadAssets)
 
     let template = `{{define "${this.state.componentName}"}}\n${scriptRegistrations}${templateBody}\n{{end}}\n`
     // Companion children defines execute with the parent's data via `bf_tmpl`.
@@ -610,11 +610,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Script registration code for the template start. Reads `.Scripts` (on every
-   * Props struct) and guards the registrations with `{{if .Scripts}}` for a nil
-   * collector.
+   * Script (and modulepreload) registration code for the template start.
+   * Reads `.Scripts` (on every Props struct) and guards the registrations
+   * with `{{if .Scripts}}` for a nil collector.
    */
-  private generateScriptRegistrations(ir: ComponentIR, scriptBaseName?: string, scriptAssets?: string[]): string {
+  private generateScriptRegistrations(
+    ir: ComponentIR,
+    scriptBaseName?: string,
+    scriptAssets?: string[],
+    preloadAssets?: string[],
+  ): string {
     // `scriptAssets`, when present (including `[]`), fully supersedes the
     // adapter-computed `barefootJsPath` / `clientJsBasePath` fallback pair
     // below — see `AdapterGenerateOptions.scriptAssets`. The caller (e.g.
@@ -622,8 +627,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // including whether any script is needed at all.
     if (scriptAssets) {
       if (scriptAssets.length === 0) return ''
+      // `preloadAssets` is only meaningful alongside a non-empty
+      // `scriptAssets` (see `AdapterGenerateOptions.preloadAssets`), and
+      // every preload registration is emitted BEFORE every script
+      // registration — a hint that arrives after the script it describes
+      // is useless. `RegisterPreload`, like `Register`, is a no-output
+      // statement: the `<link rel="modulepreload">` tag itself is only
+      // ever rendered by `BfScripts` (runtime/bf.go), never here.
+      const preloadRegistrations = (preloadAssets ?? []).map(
+        (url) => `{{.Scripts.RegisterPreload "${url}"}}`,
+      )
       const registrations = scriptAssets.map((url) => `{{.Scripts.Register "${url}"}}`)
-      return `{{if .Scripts}}${registrations.join('')}{{end}}\n`
+      return `{{if .Scripts}}${preloadRegistrations.join('')}${registrations.join('')}{{end}}\n`
     }
 
     const hasInteractivity = hasClientInteractivity(ir)

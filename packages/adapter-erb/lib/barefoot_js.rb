@@ -68,6 +68,8 @@ module BarefootJS
     bf_accessor :backend
     bf_accessor :_scripts, default: -> { [] }
     bf_accessor :_script_seen, default: -> { {} }
+    bf_accessor :_preloads, default: -> { [] }
+    bf_accessor :_preload_seen, default: -> { {} }
     bf_accessor :_scope_id
     bf_accessor :_is_child, default: -> { false }
     bf_accessor :_bf_parent
@@ -217,8 +219,28 @@ module BarefootJS
       _scripts.push(path)
     end
 
+    # Register a `<link rel="modulepreload">` hint (mirrors `register_script`
+    # exactly: same dedup-by-path set, same insertion-order array, same
+    # lifetime/reset semantics, same no-output-string return so the compiled
+    # ERB template's `<% bf.register_preload(...) %>` produces no bytes
+    # where it sits). The `<link>` itself is only ever emitted by `scripts`
+    # below, never here -- a preload registration must never inject a node
+    # into a component's own template output (see the previous attempt's
+    # regression this guards against).
+    def register_preload(path)
+      return if _preload_seen.key?(path)
+
+      _preload_seen[path] = true
+      _preloads.push(path)
+    end
+
+    # Emits preload hints BEFORE script tags -- a hint that arrives after
+    # the script it describes is useless. Same escaping (none; paths are
+    # caller-trusted resolved URLs) as the script tags below.
     def scripts
-      _scripts.map { |path| %(<script type="module" src="#{path}"></script>) }.join("\n")
+      preload_tags = _preloads.map { |path| %(<link rel="modulepreload" crossorigin href="#{path}">) }
+      script_tags = _scripts.map { |path| %(<script type="module" src="#{path}"></script>) }
+      (preload_tags + script_tags).join("\n")
     end
 
     # -----------------------------------------------------------------
@@ -301,6 +323,8 @@ module BarefootJS
           child_bf._child_renderers(parent._child_renderers)
           child_bf._scripts(parent._scripts)
           child_bf._script_seen(parent._script_seen)
+          child_bf._preloads(parent._preloads)
+          child_bf._preload_seen(parent._preload_seen)
 
           extra =
             if sig_init

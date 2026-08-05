@@ -35,6 +35,8 @@ use BarefootJS::Evaluator ();
 my %ATTR_DEFAULT = (
     _scripts         => sub { [] },
     _script_seen     => sub { {} },
+    _preloads        => sub { [] },
+    _preload_seen    => sub { {} },
     _child_renderers => sub { {} },
     _is_child        => 0,
     # Lazily fall back to the Mojo reference backend so a bare-blessed
@@ -57,7 +59,7 @@ my %ATTR_DEFAULT = (
 # _data_key    — keyed-loop-item key, emitted as data-key on the scope root
 for my $attr (qw(
     c config backend
-    _scripts _script_seen _scope_id _is_child _bf_parent _bf_mount _props
+    _scripts _script_seen _preloads _preload_seen _scope_id _is_child _bf_parent _bf_mount _props
     _data_key _child_renderers
 )) {
     no strict 'refs';
@@ -291,6 +293,20 @@ sub register_script ($self, $path) {
     push @{$self->_scripts}, $path;
 }
 
+# Register a `<link rel="modulepreload">` hint — mirrors register_script
+# exactly: same dedup-by-path hash, same insertion-order arrayref, same
+# lifetime/reset (child-propagation) semantics, same no-output-string
+# return so a template's `<: $bf->register_preload(...) :>` /
+# `% $bf->register_preload(...);` emits no bytes where it sits. The
+# `<link>` tag itself is only ever produced by `scripts` below, never
+# here — a preload registration must never inject a node into a
+# component's own template output.
+sub register_preload ($self, $path) {
+    return if $self->_preload_seen->{$path};
+    $self->_preload_seen->{$path} = 1;
+    push @{$self->_preloads}, $path;
+}
+
 # ---------------------------------------------------------------------------
 # Child Component Rendering
 # ---------------------------------------------------------------------------
@@ -477,6 +493,8 @@ sub _register_manifest_child ($self, $slot_key, $marked, $signal_init, $manifest
         $child_bf->_child_renderers($parent->_child_renderers);
         $child_bf->_scripts($parent->_scripts);
         $child_bf->_script_seen($parent->_script_seen);
+        $child_bf->_preloads($parent->_preloads);
+        $child_bf->_preload_seen($parent->_preload_seen);
 
         my %extra;
         if ($signal_init) {
@@ -532,6 +550,12 @@ sub _derive_stash_from_defaults ($defaults, $props) {
 
 sub scripts ($self) {
     my @tags;
+    # Preload hints BEFORE script tags — a hint that arrives after the
+    # script it describes is useless. Same escaping (none; paths are
+    # caller-trusted resolved URLs) as the script tags below.
+    for my $path (@{$self->_preloads}) {
+        push @tags, qq{<link rel="modulepreload" crossorigin href="$path">};
+    }
     for my $path (@{$self->_scripts}) {
         push @tags, qq{<script type="module" src="$path"></script>};
     }

@@ -318,12 +318,19 @@ function new_script_collector(BarefootJS $bf): void
 {
     $bf->_scripts(new \ArrayObject());
     $bf->_script_seen(new \ArrayObject());
+    // Same `ArrayObject`-for-reference-semantics trick, for the
+    // `<link rel="modulepreload">` collector -- see `register_preload`'s
+    // docblock in BarefootJS.php.
+    $bf->_preloads(new \ArrayObject());
+    $bf->_preload_seen(new \ArrayObject());
 }
 
 function share_script_collector(BarefootJS $from, BarefootJS $to): void
 {
     $to->_scripts($from->_scripts());
     $to->_script_seen($from->_script_seen());
+    $to->_preloads($from->_preloads());
+    $to->_preload_seen($from->_preload_seen());
 }
 
 function render_component(
