@@ -25,20 +25,16 @@ export default defineConfig({
   },
   plugins: barefoot({
     components: ['../shared/components', '../shared/blog'],
-    // Matches the legacy CLI's output layout exactly (`outputLayout:
-    // { templates: 'templates', clientJs: 'client' }` under `outDir:
-    // 'dist'`) — `main.go`'s `loadTemplates` walks `dist/templates`
-    // recursively, and `r.Handle(basePath+"/static/*", ...)` already serves
-    // everything under `dist/` (including `dist/templates`, same as before
-    // this migration — not a new exposure this PR introduces).
+    // `main.go`'s `loadTemplates` walks `dist/templates` recursively, and
+    // `r.Handle(basePath+"/static/*", ...)` already serves everything
+    // under `dist/` (including `dist/templates`).
     templates: 'dist/templates',
     packageName: 'main',
     typesOutputFile: 'components.go',
-    // blog.go no longer hand-writes `.../static/client/router-entry.js`
-    // (it's content-hashed under Vite) or a `barefoot.js` importmap entry
-    // (the runtime is a shared ESM chunk the browser follows on its own —
-    // see blog.go's header comment). `bf_assets.go`'s `Assets["RouterEntry"]`
-    // is what `blog.go` reads instead.
+    // The runtime is a shared ESM chunk the browser follows on its own —
+    // see blog.go's header comment. `bf_assets.go`'s
+    // `Assets["RouterEntry"]` is what `blog.go` reads to resolve this
+    // script's URL.
     assets: { RouterEntry: routerEntry },
     assetsOutputFile: 'bf_assets.go',
   }),

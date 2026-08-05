@@ -29,17 +29,13 @@ export default defineConfig({
   },
   plugins: barefoot({
     components: ['../shared/components', '../shared/blog'],
-    // Matches the legacy CLI's output layout exactly (`outputLayout:
-    // { templates: 'templates', clientJs: 'client', runtime: 'client' }`
-    // under `outDir: 'dist'`) — `BACKEND` (BarefootJS::Backend::Erb) reads
-    // `dist/templates` directly; it is never served over HTTP.
+    // `BACKEND` (BarefootJS::Backend::Erb) reads `dist/templates`
+    // directly; it is never served over HTTP.
     templates: 'dist/templates',
-    // ExampleApp.blog_page no longer hand-writes `.../client/router-
-    // entry.js` (it's content-hashed under Vite) or a `barefoot.js`
-    // importmap entry (the runtime is a shared ESM chunk the browser
-    // follows on its own — see example_app.rb's blog_page comment).
-    // `dist/bf-assets.json`'s `["RouterEntry"]` is what
-    // `ExampleApp::ASSETS` reads instead.
+    // The runtime is a shared ESM chunk the browser follows on its own —
+    // see example_app.rb's blog_page comment. `dist/bf-assets.json`'s
+    // `["RouterEntry"]` is what `ExampleApp::ASSETS` reads to resolve
+    // this script's URL.
     assets: { RouterEntry: routerEntry },
   }),
 })

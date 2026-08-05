@@ -30,16 +30,13 @@ export default defineConfig({
   },
   plugins: barefoot({
     components: ['../shared/components', '../shared/blog'],
-    // Matches the legacy CLI's output layout exactly (`outputLayout:
-    // { templates: 'templates', clientJs: 'client', runtime: 'client' }`
-    // under `outDir: 'dist'`) — app.pl reads `dist/templates` directly; it
-    // is never served over HTTP.
+    // app.pl reads `dist/templates` directly; it is never served over
+    // HTTP.
     templates: 'dist/templates',
-    // _blog_page() no longer hand-writes `.../client/router-entry.js`
-    // (it's content-hashed under Vite) or a `barefoot.js` importmap entry
-    // (the runtime is a shared ESM chunk the browser follows on its own —
-    // see app.pl's blog section docstring). `dist/bf-assets.json`'s
-    // `["RouterEntry"]` is what app.pl's `$BLOG_ASSETS` reads instead.
+    // The runtime is a shared ESM chunk the browser follows on its own —
+    // see app.pl's blog section docstring. `dist/bf-assets.json`'s
+    // `["RouterEntry"]` is what app.pl's `$BLOG_ASSETS` reads to resolve
+    // this script's URL.
     assets: { RouterEntry: routerEntry },
   }),
 })

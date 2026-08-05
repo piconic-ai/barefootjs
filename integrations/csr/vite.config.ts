@@ -17,8 +17,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 // client/runtime` specifier a browser would otherwise need an import map
 // for. Routing pages through Vite's own multi-page build lets it rewrite
 // both into real, hashed asset URLs — no hand-written import map, no
-// hardcoded `/static/components/Foo.client.js` guess at what the legacy
-// CLI's un-bundled output layout used to be.
+// hardcoded component script paths to keep in sync.
 const pages = [
   'index',
   'counter',
@@ -33,17 +32,15 @@ const pages = [
 ]
 
 // `package.json`'s `build:watch` runs `vite build --watch` here, NOT
-// `vite dev` (the convention every other migrated integration uses). Those
-// integrations pair `vite dev` with a BACKEND dev script that reads
-// `templates` at request time and renders a `<script src>` pointing at
-// Vite's own dev-server origin (see `@barefootjs/vite`'s `devScriptAssets`)
-// — a cross-origin split that needs a template-rendering step in the
-// middle. CSR has no such step: its pages are the shell, served verbatim by
-// `server.ts` from `dist/pages/`, so there is nothing to bake a dev-origin
-// URL INTO. `vite build --watch` keeps CSR's actual dev loop (rebuild to
-// `dist/` on save, then reload the browser) working exactly as it did under
-// the legacy CLI's own `--watch`, without a half-working dev-server split
-// that would silently never take effect.
+// `vite dev`. Other integrations pair `vite dev` with a BACKEND dev script
+// that reads `templates` at request time and renders a `<script src>`
+// pointing at Vite's own dev-server origin (see `@barefootjs/vite`'s
+// `devScriptAssets`) — a cross-origin split that needs a template-rendering
+// step in the middle. CSR has no such step: its pages are the shell, served
+// verbatim by `server.ts` from `dist/pages/`, so there is nothing to bake a
+// dev-origin URL INTO. `vite build --watch` rebuilds to `dist/` on save and
+// reloads the browser, without a half-working dev-server split that would
+// silently never take effect.
 
 export default defineConfig({
   base: '/static/',

@@ -24,17 +24,13 @@ export default defineConfig({
   },
   plugins: barefoot({
     components: ['components', '../shared/components', '../shared/blog'],
-    // `dist/components` matches the legacy CLI's output layout, which
-    // `tsconfig.json`'s `@/components/*` path already points at —
-    // `server.tsx` / `blog.tsx` import compiled components from there
-    // unchanged by this migration.
+    // `tsconfig.json`'s `@/components/*` path points here, and
+    // `server.tsx` / `blog.tsx` import compiled components from it.
     templates: 'dist/components',
-    // `renderer.tsx` / `blog.tsx` no longer hand-write
-    // `.../static/components/barefoot.js` (the runtime is a shared ESM
-    // chunk every bundled entry imports, followed by the browser on its
-    // own) or `.../static/components/router-entry.js` (content-hashed
-    // under Vite). `dist/bf-assets.ts`'s `Assets.RouterEntry` is what
-    // `blog.tsx` reads instead.
+    // The runtime is a shared ESM chunk every bundled entry imports,
+    // followed by the browser on its own. `dist/bf-assets.ts`'s
+    // `Assets.RouterEntry` is what `blog.tsx` reads to resolve
+    // router-entry.js's content-hashed URL.
     assets: { RouterEntry: routerEntry },
   }),
 })

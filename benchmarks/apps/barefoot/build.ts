@@ -74,8 +74,7 @@ export async function build(): Promise<void> {
   // `index.html`'s `<link href="/styles.css">` is a root-absolute
   // reference — Vite passes those through untouched (the publicDir
   // convention) rather than resolving/hashing them, so nothing copies the
-  // shared stylesheet into dist/ on its own. Copy it in directly, same as
-  // the legacy pipeline did.
+  // shared stylesheet into dist/ on its own. Copy it in directly.
   await mkdir(resolve(appDir, 'dist'), { recursive: true })
   await cp(sharedStylesPath, resolve(appDir, 'dist/styles.css'))
 }

@@ -18,10 +18,9 @@ const componentDirs = [resolve(HERE, '../shared/components'), resolve(HERE, '../
 // that and registers nothing. h3/Elysia therefore need every discovered
 // `'use client'` component's own resolved URL up front (renderer.tsx /
 // blog.tsx emit one `<script>` per entry unconditionally, since there's no
-// per-page/per-request collector to be selective with — matching the
-// pre-Vite behavior of emitting every entry in the legacy CLI's
-// `manifest.json`). `assets` already resolves ONE hand-written entry's URL
-// for `integrations/gin`/`integrations/hono`; here it's asked to resolve
+// per-page/per-request collector to be selective with). `assets` already
+// resolves ONE hand-written entry's URL for
+// `integrations/gin`/`integrations/hono`; here it's asked to resolve
 // EVERY discovered client component's URL by feeding it the same
 // `discoverComponents` scan core's own `barefoot()` plugin performs
 // internally (reused via `@barefootjs/vite`'s public export, not
@@ -47,10 +46,8 @@ export default defineConfig(async () => ({
   },
   plugins: barefoot({
     components: ['../shared/components', '../shared/blog'],
-    // `dist/components` matches the legacy CLI's output layout, which
-    // `tsconfig.json`'s `@/components/*` alias already points at —
-    // `server.tsx` / `blog.tsx` import compiled components from there
-    // unchanged by this migration.
+    // `tsconfig.json`'s `@/components/*` alias points here, and
+    // `server.tsx` / `blog.tsx` import compiled components from it.
     templates: 'dist/components',
     // Every discovered client component PLUS the hand-written router
     // bootstrap — see this file's header comment.
