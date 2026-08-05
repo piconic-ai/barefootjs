@@ -11,6 +11,7 @@
  */
 import { readdir } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
+import { listExportedComponents } from '@barefootjs/jsx'
 
 /** Does `content` start with a `'use client'` / `"use client"` directive
  * (after skipping leading block/line comments)? */
@@ -86,6 +87,14 @@ export interface DiscoveredComponent {
   absPath: string
   /** Whether the file's content starts with a `'use client'` directive. */
   isClient: boolean
+  /**
+   * Every component this file exports, from `@barefootjs/jsx`'s TS-AST
+   * walk (`listExportedComponents`) — never a regex, and never the
+   * basename standing in for the name. A file exporting more than one
+   * component (`icon/index.tsx` → `CopyIcon` + `CheckIcon`) is why this
+   * exists; see `buildChildNameIndex`.
+   */
+  exportedComponents: string[]
 }
 
 /**
@@ -103,7 +112,15 @@ export async function discoverComponents(
       if (seen.has(absPath)) continue
       seen.add(absPath)
       const content = await readFile(absPath)
-      out.push({ absPath, isClient: hasUseClientDirective(content) })
+      const isClient = hasUseClientDirective(content)
+      // Only client files can be `@bf-child:` targets, so only they need
+      // their export list parsed — this is a `ts.createSourceFile` per
+      // file and server-only components are the majority in most trees.
+      out.push({
+        absPath,
+        isClient,
+        exportedComponents: isClient ? listExportedComponents(content, absPath) : [],
+      })
     }
   }
   return out
@@ -116,12 +133,23 @@ export async function discoverComponents(
  * no filesystem access at that phase — see `child-components.ts`), so
  * `resolveId` needs a name→file lookup built from a full discovery pass.
  *
- * Keyed by each `'use client'` file's own basename without extension —
- * the one-component-per-file convention this repo's shared components
- * follow (`TodoItem.tsx` exports `TodoItem`). Server-only files are
- * excluded: a `@bf-child:` marker only ever names another component this
- * one instantiates at runtime (`initChild`/`createComponent`), which
- * requires an `init` function only a `'use client'` file has.
+ * Keyed by each exported component NAME, which is what the marker
+ * carries. Server-only files are excluded: a `@bf-child:` marker only
+ * ever names another component this one instantiates at runtime
+ * (`initChild`/`createComponent`), which requires an `init` function only
+ * a `'use client'` file has.
+ *
+ * This used to key on the file's basename, which worked only because the
+ * one-component-per-file convention makes the two coincide
+ * (`TodoItem.tsx` exports `TodoItem`). A file exporting several
+ * components broke it silently: `icon/index.tsx` was keyed `index`, so
+ * `@bf-child:CopyIcon` found nothing and fell through to the no-op module
+ * (`plugin.ts`'s `resolveId`) — a child that never hydrates, with no
+ * diagnostic. `ui/components` alone has 61 such `'use client'` files.
+ *
+ * First writer wins on a duplicate name, and discovery order is the
+ * `components` option's order — so an earlier directory shadows a later
+ * one, the same precedence the option list already implies.
  *
  * Known limitation of this convention: a multi-component export file
  * (e.g. `icon/index.tsx` exporting `CopyIcon` + `CheckIcon`) is keyed by
@@ -133,7 +161,15 @@ export function buildChildNameIndex(discovered: readonly DiscoveredComponent[]):
   const index = new Map<string, string>()
   for (const c of discovered) {
     if (!c.isClient) continue
-    index.set(basename(c.absPath).replace(/\.tsx?$/, ''), c.absPath)
+    // Fall back to the basename when the AST walk found no exports: a
+    // file can still be a marker target through the old convention, and
+    // losing that would be a regression rather than a fix.
+    const names = c.exportedComponents.length > 0
+      ? c.exportedComponents
+      : [basename(c.absPath).replace(/\.tsx?$/, '')]
+    for (const name of names) {
+      if (!index.has(name)) index.set(name, c.absPath)
+    }
   }
   return index
 }

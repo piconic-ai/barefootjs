@@ -78,24 +78,58 @@ describe('discoverComponents', () => {
 })
 
 describe('buildChildNameIndex', () => {
-  test('keys \'use client\' files by their basename without extension', () => {
+  test('keys \'use client\' files by their exported component names', () => {
     const index = buildChildNameIndex([
-      { absPath: '/proj/components/TodoItem.tsx', isClient: true },
-      { absPath: '/proj/blog/LikeButton.tsx', isClient: true },
+      { absPath: '/proj/components/TodoItem.tsx', isClient: true, exportedComponents: ['TodoItem'] },
+      { absPath: '/proj/blog/LikeButton.tsx', isClient: true, exportedComponents: ['LikeButton'] },
     ])
     expect(index.get('TodoItem')).toBe('/proj/components/TodoItem.tsx')
     expect(index.get('LikeButton')).toBe('/proj/blog/LikeButton.tsx')
   })
 
+  // The regression this index was rebuilt for. Keyed on the basename, an
+  // `index.tsx` exporting several components resolved only as `index`, so
+  // every `@bf-child:<Name>` marker into it fell through to the no-op
+  // module and the child silently never hydrated.
+  test('a file exporting several components is reachable by EVERY name, not by its basename', () => {
+    const index = buildChildNameIndex([
+      {
+        absPath: '/proj/components/icon/index.tsx',
+        isClient: true,
+        exportedComponents: ['CopyIcon', 'CheckIcon'],
+      },
+    ])
+    expect(index.get('CopyIcon')).toBe('/proj/components/icon/index.tsx')
+    expect(index.get('CheckIcon')).toBe('/proj/components/icon/index.tsx')
+    expect(index.has('index')).toBe(false)
+  })
+
+  test('first writer wins on a duplicate name, so an earlier components dir shadows a later one', () => {
+    const index = buildChildNameIndex([
+      { absPath: '/proj/a/Button.tsx', isClient: true, exportedComponents: ['Button'] },
+      { absPath: '/proj/b/Button.tsx', isClient: true, exportedComponents: ['Button'] },
+    ])
+    expect(index.get('Button')).toBe('/proj/a/Button.tsx')
+  })
+
+  test('falls back to the basename when no exports were parsed, keeping the old convention working', () => {
+    const index = buildChildNameIndex([
+      { absPath: '/proj/components/Widget.tsx', isClient: true, exportedComponents: [] },
+    ])
+    expect(index.get('Widget')).toBe('/proj/components/Widget.tsx')
+  })
+
   test('excludes server-only files — a @bf-child marker only ever names an interactive component', () => {
     const index = buildChildNameIndex([
-      { absPath: '/proj/components/ServerOnly.tsx', isClient: false },
+      { absPath: '/proj/components/ServerOnly.tsx', isClient: false, exportedComponents: [] },
     ])
     expect(index.has('ServerOnly')).toBe(false)
   })
 
   test('accepts a .ts extension too', () => {
-    const index = buildChildNameIndex([{ absPath: '/proj/components/Widget.ts', isClient: true }])
+    const index = buildChildNameIndex([
+      { absPath: '/proj/components/Widget.ts', isClient: true, exportedComponents: ['Widget'] },
+    ])
     expect(index.get('Widget')).toBe('/proj/components/Widget.ts')
   })
 })
